@@ -17,7 +17,7 @@ export async function createModerationAppealDraft(
   input: AiDraftInput,
 ): Promise<ModerationAppeal | null> {
   const now = new Date()
-  const { rows } = await write(sql`/* createModerationAppealDraft */
+  const { rows } = await write<ModerationAppeal>(sql`/* createModerationAppealDraft */
     WITH lifecycle_change_id AS (
       SELECT uuidv7() AS id
     ),
@@ -74,7 +74,7 @@ export async function createModerationAppealDraft(
     )
     SELECT * FROM updated
   `)
-  const result = rows[0] as ModerationAppeal | undefined
+  const result = rows[0]
   if (!result) {
     const { rows: currentRows } = await write<{
       ai_draft_request_token: string

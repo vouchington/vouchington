@@ -66,8 +66,8 @@ export async function getPostIds(
   if (ranking_lt !== undefined) queryOptions.ranking_lt = ranking_lt
   if (hot_score_lt !== undefined) queryOptions.hot_score_lt = hot_score_lt
   const query = buildPostSearchQuery(currentUser, queryOptions)
-  const { rows } = await executePostSearchQuery(query, hasSemanticSearch)
-  const typedRows = rows as PostSearchRow[]
+  const { rows } = await executePostSearchQuery<PostSearchRow>(query, hasSemanticSearch)
+  const typedRows = rows
   const hasNextPage = typedRows.length > limit
   const resultRows = typedRows.slice(0, limit)
   const results: PostSearchResult[] = resultRows.map(row => ({

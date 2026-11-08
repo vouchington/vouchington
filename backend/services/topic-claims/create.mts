@@ -23,7 +23,7 @@ export async function createTopicClaim(
     )
     const currentTopic = currentTopics[0]
     assert(currentTopic, 409, 'Topic changed while creating claim')
-    return write(
+    return write<TopicClaim & { inserted: boolean }>(
       sql`/* createTopicClaim */
     WITH upsert AS (
       INSERT INTO topic_claims (
@@ -87,7 +87,7 @@ export async function createTopicClaim(
     )
   })
 
-  const result = rows[0] as (TopicClaim & { inserted: boolean }) | undefined
+  const result = rows[0]
   assert(result, 500, 'Failed to create topic claim')
   const { inserted, ...claim } = result
   const labelledClaim = await getTopicClaimById(claim.id, write)

@@ -89,8 +89,8 @@ export async function fetchBanEvasionReports(
   `
   if (afterCursor) query.append(banEvasionAfterCursor(sort, afterCursor))
   query.append(banEvasionOrderAndLimit(sort, limit))
-  const { rows } = await read(query)
-  return rows as PendingModerationReport[]
+  const { rows } = await read<PendingModerationReport>(query)
+  return rows
 }
 
 function banEvasionAfterCursor(

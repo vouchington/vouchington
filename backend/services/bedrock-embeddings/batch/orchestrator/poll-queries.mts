@@ -31,7 +31,7 @@ export const getBatchRecordsCreatedInLastHour = async (
   excludeBatchId?: string,
 ): Promise<number> => {
   const referenceTimeUtc = referenceTime.toISOString()
-  const { rows } = await read(
+  const { rows } = await read<{ records: string }>(
     `/* getBatchRecordsCreatedInLastHour */
     SELECT COALESCE(SUM(records), 0) as records
     FROM bedrock_embedding_batches
@@ -53,7 +53,7 @@ export const getActiveBatchStats = async (
   count: number
   inputSizeMB: number
 }> => {
-  const { rows } = await read(
+  const { rows } = await read<{ count: string; input_size_mb: number }>(
     `/* getActiveBatchStats */
     SELECT
       COUNT(*) as count,
@@ -70,24 +70,24 @@ export const getActiveBatchStats = async (
 
   return {
     count: Number.parseInt(rows[0]?.count || '0', 10),
-    inputSizeMB: Number.parseFloat(rows[0]?.input_size_mb || '0'),
+    inputSizeMB: rows[0]?.input_size_mb || 0,
   }
 }
 
 export const getBatchIdByJobArn = async (jobArn: string): Promise<string | null> => {
-  const { rows } = await read(
+  const { rows } = await read<{ id: string }>(
     `/* getBatchIdByJobArn */
     SELECT id FROM bedrock_embedding_batches WHERE job_arn = $1 LIMIT 1
   `,
     [jobArn],
   )
-  return rows.length > 0 ? (rows[0].id as string) : null
+  return rows.length > 0 ? rows[0].id : null
 }
 
 export const getBatchInfo = async (
   batchId: string,
 ): Promise<{ job_type: string; data: Record<string, unknown> } | null> => {
-  const { rows } = await read(
+  const { rows } = await read<{ job_type: string; data: Record<string, unknown> }>(
     `/* getBatchInfo */
     SELECT job_type, data
     FROM bedrock_embedding_batches
@@ -102,6 +102,6 @@ export const getBatchInfo = async (
 
   return {
     job_type: rows[0].job_type,
-    data: rows[0].data as Record<string, unknown>,
+    data: rows[0].data,
   }
 }

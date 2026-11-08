@@ -19,7 +19,7 @@ export async function adminVerifyTopicClaim(
   claimId: string,
 ): Promise<TopicClaim> {
   return runWithTransaction(undefined, async (transaction: TransactionQuery) => {
-    const { rows } = await transaction(
+    const { rows } = await transaction<TopicClaim>(
       sql`/* adminVerifyTopicClaim */
     UPDATE topic_claims
     SET verification_method = 'manual_admin',
@@ -31,7 +31,7 @@ export async function adminVerifyTopicClaim(
       AND rejected_at IS NULL
     RETURNING `.append(CLAIM_RETURNING),
     )
-    const updated = rows[0] as TopicClaim | undefined
+    const updated = rows[0]
     assert(updated, 404, 'Claim not found or already resolved')
     await recordModeratorAction(
       staffUserId,
@@ -51,7 +51,7 @@ export async function rejectTopicClaim(
 ): Promise<TopicClaim> {
   assert(rejectionReason.trim().length > 0, 422, 'rejection_reason is required')
   return runWithTransaction(undefined, async (transaction: TransactionQuery) => {
-    const { rows } = await transaction(
+    const { rows } = await transaction<TopicClaim>(
       sql`/* rejectTopicClaim */
     UPDATE topic_claims
     SET rejected_at = NOW(),
@@ -62,7 +62,7 @@ export async function rejectTopicClaim(
       AND rejected_at IS NULL
     RETURNING `.append(CLAIM_RETURNING),
     )
-    const updated = rows[0] as TopicClaim | undefined
+    const updated = rows[0]
     assert(updated, 404, 'Claim not found or already resolved')
     await recordModeratorAction(
       staffUserId,

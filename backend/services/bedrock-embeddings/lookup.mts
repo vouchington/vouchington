@@ -53,7 +53,7 @@ export const lookupExistingEmbeddings = async (
     return new Map()
   }
 
-  const { rows } = await read(
+  const { rows } = await read<ExistingEmbedding & { content_sha256: Buffer }>(
     `/* lookupExistingEmbeddings */
     SELECT content_sha256, embedding, input_token_count, created_at
     FROM ${EMBEDDINGS_TABLE}

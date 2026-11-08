@@ -10,7 +10,10 @@ export async function backfillPostsBloomFilter(): Promise<void> {
   const { posts } = entityCacheBloomFilters
   const [postCount, { rows: r2 }] = await Promise.all([
     estimatePartitionedRowCount('posts'),
-    read('/* backfillPostsBloomFilter */ SELECT COUNT(*)::int AS count FROM post_slugs', []),
+    read<{ count: number }>(
+      '/* backfillPostsBloomFilter */ SELECT COUNT(*)::int AS count FROM post_slugs',
+      [],
+    ),
   ])
   const count = postCount + (r2[0]?.count ?? 0)
   const capacity = Math.max(posts.getConfig().capacity, 2 * count)
@@ -35,12 +38,15 @@ async function* postKeysFromDb(): AsyncGenerator<string> {
 export async function backfillTopicsBloomFilter(): Promise<void> {
   const { topics } = entityCacheBloomFilters
   const [{ rows: r1 }, { rows: r2 }, { rows: r3 }] = await Promise.all([
-    read(
+    read<{ count: number }>(
       '/* backfillTopicsBloomFilter */ SELECT COUNT(*)::int AS count FROM topics WHERE deleted_at IS NULL AND merged_into_topic_id IS NULL',
       [],
     ),
-    read('/* backfillTopicsBloomFilter */ SELECT COUNT(*)::int AS count FROM topic_aliases', []),
-    read(
+    read<{ count: number }>(
+      '/* backfillTopicsBloomFilter */ SELECT COUNT(*)::int AS count FROM topic_aliases',
+      [],
+    ),
+    read<{ count: number }>(
       `/* backfillTopicsBloomFilter */
       SELECT COUNT(*)::int AS count
       FROM topics source_topic
@@ -88,7 +94,7 @@ async function* topicsKeysFromDb(): AsyncGenerator<string> {
 
 export async function backfillUsersBloomFilter(): Promise<void> {
   const { users } = entityCacheBloomFilters
-  const { rows } = await read(
+  const { rows } = await read<{ count: number }>(
     '/* backfillUsersBloomFilter */ SELECT COUNT(*)::int AS count FROM users WHERE deleted_at IS NULL',
     [],
   )
@@ -113,7 +119,7 @@ async function* usersKeysFromDb(): AsyncGenerator<string> {
 
 export async function backfillCommunitiesBloomFilter(): Promise<void> {
   const { communities } = entityCacheBloomFilters
-  const { rows } = await read(
+  const { rows } = await read<{ count: number }>(
     '/* backfillCommunitiesBloomFilter */ SELECT COUNT(*)::int AS count FROM communities WHERE deleted_at IS NULL',
     [],
   )

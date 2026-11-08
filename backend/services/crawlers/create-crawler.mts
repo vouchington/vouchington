@@ -37,7 +37,7 @@ async function createCrawlerInTransaction(
     updates.referral_program_id ? [updates.referral_program_id] : [],
     options,
     query =>
-      write(
+      write<{ id: string }>(
         sql`/* createCrawler */
     INSERT INTO hostname_crawler_configurations (
       hostname_id,

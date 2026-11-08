@@ -57,8 +57,8 @@ export async function readSitemapFamilyPage(
     )
   }
   statement.append(sql` ORDER BY id DESC, path ASC LIMIT ${options.limit}`)
-  const { rows } = await read(statement)
-  return rows as SitemapFamilyEntry[]
+  const { rows } = await read<SitemapFamilyEntry>(statement)
+  return rows
 }
 
 function buildSitemapFamilyQuery(family: SitemapFamilyType, options: FamilyPageOptions) {

@@ -26,7 +26,7 @@ export async function searchTopicsByRssFeedItemEmbedding(
     LIMIT ${safeLimit}
   `
 
-  const { rows } = await query(queryStatement)
+  const { rows } = await query<{ id: string; name: string }>(queryStatement)
 
   return rows.map(row => ({
     id: row.id,

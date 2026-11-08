@@ -47,7 +47,7 @@ export const getRssFeedsByIdBatch = async (
 
   const positions = ids.map((_, index) => index)
 
-  const { rows } = await read(
+  const { rows } = await read<ViewRssFeed & { input_order: number }>(
     `/* getRssFeedsByIdBatch */
     WITH input_data AS (
       SELECT unnest($1::uuid[]) AS input_value,
@@ -67,7 +67,7 @@ export const getRssFeedsByIdBatch = async (
 
   for (const row of rows) {
     const { input_order, ...feedData } = row
-    results[input_order] = feedData as ViewRssFeed
+    results[input_order] = feedData
   }
 
   return results

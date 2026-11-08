@@ -53,7 +53,7 @@ export async function getFediverseInstanceAttributesByIdBatch(
 
   const positions = topicIds.map((_, index) => index)
 
-  const { rows } = await read(
+  const { rows } = await read<FediverseInstanceAttributes & { input_order: number }>(
     `/* getFediverseInstanceAttributesByIdBatch */
     WITH input_data AS (
       SELECT unnest($1::uuid[]) AS input_value,
@@ -81,7 +81,7 @@ export async function getFediverseInstanceAttributesByIdBatch(
 
   for (const row of rows) {
     const { input_order, ...attributes } = row
-    results[input_order] = attributes as FediverseInstanceAttributes
+    results[input_order] = attributes
   }
 
   return results

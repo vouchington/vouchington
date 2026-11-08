@@ -50,7 +50,7 @@ export async function getEmbeddingByContentSha256(contentSha256: Buffer) {
 }
 
 export async function countEmbeddingsByContentSha256(contentSha256: Buffer): Promise<number> {
-  const { rows } = await read(
+  const { rows } = await read<{ count: number }>(
     `/* countEmbeddingsByContentSha256 */ SELECT COUNT(*)::int AS count FROM ${EMBEDDINGS_TABLE} WHERE content_sha256 = $1`,
     [contentSha256],
   )
@@ -58,7 +58,7 @@ export async function countEmbeddingsByContentSha256(contentSha256: Buffer): Pro
 }
 
 export async function countAllEmbeddings(): Promise<number> {
-  const { rows } = await read(
+  const { rows } = await read<{ count: number }>(
     `/* countAllEmbeddings */ SELECT COUNT(*)::int AS count FROM ${EMBEDDINGS_TABLE}`,
   )
   return rows[0]?.count ?? 0

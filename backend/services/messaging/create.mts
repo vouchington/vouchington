@@ -23,7 +23,8 @@ export async function findOrCreateDirectConversation(
     )
 
     // Re-check inside the transaction now that the lock is held
-    const { rows: recheckRows } = await query(sql`/* findOrCreateDirectConversation:recheck */
+    const { rows: recheckRows } =
+      await query<DirectConversation>(sql`/* findOrCreateDirectConversation:recheck */
       SELECT c.id, c.channel_type, c.title, c.created_at, c.created_by_id, c.updated_at
       FROM conversations c
       WHERE c.channel_type = 'direct_message'
@@ -42,14 +43,15 @@ export async function findOrCreateDirectConversation(
         ) = 2
       LIMIT 1
     `)
-    if (recheckRows[0]) return recheckRows[0] as DirectConversation
+    if (recheckRows[0]) return recheckRows[0]
 
-    const { rows: convRows } = await query(sql`/* findOrCreateDirectConversation */
+    const { rows: convRows } =
+      await query<DirectConversation>(sql`/* findOrCreateDirectConversation */
       INSERT INTO conversations (channel_type, title, created_by_id)
       VALUES ('direct_message', '', ${currentUserId})
       RETURNING id, channel_type, title, created_at, created_by_id, updated_at
     `)
-    const conversation = convRows[0] as DirectConversation
+    const conversation = convRows[0]
 
     await query(sql`/* findOrCreateDirectConversation:participants */
       INSERT INTO conversation_participants (conversation_id, user_id, role)
@@ -69,7 +71,7 @@ async function findDirectConversation(
   userId1: string,
   userId2: string,
 ): Promise<DirectConversation | null> {
-  const { rows } = await read(sql`/* findDirectConversation */
+  const { rows } = await read<DirectConversation>(sql`/* findDirectConversation */
     SELECT c.id, c.channel_type, c.title, c.created_at, c.created_by_id, c.updated_at
     FROM conversations c
     WHERE c.channel_type = 'direct_message'
@@ -93,7 +95,7 @@ async function findDirectConversation(
       ) = 2
     LIMIT 1
   `)
-  return (rows[0] as DirectConversation | undefined) ?? null
+  return rows[0] ?? null
 }
 
 export async function createGroupConversation(
@@ -104,12 +106,12 @@ export async function createGroupConversation(
     throw new Error('createGroupConversation requires at least one recipient')
   }
   await using query = await beginTransaction()
-  const { rows: convRows } = await query(sql`/* createGroupConversation */
+  const { rows: convRows } = await query<DirectConversation>(sql`/* createGroupConversation */
       INSERT INTO conversations (channel_type, title, created_by_id)
       VALUES ('direct_message', '', ${currentUserId})
       RETURNING id, channel_type, title, created_at, created_by_id, updated_at
     `)
-  const conversation = convRows[0] as DirectConversation
+  const conversation = convRows[0]
 
   const participantSql = sql`/* createGroupConversation:participants */
       INSERT INTO conversation_participants (conversation_id, user_id, role)
@@ -130,7 +132,7 @@ export async function createConversationMessage(
   bodyText: string,
 ): Promise<DirectMessage> {
   // CTE atomically guards participant membership, inserts message, and records conversation activity.
-  const { rows } = await write(sql`/* createConversationMessage */
+  const { rows } = await write<DirectMessage>(sql`/* createConversationMessage */
     WITH participant_check AS (
       SELECT 1 FROM conversation_participants
       WHERE conversation_id = ${conversationId}
@@ -152,7 +154,7 @@ export async function createConversationMessage(
     )
     SELECT * FROM new_message
   `)
-  const message = rows[0] as DirectMessage | undefined
+  const message = rows[0]
   if (!message) throw createHttpError(403, 'Not a participant')
 
   await awaitReportedEnqueueAdmission(() =>

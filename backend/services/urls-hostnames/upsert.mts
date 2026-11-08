@@ -64,7 +64,7 @@ async function upsertUrlHostnamesWithQuery(
 
   if (normalizedHostnames.length === 0) return new Map()
 
-  const existingResult = await read(
+  const existingResult = await read<{ hostname: string; id: string }>(
     `/* upsertUrlHostnames */
     SELECT id, hostname FROM url_hostnames
     WHERE hostname = ANY($1::text[])

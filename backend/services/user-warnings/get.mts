@@ -7,7 +7,7 @@ const DEFAULT_LIMIT = 25
 const MAX_LIMIT = 100
 
 export async function getUserWarningById(id: string): Promise<UserWarning | null> {
-  const { rows } = await read(
+  const { rows } = await read<UserWarning>(
     sql`/* getUserWarningById */
     SELECT id, user_id, community_id, issued_by_id, reason, public_message,
            report_id, revoked_at, revoked_by_id, created_at
@@ -16,7 +16,7 @@ export async function getUserWarningById(id: string): Promise<UserWarning | null
     LIMIT 1
   `,
   )
-  return (rows[0] as UserWarning) ?? null
+  return rows[0] ?? null
 }
 
 export interface MemberUserWarningListItem {
@@ -71,8 +71,8 @@ export async function listReceivedUserWarnings(
 
   query.append(sql` ORDER BY w.id DESC LIMIT ${limit + 1}`)
 
-  const { rows } = await read(query)
-  const items = rows as MemberUserWarningListItem[]
+  const { rows } = await read<MemberUserWarningListItem>(query)
+  const items = rows
   const hasNextPage = items.length > limit
   const warnings = hasNextPage ? items.slice(0, limit) : items
 
@@ -126,8 +126,8 @@ export async function listIssuedUserWarnings(
 
   query.append(sql` ORDER BY w.id DESC LIMIT ${limit + 1}`)
 
-  const { rows } = await read(query)
-  const items = rows as UserWarningListItem[]
+  const { rows } = await read<UserWarningListItem>(query)
+  const items = rows
   const hasNextPage = items.length > limit
   const warnings = hasNextPage ? items.slice(0, limit) : items
 

@@ -53,7 +53,7 @@ export async function insertTestCrawler(options: {
     linkHrefsToRemove = [],
   } = options
 
-  const result = await write(
+  const result = await write<{ id: string }>(
     sql`/* insertTestCrawler */
     INSERT INTO hostname_crawler_configurations (
       hostname_id,

@@ -11,7 +11,7 @@ export async function setUserReferrerId(userId: string, referrerId: string): Pro
 }
 
 export async function getUserReferrerId(userId: string): Promise<string | null> {
-  const { rows } = await read(
+  const { rows } = await read<{ referrer_user_id: string | null }>(
     sql`/* getUserReferrerId */
     SELECT referrer_user_id
     FROM users

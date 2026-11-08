@@ -3,7 +3,7 @@ import { read, write } from '@data-stores/psql'
 export async function queryEmbeddedUser(
   userId: string,
 ): Promise<Record<string, unknown> | undefined> {
-  const result = await read<Record<string, unknown>>(
+  const result = await read(
     `/* queryEmbeddedUser */ SELECT * FROM view_embedded_users WHERE id = $1 LIMIT 1`,
     [userId],
   )

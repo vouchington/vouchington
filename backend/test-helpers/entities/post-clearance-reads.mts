@@ -13,7 +13,7 @@ export async function readTestPostClearanceAuthor(changeId: string): Promise<str
 /** Mutates an audit row only for trigger-maintenance regression coverage. */
 
 export async function getPostClearanceStatus(postId: string): Promise<string | null> {
-  const { rows } = await read(
+  const { rows } = await read<{ clearance_status: string }>(
     sql`/* getPostClearanceStatus */
     SELECT clearance_status FROM view_post_clearance_status WHERE post_id = ${postId}
   `,

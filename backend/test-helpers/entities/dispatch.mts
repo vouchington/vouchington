@@ -30,7 +30,7 @@ export async function createEntityRelationWithElection(
 ): Promise<string> {
   const {
     rows: [relation],
-  } = await write(
+  } = await write<{ id: string }>(
     sql`/* createEntityRelationWithElection:insert */
     INSERT INTO "relation__post__related__url" (subject_id, object_id, created_by_id)
     VALUES (${subjectId}, ${objectUrlId}, ${createdById})

@@ -26,7 +26,7 @@ export async function createReferralProgramFixture(data: {
     topicType: 'referral_program',
   })
 
-  const validation = await write(
+  const validation = await write<{ id: string }>(
     sql`/* createReferralProgramFixture:validationSet */
     INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
     VALUES (${`validation_${randomSuffix}`}, 'test validation')
@@ -35,7 +35,7 @@ export async function createReferralProgramFixture(data: {
   )
   const validationId = validation.rows[0].id
 
-  const rule = await write(
+  const rule = await write<{ id: string }>(
     sql`/* createReferralProgramFixture:validationRule */
     INSERT INTO referral_program_link_validation_rules (
       referral_program_link_validation_rule_set_id,
@@ -82,7 +82,7 @@ export async function createReferralProgramLinkValidation(
   slug: string,
   userHelpText = 'Test help text',
 ): Promise<string> {
-  const result = await write(
+  const result = await write<{ id: string }>(
     sql`/* createReferralProgramLinkValidation */
     INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
     VALUES (${slug}, ${userHelpText})
@@ -101,7 +101,7 @@ export async function createReferralProgramLinkValidationRule(data: {
   isInvalidReferralLinkUrl?: boolean
   userErrorText?: string | null
 }): Promise<string> {
-  const result = await write(
+  const result = await write<{ id: string }>(
     sql`/* createReferralProgramLinkValidationRule */
     INSERT INTO referral_program_link_validation_rules (
       referral_program_link_validation_rule_set_id,

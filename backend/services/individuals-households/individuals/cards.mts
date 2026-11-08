@@ -27,16 +27,16 @@ async function assertAuthorizedUserOfCard(
   individualCardId: string,
   isAuthorizedUser: boolean | undefined,
 ): Promise<void> {
-  const { rows: authRows } = await read(
+  const { rows: authRows } = await read<{ id: string }>(
     sql`/* assertAuthorizedUserOfCard */ SELECT id FROM individual_cards WHERE id = ${value} AND individual_id = ${individualId} LIMIT 1`,
   )
   assert(authRows[0], 422, 'authorized_user_of_card_id must be a card belonging to you')
   let effectiveIsAuthorizedUser = isAuthorizedUser
   if (effectiveIsAuthorizedUser === undefined) {
-    const { rows: existing } = await read(
+    const { rows: existing } = await read<{ is_authorized_user: boolean }>(
       sql`/* assertAuthorizedUserOfCard */ SELECT is_authorized_user FROM individual_cards WHERE id = ${individualCardId} AND individual_id = ${individualId} LIMIT 1`,
     )
-    effectiveIsAuthorizedUser = existing[0]?.is_authorized_user
+    effectiveIsAuthorizedUser = existing.at(0)?.is_authorized_user
   }
   assert(
     effectiveIsAuthorizedUser !== false,

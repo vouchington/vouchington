@@ -168,7 +168,7 @@ export async function insertTestBlueskyLinkCompletion(options: {
 export async function getTestBlueskyLinkedAccountRow(
   did: string,
 ): Promise<TestBlueskyLinkedAccountRow | null> {
-  const { rows } = await read(
+  const { rows } = await read<TestBlueskyLinkedAccountRow>(
     `/* getTestBlueskyLinkedAccountRow */ SELECT bluesky_did, user_id, handle, link_authorization_id,
             session_ciphertext, created_at, updated_at
      FROM bluesky_linked_accounts

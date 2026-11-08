@@ -9,8 +9,8 @@ export async function readPostsForDayPage(
   day: string,
   options: { highWaterId?: string; afterId?: string; limit: number },
 ): Promise<SitemapPostWithId[]> {
-  const { rows } = await read(buildPostsForDayQuery(postType, day, options))
-  return rows as SitemapPostWithId[]
+  const { rows } = await read<SitemapPostWithId>(buildPostsForDayQuery(postType, day, options))
+  return rows
 }
 
 function buildPostsForDayQuery(

@@ -38,7 +38,7 @@ describe('owner foreign keys', () => {
   it.each(foreignKeys)(
     '$table has a validated $deleteAction-delete FK to $target with a leading index',
     async ({ table, constraint, target, deleteAction, leadingColumn }) => {
-      const { rows } = await read<Record<string, unknown>>(
+      const { rows } = await read(
         `/* readOwnerForeignKey */
         SELECT c.confrelid::regclass::text AS target, c.confdeltype::text AS delete_action,
           c.convalidated AS validated,

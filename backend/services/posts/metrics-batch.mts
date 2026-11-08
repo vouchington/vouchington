@@ -32,7 +32,16 @@ export const getPostMetricsByAnyBatch = async (
   const slugInputs = normalizedInputs.filter(i => !i.isId)
 
   const query = buildPostMetricsBatchQuery(idInputs, slugInputs)
-  const { rows } = await read(query.text, query.values, options)
+  const { rows } = await read<{
+    id: string
+    input_order: number
+    count__descendants: string
+    count__children: string
+    count__ancestors: string
+    updated_at: Date
+    bookmarks__follow: string
+    bookmarks__save: string
+  }>(query.text, query.values, options)
 
   // Build result array with nulls for missing entries
   const results: Array<PostMetrics | null> = new Array(idsOrSlugs.length).fill(null)

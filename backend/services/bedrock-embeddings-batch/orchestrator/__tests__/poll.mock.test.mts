@@ -36,9 +36,22 @@ describe('processBatch', () => {
     return id
   }
 
+  it('rejects a batch without a job ARN before polling Bedrock', async () => {
+    const id = batchId()
+    await insertTestEmbeddingsBatch({ id, jobArn: null })
+
+    await expect(processBatch(id)).rejects.toThrow('Batch has no job ARN')
+
+    expect(BedrockControlClient.send).not.toHaveBeenCalled()
+  })
+
   it('sets completed_at when Bedrock reports Completed', async () => {
     const id = batchId()
-    await insertTestEmbeddingsBatch({ id, bedrockStatus: 'Submitted' })
+    await insertTestEmbeddingsBatch({
+      id,
+      bedrockStatus: 'Submitted',
+      jobArn: `arn:aws:bedrock:us-east-1:123456789012:model-invocation-job/${id}`,
+    })
     vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Completed' } as never)
 
     await processBatch(id)
@@ -48,7 +61,11 @@ describe('processBatch', () => {
 
   it('sets failed_at when Bedrock reports Failed', async () => {
     const id = batchId()
-    await insertTestEmbeddingsBatch({ id, bedrockStatus: 'Submitted' })
+    await insertTestEmbeddingsBatch({
+      id,
+      bedrockStatus: 'Submitted',
+      jobArn: `arn:aws:bedrock:us-east-1:123456789012:model-invocation-job/${id}`,
+    })
     vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Failed' } as never)
 
     await processBatch(id)
@@ -58,7 +75,11 @@ describe('processBatch', () => {
 
   it('sets cancelled_at when Bedrock reports Stopped', async () => {
     const id = batchId()
-    await insertTestEmbeddingsBatch({ id, bedrockStatus: 'Submitted' })
+    await insertTestEmbeddingsBatch({
+      id,
+      bedrockStatus: 'Submitted',
+      jobArn: `arn:aws:bedrock:us-east-1:123456789012:model-invocation-job/${id}`,
+    })
     vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Stopped' } as never)
 
     await processBatch(id)
@@ -68,7 +89,11 @@ describe('processBatch', () => {
 
   it('sets failed_at for unrecognised Bedrock statuses to prevent indefinite polling', async () => {
     const id = batchId()
-    await insertTestEmbeddingsBatch({ id, bedrockStatus: 'Submitted' })
+    await insertTestEmbeddingsBatch({
+      id,
+      bedrockStatus: 'Submitted',
+      jobArn: `arn:aws:bedrock:us-east-1:123456789012:model-invocation-job/${id}`,
+    })
     vi.mocked(BedrockControlClient.send).mockResolvedValue({
       status: 'UnknownFutureStatus',
     } as never)

@@ -24,7 +24,7 @@ export async function getBlueskyFollowReceipt(
   followerAuthorizationId: string,
   options: QueryOptions = {},
 ): Promise<BlueskyFollowReceipt | null> {
-  const { rows } = await read(
+  const { rows } = await read<BlueskyFollowReceipt>(
     sql`/* getBlueskyFollowReceipt */
       SELECT receipt.follower_user_id, receipt.followee_user_id,
              account.bluesky_did AS follower_bluesky_did,
@@ -38,7 +38,7 @@ export async function getBlueskyFollowReceipt(
         AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}`,
     options,
   )
-  return (rows[0] as BlueskyFollowReceipt | undefined) ?? null
+  return rows[0] ?? null
 }
 
 export async function saveBlueskyFollowReceipt(
@@ -100,7 +100,7 @@ export async function listBlueskyFollowReceiptsForFollower(
   cursor: string | null,
   options: QueryOptions = {},
 ): Promise<BlueskyFollowReceipt[]> {
-  const { rows } = await read(
+  const { rows } = await read<BlueskyFollowReceipt>(
     sql`/* listBlueskyFollowReceiptsForFollower */
       SELECT receipt.follower_user_id, receipt.followee_user_id,
              account.bluesky_did AS follower_bluesky_did,
@@ -116,7 +116,7 @@ export async function listBlueskyFollowReceiptsForFollower(
       LIMIT ${getBlueskyFollowsWorkLimit('backfill_batch_size')}`,
     options,
   )
-  return rows as BlueskyFollowReceipt[]
+  return rows
 }
 
 // Sorts before every UUID, so the first page needs no separate "no cursor" predicate.

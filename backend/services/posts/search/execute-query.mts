@@ -13,8 +13,11 @@ export const SEMANTIC_POST_SEARCH_SETTINGS = {
   'hnsw.max_scan_tuples': '20000',
 } as const
 
-export async function executePostSearchQuery(query: SQLStatement, hasSemanticSearch: boolean) {
-  if (!hasSemanticSearch) return read(query)
+export async function executePostSearchQuery<Row extends object = Record<string, unknown>>(
+  query: SQLStatement,
+  hasSemanticSearch: boolean,
+) {
+  if (!hasSemanticSearch) return read<Row>(query)
 
   await using transaction = await beginTransaction({ client: readPool })
   await transaction(sql`/* executePostSearchQuery */
@@ -22,7 +25,7 @@ export async function executePostSearchQuery(query: SQLStatement, hasSemanticSea
            set_config('hnsw.ef_search', ${SEMANTIC_POST_SEARCH_SETTINGS['hnsw.ef_search']}, true),
            set_config('hnsw.max_scan_tuples', ${SEMANTIC_POST_SEARCH_SETTINGS['hnsw.max_scan_tuples']}, true),
            set_config('plan_cache_mode', 'force_custom_plan', true)`)
-  const result = await transaction(query)
+  const result = await transaction<Row>(query)
   await transaction.commit()
   return result
 }

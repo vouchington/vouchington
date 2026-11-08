@@ -55,7 +55,7 @@ export async function insertTestUrlDirect(
   })
   if (!isPublicHostname(normalizedUrl.hostname)) return null
 
-  const hostnameResult = await write(sql`/* insertTestUrlDirect */
+  const hostnameResult = await write<{ id: string }>(sql`/* insertTestUrlDirect */
     INSERT INTO url_hostnames (hostname, publicly_introduced_at)
     VALUES (${normalizedUrl.hostname}, CURRENT_TIMESTAMP)
     ON CONFLICT (hostname) DO UPDATE SET
@@ -67,7 +67,7 @@ export async function insertTestUrlDirect(
   let urlContentTypeId: string | null = null
   if (options.content_type) {
     const mimeType = options.content_type.toLowerCase()
-    const contentTypeResult = await write(sql`/* insertTestUrlDirect */
+    const contentTypeResult = await write<{ id: string }>(sql`/* insertTestUrlDirect */
       INSERT INTO media_types (mime_type)
       VALUES (${mimeType})
       ON CONFLICT (mime_type) DO UPDATE SET mime_type = EXCLUDED.mime_type
@@ -82,7 +82,7 @@ export async function insertTestUrlDirect(
     searchParams[key] = value
   })
 
-  const urlResult = await write(sql`/* insertTestUrlDirect */
+  const urlResult = await write<{ id: string }>(sql`/* insertTestUrlDirect */
     INSERT INTO urls (id, url, hostname_id, pathname, search_params, created_by_id, media_type_id)
     VALUES (
       COALESCE(${options.id ?? null}::uuid, uuidv7()), ${normalizedUrl.toString()}, ${hostnameId}, ${pathname},
@@ -129,7 +129,7 @@ export async function insertTestUrl(options: {
     .append(values)
     .append(sql`) RETURNING id`)
 
-  const result = await write(query)
+  const result = await write<{ id: string }>(query)
   return result.rows[0].id
 }
 
@@ -147,7 +147,7 @@ export async function hardDeleteTestUrl(urlId: string): Promise<void> {
 export async function createTestUrlWithHostname(): Promise<string> {
   const uid = randomUUID()
   const hostname = `test-${uid.slice(0, 8)}.example.com`
-  const hostnameResult = await write(
+  const hostnameResult = await write<{ id: string }>(
     sql`/* createTestUrlWithHostname */ INSERT INTO url_hostnames (hostname, publicly_introduced_at) VALUES (${hostname}, CURRENT_TIMESTAMP) RETURNING id`,
   )
   const hostnameId: string = hostnameResult.rows[0].id
@@ -164,7 +164,7 @@ export async function createTestRedirectUrl(options: {
   const { canonicalUrlId } = options
   const uid = randomUUID()
   const hostname = `redirect-${uid.slice(0, 8)}.example.com`
-  const hostnameResult = await write(
+  const hostnameResult = await write<{ id: string }>(
     sql`/* createTestRedirectUrl */ INSERT INTO url_hostnames (hostname, publicly_introduced_at) VALUES (${hostname}, CURRENT_TIMESTAMP) RETURNING id`,
   )
   const hostnameId: string = hostnameResult.rows[0].id
@@ -175,7 +175,7 @@ export async function createTestRedirectUrl(options: {
 
 /** Get the MIME type stored for a URL row */
 export async function getTestUrlMimeType(urlId: string): Promise<string | null> {
-  const result = await read(
+  const result = await read<{ mime_type: string }>(
     sql`/* getTestUrlMimeType */ SELECT media_types.mime_type
       FROM urls JOIN media_types ON media_types.id = urls.media_type_id
       WHERE urls.id = ${urlId}`,
@@ -187,7 +187,7 @@ export async function getTestUrlMimeType(urlId: string): Promise<string | null> 
  * Get the canonical_url_id for a URL row
  */
 export async function getTestUrlCanonicalId(urlId: string): Promise<string | null> {
-  const result = await read(
+  const result = await read<{ canonical_url_id: string | null }>(
     sql`/* getTestUrlCanonicalId */ SELECT canonical_url_id FROM urls WHERE id = ${urlId}`,
   )
   return (result.rows[0]?.canonical_url_id as string | null | undefined) ?? null

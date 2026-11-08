@@ -29,13 +29,13 @@ function isKeyIdUniqueViolation(error: unknown): boolean {
 }
 
 async function getActorKeyPairRow(userId: string): Promise<ActorKeyPairRow | null> {
-  const { rows } = await read(sql`/* getActorKeyPairRow */
+  const { rows } = await read<ActorKeyPairRow>(sql`/* getActorKeyPairRow */
     SELECT user_id, key_id, public_key_pem, private_key_ciphertext, created_at, updated_at
     FROM activitypub_actor_keys
     WHERE user_id = ${userId}
     LIMIT 1
   `)
-  return (rows[0] as ActorKeyPairRow | undefined) ?? null
+  return rows[0] ?? null
 }
 
 // Idempotently returns the ActivityPub actor keypair for a local user, generating and persisting
@@ -51,14 +51,14 @@ export async function getOrCreateActorKeyPair(userId: string): Promise<ActorKeyP
   const privateKeyCiphertext = encryptSecret(privateKeyPem, actorKeySecretPurpose(userId))
 
   try {
-    const { rows } = await write(sql`/* getOrCreateActorKeyPair */
+    const { rows } = await write<ActorKeyPairRow>(sql`/* getOrCreateActorKeyPair */
       INSERT INTO activitypub_actor_keys (user_id, key_id, public_key_pem, private_key_ciphertext)
       VALUES (${userId}, ${keyId}, ${publicKeyPem}, ${privateKeyCiphertext})
       ON CONFLICT (user_id) DO UPDATE
         SET user_id = activitypub_actor_keys.user_id
       RETURNING user_id, key_id, public_key_pem, private_key_ciphertext, created_at, updated_at
     `)
-    return rows[0] as ActorKeyPairRow
+    return rows[0]
   } catch (err) {
     if (isKeyIdUniqueViolation(err)) {
       const existing = await getActorKeyPairRow(userId)

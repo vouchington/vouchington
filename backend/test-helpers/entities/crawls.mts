@@ -20,7 +20,7 @@ export async function insertOldInvalidCrawlForTest(urlId: string): Promise<strin
  * Count crawls for a URL
  */
 export async function countCrawlsForUrl(urlId: string): Promise<number> {
-  const { rows } = await read(
+  const { rows } = await read<{ count: number }>(
     sql`/* countCrawlsForUrl */
     SELECT COUNT(*)::int as count
     FROM crawls
@@ -46,7 +46,9 @@ export async function getCrawlData(urlId: string, crawlId: string): Promise<unkn
  * Check if crawl has pending embeddings
  */
 export async function crawlHasPendingEmbeddings(urlId: string, crawlId: string): Promise<boolean> {
-  const { rows } = await read(sql`/* crawlHasPendingEmbeddings */
+  const { rows } = await read<{
+    has_pending_embeddings: boolean
+  }>(sql`/* crawlHasPendingEmbeddings */
     SELECT has_pending_embeddings
     FROM crawls
     WHERE url_id = ${urlId}
@@ -66,7 +68,7 @@ export async function insertTestCrawlPending(
   urlId: string,
   crawlerId: string,
 ): Promise<{ id: string }> {
-  const { rows } = await write(sql`/* insertTestCrawlPending */
+  const { rows } = await write<{ id: string }>(sql`/* insertTestCrawlPending */
     INSERT INTO crawls (
       url_id,
       hostname_crawler_configuration_id,
@@ -193,7 +195,6 @@ export async function insertTestCrawl(data: {
   query.append(sql`)
   RETURNING id
   `)
-
-  const result = await write(query)
+  const result = await write<{ id: string }>(query)
   return { id: result.rows[0].id }
 }

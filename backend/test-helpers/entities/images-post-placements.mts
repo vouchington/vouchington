@@ -52,7 +52,7 @@ export async function insertTestPostImage(data: {
 export async function insertPendingTestImage(userId: string): Promise<string> {
   const imageId = v7()
   const tempHash = createHash('sha256').update(imageId).digest()
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     sql`/* insertPendingTestImage */
     INSERT INTO images (id, created_by_id, sha_256, data, s3_key)
     VALUES (${imageId}, ${userId}, ${tempHash}, '{}', ${imageId})

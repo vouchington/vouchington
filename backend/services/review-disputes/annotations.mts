@@ -10,7 +10,7 @@ const ANNOTATION_SELECT = sql`
 export async function getActiveAnnotationForPost(
   postId: string,
 ): Promise<PostDisputeAnnotation | null> {
-  const { rows } = await read(
+  const { rows } = await read<PostDisputeAnnotation>(
     sql`/* getActiveAnnotationForPost */
     SELECT `.append(ANNOTATION_SELECT).append(sql`
     FROM post_dispute_annotations
@@ -19,14 +19,14 @@ export async function getActiveAnnotationForPost(
     LIMIT 1
   `),
   )
-  return (rows[0] as PostDisputeAnnotation | undefined) ?? null
+  return rows[0] ?? null
 }
 
 export async function getActiveAnnotationsForPosts(
   postIds: string[],
 ): Promise<PostDisputeAnnotation[]> {
   if (postIds.length === 0) return []
-  const { rows } = await read(
+  const { rows } = await read<PostDisputeAnnotation>(
     sql`/* getActiveAnnotationsForPosts */
     SELECT `.append(ANNOTATION_SELECT).append(sql`
     FROM post_dispute_annotations
@@ -34,14 +34,14 @@ export async function getActiveAnnotationsForPosts(
       AND removed_at IS NULL
   `),
   )
-  return rows as PostDisputeAnnotation[]
+  return rows
 }
 
 export async function removeReviewDisputeAnnotation(
   staffUserId: string,
   annotationId: string,
 ): Promise<PostDisputeAnnotation> {
-  const { rows } = await write(
+  const { rows } = await write<PostDisputeAnnotation>(
     sql`/* removeReviewDisputeAnnotation */
     UPDATE post_dispute_annotations
     SET removed_at = NOW(),
@@ -50,7 +50,7 @@ export async function removeReviewDisputeAnnotation(
       AND removed_at IS NULL
     RETURNING `.append(ANNOTATION_SELECT),
   )
-  const updated = rows[0] as PostDisputeAnnotation | undefined
+  const updated = rows[0]
   assert(updated, 404, 'Annotation not found or already removed')
   return updated
 }

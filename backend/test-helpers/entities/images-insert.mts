@@ -6,7 +6,7 @@ import sql from 'sql-template-strings'
 export async function insertTestImage(userId: string, id?: string): Promise<string> {
   const sha256 = randomBytes(32)
   const s3Key = `test/${randomBytes(16).toString('hex')}`
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     sql`/* insertTestImage */
     INSERT INTO images (
       id, created_by_id, sha_256, upload_started_at, upload_completed_at, data, s3_key,
@@ -24,7 +24,7 @@ export async function insertTestImageWithSha256(
 ): Promise<{ id: string; sha256: Buffer }> {
   const sha256 = randomBytes(32)
   const s3Key = `test/${randomBytes(16).toString('hex')}`
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     allowUnannotatedQuery(sql`
     INSERT INTO images (
       created_by_id, sha_256, upload_started_at, upload_completed_at, data, s3_key,

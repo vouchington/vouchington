@@ -47,7 +47,7 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
     ORDER BY h.id ASC
     LIMIT ${limit}
   `)
-  const { rows } = await read(query, undefined, queryOptions)
+  const { rows } = await read<{ id: string }>(query, undefined, queryOptions)
 
   return rows.map(row => row.id)
 }

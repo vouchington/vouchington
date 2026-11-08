@@ -85,7 +85,10 @@ type HostnameEmailabilityWithoutBlacklistResult = {
 }
 
 async function checkHostnameEmailability(domain: string): Promise<HostnameEmailabilityResult> {
-  const result = await read(sql`/* checkHostnameEmailability */
+  const result = await read<{
+    is_emailable: boolean | null
+    is_blacklisted: boolean
+  }>(sql`/* checkHostnameEmailability */
     SELECT
       uh.is_emailable,
       EXISTS (
@@ -107,7 +110,9 @@ async function checkHostnameEmailability(domain: string): Promise<HostnameEmaila
 async function checkHostnameEmailabilityWithoutBlacklist(
   domain: string,
 ): Promise<HostnameEmailabilityWithoutBlacklistResult> {
-  const result = await read(sql`/* checkHostnameEmailabilityWithoutBlacklist */
+  const result = await read<{
+    is_emailable: boolean | null
+  }>(sql`/* checkHostnameEmailabilityWithoutBlacklist */
     SELECT uh.is_emailable
     FROM (SELECT ${domain} AS hostname) AS d
     LEFT JOIN url_hostnames uh ON uh.hostname = d.hostname

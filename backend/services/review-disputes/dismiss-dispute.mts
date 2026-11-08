@@ -18,7 +18,7 @@ export async function dismissReviewDispute(
 ): Promise<ReviewDisputeResponse> {
   const now = new Date()
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
-    const { rows } = await query(
+    const { rows } = await query<ReviewDisputeResolutionRow>(
       sql`/* dismissReviewDispute */
       UPDATE review_disputes
       SET resolved_at = ${now},
@@ -27,7 +27,7 @@ export async function dismissReviewDispute(
       WHERE id = ${disputeId} AND sent_at IS NOT NULL AND resolved_at IS NULL
       RETURNING `.append(DISPUTE_RETURNING),
     )
-    const row = rows[0] as ReviewDisputeResolutionRow | undefined
+    const row = rows[0]
     if (!row) return rejectUnresolvableDispute(disputeId, { query })
 
     const lifecycleId = await appendLifecycleChange(

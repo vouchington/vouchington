@@ -25,7 +25,7 @@ export async function createUserModNote(
   }
 
   try {
-    const { rows } = await write(sql`/* createUserModNote */
+    const { rows } = await write<UserModNote>(sql`/* createUserModNote */
       WITH target_check AS (
         SELECT id FROM users
         WHERE id = ${input.targetUserId}
@@ -47,7 +47,7 @@ export async function createUserModNote(
       LEFT JOIN communities community ON community.id = n.community_id
     `)
 
-    const note = rows[0] as UserModNote | undefined
+    const note = rows[0]
     assert(note, 404, 'Target user not found')
     await recordModeratorAction(currentUser.id, {
       actionType: 'warn',

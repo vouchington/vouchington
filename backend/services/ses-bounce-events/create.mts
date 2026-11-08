@@ -49,7 +49,7 @@ export async function createSesBounceEvent(
   const normalizedRecipients = normalizeRecipients(input.recipients)
   const dedupKey = deriveDedupKey(input, normalizedRecipients)
 
-  const { rows } = await write(sql`/* createSesBounceEvent */
+  const { rows } = await write<SesBounceEvent>(sql`/* createSesBounceEvent */
     WITH registered_subtype AS (
       INSERT INTO amazon_ses_bounce_subtypes (amazon_ses_bounce_subtype)
       SELECT ${input.amazon_ses_bounce_subtype_id ?? null}::text AS amazon_ses_bounce_subtype
@@ -158,5 +158,5 @@ export async function createSesBounceEvent(
     return null
   }
   assert(rows.length === 1, 500, 'Failed to create ses_bounce_event')
-  return rows[0] as SesBounceEvent
+  return rows[0]
 }

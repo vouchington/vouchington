@@ -19,7 +19,7 @@ export async function insertTestDomainBlacklist(
   options: QueryOptions = {},
 ): Promise<void> {
   // Get or create the source
-  const sourceResult = await read(
+  const sourceResult = await read<{ id: DomainBlacklistSourceId }>(
     sql`/* insertTestDomainBlacklist:findSource */
     SELECT id FROM domain_blocklist_sources WHERE name = ${sourceName}
   `,
@@ -30,7 +30,7 @@ export async function insertTestDomainBlacklist(
   if (sourceResult.rows.length > 0) {
     sourceId = sourceResult.rows[0].id
   } else {
-    const insertResult = await write(
+    const insertResult = await write<{ id: DomainBlacklistSourceId }>(
       sql`/* insertTestDomainBlacklist:createSource */
       INSERT INTO domain_blocklist_sources (type, name, url)
       VALUES ('url'::domain_blocklist_types, ${sourceName}, 'https://example.com/blacklist.txt')
@@ -60,7 +60,7 @@ export async function createTestBlacklistSource(
   source: DomainBlacklistSource,
   options: QueryOptions = {},
 ): Promise<DomainBlacklistSourceId> {
-  const result = await write(
+  const result = await write<{ id: DomainBlacklistSourceId }>(
     sql`/* createTestBlacklistSource */
     INSERT INTO domain_blocklist_sources (type, name, url)
     VALUES (${source.type}::domain_blocklist_types, ${source.name}, ${source.url})
@@ -81,7 +81,7 @@ export async function countBlacklistEntriesBySource(
   sourceId: DomainBlacklistSourceId,
   options: QueryOptions = {},
 ): Promise<number> {
-  const result = await read(
+  const result = await read<{ count: number }>(
     sql`/* countBlacklistEntriesBySource */
     SELECT COUNT(*)::int as count FROM blocklisted_domains
     WHERE source_id = ${sourceId}

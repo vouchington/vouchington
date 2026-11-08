@@ -27,8 +27,8 @@ export async function getCommunityModmailInbox(
   }
   query.append(sql` ORDER BY last_activity_at DESC, id DESC LIMIT ${limit + 1}`)
 
-  const { rows } = await read(query)
-  return rows as Array<ModmailThread & { cursor_timestamp: string }>
+  const { rows } = await read<ModmailThread & { cursor_timestamp: string }>(query)
+  return rows
 }
 
 export async function getMyModmailThreads(
@@ -57,8 +57,8 @@ export async function getMyModmailThreads(
   }
   query.append(sql` ORDER BY last_activity_at DESC, id DESC LIMIT ${limit + 1}`)
 
-  const { rows } = await read(query)
-  return rows as Array<ModmailThread & { cursor_timestamp: string }>
+  const { rows } = await read<ModmailThread & { cursor_timestamp: string }>(query)
+  return rows
 }
 
 export async function hasOpenModmailThread(
@@ -82,7 +82,7 @@ export async function hasOpenModmailThread(
 }
 
 export async function getModmailThread(conversationId: string): Promise<ModmailThread | null> {
-  const { rows } = await read(sql`/* getModmailThread */
+  const { rows } = await read<ModmailThread>(sql`/* getModmailThread */
     SELECT
       id, channel_type, title, community_id, subject_user_id,
       assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
@@ -93,5 +93,5 @@ export async function getModmailThread(conversationId: string): Promise<ModmailT
       AND deleted_at IS NULL
     LIMIT 1
   `)
-  return (rows[0] as ModmailThread | undefined) ?? null
+  return rows[0] ?? null
 }

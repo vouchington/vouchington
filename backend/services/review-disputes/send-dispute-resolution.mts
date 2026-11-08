@@ -11,7 +11,7 @@ export async function sendApprovedReviewDisputeResolution(
   disputeId: string,
 ): Promise<ReviewDisputeResponse> {
   const now = new Date()
-  const { rows } = await write(sql`/* sendApprovedReviewDisputeResolution */
+  const { rows } = await write<ReviewDispute>(sql`/* sendApprovedReviewDisputeResolution */
     WITH lifecycle_change_id AS (
       SELECT uuidv7() AS id
     ),
@@ -55,7 +55,7 @@ export async function sendApprovedReviewDisputeResolution(
     )
     SELECT * FROM updated
   `)
-  const result = rows[0] as ReviewDispute | undefined
+  const result = rows[0]
   if (!result) return rejectUnsendableDispute(disputeId)
 
   // Deliver the human-approved response to the disputant. Awaited so a delivery

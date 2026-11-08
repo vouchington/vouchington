@@ -104,8 +104,8 @@ export async function listReviewDisputes(
   }
   query.append(sql` ORDER BY rd.id DESC LIMIT ${fetchLimit}`)
 
-  const { rows } = await read(query)
-  const disputes = (rows as ReviewDisputeSummary[]).map(dispute => addIsOverdue(dispute, now))
+  const { rows } = await read<ReviewDisputeSummary>(query)
+  const disputes = rows.map(dispute => addIsOverdue(dispute, now))
   const hasNextPage = disputes.length > limit
   return { disputes: disputes.slice(0, limit), hasNextPage }
 }
@@ -124,7 +124,7 @@ function reviewDisputeStatusPredicate(status: ReviewDisputeStatus): SQLStatement
 }
 
 export async function listDisputesForPost(postId: string): Promise<ReviewDisputeResponse[]> {
-  const { rows } = await read(
+  const { rows } = await read<ReviewDisputeResponse>(
     sql`/* listDisputesForPost */
     SELECT `
       .append(DISPUTE_SELECT)
@@ -136,5 +136,5 @@ export async function listDisputesForPost(postId: string): Promise<ReviewDispute
     ORDER BY rd.id DESC
   `),
   )
-  return rows as ReviewDisputeResponse[]
+  return rows
 }

@@ -38,7 +38,10 @@ export async function getPostFacets(
   // Wrap in COUNT query
   const countQuery = buildCountQuery(baseQuery)
 
-  const { rows } = await executePostSearchQuery(countQuery, semanticSearchEmbedding !== undefined)
+  const { rows } = await executePostSearchQuery<{ total_count: string }>(
+    countQuery,
+    semanticSearchEmbedding !== undefined,
+  )
 
   return {
     total_count: Number.parseInt(rows[0]?.total_count || '0', 10),
@@ -87,17 +90,14 @@ export async function getUserPostTypeFacets(
   currentUser?: PrivateUser,
 ): Promise<UserPostTypeFacetResult> {
   const cap = getPostsWorkLimit('profile_post_count_cap')
-  const { rows } = await executePostSearchQuery(
-    buildCappedFacetQuery(userId, currentUser, cap),
-    false,
-  )
+  const { rows } = await executePostSearchQuery<{
+    post_type: keyof UserPostTypeFacets
+    total_count: string | number
+    capped: boolean | null
+  }>(buildCappedFacetQuery(userId, currentUser, cap), false)
   const counts = emptyFacets()
   let capped = false
-  for (const row of rows as {
-    post_type: keyof UserPostTypeFacets
-    total_count: number | string
-    capped: boolean | null
-  }[]) {
+  for (const row of rows) {
     counts[row.post_type] = Number(row.total_count)
     capped = capped || row.capped === true
   }

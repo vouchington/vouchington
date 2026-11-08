@@ -56,7 +56,7 @@ export async function finalizeDeliveredModerationAppeal(
   const now = new Date()
   let afterCommit: (() => Promise<void>) | undefined
   const response = await runWithTransaction(undefined, async (query: TransactionQuery) => {
-    const { rows } = await query(
+    const { rows } = await query<ModerationAppeal>(
       sql`/* finalizeDeliveredModerationAppeal */
       UPDATE moderation_appeals
       SET resolved_at = ${now},
@@ -65,7 +65,7 @@ export async function finalizeDeliveredModerationAppeal(
       WHERE id = ${appealId} AND sent_at IS NOT NULL AND resolved_at IS NULL
       RETURNING `.append(APPEAL_RETURNING),
     )
-    const row = rows[0] as ModerationAppeal | undefined
+    const row = rows[0]
     if (!row) return rejectUnresolvableAppeal(appealId, { query })
 
     const lifecycleId = await appendAppealLifecycleChange(

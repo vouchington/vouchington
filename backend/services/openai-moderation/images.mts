@@ -148,7 +148,10 @@ async function isImageOpenAIModerationUpToDate(imageId: string): Promise<boolean
 async function findExistingImageOpenAIModeration(
   sha256: Buffer | null,
 ): Promise<{ results: unknown; flagged: boolean } | null> {
-  const { rows } = await read(sql`/* findExistingImageOpenAIModeration */
+  const { rows } = await read<{
+    openai_omni_moderation_results: unknown
+    is_flagged_by_openai_omni_moderation: boolean
+  }>(sql`/* findExistingImageOpenAIModeration */
     SELECT openai_omni_moderation_results, is_flagged_by_openai_omni_moderation
     FROM images
     WHERE sha_256 = ${sha256}

@@ -41,7 +41,7 @@ export async function countCrawlChunks(filters: {
     throw new Error('countCrawlChunks requires either filters.crawlId or filters.urlId')
   }
 
-  const { rows } = await read(query)
+  const { rows } = await read<{ count: string }>(query)
   return Number.parseInt(rows[0].count, 10)
 }
 
@@ -140,7 +140,7 @@ export async function getCrawlEmbeddingsGeneratedAt(
   urlId: string,
   crawlId: string,
 ): Promise<Date | null> {
-  const { rows } = await read(
+  const { rows } = await read<{ embeddings_generated_at: Date | null }>(
     sql`/* getCrawlEmbeddingsGeneratedAt */
     SELECT embeddings_generated_at
     FROM crawls

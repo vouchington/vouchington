@@ -34,7 +34,7 @@ export async function getEntityRelationElectionsByTargetBatch(
     },
   )
 
-  const { rows } = await read(
+  const { rows } = await read<ViewEntityRelationElection & { input_order: number }>(
     `/* getEntityRelationElectionsByTargetBatch */
     WITH input_data AS (
       SELECT unnest($1::uuid[]) AS input_value,
@@ -56,7 +56,7 @@ export async function getEntityRelationElectionsByTargetBatch(
   ).fill(null)
   for (const row of rows) {
     const { input_order, ...data } = row
-    results[input_order] = data as ViewEntityRelationElection
+    results[input_order] = data
   }
   return results
 }

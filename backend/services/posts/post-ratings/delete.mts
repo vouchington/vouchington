@@ -11,7 +11,11 @@ export async function deletePostRatingRecord(
 ): Promise<void> {
   await using query = await beginTransaction()
   await lockPostPublication(query, postId)
-  const { rows } = await query(sql`/* deletePostRating */
+  const { rows } = await query<{
+    total_count: number
+    has_rating: boolean
+    did_delete: boolean
+  }>(sql`/* deletePostRating */
       WITH locked_rows AS (
         SELECT post_id, topic_id
         FROM post_review_topic_ratings

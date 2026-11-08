@@ -144,14 +144,14 @@ export function createElectionGetter<T extends ViewBaseElection>(config: EntityE
   const deletedAtClause = config.deletedAtFilter ? ' AND deleted_at IS NULL' : ''
   return async function getElectionById(entityId: string): Promise<T | null> {
     validateUUID(entityId)
-    const { rows } = await read(
+    const { rows } = await read<T>(
       `/* getElectionById */
       SELECT '${config.entityType}' AS __entity_type, id, votes_score_net, votes_count_up, votes_count_down
       FROM ${config.entityTable}
       WHERE id = $1${deletedAtClause}`,
       [entityId],
     )
-    return (rows[0] as T | undefined) ?? null
+    return rows[0] ?? null
   }
 }
 
@@ -172,7 +172,7 @@ export function createElectionBatchGetter<T extends ViewBaseElection>(
     }
 
     const positions = entityIds.map((_, index) => index)
-    const { rows } = await read(
+    const { rows } = await read<ViewBaseElection & { input_order: number }>(
       `/* getElectionsByIdBatch */
       WITH input_data AS (
         SELECT unnest($1::uuid[]) AS input_value,

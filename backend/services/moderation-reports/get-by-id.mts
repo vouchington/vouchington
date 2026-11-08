@@ -22,7 +22,7 @@ export async function getModerationReportById(
   { primary = false }: { primary?: boolean } = {},
 ): Promise<ModerationReport | null> {
   const query = primary ? write : read
-  const { rows } = await query(sql`/* getModerationReportById */
+  const { rows } = await query<ModerationReport>(sql`/* getModerationReportById */
     SELECT
       r.id,
       r.created_at,
@@ -48,5 +48,5 @@ export async function getModerationReportById(
     WHERE r.id = ${id}
     LIMIT 1
   `)
-  return (rows[0] as ModerationReport | undefined) ?? null
+  return rows[0] ?? null
 }

@@ -33,7 +33,7 @@ async function* hashBatchesFromDb(): AsyncGenerator<string[]> {
  * Rebuilds at 2× current row count per AGENTS.md to reduce immediate expansion chaining.
  */
 export async function rebuildEmbeddingBloomFilter(): Promise<void> {
-  const { rows } = await read(
+  const { rows } = await read<{ count: number }>(
     `/* rebuildEmbeddingBloomFilter */ SELECT COUNT(*)::int AS count FROM ${EMBEDDINGS_TABLE}`,
     [],
   )

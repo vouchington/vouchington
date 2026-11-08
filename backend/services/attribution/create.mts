@@ -118,13 +118,13 @@ export async function createSessionReferralAttribution({
 
 async function getReferrerId(referrer: string): Promise<string | null> {
   if (isUUID(referrer)) {
-    const { rows } = await read(sql`/* getReferrerId */
+    const { rows } = await read<{ id: string }>(sql`/* getReferrerId */
       SELECT id FROM users WHERE id = ${referrer} AND deleted_at IS NULL LIMIT 1
     `)
     return rows[0]?.id ?? null
   }
   if (isUsername(referrer)) {
-    const { rows } = await read(sql`/* getReferrerId */
+    const { rows } = await read<{ id: string }>(sql`/* getReferrerId */
       SELECT id FROM users WHERE LOWER(username) = LOWER(${referrer}) AND deleted_at IS NULL LIMIT 1
     `)
     return rows[0]?.id ?? null

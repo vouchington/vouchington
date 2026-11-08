@@ -15,7 +15,7 @@ export interface AiDraftInput {
 
 export async function createReviewDisputeDraft(input: AiDraftInput): Promise<ReviewDispute | null> {
   const now = new Date()
-  const { rows } = await write(sql`/* createReviewDisputeDraft */
+  const { rows } = await write<ReviewDispute>(sql`/* createReviewDisputeDraft */
     WITH lifecycle_change_id AS (
       SELECT uuidv7() AS id
     ),
@@ -66,7 +66,7 @@ export async function createReviewDisputeDraft(input: AiDraftInput): Promise<Rev
     )
     SELECT * FROM updated
   `)
-  const result = rows[0] as ReviewDispute | undefined
+  const result = rows[0]
   if (!result) {
     const { rows: currentRows } = await write<{ ai_draft_request_token: string }>(sql`
       /* createReviewDisputeDraft:checkRequest */

@@ -98,7 +98,7 @@ export async function getBlueskyLinkedAccountForUser(
   options: QueryOptions = {},
   includeDisconnectRequested = false,
 ): Promise<BlueskyLinkedAccount | null> {
-  const { rows } = await read(
+  const { rows } = await read<BlueskyLinkedAccount>(
     sql`/* getBlueskyLinkedAccountForUser */
       SELECT account.bluesky_did, account.handle, account.link_authorization_id,
              account.created_at, account.updated_at, account.disconnect_requested_at
@@ -116,7 +116,7 @@ export async function getBlueskyLinkedAccountForUser(
         )`,
     options,
   )
-  return (rows[0] as BlueskyLinkedAccount | undefined) ?? null
+  return rows[0] ?? null
 }
 
 export async function getExactBlueskyAccountForDisconnect(

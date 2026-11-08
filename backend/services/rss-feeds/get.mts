@@ -1,8 +1,11 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import type { ViewRssFeed } from './types.mts'
 
 export const getRssFeedById = async (id: string) => {
-  const { rows } = await read(sql`/* getRssFeedById */
+  const { rows } = await read<
+    ViewRssFeed & { canonical_rss_feed_id: string | null }
+  >(sql`/* getRssFeedById */
     SELECT *
     FROM view_rss_feeds
     WHERE view_rss_feeds.id = ${id}
@@ -13,7 +16,7 @@ export const getRssFeedById = async (id: string) => {
 export async function getRssFeedByTopicId(
   topicId: string,
 ): Promise<{ id: string; title: string } | null> {
-  const { rows } = await read(sql`/* getRssFeedByTopicId */
+  const { rows } = await read<{ id: string; title: string }>(sql`/* getRssFeedByTopicId */
     SELECT id, title FROM rss_feeds
     WHERE topic_id = ${topicId}
       AND deleted_at IS NULL
@@ -23,7 +26,7 @@ export async function getRssFeedByTopicId(
 }
 
 export async function getRssFeedByUrlId(urlId: string): Promise<{ id: string } | null> {
-  const { rows } = await read(sql`/* getRssFeedByUrlId */
+  const { rows } = await read<{ id: string }>(sql`/* getRssFeedByUrlId */
     SELECT id FROM rss_feeds
     WHERE rss_feed_url_id = ${urlId}
       AND deleted_at IS NULL
@@ -33,7 +36,7 @@ export async function getRssFeedByUrlId(urlId: string): Promise<{ id: string } |
 }
 
 export async function getRssFeedByArticleUrlId(urlId: string): Promise<{ id: string } | null> {
-  const { rows } = await read(sql`/* getRssFeedByArticleUrlId */
+  const { rows } = await read<{ id: string }>(sql`/* getRssFeedByArticleUrlId */
     SELECT rfis.rss_feed_id AS id
     FROM rss_feed_items rfi
     INNER JOIN rss_feed_item_sources rfis ON rfis.rss_feed_item_id = rfi.id

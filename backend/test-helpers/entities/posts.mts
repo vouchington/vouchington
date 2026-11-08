@@ -65,7 +65,7 @@ export async function insertTestPost(data: {
     )
     RETURNING id
   `)
-  const { rows: postRows } = await write(insertPostQuery)
+  const { rows: postRows } = await write<{ id: string }>(insertPostQuery)
   const postId = postRows[0].id
   const clearanceStatus = data.clearanceStatus ?? 'approved'
   if (clearanceStatus !== 'pending') {

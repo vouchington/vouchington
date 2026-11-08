@@ -3,7 +3,7 @@ import { read } from '@data-stores/psql'
 export { TEST_HNSW_EF_SEARCH } from './vector-search-recall-constant.mts'
 
 export async function getSessionHnswEfSearch(): Promise<number> {
-  const { rows } = await read(
+  const { rows } = await read<{ ef_search: string }>(
     `/* getSessionHnswEfSearch */ SELECT current_setting('hnsw.ef_search') AS ef_search`,
   )
   return Number.parseInt(rows[0].ef_search, 10)

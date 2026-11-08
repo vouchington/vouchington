@@ -48,8 +48,8 @@ export async function listUserModNotes(
 
   query.append(sql` ORDER BY n.id DESC LIMIT ${limit + 1}`)
 
-  const { rows } = await read(query, options)
+  const { rows } = await read<UserModNote>(query, options)
   const hasNextPage = rows.length > limit
-  const notes = (hasNextPage ? rows.slice(0, limit) : rows) as UserModNote[]
+  const notes = hasNextPage ? rows.slice(0, limit) : rows
   return { notes, hasNextPage }
 }

@@ -31,7 +31,7 @@ export async function insertTestDataPoint(data: {
   if (data.creditScoreRange) structuredData.credit_score_range = data.creditScoreRange
   if (data.creditLimit != null) structuredData.credit_limit = data.creditLimit
 
-  const { rows: postRows } = await write(
+  const { rows: postRows } = await write<{ id: string }>(
     sql`/* insertTestDataPointPost */
     INSERT INTO posts (
       id,

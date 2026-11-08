@@ -44,7 +44,7 @@ export async function insertTestAgentModeration(options: {
     (options.occurredAt
       ? uuidv7({ msecs: options.occurredAt.getTime(), seq: options.occurredAtSequence ?? 0 })
       : null)
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     sql`/* insertTestAgentModeration */
     INSERT INTO agent_moderations (id, post_id, input_sha256, prompt_id, agent_id, results, is_flagged, deleted_at)
     VALUES (
@@ -146,7 +146,7 @@ export async function insertTestAgentModerationFalseyResults(options: {
 }
 
 async function getPostLLMModerationInputSha256(postId: string): Promise<Buffer> {
-  const { rows } = await read(
+  const { rows } = await read<{ llm_moderation_content_sha256: Buffer | null }>(
     sql`/* getPostLLMModerationInputSha256 */
     SELECT llm_moderation_content_sha256
     FROM posts

@@ -39,7 +39,7 @@ export async function resolveModerationAppealAccept(
   let afterCommit: (() => Promise<void>) | undefined
   const response = await runWithTransaction(undefined, async (query: TransactionQuery) => {
     await lockSuspensionAppealAuthorLifecycle(query, appealId)
-    const { rows } = await query(
+    const { rows } = await query<ModerationAppeal>(
       sql`/* resolveModerationAppealAccept */
       UPDATE moderation_appeals
       SET resolution_action = 'accept',
@@ -48,7 +48,7 @@ export async function resolveModerationAppealAccept(
       WHERE id = ${appealId} AND sent_at IS NOT NULL AND resolved_at IS NULL
       RETURNING `.append(APPEAL_RETURNING),
     )
-    const row = rows[0] as ModerationAppeal | undefined
+    const row = rows[0]
     if (!row) return rejectUnresolvableAppeal(appealId, { query })
 
     // Undo the original action based on which FK is set

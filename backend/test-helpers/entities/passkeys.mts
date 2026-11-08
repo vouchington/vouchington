@@ -26,7 +26,7 @@ export async function insertTestPasskey(userId: string, suffix: string, id?: str
 }
 
 export async function countTestPasskeys(userId: string): Promise<number> {
-  const { rows } = await read(
+  const { rows } = await read<{ count: number }>(
     sql`/* countTestPasskeys */
     SELECT COUNT(*)::int AS count
     FROM user_passkeys
