@@ -11,6 +11,8 @@ describe('MCP tool file registration', () => {
     expect(
       mcpToolFilesFromEntries([
         'discover-topics.mts',
+        'get-referral-links.mts',
+        'get-referral-links-user-page.mts',
         'private-user.mts',
         'mcp-hacker-news-output.mts',
         'bookmark-batch-types.mts',
@@ -21,7 +23,7 @@ describe('MCP tool file registration', () => {
         'README.md',
         'my-message-tool.mts',
       ]),
-    ).toEqual(['discover-topics.mts'])
+    ).toEqual(['discover-topics.mts', 'get-referral-links.mts'])
   })
 
   it('accepts a registered name and one anonymous option source', () => {
