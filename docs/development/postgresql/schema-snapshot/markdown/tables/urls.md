@@ -48,7 +48,7 @@ Not partitioned — growth: unbounded.
 
 - `idx_urls__canonical_url_id__id`: `CREATE INDEX idx_urls__canonical_url_id__id ON public.urls USING btree (canonical_url_id, id) WHERE (canonical_url_id IS NOT NULL)`
 - `idx_urls__created_by_id`: `CREATE INDEX idx_urls__created_by_id ON public.urls USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
-- `idx_urls__hostname_feed_rank_latest_published_id`: `CREATE INDEX idx_urls__hostname_feed_rank_latest_published_id ON public.urls USING btree (hostname_id, feed_rank, COALESCE(latest_published_at, '1969-12-31 16:00:00-08'::timestamp with time zone) DESC, id DESC)`
+- `idx_urls__hostname_feed_rank_latest_published_id`: `CREATE INDEX idx_urls__hostname_feed_rank_latest_published_id ON public.urls USING btree (hostname_id, feed_rank, COALESCE(latest_published_at, '1970-01-01 00:00:00+00'::timestamp with time zone) DESC, id DESC)`
 - `idx_urls__hostname_id`: `CREATE UNIQUE INDEX idx_urls__hostname_id ON public.urls USING btree (hostname_id, id)`
 - `idx_urls__media_type_id`: `CREATE INDEX idx_urls__media_type_id ON public.urls USING btree (media_type_id) WHERE (media_type_id IS NOT NULL)`
 - `idx_urls__updated_at_id_active`: `CREATE INDEX idx_urls__updated_at_id_active ON public.urls USING btree (updated_at, ((id)::text))`
