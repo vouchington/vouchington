@@ -45,7 +45,6 @@ async function insertExtraPrefixItems(): Promise<void> {
   assert.ok(anchor)
   for (let start = 0; start < EXTRA_ITEM_COUNT; start += EXTRA_ITEM_BATCH) {
     const end = Math.min(start + EXTRA_ITEM_BATCH, EXTRA_ITEM_COUNT) - 1
-    // no-mistakes-disable-next-line query-reached-per-item: six fixed 5,000-row batches keep the maximum cap a prefix of this story
     await write(
       `/* prepareStoryPostUrlPrefix:extra-items */
        WITH ids AS (
@@ -141,7 +140,6 @@ export async function restorePrefixItems(): Promise<void> {
 async function removeExtraPrefixItems(): Promise<void> {
   for (let start = 0; start < EXTRA_ITEM_COUNT; start += EXTRA_ITEM_BATCH) {
     const end = Math.min(start + EXTRA_ITEM_BATCH, EXTRA_ITEM_COUNT) - 1
-    // no-mistakes-disable-next-line query-reached-per-item: six fixed 5,000-row deletes remove only this scenario's extra prefix rows
     await write(
       `/* restoreStoryPostUrlPrefix:extra-items */
        DELETE FROM rss_feed_item_guids
