@@ -3,11 +3,9 @@ import sql from 'sql-template-strings'
 import {
   enqueueBulkDeliverNotificationPushIntents,
   enqueueContinueCriticalModerationAlertNotification,
-} from '@queues/notifications/enqueues'
-import {
   getNotificationRecipientDispatchPageHardMax,
-  getNotificationRecipientDispatchPageLimit,
-} from '@queues/notifications/enqueues/page-limits'
+} from '@queues/notifications/enqueues'
+import { getNotificationRecipientDispatchPageLimit } from '@queues/notifications/enqueues/page-limits'
 
 export async function createCriticalModerationAlertNotification(reportId: string): Promise<void> {
   const { nextAfterUserId } = await createCriticalModerationAlertNotificationPage(reportId, null)

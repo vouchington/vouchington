@@ -43,10 +43,7 @@ export * from './enqueues/community-activity-digest.mts'
 export * from './enqueues/push-intents.mts'
 export * from './enqueues/reconcile-recipients.mts'
 export * from './enqueues/critical-moderation-alert.mts'
-export {
-  getNotificationRecipientDispatchPageHardMax,
-  getNotificationRecipientDispatchPageLimit,
-} from './enqueues/page-limits.mts'
+export { getNotificationRecipientDispatchPageHardMax } from './enqueues/page-limits.mts'
 export * from './enqueues/mark-all-read.mts'
 
 export const enqueueBulkFollowNotification = createBackgroundBulkEnqueue(
