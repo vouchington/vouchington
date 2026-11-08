@@ -10,9 +10,8 @@ const RSS_FEED_WEEKLY_PROXY_TOPIC_ID_BASE = 800_000
 const RSS_FEED_WEEKLY_PROXY_TOPIC_CANDIDATE_COUNT = 10_000
 const RSS_FEED_WEEKLY_PROXY_NOISE_COMMUNITY_COUNT = 200
 const RSS_FEED_WEEKLY_PROXY_NOISE_USER_COUNT = 200
-// Followers sit on the viewer's list only: noise communities keep zero virtual
-// subscriptions so they never outrank matches in community search's ordered walk.
-export const RSS_FEED_WEEKLY_PROXY_NOISE_FOLLOW_COUNT = RSS_FEED_WEEKLY_PROXY_NOISE_USER_COUNT
+export const RSS_FEED_WEEKLY_PROXY_NOISE_FOLLOW_COUNT =
+  RSS_FEED_WEEKLY_PROXY_NOISE_COMMUNITY_COUNT * RSS_FEED_WEEKLY_PROXY_NOISE_USER_COUNT
 
 /** Gives a viewer without direct feed/topic follows one large, realistic proxy list. */
 export async function seedRssFeedWeeklyProxy(): Promise<void> {
@@ -72,11 +71,13 @@ export async function seedRssFeedWeeklyProxy(): Promise<void> {
     { length: RSS_FEED_WEEKLY_PROXY_NOISE_COMMUNITY_COUNT },
     (_, index) => seedUuid(600_002 + index, '14'),
   )
+  // Their followers rank them first in the subscription walk. The "explain" name keeps them
+  // matches for community search's text scenarios, so they fill the page instead of preceding it.
   await transaction(
     `/* seedRssFeedWeeklyProxy.noiseCommunities */
       INSERT INTO communities (id, name, slug, created_by_id, created_via, visibility)
-      SELECT id, 'RSS Proxy Noise ' || ordinal::text,
-        'rss-proxy-noise-' || ordinal::text, $2, 'system', 'public'
+      SELECT id, 'Explain RSS Proxy Noise ' || ordinal::text,
+        'explain-rss-proxy-noise-' || ordinal::text, $2, 'system', 'public'
       FROM unnest($1::uuid[]) WITH ORDINALITY AS noise(id, ordinal)
       ON CONFLICT (id) DO NOTHING`,
     [noiseCommunityIds, ownerId],
@@ -99,14 +100,15 @@ export async function seedRssFeedWeeklyProxy(): Promise<void> {
   await transaction(
     `/* seedRssFeedWeeklyProxy.noiseFollows */
       INSERT INTO relation__user__proxy_follow__community (subject_id, object_id)
-      SELECT user_id, $2::uuid
+      SELECT user_id, community_id
       FROM unnest($1::uuid[]) AS users(user_id)
+      CROSS JOIN unnest($2::uuid[]) AS communities(community_id)
       ON CONFLICT DO NOTHING`,
     [
       Array.from({ length: RSS_FEED_WEEKLY_PROXY_NOISE_USER_COUNT }, (_, index) =>
         seedUuid(10_000 + index, '01'),
       ),
-      RSS_FEED_WEEKLY_PROXY_COMMUNITY_ID,
+      noiseCommunityIds,
     ],
   )
   await transaction.commit()
