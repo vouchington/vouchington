@@ -1,0 +1,93 @@
+import { beginTransaction, read, write, type OwnedTransaction } from '@data-stores/psql'
+import sql from 'sql-template-strings'
+
+export async function getTestUrlRanking(urlId: string): Promise<{
+  feedRank: number
+  latestPublishedAt: Date | null
+}> {
+  const { rows } = await read<{ feed_rank: number; latest_published_at: Date | null }>(
+    sql`/* getTestUrlRanking */
+      SELECT feed_rank, latest_published_at FROM urls WHERE id = ${urlId}`,
+  )
+  if (!rows[0]) throw new Error(`URL not found: ${urlId}`)
+  return { feedRank: rows[0].feed_rank, latestPublishedAt: rows[0].latest_published_at }
+}
+
+export async function reassignTestRssFeedItemUrl(itemId: string, urlId: string): Promise<void> {
+  await write(sql`/* reassignTestRssFeedItemUrl */
+    UPDATE rss_feed_items SET url_id = ${urlId} WHERE id = ${itemId}`)
+}
+
+export async function rollBackTestRssFeedItemMoveAndDate(
+  itemId: string,
+  urlId: string,
+  isoDate: string,
+): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* rollBackTestRssFeedItemMoveAndDate */
+    UPDATE rss_feed_items
+    SET url_id = ${urlId}, data = jsonb_set(data, '{isoDate}', to_jsonb(${isoDate}::text))
+    WHERE id = ${itemId}`)
+}
+
+export async function setTestRssFeedItemDate(itemId: string, isoDate: string): Promise<void> {
+  await write(sql`/* setTestRssFeedItemDate */
+    UPDATE rss_feed_items SET data = jsonb_set(data, '{isoDate}', to_jsonb(${isoDate}::text))
+    WHERE id = ${itemId}`)
+}
+
+export async function softDeleteTestRssFeedItem(itemId: string): Promise<void> {
+  await write(sql`/* softDeleteTestRssFeedItem */
+    UPDATE rss_feed_items SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${itemId}`)
+}
+
+export async function hardDeleteTestRssFeedItem(itemId: string): Promise<void> {
+  await write(
+    sql`/* hardDeleteTestRssFeedItem */ DELETE FROM rss_feed_item_guids WHERE id = ${itemId}`,
+  )
+}
+
+export async function moveTestRssFeedUrl(feedId: string, urlId: string): Promise<void> {
+  await write(sql`/* moveTestRssFeedUrl */
+    UPDATE rss_feeds SET rss_feed_url_id = ${urlId} WHERE id = ${feedId}`)
+}
+
+export async function softDeleteTestRssFeed(feedId: string): Promise<void> {
+  await write(sql`/* softDeleteTestRssFeed */
+    UPDATE rss_feeds SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${feedId}`)
+}
+
+/** Insert an uncommitted RSS feed item and keep its transaction open for the caller. */
+export async function holdTestRssFeedItemInsert(
+  urlId: string,
+  urlHostnameId: string,
+  isoDate: string,
+): Promise<OwnedTransaction> {
+  const transaction = await beginTransaction()
+  try {
+    const { rows } = await transaction<{ id: string }>(sql`/* holdTestRssFeedItemInsert:guid */
+      INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
+      VALUES (uuidv7(), ${urlHostnameId}, ${`held-${isoDate}-${urlId}`})
+      RETURNING id`)
+    await transaction(sql`/* holdTestRssFeedItemInsert:item */
+      INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
+      VALUES (${rows[0]?.id}, ${urlId}, jsonb_build_object('title', 'Held', 'isoDate', ${isoDate}::text), sha256(${isoDate}::text::bytea))`)
+    return transaction
+  } catch (err) {
+    await transaction.rollback()
+    throw err
+  }
+}
+
+/** Whether a separate connection can lock the URL row as a downward recompute would. */
+export async function canLockTestUrlRow(urlId: string): Promise<boolean> {
+  await using transaction = await beginTransaction()
+  try {
+    await transaction(sql`/* canLockTestUrlRow */
+      SELECT 1 FROM urls WHERE id = ${urlId} FOR NO KEY UPDATE NOWAIT`)
+    return true
+  } catch (err) {
+    if ((err as { code?: string }).code === '55P03') return false
+    throw err
+  }
+}

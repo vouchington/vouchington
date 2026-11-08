@@ -2355,6 +2355,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.updated_at = CURRENT_TIMESTAMP;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
+    "fn_update_url_feed_rank()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_feed_rank()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  affected_url_id UUID;\n  next_rank SMALLINT;\nBEGIN\n  FOR affected_url_id IN\n    SELECT DISTINCT candidate_url_id\n    FROM unnest(ARRAY[\n      CASE WHEN TG_OP <> 'INSERT' THEN OLD.rss_feed_url_id ELSE NULL END,\n      CASE WHEN TG_OP <> 'DELETE' THEN NEW.rss_feed_url_id ELSE NULL END\n    ]) AS candidate_url_id\n    WHERE candidate_url_id IS NOT NULL\n    ORDER BY candidate_url_id\n  LOOP\n    -- This lock is compatible with the FK's KEY SHARE lock. A separate\n    -- statement after acquiring it sees feed changes committed while waiting.\n    PERFORM 1 FROM urls WHERE id = affected_url_id FOR NO KEY UPDATE;\n    IF NOT FOUND THEN CONTINUE; END IF; -- URL deletion cascade.\n\n    SELECT CASE WHEN EXISTS (\n      SELECT 1 FROM rss_feeds\n      WHERE rss_feed_url_id = affected_url_id\n        AND deleted_at IS NULL AND is_enabled\n    ) THEN 0 ELSE 1 END INTO next_rank;\n\n    UPDATE urls SET feed_rank = next_rank\n    WHERE id = affected_url_id;\n  END LOOP;\n  RETURN NULL;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
     "fn_update_url_hostname_blocked_after_delete()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM host.id FROM url_hostnames host\n  JOIN (\n    SELECT DISTINCT url_hostname_id AS id FROM deleted_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ) affected ON affected.id = host.id\n  ORDER BY host.id FOR UPDATE OF host;\n\n  WITH affected AS MATERIALIZED (\n    SELECT DISTINCT url_hostname_id AS id FROM deleted_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ), states AS MATERIALIZED (\n    SELECT affected.id, EXISTS (\n      SELECT 1 FROM url_hostname_blocks block\n      WHERE block.url_hostname_id = affected.id\n        AND block.lifted_at IS NULL AND block.blocked_source <> 'email_blocklist'\n    ) AS is_blocked FROM affected\n  )\n  UPDATE url_hostnames host SET is_blocked = states.is_blocked\n  FROM states WHERE host.id = states.id AND host.is_blocked IS DISTINCT FROM states.is_blocked;\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
@@ -2371,6 +2375,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_crawl_policy_changed_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.is_crawlable IS DISTINCT FROM OLD.is_crawlable\n    OR NEW.is_blocked IS DISTINCT FROM OLD.is_blocked\n    OR NEW.age_threshold_days IS DISTINCT FROM OLD.age_threshold_days\n    OR NEW.requests_per_second_limit IS DISTINCT FROM OLD.requests_per_second_limit\n    OR NEW.attempt_threshold_hours IS DISTINCT FROM OLD.attempt_threshold_hours\n  THEN\n    NEW.crawl_policy_changed_at = GREATEST(\n      clock_timestamp(), OLD.crawl_policy_changed_at + INTERVAL '1 microsecond'\n    );\n  ELSE\n    NEW.crawl_policy_changed_at = OLD.crawl_policy_changed_at;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
+    "fn_update_url_latest_published_at()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_latest_published_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  affected_url_id UUID;\n  next_published_at TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    -- A new item can only raise the maximum. The write is unconditional so\n    -- every insert row-locks its URL even when it is older than the current\n    -- maximum; that lock is what serializes inserts with downward recomputes\n    -- (a skipped write would let a concurrent delete recompute without seeing\n    -- the uncommitted item). GREATEST ignores NULLs. No hostname or item\n    -- read-set locks are taken.\n    UPDATE urls\n    SET latest_published_at = GREATEST(latest_published_at, NEW.published_at)\n    WHERE id = NEW.url_id;\n    RETURN NULL;\n  END IF;\n\n  IF TG_OP = 'UPDATE' AND OLD.url_id = NEW.url_id\n      AND OLD.published_at IS NOT DISTINCT FROM NEW.published_at THEN\n    RETURN NULL;\n  END IF;\n\n  FOR affected_url_id IN\n    SELECT DISTINCT candidate_url_id\n    FROM unnest(ARRAY[\n      OLD.url_id,\n      CASE WHEN TG_OP = 'UPDATE' THEN NEW.url_id ELSE NULL END\n    ]) AS candidate_url_id\n    WHERE candidate_url_id IS NOT NULL\n    ORDER BY candidate_url_id\n  LOOP\n    -- Lock and write only affected URL rows. Sort the two URLs in a move\n    -- to keep their lock order stable.\n    PERFORM 1 FROM urls WHERE id = affected_url_id FOR NO KEY UPDATE;\n    IF NOT FOUND THEN CONTINUE; END IF; -- URL deletion cascade.\n\n    SELECT published_at INTO next_published_at\n    FROM fn_url_latest_rss_feed_item_published_at(affected_url_id);\n    UPDATE urls SET latest_published_at = next_published_at\n    WHERE id = affected_url_id;\n  END LOOP;\n  RETURN NULL;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
     "fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  UPDATE user_metrics\n  SET\n    bookmarks__updated_at = CURRENT_TIMESTAMP,\n    bookmarks__follow__topics_count = (\n      SELECT COUNT(*) FROM relation__user__follow__topic\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarks__follow__posts_count = (\n      SELECT COUNT(*) FROM relation__user__follow__post\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarks__follow__users_count = (\n      SELECT COUNT(*) FROM relation__user__follow__user\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarkers__follow_count = (\n      SELECT COUNT(*) FROM relation__user__follow__user\n      WHERE object_id = target_user_id AND deleted_at IS NULL\n    )\n  WHERE id = target_user_id;\n$function$\n",
       "returnsSet": false
@@ -2378,6 +2386,10 @@
     "fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)\n RETURNS uuid\n LANGUAGE plpgsql\nAS $function$\nDECLARE context_id UUID;\nBEGIN\n  INSERT INTO membership_provider_contexts (provider, environment, application_id)\n  VALUES (context_provider, context_environment, context_application_id)\n  ON CONFLICT (provider, environment, application_id) DO NOTHING\n  RETURNING id INTO context_id;\n  IF context_id IS NULL THEN\n    SELECT id INTO STRICT context_id FROM membership_provider_contexts\n    WHERE provider = context_provider AND environment = context_environment\n      AND application_id = context_application_id;\n  END IF;\n  RETURN context_id;\nEND $function$\n",
       "returnsSet": false
+    },
+    "fn_url_latest_rss_feed_item_published_at(p_url_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_url_latest_rss_feed_item_published_at(p_url_id uuid)\n RETURNS TABLE(published_at timestamp with time zone)\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT rss_feed_items.published_at\n  FROM rss_feed_items\n  WHERE rss_feed_items.url_id = p_url_id\n  ORDER BY rss_feed_items.published_at DESC NULLS LAST\n  LIMIT 1\n$function$\n",
+      "returnsSet": true
     },
     "fn_user_deletion_has_remaining_owned_data(target_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  ownership RECORD;\n  has_rows BOOLEAN;\nBEGIN\n  FOR ownership IN\n    SELECT * FROM (VALUES\n      ('posts', 'created_by_id'),\n      ('post_topic_alias_sources', 'contributor_user_id'),\n      ('user_email_addresses', 'user_id'),\n      ('user_phone_numbers', 'user_id'),\n      ('user_passkeys', 'user_id'),\n      ('user_totp_authenticators', 'user_id'),\n      ('api_keys', 'user_id'),\n      ('user_sessions', 'user_id'),\n      ('facebook_accounts', 'user_id'),\n      ('apple_accounts', 'user_id'),\n      ('google_accounts', 'user_id'),\n      ('x_accounts', 'user_id'),\n      ('linkedin_accounts', 'user_id'),\n      ('microsoft_accounts', 'user_id'),\n      ('github_accounts', 'user_id'),\n      ('bluesky_link_completions', 'user_id'),\n      ('bluesky_linked_accounts', 'user_id'),\n      ('session_referral_attributions', 'user_id')\n    ) AS configured(table_name, column_name)\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE %I = $1)',\n      ownership.table_name,\n      ownership.column_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'user_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'user_id'\n      AND table_name LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE user_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'subject_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'subject_id'\n      AND table_name LIKE 'relation\\_\\_user\\_\\_%' ESCAPE '\\'\n      AND table_name NOT LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE subject_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  IF EXISTS (\n    SELECT 1 FROM user_lists WHERE owner_user_id = target_user_id AND removed_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_link_authorizations\n    WHERE user_id = target_user_id\n      AND status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached')\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_follow_records\n    WHERE follower_user_id = target_user_id OR followee_user_id = target_user_id\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM user_data_requests\n    WHERE user_id = target_user_id\n      AND (\n        (completed_at IS NULL AND failed_at IS NULL)\n        OR (completed_at IS NOT NULL AND failed_at IS NULL AND s3_key IS NOT NULL)\n      )\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_clients\n    WHERE owner_user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_grants\n    WHERE user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_token_families family\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND family.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_access_tokens access\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = access.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND access.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_tokens refresh\n    JOIN oauth_refresh_token_families family ON family.id = refresh.family_id\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND refresh.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  RETURN FALSE;\nEND;\n$function$\n",
@@ -132863,6 +132875,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_rss_feed_items__url_id__published_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__url_id__published_at ON ONLY public.rss_feed_items USING btree (url_id, published_at DESC NULLS LAST) WHERE (url_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "published_at",
+              "descending": true,
+              "expression": "published_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_rss_feed_items__votes_score_sort__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -132967,6 +133011,9 @@
         },
         "trigger_sync_rss_feed_items_search_vector": {
           "definition": "CREATE TRIGGER trigger_sync_rss_feed_items_search_vector BEFORE INSERT OR UPDATE OF data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_items_search_vector()"
+        },
+        "trigger_sync_url_latest_published_at": {
+          "definition": "CREATE TRIGGER trigger_sync_url_latest_published_at AFTER INSERT OR DELETE OR UPDATE OF id, url_id, data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_url_latest_published_at()"
         }
       },
       "uniqueConstraints": {}
@@ -133844,6 +133891,9 @@
         },
         "trigger_rss_feeds_updated_at": {
           "definition": "CREATE TRIGGER trigger_rss_feeds_updated_at BEFORE UPDATE ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_sync_url_feed_rank": {
+          "definition": "CREATE TRIGGER trigger_sync_url_feed_rank AFTER INSERT OR DELETE OR UPDATE OF rss_feed_url_id, is_enabled, deleted_at ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_update_url_feed_rank()"
         }
       },
       "uniqueConstraints": {}
@@ -149496,6 +149546,10 @@
           "definition": "CHECK (((canonical_url_id IS NULL) OR (canonical_url_id <> id)))",
           "validated": true
         },
+        "urls_feed_rank_check": {
+          "definition": "CHECK ((feed_rank = ANY (ARRAY[0, 1])))",
+          "validated": true
+        },
         "urls_pathname_check": {
           "definition": "CHECK ((char_length(pathname) <= 2048))",
           "validated": true
@@ -149526,7 +149580,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 9
         },
         "created_at": {
           "comment": null,
@@ -149536,7 +149590,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 11
         },
         "created_by_id": {
           "comment": null,
@@ -149546,7 +149600,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 10
+        },
+        "feed_rank": {
+          "comment": "0 when a live enabled RSS feed uses this URL, otherwise 1; maintained synchronously by RSS feed triggers.",
+          "dataType": "smallint",
+          "defaultExpression": "1",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6
         },
         "hostname_id": {
           "comment": "The hostname this URL belongs to.",
@@ -149568,6 +149632,16 @@
           "nullable": false,
           "ordinalPosition": 1
         },
+        "latest_published_at": {
+          "comment": "Maximum publication timestamp of all RSS feed items assigned to this URL, including soft-deleted items; NULL when no items remain.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
         "media_type_id": {
           "comment": "Detected MIME content type of the URL.",
           "dataType": "bigint",
@@ -149576,7 +149650,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 8
         },
         "pathname": {
           "comment": "URL pathname component (e.g. /path/to/page). Max 2048 chars.",
@@ -149606,7 +149680,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 12
         },
         "url": {
           "comment": "Full HTTPS URL (max 2083 chars). Unique, trimmed.",
@@ -149705,6 +149779,56 @@
           ],
           "live": true,
           "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_urls__hostname_feed_rank_latest_published_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_urls__hostname_feed_rank_latest_published_id ON public.urls USING btree (hostname_id, feed_rank, COALESCE(latest_published_at, '1970-01-01 00:00:00+00'::timestamp with time zone) DESC, id DESC)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "hostname_id",
+              "descending": false,
+              "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "feed_rank",
+              "descending": false,
+              "expression": "feed_rank",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int2_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": null,
+              "descending": true,
+              "expression": "COALESCE(latest_published_at, '1970-01-01 00:00:00+00'::timestamp with time zone)",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,

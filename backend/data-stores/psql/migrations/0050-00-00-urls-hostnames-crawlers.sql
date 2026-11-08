@@ -331,6 +331,10 @@ CREATE TABLE IF NOT EXISTS urls (
   CHECK (char_length(pathname) <= 2048),
   CHECK (pathname = TRIM(pathname)),
   search_params JSONB NOT NULL,
+  -- Maintained by RSS feed and item triggers in 0080. Rank 0 means a live,
+  -- enabled feed uses this URL; NULL publication time sorts as the Unix epoch.
+  feed_rank SMALLINT NOT NULL DEFAULT 1 CHECK (feed_rank IN (0, 1)),
+  latest_published_at TIMESTAMPTZ,
 
   media_type_id BIGINT REFERENCES media_types ON DELETE SET NULL,
   canonical_url_id UUID REFERENCES urls ON DELETE SET NULL,
@@ -354,6 +358,12 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_urls__hostname_id
 ON urls (hostname_id, id);
+
+-- Match the per-hostname top-five order, including the empty-item fallback.
+CREATE INDEX IF NOT EXISTS idx_urls__hostname_feed_rank_latest_published_id
+ON urls (hostname_id, feed_rank,
+  (COALESCE(latest_published_at, '1970-01-01 00:00:00+00'::timestamptz)) DESC,
+  id DESC);
 
 -- Current crawl state is separate from URL content revisions used by entity reconciliation.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -401,6 +411,8 @@ COMMENT ON COLUMN urls.url IS 'Full HTTPS URL (max 2083 chars). Unique, trimmed.
 COMMENT ON COLUMN urls.hostname_id IS 'The hostname this URL belongs to.';
 COMMENT ON COLUMN urls.pathname IS 'URL pathname component (e.g. /path/to/page). Max 2048 chars.';
 COMMENT ON COLUMN urls.search_params IS 'URL query parameters stored as JSONB.';
+COMMENT ON COLUMN urls.feed_rank IS '0 when a live enabled RSS feed uses this URL, otherwise 1; maintained synchronously by RSS feed triggers.';
+COMMENT ON COLUMN urls.latest_published_at IS 'Maximum publication timestamp of all RSS feed items assigned to this URL, including soft-deleted items; NULL when no items remain.';
 COMMENT ON COLUMN urls.media_type_id IS 'Detected MIME content type of the URL.';
 COMMENT ON COLUMN urls.canonical_url_id IS 'Self-referencing FK to the canonical version of this URL, if different.';
 

@@ -1,6 +1,8 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+export const TOP_URLS_PER_HOSTNAME = 5
+
 export async function getTopUrlsByHostnameIds(hostnameIds: string[]) {
   if (hostnameIds.length === 0) return {}
 
@@ -12,28 +14,12 @@ export async function getTopUrlsByHostnameIds(hostnameIds: string[]) {
         urls.id,
         urls.url,
         urls.pathname,
-        CASE
-          WHEN EXISTS (
-            SELECT 1
-            FROM rss_feeds
-            JOIN view_rss_feed_current_states current_state
-              ON current_state.rss_feed_id = rss_feeds.id
-            WHERE rss_feeds.rss_feed_url_id = urls.id
-              AND rss_feeds.deleted_at IS NULL
-              AND current_state.is_enabled = TRUE
-          ) THEN 0
-          ELSE 1
-        END AS feed_rank,
-        COALESCE((
-          SELECT MAX(rss_feed_items.published_at)
-          -- no-mistakes-disable-next-line postgres-required-predicates: FIX: tracked in vouchington/vouchington#5310; URL ranking reads item publication times across item-ID partitions; URL assignment may change
-          FROM rss_feed_items
-          WHERE rss_feed_items.url_id = urls.id
-        ), to_timestamp(0)) AS latest_published_at
+        urls.feed_rank,
+        COALESCE(urls.latest_published_at, '1970-01-01 00:00:00+00'::timestamptz) AS latest_published_at
       FROM urls
       WHERE urls.hostname_id = h.id
       ORDER BY feed_rank, latest_published_at DESC, urls.id DESC
-      LIMIT 5
+      LIMIT ${TOP_URLS_PER_HOSTNAME}
     ) top_urls
     ORDER BY h.id ASC, top_urls.feed_rank ASC, top_urls.latest_published_at DESC, top_urls.id DESC
   `)

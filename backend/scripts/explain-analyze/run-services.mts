@@ -5,7 +5,6 @@ export { getTrendingTopics } from '@services/trending-topics/get-trending-topics
 export { searchRssFeeds } from '@services/rss-feeds/search'
 export { getFriendRecommendations } from '@services/friend-recommendations/get-recommendations'
 export { getCommentAncestorsByAny } from '@services/comments/ancestors'
-export { getTopUrlsByHostnameIds } from '@services/urls-hostnames/top-urls'
 export {
   getAllReferralLinksPage,
   getPrioritizedReferralLinks,

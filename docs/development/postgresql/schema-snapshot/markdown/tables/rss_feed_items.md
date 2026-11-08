@@ -100,6 +100,7 @@ _none_
 - `idx_rss_feed_items__story_id__published_at__id`: `CREATE INDEX idx_rss_feed_items__story_id__published_at__id ON ONLY public.rss_feed_items USING btree (story_id, published_at DESC, id DESC) WHERE ((story_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_rss_feed_items__updated_at_id_active`: `CREATE INDEX idx_rss_feed_items__updated_at_id_active ON ONLY public.rss_feed_items USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__url_id__id`: `CREATE INDEX idx_rss_feed_items__url_id__id ON ONLY public.rss_feed_items USING btree (url_id, id)`
+- `idx_rss_feed_items__url_id__published_at`: `CREATE INDEX idx_rss_feed_items__url_id__published_at ON ONLY public.rss_feed_items USING btree (url_id, published_at DESC NULLS LAST) WHERE (url_id IS NOT NULL)`
 - `idx_rss_feed_items__votes_score_sort__id`: `CREATE INDEX idx_rss_feed_items__votes_score_sort__id ON ONLY public.rss_feed_items USING btree (votes_score_sort DESC, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__votes_score_sort__positive__id`: `CREATE INDEX idx_rss_feed_items__votes_score_sort__positive__id ON ONLY public.rss_feed_items USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
 - `rss_feed_items_pkey`: `CREATE UNIQUE INDEX rss_feed_items_pkey ON ONLY public.rss_feed_items USING btree (id)`
@@ -109,3 +110,4 @@ _none_
 - `trigger_register_retained_rss_feed_item_identity`: `CREATE TRIGGER trigger_register_retained_rss_feed_item_identity BEFORE INSERT ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('rss_feed_item')`
 - `trigger_rss_feed_items_updated_at`: `CREATE TRIGGER trigger_rss_feed_items_updated_at BEFORE UPDATE ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_sync_rss_feed_items_search_vector`: `CREATE TRIGGER trigger_sync_rss_feed_items_search_vector BEFORE INSERT OR UPDATE OF data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_rss_feed_items_search_vector()`
+- `trigger_sync_url_latest_published_at`: `CREATE TRIGGER trigger_sync_url_latest_published_at AFTER INSERT OR DELETE OR UPDATE OF id, url_id, data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_url_latest_published_at()`

@@ -12,6 +12,8 @@ import { VOTE_WEIGHT_DISPATCH_SCENARIO_IDS } from './vote-weight-dispatch-scenar
 import { SHARED_LOADER_SCENARIO_IDS } from './shared-loader-scenario-ids.mts'
 import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.mts'
 import { SESSION_LIMIT_SCENARIO_IDS } from './session-limit-scenario-ids.mts'
+import { STORY_SCENARIO_IDS } from './story-scenario-ids.mts'
+import { TOP_URL_RANKING_SCENARIO_IDS } from './top-url-ranking-scenario-ids.mts'
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VOTE_SCORE_SCENARIO_IDS,
   ...VIEW_DRIVEN_SCENARIO_IDS,
@@ -118,19 +120,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-feed-item-feed-heavy-follow-topics',
   'rss-feed-item-feed-heavy-follows',
   'rss-feed-item-feed-related-posts',
-  'story-members-preview-1-first',
-  'story-hydration-preview-1-first',
-  'story-members-preview-1-after',
-  'story-hydration-preview-1-after',
-  'story-members-preview-3-first',
-  'story-hydration-preview-3-first',
-  'story-members-preview-3-after',
-  'story-hydration-preview-3-after',
-  'story-members-detail-25-first',
-  'story-hydration-detail-25-first',
-  'story-members-detail-25-after',
-  'story-hydration-detail-25-after',
-  'story-by-id',
+  ...STORY_SCENARIO_IDS,
   'rss-feed-items-search',
   'rss-feed-items-search-by-category-topic',
   'rss-feed-items-search-by-rss-feed-source-group',
@@ -173,7 +163,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-viewer-counts',
   'topic-viewer-counts-dense',
   'topic-votes-by-user',
-  'top-urls-by-hostname-ids',
+  ...TOP_URL_RANKING_SCENARIO_IDS,
   ...(['search-communities-trending', 'trending-posts', 'trending-posts-by-topic'] as const),
   ...(['search-rss-feeds-trending', 'trending-topics'] as const),
   'url-hostname-search-by-topic',

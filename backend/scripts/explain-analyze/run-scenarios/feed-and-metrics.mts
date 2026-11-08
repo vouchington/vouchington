@@ -9,6 +9,7 @@ import { runTopicMetricsBatchScenario } from './topic-metrics.mts'
 import { runPrioritizedReferralLinkScenarios } from './prioritized-referral-links.mts'
 import { runRssFeedSearchScenarios } from './rss-feed-search.mts'
 import { runCommentDescendantDepthScenario } from './comment-descendant-depth.mts'
+import { runTopUrlRankingScenarios } from './top-url-ranking.mts'
 
 const {
   getCommentAncestorsByAny,
@@ -21,7 +22,6 @@ const {
   getPostMetricsByAnyBatch,
   getTopicIds,
   getTopicViewerCounts,
-  getTopUrlsByHostnameIds,
   getTrendingTopics,
   getUnreadNotificationsSummary,
   getUserMetricsByAnyBatch,
@@ -49,12 +49,7 @@ export async function runFeedAndMetricScenarios() {
   const seedPostId = seedUuid(0, '05')
   await runAndCapture('comment-ancestors', () => getCommentAncestorsByAny(seedPostId))
   await runCommentDescendantDepthScenario()
-  const seedHostnameIds = [
-    `${SEED_PREFIX}-0200-7000-8000-000000000000`,
-    `${SEED_PREFIX}-0200-7000-8000-000000000001`,
-    `${SEED_PREFIX}-0200-7000-8000-000000000002`,
-  ]
-  await runAndCapture('top-urls-by-hostname-ids', () => getTopUrlsByHostnameIds(seedHostnameIds))
+  await runTopUrlRankingScenarios()
   await runPrioritizedReferralLinkScenarios()
   const seedUrlIds = [
     `${SEED_PREFIX}-0300-7000-8000-000000000000`,
