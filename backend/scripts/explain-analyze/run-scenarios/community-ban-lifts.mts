@@ -20,36 +20,6 @@ const banRows = BAN_EXPIRED_COUNT + BAN_ACTIVE_COUNT + BAN_HISTORY_NOISE_COUNT +
 
 export async function runCommunityBanLiftScenarios(): Promise<void> {
   const cap = getCommunitiesWorkLimit('lift_all_active_ban_limit')
-  registerScenarioContract('community-bans-actor-lock', {
-    expectations: [
-      {
-        kind: 'usesIndexes',
-        indexes: ['idx_community_members__unique', 'idx_community_members__user_id_id'],
-        anyOf: true,
-      },
-      // This actor also belongs to the membership-cap fixture's community.
-      { kind: 'maxProcessedRows', relation: 'community_members', max: 2 },
-    ],
-    seededRows: { community_bans: banRows },
-  })
-  await runAndCapture(
-    'community-bans-actor-lock',
-    async () => {
-      const result = await liftCommunityBan(seedUser, BAN_PAGE_COMMUNITY_ID, firstActiveId)
-      assert.deepEqual(result.lifted_ban_ids, [firstActiveId])
-    },
-    undefined,
-    'lockCommunityBanActor',
-    {
-      afterCapture: async () => {
-        await write(
-          `/* resetCommunityBanActorLockScenario */
-          UPDATE community_bans SET lifted_at = NULL, lifted_by_id = NULL WHERE id = $1`,
-          [firstActiveId],
-        )
-      },
-    },
-  )
   registerScenarioContract('community-bans-lift-all-overflow', {
     expectations: [
       { kind: 'usesIndexes', indexes: ['idx_community_bans__active_expiry'] },

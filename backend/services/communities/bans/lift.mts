@@ -52,21 +52,7 @@ async function liftSelectedCommunityBans(
   const candidateScope = liftAll ? sql`AND user_id = ${targetId}` : sql`AND id = ${targetId}`
 
   await using transaction = await beginTransaction()
-  // Hold the actor's membership role stable until the lift commits. Acquire it before ban locks.
-  const actorRole = isAdmin
-    ? null
-    : (
-        await write<{ role: string }>(
-          sql`/* lockCommunityBanActor */
-            SELECT role FROM community_members
-            WHERE community_id = ${communityId} AND user_id = ${currentUser.id}
-              AND removed_at IS NULL
-            FOR SHARE`,
-          { query: transaction },
-        )
-      ).rows[0]?.role
-  const actorAllowed = isAdmin || actorRole === 'owner' || actorRole === 'moderator'
-  // Gate before ban locks; then lock selected ban rows by id for consistent lock order.
+  // Gate before write-target locks; then lock selected ban rows by id for consistent lock order.
   // Scalar-array key probes prevent generic plans from scanning unselected ban history.
   // A concurrent insertion is outside this statement's snapshot and remains active.
   const { rows } = await write<LiftStatementResult>(
@@ -102,9 +88,20 @@ async function liftSelectedCommunityBans(
       gate AS MATERIALIZED (
         SELECT
           (SELECT count(*)::int FROM candidates) AS candidate_count,
-          (${actorAllowed}::boolean) AS actor_allowed,
-          (${actorRole === 'moderator'}::boolean
-            AND EXISTS (SELECT 1 FROM protected_issuers)) AS protected_issuer
+          (${isAdmin}::boolean OR EXISTS (
+            SELECT 1 FROM community_members actor
+            WHERE actor.community_id = ${communityId}
+              AND actor.user_id = ${currentUser.id}
+              AND actor.removed_at IS NULL
+              AND actor.role IN ('owner', 'moderator')
+          )) AS actor_allowed,
+          (NOT ${isAdmin}::boolean AND EXISTS (
+            SELECT 1 FROM community_members actor
+            WHERE actor.community_id = ${communityId}
+              AND actor.user_id = ${currentUser.id}
+              AND actor.removed_at IS NULL
+              AND actor.role = 'moderator'
+          ) AND EXISTS (SELECT 1 FROM protected_issuers)) AS protected_issuer
       ),
       locked AS MATERIALIZED (
         SELECT ban.id

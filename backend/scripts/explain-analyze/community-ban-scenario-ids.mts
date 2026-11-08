@@ -3,7 +3,6 @@ export const COMMUNITY_BAN_SCENARIO_IDS = [
   'community-bans-active-first',
   'community-bans-active-continuation',
   'community-bans-detail-by-id',
-  'community-bans-actor-lock',
   'community-bans-lift-all-overflow',
   'community-bans-lift-all-forbidden',
   'community-bans-lift-all-at-cap',
