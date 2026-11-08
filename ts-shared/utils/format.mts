@@ -32,21 +32,3 @@ const POST_TYPE_LABELS: Record<string, string> = {
 export function humanizePostType(postType: string): string {
   return POST_TYPE_LABELS[postType] ?? postType
 }
-
-const TOPIC_TYPE_LABELS: Record<string, string> = {
-  topic: 'Topic',
-  rewards_program: 'Rewards Program',
-  rewards_program_status: 'Rewards Program Status',
-  referral_program: 'Referral Program',
-  card: 'Card',
-  bank_account: 'Bank Account',
-  person: 'Person',
-  public_figure: 'Public Figure',
-  organization: 'Organization',
-  brand: 'Brand',
-  rss_feed: 'Source',
-}
-
-export function humanizeTopicType(topicType: string): string {
-  return TOPIC_TYPE_LABELS[topicType] ?? topicType
-}
