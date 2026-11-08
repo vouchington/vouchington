@@ -48,4 +48,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_community_agent_prompts_slot_count_delete`: `CREATE TRIGGER trigger_community_agent_prompts_slot_count_delete AFTER DELETE ON public.community_agent_prompts REFERENCING OLD TABLE AS old_prompts FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts()`
+- `trigger_community_agent_prompts_slot_count_insert`: `CREATE TRIGGER trigger_community_agent_prompts_slot_count_insert AFTER INSERT ON public.community_agent_prompts REFERENCING NEW TABLE AS new_prompts FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts()`
+- `trigger_community_agent_prompts_slot_count_update`: `CREATE TRIGGER trigger_community_agent_prompts_slot_count_update AFTER UPDATE ON public.community_agent_prompts REFERENCING OLD TABLE AS old_prompts NEW TABLE AS new_prompts FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts()`
 - `trigger_moderation_transparency_community_prompts_lock`: `CREATE TRIGGER trigger_moderation_transparency_community_prompts_lock BEFORE INSERT OR DELETE OR UPDATE ON public.community_agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_community_prompt()`

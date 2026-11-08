@@ -460,6 +460,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_community_active_count()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_community_agent_prompt_slot_counts`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_community_agent_prompt_slot_counts()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_community_image_placements`
 
 ```sql
@@ -480,6 +488,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_community_virtual_subscription_coun
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_copyright_form_screening_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_deleted_user_prompt_slot_counts`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_deleted_user_prompt_slot_counts()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1651,6 +1667,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_classifier_run_scope()
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_clearance_transparency_scope()
  RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_community_agent_prompt_slot_count(creator_id uuid, slot_delta integer)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_community_agent_prompt_slot_count(creator_id uuid, slot_delta integer)
+ RETURNS void
  LANGUAGE plpgsql
 ```
 

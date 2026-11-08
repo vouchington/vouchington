@@ -11,6 +11,7 @@ import {
   deallocateCommunityAgentPromptSlot,
 } from './allocate.mts'
 import { getCommunityAgentPrompt } from './get.mts'
+import { getUsedSlotsForUser } from './slots.mts'
 import type { PrivateUser } from '@services/users/types'
 
 describe('allocate', () => {
@@ -162,6 +163,7 @@ describe('allocate', () => {
       expect(fetched!.is_slot_allocated).toBe(false)
       expect(fetched!.activated_at).toBeNull()
       expect(fetched!.deactivated_at).not.toBeNull()
+      expect(await getUsedSlotsForUser(plusUser.id)).toBe(0)
     })
 
     it('rejects deallocation by non-creator', async () => {

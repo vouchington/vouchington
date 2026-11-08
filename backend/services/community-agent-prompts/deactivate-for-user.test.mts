@@ -8,6 +8,7 @@ import { deactivateCommunityPromptsForUser } from './deactivate-for-user.mts'
 import { getCommunityAgentPrompt } from './get.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
+import { getUsedSlotsForUser } from './slots.mts'
 
 describe('deactivate-for-user', () => {
   let user: PrivateUser
@@ -44,6 +45,7 @@ describe('deactivate-for-user', () => {
       expect(r1!.activated_at).toBeNull()
       expect(r2!.is_slot_allocated).toBe(false)
       expect(r2!.deactivated_at).not.toBeNull()
+      expect(await getUsedSlotsForUser(user.id)).toBe(0)
     })
 
     it('does not affect unallocated prompts', async () => {

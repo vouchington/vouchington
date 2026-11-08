@@ -10,6 +10,7 @@ import { deleteCommunityAgentPrompt } from './delete.mts'
 import { getCommunityAgentPrompt } from './get.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
+import { getUsedSlotsForUser } from './slots.mts'
 
 describe('delete', () => {
   let owner: PrivateUser
@@ -102,6 +103,7 @@ describe('delete', () => {
       await deleteCommunityAgentPrompt(owner, p)
       // After delete the prompt is soft-deleted (not visible via get)
       expect(await getCommunityAgentPrompt(p.id)).toBeNull()
+      expect(await getUsedSlotsForUser(owner.id)).toBe(0)
     })
   })
 })

@@ -686,6 +686,121 @@ CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__community_id_bare
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__created_by_id
   ON community_agent_prompts(created_by_id);
 
+-- This projection is written only for a real prompt-allocation transition. The prompt
+-- transition trigger owns it, including hard deletes and foreign-key cascades.
+CREATE TABLE IF NOT EXISTS community_agent_prompt_slot_counts (
+  creator_user_id UUID PRIMARY KEY REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  allocated_count SMALLINT NOT NULL,
+  CONSTRAINT chk_community_agent_prompt_slot_counts__allocated_count
+    CHECK (allocated_count BETWEEN 0 AND 10)
+);
+
+COMMENT ON TABLE community_agent_prompt_slot_counts IS 'Exact number of non-deleted allocated community agent prompts for a creator.';
+COMMENT ON COLUMN community_agent_prompt_slot_counts.creator_user_id IS 'Retained creator identity used for counter integrity, not authorization.';
+COMMENT ON COLUMN community_agent_prompt_slot_counts.allocated_count IS 'Current allocated prompt count; zero-valued rows may remain until creator deletion.';
+
+CREATE OR REPLACE FUNCTION fn_update_community_agent_prompt_slot_count(
+  creator_id UUID, slot_delta INTEGER
+) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  IF slot_delta = 0 THEN
+    RETURN;
+  END IF;
+  IF slot_delta > 0 THEN
+    INSERT INTO community_agent_prompt_slot_counts (creator_user_id, allocated_count)
+    VALUES (creator_id, slot_delta)
+    ON CONFLICT (creator_user_id) DO UPDATE
+      SET allocated_count = community_agent_prompt_slot_counts.allocated_count + EXCLUDED.allocated_count;
+  ELSE
+    UPDATE community_agent_prompt_slot_counts
+    SET allocated_count = allocated_count + slot_delta
+    WHERE creator_user_id = creator_id;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Missing community agent prompt slot count for creator %', creator_id
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+END;
+$$;
+COMMENT ON FUNCTION fn_update_community_agent_prompt_slot_count(UUID, INTEGER) IS 'Applies a nonzero creator slot-count delta for a prompt transition.';
+
+CREATE OR REPLACE FUNCTION fn_project_community_agent_prompt_slot_counts()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  changed RECORD;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    FOR changed IN
+      SELECT created_by_id AS creator_id, COUNT(*)::integer AS slot_delta
+      FROM new_prompts
+      WHERE created_by_id IS NOT NULL AND is_slot_allocated AND deleted_at IS NULL
+      GROUP BY created_by_id ORDER BY created_by_id
+    LOOP
+      PERFORM fn_update_community_agent_prompt_slot_count(changed.creator_id, changed.slot_delta);
+    END LOOP;
+  ELSIF TG_OP = 'DELETE' THEN
+    FOR changed IN
+      SELECT created_by_id AS creator_id, -COUNT(*)::integer AS slot_delta
+      FROM old_prompts
+      WHERE created_by_id IS NOT NULL AND is_slot_allocated AND deleted_at IS NULL
+      GROUP BY created_by_id ORDER BY created_by_id
+    LOOP
+      PERFORM fn_update_community_agent_prompt_slot_count(changed.creator_id, changed.slot_delta);
+    END LOOP;
+  ELSE
+    FOR changed IN
+      SELECT creator_id, SUM(slot_delta)::integer AS slot_delta
+      FROM (
+        SELECT created_by_id AS creator_id, -1 AS slot_delta FROM old_prompts
+        WHERE created_by_id IS NOT NULL AND is_slot_allocated AND deleted_at IS NULL
+        UNION ALL
+        SELECT created_by_id AS creator_id, 1 AS slot_delta FROM new_prompts
+        WHERE created_by_id IS NOT NULL AND is_slot_allocated AND deleted_at IS NULL
+      ) changed_rows
+      GROUP BY creator_id HAVING SUM(slot_delta) <> 0 ORDER BY creator_id
+    LOOP
+      PERFORM fn_update_community_agent_prompt_slot_count(changed.creator_id, changed.slot_delta);
+    END LOOP;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+COMMENT ON FUNCTION fn_project_community_agent_prompt_slot_counts() IS 'Projects exact creator counts from prompt statement transition rows.';
+
+CREATE TRIGGER trigger_community_agent_prompts_slot_count_insert
+AFTER INSERT ON community_agent_prompts
+REFERENCING NEW TABLE AS new_prompts
+FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts();
+
+CREATE TRIGGER trigger_community_agent_prompts_slot_count_update
+AFTER UPDATE ON community_agent_prompts
+REFERENCING OLD TABLE AS old_prompts NEW TABLE AS new_prompts
+FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts();
+
+CREATE TRIGGER trigger_community_agent_prompts_slot_count_delete
+AFTER DELETE ON community_agent_prompts
+REFERENCING OLD TABLE AS old_prompts
+FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts();
+
+-- The deferred constraint trigger runs after native FK SET NULL prompt transitions,
+-- so every count decrement follows the prompt write before this quota row is deleted.
+-- Retained identity remains untouched.
+CREATE OR REPLACE FUNCTION fn_project_deleted_user_prompt_slot_counts()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  DELETE FROM community_agent_prompt_slot_counts counts
+  WHERE counts.creator_user_id = OLD.id
+    AND counts.allocated_count = 0;
+  RETURN NULL;
+END;
+$$;
+COMMENT ON FUNCTION fn_project_deleted_user_prompt_slot_counts() IS 'Removes prompt slot-count rows after deleted users have released their prompt creator references.';
+
+CREATE CONSTRAINT TRIGGER trigger_users_delete_community_agent_prompt_slot_counts
+AFTER DELETE ON users
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION fn_project_deleted_user_prompt_slot_counts();
+
 COMMENT ON TABLE community_agent_prompts IS 'Extension table linking agent prompts to communities, with slot allocation and activation lifecycle.';
 COMMENT ON COLUMN community_agent_prompts.community_id IS 'The community this agent prompt belongs to.';
 COMMENT ON COLUMN community_agent_prompts.is_slot_allocated IS 'Whether this prompt has been allocated a slot for active use.';

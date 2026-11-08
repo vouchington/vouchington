@@ -9,14 +9,13 @@ import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-i
 import { PUBLICATION_SCOPE_SCENARIO_IDS } from './publication-scope-scenario-ids.mts'
 import { NOTIFICATION_VISIBILITY_SCENARIO_IDS } from './notification-visibility-scenario-ids.mts'
 import { POST_URL_CAPACITY_SCENARIOS } from './post-related-url-capacity-scenario-ids.mts'
+import { COMMUNITY_AGENT_PROMPT_SCENARIO_IDS } from './community-agent-prompt-page-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
   ...MEDIA_DELIVERY_LOCK_SCENARIOS,
   ...COMMUNITY_BAN_SCENARIO_IDS,
   ...ELIGIBLE_LIST_SCENARIO_IDS,
-  'community-agent-prompt-capacity',
-  'community-agent-prompts-first-page',
-  'community-agent-prompts-deep-page',
+  ...COMMUNITY_AGENT_PROMPT_SCENARIO_IDS,
   'fk-actor-images-deleted-by-no-match',
   'fk-actor-agent-moderations-deleted-by-no-match',
   'fk-actor-moderation-cases-resolved-by-no-match',

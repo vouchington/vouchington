@@ -3,6 +3,9 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityAgentPrompt,
+  hardDeleteTestCommunity,
+  hardDeleteTestUserWithPromptSlotCountObservation,
+  readTestCommunityAgentPromptSlotCount,
 } from '@voucha/test-helpers'
 import { getUsedSlotsForUser, getSlotLimitForMembership, SLOT_LIMITS_BY_PLAN } from './slots.mts'
 import { createCommunityAgentPrompt } from './create.mts'
@@ -52,6 +55,43 @@ describe('getUsedSlotsForUser', () => {
 
     const usedSlots = await getUsedSlotsForUser(user.id)
     expect(usedSlots).toBe(2)
+  })
+
+  it('keeps the count exact when a community cascade deletes an allocated prompt', async () => {
+    const user = await createTestUser()
+    const [removed, retained] = await Promise.all([
+      insertTestCommunity({ createdById: user.id }),
+      insertTestCommunity({ createdById: user.id }),
+    ])
+    await Promise.all([
+      insertTestCommunityAgentPrompt({
+        communityId: removed.id,
+        createdById: user.id,
+        slotAllocated: true,
+      }),
+      insertTestCommunityAgentPrompt({
+        communityId: retained.id,
+        createdById: user.id,
+        slotAllocated: true,
+      }),
+    ])
+
+    await hardDeleteTestCommunity(removed.id)
+    expect(await getUsedSlotsForUser(user.id)).toBe(1)
+  })
+
+  it('removes the count row with a hard-deleted creator', async () => {
+    const user = await createTestUser()
+    const community = await insertTestCommunity({ createdById: user.id })
+    await insertTestCommunityAgentPrompt({
+      communityId: community.id,
+      createdById: user.id,
+      slotAllocated: true,
+    })
+
+    expect(await hardDeleteTestUserWithPromptSlotCountObservation(user.id)).toBe(0)
+    expect(await getUsedSlotsForUser(user.id)).toBe(0)
+    expect(await readTestCommunityAgentPromptSlotCount(user.id)).toBeNull()
   })
 })
 
