@@ -100,13 +100,17 @@ export async function readStoryPostRelatedUrlProjectionActiveRelations(
   createdById: string,
   urlIds: readonly string[],
 ): Promise<Array<{ id: string; object_id: string }>> {
+  // A generic = ANY plan index-scans (subject_id, id) and then filters deleted rows.
   const { rows } = await query<{ id: string; object_id: string }>(
     `/* storyPostRelatedUrlProjectionActiveRelationIds */
-      SELECT id, object_id
-      FROM relation__post__related__url
-      WHERE subject_id = $1 AND deleted_at IS NULL AND created_by_id = $2
-        AND object_id = ANY($3::uuid[])
-      ORDER BY object_id
+      SELECT relation.id, relation.object_id
+      FROM (SELECT DISTINCT input.id FROM unnest($3::uuid[]) AS input(id)) requested
+      JOIN relation__post__related__url relation
+        ON relation.subject_id = $1
+       AND relation.created_by_id = $2
+       AND relation.object_id = requested.id
+       AND relation.deleted_at IS NULL
+      ORDER BY relation.object_id
       LIMIT $4`,
     [postId, createdById, urlIds, relationLimitsMaxValues.post_related_url],
   )
