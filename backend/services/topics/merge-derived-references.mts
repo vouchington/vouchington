@@ -7,9 +7,3 @@ export const derivedReferences = [
   ['topic_classifier_results', 'topic_id'],
   ['autotagger_agent_run_topics', 'topic_id'],
 ] as const
-
-// These rows remain until the owning subtype is deleted, then its FK cascades them.
-// Deleting them in the earlier derived-reference stage could hide a still-live merge source.
-export const cascadedDerivedReferences = [
-  ['referral_program_link_counts', 'topic_id', 'referral_program_topics'],
-] as const

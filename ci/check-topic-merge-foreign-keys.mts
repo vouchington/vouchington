@@ -3,10 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 import type { SchemaSnapshot } from 'vouchington-tooling/pg-schema-snapshot'
 
-import {
-  cascadedDerivedReferences,
-  derivedReferences,
-} from '../backend/services/topics/merge-derived-references.mts'
+import { derivedReferences } from '../backend/services/topics/merge-derived-references.mts'
 import {
   TOPIC_MERGE_REFERENCE_GROUPS,
   TOPIC_MERGE_SUBTYPE_TABLES,
@@ -22,6 +19,11 @@ import { subtypeReferences } from '../backend/services/topics/merge-subtypes.mts
 const schemaPath = fileURLToPath(
   new URL('../backend/data-stores/psql/schema-snapshot/schema.json', import.meta.url),
 )
+// The owning subtype is deleted after direct derived references during topic merge.
+// Its FK must remove these rows at that stage, while the merge source is still visible.
+const cascadedDerivedReferences = [
+  ['referral_program_link_counts', 'topic_id', 'referral_program_topics'],
+] as const
 
 if (import.meta.main) {
   const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
