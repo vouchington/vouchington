@@ -1,7 +1,7 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { collectPlanNodes, processedRows, type PlanNode } from '../plan-nodes.mts'
 
-/** The three runnable lanes may sort their winners, never the underlying job populations. */
+/** One claim walks a single index ordered row. A sort may only see that one candidate. */
 export function assertStoryProjectionClaimCandidates(result: ExplainResult): void {
   const sorts = collectPlanNodes(result.plan).filter(node =>
     ['Sort', 'Incremental Sort'].includes(String(node['Node Type'])),
@@ -22,8 +22,8 @@ export function assertStoryProjectionClaimCandidates(result: ExplainResult): voi
       child['Actual Rows'] < 0 ||
       child['Actual Loops'] < 0 ||
       !Number.isFinite(processedRows(child)) ||
-      processedRows(child) > 3
+      processedRows(child) > 1
     )
-      throw new Error(`${result.name} must sort at most three claim candidates from its input`)
+      throw new Error(`${result.name} must sort at most one claim candidate from its input`)
   }
 }

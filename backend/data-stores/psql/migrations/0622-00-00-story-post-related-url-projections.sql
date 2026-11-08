@@ -6,13 +6,7 @@ CREATE TABLE IF NOT EXISTS story_post_related_url_projection_jobs (
   story_id UUID NOT NULL,
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
   sweep_upper_bound_source_id UUID,
-  sweep_upper_bound_relation_id UUID,
-  relation_snapshot_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
-  cursor_source_id UUID,
-  eligibility_completed_at TIMESTAMPTZ,
   source_completed_at TIMESTAMPTZ,
-  cursor_prune_id UUID,
-  limit_reached_capacity INTEGER CHECK (limit_reached_capacity > 0),
   invalidation_required_at TIMESTAMPTZ,
   invalidation_completed_at TIMESTAMPTZ,
   lease_token UUID,
@@ -34,12 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_story_post_relate_url_projec_jobs__lease_expires_
   ON story_post_related_url_projection_jobs (lease_expires_at, post_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_story_post_relate_url_project_jobs__last_claimed_at_post_id
-  ON story_post_related_url_projection_jobs (last_claimed_at ASC NULLS FIRST, post_id)
-  WHERE limit_reached_capacity IS NULL;
-
-CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_jobs__limit_capacity
-  ON story_post_related_url_projection_jobs (limit_reached_capacity, last_claimed_at, post_id)
-  WHERE limit_reached_capacity IS NOT NULL;
+  ON story_post_related_url_projection_jobs (last_claimed_at ASC NULLS FIRST, post_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_jobs__story_id
   ON story_post_related_url_projection_jobs (story_id);
@@ -139,14 +128,8 @@ COMMENT ON TABLE story_post_related_url_projection_jobs IS 'Durable, generation-
 COMMENT ON COLUMN story_post_related_url_projection_jobs.post_id IS 'Story post receiving the projected related URL relations.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.story_id IS 'Current story whose active RSS item URLs are projected.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.generation IS 'Monotonic source snapshot generation; stale workers cannot mutate a newer generation.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.sweep_upper_bound_source_id IS 'RSS item ID high-water mark that bounds this generation source snapshot.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.sweep_upper_bound_relation_id IS 'Relation ID high-water mark that excludes post-capture related links from this generation prune.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.relation_snapshot_at IS 'Wall-clock boundary that excludes relations reactivated after this generation was captured.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_source_id IS 'RSS item ID keyset cursor for the bounded source projection phase.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.eligibility_completed_at IS 'Time the complete bounded eligibility scan finished before relation replacements; resets the source cursor for the write pass.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.source_completed_at IS 'Time the bounded source projection phase reached its high-water mark.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.limit_reached_capacity IS 'Capacity at which this generation could not admit its source; a changed capacity restarts it.';
-COMMENT ON COLUMN story_post_related_url_projection_jobs.cursor_prune_id IS 'Relation ID keyset cursor for the stale-relation pruning phase.';
+COMMENT ON COLUMN story_post_related_url_projection_jobs.sweep_upper_bound_source_id IS 'RSS item ID high-water mark that bounds this generation prefix.';
+COMMENT ON COLUMN story_post_related_url_projection_jobs.source_completed_at IS 'Time this generation committed its prefix admission and projected-row prune.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.invalidation_required_at IS 'Time a committed relation mutation made the story cache invalidation due.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.invalidation_completed_at IS 'Time the required story cache invalidation completed for this generation.';
 COMMENT ON COLUMN story_post_related_url_projection_jobs.lease_token IS 'Opaque fencing token rotated for each worker lease claim.';

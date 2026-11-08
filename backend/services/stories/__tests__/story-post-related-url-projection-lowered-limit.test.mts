@@ -66,4 +66,36 @@ describe('story projection with a lowered limit', () => {
     await drainStoryPostRelatedUrlProjection(post.id)
     expect((await getPostRelatedUrlIds(post.id)).toSorted()).toEqual(newUrls.toSorted())
   })
+
+  it('keeps the two oldest projected URLs when the cap drops and the items stay', async () => {
+    await relationLimitsConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(relationLimitsConfig, {
+      post_related_url: 4,
+    })
+    onTestFinished(restore)
+    const [user, feed, story] = await Promise.all([
+      createTestUserDirect(),
+      createTestRssFeed({}),
+      insertTestStory({ title: `Lowered prefix ${randomUUID()}` }),
+    ])
+    const urls: string[] = []
+    for (let index = 0; index < 4; index += 1) {
+      const urlId = await createTestUrlWithHostname()
+      urls.push(urlId)
+      await insertItem(story.id, feed.id, urlId)
+    }
+    const {
+      response: { post },
+    } = await prepareStoryPost(story.id, user)
+    await drainStoryPostRelatedUrlProjection(post.id)
+    expect((await getPostRelatedUrlIds(post.id)).toSorted()).toEqual(urls.toSorted())
+    restore()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(relationLimitsConfig, { post_related_url: 2 }),
+    )
+    expect((await getPostRelatedUrlIds(post.id)).toSorted()).toEqual(urls.toSorted())
+    await refreshStoryPostForStory(story.id)
+    await drainStoryPostRelatedUrlProjection(post.id)
+    expect((await getPostRelatedUrlIds(post.id)).toSorted()).toEqual(urls.slice(0, 2).toSorted())
+  })
 })

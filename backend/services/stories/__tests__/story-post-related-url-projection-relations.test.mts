@@ -15,11 +15,12 @@ import {
   updateUrlHostnameBlocked,
   expireTestStoryPostProjectionLeaseAfterLock,
 } from '@voucha/test-helpers'
+import { insertTestDomainBlacklist } from '@voucha/test-helpers/entities/domain-blacklists'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
-import { writeStoryPostRelatedUrlProjectionRelations } from '../story-post-related-url-projection-relations.mts'
+import { admitStoryPostRelatedUrlProjectionPrefix } from '../story-post-related-url-projection-relations.mts'
 import { drainPendingStoryPostRelatedUrlProjectionCrawlEffects } from '../story-post-related-url-projection-relation-safety.mts'
 import {
   decideStoryPostRelatedUrlProjectionRows,
@@ -43,16 +44,7 @@ describe('story post related URL projection relations', () => {
       processed: 2,
       continue: true,
     })
-
-    // Finish the eligibility scan before the source-writing page.
-    await expect(processOwnedStoryProjectionPage(post.id)).resolves.toMatchObject({
-      processed: 0,
-      continue: true,
-    })
-    await expect(processOwnedStoryProjectionPage(post.id)).resolves.toMatchObject({
-      processed: 2,
-      continue: true,
-    })
+    await expect(getTestStoryPostProjectionReceiptCount(post.id)).resolves.toBe(1)
 
     await expect(getTestStoryPostProjectionRelationStates(post.id)).resolves.toEqual([
       expect.objectContaining({ relationWrittenAt: expect.any(Date), votesScoreNet: 1 }),
@@ -88,7 +80,52 @@ describe('story post related URL projection relations', () => {
       await expect(stageStoryPostRelatedUrlProjectionReceipts(work, decisions)).resolves.toBe(true)
       await updateUrlHostnameBlocked(url.hostname.id, true)
 
-      await expect(writeStoryPostRelatedUrlProjectionRelations(work, decisions)).resolves.toBe(true)
+      await expect(
+        admitStoryPostRelatedUrlProjectionPrefix(work, decisions),
+      ).resolves.toMatchObject({
+        ok: true,
+      })
+      await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
+      await expect(
+        getTestStoryPostProjectionReceiptState(post.id, work.generation, url.id),
+      ).resolves.toMatchObject({ is_eligible: false })
+    } finally {
+      await releaseStoryPostRelatedUrlProjectionWork(work)
+      await drainProjection(post.id)
+    }
+  })
+
+  it('omits a URL blocked after an outside decision when admission reads the prefix itself', async () => {
+    const { post, url } = await createProjectablePost('blocked-before-admission')
+    const work = await createTestStoryProjectionLease(post.id)
+    if (!work) throw new Error('Expected projection work')
+    try {
+      const sourceRows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work)
+      const decisions = await decideStoryPostRelatedUrlProjectionRows(work, sourceRows)
+      expect(decisions).toEqual([expect.objectContaining({ is_eligible: true })])
+      await updateUrlHostnameBlocked(url.hostname.id, true)
+      await expect(admitStoryPostRelatedUrlProjectionPrefix(work)).resolves.toMatchObject({
+        ok: true,
+      })
+      await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
+      await expect(
+        getTestStoryPostProjectionReceiptState(post.id, work.generation, url.id),
+      ).resolves.toMatchObject({ is_eligible: false })
+    } finally {
+      await releaseStoryPostRelatedUrlProjectionWork(work)
+      await drainProjection(post.id)
+    }
+  })
+
+  it('omits a prefix URL whose domain is on the URL blocklist', async () => {
+    const { post, url } = await createProjectablePost('blocklisted-domain')
+    const work = await createTestStoryProjectionLease(post.id)
+    if (!work) throw new Error('Expected projection work')
+    try {
+      await insertTestDomainBlacklist(new URL(url.url).hostname)
+      await expect(admitStoryPostRelatedUrlProjectionPrefix(work)).resolves.toMatchObject({
+        ok: true,
+      })
       await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, work.generation, url.id),
@@ -115,7 +152,11 @@ describe('story post related URL projection relations', () => {
         pathname: parsedUrl.pathname,
       })
 
-      await expect(writeStoryPostRelatedUrlProjectionRelations(work, decisions)).resolves.toBe(true)
+      await expect(
+        admitStoryPostRelatedUrlProjectionPrefix(work, decisions),
+      ).resolves.toMatchObject({
+        ok: true,
+      })
       await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, work.generation, url.id),
@@ -132,8 +173,8 @@ describe('story post related URL projection relations', () => {
     const first = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions),
-      ).resolves.toBe(true)
+        admitStoryPostRelatedUrlProjectionPrefix(first.work, first.decisions),
+      ).resolves.toMatchObject({ ok: true })
     } finally {
       await releaseStoryPostRelatedUrlProjectionWork(first.work)
     }
@@ -143,8 +184,8 @@ describe('story post related URL projection relations', () => {
     const restarted = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(restarted.work, restarted.decisions),
-      ).resolves.toBe(true)
+        admitStoryPostRelatedUrlProjectionPrefix(restarted.work, restarted.decisions),
+      ).resolves.toMatchObject({ ok: true })
       expect(crawls.ownedPromises()).toHaveLength(1)
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, restarted.work.generation, url.id),
@@ -162,15 +203,15 @@ describe('story post related URL projection relations', () => {
     const staged = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(staged.work, staged.decisions),
+        admitStoryPostRelatedUrlProjectionPrefix(staged.work, staged.decisions),
       ).rejects.toThrow('crawl queue unavailable')
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, staged.work.generation, url.id),
       ).resolves.toMatchObject({ crawlRequired: true, effectsDispatchedAt: null })
 
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(staged.work, staged.decisions),
-      ).resolves.toBe(true)
+        admitStoryPostRelatedUrlProjectionPrefix(staged.work, staged.decisions),
+      ).resolves.toMatchObject({ ok: true })
       expect(enqueueSpy.mock.calls).toEqual([[[{ urlId: url.id }]], [[{ urlId: url.id }]]])
       await expect(
         getTestStoryPostProjectionReceiptState(post.id, staged.work.generation, url.id),
@@ -189,7 +230,7 @@ describe('story post related URL projection relations', () => {
     const first = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions),
+        admitStoryPostRelatedUrlProjectionPrefix(first.work, first.decisions),
       ).rejects.toThrow('crawl queue unavailable')
     } finally {
       enqueueSpy.mockRestore()
@@ -247,10 +288,7 @@ async function createProjectablePost(label: string) {
   const story = await insertTestStory({
     title: `Projection relation ${label} ${crypto.randomUUID()}`,
   })
-  const url = await insertTestUrlDirect(
-    null,
-    `https://story-relation-${crypto.randomUUID()}.example.test/${label}/article`,
-  )
+  const url = await insertTestUrlDirect(null, `https://${crypto.randomUUID()}.example.test`)
   if (!url) throw new Error('Expected a public projection test URL')
   await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: url.id, count: 2 })
   const user = await createTestUserDirect()

@@ -1,9 +1,11 @@
+import assert from 'node:assert/strict'
 import { getStoriesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
-import { lockReferralLinkEligibility } from '@services/entity-relations/referral-link-eligibility-lock'
+import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
+import { hostnameBlockStripeSetLockSql } from '@services/hostname-blocking/hostname-block-lock'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
 import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
@@ -50,15 +52,6 @@ export async function drainPendingStoryPostRelatedUrlProjectionCrawlEffects(
   return rowCount === rows.length ? rows.length : null
 }
 
-export async function lockProjectionEligibilityAndFindBlockedUrls(
-  query: TransactionQuery,
-  urlIds: readonly string[],
-): Promise<Set<string>> {
-  await lockReferralLinkEligibility(query, 'shared')
-  await lockStoryPostRelatedUrlProjectionHostnameBlocks(query, urlIds)
-  return findBlockedStoryPostRelatedUrlProjectionUrls(query, urlIds)
-}
-
 export async function lockPostScopeAndCheckProjectionWork(
   query: TransactionQuery,
   work: ProjectionWork,
@@ -71,6 +64,7 @@ export async function lockStoryPostRelatedUrlProjectionHostnameBlocks(
   query: TransactionQuery,
   urlIds: readonly string[],
 ): Promise<void> {
+  assertPostRelatedUrlPrefix(urlIds.length)
   await query(
     `/* lockStoryPostRelatedUrlProjectionHostnameBlocks */
       WITH RECURSIVE url_targets AS (
@@ -95,47 +89,39 @@ export async function lockStoryPostRelatedUrlProjectionHostnameBlocks(
           SELECT id FROM url_hostnames WHERE hostname = suffix.hostname LIMIT 1
         ) candidate
       )
-      SELECT pg_advisory_xact_lock(hashtextextended(id::text, 0))
-      FROM candidates
-      ORDER BY id`,
+      ${hostnameBlockStripeSetLockSql('candidates', 'candidates.id')}`,
     [urlIds],
   )
 }
 
-/** Read-only safety for existing active URLs; only the current source page holds host locks. */
-export async function findBlockedStoryPostRelatedUrlProjectionUrls(
+export async function readStoryPostRelatedUrlProjectionActiveRelations(
   query: TransactionQuery,
+  postId: string,
+  createdById: string,
   urlIds: readonly string[],
-): Promise<Set<string>> {
-  const { rows } = await query<{ url_id: string }>(
-    `/* findBlockedStoryPostRelatedUrlProjectionUrls */
-      WITH RECURSIVE url_targets AS (
-        SELECT url.id AS url_id, hostname.hostname
-        FROM (SELECT DISTINCT id FROM unnest($1::uuid[]) input(id)) requested
-        CROSS JOIN LATERAL (
-          SELECT id, hostname_id FROM urls WHERE id = requested.id LIMIT 1
-        ) url
-        CROSS JOIN LATERAL (
-          SELECT hostname FROM url_hostnames WHERE id = url.hostname_id LIMIT 1
-        ) hostname
-      ), hostname_suffixes AS (
-        SELECT url_id, hostname FROM url_targets
-        UNION ALL
-        SELECT url_id, substring(hostname FROM position('.' IN hostname) + 1)
-        FROM hostname_suffixes
-        WHERE position('.' IN hostname) > 0
-      )
-      SELECT DISTINCT suffix.url_id
-      FROM hostname_suffixes suffix
-      CROSS JOIN LATERAL (
-        SELECT is_blocked FROM url_hostnames WHERE hostname = suffix.hostname LIMIT 1
-      ) candidate
-      WHERE candidate.is_blocked`,
-    [urlIds],
+): Promise<Array<{ id: string; object_id: string }>> {
+  // A generic = ANY plan index-scans (subject_id, id) and then filters deleted rows.
+  const { rows } = await query<{ id: string; object_id: string }>(
+    `/* storyPostRelatedUrlProjectionActiveRelationIds */
+      SELECT relation.id, relation.object_id
+      FROM (SELECT DISTINCT input.id FROM unnest($3::uuid[]) AS input(id)) requested
+      JOIN relation__post__related__url relation
+        ON relation.subject_id = $1
+       AND relation.created_by_id = $2
+       AND relation.object_id = requested.id
+       AND relation.deleted_at IS NULL
+      ORDER BY relation.object_id
+      LIMIT $4`,
+    [postId, createdById, urlIds, relationLimitsMaxValues.post_related_url],
   )
-  const blockedUrlIds = new Set<string>()
-  for (const row of rows) blockedUrlIds.add(row.url_id)
-  return blockedUrlIds
+  return rows
+}
+
+function assertPostRelatedUrlPrefix(count: number): void {
+  assert.ok(
+    count <= relationLimitsMaxValues.post_related_url,
+    `post_related_url prefix has ${count} URL ids; relationLimitsMaxValues.post_related_url is ${relationLimitsMaxValues.post_related_url}`,
+  )
 }
 
 export async function recordProjectionCrawlRequirements(
@@ -172,7 +158,8 @@ export async function recordProjectionCrawlRequirements(
       FROM unnest($3::uuid[], $4::boolean[], $5::boolean[])
         AS input(url_id, should_crawl, blocked)
       WHERE receipt.post_id = $1 AND receipt.generation = $2
-        AND receipt.url_id = input.url_id`,
+        AND receipt.url_id = input.url_id
+      RETURNING receipt.url_id`,
     [work.post_id, work.generation, urlIds, crawlRequired, blocked],
   )
 }

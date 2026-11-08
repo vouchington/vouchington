@@ -116,12 +116,14 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
       },
     )
     await using holder = await beginTransaction()
-    await blockHostnameInTransaction(admin.id, hostnames.get(parent)!, holder, {
+    const parentId = hostnames.get(parent)!
+    await blockHostnameInTransaction(admin.id, parentId, holder, {
       penalizeCreators: false,
     })
+    const heldParentKey = await getFirstTestHostnameOwnershipLockKey(holder, parentId)
     await using waiter = await createTestPostgresLockWaiter({
       holder,
-      lock: { kind: 'advisory64', key: hostnames.get(parent)!.toLowerCase() },
+      lock: { kind: 'advisory64', key: heldParentKey },
       selected: {
         marker: '/* lockHostnameOwnership */',
         binding: { index: 0, value: [hostnames.get(child)!.toLowerCase()] },

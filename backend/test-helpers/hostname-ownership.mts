@@ -1,34 +1,42 @@
 import { read, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-/** Match the first ancestor key actually held by the real hostname ownership transaction. */
+/** Match the first stripe key held by hostname ownership. The stripe formula matches
+ * HOSTNAME_BLOCK_LOCK_STRIPES and HOSTNAME_BLOCK_LOCK_STRIPE_NAMESPACE.
+ */
 export async function getFirstTestHostnameOwnershipLockKey(
   query: TransactionQuery,
   hostnameId: string,
   holderProcessId?: number,
 ): Promise<string> {
-  const { rows } = await query<{ id: string }>(sql`/* getFirstTestHostnameOwnershipLockKey */
+  const { rows } = await query<{ lock_key: string }>(sql`/* getFirstTestHostnameOwnershipLockKey */
     WITH RECURSIVE hostname_names(hostname) AS (
       SELECT hostname FROM url_hostnames WHERE id = ${hostnameId}::uuid
       UNION
       SELECT substring(hostname FROM position('.' IN hostname) + 1)
       FROM hostname_names WHERE position('.' IN hostname) > 0
+    ), stripes AS (
+      SELECT DISTINCT ((hashtext((candidate.id)::text) & 2147483647) % 64) AS stripe
+      FROM url_hostnames candidate
+      WHERE candidate.hostname IN (SELECT hostname FROM hostname_names)
     )
-    SELECT candidate.id FROM url_hostnames candidate
-    WHERE candidate.hostname IN (SELECT hostname FROM hostname_names)
-      AND EXISTS (
-        SELECT 1 FROM pg_locks held
-        WHERE held.pid = COALESCE(${holderProcessId ?? null}::integer, pg_backend_pid())
-          AND held.locktype = 'advisory'
-          AND held.database = (SELECT oid FROM pg_database WHERE datname = current_database())
-          AND held.granted AND held.mode = 'ExclusiveLock' AND held.objsubid = 1
-          AND held.classid::bigint = ((hashtextextended(candidate.id::text, 0) >> 32) & 4294967295)
-          AND held.objid::bigint = (hashtextextended(candidate.id::text, 0) & 4294967295)
-      )
-    ORDER BY candidate.id LIMIT 1
+    SELECT 'hostname-block-stripe:' || stripes.stripe::text AS lock_key
+    FROM stripes
+    WHERE EXISTS (
+      SELECT 1 FROM pg_locks held
+      WHERE held.pid = COALESCE(${holderProcessId ?? null}::integer, pg_backend_pid())
+        AND held.locktype = 'advisory'
+        AND held.database = (SELECT oid FROM pg_database WHERE datname = current_database())
+        AND held.granted AND held.mode = 'ExclusiveLock' AND held.objsubid = 1
+        AND held.classid::bigint = ((hashtextextended(
+          ('hostname-block-stripe:' || stripes.stripe::text), 0) >> 32) & 4294967295)
+        AND held.objid::bigint = (hashtextextended(
+          ('hostname-block-stripe:' || stripes.stripe::text), 0) & 4294967295)
+    )
+    ORDER BY stripes.stripe LIMIT 1
   `)
   if (!rows[0]) throw new Error('Hostname ownership lock fixture has no held hostname key')
-  return rows[0].id
+  return rows[0].lock_key
 }
 
 /** Read only the landing-page claims on this test's hostname ids. */

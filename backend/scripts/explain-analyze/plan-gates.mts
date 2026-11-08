@@ -3,7 +3,13 @@ import {
   PARTITION_POLICIES,
   UNBOUNDED_UNPARTITIONED_TABLES,
 } from '@data-stores/psql/schema-growth-registry'
-import { collectPlanNodes, processedRows, baseRelationName, type PlanNode } from './plan-nodes.mts'
+import {
+  collectPlanNodes,
+  planNodeUsesIndex,
+  processedRows,
+  baseRelationName,
+  type PlanNode,
+} from './plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { executingPartitionLeaves } from './pruning/plan-gate.mts'
 import {
@@ -73,7 +79,7 @@ function evaluateExpectation(
     case 'usesIndexes': {
       if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
         return
-      const used = (index: string) => nodes.some(node => node['Index Name'] === index)
+      const used = (index: string) => nodes.some(node => planNodeUsesIndex(node, index))
       const missing = expectation.anyOf
         ? expectation.indexes.some(used)
           ? []

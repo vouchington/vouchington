@@ -5,6 +5,7 @@ import {
   getTestHostnameRow,
   getTestPostgresBackendProcessId,
 } from '@voucha/test-helpers'
+import { getFirstTestHostnameOwnershipLockKey } from '@voucha/test-helpers/hostname-ownership'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { blockHostnameInTransaction } from '../hostname-blocking/block-hostname.mts'
 import { upsertUrlHostnames } from './upsert.mts'
@@ -19,11 +20,12 @@ describe('public hostname inheritance after ownership waits', () => {
     await using blocker = await beginTransaction()
     await blockHostnameInTransaction(staff.id, parentId, blocker, { penalizeCreators: false })
     const blockerPid = await getTestPostgresBackendProcessId(blocker)
+    const heldParentKey = await getFirstTestHostnameOwnershipLockKey(blocker, parentId)
     const resolved = await withTestOwnedPostgresWait(
       {
         holderProcessId: blockerPid,
         pool: 'write',
-        lock: { kind: 'advisory', key: parentId.toLowerCase() },
+        lock: { kind: 'advisory', key: heldParentKey },
         queryMarker: 'lockHostnameOwnership',
         releaseHolder: () => blocker[Symbol.asyncDispose](),
       },

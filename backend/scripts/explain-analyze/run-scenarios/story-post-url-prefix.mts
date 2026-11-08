@@ -1,0 +1,197 @@
+import assert from 'node:assert/strict'
+import { beginTransaction } from '@data-stores/psql'
+import { blockedUrlIdsForHostnameBlocks } from '@services/hostname-blocking'
+import { getStoryPostRelatedUrlProjectionPrefix } from '@services/stories/story-post-related-url-projection'
+import { pruneStoryPostRelatedUrlsOutsidePrefix } from '@services/stories/story-post-related-url-projection-prune'
+import { lockStoryPostRelatedUrlProjectionHostnameBlocks } from '@services/stories/story-post-related-url-projection-relation-safety'
+import { registerScenarioContract } from '../plan-expectations.mts'
+import { runAndCapture } from '../run-support.mts'
+import { RSS_FEED_ITEM_SEED_COUNT } from '../seed-data/common.mts'
+import { POST_URL_CAPACITY_SEED as seed } from '../seed-data/post-related-url-capacity.mts'
+import {
+  activeUrlIds,
+  attachPrefixItems,
+  DEFAULT_LEASE,
+  HIGH_WATER_ID,
+  ITEM_INDEX,
+  insertMaxCapReceipts,
+  leasePruneJobs,
+  MAXIMUM_LEASE,
+  NEWEST_INDEX,
+  partitionIndexNames,
+  prefixUrlIds,
+  projectionWork,
+  PRUNE_INDEX,
+  restorePrefixItems,
+  STORY_ID,
+} from './story-post-url-prefix-setup.mts'
+import { captureStoryPostUrlPrefixEffectScenarios } from './story-post-url-prefix-effects.mts'
+
+/** Child hostname row plus parent-suffix probes. The capacity seed host has three labels. */
+const URL_HOSTNAME_PROBE_LIMIT = 5
+/** Admission, prefix hostname locks, and the post-bounded prune at both relation caps. */
+export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
+  const [itemIndexes, pruneIndexes, newestIndexes, activeReverseIndexes] = await Promise.all([
+    partitionIndexNames(ITEM_INDEX),
+    partitionIndexNames(PRUNE_INDEX),
+    partitionIndexNames(NEWEST_INDEX),
+    partitionIndexNames('idx_relation__post__related__url__active_reverse'),
+  ])
+  try {
+    await attachPrefixItems()
+    await leasePruneJobs()
+    await insertMaxCapReceipts()
+    await captureAdmission('story-post-related-url-admission-prefix-default', 1000, itemIndexes)
+    await captureAdmission('story-post-related-url-admission-prefix-maximum', 10_000, itemIndexes)
+    await captureHostLocks('story-post-related-url-prefix-host-locks-default', 1000)
+    await captureHostLocks('story-post-related-url-prefix-host-locks-maximum', 10_000)
+    await captureBlockedHostnames('story-post-related-url-prefix-hostname-blocks-default', 1000)
+    await captureBlockedHostnames('story-post-related-url-prefix-hostname-blocks-maximum', 10_000)
+    await capturePrune(
+      'story-post-related-url-prune-default',
+      1000,
+      seed.posts[0]!,
+      DEFAULT_LEASE,
+      [...pruneIndexes, ...newestIndexes],
+    )
+    await capturePrune(
+      'story-post-related-url-prune-maximum',
+      10_000,
+      seed.posts[1]!,
+      MAXIMUM_LEASE,
+      [...pruneIndexes, ...newestIndexes],
+    )
+    await captureStoryPostUrlPrefixEffectScenarios([
+      ...pruneIndexes,
+      ...newestIndexes,
+      ...activeReverseIndexes,
+    ])
+  } finally {
+    await restorePrefixItems()
+  }
+}
+
+async function captureAdmission(
+  id: string,
+  cap: number,
+  itemIndexes: readonly string[],
+): Promise<void> {
+  registerScenarioContract(id, {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: itemIndexes,
+        anyOf: true,
+        noSort: true,
+        queryContains: 'getStoryPostRelatedUrlProjectionPrefix',
+      },
+      { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: cap },
+      { kind: 'maxProcessedRows', relation: 'urls', max: cap },
+    ],
+    forbidSequentialScans: ['rss_feed_items', 'urls'],
+    seededRows: { rss_feed_items: RSS_FEED_ITEM_SEED_COUNT },
+    crossPartition: {
+      rss_feed_items:
+        'Story membership can attach items whose ids predate the story, so the prefix can read every item partition.',
+    },
+  })
+  await runAndCapture(
+    id,
+    async () => {
+      const rows = await getStoryPostRelatedUrlProjectionPrefix({
+        storyId: STORY_ID,
+        sourceHighWaterId: HIGH_WATER_ID,
+        limit: cap,
+      })
+      assert.equal(rows.length, cap)
+    },
+    undefined,
+    'getStoryPostRelatedUrlProjectionPrefix',
+  )
+}
+
+async function captureHostLocks(id: string, cap: number): Promise<void> {
+  const urlIds = await prefixUrlIds(cap)
+  registerScenarioContract(id, {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'urls', max: cap },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: cap * URL_HOSTNAME_PROBE_LIMIT },
+    ],
+    forbidSequentialScans: ['urls', 'url_hostnames'],
+  })
+  await using query = await beginTransaction()
+  await runAndCapture(
+    id,
+    () => lockStoryPostRelatedUrlProjectionHostnameBlocks(query, urlIds),
+    undefined,
+    'lockStoryPostRelatedUrlProjectionHostnameBlocks',
+    // Release the callback's advisory locks before EXPLAIN reruns them on another connection.
+    { afterCapture: () => query.rollback() },
+  )
+}
+
+async function captureBlockedHostnames(id: string, cap: number): Promise<void> {
+  const urlIds = await prefixUrlIds(cap)
+  registerScenarioContract(id, {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'urls', max: cap },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: cap * URL_HOSTNAME_PROBE_LIMIT },
+    ],
+    forbidSequentialScans: ['urls', 'url_hostnames'],
+    // An unblocked prefix returns no ids. The scans still have to stay within the cap.
+    allowEmptyResult: true,
+  })
+  await runAndCapture(
+    id,
+    () => blockedUrlIdsForHostnameBlocks(urlIds),
+    undefined,
+    'blockedUrlIdsForHostnameBlocks',
+  )
+}
+
+async function capturePrune(
+  id: string,
+  cap: number,
+  postId: string,
+  leaseToken: string,
+  pruneIndexes: readonly string[],
+): Promise<void> {
+  const liveUrlIds = await activeUrlIds(postId)
+  assert.equal(liveUrlIds.length, cap)
+  const outsidePrefix = liveUrlIds.at(-1)
+  assert.ok(outsidePrefix)
+  // One live story-teller URL stays outside the prefix. Its deleted substitute keeps the admitted length at the cap.
+  const admittedUrlIds = liveUrlIds.slice(0, -1)
+  admittedUrlIds.push(seed.deletedUrl)
+  assert.equal(admittedUrlIds.length, cap)
+  assert.equal(admittedUrlIds.includes(outsidePrefix), false)
+  registerScenarioContract(id, {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: pruneIndexes,
+        anyOf: true,
+        queryContains: 'pruneStoryPostRelatedUrlsOutsidePrefix',
+      },
+      // The heap read is this post's live cap. The update node also counts the row it changes.
+      { kind: 'maxProcessedRows', relation: 'relation__post__related__url', max: cap + 1 },
+    ],
+    forbidSequentialScans: ['relation__post__related__url'],
+    seededRows: { relation__post__related__url: seed.relationRows },
+  })
+  await using query = await beginTransaction()
+  await runAndCapture(
+    id,
+    () =>
+      pruneStoryPostRelatedUrlsOutsidePrefix(
+        query,
+        projectionWork(postId, leaseToken),
+        seed.user,
+        admittedUrlIds,
+      ),
+    undefined,
+    'pruneStoryPostRelatedUrlsOutsidePrefix',
+    // Roll back the callback's row locks before EXPLAIN runs the same update.
+    { afterCapture: () => query.rollback() },
+  )
+}

@@ -98310,6 +98310,40 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__post__related__url__subject__projection_source": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__subject__projection_source ON ONLY public.relation__post__related__url USING btree (subject_id, created_by_id, object_id) WHERE (deleted_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__related__url__trending_topics": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -127839,7 +127873,6 @@
     },
     "story_post_related_url_projection_jobs": {
       "checkConstraints": {
-        "story_post_related_url_projection__limit_reached_capacity_check": "CHECK ((limit_reached_capacity > 0))",
         "story_post_related_url_projection_jobs_check": "CHECK (((lease_token IS NULL) = (leased_at IS NULL)))",
         "story_post_related_url_projection_jobs_check1": "CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL)))",
         "story_post_related_url_projection_jobs_check2": "CHECK (((invalidation_completed_at IS NULL) OR (invalidation_required_at IS NOT NULL)))",
@@ -127854,40 +127887,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18,
-          "type": "timestamp with time zone"
-        },
-        "cursor_prune_id": {
-          "collation": null,
-          "comment": "Relation ID keyset cursor for the stale-relation pruning phase.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "uuid"
-        },
-        "cursor_source_id": {
-          "collation": null,
-          "comment": "RSS item ID keyset cursor for the bounded source projection phase.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "uuid"
-        },
-        "eligibility_completed_at": {
-          "collation": null,
-          "comment": "Time the complete bounded eligibility scan finished before relation replacements; resets the source cursor for the write pass.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "generation": {
@@ -127909,7 +127909,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "invalidation_required_at": {
@@ -127920,7 +127920,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "last_claimed_at": {
@@ -127931,7 +127931,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "lease_expires_at": {
@@ -127942,7 +127942,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -127953,7 +127953,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "leased_at": {
@@ -127964,19 +127964,8 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
-        },
-        "limit_reached_capacity": {
-          "collation": null,
-          "comment": "Capacity at which this generation could not admit its source; a changed capacity restarts it.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11,
-          "type": "integer"
         },
         "post_id": {
           "collation": null,
@@ -127989,26 +127978,15 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "relation_snapshot_at": {
-          "collation": null,
-          "comment": "Wall-clock boundary that excludes relations reactivated after this generation was captured.",
-          "defaultExpression": "clock_timestamp()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        },
         "source_completed_at": {
           "collation": null,
-          "comment": "Time the bounded source projection phase reached its high-water mark.",
+          "comment": "Time this generation committed its prefix admission and projected-row prune.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "story_id": {
@@ -128022,20 +128000,9 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "sweep_upper_bound_relation_id": {
-          "collation": null,
-          "comment": "Relation ID high-water mark that excludes post-capture related links from this generation prune.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "uuid"
-        },
         "sweep_upper_bound_source_id": {
           "collation": null,
-          "comment": "RSS item ID high-water mark that bounds this generation source snapshot.",
+          "comment": "RSS item ID high-water mark that bounds this generation prefix.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -128052,7 +128019,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         }
       },
@@ -128109,7 +128076,7 @@
         "idx_story_post_relate_url_project_jobs__last_claimed_at_post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_story_post_relate_url_project_jobs__last_claimed_at_post_id ON public.story_post_related_url_projection_jobs USING btree (last_claimed_at NULLS FIRST, post_id) WHERE (limit_reached_capacity IS NULL)",
+          "definition": "CREATE INDEX idx_story_post_relate_url_project_jobs__last_claimed_at_post_id ON public.story_post_related_url_projection_jobs USING btree (last_claimed_at NULLS FIRST, post_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -128127,41 +128094,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(limit_reached_capacity IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_story_post_related_url_projection_jobs__limit_capacity": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_story_post_related_url_projection_jobs__limit_capacity ON public.story_post_related_url_projection_jobs USING btree (limit_reached_capacity, last_claimed_at, post_id) WHERE (limit_reached_capacity IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "limit_reached_capacity",
-              "descending": false,
-              "expression": "limit_reached_capacity",
-              "nullsFirst": false,
-              "opclass": "int4_ops"
-            },
-            {
-              "column": "last_claimed_at",
-              "descending": false,
-              "expression": "last_claimed_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(limit_reached_capacity IS NOT NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,

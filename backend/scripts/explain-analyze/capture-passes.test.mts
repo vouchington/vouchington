@@ -58,7 +58,7 @@ describe('EXPLAIN function-call capture', () => {
   })
 
   it('captures cold WAL in both passes and plan modes while preserving rollback', async () => {
-    const scenarioId = 'post-url-replacement-maximum'
+    const scenarioId = 'post-url-capacity-maximum-overcap'
     registerScenarioContract(scenarioId, { expectations: [], walCaptureCondition: 'cold' })
     const fixture = await createExplainWalCaptureFixture(scenarioId)
     const { input } = fixture

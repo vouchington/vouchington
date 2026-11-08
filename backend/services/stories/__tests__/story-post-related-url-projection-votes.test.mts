@@ -13,7 +13,7 @@ import { getSystemUserByUsername, upsertSystemUser } from '@services/users/syste
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
-import { writeStoryPostRelatedUrlProjectionRelations } from '../story-post-related-url-projection-relations.mts'
+import { admitStoryPostRelatedUrlProjectionPrefix } from '../story-post-related-url-projection-relations.mts'
 import {
   decideStoryPostRelatedUrlProjectionRows,
   getStoryPostRelatedUrlProjectionSourcePageForWork,
@@ -32,8 +32,8 @@ describe('story post related URL projection votes', () => {
     const first = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(first.work, first.decisions),
-      ).resolves.toBe(true)
+        admitStoryPostRelatedUrlProjectionPrefix(first.work, first.decisions),
+      ).resolves.toMatchObject({ ok: true })
     } finally {
       await releaseStoryPostRelatedUrlProjectionWork(first.work)
     }
@@ -43,8 +43,8 @@ describe('story post related URL projection votes', () => {
     const restarted = await stageProjectionRelations(post.id)
     try {
       await expect(
-        writeStoryPostRelatedUrlProjectionRelations(restarted.work, restarted.decisions),
-      ).resolves.toBe(true)
+        admitStoryPostRelatedUrlProjectionPrefix(restarted.work, restarted.decisions),
+      ).resolves.toMatchObject({ ok: true })
       expect(crawls.ownedPromises()).toHaveLength(1)
       const storyTeller = await getSystemUserByUsername('story-teller')
       if (!storyTeller) throw new Error('Expected story-teller system user')

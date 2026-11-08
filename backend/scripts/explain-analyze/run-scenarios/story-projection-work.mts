@@ -55,64 +55,16 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
     await releaseStoryPostRelatedUrlProjectionWork(rotated)
     await releaseStoryPostRelatedUrlProjectionWork(heldSecond)
 
-    // Each empty snapshot first completes eligibility without publishing or pruning.
-    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-      processed: 0,
-      continue: true,
-    })
-    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-      processed: 0,
-      continue: true,
-    })
-    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-      processed: 0,
-      continue: true,
-    })
-
-    // NULL source/relation high-water marks are genuine empty snapshots, not skipped effects.
-    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-      processed: 0,
-      continue: true,
-    })
-    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-      processed: 0,
-      continue: true,
-    })
-    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-      processed: 0,
-      continue: true,
-    })
-    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-      processed: 0,
-      continue: true,
-    })
-    const remaining2 = await write<{ count: string }>(
-      `/* storyProjectionDispatcherWitness */ SELECT COUNT(*)::text AS count
-        FROM story_post_related_url_projection_jobs`,
-    )
-    assert.equal(Number(remaining2.rows[0]!.count), 2)
-    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-      processed: 0,
-      continue: true,
-    })
-    const remaining1 = await write<{ count: string }>(
-      `/* storyProjectionDispatcherWitness */ SELECT COUNT(*)::text AS count
-        FROM story_post_related_url_projection_jobs`,
-    )
-    assert.equal(Number(remaining1.rows[0]!.count), 1)
-    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-      processed: 0,
-      continue: false,
-    })
-    const remaining0 = await write<{ count: string }>(
-      `/* storyProjectionDispatcherWitness */ SELECT COUNT(*)::text AS count
-        FROM story_post_related_url_projection_jobs`,
-    )
-    assert.equal(Number(remaining0.rows[0]!.count), 0)
-    assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
-      processed: 0,
-      continue: false,
-    })
+    // A NULL high-water admits an empty prefix and keeps the job. Claims rotate by
+    // last_claimed_at, so each post is admitted before any of them is completed.
+    // The last completion finds nothing left, and the following claim is idle.
+    await assertEmptyPrefixSnapshot(true, 3)
+    await assertEmptyPrefixSnapshot(true, 3)
+    await assertEmptyPrefixSnapshot(true, 3)
+    await assertEmptyPrefixSnapshot(true, 2)
+    await assertEmptyPrefixSnapshot(true, 1)
+    await assertEmptyPrefixSnapshot(false, 0)
+    await assertEmptyPrefixSnapshot(false, 0)
   } finally {
     await removeStoryProjectionDispatcherWitness(fixture)
   }
@@ -167,4 +119,20 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
       [planStoryId],
     )
   }
+}
+
+/** One empty-prefix dispatcher pass and the jobs still waiting after it. */
+async function assertEmptyPrefixSnapshot(
+  expectedContinue: boolean,
+  expectedRemaining: number,
+): Promise<void> {
+  assert.deepEqual(await reconcileStoryPostRelatedUrlProjection(), {
+    processed: 0,
+    continue: expectedContinue,
+  })
+  const remaining = await write<{ count: string }>(
+    `/* storyProjectionDispatcherWitness */ SELECT COUNT(*)::text AS count
+      FROM story_post_related_url_projection_jobs`,
+  )
+  assert.equal(Number(remaining.rows[0]!.count), expectedRemaining)
 }
