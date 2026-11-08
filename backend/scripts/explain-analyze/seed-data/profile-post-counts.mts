@@ -4,7 +4,6 @@ import { contentHash, postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from 
 export const PROFILE_POST_COUNTS_AUTHOR_ID = seedUuid(9_000_000, '01')
 export const PROFILE_POST_COUNT_PER_TYPE = 2_000
 const POST_SERIAL_START = 20_000_000
-const BATCH_SIZE = 500
 
 /** One author's comments exceed the old first-page count while every type stays equally dense. */
 export async function seedProfilePostCounts(): Promise<void> {
@@ -17,32 +16,30 @@ export async function seedProfilePostCounts(): Promise<void> {
      VALUES ($1, 'seed-profile-post-counts') ON CONFLICT (id) DO NOTHING`,
     [PROFILE_POST_COUNTS_AUTHOR_ID],
   )
-  const postTypes = ['review', 'discussion', 'comment'] as const
-  for (const [typeIndex, postType] of postTypes.entries()) {
-    for (let start = 0; start < PROFILE_POST_COUNT_PER_TYPE; start += BATCH_SIZE) {
-      const ids = Array.from({ length: BATCH_SIZE }, (_, index) => {
-        const offset = typeIndex * PROFILE_POST_COUNT_PER_TYPE + start + index
-        return seedUuidAtTimestamp(anchorMs + offset, POST_SERIAL_START + offset)
-      })
-      await transaction(
-        `/* seedProfilePostCountsPosts */ INSERT INTO posts (
+  const offsets = Array.from({ length: PROFILE_POST_COUNT_PER_TYPE * 3 }, (_, offset) => offset)
+  const ids = offsets.map(offset =>
+    seedUuidAtTimestamp(anchorMs + offset, POST_SERIAL_START + offset),
+  )
+  const postTypes = offsets.map(offset =>
+    offset < PROFILE_POST_COUNT_PER_TYPE
+      ? 'review'
+      : offset < PROFILE_POST_COUNT_PER_TYPE * 2
+        ? 'discussion'
+        : 'comment',
+  )
+  const rootIds = offsets.map(offset => (offset >= PROFILE_POST_COUNT_PER_TYPE * 2 ? rootId : null))
+  await transaction(
+    `/* seedProfilePostCountsPosts */ INSERT INTO posts (
           id, post_type, created_via, markdown, created_by_id,
           parent_post_id, root_post_id, approved_at,
           bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256
-        ) SELECT fixture.id, $2::post_types, 'system', 'profile count fixture', $3,
-            $4::uuid, $4::uuid, now(), $5, $5
-          FROM UNNEST($1::uuid[]) AS fixture(id)
+        ) SELECT fixture.id, fixture.post_type, 'system', 'profile count fixture', $3,
+            fixture.root_id, fixture.root_id, now(), $5, $5
+          FROM UNNEST($1::uuid[], $2::post_types[], $4::uuid[])
+            AS fixture(id, post_type, root_id)
           ON CONFLICT (id) DO NOTHING`,
-        [
-          ids,
-          postType,
-          PROFILE_POST_COUNTS_AUTHOR_ID,
-          postType === 'comment' ? rootId : null,
-          hash,
-        ],
-      )
-    }
-  }
+    [ids, postTypes, PROFILE_POST_COUNTS_AUTHOR_ID, rootIds, hash],
+  )
   await transaction.commit()
 }
 
