@@ -96,4 +96,9 @@ export async function seedMembershipExpiryPages(): Promise<void> {
       productId,
     ],
   )
+  await write(
+    `/* seedMembershipExpiryPages:analyze */ ANALYZE memberships, membership_sources,
+     membership_source_states, membership_grants, membership_grant_activation_periods,
+     membership_changes, membership_entitlement_effects`,
+  )
 }

@@ -1,4 +1,3 @@
-import { runMembershipExpiryPageScenarios } from './membership-expiry-pages.mts'
 import { write } from '@data-stores/psql'
 import { getElapsedMembershipUserIdsBatch } from '@services/memberships/grants/expire-elapsed-batch'
 import { dispatchDuePauseCollectionWork } from '@services/memberships/pause-collection/dispatch'
@@ -7,7 +6,6 @@ import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 
 export async function runMembershipWorkSelectionScenarios(): Promise<void> {
-  await runMembershipExpiryPageScenarios()
   await write(
     `/* seedExplainMembershipExpiry */ UPDATE memberships
      SET expires_at = NOW() - INTERVAL '1 day'

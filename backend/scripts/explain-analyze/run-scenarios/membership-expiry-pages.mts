@@ -9,11 +9,14 @@ import {
   EXPIRY_PAGE_MEMBERSHIP_IDS,
   EXPIRY_PAGE_CLOSED_ACTIVATIONS,
   EXPIRY_PAGE_USER_IDS,
+  seedMembershipExpiryPages,
 } from '../seed-data/membership-expiry-pages.mts'
 
 const PAGE_CHANGES = 2 // One expiration and one replacement per current-projection page.
 
 export async function runMembershipExpiryPageScenarios(): Promise<void> {
+  // Seed after the ordinary aggregate plans, so their established corpus and gates stay intact.
+  await seedMembershipExpiryPages()
   const { rows } = await read<{
     id: string
     user_id: string
