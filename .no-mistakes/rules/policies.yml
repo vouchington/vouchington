@@ -4492,7 +4492,6 @@
 - name: Actions inline scripts stay short
   rule: github-actions-max-inline-script-lines
   scope: repository
-  severity: advisory
   options:
     maxLines: 3
 

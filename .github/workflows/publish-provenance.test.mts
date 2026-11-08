@@ -25,12 +25,14 @@ const readWorkflow = (path: string): [string, Workflow] => {
 const cases = [
   {
     path: '.github/workflows/publish-backend-images.yml',
+    script: '.github/actions/build-backend-images/publish-images.sh',
     caller: '.github/workflows/main-backend.yml',
     subjects: ['api', 'worker-cpu', 'worker-io'],
     outputs: ['api_digest', 'worker_cpu_digest', 'worker_io_digest'],
   },
   {
     path: '.github/workflows/publish-web-images.yml',
+    script: '.github/actions/build-web-images/publish-image.sh',
     caller: '.github/workflows/main-web.yml',
     subjects: ['web'],
     outputs: ['web_digest'],
@@ -62,8 +64,10 @@ describe.each(cases)('$path image provenance', config => {
   it('exports each push digest and attests it after the push', () => {
     const publish = steps[publishIndex]
     expect(publish?.if).toContain('success()')
-    expect(publish?.run).toContain('GITHUB_OUTPUT')
-    for (const output of config.outputs) expect(publish?.run).toContain(output)
+    expect(publish?.run).toBe(`bash --noprofile --norc -e -o pipefail ${config.script}`)
+    const script = readFileSync(config.script, 'utf8')
+    expect(script).toContain('GITHUB_OUTPUT')
+    for (const output of config.outputs) expect(script).toContain(output)
 
     const attestations = steps.filter(step => step.uses?.startsWith('actions/attest@'))
     expect(attestations).toHaveLength(config.subjects.length)

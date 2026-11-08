@@ -96,7 +96,7 @@ runs:
         IMAGE_TAG: ${{ env.SHA_TAG }}
       run: 'source "$GITHUB_ACTION_PATH/report-image-size.sh"'
 
-    - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@102b3d948645b8f6ad9fc361d8681bfc55081551 # v0.85.1
+    - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@90e878e740edd47d19dae5d0dd28866afd719a01 # v0.85.3
     - name: Run Docker smoke test
       shell: bash
       env:
@@ -126,60 +126,13 @@ runs:
       env:
         IMAGE_TAG: ${{ env.SHA_TAG }}
         TRIVY_FINDINGS_EXIT_CODE: '10'
-      run: |
-        set -euo pipefail
-        image="$IMAGE_REPOSITORY/web:$IMAGE_TAG"
-        trivy_exit=0
-        trivy image \
-          --scanners vuln \
-          --quiet \
-          --pkg-types os \
-          --skip-db-update \
-          --exit-code "$TRIVY_FINDINGS_EXIT_CODE" \
-          --severity CRITICAL,HIGH \
-          --ignore-unfixed \
-          --ignorefile .trivyignore.yaml \
-          --format table \
-          --table-mode detailed \
-          --output trivy-web-os-table.txt \
-          "$image" 2> trivy-web-os-stderr.txt || trivy_exit=$?
-        if [ "$trivy_exit" -eq "$TRIVY_FINDINGS_EXIT_CODE" ]; then
-          echo "::error title=Trivy OS vulnerability findings::CRITICAL/HIGH fixable OS vulnerabilities were found in $image."
-          {
-            echo "## Trivy OS Package Scan — Web"
-            echo ""
-            echo "⚠️ CRITICAL/HIGH fixable OS vulnerabilities were found."
-            echo ""
-            echo '```'
-            cat trivy-web-os-table.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          cat trivy-web-os-table.txt
-          exit "$trivy_exit"
-        elif [ "$trivy_exit" -ne 0 ]; then
-          echo "::error title=Trivy scanner error::Trivy could not complete the OS package scan for $image (exit $trivy_exit)."
-          echo "✗ Trivy scanner error while scanning OS packages in $image (exit $trivy_exit)"
-          cat trivy-web-os-stderr.txt >&2
-          exit "$trivy_exit"
-        fi
+      run: 'source "$GITHUB_ACTION_PATH/trivy-scan.sh"'
 
     - name: Generate web SBOM
       shell: bash
       env:
         IMAGE_TAG: ${{ env.SHA_TAG }}
-      run: |
-        # Gating already happened in "Scan OS packages in web image with Trivy" above; this step
-        # only runs once that step has passed, so an exit-code/severity filter
-        # here can never trigger. Keep the SBOM free of vulnerability filters so it
-        # remains a complete OS and language package component inventory for the
-        # uploaded artifact, not a truncated gate report.
-        trivy image \
-          --quiet \
-          --skip-db-update \
-          --exit-code 0 \
-          --format cyclonedx \
-          --output sbom-web.cdx.json \
-          "$IMAGE_REPOSITORY/web:$IMAGE_TAG"
+      run: 'source "$GITHUB_ACTION_PATH/trivy-sbom.sh"'
 
     - name: Upload Trivy artifacts
       if: ${{ !cancelled() }}

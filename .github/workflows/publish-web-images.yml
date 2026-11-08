@@ -83,7 +83,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@bd89d56c941ff4aa3b3c09edf1eb597ab93f1718 # v0.85.2
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@90e878e740edd47d19dae5d0dd28866afd719a01 # v0.85.3
         timeout-minutes: 2
         with:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
@@ -117,50 +117,7 @@ jobs:
           IMAGE_TAG: ${{ env.SHA_TAG }}
           REGISTRY_PASSWORD: ${{ github.token }}
           REGISTRY_USERNAME: ${{ github.actor }}
-        run: |
-          set -euo pipefail
-
-          printf '%s' "$REGISTRY_PASSWORD" |
-            docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
-
-          local_image="$IMAGE_REPOSITORY/web:$IMAGE_TAG"
-          remote_image="$GHCR_NAMESPACE/web:$IMAGE_TAG"
-          docker tag "$local_image" "$remote_image"
-
-          # GHCR intermittently rejects a push with "unknown blob". Re-pushing the same local image
-          # is idempotent -- uploaded layers are skipped and the tag still names the tested image --
-          # so a few short, bounded attempts replace an ejected merge-queue run. A healthy push
-          # takes about ten seconds.
-          #
-          # The digest is read back from the push output rather than from `docker image
-          # inspect`, whose RepoDigests can carry entries for other repositories.
-          for attempt in 1 2 3; do
-            if push_output=$(timeout 75 docker push "$remote_image"); then
-              break
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              echo "::error::docker push of $remote_image failed after $attempt attempts."
-              exit 1
-            fi
-            echo "::warning::docker push attempt $attempt failed; retrying."
-            sleep $((attempt * 5))
-          done
-          printf '%s\n' "$push_output"
-          digest=$(printf '%s\n' "$push_output" |
-            sed -n 's/.*[[:space:]]digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' | head -1)
-          if [ -z "$digest" ]; then
-            echo "::error::$remote_image was pushed but no digest could be read back."
-            exit 1
-          fi
-
-          printf 'web_digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
-
-          echo "✓ published $remote_image ($digest)"
-          {
-            echo "## Published web image"
-            echo ""
-            echo "- \`$remote_image\` — \`$digest\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: bash --noprofile --norc -e -o pipefail .github/actions/build-web-images/publish-image.sh
 
       - name: Attest web image provenance
         timeout-minutes: 2
