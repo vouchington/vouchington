@@ -15,8 +15,9 @@ import {
   applyTopicAliasUnlinkPageForTest as applyTopicAliasUnlinkPage,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { createTopicAliases, createUnlinkedTopicAlias, unlinkTopicAlias } from '../aliases.mts'
+import { createTopicAliases, unlinkTopicAlias } from '../aliases.mts'
 import { getTopicAliasIdByKey } from '../get-topic-aliases.mts'
 import {
   recoverTopicAliasUnlinks,
@@ -34,7 +35,6 @@ describe('topic alias unlink recovery', () => {
     onTestFinished(restore)
     const user = await createTestUser({ administrator: true })
     const topic = await createTestTopic({ user, name: `Recover unlink ${crypto.randomUUID()}` })
-    const anchor = await createUnlinkedTopicAlias(`#recover-anchor-${crypto.randomUUID()}`)
     const aliases = await createTopicAliases(topic.id, [
       `recover a ${crypto.randomUUID()}`,
       `recover b ${crypto.randomUUID()}`,
@@ -44,11 +44,16 @@ describe('topic alias unlink recovery', () => {
     )
     const [first] = aliases.toSorted((a, b) => a.id.localeCompare(b.id))
 
-    await recoverTopicAliasUnlinks(anchor.id)
-
     await using lookup = await beginTransaction()
     const page = await selectTopicAliasUnlinkNextPage(lookup, first!.id, false)
     await lookup.rollback()
+    const pageJobId = `unlink-topic-alias__${page.topicAliasId}__${page.phase}__${page.pageCursor}`
+    const initialJob = await rssFeedMaintenance.getJob(pageJobId)
+    expect(initialJob).not.toBeNull()
+    await initialJob!.remove()
+
+    await recoverTopicAliasUnlinks(uuidBefore(first!.id))
+
     await expect(
       rssFeedMaintenance.getJob(
         `unlink-topic-alias__${page.topicAliasId}__${page.phase}__${page.pageCursor}`,
