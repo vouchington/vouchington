@@ -628,6 +628,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_referral_program_active_link_count(
  LANGUAGE plpgsql
 ```
 
+## `fn_project_referral_program_link_counts`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_referral_program_link_counts()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_refresh_rss_feed_item_unmapped_category_count`
 
 ```sql
@@ -728,6 +736,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_user_profile_image_placement()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_refresh_referral_program_link_counts_on_topic_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_refresh_referral_program_link_counts_on_topic_lifecycle()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

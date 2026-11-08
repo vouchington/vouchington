@@ -33,11 +33,11 @@ _none_
 
 **Indexes:**
 
-- `idx_referral_program_topics__active_link_count__topic_id`: `CREATE INDEX idx_referral_program_topics__active_link_count__topic_id ON public.referral_program_topics USING btree (active_link_count DESC, topic_id DESC) WHERE ((enabled_at IS NOT NULL) AND (disabled_at IS NULL))`
 - `idx_referral_program_topics__company_topic_id__topic_id`: `CREATE INDEX idx_referral_program_topics__company_topic_id__topic_id ON public.referral_program_topics USING btree (company_topic_id, topic_id) WHERE (company_topic_id IS NOT NULL)`
 - `referral_program_topics_pkey`: `CREATE UNIQUE INDEX referral_program_topics_pkey ON public.referral_program_topics USING btree (topic_id)`
 
 **Triggers:**
 
 - `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')`
+- `trigger_project_referral_program_link_counts`: `CREATE TRIGGER trigger_project_referral_program_link_counts AFTER INSERT OR UPDATE OF active_link_count, enabled_at, disabled_at ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_project_referral_program_link_counts()`
 - `trigger_referral_program_topics_updated_at`: `CREATE TRIGGER trigger_referral_program_topics_updated_at BEFORE UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
