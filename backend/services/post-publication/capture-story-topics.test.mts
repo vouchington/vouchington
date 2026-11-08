@@ -12,7 +12,7 @@ import { recordStoryTopicPublicationChanges } from './capture-story-topics.mts'
 import { postPublicationWorkConfig } from './work-limits.mts'
 
 describe('story publication capture pages', () => {
-  it('captures every story and merges repeated impacts across bounded lock pages', async () => {
+  it('captures every story and merges repeated impacts without locking read context', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, { capture_batch_size: 2 }),
     )
@@ -39,7 +39,7 @@ describe('story publication capture pages', () => {
         await query.commit()
       })
     })
-    expect(countCapturedQueriesByAnnotation(queries, 'lockStoryTopicPublicationCaptures')).toBe(2)
+    expect(countCapturedQueriesByAnnotation(queries, 'lockStoryTopicPublicationCaptures')).toBe(0)
     expect(jobs).toHaveLength(3)
     for (const [index, storyId] of storyIds.entries()) {
       expect(jobs.find(job => job.scope.id === storyId)?.keys).toEqual(

@@ -11,9 +11,11 @@ import {
   createTopHashtagPostSourceForTest,
   createTopHashtagRssSourceForTest,
   getPostHashtagSourcesForTest,
+  getTestRssFeedItemCategoryAliasIds,
   insertTestRssFeedDirect,
   applyTopicAliasUnlinkPageForTest as applyTopicAliasUnlinkPage,
 } from '@voucha/test-helpers'
+import { answerPostgresWritesForTest } from '@voucha/test-helpers/injected-failures'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { describe, expect, it, onTestFinished } from 'vitest'
@@ -23,7 +25,6 @@ import {
   recoverTopicAliasUnlinks,
   selectTopicAliasUnlinkNextPage,
 } from '../unlink-topic-alias-page.mts'
-import { deleteTopicAliasUnlinkPhase } from '../unlink-topic-alias-phase.mts'
 
 const NO_MORE_ALIASES = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 
@@ -124,6 +125,31 @@ describe('topic alias unlink recovery', () => {
     await expect(getTopicAliasIdByKey(alias.alias)).resolves.toBeUndefined()
   })
 
+  it('continues a stale finalize page when a child relation remains', async () => {
+    const user = await createTestUser({ administrator: true })
+    const topic = await createTestTopic({ user, name: `Finalization guard ${crypto.randomUUID()}` })
+    const [alias] = await createTopicAliases(topic.id, `finalize-guard-${crypto.randomUUID()}`)
+    if (!alias) throw new Error('Expected ordinary alias')
+    const post = await createTestPost({ user, title: `Late alias child ${crypto.randomUUID()}` })
+    await createActivePostTopicAliasRelationForTest({
+      postId: post.id,
+      topicAliasId: alias.id,
+      userId: user.id,
+    })
+    await unlinkTopicAlias(alias.id, { expectedTopicId: topic.id })
+
+    await expect(
+      applyTopicAliasUnlinkPage({
+        topicAliasId: alias.id,
+        phase: 'finalize',
+        pageCursor: 'finalize',
+      }),
+    ).resolves.toMatchObject({
+      topicAliasId: alias.id,
+      phase: 'post_relations',
+    })
+  })
+
   it('drains rss item relations after the categories', async () => {
     const user = await createTestUser({ administrator: true })
     const topic = await createTestTopic({ user, name: `Unlink rss ${crypto.randomUUID()}` })
@@ -147,23 +173,29 @@ describe('topic alias unlink recovery', () => {
     await expect(getTopicAliasIdByKey(alias.alias)).resolves.toBeUndefined()
   })
 
-  it.each(['post_sources', 'post_relations', 'rss_item_categories', 'rss_item_relations'] as const)(
-    'returns nothing for a stale %s cursor',
-    async phase => {
-      await using transaction = await beginTransaction()
-      const alias = {
-        id: crypto.randomUUID(),
-        alias: 'stale',
-        unlink_topic_id: crypto.randomUUID(),
-      }
+  it('keeps item categories when the staged page no longer matches the live cursor', async () => {
+    const user = await createTestUser({ administrator: true })
+    const topic = await createTestTopic({ user, name: `Unlink staged ${crypto.randomUUID()}` })
+    const [alias] = await createTopicAliases(topic.id, `staged alias ${crypto.randomUUID()}`)
+    if (!alias) throw new Error('Expected ordinary alias')
+    const feed = await insertTestRssFeedDirect({ topicId: topic.id })
+    const item = await createTestRssFeedItemWithUrl(feed.id)
+    await createTopHashtagRssSourceForTest({
+      rssFeedItemId: item.id,
+      topicAliasId: alias.id,
+      authoredToken: `staged-${crypto.randomUUID()}`,
+    })
+    await unlinkTopicAlias(alias.id, { expectedTopicId: topic.id })
+    await using lookup = await beginTransaction()
+    const page = await selectTopicAliasUnlinkNextPage(lookup, alias.id, false)
+    await lookup.rollback()
+    expect(page.phase).toBe('rss_item_categories')
 
-      await expect(
-        deleteTopicAliasUnlinkPhase(transaction, alias, {
-          topicAliasId: alias.id,
-          phase,
-          pageCursor: 'stale',
-        }),
-      ).resolves.toEqual({ postIds: [], rssFeedItemIds: [] })
-    },
-  )
+    // The staging read ran before the live rows changed, so it no longer holds this page.
+    onTestFinished(answerPostgresWritesForTest('stageTopicAliasUnlinkItemCategories', [[]]))
+    await expect(applyTopicAliasUnlinkPage(page)).resolves.toEqual(page)
+
+    const rows = await getTestRssFeedItemCategoryAliasIds(item.id)
+    expect(rows).toEqual([{ topic_alias_id: alias.id }])
+  })
 })

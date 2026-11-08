@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestTopic,
   createTestTopicAliasForCategoryMapping,
@@ -8,7 +8,7 @@ import {
   deleteTestPostStory,
   getTopicAliasIdForTest,
   insertTestPost,
-  insertTestPostStoryAndWaitBeforeCommit,
+  insertTestPostStory,
   insertTestRssFeedItem,
   insertTestStoryCategoryPublicationBatch,
   insertTestStory,
@@ -23,14 +23,13 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
-import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
+import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import { prepareStoryPost } from '../story-posts.mts'
 import { recordTestStoryTopicPublicationChange } from '@voucha/test-helpers/post-publication-fixtures'
 import {
   captureAddedPublicationEffectsForScope,
   captureAddedPublicationEffectsForScopes,
 } from '@voucha/test-helpers/publication-effect-jobs'
-import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 
 let feedId: string
 let urlId: string
@@ -193,7 +192,7 @@ describe('RSS category story-post publication', () => {
     })
   })
 
-  it('re-reads a story-post association committed by concurrent story creation', async () => {
+  it('captures a committed story-post association while a reader holds the story lock', async () => {
     const story = await insertTestStory({ title: `Concurrent story ${Math.random()}` })
     const suffix = Math.random().toString(36).slice(2)
     const data = { title: `Concurrent item ${suffix}`, link: `https://example.com/${suffix}` }
@@ -215,48 +214,17 @@ describe('RSS category story-post publication', () => {
     const topic = await createTestTopic({ user })
     const alias = `rss-category-concurrent-${suffix}`
     await createTestTopicAliasForCategoryMapping({ alias, topicId: topic.id })
-    const releaseCreation = Promise.withResolvers<void>()
-    const associationInserted = Promise.withResolvers<void>()
-    const creating = insertTestPostStoryAndWaitBeforeCommit(
-      postId,
-      story.id,
-      user.id,
-      releaseCreation.promise,
-      associationInserted.resolve,
+    await insertTestPostStory(postId, story.id, user.id)
+    await using holder = await beginTransaction()
+    await lockStoryLifecycles(holder, [story.id])
+    const jobs = await captureAddedPublicationEffectsForScope(story.id, () =>
+      upsertRssFeedItemCategories([{ rss_feed_item_id: itemId, categories: [alias] }]),
     )
-    let capturing: Promise<PostPublicationEffectsJobData[]> | undefined
-    try {
-      await associationInserted.promise
-      const lockStories = storyLifecycleLock.lockStoryLifecycles
-      const entered = Promise.withResolvers<void>()
-      const lifecycleSpy = vi
-        .spyOn(storyLifecycleLock, 'lockStoryLifecycles')
-        .mockImplementation((query, storyIds) => {
-          if (storyIds.includes(story.id)) entered.resolve()
-          return lockStories(query, storyIds)
-        })
-      capturing = captureAddedPublicationEffectsForScope(story.id, () =>
-        upsertRssFeedItemCategories([{ rss_feed_item_id: itemId, categories: [alias] }]),
-      )
-      try {
-        await entered.promise
-        await using probe = await beginTransaction()
-        await probe(`/* testRssCategoryPublication */ SET LOCAL lock_timeout = '50ms'`)
-        await expect(lockStories(probe, [story.id])).rejects.toMatchObject({ code: '55P03' })
-      } finally {
-        lifecycleSpy.mockRestore()
-      }
-      releaseCreation.resolve()
-      const [, jobs] = await Promise.all([creating, capturing])
-      expect(jobs.flatMap(job => job.keys)).toContainEqual({
-        kind: 'impact_post',
-        uuidValue: postId,
-      })
-    } finally {
-      releaseCreation.resolve()
-      await creating.catch(() => undefined)
-      await capturing?.catch(() => undefined)
-    }
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_post',
+      uuidValue: postId,
+    })
+    await holder.commit()
   })
   it('captures the full 500-row category writer batch without per-story loops', async () => {
     const topic = await createTestTopic({ user })

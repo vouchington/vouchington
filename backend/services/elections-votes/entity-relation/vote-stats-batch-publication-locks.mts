@@ -1,14 +1,6 @@
 import { assertWhitelistedSqlIdentifier, type TransactionQuery } from '@data-stores/psql'
-import {
-  isPostScopedPublicationRelationTable,
-  isRssFeedItemTopicAliasPublicationRelationTable,
-  isTopicPublisherTypePublicationRelationTable,
-} from '@services/entity-relations'
-import {
-  lockPostPublicationPostScopes,
-  lockTopicAliasPublicationScopes,
-  lockTopicRssFeedPublicationScopes,
-} from '@services/post-publication'
+import { isPostScopedPublicationRelationTable } from '@services/entity-relations'
+import { lockPostPublicationPostScopes } from '@services/post-publication'
 import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqueues/types-elections'
 import sql from 'sql-template-strings'
 import { entityRelationElectionTables } from './target.mts'
@@ -20,10 +12,7 @@ export async function lockEntityRelationVoteStatsPostPublicationScopes(
   relationIds: readonly string[],
 ): Promise<void> {
   const locksPostScopes = isPostScopedPublicationRelationTable(relationTable)
-  const locksAliasScopes = isRssFeedItemTopicAliasPublicationRelationTable(relationTable)
-  const locksTopicFeedScopes = isTopicPublisherTypePublicationRelationTable(relationTable)
-  if ((!locksPostScopes && !locksAliasScopes && !locksTopicFeedScopes) || relationIds.length === 0)
-    return
+  if (!locksPostScopes || relationIds.length === 0) return
   const table = assertWhitelistedSqlIdentifier(
     relationTable,
     entityRelationElectionTables,
@@ -40,15 +29,5 @@ export async function lockEntityRelationVoteStatsPostPublicationScopes(
     await lockPostPublicationPostScopes(
       query,
       rows.map(row => row.subject_id),
-    )
-  if (locksAliasScopes)
-    await lockTopicAliasPublicationScopes(
-      query,
-      [...new Set(rows.map(row => row.object_id))].toSorted(),
-    )
-  if (locksTopicFeedScopes)
-    await lockTopicRssFeedPublicationScopes(
-      query,
-      [...new Set(rows.map(row => row.subject_id))].toSorted(),
     )
 }

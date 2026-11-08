@@ -3,8 +3,6 @@ import {
   beginTransaction,
   captureScopedTestQueries,
   countCapturedQueriesByAnnotation,
-  createActivePostTopicAliasRelationForTest,
-  createTestPost,
   createTestTopic,
   createTestUser,
   insertTestPost,
@@ -14,10 +12,8 @@ import {
 import { captureAddedPublicationEffectsForScopes } from '@voucha/test-helpers/publication-effect-jobs'
 import {
   deleteTestPostRow,
-  deleteTestTopicAlias,
   readTestPostPreimageForUpdate,
 } from '../../test-helpers/publication-test-queries.mts'
-import { createTopicAliases } from '../topics/aliases.mts'
 import { enqueuePostPublicationEffects } from '@queues/post-publication/enqueues'
 import { backgroundQueue as postPublicationQueue } from '@voucha/test-helpers/shared-background-queue'
 import { describe, expect, it, onTestFinished } from 'vitest'
@@ -26,7 +22,6 @@ import { capturedPublicationKeys, hashCapturedPublicationKeys } from './captured
 import { recordPostPublicationChange } from './capture.mts'
 import { lockPostPublicationPostScopes, recordPostPublicationChanges } from './capture-posts.mts'
 import { postPublicationWorkConfig } from './work-limits.mts'
-import { captureDestroyedTopicAliasPostImpacts } from './capture-topic-alias.mts'
 import type { PostPublicationChange } from './types.mts'
 
 function effectPayload(
@@ -96,40 +91,6 @@ describe('direct post-publication capture', () => {
       const matchingJob = jobs.find(candidateJob => candidateJob.scope.id === postId)
       expect(matchingJob?.keys).toContainEqual({ kind: 'impact_post', uuidValue: postId })
     }
-  })
-
-  it('retains a source-less alias relation before its delete cascade', async () => {
-    const user = await createTestUser({ administrator: true })
-    const topic = await createTestTopic({ user, name: `Alias preimage ${randomUUID()}` })
-    const [alias] = await createTopicAliases(topic.id, `ordinary preimage ${randomUUID()}`)
-    if (!alias) throw new Error('Expected ordinary alias')
-    const post = await createTestPost({ user, title: `Alias member ${randomUUID()}` })
-    await createActivePostTopicAliasRelationForTest({
-      postId: post.id,
-      topicAliasId: alias.id,
-      userId: user.id,
-    })
-
-    await using query = await beginTransaction()
-    const changeId = await recordPostPublicationChange(query, {
-      scope: { type: 'topic_alias', topicAliasId: alias.id },
-      reason: 'post_topics_changed',
-      impactedTopicIds: [topic.id],
-      topicAliasText: alias.alias,
-    })
-    await captureDestroyedTopicAliasPostImpacts(query, changeId, alias.id)
-    await deleteTestTopicAlias(query, alias.id)
-    await query.commit()
-
-    const keys = [{ kind: 'impact_post' as const, uuidValue: post.id }]
-    const job = (await effectJobs(changeId)).find(candidate =>
-      (candidate.data as PostPublicationEffectsJobData).keys.some(
-        key => key.kind === 'impact_post' && key.uuidValue === post.id,
-      ),
-    )
-    if (!job) throw new Error('Expected captured alias effect')
-    onTestFinished(async () => job.remove())
-    expect(job.data).toMatchObject({ keys })
   })
 
   it('keeps every captured predelete key without a receipt after its row is removed', async () => {

@@ -25,12 +25,14 @@ import {
   insertTestRssFeedDirect,
   holdTestEntityRelationVoteLock,
   setTestRssFeedItemCategoryTopicId,
-  withFailingTransactionQueryOptionsForTest,
   finishTopicAliasUnlinkForTest,
-  applyTopicAliasUnlinkPageForTest,
   beginTransaction,
 } from '@voucha/test-helpers'
-import { selectTopicAliasUnlinkNextPage } from '@services/topics/unlink-topic-alias-page'
+import {
+  applyTopicAliasUnlinkPage,
+  selectTopicAliasUnlinkNextPage,
+} from '@services/topics/unlink-topic-alias-page'
+import { clearTopicAliasUnlinkCategoryPage } from '../clear-unlinked-topic-alias-categories.mts'
 import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
 
 describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
@@ -72,13 +74,13 @@ describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
     await lookup.rollback()
     expect(page.phase).toBe('rss_item_categories')
     await expect(
-      withFailingTransactionQueryOptionsForTest(
-        'updateEntityRelationElectionVoteStatsFromPrimaryBatch',
-        options => applyTopicAliasUnlinkPageForTest(page, options),
-      ),
-    ).rejects.toThrow(
-      'Injected query failure for updateEntityRelationElectionVoteStatsFromPrimaryBatch',
-    )
+      applyTopicAliasUnlinkPage(page, {
+        clearItemCategoryPage: async (...args) => {
+          await clearTopicAliasUnlinkCategoryPage(...args)
+          throw new Error('Injected failure after alias category clearing')
+        },
+      }),
+    ).rejects.toThrow('Injected failure after alias category clearing')
 
     await expect(getTestRssFeedItemCategories(item!.id)).resolves.toContainEqual(
       expect.objectContaining({ category_text: categoryText, topic_id: topic.id }),

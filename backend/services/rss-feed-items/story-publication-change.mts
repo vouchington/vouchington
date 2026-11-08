@@ -1,3 +1,4 @@
+/* oxlint-disable no-await-in-loop -- Sequential bounded batches preserve lock order and cap query inputs. */
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import {
@@ -5,7 +6,6 @@ import {
   recordRssFeedTopicPublicationChanges,
   recordStoryTopicPublicationChanges,
 } from '@services/post-publication'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 
 type CategoryTopicChange = {
   rss_feed_item_id: string
@@ -20,10 +20,13 @@ export async function lockRssFeedItemsForStoryPublicationChanges(
 ): Promise<void> {
   const STORY_CATEGORY_ITEM_BATCH_SIZE = getRssFeedItemsWorkLimit('story_category_item_batch_size')
   const ids = [...new Set(itemIds)].toSorted()
+  // Retain these writer lock helpers for category backfill callers.
+  // Alias unlink only records effects and does not call this helper.
+  // Input chunks keep every discovery and lock statement bounded.
   const rssFeedIds = new Set<string>()
   for (let offset = 0; offset < ids.length; offset += STORY_CATEGORY_ITEM_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + STORY_CATEGORY_ITEM_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- every feed discovery query is item-batch bounded.
+    // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.
     const { rows } = await query<{ rss_feed_id: string }>(
       `/* getRssFeedScopesForCategoryPublicationLocks */
       SELECT DISTINCT rss_feed_id FROM rss_feed_item_sources
@@ -35,7 +38,7 @@ export async function lockRssFeedItemsForStoryPublicationChanges(
   await lockPostPublicationRssFeedScopes(query, [...rssFeedIds])
   for (let offset = 0; offset < ids.length; offset += STORY_CATEGORY_ITEM_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + STORY_CATEGORY_ITEM_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- ascending batches preserve global item lock order.
+    // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.
     await query(
       `/* lockRssFeedItemsForStoryPublicationChanges */
       SELECT id FROM rss_feed_items WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
@@ -47,39 +50,23 @@ export async function lockRssFeedItemsForStoryPublicationChanges(
 /**
  * Coalesces category topic remaps by story without refreshing an unbounded story projection in
  * the category writer's transaction. The publication reconciler owns that later projection refresh.
- * Callers hold `lockRssFeedItemsForStoryPublicationChanges` for every changed item before they
- * write the category rows, so this capture does not repeat the feed-scope and item locks.
+ * Publication context is read without locking the stories, feeds, or items it describes.
  */
 export async function recordStoryPublicationChangesForCategoryTopics(
   query: TransactionQuery,
   changes: readonly CategoryTopicChange[],
 ): Promise<void> {
-  const STORY_CATEGORY_ITEM_BATCH_SIZE = getRssFeedItemsWorkLimit('story_category_item_batch_size')
   const STORY_CATEGORY_CHANGE_BATCH_SIZE = getRssFeedItemsWorkLimit(
     'story_category_change_batch_size',
   )
   const topicChanges = changes.filter(change => change.previous_topic_id !== change.topic_id)
   if (topicChanges.length === 0) return
 
-  const itemIds = [...new Set(topicChanges.map(change => change.rss_feed_item_id))].toSorted()
-  const affectedStoryIds = new Set<string>()
-  for (let offset = 0; offset < itemIds.length; offset += STORY_CATEGORY_ITEM_BATCH_SIZE) {
-    const batch = itemIds.slice(offset, offset + STORY_CATEGORY_ITEM_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- every discovery query is capped at STORY_CATEGORY_ITEM_BATCH_SIZE.
-    const { rows } = await query<{ story_id: string }>(
-      `/* getStoriesForCategoryPublicationLocks */
-      SELECT DISTINCT story_id FROM rss_feed_items
-      WHERE id = ANY($1::uuid[]) AND story_id IS NOT NULL ORDER BY story_id`,
-      [batch],
-    )
-    for (const row of rows) affectedStoryIds.add(row.story_id)
-  }
-  await lockStoryLifecycles(query, [...affectedStoryIds])
   const impactsByStory = new Map<string, { postIds: Set<string>; topicIds: Set<string> }>()
   const topicIdsByRssFeed = new Map<string, Set<string>>()
   for (let offset = 0; offset < topicChanges.length; offset += STORY_CATEGORY_CHANGE_BATCH_SIZE) {
     const batch = topicChanges.slice(offset, offset + STORY_CATEGORY_CHANGE_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- every association re-read is capped at STORY_CATEGORY_CHANGE_BATCH_SIZE.
+    // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.
     const { rows } = await query<{
       post_ids: string[]
       story_id: string
@@ -119,7 +106,7 @@ export async function recordStoryPublicationChangesForCategoryTopics(
       for (const topicId of row.topic_ids ?? []) impacts.topicIds.add(topicId)
       impactsByStory.set(row.story_id, impacts)
     }
-    // oxlint-disable-next-line no-await-in-loop -- every unclustered feed-impact query is change-batch bounded.
+    // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.
     const feedImpacts = await query<{ rss_feed_id: string; topic_ids: string[] }>(
       `/* recordUnclusteredRssFeedPublicationChangesForCategoryTopics */
       WITH changed_categories AS (

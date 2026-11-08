@@ -50,7 +50,7 @@ export async function recoverTopicAliasUnlinks(afterId: string | null): Promise<
           -- no-mistakes-disable-next-line postgres-required-predicates: unlink drains soft-deleted alias edges before the alias row can go
           FROM relation__post__category__topic_alias relation
           WHERE relation.object_id = input.id
-          ORDER BY relation.subject_id, relation.id
+          ORDER BY relation.subject_id
           LIMIT 1
         )
         UNION ALL
@@ -61,7 +61,7 @@ export async function recoverTopicAliasUnlinks(afterId: string | null): Promise<
             3 AS ord
           FROM rss_feed_item_categories category
           WHERE category.topic_alias_id = input.id
-          ORDER BY category.rss_feed_item_id DESC, category.category_identity_id
+          ORDER BY category.rss_feed_item_id DESC, category.category_identity_id DESC
           LIMIT 1
         )
         UNION ALL
@@ -69,7 +69,7 @@ export async function recoverTopicAliasUnlinks(afterId: string | null): Promise<
           SELECT 'rss_item_relations' AS phase, relation.id::text AS page_cursor, 4 AS ord
           FROM relation__rss_feed_item__category__topic_alias relation
           WHERE relation.object_id = input.id
-          ORDER BY relation.subject_id, relation.id
+          ORDER BY relation.subject_id
           LIMIT 1
         )
       ) candidate

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
+  beginTransaction,
   createTestPost,
   createTestTopic,
   getEntityRelation,
@@ -12,6 +13,9 @@ import {
   insertUnlinkedTopicAliasForTest,
   setTestEntityRelationIdAndScore,
 } from '@voucha/test-helpers'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
+import { capturePublisherFeedPublicationJobs } from '@voucha/test-helpers/publisher-feed-publication-jobs'
+import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { observeTestEntityRelationVoteStatsLock } from '@voucha/test-helpers/entity-relation-vote-stats-locks'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
@@ -77,7 +81,7 @@ describe('entity relation vote stats batch locking', () => {
     expect(proof.publicationLockHeld).toBe(true)
   })
 
-  it('locks an RSS item hashtag alias scope before waiting on a target relation row', async () => {
+  it('updates RSS alias relation stats and captures the item while alias scope is held', async () => {
     const suffix = randomUUID()
     const hostname = `vote-stats-lock-${suffix}.example.test`
     const feed = await createTestRssFeed({
@@ -109,15 +113,27 @@ describe('entity relation vote stats batch locking', () => {
     if (!row) throw new Error('Expected RSS item hashtag relation')
     await setTestEntityRelationIdAndScore(relation.table_name, itemId, aliasId, row.id, 1)
     const target = createEntityRelationElectionTarget(row.id, relation.table_name)
-    const proof = await observeTestEntityRelationVoteStatsLock(
-      target,
-      { type: 'topic_alias', topicAliasId: aliasId },
-      query => updateEntityRelationElectionVoteStatsFromPrimaryBatch([target], { query }),
+    await using holder = await beginTransaction()
+    await lockTopicAliasPublicationScopes(holder, [aliasId])
+    const jobs = await captureAddedPublicationEffectsForScope(aliasId, async () => {
+      await expect(
+        updateEntityRelationElectionVoteStatsFromPrimaryBatch([target]),
+      ).resolves.toEqual([target])
+    })
+    expect(jobs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          keys: expect.arrayContaining([{ kind: 'impact_rss_feed_item', uuidValue: itemId }]),
+        }),
+      ]),
     )
-    expect(proof.publicationLockHeld).toBe(true)
+    const [updated] = (await getEntityRelation(relation.table_name, itemId, aliasId)) as Array<{
+      votes_score_net: number
+    }>
+    expect(updated?.votes_score_net).toBe(0)
   })
 
-  it('locks publisher-topic feed scopes before waiting on a target relation row', async () => {
+  it('updates publisher relation stats and captures the feed while its scope is held', async () => {
     expect.hasAssertions()
     const sourceTopic = await createTestTopic({
       hostname: `batch-publisher-lock-${randomUUID()}.example.test`,
@@ -127,7 +143,7 @@ describe('entity relation vote stats batch locking', () => {
       topic => topic.slug === 'blog',
     )?.id
     if (!publisherTypeId) throw new Error('Expected blog publisher type')
-    const feed = await insertTestRssFeedDirect({ topicId: sourceTopic.id })
+    await insertTestRssFeedDirect({ topicId: sourceTopic.id })
     const relation = getEntityRelationMetadataOrThrow({
       subjectType: 'topic',
       objectType: 'topic',
@@ -148,12 +164,19 @@ describe('entity relation vote stats batch locking', () => {
       1,
     )
     const target = createEntityRelationElectionTarget(row.id, relation.table_name)
-    const proof = await observeTestEntityRelationVoteStatsLock(
-      target,
-      { type: 'rss_feed', rssFeedId: feed.id },
-      query => updateEntityRelationElectionVoteStatsFromPrimaryBatch([target], { query }),
-    )
-    expect(proof.publicationLockHeld).toBe(true)
-    expect(proof.result).toEqual([target])
+    const jobs = await capturePublisherFeedPublicationJobs([sourceTopic.id], async () => {
+      await expect(
+        updateEntityRelationElectionVoteStatsFromPrimaryBatch([target]),
+      ).resolves.toEqual([target])
+    })
+    expect(jobs).toEqual([
+      expect.objectContaining({ topicIds: [sourceTopic.id], afterTopicId: null }),
+    ])
+    const [updated] = (await getEntityRelation(
+      relation.table_name,
+      sourceTopic.id,
+      publisherTypeId,
+    )) as Array<{ votes_score_net: number }>
+    expect(updated?.votes_score_net).toBe(0)
   })
 })

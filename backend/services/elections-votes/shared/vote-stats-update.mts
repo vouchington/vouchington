@@ -2,10 +2,10 @@ import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
   lockPostPublication,
-  lockTopicRssFeedPublicationScopes,
   recordPostPublicationChange,
   recordRssFeedDiscoverabilityChanges,
 } from '@services/post-publication'
+import { listTopicPublicationFeedsPage } from '@services/post-publication/topic-feed-pages'
 import type { AggregatedElectionStats, EntityElectionConfig } from './types.mts'
 import { buildElectionStatsUpdateQuery } from './vote-stats-update-query.mts'
 
@@ -21,11 +21,12 @@ export async function updateElectionStatsIfChanged(
 ): Promise<UpdatedElectionStats | undefined> {
   if (!config.entityTable) return undefined
   const entityTable = config.entityTable
+  // One topic owns at most one active feed, so the staged page never has a continuation.
+  const topicFeeds =
+    entityTable === 'topics' ? await listTopicPublicationFeedsPage([entityId], null) : null
 
   const run = async (query: TransactionQuery): Promise<UpdatedElectionStats | undefined> => {
     if (entityTable === 'posts') await lockPostPublication(query, entityId)
-    const topicRssFeedIds =
-      entityTable === 'topics' ? await lockTopicRssFeedPublicationScopes(query, [entityId]) : []
     const statement = buildElectionStatsUpdateQuery(config, entityId, stats)
 
     const { rows } = await query<UpdatedElectionStats>(statement)
@@ -40,8 +41,7 @@ export async function updateElectionStatsIfChanged(
         scope: { type: 'post', postId: entityId },
         reason: 'post_updated',
       })
-    if (entityTable === 'topics' && updated)
-      await recordRssFeedDiscoverabilityChanges(query, topicRssFeedIds)
+    if (updated && topicFeeds) await recordRssFeedDiscoverabilityChanges(query, topicFeeds.ids)
     return updated
   }
   if (transactionQuery) return withTransactionOptions({ query: transactionQuery }, run)

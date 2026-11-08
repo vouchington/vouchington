@@ -4,12 +4,11 @@ import {
   beginTransaction,
   createTestTopic,
   createTestUser,
-  getTestPostgresBackendProcessId,
   getUrlHostnameTopicId,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { withApprovalHostnameWait } from '@voucha/test-helpers/topic-recommendation-hostname-lock-race'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TopicRecommendationPost } from './types.mts'
 import { prepareTopicRecommendation } from './create-topic-recommendation.mts'
@@ -146,7 +145,7 @@ describe('hostname ownership serialization against approval', () => {
     ).toContain(urlId)
   })
 
-  it.each(['insert', 'reactivate', 'delete'] as const)(
+  it.each(['insert', 'reactivate'] as const)(
     'serializes landing-page %s through its owning boundary',
     async operation => {
       if (operation === 'reactivate') {
@@ -159,50 +158,36 @@ describe('hostname ownership serialization against approval', () => {
         await softDeleteEntityRelation(admin, landing, otherTopic, [{ id: urlId }])
       }
       await using holder = await beginTransaction()
-      const approved = await approveTopicRecommendationInTransaction(
-        admin,
-        WEB_PROVENANCE,
-        recommendation.id,
-        { query: holder },
+      await approveTopicRecommendationInTransaction(admin, WEB_PROVENANCE, recommendation.id, {
+        query: holder,
+      })
+      const subject = otherTopic
+      const pending = await withApprovalHostnameWait(holder, hostnameId, () =>
+        writeEntityRelations(landing, admin, [{ subject, object: { id: urlId } }], {
+          vote: false,
+        }).then(
+          () => null,
+          (err: unknown) => err,
+        ),
       )
-      const pid = await getTestPostgresBackendProcessId(holder)
-      const subject = operation === 'delete' ? approved.topic : otherTopic
-      const pending =
-        operation === 'delete'
-          ? await withTestOwnedPostgresWait(
-              {
-                holderProcessId: pid,
-                pool: 'write',
-                lock: {
-                  kind: 'advisory',
-                  key: `topic-rss-feed-attachment:${subject.id.toLowerCase()}`,
-                },
-                queryMarker: 'lockTopicRssFeedAttachmentLifecycles',
-                releaseHolder: () => holder[Symbol.asyncDispose](),
-              },
-              async waitForLock => {
-                const deleting = softDeleteEntityRelation(admin, landing, subject, [{ id: urlId }])
-                await waitForLock(deleting)
-                await holder.commit()
-                return deleting.then(
-                  () => null,
-                  (err: unknown) => err,
-                )
-              },
-            )
-          : await withApprovalHostnameWait(holder, hostnameId, () =>
-              writeEntityRelations(landing, admin, [{ subject, object: { id: urlId } }], {
-                vote: false,
-              }).then(
-                () => null,
-                (err: unknown) => err,
-              ),
-            )
       expect(pending).toBeNull()
       const relations = await getEntityRelations('topic', subject.id, 'landing_page', 'url', {
         viewer: { kind: 'anonymous' },
       })
-      expect(relations.some(row => row.object_id === urlId)).toBe(operation !== 'delete')
+      expect(relations.some(row => row.object_id === urlId)).toBe(true)
     },
   )
+
+  it('deletes a committed landing page while its topic attachment context is held', async () => {
+    await writeEntityRelations(landing, admin, [{ subject: otherTopic, object: { id: urlId } }], {
+      vote: false,
+    })
+    await using holder = await beginTransaction()
+    await lockTopicRssFeedAttachmentLifecycle(holder, otherTopic.id)
+    await softDeleteEntityRelation(admin, landing, otherTopic, [{ id: urlId }])
+    const relations = await getEntityRelations('topic', otherTopic.id, 'landing_page', 'url', {
+      viewer: { kind: 'anonymous' },
+    })
+    expect(relations.some(row => row.object_id === urlId)).toBe(false)
+  })
 })

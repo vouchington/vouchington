@@ -1,12 +1,10 @@
 import { recordPublisherTypeFeedPublicationWork } from '@services/post-publication/publisher-type-feeds'
+import { recordRssAliasRelationPublicationChanges } from './rss-alias-publication.mts'
 import { recomputeRegisteredPostHackerNewsFlags } from './post-hacker-news-flag-registry.mts'
 import { getEntityRelationsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  recordPostPublicationChanges,
-  recordTopicAliasPublicationWork,
-} from '@services/post-publication'
+import { recordPostPublicationChanges } from '@services/post-publication'
 import {
   POST_TOPIC_CATEGORY_RELATION_TABLE as POST_TOPIC_CATEGORY_TABLE,
   POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE as POST_TOPIC_ALIAS_CATEGORY_TABLE,
@@ -75,10 +73,7 @@ export async function recordPostTopicRelationPublicationChanges(
   }
 
   if (relationTable === RSS_FEED_ITEM_TOPIC_ALIAS_CATEGORY_TABLE) {
-    await recordTopicAliasPublicationWork(
-      query,
-      changes.map(change => change.object_id),
-    )
+    recordRssAliasRelationPublicationChanges(query, changes)
     return
   }
 
@@ -126,6 +121,7 @@ function addTopicId(topicIdsByPostId: Map<string, Set<string>>, postId: string, 
   topicIdsByPostId.set(postId, topicIds)
 }
 
+/* oxlint-disable no-await-in-loop -- Sequential alias resolution keeps each query input bounded. */
 async function getCanonicalTopicIdsByAliasId(
   query: TransactionQuery,
   aliasIds: readonly string[],
@@ -135,7 +131,7 @@ async function getCanonicalTopicIdsByAliasId(
   const uniqueAliasIds = [...new Set(aliasIds)].toSorted()
   for (let offset = 0; offset < uniqueAliasIds.length; offset += ALIAS_RESOLUTION_BATCH_SIZE) {
     const batch = uniqueAliasIds.slice(offset, offset + ALIAS_RESOLUTION_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- alias resolution is capped and preserves bounded query parameters.
+    // no-mistakes-disable-next-line query-reached-per-item: each iteration resolves one runtime-capped chunk of alias ids.
     const { rows } = await query<{ id: string; topic_id: string }>(
       sql`/* recordPostTopicRelationPublicationChanges:aliases */
       SELECT id, topic_id

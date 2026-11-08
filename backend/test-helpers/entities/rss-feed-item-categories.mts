@@ -47,3 +47,14 @@ export async function countTestRssFeedItemAliasCategoryBindings(
   )
   return Number(rows[0]?.count ?? 0)
 }
+
+export async function getTestRssFeedItemCategoryAliasIds(
+  rssFeedItemId: string,
+): Promise<{ topic_alias_id: string | null }[]> {
+  const { rows } = await read<{ topic_alias_id: string | null }>(
+    `/* getTestRssFeedItemCategoryAliasIds */
+     SELECT topic_alias_id FROM rss_feed_item_categories WHERE rss_feed_item_id = $1::uuid`,
+    [rssFeedItemId],
+  )
+  return rows
+}

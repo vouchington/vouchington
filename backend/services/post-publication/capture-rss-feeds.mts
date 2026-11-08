@@ -1,9 +1,9 @@
+/* oxlint-disable no-await-in-loop -- Sequential bounded batches preserve lock order and cap query inputs. */
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { impactPublicationKeys } from './captured-keys.mts'
 import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
-import { lockTopicRssFeedAttachmentLifecycle } from './lock.mts'
 
 const RSS_FEED_PUBLICATION_REASON = 'rss_feed_discoverability_changed' as const
 const rssFeedScopesLockedInQuery = new WeakMap<TransactionQuery, Set<string>>()
@@ -22,8 +22,6 @@ export async function recordRssFeedDiscoverabilityChanges(
   const ids = normalizePostPublicationIdentifiers(rssFeedIds)
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- sorted batches preserve feed lock order.
-    await lockPostPublicationRssFeedScopes(query, batch)
     for (const rssFeedId of batch)
       enqueueCapturedPublicationChangeAfterCommit(query, {
         scope: { type: 'rss_feed', rssFeedId },
@@ -51,8 +49,6 @@ export async function recordRssFeedTopicPublicationChanges(
   const feedIds = normalizePostPublicationIdentifiers(topicIdsByFeedId.keys())
   for (let offset = 0; offset < feedIds.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = feedIds.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- sorted batches preserve the global feed lock order.
-    await lockPostPublicationRssFeedScopes(query, batch)
     for (const rssFeedId of batch)
       enqueueCapturedPublicationChangeAfterCommit(query, {
         scope: { type: 'rss_feed', rssFeedId },
@@ -79,7 +75,7 @@ export async function lockPostPublicationRssFeedScopes(
   rssFeedScopesLockedInQuery.set(query, held)
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- ascending batches preserve global feed lock order.
+    // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.
     await query(
       `/* lockPostPublicationRssFeedScopes */
       SELECT pg_advisory_xact_lock(hashtextextended('rss_feed:' || rss_feed_id::text, 0))
@@ -89,55 +85,4 @@ export async function lockPostPublicationRssFeedScopes(
     )
     for (const id of batch) held.add(id)
   }
-}
-
-/** Hard page cap for one topic feed scope discovery; the page size is capture_batch_size. */
-const MAX_TOPIC_FEED_SCOPE_PAGES = 1000
-
-/**
- * Locks every feed attached to the supplied topics before a writer takes topic-backed FK locks.
- * The attachment lifecycle lock makes feed discovery stable while preserving global topic/feed order.
- */
-export async function lockTopicRssFeedPublicationScopes(
-  query: TransactionQuery,
-  topicIds: readonly string[],
-): Promise<string[]> {
-  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
-  const ids = normalizePostPublicationIdentifiers(topicIds)
-  for (const topicId of ids) {
-    // oxlint-disable-next-line no-await-in-loop -- sorted topic lifecycles make feed discovery stable.
-    await lockTopicRssFeedAttachmentLifecycle(query, topicId)
-  }
-
-  const rssFeedIds: string[] = []
-  let exhausted = false
-  let afterRssFeedId: string | null = null
-  for (let page = 0; page < MAX_TOPIC_FEED_SCOPE_PAGES; page += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- globally ordered feed pages keep scope discovery bounded.
-    const result = await query<{ id: string }>(
-      `/* listTopicRssFeedPublicationScopes */
-      SELECT id
-      FROM rss_feeds
-      WHERE topic_id = ANY($1::uuid[])
-        AND deleted_at IS NULL
-        AND ($2::uuid IS NULL OR id > $2::uuid)
-      ORDER BY id
-      LIMIT $3`,
-      [ids, afterRssFeedId, POST_PUBLICATION_CAPTURE_BATCH_SIZE],
-    )
-    const rows: Array<{ id: string }> = result.rows
-    if (rows.length === 0) {
-      exhausted = true
-      break
-    }
-    rssFeedIds.push(...rows.map(row => row.id))
-    afterRssFeedId = rows.at(-1)!.id
-  }
-  // Safety cap: exceeding it fails the transaction instead of running unbounded; redesign tracked in vouchington/vouchington#5327
-  if (!exhausted)
-    throw new Error(
-      `topic feed scope discovery exceeded ${MAX_TOPIC_FEED_SCOPE_PAGES} pages; continuation after rss_feed ${afterRssFeedId}`,
-    )
-  await lockPostPublicationRssFeedScopes(query, rssFeedIds)
-  return rssFeedIds
 }

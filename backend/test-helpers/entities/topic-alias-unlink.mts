@@ -1,5 +1,5 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import type { TopicAliasUnlinkPage } from '../../queues/rss-feed-maintenance/types.mts'
 import { clearTopicAliasUnlinkCategoryPage } from '../../services/rss-feed-items/clear-unlinked-topic-alias-categories.mts'
 import {
@@ -10,12 +10,8 @@ import { processReconcileTopicAliasCategoryMappings } from '../../services/rss-f
 import { normalizeHashtag } from '../../../ts-shared/utils/hashtags.mts'
 
 /** Exercises the same callback wiring as the RSS maintenance worker. */
-export function applyTopicAliasUnlinkPageForTest(
-  page: TopicAliasUnlinkPage,
-  options: QueryOptions = {},
-) {
+export function applyTopicAliasUnlinkPageForTest(page: TopicAliasUnlinkPage) {
   return applyProductionTopicAliasUnlinkPage(page, {
-    ...options,
     clearItemCategoryPage: clearTopicAliasUnlinkCategoryPage,
   })
 }
@@ -85,4 +81,16 @@ export async function getPendingTopicAliasForTest(
     [alias],
   )
   return rows[0] ?? null
+}
+
+/** Makes an alias the topic's active slug on the caller's transaction, as a committed rename would. */
+export async function setTopicSlugForTest(
+  query: TransactionQuery,
+  topicId: string,
+  slug: string,
+): Promise<void> {
+  await query(`/* setTopicSlugForTest */ UPDATE topics SET slug = $2 WHERE id = $1::uuid`, [
+    topicId,
+    slug,
+  ])
 }

@@ -1,5 +1,7 @@
 import { listPublisherTypeFeedPublicationPage } from '@services/post-publication/publisher-type-feeds'
+import { capturePublicationTopicFeedPages } from './publication-topic-feed-pages.mts'
 import { capturePublicationHardDeleteScenarios } from './publication-hard-delete.mts'
+import { captureAliasUnlinkPrecaptureScenarios } from './alias-unlink-precapture.mts'
 import assert from 'node:assert/strict'
 import {
   listLiveScopePostPage,
@@ -30,7 +32,9 @@ export async function runPublicationScopePageScenarios(): Promise<void> {
     await seedPublicationScopePages()
     await preparePublicationScopePlans()
     await capturePublicationScopePages()
+    await captureAliasUnlinkPrecaptureScenarios()
     await capturePublicationHardDeleteScenarios()
+    await capturePublicationTopicFeedPages()
   } finally {
     await cleanupPublicationScopePages()
     await runAnalyze()

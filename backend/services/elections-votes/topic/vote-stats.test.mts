@@ -1,85 +1,59 @@
-import { describe, expect, it, vi } from 'vitest'
-import {
-  beginTransaction,
-  createTestTopic,
-  insertTestRssFeedDirect,
-  readAllQueueJobs,
-} from '@voucha/test-helpers'
-import * as postPublication from '@services/post-publication'
-import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
+import { describe, expect, it } from 'vitest'
+import { beginTransaction, createTestTopic, insertTestRssFeedDirect } from '@voucha/test-helpers'
+import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
+import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { updateTopicElectionVoteStats } from './vote-stats.mts'
 import { updateElectionStatsIfChanged } from '../shared/vote-stats-update.mts'
 import { TOPIC_ELECTION_CONFIG } from './config.mts'
 
 describe('topic vote stats side effects', () => {
-  it('enqueues RSS feed discoverability evaluation for feeds attached to the topic', async () => {
-    const topic = await createTestTopic({ hostname: `vote-stats-${Date.now()}.example.com` })
-    const rssFeed = await insertTestRssFeedDirect({ topicId: topic.id })
-
-    await updateTopicElectionVoteStats(topic.id)
-
-    const waiting = await readAllQueueJobs(rssFeedMaintenance)
-    expect(
-      waiting.some(
-        job =>
-          job.name === 'processEvaluateRssFeedDiscoverability' &&
-          (job.data as { rssFeedId?: string }).rssFeedId === rssFeed.id,
-      ),
-    ).toBe(true)
+  it('enqueues bounded discoverability work even when stats are unchanged', async () => {
+    const topic = await createTestTopic({
+      hostname: `vote-stats-${crypto.randomUUID()}.example.com`,
+    })
+    const feed = await insertTestRssFeedDirect({ topicId: topic.id })
+    const admitted = Promise.withResolvers<PostPublicationEffectsJobData>()
+    const onAdded = (job: { data: unknown }) => {
+      const data = job.data as PostPublicationEffectsJobData
+      if (data.scope?.id === topic.id && data.continuation?.kind === 'topic_feed_discoverability')
+        admitted.resolve(data)
+    }
+    backgroundQueue.on('added', onAdded)
+    try {
+      await updateTopicElectionVoteStats(topic.id)
+      const job = await admitted.promise
+      expect(job.continuation).toEqual({
+        kind: 'topic_feed_discoverability',
+        subjectIds: [topic.id],
+        subjectIndex: 0,
+        after: null,
+      })
+      expect(feed.id).toBeDefined()
+    } finally {
+      backgroundQueue.off('added', onAdded)
+    }
   })
 
-  it('locks attached feed publication scopes before waiting on the topic row', async () => {
-    expect.hasAssertions()
+  it('updates in a caller transaction without acquiring feed scope locks', async () => {
     const topic = await createTestTopic({
-      hostname: `topic-vote-lock-${crypto.randomUUID()}.example.com`,
+      hostname: `vote-stage-${crypto.randomUUID()}.example.com`,
     })
-    const rssFeed = await insertTestRssFeedDirect({ topicId: topic.id })
-    const topicLocked = Promise.withResolvers<void>()
-    const releaseTopic = Promise.withResolvers<void>()
-    const holder = holdTopicRowLock()
-
-    async function holdTopicRowLock(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* topic vote stats lock holder */ SELECT id FROM topics WHERE id = $1::uuid FOR UPDATE`,
-        [topic.id],
-      )
-      topicLocked.resolve()
-      await releaseTopic.promise
-
-      await query.commit()
-    }
-    await topicLocked.promise
-    const lockTopicFeeds = postPublication.lockTopicRssFeedPublicationScopes
-    const feedsLocked = Promise.withResolvers<void>()
-    const feedSpy = vi
-      .spyOn(postPublication, 'lockTopicRssFeedPublicationScopes')
-      .mockImplementation(async (query, topicIds) => {
-        const ids = await lockTopicFeeds(query, topicIds)
-        feedsLocked.resolve()
-        return ids
-      })
-    const updating = updateElectionStatsIfChanged(
-      TOPIC_ELECTION_CONFIG,
-      topic.id,
-      statsForNetScore(1),
+    const feed = await insertTestRssFeedDirect({ topicId: topic.id })
+    await using holder = await beginTransaction()
+    await holder(
+      `/* holdUnrelatedFeedScope */ SELECT pg_advisory_xact_lock(hashtextextended('rss_feed:' || $1::uuid::text, 0))`,
+      [feed.id],
     )
-    try {
-      await feedsLocked.promise
-      await expect(lockRssFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
-    } finally {
-      releaseTopic.resolve()
-      feedSpy.mockRestore()
-    }
-    await holder
-    await expect(updating).resolves.toBeDefined()
-
-    async function lockRssFeedPublicationScope(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(`/* topic vote stats feed scope timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await postPublication.lockPostPublicationRssFeedScopes(query, [rssFeed.id])
-      await query.commit()
-    }
+    await using transaction = await beginTransaction()
+    await expect(
+      updateElectionStatsIfChanged(
+        TOPIC_ELECTION_CONFIG,
+        topic.id,
+        statsForNetScore(1),
+        transaction,
+      ),
+    ).resolves.toBeDefined()
+    await transaction.commit()
   })
 })
 

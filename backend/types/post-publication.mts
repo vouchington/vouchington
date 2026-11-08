@@ -60,6 +60,7 @@ export type PostPublicationEffectsJobData = {
       | 'rss_feed_items'
       | 'rss_feed_categories'
       | 'rss_feed_item_categories'
+      | 'topic_feed_discoverability'
       | 'topic_merge_posts'
       | 'topic_merge_feeds'
       | 'topic_merge_items'

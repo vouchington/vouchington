@@ -2,17 +2,10 @@ import { recomputeRegisteredPostHackerNewsFlags } from './post-hacker-news-flag-
 import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
 import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 import {
-  isRssFeedItemTopicAliasPublicationRelationTable,
   isPostScopedPublicationRelationTable,
-  isTopicPublisherTypePublicationRelationTable,
   recordPostTopicRelationPublicationChanges,
 } from './post-topic-publication.mts'
-import {
-  lockPostPublicationPostScopes,
-  lockTopicRssFeedPublicationScopes,
-  lockTopicAliasPublicationScopes,
-  lockTopicRssFeedAttachmentLifecycles,
-} from '@services/post-publication'
+import { lockPostPublicationPostScopes } from '@services/post-publication'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import {
   getHostnamePolicyGroups,
@@ -59,11 +52,6 @@ export async function runRelationPublicationMutation<
       )
     }
     await lockActiveUserSubjectsForMutation(query, activeUserSubjectIds)
-    const topicIds = [
-      ...(relationTable.startsWith('relation__topic__') ? subjectIds : []),
-      ...(relationTable.endsWith('__topic') ? objectIds : []),
-    ]
-    if (topicIds.length > 0) await lockTopicRssFeedAttachmentLifecycles(query, topicIds)
     const capturePublication = options?.capturePublication !== false
     const postScopeIds = [
       ...((capturePublication || relationTable === 'relation__post__related__url') &&
@@ -73,10 +61,6 @@ export async function runRelationPublicationMutation<
       ...(options?.postMutationGuard?.postIds ?? []),
     ]
     if (postScopeIds.length > 0) await lockPostPublicationPostScopes(query, postScopeIds)
-    if (capturePublication && isRssFeedItemTopicAliasPublicationRelationTable(relationTable))
-      await lockTopicAliasPublicationScopes(query, objectIds)
-    if (capturePublication && isTopicPublisherTypePublicationRelationTable(relationTable))
-      await lockTopicRssFeedPublicationScopes(query, subjectIds)
     await options?.postMutationGuard?.assertAllowed(query)
     const changes = await mutation(query)
     if (!capturePublication && relationTable === 'relation__post__related__url') {

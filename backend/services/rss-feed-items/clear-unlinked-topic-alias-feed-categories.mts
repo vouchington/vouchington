@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
-import { tryLockAndAssertNoActiveTopicMerges } from '@services/topics/merge-preflight'
+import { assertNoActiveTopicMerges } from '@services/topics/merge-preflight'
 import createHttpError from 'http-errors'
 
 type FeedCategoryCandidate = {
@@ -127,6 +127,6 @@ export async function clearUnlinkedTopicAliasFeedPage(
 }
 
 async function lockFeedCategoryTopics(query: TransactionQuery, topicIds: string[]): Promise<void> {
-  await tryLockAndAssertNoActiveTopicMerges(query, topicIds)
+  await assertNoActiveTopicMerges(query, topicIds)
   await lockTopicRssFeedAttachmentLifecycles(query, topicIds)
 }

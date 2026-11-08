@@ -12,7 +12,6 @@ import {
   clearTestRssFeedItemCategoryTopicAlias,
   createTestTopic,
   getEntityRelation,
-  getTestPostgresBackendProcessId,
   insertTestRssFeedDirect,
   selectTopicAliasUnlinkInitialPageForTest,
   updateTopicName,
@@ -23,15 +22,13 @@ import {
 } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getTopicAliasCategoryMappingDirtyRowForTest } from '@voucha/test-helpers/entities/topic-alias-category-mappings'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { upsertRssFeedItemCategories } from './categories.mts'
 import { upsertRssFeedItems } from './upsert.mts'
 import { rssFeedItemsWorkConfig } from './work-limits.mts'
-import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
 
 describe('topic alias unlink category page', () => {
-  it('waits for snapshot item locks before category locks and clears a text mapping', async () => {
+  it('clears a text mapping while another transaction holds a non-key item lock', async () => {
     const suffix = randomUUID()
     const aliasText = `snapshot-category-alias-${suffix}`
     const topic = await createTestTopic({
@@ -87,24 +84,17 @@ describe('topic alias unlink category page', () => {
     })
 
     await using holder = await beginTransaction()
-    await lockRssFeedItemsForStoryPublicationChanges(holder, [item.id])
-    const holderProcessId = await getTestPostgresBackendProcessId(holder)
-    await withTestOwnedPostgresWait(
-      {
-        holderProcessId,
-        pool: 'write',
-        lock: { kind: 'advisory', key: `rss_feed:${feed.id}` },
-        queryMarker: 'lockPostPublicationRssFeedScopes',
-        releaseHolder: () => holder[Symbol.asyncDispose](),
-      },
-      async waitForLock => {
-        const cleaning = processReconcileTopicAliasCategoryMappings(1, [alias.id])
-        void cleaning.catch(() => {})
-        await waitForLock(cleaning)
-        await holder.commit()
-        await expect(cleaning).resolves.toMatchObject({ updated: 1, hasMore: true })
-      },
+    // This conflicts with the removed item FOR UPDATE read lock but allows FK KEY SHARE checks.
+    await holder(
+      `/* holdReadOnlyRssItemForAliasClear */
+       SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR NO KEY UPDATE`,
+      [item.id],
     )
+    await expect(processReconcileTopicAliasCategoryMappings(1, [alias.id])).resolves.toMatchObject({
+      updated: 1,
+      hasMore: true,
+    })
+    await holder.commit()
     await expect(getTestRssFeedItemCategories(item.id)).resolves.toContainEqual(
       expect.objectContaining({ category_text: aliasText, topic_id: null }),
     )
