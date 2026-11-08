@@ -1,3 +1,4 @@
+import { MEMBERSHIP_COLLISION_REVIEW_SCENARIO_IDS } from './membership-collision-review-scenario-ids.mts'
 import { HACKER_NEWS_VIEWER_SCENARIO_IDS } from './hacker-news-viewer-scenario-ids.mts'
 import { COMMUNITY_BAN_SCENARIO_IDS } from './community-ban-scenario-ids.mts'
 import { COPYRIGHT_CASE_PURGE_SCENARIO_IDS } from './copyright-case-purge-scenario-ids.mts'
@@ -59,12 +60,7 @@ export const BOUNDED_WORK_SCENARIOS = [
   'membership-reversal-case-retention-resumed-after-blocked',
   'membership-reversal-case-creation',
   'membership-reversal-collision-work-insert',
-  'membership-reversal-collision-review-insert',
-  'membership-reversal-collision-review-replay',
-  'membership-reversal-collision-review-list',
-  'membership-reversal-collision-review-get',
-  'membership-reversal-collision-review-delete',
-  'membership-reversal-collision-review-case',
+  ...MEMBERSHIP_COLLISION_REVIEW_SCENARIO_IDS,
   'membership-reversal-collision-work-existing',
   'membership-reversal-collision-work-load',
   'membership-reversal-collision-work-upper-bound',
