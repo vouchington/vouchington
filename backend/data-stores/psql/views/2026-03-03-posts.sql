@@ -237,9 +237,8 @@ CREATE OR REPLACE VIEW view_posts AS
     FROM post_moderation_dispositions disposition
     WHERE disposition.version_id = (
       SELECT version.id FROM post_moderation_versions version
-      WHERE version.post_id = posts.id
-        AND version.content_sha256 = posts.llm_moderation_content_sha256
-        AND version.policy_revision = '2026-09-09.1'
+      WHERE (version.post_id, version.content_sha256, version.policy_revision)::post_moderation_version_keys
+        = (posts.id, posts.llm_moderation_content_sha256, '2026-09-09.1'::text)::post_moderation_version_keys
     )
       AND disposition.source = 'openai_omni'
     ORDER BY disposition.id DESC

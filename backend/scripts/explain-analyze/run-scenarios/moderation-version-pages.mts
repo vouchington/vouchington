@@ -58,7 +58,7 @@ export async function runModerationVersionPageScenarios(): Promise<void> {
           {
             kind: 'usesIndexes',
             indexes: [
-              'uq_post_modera_versio__post_id__content_sha256__policy_revision',
+              'idx_post_moderation_versions__content_policy_key',
               'post_moderation_versions_pkey',
             ],
           },
@@ -91,7 +91,7 @@ export async function runModerationVersionPageScenarios(): Promise<void> {
         {
           kind: 'usesIndexes',
           indexes: [
-            'uq_post_modera_versio__post_id__content_sha256__policy_revision',
+            'idx_post_moderation_versions__content_policy_key',
             'post_moderation_versions_pkey',
           ],
         },

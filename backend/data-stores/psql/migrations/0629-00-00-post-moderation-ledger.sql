@@ -8,6 +8,13 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+DO $$ BEGIN
+  CREATE TYPE post_moderation_version_keys AS (
+    post_id UUID, content_sha256 BYTEA, policy_revision TEXT
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
 CREATE TABLE IF NOT EXISTS post_moderation_versions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
@@ -18,11 +25,15 @@ CREATE TABLE IF NOT EXISTS post_moderation_versions (
   retention_due_at TIMESTAMPTZ,
   retention_hash_blocked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CONSTRAINT uq_post_modera_versio__post_id__content_sha256__policy_revision UNIQUE (post_id, content_sha256, policy_revision) INCLUDE (id, deadline_at)
+  CONSTRAINT uq_post_modera_versio__post_id__content_sha256__policy_revision UNIQUE (post_id, content_sha256, policy_revision)
 );
 
 CREATE INDEX IF NOT EXISTS idx_post_moderation_versions__post_id__id
 ON post_moderation_versions (post_id, id DESC);
+-- Exact current-version probes use the complete identity rather than an ordered history prefix.
+CREATE INDEX IF NOT EXISTS idx_post_moderation_versions__content_policy_key
+ON post_moderation_versions (((post_id, content_sha256, policy_revision)::post_moderation_version_keys))
+INCLUDE (id, deadline_at);
 -- Current-policy reconciliation walks versions in id order before expanding automated sources.
 CREATE INDEX IF NOT EXISTS idx_post_moderation_versions__policy_revision__id
 ON post_moderation_versions (policy_revision, id) INCLUDE (post_id, content_sha256, deadline_at);
