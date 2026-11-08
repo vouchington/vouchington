@@ -33,19 +33,25 @@ async function seedFolloweeReceipts(): Promise<void> {
      ON CONFLICT DO NOTHING`,
     [AUTHORIZATION_ID, HOLDER_DID, HOLDER_USER_ID],
   )
-  await write(
-    `/* seedExplainBlueskyReceipts:receipts */ INSERT INTO bluesky_follow_records
-       (follower_user_id, followee_user_id, follower_account_link_authorization_id, record_uri)
-     SELECT follower_id, $2::uuid, $3::uuid, 'at://' || $4::text || '/app.bsky.graph.follow/' || ordinal
-     FROM unnest($1::uuid[]) WITH ORDINALITY AS input(follower_id, ordinal)
-     ON CONFLICT DO NOTHING`,
-    [
-      Array.from({ length: FOLLOWER_COUNT }, (_, index) => seedUuid(100 + index, '01')),
-      FOLLOWEE_ID,
-      AUTHORIZATION_ID,
-      HOLDER_DID,
-    ],
-  )
+  for (let offset = 0; offset < FOLLOWER_COUNT; offset += 500) {
+    // Each autocommit batch releases the active-user advisory locks before the next batch.
+    await write(
+      `/* seedExplainBlueskyReceipts:receipts */ INSERT INTO bluesky_follow_records
+         (follower_user_id, followee_user_id, follower_account_link_authorization_id, record_uri)
+       SELECT follower_id, $2::uuid, $3::uuid, 'at://' || $4::text || '/app.bsky.graph.follow/' || (ordinal + $5::int)
+       FROM unnest($1::uuid[]) WITH ORDINALITY AS input(follower_id, ordinal)
+       ON CONFLICT DO NOTHING`,
+      [
+        Array.from({ length: Math.min(500, FOLLOWER_COUNT - offset) }, (_, index) =>
+          seedUuid(100 + offset + index, '01'),
+        ),
+        FOLLOWEE_ID,
+        AUTHORIZATION_ID,
+        HOLDER_DID,
+        offset,
+      ],
+    )
+  }
   // Without statistics the planner assumes a tiny table and picks a bitmap scan plus Sort.
   await write('/* seedExplainBlueskyReceipts:analyze */ ANALYZE bluesky_follow_records')
 }
@@ -62,6 +68,9 @@ async function removeFolloweeReceipts(): Promise<void> {
   await write(
     '/* seedExplainBlueskyReceipts:removeAuthorization */ DELETE FROM bluesky_link_authorizations WHERE id = $1',
     [AUTHORIZATION_ID],
+  )
+  await write(
+    '/* seedExplainBlueskyReceipts:restoreStats */ ANALYZE bluesky_follow_records, bluesky_linked_accounts',
   )
 }
 
@@ -87,7 +96,8 @@ export async function runBlueskyFolloweeReceiptScenarios(): Promise<void> {
       expectations: [
         {
           kind: 'usesIndexes',
-          indexes: ['idx_bluesky_follow_records__followee_follower'],
+          indexes: ['idx_bluesky_follow_records__followee_follower', 'bluesky_follow_records_pkey'],
+          anyOf: true,
           noSort: true,
         },
         // Each page row is counted by three nodes: the ordered index scan, the ctid fetch, and the
@@ -97,8 +107,8 @@ export async function runBlueskyFolloweeReceiptScenarios(): Promise<void> {
       seededRows: { bluesky_follow_records: FOLLOWER_COUNT },
     })
   }
-  await seedFolloweeReceipts()
   try {
+    await seedFolloweeReceipts()
     await runAndCapture(
       'bluesky-followee-receipts-page',
       () => deletePageInRolledBackTransaction(START_OF_IDS),

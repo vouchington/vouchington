@@ -31,8 +31,9 @@ CREATE TABLE IF NOT EXISTS bluesky_follow_records (
 -- page (WHERE followee_user_id = $1 AND follower_user_id > $2 ORDER BY follower_user_id LIMIT n)
 -- without a Sort.
 CREATE INDEX IF NOT EXISTS idx_bluesky_follow_records__followee_follower ON bluesky_follow_records (followee_user_id, follower_user_id);
-CREATE INDEX IF NOT EXISTS idx_bluesky_follow_records__follower_account_auth
-  ON bluesky_follow_records (follower_account_link_authorization_id);
+-- Preserve authorization-first foreign-key cleanup while serving a generation's ordered drain.
+CREATE INDEX IF NOT EXISTS idx_bluesky_follow_records__authorization_follower_followee
+  ON bluesky_follow_records (follower_account_link_authorization_id, follower_user_id, followee_user_id);
 
 COMMENT ON TABLE bluesky_follow_records IS 'Receipt of a live app.bsky.graph.follow record created on Bluesky on behalf of a Voucha follow relation. Presence = record exists on Bluesky; absence = it does not. Reconciled against relation__user__follow__user by @workers/bluesky-follow-propagation. Never holds a self-chosen rkey — Bluesky''s PDS mints it server-side (see table comment).';
 COMMENT ON COLUMN bluesky_follow_records.follower_user_id IS 'The Voucha user whose linked Bluesky account holds the follow record in its own PDS repo (the record''s `repo`).';

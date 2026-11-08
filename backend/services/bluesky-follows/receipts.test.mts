@@ -5,14 +5,17 @@ import {
   createRandomString,
   createTestUserDirect,
   deleteTestBlueskyLinkedAccount,
+  getTestBlueskyFollowReceiptRecord,
   insertTestBlueskyFollowReceipt,
   insertTestBlueskyLinkedAccount,
+  requestTestBlueskyDisconnect,
   softDeleteUser,
 } from '@voucha/test-helpers'
 import {
   getBlueskyFollowReceipt,
   listBlueskyFollowReceiptsForFollower,
   deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage,
+  deleteBlueskyFollowReceipts,
   saveBlueskyFollowReceipt as saveScopedBlueskyFollowReceipt,
   START_OF_IDS,
 } from './receipts.mts'
@@ -42,7 +45,10 @@ function fakeRecordUri(): string {
 describe('bluesky follow receipt ownership', () => {
   it('pages follower receipts and deletes only other followers of the target', async () => {
     onTestFinished(
-      overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, { backfill_batch_size: 1 }),
+      overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, {
+        backfill_batch_size: 1,
+        disconnect_batch_size: 1,
+      }),
     )
     const follower = await createTestUserDirect()
     const target = await createTestUserDirect()
@@ -192,6 +198,86 @@ describe('bluesky follow receipt ownership', () => {
     await expect(
       saveBlueskyFollowReceipt(follower.id, followee.id, fakeRecordUri()),
     ).rejects.toThrow('cannot own new data after deletion')
+  })
+
+  it('hides and rejects receipts while the follower account is disconnecting', async () => {
+    const follower = await createTestUserDirect()
+    const followee = await createTestUserDirect()
+    const account = await insertTestBlueskyLinkedAccount({ userId: follower.id })
+    const uri = fakeRecordUri()
+    await saveScopedBlueskyFollowReceipt(
+      follower.id,
+      followee.id,
+      account.bluesky_did,
+      account.link_authorization_id,
+      uri,
+    )
+    await requestTestBlueskyDisconnect(account.bluesky_did)
+
+    await expect(
+      getBlueskyFollowReceipt(
+        follower.id,
+        followee.id,
+        account.bluesky_did,
+        account.link_authorization_id,
+      ),
+    ).resolves.toBeNull()
+    // Disconnect cleanup must retain access to this generation's pending receipts until revoke.
+    await expect(
+      listBlueskyFollowReceiptsForFollower(
+        follower.id,
+        account.bluesky_did,
+        account.link_authorization_id,
+        null,
+      ),
+    ).resolves.toHaveLength(1)
+    await expect(
+      saveScopedBlueskyFollowReceipt(
+        follower.id,
+        followee.id,
+        account.bluesky_did,
+        account.link_authorization_id,
+        fakeRecordUri(),
+      ),
+    ).rejects.toThrow('Exact Bluesky account generation is missing')
+    await expect(getTestBlueskyFollowReceiptRecord(follower.id, followee.id)).resolves.toEqual({
+      record_uri: uri,
+      follower_account_link_authorization_id: account.link_authorization_id,
+    })
+  })
+
+  it('keeps a replacement receipt when a stale remote-delete result names the old URI', async () => {
+    const follower = await createTestUserDirect()
+    const followee = await createTestUserDirect()
+    const account = await insertTestBlueskyLinkedAccount({ userId: follower.id })
+    const oldRecordUri = fakeRecordUri()
+    const replacementRecordUri = fakeRecordUri()
+    await saveScopedBlueskyFollowReceipt(
+      follower.id,
+      followee.id,
+      account.bluesky_did,
+      account.link_authorization_id,
+      oldRecordUri,
+    )
+    await saveScopedBlueskyFollowReceipt(
+      follower.id,
+      followee.id,
+      account.bluesky_did,
+      account.link_authorization_id,
+      replacementRecordUri,
+    )
+
+    await deleteBlueskyFollowReceipts(
+      follower.id,
+      [{ followeeUserId: followee.id, recordUri: oldRecordUri }],
+      account.bluesky_did,
+      account.link_authorization_id,
+    )
+
+    await expect(getTestBlueskyFollowReceiptRecord(follower.id, followee.id)).resolves.toEqual({
+      record_uri: replacementRecordUri,
+      follower_account_link_authorization_id: account.link_authorization_id,
+    })
   })
 
   it('rejects a late receipt from a writer that bypasses the service fence', async () => {

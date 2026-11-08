@@ -27,6 +27,21 @@ export async function countTestBlueskyFollowReceiptsForUser(userId: string): Pro
   return Number(rows[0]?.count ?? 0)
 }
 
+export async function getTestBlueskyFollowReceiptRecord(
+  followerUserId: string,
+  followeeUserId: string,
+): Promise<{ record_uri: string; follower_account_link_authorization_id: string } | null> {
+  const { rows } = await read<{
+    record_uri: string
+    follower_account_link_authorization_id: string
+  }>(sql`/* getTestBlueskyFollowReceiptRecord */
+    SELECT record_uri, follower_account_link_authorization_id
+    FROM bluesky_follow_records
+    WHERE follower_user_id = ${followerUserId}
+      AND followee_user_id = ${followeeUserId}`)
+  return rows[0] ?? null
+}
+
 export async function acquireTestUserAdvisoryLock(userId: string): Promise<{
   release: () => void
   completed: Promise<void>

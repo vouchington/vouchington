@@ -15,7 +15,13 @@ export type { DisconnectRequestedData, ReconcileFollowData }
 
 export function disconnectRequestedJobOptions(data: DisconnectRequestedData): Partial<JobOptions> {
   // A continuation needs its own id: the plain logical id would dedupe against the running job.
-  const logicalId = `disconnect_${data.userId}_${data.linkAuthorizationId}${data.after ? `__${data.after}` : ''}`
+  const cursorId =
+    data.followerAfter !== undefined
+      ? `__follower_${data.followerAfter}`
+      : data.after !== undefined
+        ? `__followee_${data.after}`
+        : ''
+  const logicalId = `disconnect_${data.userId}_${data.linkAuthorizationId}${cursorId}`
   return {
     jobId: logicalId,
     deduplication: { id: logicalId, mode: 'simple' },
