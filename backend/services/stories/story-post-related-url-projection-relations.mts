@@ -4,7 +4,6 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import { assertPostRelatedUrlsAllowed } from '@services/entity-relations/assert-post-related-urls-allowed'
 import { recordPostRelatedUrlPublicationChanges } from '@services/entity-relations/post-topic-publication'
 import { getRelationLimitState } from '@services/entity-relations/relation-limits'
-import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
 import { lockReferralLinkEligibility } from '@services/entity-relations/referral-link-eligibility-lock'
 import { handleElectionVotes, type EntityRelation } from '@services/entity-relations/upsert-helpers'
 import { insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction } from '@services/entity-relations/write-relations'
@@ -26,6 +25,7 @@ import { pruneStoryPostRelatedUrlsOutsidePrefix } from './story-post-related-url
 import {
   lockPostScopeAndCheckProjectionWork,
   lockStoryPostRelatedUrlProjectionHostnameBlocks,
+  readStoryPostRelatedUrlProjectionActiveRelations,
   recordProjectionCrawlRequirements,
 } from './story-post-related-url-projection-relation-safety.mts'
 import {
@@ -41,35 +41,33 @@ export async function admitStoryPostRelatedUrlProjectionPrefix(
   work: ProjectionWork,
   rows?: readonly SourceRow[],
 ): Promise<{ ok: boolean; processed: number }> {
-  const storyTeller = await requireStoryTeller()
+  const [storyTeller, sourceRows] = await Promise.all([
+    requireStoryTeller(),
+    rows === undefined
+      ? getStoryPostRelatedUrlProjectionSourcePageForWork(work)
+      : Promise.resolve(rows),
+  ])
+  const webRiskBlockedUrls = await blockedUrlsFromWebRiskScreen(uniqueUrls(sourceRows))
   await using transaction = await beginTransaction()
   await markProjectionWrite(transaction)
-  const loaded = await loadAdmittedRows(transaction, work, rows, storyTeller)
-  if (!loaded.admitted.ok) return { ok: false, processed: 0 }
+  const admitted = await admitPreparedRows(
+    transaction,
+    work,
+    sourceRows,
+    storyTeller,
+    webRiskBlockedUrls,
+  )
+  if (!admitted.ok) return { ok: false, processed: 0 }
   await transaction.commit()
-  await publishAdmissionEffects(loaded.admitted)
-  const dispatched = await dispatchPendingCrawls(work, loaded.sourceRows)
-  return { ok: dispatched, processed: loaded.sourceRows.length }
+  await publishAdmissionEffects(admitted)
+  const dispatched = await dispatchPendingCrawls(work, sourceRows)
+  return { ok: dispatched, processed: sourceRows.length }
 }
 
 type PreparedAdmission = {
   ok: true
   relation: ReturnType<typeof getEntityRelationMetadataOrThrow>
   internalRelations: EntityRelation[]
-}
-
-async function loadAdmittedRows(
-  transaction: TransactionQuery,
-  work: ProjectionWork,
-  rows: readonly SourceRow[] | undefined,
-  storyTeller: StoryTeller,
-): Promise<{ sourceRows: readonly SourceRow[]; admitted: PreparedAdmission | { ok: false } }> {
-  const sourceRows =
-    rows === undefined
-      ? await getStoryPostRelatedUrlProjectionSourcePageForWork(work, transaction)
-      : rows
-  const admitted = await admitPreparedRows(transaction, work, sourceRows, storyTeller)
-  return { sourceRows, admitted }
 }
 
 async function lockPrefixHostnames(
@@ -85,10 +83,9 @@ async function admitPreparedRows(
   work: ProjectionWork,
   rows: readonly SourceRow[],
   storyTeller: StoryTeller,
+  webRiskBlockedUrls: ReadonlySet<string>,
 ): Promise<PreparedAdmission | { ok: false }> {
   const urlIds = uniqueUrlIds(rows)
-  // ast-grep-ignore: no-three-sequential-awaits -- Web Risk must commit its hostname blocks before these locks, and the locks must precede the local eligibility recheck
-  const webRiskBlockedUrls = await blockedUrlsFromWebRiskScreen(uniqueUrls(rows))
   await lockPrefixHostnames(transaction, urlIds)
   const decisions = await decideStoryPostRelatedUrlProjectionRows(
     work,
@@ -164,15 +161,11 @@ async function admitPreparedRows(
   }
   if (alreadyActive.length > 0) {
     const activeUrlIds = alreadyActive.map(row => row.object_id)
-    const { rows: activeRelations } = await transaction<{ id: string; object_id: string }>(
-      `/* storyPostRelatedUrlProjectionActiveRelationIds */
-        SELECT id, object_id
-        FROM relation__post__related__url
-        WHERE subject_id = $1 AND deleted_at IS NULL AND created_by_id = $2
-          AND object_id = ANY($3::uuid[])
-        ORDER BY object_id
-        LIMIT $4`,
-      [work.post_id, storyTeller.id, activeUrlIds, relationLimitsMaxValues.post_related_url],
+    const activeRelations = await readStoryPostRelatedUrlProjectionActiveRelations(
+      transaction,
+      work.post_id,
+      storyTeller.id,
+      activeUrlIds,
     )
     const voteRelations: EntityRelation[] = []
     for (const row of activeRelations) {

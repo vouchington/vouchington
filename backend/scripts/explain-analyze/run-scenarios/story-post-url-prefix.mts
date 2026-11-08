@@ -4,7 +4,6 @@ import { blockedUrlIdsForHostnameBlocks } from '@services/hostname-blocking'
 import { getStoryPostRelatedUrlProjectionPrefix } from '@services/stories/story-post-related-url-projection'
 import { pruneStoryPostRelatedUrlsOutsidePrefix } from '@services/stories/story-post-related-url-projection-prune'
 import { lockStoryPostRelatedUrlProjectionHostnameBlocks } from '@services/stories/story-post-related-url-projection-relation-safety'
-import type { ProjectionWork } from '@services/stories/story-post-related-url-projection-types'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { RSS_FEED_ITEM_SEED_COUNT } from '../seed-data/common.mts'
@@ -15,15 +14,21 @@ import {
   DEFAULT_LEASE,
   HIGH_WATER_ID,
   ITEM_INDEX,
+  insertMaxCapReceipts,
   leasePruneJobs,
   MAXIMUM_LEASE,
   NEWEST_INDEX,
   partitionIndexNames,
   prefixUrlIds,
+  projectionWork,
   PRUNE_INDEX,
   restorePrefixItems,
   STORY_ID,
 } from './story-post-url-prefix-setup.mts'
+import { captureStoryPostUrlPrefixEffectScenarios } from './story-post-url-prefix-effects.mts'
+
+/** Child hostname row plus parent-suffix probes. The capacity seed host has three labels. */
+const URL_HOSTNAME_PROBE_LIMIT = 5
 
 /** Admission, prefix hostname locks, and the post-bounded prune at both relation caps. */
 export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
@@ -35,6 +40,7 @@ export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
   try {
     await attachPrefixItems()
     await leasePruneJobs()
+    await insertMaxCapReceipts()
     await captureAdmission('story-post-related-url-admission-prefix-default', 1000, itemIndexes)
     await captureAdmission('story-post-related-url-admission-prefix-maximum', 10_000, itemIndexes)
     await captureHostLocks('story-post-related-url-prefix-host-locks-default', 1000)
@@ -55,6 +61,7 @@ export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
       MAXIMUM_LEASE,
       [...pruneIndexes, ...newestIndexes],
     )
+    await captureStoryPostUrlPrefixEffectScenarios([...pruneIndexes, ...newestIndexes])
   } finally {
     await restorePrefixItems()
   }
@@ -104,7 +111,7 @@ async function captureHostLocks(id: string, cap: number): Promise<void> {
   registerScenarioContract(id, {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'urls', max: cap },
-      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: cap * 5 },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: cap * URL_HOSTNAME_PROBE_LIMIT },
     ],
     forbidSequentialScans: ['urls', 'url_hostnames'],
   })
@@ -125,7 +132,7 @@ async function captureBlockedHostnames(id: string, cap: number): Promise<void> {
   registerScenarioContract(id, {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'urls', max: cap },
-      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: cap * 5 },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: cap * URL_HOSTNAME_PROBE_LIMIT },
     ],
     forbidSequentialScans: ['urls', 'url_hostnames'],
     // An unblocked prefix returns no ids. The scans still have to stay within the cap.
@@ -176,7 +183,7 @@ async function capturePrune(
     () =>
       pruneStoryPostRelatedUrlsOutsidePrefix(
         query,
-        pruneWork(postId, leaseToken),
+        projectionWork(postId, leaseToken),
         seed.user,
         admittedUrlIds,
       ),
@@ -185,15 +192,4 @@ async function capturePrune(
     // Roll back the callback's row locks before EXPLAIN runs the same update.
     { afterCapture: () => query.rollback() },
   )
-}
-
-function pruneWork(postId: string, leaseToken: string): ProjectionWork {
-  return {
-    post_id: postId,
-    story_id: STORY_ID,
-    generation: '1',
-    sweep_upper_bound_source_id: null,
-    source_completed_at: null,
-    lease_token: leaseToken,
-  }
 }

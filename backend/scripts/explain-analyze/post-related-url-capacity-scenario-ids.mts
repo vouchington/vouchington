@@ -12,4 +12,10 @@ export const POST_URL_CAPACITY_SCENARIOS = [
   'story-post-related-url-prefix-hostname-blocks-maximum',
   'story-post-related-url-prune-default',
   'story-post-related-url-prune-maximum',
+  'story-post-related-url-prune-lowered-cap',
+  'story-post-related-url-active-relations-maximum',
+  'story-post-related-url-receipt-insert-maximum',
+  'story-post-related-url-receipts-written-maximum',
+  'story-post-related-url-crawl-requirements-maximum',
+  'story-post-related-url-pending-crawls-maximum',
 ] as const

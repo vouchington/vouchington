@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
+import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
 import { maintainBookmarkBloomForRelations } from '@services/entity-relations/bookmark-bloom-maintenance'
 import { enqueueNotificationReconcileForRelations } from '@services/entity-relations/notification-reconcile'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
@@ -50,21 +51,33 @@ export async function publishAdmissionEffects(admitted: AdmissionEffects): Promi
   ])
 }
 
-export async function dispatchPendingCrawls(
+export async function readStoryPostRelatedUrlProjectionPendingCrawlEffects(
   work: ProjectionWork,
-  rows: readonly SourceRow[],
-): Promise<boolean> {
-  const { rows: pendingEffects } = await write<{ url_id: string }>(
+  urlIds: readonly string[],
+): Promise<string[]> {
+  const { rows } = await write<{ url_id: string }>(
     `/* storyPostRelatedUrlProjectionPendingCrawlEffects */
       SELECT url_id
       FROM story_post_related_url_projection_receipts
       WHERE post_id = $1 AND generation = $2 AND is_eligible = TRUE
         AND url_id = ANY($3::uuid[]) AND should_crawl = TRUE
-        AND effects_dispatched_at IS NULL`,
-    [work.post_id, work.generation, uniqueUrlIds(rows)],
+        AND effects_dispatched_at IS NULL
+      LIMIT $4`,
+    [work.post_id, work.generation, urlIds, relationLimitsMaxValues.post_related_url],
   )
   const pendingEffectIds: string[] = []
-  for (const row of pendingEffects) pendingEffectIds.push(row.url_id)
+  for (const row of rows) pendingEffectIds.push(row.url_id)
+  return pendingEffectIds
+}
+
+export async function dispatchPendingCrawls(
+  work: ProjectionWork,
+  rows: readonly SourceRow[],
+): Promise<boolean> {
+  const pendingEffectIds = await readStoryPostRelatedUrlProjectionPendingCrawlEffects(
+    work,
+    uniqueUrlIds(rows),
+  )
   if (pendingEffectIds.length === 0) return true
   await enqueueBulkCrawlUrls(pendingEffectIds.map(urlId => ({ urlId })))
   const { rowCount } = await write(

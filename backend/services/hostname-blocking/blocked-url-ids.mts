@@ -1,5 +1,7 @@
+import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
 import sql from 'sql-template-strings'
 
 /** URL ids whose hostname, or a parent suffix, is blocked. One statement for the whole set. */
@@ -8,9 +10,13 @@ export async function blockedUrlIdsForHostnameBlocks(
   options: QueryOptions = {},
 ): Promise<Set<string>> {
   if (urlIds.length === 0) return new Set()
+  assert.ok(
+    urlIds.length <= relationLimitsMaxValues.post_related_url,
+    `blockedUrlIdsForHostnameBlocks received ${urlIds.length} URL ids; relationLimitsMaxValues.post_related_url is ${relationLimitsMaxValues.post_related_url}`,
+  )
   const { rows } = await write<{ url_id: string }>(
     sql`/* blockedUrlIdsForHostnameBlocks */
-      -- no-mistakes-disable-next-line postgres-bounded-statements: the caller passes one projection prefix, at most the post_related_url hard maximum of 10000; a LIMIT on this result would hide a blocked URL and admit it
+      -- no-mistakes-disable-next-line postgres-bounded-statements: blockedUrlIdsForHostnameBlocks asserts urlIds.length is at most relationLimitsMaxValues.post_related_url; a LIMIT on this result would hide a blocked URL and admit it
       SELECT requested.id AS url_id
       FROM (SELECT DISTINCT id FROM unnest(${[...urlIds]}::uuid[]) AS input(id)) AS requested
       CROSS JOIN LATERAL (

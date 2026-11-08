@@ -1,5 +1,7 @@
+import assert from 'node:assert/strict'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { recordPostRelatedUrlPublicationChanges } from '@services/entity-relations/post-topic-publication'
+import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
 import { markStoryPostRelatedUrlProjectionInvalidationRequired } from './story-post-related-url-projection-invalidation.mts'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
 
@@ -15,9 +17,13 @@ export async function pruneStoryPostRelatedUrlsOutsidePrefix(
   storyTellerId: string,
   admittedUrlIds: readonly string[],
 ): Promise<void> {
+  assert.ok(
+    admittedUrlIds.length <= relationLimitsMaxValues.post_related_url,
+    `post_related_url admitted prefix has ${admittedUrlIds.length} URL ids; relationLimitsMaxValues.post_related_url is ${relationLimitsMaxValues.post_related_url}`,
+  )
   const { rows } = await query<{ subject_id: string }>(
     `/* pruneStoryPostRelatedUrlsOutsidePrefix */
-      -- no-mistakes-disable-next-line postgres-bounded-statements: the relation write guard keeps this post's live story-teller rows at or under the post_related_url hard maximum of 10000; this pass must remove every projected URL outside the admitted prefix, and a LIMIT would leave outsiders attached
+      -- no-mistakes-disable-next-line postgres-bounded-statements: the relation write guard keeps this post's live story-teller rows at or under relationLimitsMaxValues.post_related_url; this pass must remove every projected URL outside the admitted prefix, and a LIMIT would leave outsiders attached
       UPDATE relation__post__related__url AS relation
       SET deleted_at = CURRENT_TIMESTAMP, deleted_by_id = $2
       WHERE relation.subject_id = $1

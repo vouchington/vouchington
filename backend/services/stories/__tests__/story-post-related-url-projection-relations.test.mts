@@ -95,6 +95,28 @@ describe('story post related URL projection relations', () => {
     }
   })
 
+  it('omits a URL blocked after an outside decision when admission reads the prefix itself', async () => {
+    const { post, url } = await createProjectablePost('blocked-before-admission')
+    const work = await createTestStoryProjectionLease(post.id)
+    if (!work) throw new Error('Expected projection work')
+    try {
+      const sourceRows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work)
+      const decisions = await decideStoryPostRelatedUrlProjectionRows(work, sourceRows)
+      expect(decisions).toEqual([expect.objectContaining({ is_eligible: true })])
+      await updateUrlHostnameBlocked(url.hostname.id, true)
+      await expect(admitStoryPostRelatedUrlProjectionPrefix(work)).resolves.toMatchObject({
+        ok: true,
+      })
+      await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
+      await expect(
+        getTestStoryPostProjectionReceiptState(post.id, work.generation, url.id),
+      ).resolves.toMatchObject({ is_eligible: false })
+    } finally {
+      await releaseStoryPostRelatedUrlProjectionWork(work)
+      await drainProjection(post.id)
+    }
+  })
+
   it('omits a prefix URL whose domain is on the URL blocklist', async () => {
     const { post, url } = await createProjectablePost('blocklisted-domain')
     const work = await createTestStoryProjectionLease(post.id)
@@ -266,10 +288,7 @@ async function createProjectablePost(label: string) {
   const story = await insertTestStory({
     title: `Projection relation ${label} ${crypto.randomUUID()}`,
   })
-  const url = await insertTestUrlDirect(
-    null,
-    `https://story-relation-${crypto.randomUUID()}.example.test/${label}/article`,
-  )
+  const url = await insertTestUrlDirect(null, `https://${crypto.randomUUID()}.example.test`)
   if (!url) throw new Error('Expected a public projection test URL')
   await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: url.id, count: 2 })
   const user = await createTestUserDirect()

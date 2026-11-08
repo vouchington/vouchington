@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
+import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
+import type { ProjectionWork } from '@services/stories/story-post-related-url-projection-types'
 import { seedUuid } from '../seed-data/common.mts'
 import { POST_URL_CAPACITY_SEED as seed } from '../seed-data/post-related-url-capacity.mts'
 
@@ -86,7 +88,49 @@ export async function leasePruneJobs(): Promise<void> {
   )
 }
 
+export function projectionWork(postId: string, leaseToken: string): ProjectionWork {
+  return {
+    post_id: postId,
+    story_id: STORY_ID,
+    generation: '1',
+    sweep_upper_bound_source_id: null,
+    source_completed_at: null,
+    lease_token: leaseToken,
+  }
+}
+
+export async function insertMaxCapReceipts(): Promise<void> {
+  const { rows } = await write<{ count: number }>(
+    `/* prepareStoryPostUrlPrefix:receipts */
+     WITH inserted AS (
+       INSERT INTO story_post_related_url_projection_receipts
+         (post_id, generation, url_id, source_item_id, is_eligible, should_crawl)
+       SELECT $1, 1, relation.object_id, item.id, TRUE, TRUE
+       FROM relation__post__related__url relation
+       CROSS JOIN LATERAL (
+         SELECT id FROM rss_feed_items
+         WHERE story_id = $2 AND deleted_at IS NULL
+         ORDER BY id
+         LIMIT 1
+       ) item
+       WHERE relation.subject_id = $1 AND relation.deleted_at IS NULL AND relation.created_by_id = $3
+       RETURNING url_id
+     )
+     SELECT count(*)::int AS count FROM inserted`,
+    [seed.posts[1], STORY_ID, seed.user],
+  )
+  assert.equal(rows[0]?.count, relationLimitsMaxValues.post_related_url)
+  await write(
+    `/* prepareStoryPostUrlPrefix:analyze-receipts */ ANALYZE story_post_related_url_projection_receipts`,
+  )
+}
+
 export async function restorePrefixItems(): Promise<void> {
+  await write(
+    `/* restoreStoryPostUrlPrefix:receipts */
+     DELETE FROM story_post_related_url_projection_receipts WHERE post_id = $1`,
+    [seed.posts[1]],
+  )
   await removeExtraPrefixItems()
   await write(`/* restoreStoryPostUrlPrefix:story */ DELETE FROM stories WHERE id = $1`, [STORY_ID])
   // Inserts append past the seed heap. Vacuum drops those dead tuples so later plans see the

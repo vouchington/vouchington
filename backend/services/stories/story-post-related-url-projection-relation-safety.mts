@@ -1,8 +1,11 @@
+import assert from 'node:assert/strict'
 import { getStoriesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
+import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
+import { hostnameBlockStripeSetLockSql } from '@services/hostname-blocking/hostname-block-lock'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
 import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
@@ -61,6 +64,7 @@ export async function lockStoryPostRelatedUrlProjectionHostnameBlocks(
   query: TransactionQuery,
   urlIds: readonly string[],
 ): Promise<void> {
+  assertPostRelatedUrlPrefix(urlIds.length)
   await query(
     `/* lockStoryPostRelatedUrlProjectionHostnameBlocks */
       WITH RECURSIVE url_targets AS (
@@ -85,10 +89,34 @@ export async function lockStoryPostRelatedUrlProjectionHostnameBlocks(
           SELECT id FROM url_hostnames WHERE hostname = suffix.hostname LIMIT 1
         ) candidate
       )
-      SELECT pg_advisory_xact_lock(hashtextextended(id::text, 0))
-      FROM candidates
-      ORDER BY id`,
+      ${hostnameBlockStripeSetLockSql('candidates', 'candidates.id')}`,
     [urlIds],
+  )
+}
+
+export async function readStoryPostRelatedUrlProjectionActiveRelations(
+  query: TransactionQuery,
+  postId: string,
+  createdById: string,
+  urlIds: readonly string[],
+): Promise<Array<{ id: string; object_id: string }>> {
+  const { rows } = await query<{ id: string; object_id: string }>(
+    `/* storyPostRelatedUrlProjectionActiveRelationIds */
+      SELECT id, object_id
+      FROM relation__post__related__url
+      WHERE subject_id = $1 AND deleted_at IS NULL AND created_by_id = $2
+        AND object_id = ANY($3::uuid[])
+      ORDER BY object_id
+      LIMIT $4`,
+    [postId, createdById, urlIds, relationLimitsMaxValues.post_related_url],
+  )
+  return rows
+}
+
+function assertPostRelatedUrlPrefix(count: number): void {
+  assert.ok(
+    count <= relationLimitsMaxValues.post_related_url,
+    `post_related_url prefix has ${count} URL ids; relationLimitsMaxValues.post_related_url is ${relationLimitsMaxValues.post_related_url}`,
   )
 }
 

@@ -134,7 +134,7 @@ export async function assertUrlsAllowedByWebRiskWithState(
   for (const item of decided) {
     try {
       // oxlint-disable no-await-in-loop -- the rate-limit charge and provider cooldown are ordered per URL
-      // no-mistakes-disable-next-line query-reached-per-item: uris:search takes one uri; this URL's charge, cache write, and block depend on that response
+      // no-mistakes-disable-next-line query-reached-per-item: uris:search takes one uri; this URL's charge, cache write, and block depend on that response. A projection prefix that reaches this loop is at most relationLimitsMaxValues.post_related_url and runs before the admission transaction opens
       await decideWebRiskUrl(
         state,
         item.url,

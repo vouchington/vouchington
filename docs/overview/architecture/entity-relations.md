@@ -47,8 +47,10 @@ relations such as follow, mute, and block remain bookmark API concerns.
 
 Story projection admits one prefix of the story's active RSS items, ordered by item id up to the
 post related-URL cap and the generation's high-water mark, then soft-deletes projected rows whose
-URL is outside that eligible prefix. The row stays because votes and history reference it. Both
-happen in the same transaction as the prefix hostname locks.
+URL is outside that eligible prefix. The row stays because votes and history reference it. The
+provider screen finishes before the admission transaction opens. Admission and the prune then run in the
+same transaction as the prefix hostname locks. Those locks are a fixed stripe set shared with
+hostname blocking, so a full prefix cannot exhaust the lock table.
 Rows inside the prefix that are blocked or are referral links are not admitted, and projected
 copies of those URLs come off. Eligible items past the prefix stay off the post until a later
 generation; the statement does not walk further to refill the cap. A lowered cap takes effect on
@@ -56,9 +58,10 @@ the next refresh: projected URLs outside the new prefix come off. Changing the c
 itself start a generation.
 
 Relations a person added by hand are left in place. A projected row that a person later touches is
-kept by the generation's mutation fence. A block that lands on an already-written URL after this
-statement commits is handled by the next generation, which prunes projected URLs missing from the
-new eligible prefix.
+kept by the generation's mutation fence. Refresh copies that fence onto the new generation, and
+cleanup removes only older generations, so the edit stays protected. A block that lands on an
+already-written URL after this statement commits is handled by the next generation, which prunes
+projected URLs missing from the new eligible prefix.
 
 Post-related URL writes recheck the relation cap under the post scope lock, so they cannot exceed
 it. Other relation types keep check-before-write behavior and may overshoot during concurrent

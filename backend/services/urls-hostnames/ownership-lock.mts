@@ -1,4 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
+import { hostnameBlockStripeSetLockSql } from '@services/hostname-blocking/hostname-block-lock'
 import { createTransactionLockOnce } from '@vouchington/postgres'
 import sql from 'sql-template-strings'
 
@@ -7,6 +8,7 @@ const hostnameOwnershipLocks = createTransactionLockOnce({
   namespace: '',
   annotation: 'lockHostnameOwnership',
   async acquire(query, sortedIds) {
+    await lockHostnameOwnershipStripes(query, sortedIds)
     const { rows } = await query<{ hostname_id: string }>(sql`/* lockHostnameOwnership */
       WITH RECURSIVE hostname_names(hostname) AS (
         SELECT hostname FROM url_hostnames WHERE id = ANY(${sortedIds}::uuid[])
@@ -29,6 +31,28 @@ const hostnameOwnershipLocks = createTransactionLockOnce({
     return rows.map(row => row.hostname_id)
   },
 })
+
+/** Stripe locks for the same hostname ids ownership then locks one by one. */
+async function lockHostnameOwnershipStripes(
+  query: TransactionQuery,
+  sortedIds: readonly string[],
+): Promise<void> {
+  const statement = sql`/* lockHostnameOwnershipStripes */
+    WITH RECURSIVE hostname_names(hostname) AS (
+      SELECT hostname FROM url_hostnames WHERE id = ANY(${sortedIds}::uuid[])
+      UNION
+      SELECT substring(hostname FROM position('.' IN hostname) + 1)
+      FROM hostname_names WHERE position('.' IN hostname) > 0
+    ), candidate_ids AS (
+      SELECT id AS hostname_id FROM url_hostnames
+      WHERE hostname IN (SELECT hostname FROM hostname_names)
+      UNION
+      SELECT unnest(${sortedIds}::uuid[])
+    )
+  `
+  statement.append(hostnameBlockStripeSetLockSql('candidate_ids', 'hostname_id'))
+  await query(statement)
+}
 
 /** Serializes ownership writers using the same ID key as hostname blocking. */
 export async function lockHostnameOwnership(
