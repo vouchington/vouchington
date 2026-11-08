@@ -154,6 +154,45 @@ COMMENT ON COLUMN rss_feeds.should_ignore_robots_txt IS 'Whether robots.txt allo
 COMMENT ON COLUMN rss_feeds.unreliable_status_codes IS 'RSS feed fetch HTTP status codes that should retry instead of soft-deleting this feed. NULL = inherit from hostname. Empty array = no unreliable statuses, overriding hostname defaults.';
 COMMENT ON COLUMN rss_feeds.declared_language IS 'Feed-declared language from <language> or xml:lang element';
 
+-- The feed projection on urls is updated for direct feed writes as well as
+-- enablement changes projected from rss_feed_setting_changes.
+CREATE OR REPLACE FUNCTION fn_update_url_feed_rank()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  affected_url_id UUID;
+  next_rank SMALLINT;
+BEGIN
+  FOR affected_url_id IN
+    SELECT DISTINCT candidate_url_id
+    FROM unnest(ARRAY[
+      CASE WHEN TG_OP <> 'INSERT' THEN OLD.rss_feed_url_id ELSE NULL END,
+      CASE WHEN TG_OP <> 'DELETE' THEN NEW.rss_feed_url_id ELSE NULL END
+    ]) AS candidate_url_id
+    WHERE candidate_url_id IS NOT NULL
+    ORDER BY candidate_url_id
+  LOOP
+    -- This lock is compatible with the FK's KEY SHARE lock. A separate
+    -- statement after acquiring it sees feed changes committed while waiting.
+    PERFORM 1 FROM urls WHERE id = affected_url_id FOR NO KEY UPDATE;
+    IF NOT FOUND THEN CONTINUE; END IF; -- URL deletion cascade.
+
+    SELECT CASE WHEN EXISTS (
+      SELECT 1 FROM rss_feeds
+      WHERE rss_feed_url_id = affected_url_id
+        AND deleted_at IS NULL AND is_enabled
+    ) THEN 0 ELSE 1 END INTO next_rank;
+
+    UPDATE urls SET feed_rank = next_rank
+    WHERE id = affected_url_id;
+  END LOOP;
+  RETURN NULL;
+END;
+$$;
+COMMENT ON FUNCTION fn_update_url_feed_rank() IS 'Keeps each affected URL rank synchronized with live enabled RSS feeds, including feed moves and setting projections.';
+CREATE TRIGGER trigger_sync_url_feed_rank
+AFTER INSERT OR UPDATE OF rss_feed_url_id, is_enabled, deleted_at OR DELETE ON rss_feeds
+FOR EACH ROW EXECUTE FUNCTION fn_update_url_feed_rank();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TYPE rss_feed_setting_change_types AS ENUM ('enablement', 'discoverability');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -415,6 +454,71 @@ WHERE deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__url_id__id
 ON rss_feed_items (url_id, id);
+
+-- One ordered index probe per item-ID partition finds this URL's maximum,
+-- including soft-deleted items (the old MAX had no deletion predicate).
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__url_id__published_at
+ON rss_feed_items (url_id, published_at DESC NULLS LAST);
+
+-- The same inlinable query is used by the maintenance trigger and EXPLAIN probes.
+CREATE OR REPLACE FUNCTION fn_url_latest_rss_feed_item_published_at(p_url_id UUID)
+RETURNS TABLE (published_at TIMESTAMPTZ)
+LANGUAGE SQL STABLE AS $$
+  SELECT rss_feed_items.published_at
+  FROM rss_feed_items
+  WHERE rss_feed_items.url_id = p_url_id
+  ORDER BY rss_feed_items.published_at DESC NULLS LAST
+  LIMIT 1
+$$;
+COMMENT ON FUNCTION fn_url_latest_rss_feed_item_published_at(UUID) IS 'Returns the newest publication timestamp for one URL with an ordered probe per item-ID partition.';
+
+CREATE OR REPLACE FUNCTION fn_update_url_latest_published_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  affected_url_id UUID;
+  next_published_at TIMESTAMPTZ;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    -- A new item can only raise the maximum. The row update serializes with
+    -- downward recomputes without locking the hostname or an item read set.
+    UPDATE urls
+    SET latest_published_at = NEW.published_at
+    WHERE id = NEW.url_id
+      AND (latest_published_at IS NULL OR latest_published_at < NEW.published_at);
+    RETURN NULL;
+  END IF;
+
+  IF TG_OP = 'UPDATE' AND OLD.url_id = NEW.url_id
+      AND OLD.published_at IS NOT DISTINCT FROM NEW.published_at THEN
+    RETURN NULL;
+  END IF;
+
+  FOR affected_url_id IN
+    SELECT DISTINCT candidate_url_id
+    FROM unnest(ARRAY[
+      OLD.url_id,
+      CASE WHEN TG_OP = 'UPDATE' THEN NEW.url_id ELSE NULL END
+    ]) AS candidate_url_id
+    WHERE candidate_url_id IS NOT NULL
+    ORDER BY candidate_url_id
+  LOOP
+    -- Lock and write only affected URL rows. Sort the two URLs in a move
+    -- to keep their lock order stable.
+    PERFORM 1 FROM urls WHERE id = affected_url_id FOR NO KEY UPDATE;
+    IF NOT FOUND THEN CONTINUE; END IF; -- URL deletion cascade.
+
+    SELECT published_at INTO next_published_at
+    FROM fn_url_latest_rss_feed_item_published_at(affected_url_id);
+    UPDATE urls SET latest_published_at = next_published_at
+    WHERE id = affected_url_id;
+  END LOOP;
+  RETURN NULL;
+END;
+$$;
+COMMENT ON FUNCTION fn_update_url_latest_published_at() IS 'Maintains the exact RSS item publication maximum on affected URLs after insert, delete, URL move, or publication-date change.';
+CREATE TRIGGER trigger_sync_url_latest_published_at
+AFTER INSERT OR UPDATE OF id, url_id, data OR DELETE ON rss_feed_items
+FOR EACH ROW EXECUTE FUNCTION fn_update_url_latest_published_at();
 
 -- find rss feed items pending language detection
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

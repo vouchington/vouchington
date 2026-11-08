@@ -1894,6 +1894,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_updated_at()
  LANGUAGE plpgsql
 ```
 
+## `fn_update_url_feed_rank`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_url_feed_rank()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_url_hostname_blocked_after_delete`
 
 ```sql
@@ -1926,6 +1934,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_crawl_policy_changed_at
  LANGUAGE plpgsql
 ```
 
+## `fn_update_url_latest_published_at`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_url_latest_published_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)`
 
 ```sql
@@ -1940,6 +1956,15 @@ CREATE OR REPLACE FUNCTION public.fn_update_user_bookmark_stats_for_user_id(targ
 CREATE OR REPLACE FUNCTION public.fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)
  RETURNS uuid
  LANGUAGE plpgsql
+```
+
+## `fn_url_latest_rss_feed_item_published_at(p_url_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_url_latest_rss_feed_item_published_at(p_url_id uuid)
+ RETURNS TABLE(published_at timestamp with time zone)
+ LANGUAGE sql
+ STABLE
 ```
 
 ## `fn_user_deletion_has_remaining_owned_data(target_user_id uuid)`

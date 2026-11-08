@@ -19,6 +19,14 @@
 | Crawl CPU work        | Shared `background-cpu` worker             | URL, referral-link and dispatch handlers share hostname ordering |
 | Blacklist system      | `backend/queues/urls-domains-blacklist/`   | Weekly blacklist sync from external sources                      |
 
+Hostname URL ranking uses transactionally maintained URL metadata rather than item-history reads
+on the request path. A recent-window refresh would change the exact ranking when an older item
+changes URL or publication date. Removing or moving the newest item therefore finds the remaining
+maximum through an ordered probe in each item partition; only the affected URL projection is
+locked. Soft deletion keeps an item's publication contribution, matching the historical ranking
+contract, while hard deletion removes it. The [canonical RSS creator](../../../backend/data-stores/psql/migrations/0080-00-00-rss-feeds-items.sql)
+owns these write invariants.
+
 ## Crawl Pipeline
 
 For each URL crawl:

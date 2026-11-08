@@ -12,6 +12,7 @@ import { VOTE_WEIGHT_DISPATCH_SCENARIO_IDS } from './vote-weight-dispatch-scenar
 import { SHARED_LOADER_SCENARIO_IDS } from './shared-loader-scenario-ids.mts'
 import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.mts'
 import { SESSION_LIMIT_SCENARIO_IDS } from './session-limit-scenario-ids.mts'
+import { TOP_URL_RANKING_SCENARIO_IDS } from './top-url-ranking-scenario-ids.mts'
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VOTE_SCORE_SCENARIO_IDS,
   ...VIEW_DRIVEN_SCENARIO_IDS,
@@ -173,7 +174,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-viewer-counts',
   'topic-viewer-counts-dense',
   'topic-votes-by-user',
-  'top-urls-by-hostname-ids',
+  ...TOP_URL_RANKING_SCENARIO_IDS,
   ...(['search-communities-trending', 'trending-posts', 'trending-posts-by-topic'] as const),
   ...(['search-rss-feeds-trending', 'trending-topics'] as const),
   'url-hostname-search-by-topic',
