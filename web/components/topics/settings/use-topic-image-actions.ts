@@ -1,6 +1,10 @@
 import onError, { onSuccess } from '@/lib/on-error'
 import { updateTopic } from '@/lib/api/client/topics'
 import type { TopicEditState } from './topic-edit-model'
+import {
+  IMAGE_PLACEMENT_LIMIT_MESSAGE,
+  IMAGE_PLACEMENT_LIMIT_REACHED,
+} from '@/lib/api/image-placement-limit'
 
 type Action = Partial<TopicEditState>
 type Dispatch = (action: Action) => void
@@ -29,6 +33,7 @@ export function useTopicImageActions({
       const action = imageId === null ? 'remove' : 'update'
       onError(err, {
         fallback: `Failed to ${action} image`,
+        displayMessageByCode: { [IMAGE_PLACEMENT_LIMIT_REACHED]: IMAGE_PLACEMENT_LIMIT_MESSAGE },
         tags: { form: 'admin-topic-images' },
       })
     } finally {

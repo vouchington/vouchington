@@ -19,6 +19,7 @@ export const backgroundWorkRegistryEntries7 = {
     label: 'Media delivery safety',
     maxValues: mediaDeliverySafetyWorkMaxValues,
     descriptions: {
+      max_placements_per_image: 'Maximum active post and public-surface placements per image.',
       recovery_page_size: 'Recovery page size for media delivery safety processing.',
       edge_publish_batch_size:
         'Records claimed, published at the edge and acknowledged together within one claim lease.',

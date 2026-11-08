@@ -8,6 +8,10 @@ import {
   isEmailVerificationRequired,
   useEmailVerificationRecovery,
 } from '@/lib/email-verification-recovery-context'
+import {
+  IMAGE_PLACEMENT_LIMIT_MESSAGE,
+  IMAGE_PLACEMENT_LIMIT_REACHED,
+} from '@/lib/api/image-placement-limit'
 
 export function usePostFormSubmit({
   communityPendingRedirectPath,
@@ -91,7 +95,11 @@ export function usePostFormSubmit({
       setUsernameDialogOpen(true)
       return false
     }
-    onError(err, { fallback: 'An unexpected error occurred.', tags: { form: 'post-submit' } })
+    onError(err, {
+      fallback: 'An unexpected error occurred.',
+      displayMessageByCode: { [IMAGE_PLACEMENT_LIMIT_REACHED]: IMAGE_PLACEMENT_LIMIT_MESSAGE },
+      tags: { form: 'post-submit' },
+    })
     onCaptchaConsumed?.()
     return true
   }

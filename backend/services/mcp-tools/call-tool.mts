@@ -5,6 +5,7 @@ import createHttpError, { isHttpError } from 'http-errors'
 import {
   CONFLICT,
   RELATION_LIMIT_REACHED,
+  IMAGE_PLACEMENT_LIMIT_REACHED,
   FORBIDDEN,
   INVALID_INPUT,
   NOT_FOUND,
@@ -123,6 +124,7 @@ export async function callMcpTool(
               ? FORBIDDEN
               : INVALID_INPUT
       const domainCodes = [
+        IMAGE_PLACEMENT_LIMIT_REACHED,
         RELATION_LIMIT_REACHED,
         CONTRIBUTION_ADMISSION_IN_PROGRESS,
         CONTRIBUTION_QUOTA_EXCEEDED,

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock(import('@/lib/api/client'), () => ({
   updateMyIdentity: vi.fn<VitestLooseMock>(),
@@ -68,9 +68,17 @@ vi.mock(
 )
 
 vi.mock(import('@/lib/on-error'), () => ({
-  default: (_err: unknown, options: { fallback: string }) => {
-    toastMock.error(options.fallback)
-    return options.fallback
+  default: (
+    err: unknown,
+    options: { fallback: string; displayMessageByCode?: Record<string, string> },
+  ) => {
+    const code =
+      err && typeof err === 'object' && 'code' in err && typeof err.code === 'string'
+        ? err.code
+        : undefined
+    const message = (code && options.displayMessageByCode?.[code]) ?? options.fallback
+    toastMock.error(message)
+    return message
   },
   onSuccess: (message: string) => {
     toastMock.success(message)
@@ -79,6 +87,7 @@ vi.mock(import('@/lib/on-error'), () => ({
 
 import { IdentityForm } from '../identity-form'
 import { updateMyIdentity } from '@/lib/api/client'
+import { ApiError } from '@vouchington/api-client'
 
 const mockUpdateMyIdentity = vi.mocked(updateMyIdentity)
 
@@ -139,6 +148,23 @@ describe('IdentityForm error handling', () => {
     await waitFor(() => {
       expect(toastMock.error).toHaveBeenCalledWith('Failed to update profile image')
     })
+  })
+
+  it('explains how to recover when an image placement limit is reached', async () => {
+    mockUpdateMyIdentity.mockRejectedValueOnce(
+      new ApiError('Image placement limit reached', 409, {
+        code: 'IMAGE_PLACEMENT_LIMIT_REACHED',
+      }),
+    )
+
+    render(<IdentityForm {...baseProps} />)
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Upload image' }))
+    })
+
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'This image is already used in many places. Remove it from another profile, topic, community, or post before adding it here.',
+    )
   })
 
   it('emits onSuccess on successful image upload', async () => {

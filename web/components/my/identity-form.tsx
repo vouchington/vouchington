@@ -11,6 +11,10 @@ import { IdentityDisplayNameSourceSection } from './identity-display-name-source
 import { IdentityUsernameSection } from './identity-username-section'
 import { useAvailabilityCheck } from '@/hooks/use-availability-check'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import {
+  IMAGE_PLACEMENT_LIMIT_MESSAGE,
+  IMAGE_PLACEMENT_LIMIT_REACHED,
+} from '@/lib/api/image-placement-limit'
 
 interface Props {
   initialUsername: string | null
@@ -116,6 +120,7 @@ export function IdentityForm({
     } catch (err) {
       onError(err, {
         fallback: t('extracted.my.identityForm.failedToUpdateProfileImage_6fb576f7'),
+        displayMessageByCode: { [IMAGE_PLACEMENT_LIMIT_REACHED]: IMAGE_PLACEMENT_LIMIT_MESSAGE },
         tags: { form: 'my-identity' },
       })
     }

@@ -620,6 +620,7 @@
       "id": "image-upload",
       "title": "Post and profile image upload",
       "domain": "Media",
+      "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/559",
       "intents": [],
       "requirements": ["docs/requirements/users/USER_SETTINGS.md"],
       "matrixRows": [
@@ -643,10 +644,14 @@
             "web/components/shared/image-upload-button.tsx",
             "web/components/my/identity-profile-image-section.tsx"
           ],
-          "behaviorTests": []
+          "behaviorTests": [
+            "web/components/my/__tests__/identity-form.error.mock.test.tsx",
+            "web/components/posts/post-form/__tests__/submit-handler.mock.test.ts",
+            "web/components/topics/settings/__tests__/use-topic-image-actions.error.mock.test.ts"
+          ]
         },
         "swift": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": [
             "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativePostComposeSurface+Images.swift",
             "swift-clients/ui/Sources/VouchaFeatures/Profile/ProfileView.swift"
@@ -657,7 +662,7 @@
           ]
         },
         "dotnet": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": [
             "dotnet-clients/src/Voucha.Client.App/Pages/PostComposePage.xaml",
             "dotnet-clients/src/Voucha.Client.App/Pages/ProfilePage.xaml"

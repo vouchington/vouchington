@@ -7,6 +7,7 @@ import {
 } from './surface-lock.mts'
 import { prepublishImagePlacementDenialBatch } from './delivery-registry-publish.mts'
 import { lockImageAssetAdmission, assertImagesReadyForSurface } from './asset-admission-lock.mts'
+import { assertImagePlacementCapacity } from './placement-capacity.mts'
 
 export * from './delivery-registry.mts'
 export { lockImageAssetMutation } from './asset-mutation-lock.mts'
@@ -90,7 +91,9 @@ export async function prepublishImageSurfaceDenials(
       })
     }
   }
+  // ast-grep-ignore: no-three-sequential-awaits -- Readiness establishes image authority; capacity refusal must precede external denial publication on this transaction.
   await assertImagesReadyForSurface(changedImageIds, query)
+  await assertImagePlacementCapacity(changedImageIds, query)
   await prepublishImagePlacementDenialBatch(
     tuples.map(current => ({
       placementId: current.placement_id,
