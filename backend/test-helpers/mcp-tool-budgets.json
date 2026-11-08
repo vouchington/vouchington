@@ -195,8 +195,8 @@
       },
       "read_my_lists": {
         "measured": {
-          "list": 6166,
-          "core": 2900
+          "list": 6155,
+          "core": 2889
         },
         "max": {
           "list": 7000,

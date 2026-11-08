@@ -216,8 +216,9 @@ describe('read_community.list_items and read_community.list_item_counts — real
     const page = await items(slug, 'post', { limit: 2 })
     const first = await items(slug, 'post', { limit: 1 })
 
-    expect(entities(page)).toEqual([expected.post[0]])
-    expect(page.page_info.has_next_page).toBe(true)
+    expect(entities(page)).toEqual(expected.post)
+    expect(page.page_info.has_next_page).toBe(false)
+    expect(entities(first)).toEqual([expected.post[0]])
     expect(first.page_info.has_next_page).toBe(true)
     expect((await readPages('post', 2)).mcpIds).toEqual(expected.post)
   })

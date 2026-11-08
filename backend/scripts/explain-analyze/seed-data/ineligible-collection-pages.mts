@@ -1,9 +1,10 @@
 import { beginTransaction } from '@data-stores/psql'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 
-/** One keyset page is 21 rows. Live targets sit on every 10th key, so the first page stays short. */
+/** Each end has more than one page of hidden targets, followed by enough live targets to fill. */
 export const INELIGIBLE_COLLECTION_PAGE_COUNT = 400
 export const INELIGIBLE_COLLECTION_PAGE_LIMIT = 21
+export const INELIGIBLE_COLLECTION_NOISE_COMMUNITY_COUNT = 20
 
 const PAGE_USER_ID = seedUuid(7, '01')
 const PAGE_COMMUNITY_ID = seedUuid(9, '14')
@@ -16,18 +17,19 @@ export async function seedIneligibleCollectionPages(): Promise<void> {
   const postIds = Array.from({ length: count }, (_, index) =>
     seedUuid(POST_INDEX_BASE + index, '05'),
   )
-  const livePostIds = postIds.filter((_, index) => index % 10 === 0)
+  const hiddenRun = INELIGIBLE_COLLECTION_PAGE_LIMIT + 1
+  const isLive = (index: number) => index >= hiddenRun && index < count - hiddenRun
+  const livePostIds = postIds.filter((_, index) => isLive(index))
+  const highestRankedHiddenPostIds = postIds.slice(-hiddenRun)
   const topicIds = Array.from({ length: count }, (_, index) => seedUuid(index, 'b7'))
   const hostnameIds = Array.from({ length: count }, (_, index) => seedUuid(index, 'b8'))
   const membershipIds = Array.from({ length: count }, (_, index) =>
     seedUuidAtTimestamp(RELATION_BASE_MS + index * 1000, index),
   )
   const introducedAt = hostnameIds.map((_, index) =>
-    index % 10 === 0 ? new Date(RELATION_BASE_MS) : null,
+    isLive(index) ? new Date(RELATION_BASE_MS) : null,
   )
-  const deletedAt = postIds.map((_, index) =>
-    index % 10 === 0 ? null : new Date(RELATION_BASE_MS),
-  )
+  const deletedAt = postIds.map((_, index) => (isLive(index) ? null : new Date(RELATION_BASE_MS)))
   const orderIndexes = postIds.map((_, index) => index)
 
   await using transaction = await beginTransaction()
@@ -121,7 +123,8 @@ export async function seedIneligibleCollectionPages(): Promise<void> {
      ON CONFLICT DO NOTHING`,
     [PAGE_COMMUNITY_ID, PAGE_USER_ID, membershipIds, hostnameIds, orderIndexes],
   )
-  const objectIds = postIds.slice(1)
+  const subjectPostId = postIds[hiddenRun]!
+  const objectIds = postIds.filter(id => id !== subjectPostId)
   const relationIds = objectIds.map((_, index) =>
     seedUuidAtTimestamp(RELATION_BASE_MS + (count + index) * 1000, index),
   )
@@ -129,10 +132,47 @@ export async function seedIneligibleCollectionPages(): Promise<void> {
     `/* seedIneligibleCollectionPages */ INSERT INTO relation__post__related__post
        (id, subject_id, object_id, created_by_id, created_at, votes_score_up)
      SELECT relation_id, $1, object_id, $2, to_timestamp($3::double precision / 1000 + ordinality),
-       CASE WHEN object_id = ANY($4::uuid[]) THEN 1 ELSE 100 END
+       CASE WHEN object_id = ANY($4::uuid[]) THEN 100
+         WHEN object_id = ANY($7::uuid[]) THEN 1 ELSE 0 END
      FROM unnest($5::uuid[], $6::uuid[]) WITH ORDINALITY AS row(relation_id, object_id, ordinality)
      ON CONFLICT DO NOTHING`,
-    [postIds[0], PAGE_USER_ID, RELATION_BASE_MS, livePostIds, relationIds, objectIds],
+    [
+      subjectPostId,
+      PAGE_USER_ID,
+      RELATION_BASE_MS,
+      highestRankedHiddenPostIds,
+      relationIds,
+      objectIds,
+      livePostIds,
+    ],
+  )
+  // Newer memberships in other communities expose a global-id walk that skips unrelated rows.
+  const noiseCommunityIds = Array.from(
+    { length: INELIGIBLE_COLLECTION_NOISE_COMMUNITY_COUNT },
+    (_, index) => seedUuid(index, 'b9'),
+  )
+  const noiseMembershipIds = Array.from({ length: noiseCommunityIds.length * count }, (_, index) =>
+    seedUuidAtTimestamp(RELATION_BASE_MS + (count * 2 + index) * 1000, index),
+  )
+  await transaction(
+    `/* seedIneligibleCollectionPages */ INSERT INTO communities
+       (id, name, slug, created_by_id, created_via)
+     SELECT id, 'Ineligible page noise', 'ineligible-page-noise-' || ordinality, $2, 'system'
+     FROM unnest($1::uuid[]) WITH ORDINALITY AS row(id, ordinality)
+     ON CONFLICT DO NOTHING`,
+    [noiseCommunityIds, PAGE_USER_ID],
+  )
+  await transaction(
+    `/* seedIneligibleCollectionPages */ INSERT INTO community_list_posts
+       (id, community_id, post_id, added_by_id, order_index)
+     SELECT membership_id, community_id, post_id, $4, post_ordinality - 1
+     FROM unnest($1::uuid[]) WITH ORDINALITY AS memberships(membership_id, membership_ordinality)
+     JOIN unnest($2::uuid[]) WITH ORDINALITY AS communities(community_id, community_ordinality)
+       ON community_ordinality = ((membership_ordinality - 1) / $5) + 1
+     JOIN unnest($3::uuid[]) WITH ORDINALITY AS posts(post_id, post_ordinality)
+       ON post_ordinality = ((membership_ordinality - 1) % $5) + 1
+     ON CONFLICT DO NOTHING`,
+    [noiseMembershipIds, noiseCommunityIds, postIds, PAGE_USER_ID, count],
   )
   await transaction.commit()
 }
@@ -141,5 +181,5 @@ export const ineligibleCollectionPageIds = {
   userId: PAGE_USER_ID,
   communityId: PAGE_COMMUNITY_ID,
   listId: PAGE_LIST_ID,
-  subjectPostId: seedUuid(POST_INDEX_BASE, '05'),
+  subjectPostId: seedUuid(POST_INDEX_BASE + INELIGIBLE_COLLECTION_PAGE_LIMIT + 1, '05'),
 }

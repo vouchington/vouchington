@@ -128,34 +128,31 @@ describe('get', () => {
       }
     })
 
-    it('keeps the cursor on an ineligible membership when the page comes back short', async () => {
+    it('fills past an ineligible run longer than the page and reaches the end', async () => {
       const listCommunity = await insertTestCommunity({ createdById: owner.id })
-      const archivedPost = await createTestPost({ user: owner })
-      const visiblePost = await createTestPost({ user: owner })
-      await archivePostForTopHashtagTest(archivedPost.id, owner.id)
-      await insertTestCommunityListItem({
-        communityId: listCommunity.id,
-        itemType: 'post',
-        entityId: archivedPost.id,
-        orderIndex: 0,
-      })
-      await insertTestCommunityListItem({
-        communityId: listCommunity.id,
-        itemType: 'post',
-        entityId: visiblePost.id,
-        orderIndex: 1,
-      })
+      const archivedPosts = await Promise.all(
+        [0, 1, 2].map(async () => createTestPost({ user: owner })),
+      )
+      const firstVisible = await createTestPost({ user: owner })
+      const secondVisible = await createTestPost({ user: owner })
+      for (const post of archivedPosts) await archivePostForTopHashtagTest(post.id, owner.id)
+      for (const [orderIndex, post] of [...archivedPosts, firstVisible, secondVisible].entries()) {
+        await insertTestCommunityListItem({
+          communityId: listCommunity.id,
+          itemType: 'post',
+          entityId: post.id,
+          orderIndex,
+        })
+      }
 
       const first = await searchCommunityListItems(listCommunity.id, 'post', { limit: 1 })
-      expect(first.results).toEqual([])
+      expect(first.results.map(item => item.entity_id)).toEqual([firstVisible.id])
       expect(first.page_info.has_next_page).toBe(true)
-      expect(first.page_info.end_cursor).toEqual(expect.any(String))
-
       const second = await searchCommunityListItems(listCommunity.id, 'post', {
         limit: 1,
         after: first.page_info.end_cursor!,
       })
-      expect(second.results.map(item => item.entity_id)).toEqual([visiblePost.id])
+      expect(second.results.map(item => item.entity_id)).toEqual([secondVisible.id])
       expect(second.page_info.has_next_page).toBe(false)
     })
   })

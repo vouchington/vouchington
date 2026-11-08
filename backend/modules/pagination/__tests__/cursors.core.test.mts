@@ -5,8 +5,6 @@ import {
   decodeScopedUuidCursor,
   encodeCursor,
   encodeScopedUuidCursor,
-  sliceRawKeysetPage,
-  sortMembershipKeysetRows,
 } from '../cursors.mts'
 
 describe('cursor encoding', () => {
@@ -68,31 +66,5 @@ describe('buildPageInfo', () => {
       start_cursor: encodeCursor({ id: 'only' }),
       end_cursor: null,
     })
-  })
-})
-
-describe('membership keyset order', () => {
-  it('slices a shuffled window into created_us DESC, entity_id DESC order', () => {
-    const newerLow = '019d0000-0000-7000-8000-000000000001'
-    const older = '019d0000-0000-7000-8000-000000000002'
-    const newerHigh = '019d0000-0000-7000-8000-000000000003'
-    const middle = '019d0000-0000-7000-8000-00000000000a'
-    const shuffled = [
-      { entity_id: older, created_us: 10, eligible: true },
-      { entity_id: newerLow, created_us: 30, eligible: false },
-      { entity_id: middle, created_us: 20, eligible: true },
-      { entity_id: newerHigh, created_us: 30, eligible: true },
-    ]
-    const expected = [
-      { entity_id: newerHigh, created_us: 30, eligible: true },
-      { entity_id: newerLow, created_us: 30, eligible: false },
-      { entity_id: middle, created_us: 20, eligible: true },
-    ]
-
-    expect(shuffled.map(row => row.entity_id)).not.toEqual(expected.map(row => row.entity_id))
-    const { window, hasMore } = sliceRawKeysetPage(sortMembershipKeysetRows(shuffled), 3)
-
-    expect(window).toEqual(expected)
-    expect(hasMore).toBe(true)
   })
 })

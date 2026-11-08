@@ -40,8 +40,6 @@ export async function getUserPostsCollection(
   const afterCursor = after
     ? decodeScopedTimestampUuidCursor(after, scope, 'Invalid private post collection cursor')
     : undefined
-  // page_info comes from the raw membership window. Visibility can drop every row in that
-  // window; the cursor still advances to the last membership key inspected.
   const page = await getVisiblePostCollectionRows(
     currentUser,
     POST_LIST_TABLES[listType],
@@ -50,7 +48,7 @@ export async function getUserPostsCollection(
     { after: afterCursor },
     options,
   )
-  const page_info = buildPageInfo(page.inspected, {
+  const page_info = buildPageInfo(page.rows, {
     hasNextPage: page.hasMore,
     getCursor: row => ({ timestamp: row.created_us, id: row.entity_id, scope }),
   })
