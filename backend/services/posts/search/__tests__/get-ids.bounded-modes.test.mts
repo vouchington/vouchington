@@ -224,6 +224,7 @@ describe('bounded post search modes', () => {
         })),
         async ([oldest, middle, newest]) => {
           const options = {
+            user_id: followed.id,
             sort: 'following_new' as const,
             time_range: 'all' as const,
             exclude_post_ids: [newest!, middle!],
