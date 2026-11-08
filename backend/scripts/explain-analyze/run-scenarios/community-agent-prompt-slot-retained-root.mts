@@ -7,6 +7,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuidAtTimestamp } from '../seed-data/common.mts'
 import { COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS } from '../seed-data/community-agent-prompt-slot-counts.mts'
+import { countRetainedUserRootReferenceRows } from '../seed-data/retained-user-root-reference-counts.mts'
 
 // A retained actor may have an FK in any history month; its ID cannot prune an event-ID partition.
 const HISTORICAL_USER_REFERENCE_PARENTS = [
@@ -33,15 +34,15 @@ export async function runSlotRetainedRootCleanupScenario(): Promise<void> {
   }
   await restoreOrphan()
   try {
+    const seededRows = await countRetainedUserRootReferenceRows()
+    assert.ok(
+      (seededRows.community_agent_prompt_slot_counts ?? 0) >=
+        COMMUNITY_AGENT_PROMPT_CREATOR_COUNT + COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS,
+      'The slot-count lookup needs the seeded creator cohort',
+    )
     registerScenarioContract('community-agent-prompt-slot-retained-root-cleanup', {
       allowEmptyResult: true,
-      seededRows: {
-        retained_user_identities: 20_001,
-        community_agent_prompt_slot_counts:
-          COMMUNITY_AGENT_PROMPT_CREATOR_COUNT +
-          COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS +
-          2,
-      },
+      seededRows,
       expectations: [
         { kind: 'usesIndexes', indexes: ['community_agent_prompt_slot_counts_pkey'] },
         { kind: 'maxProcessedRows', relation: 'community_agent_prompt_slot_counts', max: 1 },
