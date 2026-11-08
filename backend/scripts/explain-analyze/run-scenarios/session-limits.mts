@@ -6,7 +6,6 @@ import {
   revokeOtherAuthenticatedSessions,
 } from '@services/jwt-session/user-session-revocation'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { runBlueskyFolloweeReceiptScenarios } from './bluesky-followee-receipts.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { SESSION_LIMIT_ACTIVE_COUNT, SESSION_LIMIT_USER_ID } from '../seed-data/session-limits.mts'
@@ -124,6 +123,4 @@ export async function runSessionLimitScenarios(): Promise<void> {
     undefined,
     'listActiveUserSessions',
   )
-  // Kept in this runner because run.mts is at its 200-line cap; it ran right after this step.
-  await runBlueskyFolloweeReceiptScenarios()
 }
