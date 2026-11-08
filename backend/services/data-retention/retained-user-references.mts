@@ -12,6 +12,7 @@ export const RETAINED_USER_REFERENCES = [
   ['users', 'id'],
   ['posts', 'clearance_changed_by_id'],
   ['communities', 'created_by_id'],
+  ['community_agent_prompt_slot_counts', 'creator_user_id'],
   ['images', 'created_by_id'],
   ['retained_image_identities', 'created_by_id'],
   ['image_surface_placement_activations', 'bound_by_id'],

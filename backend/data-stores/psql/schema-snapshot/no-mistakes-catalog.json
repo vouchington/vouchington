@@ -1656,7 +1656,7 @@
       "returnsSet": false
     },
     "fn_project_deleted_user_prompt_slot_counts()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_deleted_user_prompt_slot_counts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  DELETE FROM community_agent_prompt_slot_counts counts\n  USING deleted_users\n  WHERE counts.creator_user_id = deleted_users.id\n    AND counts.allocated_count = 0;\n  RETURN NULL;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_deleted_user_prompt_slot_counts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  DELETE FROM community_agent_prompt_slot_counts counts\n  WHERE counts.creator_user_id = OLD.id\n    AND counts.allocated_count = 0;\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_project_domain_blocklist_hostname_block_lifts()": {
@@ -2244,7 +2244,7 @@
       "returnsSet": false
     },
     "fn_update_community_agent_prompt_slot_count(creator_id uuid, slot_delta integer)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_community_agent_prompt_slot_count(creator_id uuid, slot_delta integer)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF slot_delta = 0 THEN\n    RETURN;\n  END IF;\n  IF slot_delta > 0 THEN\n    INSERT INTO community_agent_prompt_slot_counts (creator_user_id, allocated_count)\n    VALUES (creator_id, slot_delta)\n    ON CONFLICT (creator_user_id) DO UPDATE\n      SET allocated_count = community_agent_prompt_slot_counts.allocated_count + EXCLUDED.allocated_count;\n  ELSE\n    UPDATE community_agent_prompt_slot_counts\n    SET allocated_count = allocated_count + slot_delta\n    WHERE creator_user_id = creator_id;\n    IF NOT FOUND THEN\n      RAISE EXCEPTION 'Missing community agent prompt slot count for creator %', creator_id\n        USING ERRCODE = '23514';\n    END IF;\n    -- FK SET NULL can run after the users statement trigger. Remove the now-empty\n    -- projection once the live creator is gone, regardless of native trigger order.\n    DELETE FROM community_agent_prompt_slot_counts counts\n    WHERE counts.creator_user_id = creator_id\n      AND counts.allocated_count = 0\n      AND NOT EXISTS (SELECT 1 FROM users WHERE id = creator_id);\n  END IF;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_community_agent_prompt_slot_count(creator_id uuid, slot_delta integer)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF slot_delta = 0 THEN\n    RETURN;\n  END IF;\n  IF slot_delta > 0 THEN\n    INSERT INTO community_agent_prompt_slot_counts (creator_user_id, allocated_count)\n    VALUES (creator_id, slot_delta)\n    ON CONFLICT (creator_user_id) DO UPDATE\n      SET allocated_count = community_agent_prompt_slot_counts.allocated_count + EXCLUDED.allocated_count;\n  ELSE\n    UPDATE community_agent_prompt_slot_counts\n    SET allocated_count = allocated_count + slot_delta\n    WHERE creator_user_id = creator_id;\n    IF NOT FOUND THEN\n      RAISE EXCEPTION 'Missing community agent prompt slot count for creator %', creator_id\n        USING ERRCODE = '23514';\n    END IF;\n  END IF;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_update_copyright_action_work()": {
@@ -163224,7 +163224,7 @@
           "definition": "CREATE TRIGGER trigger_users_create_individual_household AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_individual_household()"
         },
         "trigger_users_delete_community_agent_prompt_slot_counts": {
-          "definition": "CREATE TRIGGER trigger_users_delete_community_agent_prompt_slot_counts AFTER DELETE ON public.users REFERENCING OLD TABLE AS deleted_users FOR EACH STATEMENT EXECUTE FUNCTION fn_project_deleted_user_prompt_slot_counts()"
+          "definition": "CREATE CONSTRAINT TRIGGER trigger_users_delete_community_agent_prompt_slot_counts AFTER DELETE ON public.users DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_project_deleted_user_prompt_slot_counts()"
         },
         "trigger_users_platform_account_kind": {
           "definition": "CREATE TRIGGER trigger_users_platform_account_kind BEFORE UPDATE OF platform_account_kind ON public.users FOR EACH ROW EXECUTE FUNCTION fn_reject_platform_account_kind_change()"

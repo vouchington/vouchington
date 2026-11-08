@@ -719,12 +719,6 @@ BEGIN
       RAISE EXCEPTION 'Missing community agent prompt slot count for creator %', creator_id
         USING ERRCODE = '23514';
     END IF;
-    -- FK SET NULL can run after the users statement trigger. Remove the now-empty
-    -- projection once the live creator is gone, regardless of native trigger order.
-    DELETE FROM community_agent_prompt_slot_counts counts
-    WHERE counts.creator_user_id = creator_id
-      AND counts.allocated_count = 0
-      AND NOT EXISTS (SELECT 1 FROM users WHERE id = creator_id);
   END IF;
 END;
 $$;
@@ -788,25 +782,24 @@ AFTER DELETE ON community_agent_prompts
 REFERENCING OLD TABLE AS old_prompts
 FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts();
 
--- Native FK SET NULL actions may run after this users statement trigger. It removes
--- already-empty projections; the prompt transition removes any that reach zero later.
+-- The deferred constraint trigger runs after native FK SET NULL prompt transitions,
+-- so every count decrement follows the prompt write before this quota row is deleted.
 -- Retained identity remains untouched.
 CREATE OR REPLACE FUNCTION fn_project_deleted_user_prompt_slot_counts()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   DELETE FROM community_agent_prompt_slot_counts counts
-  USING deleted_users
-  WHERE counts.creator_user_id = deleted_users.id
+  WHERE counts.creator_user_id = OLD.id
     AND counts.allocated_count = 0;
   RETURN NULL;
 END;
 $$;
 COMMENT ON FUNCTION fn_project_deleted_user_prompt_slot_counts() IS 'Removes prompt slot-count rows after deleted users have released their prompt creator references.';
 
-CREATE TRIGGER trigger_users_delete_community_agent_prompt_slot_counts
+CREATE CONSTRAINT TRIGGER trigger_users_delete_community_agent_prompt_slot_counts
 AFTER DELETE ON users
-REFERENCING OLD TABLE AS deleted_users
-FOR EACH STATEMENT EXECUTE FUNCTION fn_project_deleted_user_prompt_slot_counts();
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION fn_project_deleted_user_prompt_slot_counts();
 
 COMMENT ON TABLE community_agent_prompts IS 'Extension table linking agent prompts to communities, with slot allocation and activation lifecycle.';
 COMMENT ON COLUMN community_agent_prompts.community_id IS 'The community this agent prompt belongs to.';

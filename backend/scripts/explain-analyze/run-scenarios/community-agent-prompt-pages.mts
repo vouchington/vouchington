@@ -17,6 +17,7 @@ import {
   COMMUNITY_AGENT_PROMPT_PAGE_CREATOR_ID,
   COMMUNITY_AGENT_PROMPT_TOTAL_ROWS,
 } from '../community-agent-prompt-page-ids.mts'
+import { runSlotRetainedRootCleanupScenario } from './community-agent-prompt-slot-retained-root.mts'
 
 export async function runCommunityAgentPromptPageScenarios(): Promise<void> {
   const promptSeededRows =
@@ -55,6 +56,7 @@ export async function runCommunityAgentPromptPageScenarios(): Promise<void> {
     ),
   )
   await runSlotScenarios()
+  await runSlotRetainedRootCleanupScenario()
 }
 
 async function runSlotScenarios(): Promise<void> {

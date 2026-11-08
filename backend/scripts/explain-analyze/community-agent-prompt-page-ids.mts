@@ -1,5 +1,14 @@
 import { seedUuid } from './seed-data/common.mts'
 
+export const COMMUNITY_AGENT_PROMPT_SCENARIO_IDS = [
+  'community-agent-prompt-capacity',
+  'community-agent-prompts-first-page',
+  'community-agent-prompts-deep-page',
+  'community-agent-prompt-slot-count',
+  'community-agent-prompt-slot-allocation',
+  'community-agent-prompt-slot-retained-root-cleanup',
+] as const
+
 export const COMMUNITY_AGENT_PROMPT_CREATOR_COUNT = 100
 export const COMMUNITY_AGENT_PROMPTS_PER_CREATOR = 25
 export const COMMUNITY_AGENT_PROMPT_PAGE_ROWS =

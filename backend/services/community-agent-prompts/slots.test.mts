@@ -4,7 +4,7 @@ import {
   insertTestCommunity,
   insertTestCommunityAgentPrompt,
   hardDeleteTestCommunity,
-  hardDeleteTestUser,
+  hardDeleteTestUserWithPromptSlotCountObservation,
   readTestCommunityAgentPromptSlotCount,
 } from '@voucha/test-helpers'
 import { getUsedSlotsForUser, getSlotLimitForMembership, SLOT_LIMITS_BY_PLAN } from './slots.mts'
@@ -89,7 +89,7 @@ describe('getUsedSlotsForUser', () => {
       slotAllocated: true,
     })
 
-    await hardDeleteTestUser(user.id)
+    expect(await hardDeleteTestUserWithPromptSlotCountObservation(user.id)).toBe(0)
     expect(await getUsedSlotsForUser(user.id)).toBe(0)
     expect(await readTestCommunityAgentPromptSlotCount(user.id)).toBeNull()
   })
