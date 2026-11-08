@@ -12,7 +12,11 @@ import {
 } from './config.mts'
 import { findYourFriendsQueue } from './queues.mts'
 import { createHash } from 'node:crypto'
-import type { FriendSyncResume, FindYourFriendsJobPayloads, FindYourFriendsSyncJobs } from './types.mts'
+import type {
+  FriendSyncResume,
+  FindYourFriendsJobPayloads,
+  FindYourFriendsSyncJobs,
+} from './types.mts'
 
 const { attempts, backoff, removeOnComplete, removeOnFail, deduplicationTtlMs } =
   FIND_YOUR_FRIENDS_DEFAULTS

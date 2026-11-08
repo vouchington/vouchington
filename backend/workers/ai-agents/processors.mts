@@ -19,44 +19,39 @@ import { processReconcileAutoDispatchJudgements } from './processors/process-rec
 import { processReconcileCopyrightAgentDispatches } from './processors/process-reconcile-copyright-agent-dispatches.mts'
 import { processReconcileClassifierRuns } from './processors/process-reconcile-classifier-runs.mts'
 
-export function processAIAgent(job: NamedQueueJob<AIAgentJobPayloads>): Promise<unknown> {
-  const jobName: string = job.name
-  switch (job.name) {
-    case 'autotagger-rss-feed-item':
-      return processAutotaggerRssFeedItem(job)
-    case 'classifier-run-dispatcher':
-      return processClassifierRunDispatcher(job)
-    case 'classifier-run':
-      return processClassifierRun(job)
-    case 'reconcile-classifier-runs':
-      return processReconcileClassifierRuns(job.data)
-    case 'story-post':
-      return processStoryPost(job)
-    case 'report-judgement':
-      return processReportJudgement(job)
-    case 'dispute-resolution':
-      return processDisputeResolution(job)
-    case 'appeal-resolution':
-      return processAppealResolution(job)
-    case 'copyright-email-intake':
-      return processCopyrightEmailIntake(job)
-    case 'copyright-form-screening':
-      return processCopyrightFormScreening(job)
-    case 'copyright-appeal-recommendation':
-      return processCopyrightAppealRecommendation(job)
-    case 'copyright-submission-guidance':
-      return processCopyrightSubmissionGuidance(job)
-    case 'backfill_report_judgements':
-      return processBackfillReportJudgements()
-    case 'auto-dispatch-judgement':
-      return processAutoDispatchJudgement(job)
-    case 'reconcile-auto-dispatch-judgements':
-      return processReconcileAutoDispatchJudgements()
-    case 'recover-background-response':
-      throw new Error('Response recovery must settle before processor dispatch')
-    case 'reconcile-copyright-agent-dispatches':
-      return processReconcileCopyrightAgentDispatches(job.data)
-    default:
-      throw new Error(`Unknown AI agent job: ${jobName}`)
+type AIAgentJob = NamedQueueJob<AIAgentJobPayloads>
+
+const processors = {
+  'autotagger-rss-feed-item': processAutotaggerRssFeedItem,
+  'classifier-run-dispatcher': processClassifierRunDispatcher,
+  'classifier-run': processClassifierRun,
+  'reconcile-classifier-runs': job => processReconcileClassifierRuns(job.data),
+  'story-post': processStoryPost,
+  'report-judgement': processReportJudgement,
+  'dispute-resolution': processDisputeResolution,
+  'appeal-resolution': processAppealResolution,
+  'copyright-email-intake': processCopyrightEmailIntake,
+  'copyright-form-screening': processCopyrightFormScreening,
+  'copyright-appeal-recommendation': processCopyrightAppealRecommendation,
+  'copyright-submission-guidance': processCopyrightSubmissionGuidance,
+  backfill_report_judgements: processBackfillReportJudgements,
+  'auto-dispatch-judgement': processAutoDispatchJudgement,
+  'reconcile-auto-dispatch-judgements': processReconcileAutoDispatchJudgements,
+  'recover-background-response': () => {
+    throw new Error('Response recovery must settle before processor dispatch')
+  },
+  'reconcile-copyright-agent-dispatches': job => processReconcileCopyrightAgentDispatches(job.data),
+} satisfies {
+  [TName in keyof AIAgentJobPayloads]: (
+    job: Extract<AIAgentJob, { name: TName }>,
+  ) => Promise<unknown>
+}
+
+export function processAIAgent(job: AIAgentJob): Promise<unknown> {
+  if (!Object.hasOwn(processors, job.name)) {
+    throw new Error(`Unknown AI agent job: ${job.name}`)
   }
+  // Each entry is checked against its name above; lookup loses that job/name correlation.
+  const processor = processors[job.name] as (namedJob: AIAgentJob) => Promise<unknown>
+  return processor(job)
 }

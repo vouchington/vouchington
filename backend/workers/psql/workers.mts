@@ -52,46 +52,10 @@ async function processPsqlJob(job: PsqlJob): Promise<unknown> {
     return processAIRetentionContinuation(job)
   }
 
-  const jobName: string = job.name
-  if (job.name === 'cleanupOperationalTombstones') throw new Error(`Unknown job: ${jobName}`)
-  let result: unknown
-  switch (job.name) {
-    case 'runMigrations':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    case 'runViews':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    case 'runConfigDriven':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    case 'createPartitions':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    case 'cleanupPartitions':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    case 'dataRetentionCleanup':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    case 'continueVoteRetentionCleanup':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    case 'continueAgentModerationRetentionCleanup':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    case 'refreshMaterializedView':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    case 'reconcileVoteDrift':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    case 'cleanupDeletedConversations':
-      result = await processPsql(job.name, job.data, undefined, job.id)
-      break
-    default:
-      throw new Error(`Unknown job: ${jobName}`)
-  }
+  // The named job union correlates these arguments; the tuple keeps that correlation at dispatch.
+  const result = await processPsql(
+    ...([job.name, job.data, undefined, job.id] as Parameters<typeof processPsql>),
+  )
   if (admitsDailyRetentionResults(job)) {
     await admitPendingTerminalActivityRetention(
       result as Awaited<ReturnType<typeof runDataRetentionCleanup>>,
