@@ -26,6 +26,38 @@ async function reconcileOwned(rssFeedItemId: string) {
 }
 
 describe('RSS category projection completion result', () => {
+  it('reuses completed projections only while the exact notification identity is pending', async () => {
+    const suffix = crypto.randomUUID()
+    const feed = await insertTestRssFeedDirect({})
+    const category = `replay-${suffix}`
+    const [item] = await upsertRssFeedItems(feed.id, [itemInput(suffix, [category])])
+    const pending = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
+    expect(pending).toBeDefined()
+    const snapshot = { rss_feed_item_id: item!.id, categories: [category] }
+    const selected = { ...snapshot, change_id: pending!.change_id, generation: pending!.generation }
+    await expect(upsertRssFeedItemCategories([snapshot], selected)).resolves.toBe(true)
+    const completed = await getTestRssFeedItemCategoryProjectionResult(item!.id)
+    expect(completed).toMatchObject({ change_id: selected.change_id, categories: [category] })
+    const rejectReapplication = async () => {
+      throw new Error('A completed snapshot must not be projected again')
+    }
+    await expect(
+      applyRssFeedItemCategorySnapshots([snapshot], rejectReapplication, selected),
+    ).resolves.toBe(true)
+    await expect(getTestRssFeedItemCategoryProjectionResult(item!.id)).resolves.toEqual(completed)
+
+    const nextCategory = `next-${suffix}`
+    await upsertRssFeedItems(feed.id, [itemInput(suffix, [nextCategory], 'Updated title')])
+    await expect(
+      applyRssFeedItemCategorySnapshots([snapshot], rejectReapplication, selected),
+    ).resolves.toBe(false)
+    await expect(getTestRssFeedItemCategoryProjectionResult(item!.id)).resolves.toEqual(completed)
+    await expect(reconcileOwned(item!.id)).resolves.toEqual({ reconciled: 1 })
+    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([
+      expect.objectContaining({ category_text: nextCategory }),
+    ])
+  })
+
   it('completes overlapping multi-item snapshots supplied in opposite orders', async () => {
     const suffix = crypto.randomUUID()
     const feed = await insertTestRssFeedDirect({})
