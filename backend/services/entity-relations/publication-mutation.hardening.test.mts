@@ -9,7 +9,10 @@ import {
   updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import { getActiveLandingPageHostnameClaims } from '@voucha/test-helpers/hostname-ownership'
+import {
+  getActiveLandingPageHostnameClaims,
+  getFirstTestHostnameOwnershipLockKey,
+} from '@voucha/test-helpers/hostname-ownership'
 import { blockHostnameInTransaction } from '../hostname-blocking/block-hostname.mts'
 import { upsertUrlHostnames } from '../urls-hostnames/upsert.mts'
 import { addUrl } from '../urls/upsert.mts'
@@ -42,11 +45,12 @@ describe('URL relation local policy after ownership waits', () => {
       await using holder = await beginTransaction()
       await blockHostnameInTransaction(admin.id, parentId, holder, { penalizeCreators: false })
       const pid = await getTestPostgresBackendProcessId(holder)
+      const heldParentKey = await getFirstTestHostnameOwnershipLockKey(holder, parentId)
       const claiming = await withTestOwnedPostgresWait(
         {
           holderProcessId: pid,
           pool: 'write',
-          lock: { kind: 'advisory', key: parentId.toLowerCase() },
+          lock: { kind: 'advisory', key: heldParentKey },
           queryMarker: 'lockHostnameOwnership',
           releaseHolder: () => holder[Symbol.asyncDispose](),
         },
@@ -98,11 +102,12 @@ describe('URL relation local policy after ownership waits', () => {
       penalizeCreators: false,
     })
     const pid = await getTestPostgresBackendProcessId(holder)
+    const heldParentKey = await getFirstTestHostnameOwnershipLockKey(holder, parentId)
     const relating = await withTestOwnedPostgresWait(
       {
         holderProcessId: pid,
         pool: 'write',
-        lock: { kind: 'advisory', key: parentId.toLowerCase() },
+        lock: { kind: 'advisory', key: heldParentKey },
         queryMarker: 'lockHostnameOwnership',
         releaseHolder: () => holder[Symbol.asyncDispose](),
       },
