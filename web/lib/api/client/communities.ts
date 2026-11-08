@@ -18,7 +18,6 @@ export {
   liftAllBans,
   fetchCommunityBan,
   fetchCommunityBans,
-  fetchActiveCommunityBans,
 } from './community-bans'
 export { fetchCommunities, searchMyCommunities } from './community-search'
 export { archiveCommunity, unarchiveCommunity } from './community-archive'

@@ -97,6 +97,26 @@ describe('bounded community ban lifts and active pages', () => {
     expect((await getCommunityBanById(protectedBan.id))?.lifted_at).toBeNull()
   })
 
+  it('lift-all reports protected issuer before an active-ban overflow', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(communitiesWorkConfig, { lift_all_active_ban_limit: 1 }),
+    )
+    const user = await createTestUser()
+    const bans = await Promise.all([
+      insertTestCommunityBan({ communityId: community.id, userId: user.id, bannedById: owner.id }),
+      insertTestCommunityBan({
+        communityId: community.id,
+        userId: user.id,
+        bannedById: moderator.id,
+      }),
+    ])
+    await expect(liftAllCommunityBans(moderator, community.id, user.id)).rejects.toMatchObject({
+      status: 403,
+      code: 'COMMUNITY_BAN_LIFT_ALL_FORBIDDEN',
+    })
+    for (const ban of bans) expect((await getCommunityBanById(ban.id))?.lifted_at).toBeNull()
+  })
+
   it('active pages skip expired history and scope far-future expiry cursors to the user', async () => {
     const [user, other] = await Promise.all([createTestUser(), createTestUser()])
     await insertTestCommunityBan({
@@ -129,12 +149,20 @@ describe('bounded community ban lifts and active pages', () => {
     ).rejects.toMatchObject({ status: 422 })
     for (const expiry of ['1', '2026-02-31 00:00:00+00', '0000-01-01 00:00:00+00']) {
       const after = encodeCursor({
-        name: `community-active-bans:${community.id}:${user.id}:${expiry}`,
+        timestamp: expiry,
+        scope: `community-active-bans:${community.id}:${user.id}`,
         id: first.id,
       })
       await expect(listActiveCommunityBans(community.id, user.id, { after })).rejects.toMatchObject(
         { status: 422 },
       )
     }
+  })
+
+  it.each([0, 101, 1.5])('active pages reject invalid limit %s', async limit => {
+    const user = await createTestUser()
+    await expect(listActiveCommunityBans(community.id, user.id, { limit })).rejects.toMatchObject({
+      status: 422,
+    })
   })
 })

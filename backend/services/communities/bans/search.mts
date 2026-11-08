@@ -5,14 +5,13 @@ import {
   decodeUuidCursor,
   encodeCursor,
   encodeScopedUuidCursor,
+  hasExactKeys,
   isSimpleCursor,
-  isNameCursor,
 } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { CommunityBan } from '../types.mts'
-import { clampLimit } from '@services/pagination'
 
 export type CommunityBanSummary = Omit<CommunityBan, 'reason' | 'case_id'>
 
@@ -21,19 +20,17 @@ export async function listActiveCommunityBans(
   userId: string,
   options?: QueryOptions & { limit?: number; after?: string },
 ): Promise<{ results: CommunityBanSummary[]; page_info: PageInfo }> {
-  const limit = clampLimit(options?.limit, 20, 100)
-  const cursorScope = `community-active-bans:${communityId}:${userId}:`
+  const limit = options?.limit ?? 20
+  assert(Number.isInteger(limit), 422, 'limit must be an integer')
+  assert(limit > 0 && limit <= 100, 422, 'limit must be between 1 and 100')
+  const cursorScope = `community-active-bans:${communityId}:${userId}`
   let cursorExpiry: string | undefined
   let cursorId: string | undefined
   if (options?.after) {
-    const cursor = decodeUuidCursor(options.after, isNameCursor, 'Invalid cursor format')
-    assert(cursor.name.startsWith(cursorScope), 422, 'Invalid cursor scope')
-    cursorExpiry = cursor.name.slice(cursorScope.length)
-    assert(
-      cursorExpiry === 'infinity' || isCursorExpiry(cursorExpiry),
-      422,
-      'Invalid cursor format',
-    )
+    const cursor = decodeUuidCursor(options.after, isActiveBanExpiryCursor, 'Invalid cursor format')
+    assert(cursor.scope === cursorScope, 422, 'Invalid cursor scope')
+    cursorExpiry = cursor.timestamp
+    assert(isCursorExpiry(cursorExpiry), 422, 'Invalid cursor format')
     cursorId = cursor.id
   }
 
@@ -60,7 +57,7 @@ export async function listActiveCommunityBans(
   const results = selected.map(({ cursor_expires_at: _, ...ban }) => ban)
   const hasNextPage = rows.length > limit
   const cursorFor = (ban: (typeof selected)[number]) =>
-    encodeCursor({ name: `${cursorScope}${ban.cursor_expires_at ?? 'infinity'}`, id: ban.id })
+    encodeCursor({ timestamp: ban.cursor_expires_at ?? 'infinity', scope: cursorScope, id: ban.id })
   return {
     results,
     page_info: {
@@ -71,7 +68,19 @@ export async function listActiveCommunityBans(
   }
 }
 
+type ActiveBanExpiryCursor = { timestamp: string; scope: string; id: string }
+
+function isActiveBanExpiryCursor(value: unknown): value is ActiveBanExpiryCursor {
+  return (
+    hasExactKeys(value, ['timestamp', 'scope', 'id']) &&
+    typeof value.timestamp === 'string' &&
+    typeof value.scope === 'string' &&
+    typeof value.id === 'string'
+  )
+}
+
 function isCursorExpiry(value: string): boolean {
+  if (value === 'infinity') return true
   if (
     !/^[0-9]{4,6}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,6})?[+-](0[0-9]|1[0-5])(:[0-5][0-9])?$/.test(
       value,

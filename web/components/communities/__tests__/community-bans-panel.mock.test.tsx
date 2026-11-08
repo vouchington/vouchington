@@ -67,6 +67,15 @@ function makeData(bans: CommunityBan[], hasNext = false): CommunityBansResponseB
   }
 }
 
+function renderPanel(bans: CommunityBan[]) {
+  return render(
+    <CommunityBansPanel
+      community={makeCommunity()}
+      initialData={makeData(bans)}
+    />,
+  )
+}
+
 describe('CommunityBansPanel', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -84,12 +93,7 @@ describe('CommunityBansPanel', () => {
 
   it('loads the reason only when details are requested', async () => {
     mockFetchCommunityBan.mockResolvedValueOnce({ community_ban: makeBan() })
-    render(
-      <CommunityBansPanel
-        community={makeCommunity()}
-        initialData={makeData([makeBan()])}
-      />,
-    )
+    renderPanel([makeBan()])
     expect(screen.getByText('spammer')).toBeInTheDocument()
     expect(screen.queryByText('Reason: spam')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Show details' }))
@@ -115,24 +119,30 @@ describe('CommunityBansPanel', () => {
     render(
       <CommunityBansPanel
         community={makeCommunity()}
-        initialData={{ ...makeData([makeBan()]), users: {} }}
+        initialData={{
+          ...makeData([
+            makeBan(),
+            makeBan({ id: 'ban-lifted', lifted_at: '2026-02-01T00:00:00.000Z' }),
+            makeBan({ id: 'ban-expired', expires_at: '2000-01-01T00:00:00.000Z' }),
+          ]),
+          users: {},
+        }}
       />,
       {
         wrapper: ({ children }) => <LocaleProvider locale='es'>{children}</LocaleProvider>,
       },
     )
-    expect(screen.getByText('Usuario eliminado')).toBeInTheDocument()
+    expect(screen.getAllByText('Usuario eliminado')).toHaveLength(3)
+    expect(screen.getByText('Activo')).toBeVisible()
+    expect(screen.getByText('Levantado')).toBeVisible()
+    expect(screen.getByText('Vencido')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Levantar ban' })).toBeVisible()
     expect(screen.queryByText('u-1')).not.toBeInTheDocument()
   })
 
   it('lifts a ban and refreshes', async () => {
     mockLiftBan.mockResolvedValueOnce({ lifted_ban_ids: ['ban-1'] })
-    render(
-      <CommunityBansPanel
-        community={makeCommunity()}
-        initialData={makeData([makeBan()])}
-      />,
-    )
+    renderPanel([makeBan()])
 
     fireEvent.click(screen.getByTestId('community-ban-lift'))
 
@@ -219,12 +229,7 @@ describe('CommunityBansPanel', () => {
     ],
   ])('shows localized guidance for %s', async (code, status, cap, expected) => {
     mockLiftAllBans.mockRejectedValueOnce(new ApiError('server message', status, { code, cap }))
-    render(
-      <CommunityBansPanel
-        community={makeCommunity()}
-        initialData={makeData([makeBan()])}
-      />,
-    )
+    renderPanel([makeBan()])
     fireEvent.click(screen.getByRole('button', { name: 'Lift all bans' }))
     fireEvent.click(screen.getByRole('alertdialog').querySelector('button:last-child')!)
     expect(await screen.findByText(expected)).toBeVisible()
@@ -233,36 +238,27 @@ describe('CommunityBansPanel', () => {
 
   it('shows an error when lift fails', async () => {
     mockLiftBan.mockRejectedValueOnce(new Error('nope'))
-    render(
-      <CommunityBansPanel
-        community={makeCommunity()}
-        initialData={makeData([makeBan()])}
-      />,
-    )
+    renderPanel([makeBan()])
 
     fireEvent.click(screen.getByTestId('community-ban-lift'))
 
-    await waitFor(() => expect(screen.getByText('nope')).toBeInTheDocument())
+    expect(await screen.findByText('Failed to lift ban')).toBeInTheDocument()
+    expect(screen.queryByText('nope')).not.toBeInTheDocument()
+    mockFetchCommunityBan.mockRejectedValueOnce(new Error('private server detail'))
+    fireEvent.click(screen.getByRole('button', { name: 'Show details' }))
+    await waitFor(() => expect(mockFetchCommunityBan).toHaveBeenCalled())
+    expect(screen.getByText('Failed to lift ban')).toBeInTheDocument()
+    expect(screen.queryByText('private server detail')).not.toBeInTheDocument()
   })
 
   it('does not render a lift button for an already-lifted ban', () => {
-    render(
-      <CommunityBansPanel
-        community={makeCommunity()}
-        initialData={makeData([makeBan({ lifted_at: '2026-02-01T00:00:00.000Z' })])}
-      />,
-    )
+    renderPanel([makeBan({ lifted_at: '2026-02-01T00:00:00.000Z' })])
     expect(screen.queryByTestId('community-ban-lift')).not.toBeInTheDocument()
     expect(screen.getByText('Lifted')).toBeInTheDocument()
   })
 
   it('labels a naturally-expired ban as Expired (not lifted) with no lift button', () => {
-    render(
-      <CommunityBansPanel
-        community={makeCommunity()}
-        initialData={makeData([makeBan({ expires_at: '2000-01-01T00:00:00.000Z' })])}
-      />,
-    )
+    renderPanel([makeBan({ expires_at: '2000-01-01T00:00:00.000Z' })])
     expect(screen.getByText('Expired')).toBeInTheDocument()
     expect(screen.queryByTestId('community-ban-lift')).not.toBeInTheDocument()
   })

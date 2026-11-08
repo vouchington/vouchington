@@ -9,6 +9,7 @@ import {
   updateTestCommunityMemberRole,
 } from '@voucha/test-helpers'
 import { withHeldCommunityUserWait } from '@voucha/test-helpers/community-membership-lock-race'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { banUserFromCommunity } from '../bans/create.mts'
 import { getActiveCommunityBan } from '../bans/get.mts'
 import { liftCommunityBan } from '../bans/lift.mts'
@@ -174,7 +175,7 @@ describe('community membership role locks', () => {
     expect(moderatorMembership?.role).toBe('member')
   })
 
-  it('liftCommunityBan rejects a moderator demoted before the lift statement', async () => {
+  it('liftCommunityBan rejects a moderator demoted while waiting for their membership row', async () => {
     const { target, community } = await createOwnerAndTarget('member')
     const moderator = await createTestUser()
     await insertTestCommunityMember({
@@ -187,10 +188,35 @@ describe('community membership role locks', () => {
       userId: target.id,
       bannedById: moderator.id,
     })
-    await updateTestCommunityMemberRole(community.id, moderator.id, 'member')
-    await expect(liftCommunityBan(moderator, community.id, ban.id)).rejects.toMatchObject({
-      status: 403,
-    })
+    const ready = Promise.withResolvers<number>()
+    const release = Promise.withResolvers<void>()
+    const holder = (async () => {
+      await using query = await beginTransaction()
+      await updateTestCommunityMemberRole(community.id, moderator.id, 'member', { query })
+      ready.resolve(await getTestPostgresBackendProcessId(query))
+      await release.promise
+      await query.commit()
+    })()
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId: await ready.promise,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'lockCommunityBanActor',
+        releaseHolder: async () => {
+          release.resolve()
+          await holder
+        },
+      },
+      async waitForLock => {
+        const lift = liftCommunityBan(moderator, community.id, ban.id)
+        const rejection = lift.catch((err: unknown) => err)
+        await waitForLock(lift)
+        release.resolve()
+        await holder
+        await expect(rejection).resolves.toMatchObject({ status: 403 })
+      },
+    )
     const activeBan = await getActiveCommunityBan(community.id, target.id)
     expect(activeBan).not.toBeNull()
     const moderatorMembership = await getCommunityMember(community.id, moderator.id)

@@ -18,7 +18,6 @@ import {
   liftBan,
   liftAllBans,
   fetchCommunityBan,
-  fetchActiveCommunityBans,
   fetchCommunityBans,
 } from '../community-bans'
 
@@ -68,11 +67,7 @@ describe('community-bans client', () => {
     expect(mockDelete).toHaveBeenCalledWith('/api/v1/communities/credit-cards/bans/ban-3')
   })
 
-  it('uses separate active-list, detail, and lift-all paths', async () => {
-    await fetchActiveCommunityBans('credit-cards', 'user-3', 'cursor')
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/credit-cards/bans/users/user-3', {
-      searchParams: { after: 'cursor' },
-    })
+  it('uses separate detail and lift-all paths', async () => {
     await fetchCommunityBan('credit-cards', 'ban-3')
     expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/credit-cards/bans/ban-3')
     await liftAllBans('credit-cards', 'user-3')

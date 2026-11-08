@@ -41,16 +41,6 @@ export function fetchCommunityBan(
   return clientApi.get(`/api/v1/communities/${idOrSlug}/bans/${banId}`)
 }
 
-export function fetchActiveCommunityBans(
-  idOrSlug: string,
-  userId: string,
-  after?: string,
-): Promise<CommunityBansResponseBody> {
-  return clientApi.get(`/api/v1/communities/${idOrSlug}/bans/users/${userId}`, {
-    searchParams: { after },
-  })
-}
-
 export function fetchCommunityBans(
   idOrSlug: string,
   after?: string,

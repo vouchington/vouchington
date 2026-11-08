@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
 import { liftAllCommunityBans, liftCommunityBan } from '@services/communities/bans/lift'
+import { getCommunitiesWorkLimit } from '@services/communities/work-limits'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser, heavyFollowUser } from '../run-support.mts'
 import {
@@ -18,10 +19,41 @@ const firstActiveId = seedUuid(BAN_EXPIRED_COUNT, '29')
 const banRows = BAN_EXPIRED_COUNT + BAN_ACTIVE_COUNT + BAN_HISTORY_NOISE_COUNT + BAN_BULK_COUNT
 
 export async function runCommunityBanLiftScenarios(): Promise<void> {
+  const cap = getCommunitiesWorkLimit('lift_all_active_ban_limit')
+  registerScenarioContract('community-bans-actor-lock', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_community_members__unique', 'idx_community_members__user_id_id'],
+        anyOf: true,
+      },
+      // This actor also belongs to the membership-cap fixture's community.
+      { kind: 'maxProcessedRows', relation: 'community_members', max: 2 },
+    ],
+    seededRows: { community_bans: banRows },
+  })
+  await runAndCapture(
+    'community-bans-actor-lock',
+    async () => {
+      const result = await liftCommunityBan(seedUser, BAN_PAGE_COMMUNITY_ID, firstActiveId)
+      assert.deepEqual(result.lifted_ban_ids, [firstActiveId])
+    },
+    undefined,
+    'lockCommunityBanActor',
+    {
+      afterCapture: async () => {
+        await write(
+          `/* resetCommunityBanActorLockScenario */
+          UPDATE community_bans SET lifted_at = NULL, lifted_by_id = NULL WHERE id = $1`,
+          [firstActiveId],
+        )
+      },
+    },
+  )
   registerScenarioContract('community-bans-lift-all-overflow', {
     expectations: [
       { kind: 'usesIndexes', indexes: ['idx_community_bans__active_expiry'] },
-      { kind: 'maxProcessedRows', relation: 'community_bans', max: 202 },
+      { kind: 'maxProcessedRows', relation: 'community_bans', max: 2 * (cap + 1) },
     ],
     seededRows: { community_bans: banRows },
   })
@@ -43,7 +75,7 @@ export async function runCommunityBanLiftScenarios(): Promise<void> {
   registerScenarioContract('community-bans-lift-all-forbidden', {
     expectations: [
       { kind: 'usesIndexes', indexes: ['idx_community_bans__active_expiry'] },
-      { kind: 'maxProcessedRows', relation: 'community_bans', max: 202 },
+      { kind: 'maxProcessedRows', relation: 'community_bans', max: 2 * (cap + 1) },
     ],
     seededRows: { community_bans: banRows },
   })
@@ -65,7 +97,7 @@ export async function runCommunityBanLiftScenarios(): Promise<void> {
   registerScenarioContract('community-bans-lift-all-at-cap', {
     expectations: [
       { kind: 'usesIndexes', indexes: ['idx_community_bans__active_expiry'] },
-      { kind: 'maxProcessedRows', relation: 'community_bans', max: 402 },
+      { kind: 'maxProcessedRows', relation: 'community_bans', max: 4 * cap + 2 },
     ],
     seededRows: { community_bans: banRows },
   })

@@ -5273,9 +5273,6 @@ importers:
       '@services/notifications':
         specifier: workspace:^
         version: link:../notifications
-      '@services/pagination':
-        specifier: workspace:^
-        version: link:../pagination
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication

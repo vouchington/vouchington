@@ -52,7 +52,21 @@ async function liftSelectedCommunityBans(
   const candidateScope = liftAll ? sql`AND user_id = ${targetId}` : sql`AND id = ${targetId}`
 
   await using transaction = await beginTransaction()
-  // Gate before write-target locks; then lock selected ban rows by id for consistent lock order.
+  // Hold the actor's membership role stable until the lift commits. Acquire it before ban locks.
+  const actorRole = isAdmin
+    ? null
+    : (
+        await write<{ role: string }>(
+          sql`/* lockCommunityBanActor */
+            SELECT role FROM community_members
+            WHERE community_id = ${communityId} AND user_id = ${currentUser.id}
+              AND removed_at IS NULL
+            FOR SHARE`,
+          { query: transaction },
+        )
+      ).rows[0]?.role
+  const actorAllowed = isAdmin || actorRole === 'owner' || actorRole === 'moderator'
+  // Gate before ban locks; then lock selected ban rows by id for consistent lock order.
   // Scalar-array key probes prevent generic plans from scanning unselected ban history.
   // A concurrent insertion is outside this statement's snapshot and remains active.
   const { rows } = await write<LiftStatementResult>(
@@ -88,20 +102,9 @@ async function liftSelectedCommunityBans(
       gate AS MATERIALIZED (
         SELECT
           (SELECT count(*)::int FROM candidates) AS candidate_count,
-          (${isAdmin}::boolean OR EXISTS (
-            SELECT 1 FROM community_members actor
-            WHERE actor.community_id = ${communityId}
-              AND actor.user_id = ${currentUser.id}
-              AND actor.removed_at IS NULL
-              AND actor.role IN ('owner', 'moderator')
-          )) AS actor_allowed,
-          (NOT ${isAdmin}::boolean AND EXISTS (
-            SELECT 1 FROM community_members actor
-            WHERE actor.community_id = ${communityId}
-              AND actor.user_id = ${currentUser.id}
-              AND actor.removed_at IS NULL
-              AND actor.role = 'moderator'
-          ) AND EXISTS (SELECT 1 FROM protected_issuers)) AS protected_issuer
+          (${actorAllowed}::boolean) AS actor_allowed,
+          (${actorRole === 'moderator'}::boolean
+            AND EXISTS (SELECT 1 FROM protected_issuers)) AS protected_issuer
       ),
       locked AS MATERIALIZED (
         SELECT ban.id
@@ -131,6 +134,15 @@ async function liftSelectedCommunityBans(
   )
   const result = rows[0]!
   assert(result.actor_allowed, 403, 'Forbidden')
+  if (result.protected_issuer) {
+    if (liftAll)
+      throw createCodedError(
+        403,
+        COMMUNITY_BAN_LIFT_ALL_FORBIDDEN,
+        COMMUNITY_BAN_LIFT_ALL_FORBIDDEN,
+      )
+    assert(false, 403, 'Only an owner or admin can lift this ban')
+  }
   if (liftAll && result.candidate_count > cap) {
     throw Object.assign(
       createCodedError(
@@ -142,15 +154,6 @@ async function liftSelectedCommunityBans(
     )
   }
   assert(result.candidate_count > 0, 404, 'No active ban found')
-  if (result.protected_issuer) {
-    if (liftAll)
-      throw createCodedError(
-        403,
-        COMMUNITY_BAN_LIFT_ALL_FORBIDDEN,
-        COMMUNITY_BAN_LIFT_ALL_FORBIDDEN,
-      )
-    assert(false, 403, 'Only an owner or admin can lift this ban')
-  }
   assert(result.lifted_ban_ids.length > 0, 404, 'No active ban found')
   await transaction.commit()
 

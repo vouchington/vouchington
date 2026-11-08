@@ -71,4 +71,5 @@ export async function seedCommunityBanPages(): Promise<void> {
       seedUuid(1, '01'),
     ],
   )
+  await write('/* seedCommunityBanPages:analyze */ ANALYZE community_bans')
 }

@@ -10,7 +10,7 @@ import { liftBan, liftAllBans, fetchCommunityBan, fetchCommunityBans } from '@/l
 import { LiftAllBansDialog } from './lift-all-bans-dialog'
 import { ApiError } from '@vouchington/api-client'
 import type { Community, CommunityBan, CommunityBansResponseBody } from '@/types/api-responses'
-import { isBanActive, uniqueBans } from './community-bans-panel-state'
+import { collectBanUsers, isBanActive, uniqueBans } from './community-bans-panel-state'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getUserLabel } from '@/lib/users/user-helpers'
 interface Props {
@@ -33,10 +33,7 @@ export function CommunityBansPanel({ community, initialData }: Props) {
   const [details, setDetails] = useState<Record<string, CommunityBan>>({})
   const [liftError, setLiftError] = useState<string | null>(null)
   const [liftedAtByBanId, setLiftedAtByBanId] = useState<Record<string, string>>({})
-  const users = Object.assign(
-    {},
-    ...pages.map(page => page.users),
-  ) as CommunityBansResponseBody['users']
+  const users = collectBanUsers(pages)
   const bans = uniqueBans(
     pages.flatMap(page =>
       page.results.flatMap(result => {
@@ -69,7 +66,7 @@ export function CommunityBansPanel({ community, initialData }: Props) {
             : t('moderation.communityBans.liftAllLimitUnknown'),
         )
       } else {
-        setLiftError(err instanceof Error ? err.message : t('moderation.communityBans.liftFailed'))
+        setLiftError(t('moderation.communityBans.liftFailed'))
       }
     } finally {
       setLiftingId(null)
@@ -80,10 +77,8 @@ export function CommunityBansPanel({ community, initialData }: Props) {
     try {
       const { community_ban } = await fetchCommunityBan(community.slug, banId)
       setDetails(prev => ({ ...prev, [banId]: community_ban }))
-    } catch (err) {
-      setLiftError(
-        err instanceof Error ? err.message : t('moderation.communityBans.detailLoadFailed'),
-      )
+    } catch {
+      setLiftError(t('moderation.communityBans.liftFailed'))
     }
   }
   return (
@@ -118,7 +113,6 @@ export function CommunityBansPanel({ community, initialData }: Props) {
           {bans.map(ban => {
             const user = users[ban.user_id]
             const isActive = isBanActive(ban)
-            const statusLabel = isActive ? 'Active' : ban.lifted_at ? 'Lifted' : 'Expired'
             const isLifting = liftingId === ban.id || liftingId === ban.user_id
             return (
               <div
@@ -135,7 +129,11 @@ export function CommunityBansPanel({ community, initialData }: Props) {
                       variant={isActive ? 'destructive' : 'secondary'}
                       suppressHydrationWarning
                     >
-                      {statusLabel}
+                      {isActive
+                        ? t('moderation.communityBans.active')
+                        : ban.lifted_at
+                          ? t('moderation.communityBans.lifted')
+                          : t('moderation.communityBans.expired')}
                     </Badge>
                   </div>
                   {details[ban.id]?.reason && (
@@ -179,7 +177,9 @@ export function CommunityBansPanel({ community, initialData }: Props) {
                       data-pw='community-ban-lift'
                       onClick={() => handleLiftBan(ban.id, false)}
                     >
-                      {isLifting ? 'Lifting…' : 'Lift ban'}
+                      {isLifting
+                        ? t('moderation.communityBans.lifting')
+                        : t('moderation.communityBans.liftBan')}
                     </Button>
                     <LiftAllBansDialog
                       userLabel={getUserLabel(user, t('shared.user.deletedUser'))}
