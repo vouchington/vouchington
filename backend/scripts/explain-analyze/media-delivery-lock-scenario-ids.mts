@@ -1,0 +1,16 @@
+export const MEDIA_DELIVERY_LOCK_SCENARIOS = [
+  'media-delivery-lock-post-find',
+  'media-delivery-lock-post-placements',
+  'media-delivery-lock-image-find',
+  'media-delivery-lock-image-placements',
+  'media-delivery-lock-placement-find',
+  'media-delivery-lock-placement-placements',
+  'media-delivery-lock-mixed-find',
+  'media-delivery-lock-mixed-placements',
+  'media-delivery-lock-empty-find',
+  'media-delivery-lock-empty-placements',
+  'media-delivery-recovery-post',
+  'media-delivery-recovery-image',
+  'media-delivery-recovery-mixed',
+  'media-delivery-recovery-empty',
+] as const

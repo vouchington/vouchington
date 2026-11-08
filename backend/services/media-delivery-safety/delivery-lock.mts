@@ -36,21 +36,20 @@ export async function lockImageDeliveryMutation(
     await markImageDeliveryAuthorityStarted(query)
     return
   }
+  // Constrain the parent PK explicitly: a bare join still scanned every parent in measured plans.
+  const findBindings = sql`/* lockImageDeliveryMutation:findBindings */
+    WITH bindings AS MATERIALIZED (`
+  findBindings.append(bindingProbes(requestedPostIds, requestedImageIds, requestedPlacementIds))
+  findBindings.append(sql`)
+    SELECT placement.id AS placement_id, binding.post_id, binding.image_id
+    FROM bindings binding
+    JOIN media_placements placement ON placement.id = binding.placement_id
+      AND placement.id = ANY(ARRAY(SELECT placement_id FROM bindings))`)
   const { rows } = await query<{
     placement_id: string
     post_id: string | null
     image_id: string
-  }>(sql`/* lockImageDeliveryMutation:findBindings */
-    SELECT placement.id AS placement_id, binding.post_id, binding.image_id
-    FROM (
-      SELECT placement_id, post_id, image_id FROM image_placements
-      UNION ALL SELECT placement_id, NULL::uuid AS post_id, image_id FROM image_surface_placements
-    ) binding
-    JOIN media_placements placement ON placement.id = binding.placement_id
-    WHERE binding.post_id = ANY(${requestedPostIds}::uuid[])
-       OR binding.image_id = ANY(${requestedImageIds}::uuid[])
-       OR placement.id = ANY(${requestedPlacementIds}::uuid[])
-  `)
+  }>(findBindings)
   const keys = new Set<string>()
   for (const postId of requestedPostIds) keys.add(`media-delivery:post:${postId}`)
   for (const imageId of requestedImageIds) keys.add(`media-delivery:image:${imageId}`)
@@ -73,17 +72,40 @@ export async function lockImageDeliveryMutation(
   await query(advisory)
   // All writers acquire the post/image advisory identities above before changing a binding, so
   // this row lock happens after (never before) the shared copyright placement fence.
-  await query(sql`/* lockImageDeliveryMutation:lockPlacements */
+  const lockPlacements = sql`/* lockImageDeliveryMutation:lockPlacements */
+    WITH bindings AS MATERIALIZED (`
+  lockPlacements.append(bindingProbes(requestedPostIds, requestedImageIds, requestedPlacementIds))
+  lockPlacements.append(sql`)
     SELECT placement.id
-    FROM (
-      SELECT placement_id, post_id, image_id FROM image_placements
-      UNION ALL SELECT placement_id, NULL::uuid AS post_id, image_id FROM image_surface_placements
-    ) binding
+    FROM bindings binding
     JOIN media_placements placement ON placement.id = binding.placement_id
-    WHERE binding.post_id = ANY(${requestedPostIds}::uuid[])
-       OR binding.image_id = ANY(${requestedImageIds}::uuid[])
-       OR placement.id = ANY(${requestedPlacementIds}::uuid[])
+      AND placement.id = ANY(ARRAY(SELECT placement_id FROM bindings))
     ORDER BY placement.id
     FOR UPDATE OF placement
   `)
+  await query(lockPlacements)
+}
+
+/** Every arm starts at its own indexed binding key; UNION removes overlapping input matches. */
+function bindingProbes(
+  postIds: string[],
+  imageIds: string[],
+  placementIds: string[],
+): ReturnType<typeof sql> {
+  return sql`
+    SELECT placement_id, post_id, image_id FROM image_placements
+    WHERE post_id = ANY(${postIds}::uuid[])
+    UNION
+    SELECT placement_id, post_id, image_id FROM image_placements
+    WHERE image_id = ANY(${imageIds}::uuid[])
+    UNION
+    SELECT placement_id, post_id, image_id FROM image_placements
+    WHERE placement_id = ANY(${placementIds}::uuid[])
+    UNION
+    SELECT placement_id, NULL::uuid AS post_id, image_id FROM image_surface_placements
+    WHERE image_id = ANY(${imageIds}::uuid[])
+    UNION
+    SELECT placement_id, NULL::uuid AS post_id, image_id FROM image_surface_placements
+    WHERE placement_id = ANY(${placementIds}::uuid[])
+  `
 }

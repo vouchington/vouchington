@@ -1,3 +1,4 @@
+import { MEDIA_DELIVERY_LOCK_SCENARIOS } from './media-delivery-lock-scenario-ids.mts'
 import { MEMBERSHIP_COLLISION_REVIEW_SCENARIO_IDS } from './membership-collision-review-scenario-ids.mts'
 import { HACKER_NEWS_VIEWER_SCENARIO_IDS } from './hacker-news-viewer-scenario-ids.mts'
 import { COMMUNITY_BAN_SCENARIO_IDS } from './community-ban-scenario-ids.mts'
@@ -8,6 +9,7 @@ import { NOTIFICATION_VISIBILITY_SCENARIO_IDS } from './notification-visibility-
 import { POST_URL_CAPACITY_SCENARIOS } from './post-related-url-capacity-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
+  ...MEDIA_DELIVERY_LOCK_SCENARIOS,
   ...COMMUNITY_BAN_SCENARIO_IDS,
   'community-agent-prompt-capacity',
   'community-agent-prompts-first-page',
