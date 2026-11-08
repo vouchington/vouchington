@@ -32,7 +32,7 @@ import {
   getOfficialReferralLinks,
   getReferralProgramValidationInfo,
   getReferralProgramValidations,
-  referralProgramLinksValidation,
+  getReferralProgramLinkedValidation,
 } from '../referral-links'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 
@@ -156,7 +156,7 @@ describe('referral-links server api helpers', () => {
       expect(result).toEqual({ results })
     })
 
-    it('passes the name cursor when a later page is requested', async () => {
+    it('passes the cursor when a later page is requested', async () => {
       mockGet.mockResolvedValueOnce({
         results: [],
         page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
@@ -170,37 +170,32 @@ describe('referral-links server api helpers', () => {
       )
     })
 
-    it('follows the cursor until the validation id is found', async () => {
-      const later = {
+    it('reads one linked validation by its resolved id', async () => {
+      const validation = {
         id: 'val-2',
         slug: 'amex',
         user_help_text: '',
         updated_at: '2026-01-02',
       }
-      mockGet
-        .mockResolvedValueOnce({
-          results: [{ id: 'val-1', slug: 'chase', user_help_text: '', updated_at: '2026-01-01' }],
-          page_info: { has_next_page: true, end_cursor: 'cursor-1', start_cursor: 'cursor-0' },
-        })
-        .mockResolvedValueOnce({
-          results: [later],
-          page_info: { has_next_page: false, end_cursor: null, start_cursor: 'cursor-1' },
-        })
+      mockGet.mockResolvedValueOnce({ validation })
 
-      await expect(referralProgramLinksValidation('program-1', 'val-2')).resolves.toBe(true)
-      expect(mockGet).toHaveBeenLastCalledWith(
-        '/api/v1/topics/program-1/referral-program/validations',
-        { searchParams: { limit: 100, after: 'cursor-1' } },
+      await expect(getReferralProgramLinkedValidation('program-1', 'val-2')).resolves.toEqual(
+        validation,
       )
+      expect(mockGet).toHaveBeenCalledWith(
+        '/api/v1/topics/program-1/referral-program/validations/val-2',
+      )
+      expect(mockGet).toHaveBeenCalledTimes(1)
     })
 
-    it('returns false when the cursor ends without the validation', async () => {
-      mockGet.mockResolvedValueOnce({
-        results: [],
-        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-      })
+    it('returns null for an unlinked validation', async () => {
+      mockGet.mockResolvedValueOnce({ validation: null })
+      mockReturnNullForMissingEntity.mockResolvedValueOnce(null)
 
-      await expect(referralProgramLinksValidation('program-1', 'missing')).resolves.toBe(false)
+      await expect(getReferralProgramLinkedValidation('program-1', 'missing')).resolves.toBeNull()
+      expect(mockGet).toHaveBeenCalledWith(
+        '/api/v1/topics/program-1/referral-program/validations/missing',
+      )
     })
 
     it('returns empty results when no validations are linked', async () => {

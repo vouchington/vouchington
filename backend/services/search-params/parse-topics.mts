@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors'
 import { parseBooleanish } from '@ts-shared/utils/query'
 import {
   defineQueryContract,
@@ -43,6 +44,15 @@ export function prepareTopicsSearchParams(
   query: Record<string, unknown>,
   runtimeLimits?: PaginationRuntimeLimitBounds,
 ) {
+  // An unresolved filter would otherwise return an empty page before the link-count guard runs.
+  if (
+    query.sort === 'link_count' &&
+    Object.entries(query).some(
+      ([key, value]) => value !== undefined && !['sort', 'limit', 'after'].includes(key),
+    )
+  ) {
+    throw createHttpError(400, 'sort=link_count does not combine with topic search filters')
+  }
   const validationQuery = prepareQueryForValidation(query, {
     ...topicsParser.queryContract,
     ...topicsQueryContract.queryContract,

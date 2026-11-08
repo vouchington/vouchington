@@ -101,18 +101,16 @@ export const getReferralProgramValidations = cache(
   },
 )
 
-// Each call is one keyset page. The next call waits on that cursor, so this cannot be a parallel loop.
-export async function referralProgramLinksValidation(
-  referralProgramId: string,
-  validationId: string,
-  after?: string,
-  seen?: ReadonlySet<string>,
-): Promise<boolean> {
-  const page = await getReferralProgramValidations(referralProgramId, after)
-  if (page.results.some(row => row.id === validationId)) return true
-  const next = page.page_info?.has_next_page ? page.page_info.end_cursor : null
-  if (!next || seen?.has(next)) return false
-  const cursors = new Set(seen)
-  cursors.add(next)
-  return referralProgramLinksValidation(referralProgramId, validationId, next, cursors)
-}
+export const getReferralProgramLinkedValidation = cache(
+  (
+    referralProgramId: string,
+    validationIdOrSlug: string,
+  ): Promise<ReferralLinkValidationSummary | null> =>
+    returnNullForMissingEntity(
+      serverApi
+        .get<{ validation: ReferralLinkValidationSummary }>(
+          `/api/v1/topics/${referralProgramId}/referral-program/validations/${validationIdOrSlug}`,
+        )
+        .then(data => data.validation),
+    ),
+)

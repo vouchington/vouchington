@@ -46764,6 +46764,21 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/topics/:referralProgramId/referral-program/validations/:validationIdOrSlug": {
+      "path": {
+        "properties": {
+          "referralProgramId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "validationIdOrSlug": {
+            "type": "string"
+          }
+        },
+        "required": ["referralProgramId", "validationIdOrSlug"],
+        "type": "object"
+      }
+    },
     "GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId": {
       "path": {
         "properties": {

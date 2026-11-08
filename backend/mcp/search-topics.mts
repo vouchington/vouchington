@@ -55,7 +55,7 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. sort=link_count lists enabled referral programs by all-time active link count. It accepts only limit and after, and rejects every other search filter.',
+      'Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. sort=link_count lists enabled referral programs by all-time active link count, excluding programs with zero active links. It accepts only limit and after, and rejects every other search filter.',
     parameters: {
       type: 'object',
       properties: {

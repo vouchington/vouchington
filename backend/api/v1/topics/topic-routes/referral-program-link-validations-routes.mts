@@ -5,6 +5,7 @@ import {
 } from '@services/topics'
 import {
   createAndLinkValidationToReferralProgram,
+  getReferralLinkValidationForProgram,
   listReferralLinkValidationsForProgram,
 } from '@services/referral-program-link-validations'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
@@ -24,7 +25,7 @@ type LinkReferralProgramValidationBody = { validation_id: string }
 type CreateReferralProgramValidationBody = { slug: string; user_help_text?: string | null }
 
 const programValidationsParser = createPaginationParser({
-  cursor: { type: 'name' as const },
+  cursor: { type: 'simple' as const },
   limit: { min: 1, max: 100, default: 50 },
 })
 
@@ -129,5 +130,23 @@ app
     )
 
     ctx.setStatus(201)
+    ctx.json({ validation })
+  })
+
+// GET /api/v1/topics/:referralProgramId/referral-program/validations/:validationIdOrSlug
+app
+  .route('/api/v1/topics/:referralProgramId/referral-program/validations/:validationIdOrSlug')
+  .get(async (ctx: Context) => {
+    const operation =
+      'GET:/api/v1/topics/:referralProgramId/referral-program/validations/:validationIdOrSlug'
+    await requireAuthAndRateLimit(ctx, currentUserCanUpdateTopic, operation)
+    validateRequestContract(ctx, operation, { path: ctx.params })
+
+    const referralProgramId = validateUUIDParam(ctx, 'referralProgramId')
+    const validation = await getReferralLinkValidationForProgram(
+      referralProgramId,
+      ctx.params.validationIdOrSlug!,
+    )
+    ctx.assert(validation, 404, 'Validation not linked to referral program')
     ctx.json({ validation })
   })

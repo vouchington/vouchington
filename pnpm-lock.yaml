@@ -171,6 +171,9 @@ importers:
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:data-stores/graceful-shutdown
+      '@services/referral-program-link-validations':
+        specifier: workspace:^
+        version: link:services/referral-program-link-validations
       '@voucha/api':
         specifier: workspace:^
         version: link:api

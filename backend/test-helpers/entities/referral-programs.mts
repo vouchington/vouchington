@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestTopic } from './topics.mts'
 
@@ -173,4 +173,17 @@ export async function setTopicReferralProgramId(
     UPDATE topics SET referral_program_topic_id = ${referralProgramId} WHERE id = ${topicId}
   `,
   )
+}
+
+export async function hasReferralProgramValidationForTest(
+  programId: string,
+  validationId: string,
+): Promise<boolean> {
+  const { rows } = await read(sql`/* hasReferralProgramValidationForTest */
+    SELECT 1 FROM referral_program_topic_link_validation_rule_sets
+    WHERE referral_program_topic_id = ${programId}
+      AND referral_program_link_validation_rule_set_id = ${validationId}
+    LIMIT 1
+  `)
+  return rows.length > 0
 }

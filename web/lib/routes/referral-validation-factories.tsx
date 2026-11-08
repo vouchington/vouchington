@@ -8,15 +8,11 @@ import { ValidationForm } from '@/components/admin/referral-link-validations/val
 import { ValidationRulesTable } from '@/components/admin/referral-link-validations/validation-rules-table'
 import { ValidationsListTable } from '@/components/admin/referral-link-validations/validations-list-table'
 import { Button } from '@/components/ui/button'
-import type {
-  ReferralLinkValidation,
-  ReferralLinkValidationRule,
-} from '@/lib/api/client/referral-link-validations'
-import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
+import type { ReferralLinkValidationRule } from '@/lib/api/client/referral-link-validations'
 import {
   getReferralProgramValidations,
+  getReferralProgramLinkedValidation,
   getTopic,
-  referralProgramLinksValidation,
   serverApi,
 } from '@/lib/api/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
@@ -143,16 +139,8 @@ export function createReferralProgramValidationDetailPage() {
     const { id, validationId } = await params
     const { topic, basePath } = await loadReferralProgram(id)
 
-    const validationData = await returnNullForMissingEntity(
-      serverApi.get<{ validation: ReferralLinkValidation }>(
-        `/api/v1/referral-link-validations/${validationId}`,
-      ),
-    )
-    if (!validationData) notFound()
-    // The resolved id, not the route segment, is what the keyset pages carry.
-    const linked = await referralProgramLinksValidation(topic.id, validationData.validation.id)
-    if (!linked) notFound()
-    const { validation } = validationData
+    const validation = await getReferralProgramLinkedValidation(topic.id, validationId)
+    if (!validation) notFound()
     if (isUUID(id) || isUUID(validationId)) {
       permanentRedirect(referralValidationHref(topic, validation))
     }

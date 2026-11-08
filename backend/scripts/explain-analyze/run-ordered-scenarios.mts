@@ -1,3 +1,4 @@
+import { runReferralValidationPages } from './run-scenarios/referral-program-validation-pages.mts'
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
@@ -152,6 +153,7 @@ export async function runScenariosBeforePartition(): Promise<void> {
   await runStep(runMembershipRenewalSelection.name, runMembershipRenewalSelection)
   const measureReferralCache = runPrioritizedReferralCacheMeasurement
   await runStep(measureReferralCache.name, measureReferralCache)
+  await runStep(runReferralValidationPages.name, runReferralValidationPages)
   await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios)
   await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
   await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)

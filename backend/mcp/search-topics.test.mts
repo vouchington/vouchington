@@ -51,4 +51,13 @@ describe('search-topics', () => {
     expect(oversized.topics).toHaveLength(30)
     expect(oversized.page_info.has_next_page).toBe(false)
   })
+
+  it('rejects link-count filters even when a similar item does not resolve', async () => {
+    await expect(
+      searchPage({ sort: 'link_count', similar_post_id: `missing-${crypto.randomUUID()}` }),
+    ).rejects.toMatchObject({ status: 400 })
+    await expect(
+      searchPage({ sort: 'link_count', q: `#missing-${crypto.randomUUID()}` }),
+    ).rejects.toMatchObject({ status: 400 })
+  })
 })

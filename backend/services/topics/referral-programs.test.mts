@@ -2,6 +2,7 @@ import { it, beforeAll, describe } from 'vitest'
 import assert from 'node:assert/strict'
 import { createReferralProgramLinkValidation, createTestUser } from '@voucha/test-helpers'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
+import { hasReferralProgramValidationForTest } from '@voucha/test-helpers/entities/referral-programs'
 import {
   getReferralProgramAttributes,
   linkValidationToReferralProgram,
@@ -118,18 +119,11 @@ describe('referral-programs', () => {
   it('unlinkValidationFromReferralProgram unlinks a validation from a referral program', async () => {
     const random = Math.random().toString(36).slice(7)
     const validationId = await createReferralProgramLinkValidation(`unlink_svc_test_${random}`)
-    const topic = {
-      id: referralProgramId!,
-      topic_type: 'referral_program' as const,
-    } as unknown as Topic
-
     await linkValidationToReferralProgram(user, referralProgramId!, validationId)
-    const linked = await getReferralProgramAttributes(topic)
-    assert.ok(linked?.referral_program_link_validation_ids?.includes(validationId))
+    assert.equal(await hasReferralProgramValidationForTest(referralProgramId!, validationId), true)
 
     await unlinkValidationFromReferralProgram(user, referralProgramId!, validationId)
-    const unlinked = await getReferralProgramAttributes(topic)
-    assert.ok(!unlinked?.referral_program_link_validation_ids?.includes(validationId))
+    assert.equal(await hasReferralProgramValidationForTest(referralProgramId!, validationId), false)
   })
 
   it('unlinkValidationFromReferralProgram rejects unauthenticated users', async () => {
