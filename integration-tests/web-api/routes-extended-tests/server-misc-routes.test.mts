@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import serverApp from '../../../backend/entrypoints/api/index.mts'
 import * as serverRoutes from '@/lib/api/server'
-import { getMigrationStatus, getPartitionStatus } from '@/lib/api/server/psql'
+import type { MigrationStatusResponse, PartitionStatusResponseBody } from '@/types/api-responses'
 import {
   createTestUser,
   createTestLandingPage,
@@ -189,14 +189,20 @@ describe('server-misc-routes', () => {
 
   describe('psql server routes', () => {
     it('getMigrationStatus returns 200 with admin auth', async () => {
-      const response = await getMigrationStatus({ headers: adminCookieHeader })
+      const response = await serverRoutes.serverApi.get<MigrationStatusResponse>(
+        '/api/v1/psql/migrations',
+        { headers: adminCookieHeader },
+      )
 
       expect(response.applied).toEqual(expect.any(Array))
       expect(response.total).toEqual(expect.any(Number))
     })
 
     it('getPartitionStatus returns 200 with admin auth', async () => {
-      const response = await getPartitionStatus({ headers: adminCookieHeader })
+      const response = await serverRoutes.serverApi.get<PartitionStatusResponseBody>(
+        '/api/v1/psql/partitions',
+        { headers: adminCookieHeader },
+      )
 
       expect(response.tables).toEqual(expect.any(Array))
     })

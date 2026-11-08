@@ -128,15 +128,6 @@ export async function loadServerMessages(locale: string): Promise<EnCatalog> {
   return entry.catalog
 }
 
-/** Catalog revision for the same pathname-keyed entry `loadServerMessages` just resolved. */
-export async function loadedServerLocalizationRevision(
-  locale: string,
-): Promise<string | undefined> {
-  const pathname = await localizationPathname()
-  const entry = catalogs.get(localizationCacheKey(locale, pathname))
-  return entry?.state === 'resolved' ? entry.batch.revision : undefined
-}
-
 /** Development-only `<html>` marker bound to the catalog object this render serialized. */
 export function ssrLocalizationRevisionHtmlProps(
   catalog: EnCatalog,

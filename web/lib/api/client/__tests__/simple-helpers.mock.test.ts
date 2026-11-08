@@ -15,7 +15,6 @@ vi.mock(
 import { clientApi } from '../instance'
 import { getApiKeys } from '../api-keys'
 import { fetchCaptchaConfig } from '../captcha-config'
-import { getFeatureFlagsClient } from '../feature-flags'
 import { exportRssFeeds } from '../import-export'
 import { unsubscribeEmailToken } from '../my'
 import { searchRssFeedsClient } from '../rss-feeds'
@@ -37,15 +36,6 @@ describe('simple client api helpers', () => {
 
     expect(mockGet).toHaveBeenCalledWith('/api/v1/my/api-keys')
     expect(result).toBe(response)
-  })
-
-  it('loads feature flags through the client request helper', async () => {
-    const response = { flags: {}, overrides: {} }
-    mockGet.mockResolvedValueOnce(response)
-
-    expect(await getFeatureFlagsClient()).toBe(response)
-
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/feature-flags')
   })
 
   it('loads captcha config through the client request helper', async () => {

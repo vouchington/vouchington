@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  loadServerMessages,
-  loadedServerLocalizationRevision,
-  ssrLocalizationRevisionHtmlProps,
-} from '../load-server-messages'
+import { loadServerMessages, ssrLocalizationRevisionHtmlProps } from '../load-server-messages'
 import { SSR_LOCALIZATION_REVISION_ATTRIBUTE } from '../ssr-localization-revision-props.mts'
 import { ROUTE_SELECTORS, WEB_CHROME_SELECTOR } from '../route-selectors.generated.mts'
 
@@ -60,7 +56,6 @@ describe('loadServerMessages', () => {
     vi.unstubAllEnvs()
     vi.useRealTimers()
   })
-
   it('fetches from the backend in development', async () => {
     vi.stubEnv('ENVIRONMENT', 'development')
     mockHeadersGet.mockReturnValue('/login')
@@ -69,7 +64,6 @@ describe('loadServerMessages', () => {
     await expect(loadServerMessages('dev')).resolves.toEqual({ nav: { home: 'Home' } })
     expect(mockGetBatch).toHaveBeenCalledTimes(1)
   })
-
   it('fetches chrome plus the current route from the API', async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     const catalog = await loadServerMessages('es')
@@ -80,7 +74,13 @@ describe('loadServerMessages', () => {
     await loadServerMessages('es')
     expect(mockGetBatch).toHaveBeenCalledTimes(1)
   })
+  it('loads the default selectors when the request has no pathname header', async () => {
+    mockHeadersGet.mockReturnValue(null)
+    mockGetBatch.mockResolvedValue(localizationBatch('Fallback'))
 
+    await expect(loadServerMessages('missing-path')).resolves.toEqual({ nav: { home: 'Fallback' } })
+    expect(mockGetBatch).toHaveBeenCalledExactlyOnceWith('missing-path', exactSelectorsFor('/'))
+  })
   it('uses one exact request when the backend returns an empty batch', async () => {
     mockHeadersGet.mockReturnValue('/plans')
     mockGetBatch.mockResolvedValue({
@@ -93,7 +93,6 @@ describe('loadServerMessages', () => {
     await expect(loadServerMessages('fr')).resolves.toEqual({})
     expect(mockGetBatch).toHaveBeenCalledExactlyOnceWith('fr', exactSelectorsFor('/plans'))
   })
-
   it('coalesces concurrent initial loads for the same locale and selectors', async () => {
     vi.stubEnv('ENVIRONMENT', 'production')
     mockHeadersGet.mockReturnValue('/feed')
@@ -105,7 +104,6 @@ describe('loadServerMessages', () => {
     expect(second).toEqual(first)
     expect(mockGetBatch).toHaveBeenCalledTimes(1)
   })
-
   it('serves stale data while one TTL-driven refresh replaces the catalog', async () => {
     vi.stubEnv('ENVIRONMENT', 'production')
     mockHeadersGet.mockReturnValue('/topics')
@@ -133,7 +131,6 @@ describe('loadServerMessages', () => {
     })
     expect(mockGetBatch).toHaveBeenCalledTimes(2)
   })
-
   it('evicts a failed initial load so the next request retries', async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     mockHeadersGet.mockReturnValue('/my')
@@ -145,7 +142,6 @@ describe('loadServerMessages', () => {
     await expect(loadServerMessages('es')).resolves.toEqual({ nav: { home: 'Recovered' } })
     expect(mockGetBatch).toHaveBeenCalledTimes(2)
   })
-
   it('treats a non-finite API TTL as immediately expired', async () => {
     vi.stubEnv('ENVIRONMENT', 'production')
     mockHeadersGet.mockReturnValue('/settings')
@@ -165,7 +161,6 @@ describe('loadServerMessages', () => {
       nav: { home: 'Settings refreshed' },
     })
   })
-
   it('keeps stale data and backs off a failed refresh for 60 seconds', async () => {
     vi.stubEnv('ENVIRONMENT', 'production')
     mockHeadersGet.mockReturnValue('/communities')
@@ -198,47 +193,58 @@ describe('loadServerMessages', () => {
       nav: { home: 'Communities refreshed' },
     })
   })
-
-  it('reports the cached catalog revision for the current pathname selectors', async () => {
+  it('reports the catalog snapshot revision for the current pathname selectors', async () => {
     mockHeadersGet.mockReturnValue('/articles')
     mockGetBatch.mockResolvedValue(localizationBatch('Articles', 60))
-
-    await expect(loadedServerLocalizationRevision('it')).resolves.toBeUndefined()
-    await expect(loadServerMessages('it')).resolves.toEqual({ nav: { home: 'Articles' } })
-    await expect(loadedServerLocalizationRevision('it')).resolves.toBe('revision-Articles')
+    vi.stubEnv('NODE_ENV', 'development')
+    const catalog = await loadServerMessages('it')
+    expect(catalog).toEqual({ nav: { home: 'Articles' } })
+    expect(ssrLocalizationRevisionHtmlProps(catalog)).toEqual({
+      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Articles',
+    })
   })
-
-  it('keys peeked revision by pathname selectors, not locale alone', async () => {
+  it('keys catalog snapshots by pathname selectors, not locale alone', async () => {
     mockHeadersGet.mockReturnValue('/appeals')
     mockGetBatch.mockResolvedValueOnce(localizationBatch('Appeals', 60))
-    await expect(loadServerMessages('en')).resolves.toEqual({ nav: { home: 'Appeals' } })
-    await expect(loadedServerLocalizationRevision('en')).resolves.toBe('revision-Appeals')
-
+    const appeals = await loadServerMessages('en')
+    expect(appeals).toEqual({ nav: { home: 'Appeals' } })
     mockHeadersGet.mockReturnValue('/admin/queues')
-    await expect(loadedServerLocalizationRevision('en')).resolves.toBeUndefined()
     mockGetBatch.mockResolvedValueOnce(localizationBatch('Queues', 60))
-    await expect(loadServerMessages('en')).resolves.toEqual({ nav: { home: 'Queues' } })
-    await expect(loadedServerLocalizationRevision('en')).resolves.toBe('revision-Queues')
-
+    const queues = await loadServerMessages('en')
+    expect(queues).toEqual({ nav: { home: 'Queues' } })
+    vi.stubEnv('NODE_ENV', 'development')
+    expect(ssrLocalizationRevisionHtmlProps(appeals)).toEqual({
+      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Appeals',
+    })
+    expect(ssrLocalizationRevisionHtmlProps(queues)).toEqual({
+      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Queues',
+    })
     mockHeadersGet.mockReturnValue('/appeals')
-    await expect(loadedServerLocalizationRevision('en')).resolves.toBe('revision-Appeals')
+    const cached = await loadServerMessages('en')
+    expect(ssrLocalizationRevisionHtmlProps(cached)).toEqual({
+      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Appeals',
+    })
   })
-
   it('keeps the stale catalog revision while TTL is still valid after the backend changes', async () => {
     mockHeadersGet.mockReturnValue('/blog')
     mockGetBatch
       .mockResolvedValueOnce(localizationBatch('Blog', 60))
       .mockResolvedValueOnce(localizationBatch('Blog next', 60))
-
-    await expect(loadServerMessages('nl')).resolves.toEqual({ nav: { home: 'Blog' } })
-    await expect(loadedServerLocalizationRevision('nl')).resolves.toBe('revision-Blog')
+    vi.stubEnv('NODE_ENV', 'development')
+    const first = await loadServerMessages('nl')
+    expect(first).toEqual({ nav: { home: 'Blog' } })
+    expect(ssrLocalizationRevisionHtmlProps(first)).toEqual({
+      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Blog',
+    })
     vi.advanceTimersByTime(59_000)
-    await expect(loadServerMessages('nl')).resolves.toEqual({ nav: { home: 'Blog' } })
-    await expect(loadedServerLocalizationRevision('nl')).resolves.toBe('revision-Blog')
+    const cached = await loadServerMessages('nl')
+    expect(cached).toEqual({ nav: { home: 'Blog' } })
+    expect(ssrLocalizationRevisionHtmlProps(cached)).toEqual({
+      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Blog',
+    })
     expect(mockGetBatch).toHaveBeenCalledTimes(1)
   })
-
-  it('updates the peeked revision after a TTL refresh completes', async () => {
+  it('updates the snapshot revision after a TTL refresh completes', async () => {
     mockHeadersGet.mockReturnValue('/channels')
     const refreshedBatch = localizationBatch('Channels next', 30)
     let resolveRefresh!: (batch: typeof refreshedBatch) => void
@@ -253,14 +259,12 @@ describe('loadServerMessages', () => {
     expect(stale).toEqual({ nav: { home: 'Channels' } })
     vi.advanceTimersByTime(10_000)
     await expect(loadServerMessages('sv')).resolves.toEqual({ nav: { home: 'Channels' } })
-    await expect(loadedServerLocalizationRevision('sv')).resolves.toBe('revision-Channels')
     vi.stubEnv('NODE_ENV', 'development')
     expect(ssrLocalizationRevisionHtmlProps(stale)).toEqual({
       [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Channels',
     })
     resolveRefresh(refreshedBatch)
     await flushPromises()
-    await expect(loadedServerLocalizationRevision('sv')).resolves.toBe('revision-Channels next')
     expect(ssrLocalizationRevisionHtmlProps(stale)).toEqual({
       [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Channels',
     })
@@ -270,7 +274,6 @@ describe('loadServerMessages', () => {
       [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Channels next',
     })
   })
-
   it('emits development html props from the catalog snapshot revision', async () => {
     mockHeadersGet.mockReturnValue('/messages')
     mockGetBatch.mockResolvedValue(localizationBatch('Messages', 60))
@@ -280,7 +283,6 @@ describe('loadServerMessages', () => {
       [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Messages',
     })
   })
-
   it('omits html props outside development', async () => {
     mockHeadersGet.mockReturnValue('/cards')
     mockGetBatch.mockResolvedValue(localizationBatch('Cards', 60))

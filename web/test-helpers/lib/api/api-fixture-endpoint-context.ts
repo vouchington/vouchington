@@ -21,7 +21,6 @@ import * as clientCopyrightNoticeAssociationSearch from '../../../lib/api/client
 import * as clientCopyrightRepeatInfringer from '../../../lib/api/client/copyright-repeat-infringer'
 import * as clientDynamicConfig from '../../../lib/api/client/dynamic-config'
 import * as clientEntityRelations from '../../../lib/api/client/entity-relations'
-import * as clientFeatureFlags from '../../../lib/api/client/feature-flags'
 import * as clientHouseholds from '../../../lib/api/client/households'
 import * as clientHouseholdInvitations from '../../../lib/api/client/household-invitations'
 import * as clientHostnames from '../../../lib/api/client/hostnames'
@@ -62,7 +61,6 @@ import * as serverHouseholdInvitations from '../../../lib/api/server/household-i
 import * as serverModerationAnalytics from '../../../lib/api/server/moderation-analytics'
 import * as serverModmail from '../../../lib/api/server/modmail'
 import * as serverMy from '../../../lib/api/server/my'
-import * as serverPsql from '../../../lib/api/server/psql'
 import * as serverReferralLinks from '../../../lib/api/server/referral-links'
 import * as serverReports from '../../../lib/api/server/reports'
 import * as serverRssFeedCategories from '../../../lib/api/server/rss-feed-categories'
@@ -101,7 +99,6 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     copyrightRepeatInfringer: clientCopyrightRepeatInfringer,
     dynamicConfig: clientDynamicConfig,
     entityRelations: clientEntityRelations,
-    featureFlags: clientFeatureFlags,
     households: clientHouseholds,
     householdInvitations: clientHouseholdInvitations,
     hostnames: clientHostnames,
@@ -146,7 +143,6 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     my: serverMy,
     oauthApps: serverOAuthApps,
     oauthGrants: serverOAuthGrants,
-    psql: serverPsql,
     referralLinks: serverReferralLinks,
     reports: serverReports,
     rssFeedCategories: serverRssFeedCategories,

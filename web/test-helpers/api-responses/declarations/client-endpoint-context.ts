@@ -88,10 +88,6 @@ export interface WebFixtureClientEndpointContext {
     typeof import('@/lib/api/client/entity-relations'),
     'createEntityRelation' | 'fetchEntityRelations' | 'submitEntityRelationVote'
   >
-  readonly featureFlags: Pick<
-    typeof import('@/lib/api/client/feature-flags'),
-    'getFeatureFlagsClient'
-  >
   readonly householdInvitations: typeof import('@/lib/api/client/household-invitations')
   readonly households: Pick<
     typeof import('@/lib/api/client/households'),

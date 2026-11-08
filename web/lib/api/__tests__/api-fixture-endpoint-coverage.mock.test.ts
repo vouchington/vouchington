@@ -12,7 +12,7 @@ const {
   mockServerPost,
 } = vi.hoisted(() => ({
   mockClientDelete: vi.fn<VitestLooseMock>(),
-  mockClientFetch: vi.fn<typeof import('../client/raw-fetch').clientFetch>(),
+  mockClientFetch: vi.fn<typeof import('@/test-helpers/api-fixture-fetch').clientFetch>(),
   mockClientGet: vi.fn<VitestLooseMock>(),
   mockClientPatch: vi.fn<VitestLooseMock>(),
   mockClientPost: vi.fn<VitestLooseMock>(),
@@ -36,11 +36,11 @@ vi.mock(
 )
 
 vi.mock(
-  import('../client/raw-fetch'),
+  import('@/test-helpers/api-fixture-fetch'),
   () =>
     ({
       clientFetch: mockClientFetch,
-    }) as unknown as typeof import('../client/raw-fetch'),
+    }) as unknown as typeof import('@/test-helpers/api-fixture-fetch'),
 )
 
 vi.mock(

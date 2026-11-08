@@ -89,12 +89,6 @@ export function getMyLandingPageCandidatesClient(
     searchParams: { after },
   })
 }
-export function getMyLandingPageClient(pageId: string): Promise<LandingPageDetailResponseBody> {
-  const safeId = assertEncodablePathSegmentIdentifier(pageId)
-  return clientApi.get<LandingPageDetailResponseBody>(
-    `/api/v1/my/landing-pages/${encodeURIComponent(safeId)}`,
-  )
-}
 export function updateMyIdentity(body: unknown): Promise<IdentityResponseBody> {
   return clientApi.patch<IdentityResponseBody>('/api/v1/my/identity', body)
 }

@@ -11,7 +11,7 @@ import { ApiError } from '@vouchington/api-client'
 import { isRateLimitError, getRateLimitMessage } from '@/lib/api/rate-limit-error'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 import { buildWorkerSecretHeader } from '@/lib/api/worker-secret'
-import { clientFetch } from '@/lib/api/client/raw-fetch'
+import { clientFetch } from '@/test-helpers/api-fixture-fetch'
 import { recordCommunityAutomodFeedback } from '@/lib/api/client/community-automod'
 import { getCommunityAutomodRecentActions } from '@/lib/api/server/community-automod'
 
