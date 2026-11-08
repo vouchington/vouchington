@@ -28,7 +28,7 @@ export async function captureStoryPostUrlPrefixEffectScenarios(
   const receipts = await maxCapReceipts()
   const urlIds = receipts.map(row => row.url_id)
   await captureActiveRelations(relationIndexes, urlIds)
-  await capturePendingCrawls(urlIds)
+  await capturePendingCrawls()
   await captureReceiptsWritten(receipts)
   await captureCrawlRequirements(urlIds)
   await captureLoweredCapPrune(relationIndexes)
@@ -57,7 +57,7 @@ async function captureActiveRelations(
   })
 }
 
-async function capturePendingCrawls(urlIds: readonly string[]): Promise<void> {
+async function capturePendingCrawls(): Promise<void> {
   const id = 'story-post-related-url-pending-crawls-maximum'
   registerReceiptContract(id, 'storyPostRelatedUrlProjectionPendingCrawlEffects', HARD_MAX)
   await runAndCapture(
@@ -65,7 +65,6 @@ async function capturePendingCrawls(urlIds: readonly string[]): Promise<void> {
     async () => {
       const pending = await readStoryPostRelatedUrlProjectionPendingCrawlEffects(
         projectionWork(seed.posts[1]!, MAXIMUM_LEASE),
-        urlIds,
       )
       assert.equal(pending.length, HARD_MAX)
     },

@@ -53,31 +53,26 @@ export async function publishAdmissionEffects(admitted: AdmissionEffects): Promi
 
 export async function readStoryPostRelatedUrlProjectionPendingCrawlEffects(
   work: ProjectionWork,
-  urlIds: readonly string[],
 ): Promise<string[]> {
   const { rows } = await write<{ url_id: string }>(
     `/* storyPostRelatedUrlProjectionPendingCrawlEffects */
+      -- A retry can admit a smaller prefix. Receipts outside that prefix still owe a crawl,
+      -- and completing the job cascades them away. One generation records at most the hard max.
       SELECT url_id
       FROM story_post_related_url_projection_receipts
       WHERE post_id = $1 AND generation = $2 AND is_eligible = TRUE
-        AND url_id = ANY($3::uuid[]) AND should_crawl = TRUE
-        AND effects_dispatched_at IS NULL
-      LIMIT $4`,
-    [work.post_id, work.generation, urlIds, relationLimitsMaxValues.post_related_url],
+        AND should_crawl = TRUE AND effects_dispatched_at IS NULL
+      ORDER BY url_id
+      LIMIT $3`,
+    [work.post_id, work.generation, relationLimitsMaxValues.post_related_url],
   )
   const pendingEffectIds: string[] = []
   for (const row of rows) pendingEffectIds.push(row.url_id)
   return pendingEffectIds
 }
 
-export async function dispatchPendingCrawls(
-  work: ProjectionWork,
-  rows: readonly SourceRow[],
-): Promise<boolean> {
-  const pendingEffectIds = await readStoryPostRelatedUrlProjectionPendingCrawlEffects(
-    work,
-    uniqueUrlIds(rows),
-  )
+export async function dispatchPendingCrawls(work: ProjectionWork): Promise<boolean> {
+  const pendingEffectIds = await readStoryPostRelatedUrlProjectionPendingCrawlEffects(work)
   if (pendingEffectIds.length === 0) return true
   await enqueueBulkCrawlUrls(pendingEffectIds.map(urlId => ({ urlId })))
   const { rowCount } = await write(

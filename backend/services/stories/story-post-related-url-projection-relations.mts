@@ -60,7 +60,7 @@ export async function admitStoryPostRelatedUrlProjectionPrefix(
   if (!admitted.ok) return { ok: false, processed: 0 }
   await transaction.commit()
   await publishAdmissionEffects(admitted)
-  const dispatched = await dispatchPendingCrawls(work, sourceRows)
+  const dispatched = await dispatchPendingCrawls(work)
   return { ok: dispatched, processed: sourceRows.length }
 }
 
