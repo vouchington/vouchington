@@ -14,10 +14,8 @@ import {
   setTestEntityRelationIdAndScore,
 } from '@voucha/test-helpers'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
-import {
-  lockTopicAliasPublicationScopes,
-  lockPostPublicationRssFeedScopes,
-} from '@services/post-publication'
+import { capturePublisherFeedPublicationJobs } from '@voucha/test-helpers/publisher-feed-publication-jobs'
+import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { observeTestEntityRelationVoteStatsLock } from '@voucha/test-helpers/entity-relation-vote-stats-locks'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
@@ -145,7 +143,7 @@ describe('entity relation vote stats batch locking', () => {
       topic => topic.slug === 'blog',
     )?.id
     if (!publisherTypeId) throw new Error('Expected blog publisher type')
-    const feed = await insertTestRssFeedDirect({ topicId: sourceTopic.id })
+    await insertTestRssFeedDirect({ topicId: sourceTopic.id })
     const relation = getEntityRelationMetadataOrThrow({
       subjectType: 'topic',
       objectType: 'topic',
@@ -166,20 +164,14 @@ describe('entity relation vote stats batch locking', () => {
       1,
     )
     const target = createEntityRelationElectionTarget(row.id, relation.table_name)
-    await using holder = await beginTransaction()
-    await lockPostPublicationRssFeedScopes(holder, [feed.id])
-    const jobs = await captureAddedPublicationEffectsForScope(feed.id, async () => {
+    const jobs = await capturePublisherFeedPublicationJobs([sourceTopic.id], async () => {
       await expect(
         updateEntityRelationElectionVoteStatsFromPrimaryBatch([target]),
       ).resolves.toEqual([target])
     })
-    expect(jobs).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          keys: expect.arrayContaining([{ kind: 'identity_rss_feed', uuidValue: feed.id }]),
-        }),
-      ]),
-    )
+    expect(jobs).toEqual([
+      expect.objectContaining({ topicIds: [sourceTopic.id], afterTopicId: null }),
+    ])
     const [updated] = (await getEntityRelation(
       relation.table_name,
       sourceTopic.id,

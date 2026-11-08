@@ -4,9 +4,7 @@ import { recomputeRegisteredPostHackerNewsFlags } from './post-hacker-news-flag-
 import { getEntityRelationsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  recordPostPublicationChanges,
-} from '@services/post-publication'
+import { recordPostPublicationChanges } from '@services/post-publication'
 import {
   POST_TOPIC_CATEGORY_RELATION_TABLE as POST_TOPIC_CATEGORY_TABLE,
   POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE as POST_TOPIC_ALIAS_CATEGORY_TABLE,
