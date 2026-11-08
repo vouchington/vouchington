@@ -1,5 +1,4 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { buildPostSearchTimeRangeFilter } from '../hacker-news-hot-options.mts'
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions } from '../types.mts'
 import { buildPostSearchAuthorFilter } from './base-filters.mts'
@@ -52,14 +51,8 @@ export function buildSemanticPostCandidates(
       .append(sql` AND `)
       .append(buildPostSearchAuthorFilter(options.user_id, 'semantic_vector_post'))
   }
-  // Bound the vector scan itself; the LATERAL's time filter alone leaves old rows to be walked
-  // and rejected up to hnsw.max_scan_tuples.
-  const timeRangeFilter = buildPostSearchTimeRangeFilter(
-    options,
-    'semantic_vector_post.id',
-    decisionInstant,
-  )
-  if (timeRangeFilter) query.append(sql` AND `).append(timeRangeFilter)
+  // The per-id eligible lookup applies the same time range before this window's LIMIT.
+  // Keeping a second vector-side predicate makes generic plans favor a full table scan.
   const candidateLimit = getPostsWorkLimit('semantic_post_candidate_limit')
   if (!Number.isSafeInteger(candidateLimit) || candidateLimit < 1)
     throw new Error('Invalid semantic post candidate limit')
