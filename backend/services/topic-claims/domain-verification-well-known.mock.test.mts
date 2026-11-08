@@ -132,6 +132,20 @@ describe('well-known', () => {
     expect(await fetchWellKnownToken('example.com')).toBeNull()
   })
 
+  it('returns null when a body stream yields a non-byte chunk', async () => {
+    const body = new ReadableStream<string>({
+      start(controller) {
+        controller.enqueue('not bytes')
+        controller.close()
+      },
+    })
+    const response = new Response()
+    Object.defineProperty(response, 'body', { value: body })
+    fetchWithTimeout.mockResolvedValueOnce(fetchWithTimeoutResult(response))
+
+    await expect(fetchWellKnownToken('example.com')).resolves.toBeNull()
+  })
+
   it('never throws when DNS resolution times out — resolves null like any other lookup failure', async () => {
     dnsLookup.mockRejectedValueOnce(Object.assign(new Error('aborted'), { name: 'AbortError' }))
 

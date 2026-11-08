@@ -55,13 +55,8 @@ async function collectStdout(
 ): Promise<string> {
   const chunks: Buffer[] = []
   const stdout = new Writable({
-    write(chunk, _encoding, callback) {
-      const data: unknown = chunk
-      if (typeof data !== 'string' && !(data instanceof Uint8Array)) {
-        callback(new TypeError('Command output chunk is not text or bytes'))
-        return
-      }
-      chunks.push(Buffer.from(data))
+    write(chunk: string | Uint8Array, _encoding, callback) {
+      chunks.push(Buffer.from(chunk))
       callback()
     },
   })
