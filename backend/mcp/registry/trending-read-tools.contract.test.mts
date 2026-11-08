@@ -32,7 +32,6 @@ const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>) => ({
 type Caller = ReturnType<typeof asCaller>
 /** A cursor that starts the listing at the scores up to and including `score`. */
 const startAt = (score: number) => encodeCursor({ score: score + 0.5, id: HIGHEST_ID })
-const byId = (entries: Entry[]) => entries.toSorted((a, b) => a.id.localeCompare(b.id))
 
 /** Pages down from `after` until every wanted id has been seen, and returns every entry seen. */
 async function seenUntil(wanted: string[], after: string, pageOf: PageOf): Promise<Entry[]> {
