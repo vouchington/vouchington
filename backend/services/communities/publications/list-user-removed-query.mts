@@ -73,14 +73,17 @@ function appendRemovalCursor(
 ): void {
   const cursor = options.cursor
   if (!cursor) return
+  if (options.includePlatform && tier !== (cursor as ScopedTierPreciseUuidCursor).tier) {
+    const inclusive = tier < (cursor as ScopedTierPreciseUuidCursor).tier
+    query.append(sql` AND `).append(timestamp)
+    query.append(inclusive ? sql` <= ` : sql` < `)
+    query.append(sql`${cursor.timestamp}::timestamptz`)
+    return
+  }
   query
     .append(sql` AND (`)
     .append(timestamp)
-    .append(sql` < ${cursor.timestamp}::timestamptz OR (`)
-  query.append(timestamp).append(sql` = ${cursor.timestamp}::timestamptz AND `)
-  if (options.includePlatform) {
-    const tierCursor = cursor as ScopedTierPreciseUuidCursor
-    query.append(sql`(${tier} < ${tierCursor.tier} OR (${tier} = ${tierCursor.tier} AND `)
-    query.append(id).append(sql` < ${cursor.id}))))`)
-  } else query.append(id).append(sql` < ${cursor.id}))`)
+    .append(sql`, `)
+    .append(id)
+  query.append(sql`) < (${cursor.timestamp}::timestamptz, ${cursor.id}::uuid)`)
 }

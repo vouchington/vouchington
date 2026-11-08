@@ -66,17 +66,17 @@ export async function reconcilePostModerationWork(
           version.post_id, version.deadline_at,
           COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond')) AS through_id
         FROM ${versionSource} version
-        ${
-          postIds
-            ? ''
-            : `JOIN posts post ON post.id = version.post_id
-          AND post.llm_moderation_content_sha256 = version.content_sha256
-          AND post.deleted_at IS NULL`
-        }
         CROSS JOIN unnest($7::text[]) AS source(source)
         WHERE version.policy_revision = $2
           AND version.id < COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond'))
-          ${postIds ? '' : 'AND $3::uuid[] IS NULL'}
+          ${
+            postIds
+              ? ''
+              : `AND $3::uuid[] IS NULL
+          AND (SELECT post.deleted_at IS NULL
+                 AND post.llm_moderation_content_sha256 = version.content_sha256
+               FROM posts post WHERE post.id = version.post_id) IS TRUE`
+          }
           AND ($4::uuid IS NULL OR (version.id, source.source::post_moderation_sources)
             > ($4::uuid, $5::post_moderation_sources))
           AND NOT EXISTS (

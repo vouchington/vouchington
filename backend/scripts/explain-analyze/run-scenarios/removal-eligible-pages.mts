@@ -10,6 +10,8 @@ import { contentHash, seedUuid } from '../seed-data/common.mts'
 
 const SIZE = 512
 const PREFIX = 384
+const PAGE_SIZE = 25
+const LOOKAHEAD = PAGE_SIZE + 1
 const removedAt = (index: number) =>
   new Date(Date.UTC(2026, 5, 1) - index * 1_000).toISOString().replace('Z', '000Z')
 
@@ -58,17 +60,22 @@ export async function runRemovalEligiblePageScenarios(): Promise<void> {
     for (const includePlatform of [false, true]) {
       for (const later of [false, true]) {
         const scenarioId = `removal-events-deleted-prefix-${includePlatform ? 'combined' : 'community'}-${later ? 'later' : 'first'}`
+        const reviewReads = (later ? 0 : PREFIX) + LOOKAHEAD
         registerScenarioContract(scenarioId, {
           expectations: [
             { kind: 'usesIndexes', indexes: ['idx_comm_post_reviews__user_removed'] },
-            { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: SIZE },
-            { kind: 'maxProcessedRows', relation: 'posts', max: SIZE * 2 },
+            { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: reviewReads },
+            {
+              kind: 'maxProcessedRows',
+              relation: 'posts',
+              max: reviewReads + LOOKAHEAD * (includePlatform ? 2 : 1),
+            },
           ],
           crossPartition: {
             posts: 'Removal event eligibility and hydration look up posts across id partitions.',
           },
         })
-        const cursorIndex = PREFIX + 24
+        const cursorIndex = PREFIX + PAGE_SIZE - 1
         const after = !later
           ? undefined
           : includePlatform
@@ -85,7 +92,7 @@ export async function runRemovalEligiblePageScenarios(): Promise<void> {
               )
         // no-mistakes-disable-next-line query-reached-per-item: four fixed community/combined first/later scenarios require separate serialized query captures and plan gates
         await runAndCapture(scenarioId, () =>
-          listUserRemovedPosts(userId, { limit: 25, includePlatform, after }),
+          listUserRemovedPosts(userId, { limit: PAGE_SIZE, includePlatform, after }),
         )
       }
     }
