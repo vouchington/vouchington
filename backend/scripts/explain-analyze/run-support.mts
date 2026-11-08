@@ -17,7 +17,11 @@ import { ensureScenarioContract } from './plan-expectations.mts'
 import { seedUuid } from './seed-data/common.mts'
 import { withSeedAnchorClock } from './seed-clock.mts'
 import { continuingAfterFailure } from './scenario-failures.mts'
-import { captureScenarioTwice, writeSecondPassResults } from './capture-passes.mts'
+import {
+  captureScenarioTwice,
+  writeSecondPassResults,
+  type BeforeExplain,
+} from './capture-passes.mts'
 
 export const SEED_PREFIX = '019e0000'
 export const OUTPUT_DIR = join(import.meta.dirname, 'output')
@@ -71,7 +75,7 @@ export function getCompletedScenarioIds(): readonly string[] {
   return completedScenarioIds
 }
 
-function getExplainPlanCacheModes(): ExplainPlanCacheMode[] {
+export function getExplainPlanCacheModes(): ExplainPlanCacheMode[] {
   const mode = process.env.EXPLAIN_PLAN_CACHE_MODE
   if (mode === undefined || mode === '' || mode === 'auto') return ['auto']
   if (mode === 'compare') return ['force_custom_plan', 'force_generic_plan']
@@ -93,6 +97,8 @@ async function captureScenario(
     afterCapture?: () => Promise<void>
     exactCapturedNames?: readonly string[]
     useWallClock?: boolean
+    decisionInstant?: Date
+    beforeExplain?: BeforeExplain
     setupQueryNames?: readonly string[]
     expectedSetupQueryCount?: number
     captureRawPoolQueryNames?: readonly string[]
@@ -109,7 +115,7 @@ async function captureScenario(
   try {
     // Expiring authorization artifacts compare application time with PostgreSQL wall time.
     if (explainOptions.useWallClock) await fn()
-    else await withSeedAnchorClock(fn)
+    else await withSeedAnchorClock(fn, explainOptions.decisionInstant?.getTime())
   } finally {
     restoreRawPool?.()
     disableQueryCapture()
@@ -154,6 +160,7 @@ async function captureScenario(
         planCacheMode,
         localSettings: explainOptions.localSettings,
         setupSql,
+        beforeExplain: explainOptions.beforeExplain,
       }
     })
   })

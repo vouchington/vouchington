@@ -17,6 +17,12 @@ import {
 } from './seq-scan-baseline.mts'
 import { costWithoutSeqScan, forcedSeqScan, type ProbedExplainResult } from './seq-scan-ties.mts'
 
+export type BeforeExplain = (input: {
+  text: string
+  values: readonly unknown[]
+  planCacheMode: ExplainPlanCacheMode
+}) => Promise<void>
+
 export type Capture = {
   name: string
   text: string
@@ -26,6 +32,7 @@ export type Capture = {
   planCacheMode: ExplainPlanCacheMode
   localSettings?: Readonly<Record<string, string>>
   setupSql?: string
+  beforeExplain?: BeforeExplain
 }
 
 const repeatedResults: ExplainResult[] = []
@@ -112,6 +119,7 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
     // capture. Repeat for every mode/pass so the WAL gate sees the cold condition each time.
     await write('/* explainWalCaptureCheckpoint */ CHECKPOINT')
   }
+  await input.beforeExplain?.(input)
   const result = await explainAnalyze(input.name, input.text, input.values, {
     localSettings: input.localSettings,
     setupSql: input.setupSql,

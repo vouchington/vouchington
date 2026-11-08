@@ -32,4 +32,11 @@ describe('withSeedAnchorClock', () => {
     ).rejects.toThrow('scenario failed')
     expect(Date.now()).not.toBe(ANCHOR_MS)
   })
+
+  it('uses an explicit scale decision instant without changing the ordinary anchor', async () => {
+    vi.stubEnv('EXPLAIN_SEED_ANCHOR_DATE', '2026-10-17')
+    const scaleInstant = Date.UTC(2030, 0, 1)
+    expect(await withSeedAnchorClock(async () => Date.now(), scaleInstant)).toBe(scaleInstant)
+    expect(await withSeedAnchorClock(async () => Date.now())).toBe(ANCHOR_MS)
+  })
 })

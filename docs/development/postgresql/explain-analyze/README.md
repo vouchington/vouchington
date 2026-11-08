@@ -79,6 +79,30 @@ and realistic eligible and ineligible rows when a stage has a distinct access pa
 
 ## Loader decisions
 
+### Hacker News filter scale measurements
+
+The final HN scale phase owns explicit monthly post partitions, after the ordinary and comment
+fixtures. Its recorded query-decision clock makes one-year cutoffs prune real leaves without moving
+the ordinary DEFAULT corpus. Future post identifiers still take the production hot-score future-date
+guard because PostgreSQL's wall clock is unchanged; timing is diagnostic, while page membership,
+candidate work and partition access are checked. A leftover-scale preflight requires recreating the
+disposable database before another full run.
+
+Sparse positives, zero matches and the unvoted-related-URL witness are separate fact states.
+Current stored-flag queries retain the existing row-work budgets and run in both plan-cache modes,
+including first and continuation pages. Historical canonical-URL join predicates are composed only
+inside the measurement code, under current pagination and hot-window rules. Their plans are a
+separate diagnostic artifact; they cannot add an exception or weaken a production plan gate.
+
+The cold/warm labels concern PostgreSQL shared buffers. Before each cold replay, the administrator
+evicts only non-shared current-database heaps and indexes named by that statement's plan and records
+evicted, flushed and skipped buffers. Skipped buffers fail preparation. A warm measurement follows
+the same statement and plan mode immediately. OS and storage caches remain uncontrolled; neither
+the ordinary repeat pass nor a WAL checkpoint establishes a cold read cache. This instrumentation
+requires the disposable database's PostgreSQL administrator and the `pg_buffercache` extension;
+it never restarts the server or clears global caches. Results, density witnesses, per-page row and
+buffer work, and full historical plans live in the uploaded `hacker-news-scale.json` artifact.
+
 COPY is adopted for a fixture only when it wins a complete load at real cardinality, compared on
 fresh equivalent databases with alternating order and matching logical fingerprints. Repeated
 comparisons for the remote-follower, user, and post loaders found no stable win, so none was

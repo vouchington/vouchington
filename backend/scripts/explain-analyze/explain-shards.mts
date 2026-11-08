@@ -1,7 +1,8 @@
 import { COMMENT_PARTITIONED_SCENARIO_IDS } from './comment-scenario-ids.mts'
 import { CRITICAL_ALERT_SCENARIO_IDS } from './critical-alert-scenario-ids.mts'
+import { HACKER_NEWS_SCALE_SCENARIO_IDS } from './hacker-news-scale-scenario-ids.mts'
 
-export const EXPLAIN_SHARDS = ['main', 'partition'] as const
+export const EXPLAIN_SHARDS = ['main', 'partition', 'hn-scale'] as const
 export type ExplainShard = (typeof EXPLAIN_SHARDS)[number]
 
 // The partitioned comment fixture is additive: its monthly bounds start after the current UTC
@@ -12,6 +13,10 @@ export const PARTITION_SHARD_SCENARIO_IDS: readonly string[] = [
   ...COMMENT_PARTITIONED_SCENARIO_IDS,
   ...CRITICAL_ALERT_SCENARIO_IDS,
 ]
+
+// The million-post Hacker News fixture seeds its own future partitions and cleans them up, so
+// only its scenarios read it. It runs in its own job so its seeding time never extends `main`.
+export const HN_SCALE_SHARD_SCENARIO_IDS: readonly string[] = HACKER_NEWS_SCALE_SCENARIO_IDS
 
 /** An unset shard runs everything, as local runs do. */
 export function parseExplainShard(value: string | undefined): ExplainShard | undefined {
@@ -27,10 +32,13 @@ export function getShardScenarioIds(
   shard: ExplainShard | undefined,
   manifest: readonly string[],
   partitionIds: readonly string[] = PARTITION_SHARD_SCENARIO_IDS,
+  scaleIds: readonly string[] = HN_SCALE_SHARD_SCENARIO_IDS,
 ): readonly string[] {
   const partitionSet = new Set(partitionIds)
+  const scaleSet = new Set(scaleIds)
   if (shard === 'partition') return manifest.filter(id => partitionSet.has(id))
-  if (shard === 'main') return manifest.filter(id => !partitionSet.has(id))
+  if (shard === 'hn-scale') return manifest.filter(id => scaleSet.has(id))
+  if (shard === 'main') return manifest.filter(id => !partitionSet.has(id) && !scaleSet.has(id))
   return manifest
 }
 
@@ -56,11 +64,14 @@ export function assertShardsPartitionManifest(
 export function assertShardDeclarations(
   manifest: readonly string[],
   partitionIds: readonly string[] = PARTITION_SHARD_SCENARIO_IDS,
+  scaleIds: readonly string[] = HN_SCALE_SHARD_SCENARIO_IDS,
 ): void {
   assertPartitionIdsInManifest(manifest, partitionIds)
+  assertPartitionIdsInManifest(manifest, scaleIds)
   assertShardsPartitionManifest(manifest, {
-    main: getShardScenarioIds('main', manifest, partitionIds),
-    partition: getShardScenarioIds('partition', manifest, partitionIds),
+    main: getShardScenarioIds('main', manifest, partitionIds, scaleIds),
+    partition: getShardScenarioIds('partition', manifest, partitionIds, scaleIds),
+    'hn-scale': getShardScenarioIds('hn-scale', manifest, partitionIds, scaleIds),
   })
 }
 
