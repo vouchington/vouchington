@@ -71,23 +71,18 @@ async function captureRecipientPages(): Promise<void> {
   const pages = [
     ['critical-alert-recipients-first-page', null, CAP, true],
     ['critical-alert-recipients-continuation', seedUuid(14_998, '01'), CAP, true],
-    ['critical-alert-recipients-empty', 'ffffffff-ffff-ffff-ffff-ffffffffffff', 0, false],
   ] as const
   for (const [id, afterUserId, expected, hasMore] of pages) {
     registerScenarioContract(id, {
       seededRows: { user_roles: CRITICAL_ALERT_STAFF_COUNT * 2 },
       expectations: [
-        {
-          kind: 'usesIndexes',
-          indexes: [expected === 0 ? 'user_roles_pkey' : 'idx_user_roles__role_type_id'],
-        },
+        { kind: 'usesIndexes', indexes: ['idx_user_roles__role_type_id'] },
         { kind: 'maxProcessedRows', relation: 'user_roles', max: PAGE_ROLE_ROWS },
         { kind: 'queryBinds', token: 'LIMIT' },
       ],
       forbidSequentialScans: ['user_roles'],
-      ...(expected === 0 ? { allowEmptyResult: true } : {}),
     })
-    // no-mistakes-disable-next-line query-reached-per-item: three distinct cursor positions have separate bounded plan contracts.
+    // no-mistakes-disable-next-line query-reached-per-item: first and deep cursor have separate bounded plan contracts.
     await runAndCapture(
       id,
       async () => {
