@@ -27,9 +27,10 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   tie-breaker. A continuation predicate uses the same keys and direction as `ORDER BY`.
 - Apply visibility, filters, and semantic deduplication before pagination. Membership-ordered lists
   (saved posts, personal lists, community lists, entity relations) walk the membership index and
-  join the targets with eligibility in WHERE, bounded by the per-type write limits. A page is short
-  only at the end. Preserve filter inputs on every continuation request and reject a cursor whose
-  encoded query or sort shape is incompatible.
+  join the targets with eligibility in WHERE. These memberships have no write cap (only follows and
+  subscriptions do, #4979); the keyset walk bounds each page. A page is short only at the end.
+  Preserve filter inputs on every continuation request and reject a cursor whose encoded query or
+  sort shape is incompatible.
 - Relevance-ranked RSS search uses the same rule with a score, microsecond publication timestamp,
   and UUID keyset. Its opaque scope binds normalized semantic query input, effective filters, and
   viewer identity only when a viewer-dependent filter is active.
