@@ -8,16 +8,23 @@ export async function getModerationSummaryRecipients(now: Date): Promise<Moderat
   const { rows } = await read(sql`/* getModerationSummaryRecipients */
     SELECT
       u.id,
-      email.email_address,
+      (SELECT email.email_address FROM user_email_addresses email
+       WHERE email.user_id = u.id AND email.is_primary = TRUE) AS email_address,
       u.username,
       u.ui_locale,
       u.moderation_email_cadence,
       u.moderation_email_days_of_week,
       u.moderation_email_time_of_day,
       COALESCE(u.moderation_email_timezone, 'America/Los_Angeles') AS moderation_email_timezone
-    FROM users u
-    JOIN user_email_addresses email
-      ON email.user_id = u.id AND email.is_primary = TRUE
+    -- Stream unique moderator identities in user order; all recipient filters precede LIMIT.
+    FROM (
+      SELECT DISTINCT cm.user_id
+      FROM community_members cm
+      WHERE cm.removed_at IS NULL
+        AND cm.role IN ('owner', 'moderator')
+      ORDER BY cm.user_id
+    ) moderator_users
+    JOIN users u ON u.id = moderator_users.user_id
     CROSS JOIN LATERAL (
       SELECT
         ${now}::timestamptz AT TIME ZONE COALESCE(
@@ -25,8 +32,9 @@ export async function getModerationSummaryRecipients(now: Date): Promise<Moderat
           'America/Los_Angeles'
         ) AS local_now
     ) moderation_email_schedule
-    WHERE email.email_address IS NOT NULL
-      AND u.deleted_at IS NULL
+    WHERE u.deleted_at IS NULL
+      AND (SELECT email.email_address FROM user_email_addresses email
+           WHERE email.user_id = u.id AND email.is_primary = TRUE) IS NOT NULL
       AND u.is_moderation_emails_enabled = TRUE
       AND NOT EXISTS (
         SELECT 1 FROM user_suspensions suspension
@@ -56,55 +64,52 @@ export async function getModerationSummaryRecipients(now: Date): Promise<Moderat
         WHERE cm.user_id = u.id
           AND c.deleted_at IS NULL
           AND c.archived_at IS NULL
-      AND cm.removed_at IS NULL
-      AND cm.role IN ('owner', 'moderator')
-      AND (
-        NOT cm.should_suppress_community_digests_while_on_vacation
-        OR NOT EXISTS (
-        SELECT 1
-        FROM community_member_vacations v
-        WHERE v.community_id = cm.community_id
-          AND v.user_id = cm.user_id
-          AND v.starts_at <= ${now}::timestamptz
-          AND (v.ends_at IS NULL OR v.ends_at > ${now}::timestamptz)
-        )
-      )
-      AND (
-        EXISTS (
-          SELECT 1
-          FROM community_post_reviews cpr
-          INNER JOIN posts rp
-            ON rp.id = cpr.post_id
-            AND rp.deleted_at IS NULL
-          WHERE cpr.community_id = c.id
-            AND cpr.approved_at IS NULL
-            AND cpr.rejected_at IS NULL
-            -- Pending is the same set as searchPendingPosts, which is what idx_comm_post_reviews__pending covers.
-            AND cpr.unpublished_at IS NULL
-        )
-        OR EXISTS (
-          SELECT 1
-          FROM community_applications ca
-          WHERE ca.community_id = c.id
-            AND ca.approved_at IS NULL
-            AND ca.rejected_at IS NULL
-        )
-        OR EXISTS (
-          SELECT 1
-          FROM moderation_reports mr
-          INNER JOIN posts p ON p.id = mr.post_id
-          WHERE p.community_id = c.id
-            AND mr.reviewed_at IS NULL
-        )
-        OR EXISTS (
-          SELECT 1
-          FROM community_members cm2
-          WHERE cm2.community_id = c.id
-            AND cm2.removed_at IS NULL
-            AND cm2.suspected_ban_evader_at IS NOT NULL
-            AND cm2.suspected_ban_evader_dismissed_at IS NULL
-        )
-      )
+          AND cm.removed_at IS NULL
+          AND cm.role IN ('owner', 'moderator')
+          AND (
+            NOT cm.should_suppress_community_digests_while_on_vacation
+            OR NOT EXISTS (
+              SELECT 1
+              FROM community_member_vacations v
+              WHERE v.community_id = cm.community_id
+                AND v.user_id = cm.user_id
+                AND v.starts_at <= ${now}::timestamptz
+                AND (v.ends_at IS NULL OR v.ends_at > ${now}::timestamptz)
+            )
+          )
+          AND (
+            EXISTS (
+              SELECT 1
+              FROM community_post_reviews cpr
+              INNER JOIN posts rp ON rp.id = cpr.post_id AND rp.deleted_at IS NULL
+              WHERE cpr.community_id = c.id
+                AND cpr.approved_at IS NULL
+                AND cpr.rejected_at IS NULL
+                -- Pending is the same set as searchPendingPosts, which is what idx_comm_post_reviews__pending covers.
+                AND cpr.unpublished_at IS NULL
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM community_applications ca
+              WHERE ca.community_id = c.id
+                AND ca.approved_at IS NULL
+                AND ca.rejected_at IS NULL
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM moderation_reports mr
+              WHERE mr.reviewed_at IS NULL
+                AND (SELECT p.community_id FROM posts p WHERE p.id = mr.post_id) = c.id
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM community_members cm2
+              WHERE cm2.community_id = c.id
+                AND cm2.removed_at IS NULL
+                AND cm2.suspected_ban_evader_at IS NOT NULL
+                AND cm2.suspected_ban_evader_dismissed_at IS NULL
+            )
+          )
       )
       AND NOT EXISTS (
         SELECT 1

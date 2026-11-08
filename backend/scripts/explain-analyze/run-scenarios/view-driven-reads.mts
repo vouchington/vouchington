@@ -9,11 +9,16 @@ import {
   importCommunityListPostsSourceSql,
 } from '@services/lists/import'
 import { getModerationSummaryRecipients } from '@services/communities/moderation-summary-recipients'
+import { getCommunitiesWorkLimit } from '@services/communities/work-limits'
 import { detectRssFeedItemLanguage } from '@services/language-detection/entities/rss-feed-items'
 import { detectRssFeedItemLanguageBatch } from '@services/language-detection/batch-detect'
 import { runIneligibleCollectionPageScenarios } from './ineligible-collection-pages.mts'
 import { runAndCapture, seedPostId, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import {
+  COMMUNITY_MEMBERSHIP_CAP_COMMUNITIES,
+  COMMUNITY_MEMBERSHIP_CAP_MODERATORS,
+} from '../seed-data/community-membership-caps.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 
 export async function runViewDrivenReadScenarios(): Promise<void> {
@@ -48,11 +53,33 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
     'detectRssFeedItemLanguage',
   )
 
+  const moderationRecipientPageSize = getCommunitiesWorkLimit('summary_email_batch_size')
   registerScenarioContract('moderation-summary-recipients', {
     expectations: [
-      // A custom plain users walk scans the 25k seeded population; generic plans may start with eligible users.
-      { kind: 'maxProcessedRows', relation: 'community_members', max: 1350 },
-      { kind: 'maxProcessedRows', relation: 'users', max: 30_000 },
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'idx_community_members__active_moderator_user_id',
+          'users_pkey',
+          'idx_user_email_addresses__user_primary',
+        ],
+        noSort: true,
+      },
+      // The ordered moderator walk must reach users by key, not scan the seeded population.
+      {
+        kind: 'maxProcessedRows',
+        relation: 'community_members',
+        max:
+          COMMUNITY_MEMBERSHIP_CAP_COMMUNITIES +
+          COMMUNITY_MEMBERSHIP_CAP_MODERATORS +
+          moderationRecipientPageSize,
+      },
+      { kind: 'maxProcessedRows', relation: 'users', max: moderationRecipientPageSize },
+      {
+        kind: 'maxProcessedRows',
+        relation: 'user_email_addresses',
+        max: moderationRecipientPageSize * 2,
+      },
     ],
   })
   await runAndCapture('moderation-summary-recipients', () =>

@@ -42,9 +42,7 @@ export async function claimRecoverableDataRequests(
   `)
   const requestPageIds = workRows.map(row => row.id)
   // Sorted lifecycle locks fence every candidate before a request-row lock.
-  const candidateUserIds = [
-    ...new Set(workRows.flatMap(row => (row.user_id ? [row.user_id] : []))),
-  ]
+  const candidateUserIds = [...new Set(workRows.flatMap(row => (row.user_id ? [row.user_id] : [])))]
   const activeUsers = await lockActiveDataRequestUsers(transaction, candidateUserIds)
   const activeUserIds = candidateUserIds.filter(userId => activeUsers.has(userId))
   const deletedUserIds = candidateUserIds.filter(userId => !activeUsers.has(userId))
