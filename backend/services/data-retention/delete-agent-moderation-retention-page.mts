@@ -92,7 +92,42 @@ export async function deleteAgentModerationRetentionPage(
          END::agent_moderation_retention_block_reasons
      FROM unnest($1::uuid[], $2::uuid[]) AS page(id, post_id)
      WHERE moderation.id = page.id AND moderation.post_id = page.post_id
-       AND moderation.retention_due_at IS NOT NULL`,
+       AND moderation.retention_due_at IS NOT NULL
+       -- Without the post lock, a hash change can commit between the delete and this publish.
+       -- A row that no longer has any blocker stays due so the next run deletes it, rather
+       -- than being frozen as 'newest' with an unwakeable blocker.
+       AND (
+         EXISTS (
+           SELECT 1 FROM moderation_training_feedbacks feedback
+           WHERE feedback.post_id = moderation.post_id AND feedback.agent_moderation_id = moderation.id
+         ) OR EXISTS (
+           SELECT 1 FROM vote_integrity_flags flag
+           WHERE flag.agent_moderation_post_id = moderation.post_id AND flag.agent_moderation_id = moderation.id
+         ) OR EXISTS (
+           SELECT 1 FROM agent_moderation_votes vote
+           WHERE vote.post_id = moderation.post_id AND vote.agent_moderation_id = moderation.id
+         ) OR EXISTS (
+           SELECT 1 FROM moderator_actions action
+           WHERE action.agent_moderation_post_id = moderation.post_id AND action.agent_moderation_id = moderation.id
+         ) OR EXISTS (
+           SELECT 1 FROM posts post
+           WHERE post.id = moderation.post_id
+             AND post.llm_moderation_content_sha256 = moderation.input_sha256
+         ) OR (
+           SELECT newer.id FROM agent_moderations newer
+           WHERE newer.post_id = moderation.post_id
+             AND newer.prompt_id = moderation.prompt_id AND newer.id > moderation.id
+           LIMIT 1
+         ) IS NULL OR (
+           moderation.deleted_at IS NULL AND (
+             SELECT newer_live.id FROM agent_moderations newer_live
+             WHERE newer_live.post_id = moderation.post_id
+               AND newer_live.prompt_id = moderation.prompt_id
+               AND newer_live.id > moderation.id AND newer_live.deleted_at IS NULL
+             LIMIT 1
+           ) IS NULL
+         )
+       )`,
     [page.map(row => row.id), page.map(row => row.post_id)],
   )
   return deletedRows.length
