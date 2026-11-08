@@ -22,7 +22,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `uq_post_modera_versio__post_id__content_sha256__policy_revision`: `UNIQUE (post_id, content_sha256, policy_revision)`
+- `uq_post_modera_versio__post_id__content_sha256__policy_revision`: `UNIQUE (post_id, content_sha256, policy_revision) INCLUDE (id, deadline_at)`
 
 **Check constraints:**
 
@@ -36,13 +36,12 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_post_moderation_versions__policy_revision__id`: `CREATE INDEX idx_post_moderation_versions__policy_revision__id ON public.post_moderation_versions USING btree (policy_revision, id) INCLUDE (post_id, content_sha256, deadline_at)`
-- `idx_post_moderation_versions__post_hash_policy_id`: `CREATE INDEX idx_post_moderation_versions__post_hash_policy_id ON public.post_moderation_versions USING btree (post_id, content_sha256, policy_revision, id) INCLUDE (deadline_at)`
 - `idx_post_moderation_versions__post_id__id`: `CREATE INDEX idx_post_moderation_versions__post_id__id ON public.post_moderation_versions USING btree (post_id, id DESC)`
 - `idx_post_moderation_versions__retention_due`: `CREATE INDEX idx_post_moderation_versions__retention_due ON public.post_moderation_versions USING btree (retention_due_at, id) WHERE (retention_due_at IS NOT NULL)`
 - `idx_post_moderation_versions__retention_hash_policy`: `CREATE INDEX idx_post_moderation_versions__retention_hash_policy ON public.post_moderation_versions USING btree (id) WHERE (retention_hash_blocked_at IS NOT NULL)`
 - `idx_post_moderation_versions__retention_hash_post`: `CREATE INDEX idx_post_moderation_versions__retention_hash_post ON public.post_moderation_versions USING btree (post_id, id) WHERE (retention_hash_blocked_at IS NOT NULL)`
 - `post_moderation_versions_pkey`: `CREATE UNIQUE INDEX post_moderation_versions_pkey ON public.post_moderation_versions USING btree (id)`
-- `uq_post_modera_versio__post_id__content_sha256__policy_revision`: `CREATE UNIQUE INDEX uq_post_modera_versio__post_id__content_sha256__policy_revision ON public.post_moderation_versions USING btree (post_id, content_sha256, policy_revision)`
+- `uq_post_modera_versio__post_id__content_sha256__policy_revision`: `CREATE UNIQUE INDEX uq_post_modera_versio__post_id__content_sha256__policy_revision ON public.post_moderation_versions USING btree (post_id, content_sha256, policy_revision) INCLUDE (id, deadline_at)`
 
 **Triggers:**
 
