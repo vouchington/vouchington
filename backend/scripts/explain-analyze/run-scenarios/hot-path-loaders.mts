@@ -4,6 +4,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runUserProfileMetricsScenario } from './hot-path-profile-metrics.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import { runHouseholdLimitScenarios } from './household-limits.mts'
 import {
   getCommunitiesByIdBatch,
   getPostElectionsByIdBatch,
@@ -178,4 +179,6 @@ export async function runHotPathLoaderScenarios() {
   )
 
   await runUserProfileMetricsScenario()
+  // Household runner; run.mts is at its 200-line cap, so the limit scenarios run from here.
+  await runHouseholdLimitScenarios()
 }
