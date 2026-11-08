@@ -740,14 +740,6 @@ CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()
  LANGUAGE plpgsql
 ```
 
-## `fn_refresh_referral_program_link_counts_on_topic_lifecycle`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_refresh_referral_program_link_counts_on_topic_lifecycle()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_register_agent_moderation_retention_post_hash`
 
 ```sql
@@ -1922,6 +1914,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_post_moderation_version_retention()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_referral_program_link_counts_on_topic_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_referral_program_link_counts_on_topic_lifecycle()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

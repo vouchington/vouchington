@@ -1707,9 +1707,6 @@
     "fn_project_user_profile_link_image_placement": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.image_id IS DISTINCT FROM OLD.image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-link-image', NEW.image_id, NULL, NULL, NULL, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
-    "fn_refresh_referral_program_link_counts_on_topic_lifecycle": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_refresh_referral_program_link_counts_on_topic_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE referral_program_topics\n  SET active_link_count = active_link_count\n  WHERE topic_id = NEW.id;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
     "fn_register_agent_moderation_retention_post_hash": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_agent_moderation_retention_post_hash()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- A current-hash change can wake only rows already blocked on that hash.\n  -- The partial post-work index makes this existence probe stop at one row.\n  IF NOT EXISTS (\n    SELECT 1 FROM agent_moderations\n    WHERE post_id = NEW.id AND retention_blocked_reason = 'hash'\n    LIMIT 1\n  ) THEN RETURN NULL; END IF;\n  INSERT INTO agent_moderation_retention_post_work_items (post_id)\n  VALUES (NEW.id)\n  ON CONFLICT (post_id) DO UPDATE\n    SET cursor_moderation_record_id = '00000000-0000-0000-0000-000000000000',\n        changed_at = CURRENT_TIMESTAMP;\n  RETURN NULL;\nEND $function$\n"
     },
@@ -2150,6 +2147,9 @@
     },
     "fn_update_posts_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.title, '')), 'A') ||\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.markdown, '')), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_referral_program_link_counts_on_topic_lifecycle": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_referral_program_link_counts_on_topic_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE referral_program_topics\n  SET active_link_count = active_link_count\n  WHERE topic_id = NEW.id;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_retained_copyright_notice_identity_residual": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_retained_copyright_notice_identity_residual()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE retained_copyright_notice_identities SET case_deleted_at = clock_timestamp() WHERE id = OLD.id;\n  RETURN NULL;\nEND;\n$function$\n"
@@ -141629,12 +141629,12 @@
       "triggers": {
         "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id', 'rewards_program_topic_id')",
         "trigger_create_topic_metrics": "CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_metrics('topic_metrics', 'topic_id')",
-        "trigger_refresh_referral_program_link_counts_on_topic_lifecycle": "CREATE TRIGGER trigger_refresh_referral_program_link_counts_on_topic_lifecycle AFTER UPDATE OF deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW WHEN (((old.deleted_at IS DISTINCT FROM new.deleted_at) OR (old.merged_into_topic_id IS DISTINCT FROM new.merged_into_topic_id))) EXECUTE FUNCTION fn_refresh_referral_program_link_counts_on_topic_lifecycle()",
         "trigger_register_retained_topic_identity": "CREATE TRIGGER trigger_register_retained_topic_identity BEFORE INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('topic')",
         "trigger_sync_topic_image_placements": "CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_project_topic_image_placements()",
         "trigger_topic_merge_participant_reservation": "CREATE TRIGGER trigger_topic_merge_participant_reservation BEFORE DELETE OR UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_participant_not_reserved()",
         "trigger_topics_content_provenance_immutable": "CREATE TRIGGER trigger_topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()",
-        "trigger_topics_updated_at": "CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_topics_updated_at": "CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_update_referral_program_link_counts_on_topic_lifecycle": "CREATE TRIGGER trigger_update_referral_program_link_counts_on_topic_lifecycle AFTER UPDATE OF deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW WHEN (((old.deleted_at IS DISTINCT FROM new.deleted_at) OR (old.merged_into_topic_id IS DISTINCT FROM new.merged_into_topic_id))) EXECUTE FUNCTION fn_update_referral_program_link_counts_on_topic_lifecycle()"
       },
       "uniqueConstraints": {}
     },
