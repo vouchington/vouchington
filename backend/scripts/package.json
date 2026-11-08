@@ -40,7 +40,6 @@
     "@services/autotagger": "workspace:^",
     "@services/bedrock-embeddings-batch": "workspace:^",
     "@services/bluesky-follows": "workspace:^",
-    "@services/boilerplate-removals": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/classifier-runs": "workspace:^",
     "@services/classifiers": "workspace:^",

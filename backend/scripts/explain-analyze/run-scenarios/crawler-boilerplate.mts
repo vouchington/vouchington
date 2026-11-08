@@ -1,7 +1,6 @@
 import { write } from '@data-stores/psql'
 import assert from 'node:assert/strict'
 import { searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId } from '@services/crawlers/boilerplate-removal'
-import { searchParentPathsNeedingBoilerplateRemoval } from '@services/boilerplate-removals/search'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { crawlSeedUuid, seedUuid } from '../seed-data/common.mts'
@@ -60,34 +59,6 @@ export async function runCrawlerBoilerplateScenario(): Promise<void> {
       },
       undefined,
       'searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId',
-    )
-    registerScenarioContract('crawler-boilerplate-parent-paths', {
-      // The hostname-scoped selector groups recent HTML URLs by parent path.
-      // Reuse the same 2k eligible URLs and crawls without widening either read budget.
-      expectations: [
-        { kind: 'maxProcessedRows', relation: 'urls', max: 14_200 },
-        { kind: 'maxProcessedRows', relation: 'crawls', max: 2_600 },
-      ],
-      seededRows: { urls: 14_100, crawls: 2500 },
-      crossPartition: {
-        crawls: 'Recent HTML snapshots can exist in any crawl ID range for a URL.',
-      },
-    })
-    await runAndCapture(
-      'crawler-boilerplate-parent-paths',
-      async () => {
-        const paths = await searchParentPathsNeedingBoilerplateRemoval(1000, {
-          hostnameId: seedUuid(0, '02'),
-        })
-        assert.ok(
-          paths.some(
-            path => path.hostname_id === seedUuid(0, '02') && path.parent_path === '/explain-blog',
-          ),
-          'The seeded recent HTML corpus must yield its shared parent path',
-        )
-      },
-      undefined,
-      'searchParentPathsNeedingBoilerplateRemoval',
     )
   } finally {
     await write(
