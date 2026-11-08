@@ -99,11 +99,26 @@ export async function unlinkTopicAlias(
       WHERE id = $1::uuid
         AND topic_id = $2::uuid
         AND unlink_requested_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM topics
+          WHERE topics.id = $2::uuid
+            AND topics.deleted_at IS NULL
+            AND topics.slug = topic_aliases.alias
+        )
       RETURNING id`,
       [aliasId, detachedTopicId],
     )
     if (marked.length === 0) {
       const concurrent = await getPendingAlias(query, aliasId)
+      if (concurrent?.unlink_topic_id !== detachedTopicId) {
+        const { rows: active } = await query(
+          `/* unlinkTopicAlias recheckActiveSlug */
+          SELECT id FROM topics
+          WHERE id = $1::uuid AND deleted_at IS NULL AND slug = $2`,
+          [detachedTopicId, existing.alias],
+        )
+        assert(active.length === 0, 409, 'Cannot unlink an active topic slug')
+      }
       assert(
         concurrent && concurrent.unlink_topic_id === detachedTopicId,
         409,
