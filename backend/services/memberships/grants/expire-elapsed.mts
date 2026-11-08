@@ -2,9 +2,8 @@ import { getMembershipWorkLimits } from '../work-limits.mts'
 import createError from 'http-errors'
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { recordMembershipChange } from '../changes.mts'
-import { restoreFallbackAfterCurrentAccessEndsInTransaction } from '../fallback/restore-after-current-access-ends.mts'
-import { activateOldestQueuedGrant } from './activate-queued.mts'
+import { runBoundedPages } from '@modules/utils/run-bounded-pages'
+import { expireElapsedMembershipPage } from './expire-elapsed-page.mts'
 
 export type MembershipExpiryResult = { expired: number; hasMore: boolean }
 
@@ -21,82 +20,14 @@ export async function expireElapsedMemberships(
 ): Promise<MembershipExpiryResult> {
   await query(sql`/* expireElapsedMemberships: lock user */
     SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
-  const { batchSize, maxBatches } = options.limits ?? getMembershipWorkLimits()
-  let expired = 0
-  for (let batch = 0; batch < maxBatches; batch++) {
-    // A queued grant can become live after each expiry, so normalize one projection at a time.
-    // oxlint-disable-next-line no-await-in-loop -- page loop capped by maxBatches (getMembershipWorkLimits); no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed
-    const { rows } = await query(sql`/* expireElapsedMemberships */
-      WITH candidates AS (
-        SELECT membership.id FROM memberships membership
-        JOIN membership_sources source ON source.id = membership.membership_source_id
-        WHERE source.source_kind = 'admin_grant' AND membership.user_id = ${userId}
-          AND membership.projection_ended_at IS NULL AND membership.cancelled_at IS NULL
-          AND membership.expired_at IS NULL AND membership.expires_at IS NOT NULL
-          AND membership.expires_at <= COALESCE(${options.expiresThrough ?? null}::timestamptz, CURRENT_TIMESTAMP)
-        ORDER BY membership.expires_at, membership.id LIMIT ${batchSize} FOR UPDATE OF membership
-      )
-      UPDATE memberships membership
-      SET expired_at = membership.expires_at, cancelled_at = NULL, past_due_at = NULL,
-        paused_at = NULL, should_cancel_at_period_end = false
-      FROM membership_sources source
-      WHERE membership.id IN (SELECT id FROM candidates)
-        AND source.id = membership.membership_source_id AND source.source_kind = 'admin_grant'
-        AND membership.user_id = ${userId} AND membership.projection_ended_at IS NULL
-        AND membership.cancelled_at IS NULL AND membership.expired_at IS NULL
-        AND membership.expires_at IS NOT NULL
-        AND membership.expires_at <= COALESCE(${options.expiresThrough ?? null}::timestamptz, CURRENT_TIMESTAMP)
-      RETURNING membership.id, membership.membership_source_id, membership.membership_product_id, membership.expires_at`)
-    options.onPage?.()
-    const elapsed = rows as Array<{
-      expires_at: Date
-      id: string
-      membership_product_id: string
-      membership_source_id: string
-    }>
-    if (elapsed.length === 0) return { expired, hasMore: false }
-    expired += elapsed.length
-    // Two statements close every elapsed source and its open activations for the whole page.
-    const sourceIds = elapsed.map(membership => membership.membership_source_id)
-    const expiries = elapsed.map(membership => membership.expires_at)
-    // oxlint-disable-next-line no-await-in-loop -- same capped page loop as above
-    await query(sql`/* expireElapsedMemberships: close sources */
-      UPDATE membership_source_states state
-      SET cancelled_at = NULL, expired_at = closed.expires_at,
-        past_due_at = NULL, paused_at = NULL, should_auto_renew = false
-      FROM UNNEST(${sourceIds}::uuid[], ${expiries}::timestamptz[]) AS closed(source_id, expires_at)
-      WHERE state.membership_source_id = closed.source_id`)
-    // oxlint-disable-next-line no-await-in-loop -- same capped page loop as above
-    await query(sql`/* expireElapsedMemberships: close activations */
-      UPDATE membership_grant_activation_periods activation
-      SET ended_at = closed.expires_at
-      FROM UNNEST(${sourceIds}::uuid[], ${expiries}::timestamptz[]) AS closed(source_id, expires_at),
-        membership_grants grant_row
-      WHERE grant_row.membership_source_id = closed.source_id
-        AND activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL`)
-    for (const membership of elapsed) {
-      // Each change, queued-grant activation and fallback restore reads the state the previous
-      // membership left, so they stay ordered inside this user's FOR UPDATE transaction.
-      // oxlint-disable-next-line no-await-in-loop -- sequential by design; at most batchSize memberships per page (getMembershipWorkLimits)
-      await recordMembershipChange({
-        membershipId: membership.id,
-        userId,
-        changeType: 'expiration',
-        fromSkuId: membership.membership_product_id,
-        expiredAt: membership.expires_at,
-        query,
-      })
-      if (options.activateQueuedGrants !== false) {
-        // oxlint-disable-next-line no-await-in-loop -- activation picks the oldest queued grant after the previous activation
-        const activated = await activateOldestQueuedGrant(userId, membership, query)
-        if (!activated) {
-          // The grant may have been the temporary fallback after a direct source suspended.
-          // oxlint-disable-next-line no-await-in-loop -- fallback restore reads the projection the previous activation wrote
-          await restoreFallbackAfterCurrentAccessEndsInTransaction(userId, membership.id, query)
-        }
-      }
-    }
-  }
+  const { maxBatches } = options.limits ?? getMembershipWorkLimits()
+  // Each page expires one current projection before considering its queued replacement.
+  const { processed: expired, hasMore: reachedPageLimit } = await runBoundedPages(
+    { batchSize: 1, maxBatches },
+    () => expireElapsedMembershipPage(userId, query, options),
+  )
+  if (!reachedPageLimit) return { expired, hasMore: false }
+
   const { rows } = await query(sql`/* expireElapsedMemberships:hasMore */
     SELECT 1 FROM memberships membership
     JOIN membership_sources source ON source.id = membership.membership_source_id

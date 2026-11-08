@@ -1,6 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { recordMembershipChange } from '../changes.mts'
+import { recordMembershipChange, type MembershipChangeInput } from '../changes.mts'
 
 type ClosedMembership = {
   id: string
@@ -16,17 +16,37 @@ export async function activateOldestQueuedGrant(
   startedAt = closedMembership.expires_at,
   membershipSourceId?: string,
 ): Promise<boolean> {
+  const { rows: users } = await query(sql`/* activateOldestQueuedGrant: lock user */
+    SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
+  if (users.length === 0) return false
+  const change = await activateOldestQueuedGrantForLockedUser(
+    userId,
+    closedMembership,
+    query,
+    startedAt,
+    membershipSourceId,
+  )
+  if (!change) return false
+  await recordMembershipChange({ ...change, query })
+  return true
+}
+
+/** The caller owns the user lock and records this transition's history with its page. */
+export async function activateOldestQueuedGrantForLockedUser(
+  userId: string,
+  closedMembership: ClosedMembership,
+  query: QueryExecutor,
+  startedAt = closedMembership.expires_at,
+  membershipSourceId?: string,
+): Promise<MembershipChangeInput | null> {
   const { rows } = await query(sql`/* activateOldestQueuedGrant */
-    WITH locked_user AS (
-      SELECT id FROM users WHERE id = ${userId} FOR UPDATE
-    ), candidate AS (
+    WITH candidate AS (
       SELECT grant_row.id, grant_row.membership_source_id, grant_row.membership_product_id,
         grant_row.created_at, grant_row.granted_by_id, grant_row.note,
         fn_membership_grant_remaining_duration(grant_row.id) AS remaining_duration
       FROM membership_grants grant_row
       INNER JOIN membership_source_states source_state
         ON source_state.membership_source_id = grant_row.membership_source_id
-      CROSS JOIN locked_user
       WHERE grant_row.user_id = ${userId} AND grant_row.revoked_at IS NULL
         AND (${membershipSourceId ?? null}::uuid IS NULL
           OR grant_row.membership_source_id = ${membershipSourceId ?? null}::uuid)
@@ -35,7 +55,8 @@ export async function activateOldestQueuedGrant(
         AND fn_membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'
         AND NOT EXISTS (
           SELECT 1 FROM membership_grant_activation_periods activation
-          WHERE activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL
+          WHERE activation.membership_grant_id = grant_row.id
+            AND activation.user_id = ${userId} AND activation.ended_at IS NULL
         )
       ORDER BY grant_row.id
       LIMIT 1
@@ -67,7 +88,7 @@ export async function activateOldestQueuedGrant(
         note: string | null
       }
     | undefined
-  if (!grant) return false
+  if (!grant) return null
   // ast-grep-ignore: no-three-sequential-awaits -- Retirement removes the old row from the unique live-user projection index so replacement INSERT can succeed; its returned id feeds the audit/outbox.
   await query(sql`/* activateOldestQueuedGrant: retire closed projection */
     UPDATE memberships SET projection_ended_at = CURRENT_TIMESTAMP
@@ -80,7 +101,7 @@ export async function activateOldestQueuedGrant(
       ${userId}, ${grant.membership_source_id}, ${grant.membership_product_id},
       ${grant.effective_at}, ${grant.expires_at}, NULL, NULL, NULL, NULL, false
     ) RETURNING id`)
-  await recordMembershipChange({
+  return {
     membershipId: (memberships[0] as { id: string }).id,
     userId,
     membershipSourceId: grant.membership_source_id,
@@ -90,7 +111,5 @@ export async function activateOldestQueuedGrant(
     toSkuId: grant.membership_product_id,
     changedById: grant.granted_by_id,
     note: grant.note,
-    query,
-  })
-  return true
+  }
 }

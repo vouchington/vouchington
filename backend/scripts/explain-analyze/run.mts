@@ -1,3 +1,4 @@
+import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runHackerNewsFilterScenarios } from './run-scenarios/hacker-news-filter.mts'
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
@@ -171,6 +172,8 @@ async function main() {
     await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
     await runStep(runCommentDescendantPartitionedPages.name, runCommentDescendantPartitionedPages)
     await runStep(runMembershipScenarios.name, runMembershipScenarios)
+    // Expiry fixtures come after the shared membership writer's corpus and all ordinary plans.
+    await runStep(runMembershipExpiryPageScenarios.name, runMembershipExpiryPageScenarios)
     const runErrors: unknown[] = []
     try {
       assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
@@ -188,11 +191,7 @@ async function main() {
   }
 }
 async function run(): Promise<void> {
-  try {
-    await main()
-  } finally {
-    await gracefulShutdown()
-  }
+  await main().finally(gracefulShutdown)
 }
 run().catch((err: unknown) => {
   console.error(err)

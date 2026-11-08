@@ -383,20 +383,6 @@
           file: backend/services/memberships/grants/expire-elapsed-batch.mts,
           callee: 'expireElapsedMembershipsForUserInTransaction',
         }
-      # FIX: tracked in vouchington/vouchington#5325 (per-membership activate, query, recordMembershipChange
-      # and restoreFallback still run per row inside the user's FOR UPDATE transaction).
-      - {
-          file: backend/services/memberships/grants/expire-elapsed.mts,
-          callee: 'activateOldestQueuedGrant',
-        }
-      - {
-          file: backend/services/memberships/grants/expire-elapsed.mts,
-          callee: 'recordMembershipChange',
-        }
-      - {
-          file: backend/services/memberships/grants/expire-elapsed.mts,
-          callee: 'restoreFallbackAfterCurrentAccessEndsInTransaction',
-        }
       # Closed set: one publish per descriptor of the CATALOG constant (stripe-catalog.mts:88). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/memberships/stripe-catalog.mts,
@@ -533,9 +519,6 @@
           file: playwright/tests/tags/tag-voting-helpers.mts,
           callee: 'softDeleteScoredPostTopicCategoryRelation',
         }
-      # FIX (P2): per-membership source/activation updates inside the user lock; batch per page with unnest. Remove these entries with the fix.
-      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 63 }
-      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 70 }
       # Capped retry, not a per-item or chunked lock loop: the pass repeats the same two set statements over unnest at most MAX_RETAINED_IDENTITY_PIN_ATTEMPTS = 5 times (record-deleted-relation-impacts.mts:8) and throws on exhaustion, so the lock work is bounded by that constant.
       - {
           file: backend/services/users/record-deleted-relation-impacts.mts,
@@ -563,8 +546,6 @@
         }
       # no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed: Promise.all over claim-token groups of one claim call; each group completes its whole id batch with one UPDATE.
       - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query', line: 90 }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: counter-bounded loop, batch < maxBatches with LIMIT batchSize per page (getMembershipWorkLimits, expire-elapsed.mts:24).
-      - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 29 }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loops advance chunks of capture_batch_size (getPostPublicationWorkLimit), one unnest ORDER BY statement per chunk.
       - { file: backend/services/post-publication/capture-posts.mts, callee: 'query', line: 73 }
       - { file: backend/services/post-publication/capture-rss-feeds.mts, callee: 'query', line: 83 }
