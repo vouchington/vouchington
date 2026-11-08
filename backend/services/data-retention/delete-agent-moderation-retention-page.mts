@@ -17,21 +17,22 @@ export async function deleteAgentModerationRetentionPage(
      WHERE moderation.id = page.id AND moderation.post_id = page.post_id
        AND moderation.id < $3::uuid
        AND moderation.retention_due_at <= $4::timestamptz
-       AND EXISTS (
-         SELECT 1 FROM agent_moderations newer
+       -- Scalar probes stay correlated single-row index lookups; EXISTS would drop the LIMIT
+       -- and flatten into a join once the read-context lock is gone.
+       AND (
+         SELECT newer.id FROM agent_moderations newer
          WHERE newer.post_id = moderation.post_id
            AND newer.prompt_id = moderation.prompt_id AND newer.id > moderation.id
-         -- LIMIT keeps the bounded successor probe correlated instead of pulled into a join.
          LIMIT 1
-       )
+       ) IS NOT NULL
        AND (
-         moderation.deleted_at IS NOT NULL OR EXISTS (
-           SELECT 1 FROM agent_moderations newer_live
+         moderation.deleted_at IS NOT NULL OR (
+           SELECT newer_live.id FROM agent_moderations newer_live
            WHERE newer_live.post_id = moderation.post_id
              AND newer_live.prompt_id = moderation.prompt_id
              AND newer_live.id > moderation.id AND newer_live.deleted_at IS NULL
            LIMIT 1
-         )
+         ) IS NOT NULL
        )
        AND NOT EXISTS (
          SELECT 1 FROM posts current_post
