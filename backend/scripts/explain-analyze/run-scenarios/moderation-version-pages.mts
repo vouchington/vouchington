@@ -34,13 +34,16 @@ export async function runModerationVersionPageScenarios(): Promise<void> {
       const { rows } = await write<{ id: string }>(
         `/* seedRequestedModerationHistory */
        INSERT INTO post_moderation_versions (post_id, content_sha256, policy_revision)
-       SELECT post.id, post.llm_moderation_content_sha256, 'explain-requested-old:' || ordinal
-       FROM posts post CROSS JOIN generate_series(1, 256) ordinal WHERE post.id = $1
+       SELECT post.id,
+         CASE WHEN ordinal <= 256 THEN post.llm_moderation_content_sha256
+           ELSE decode(md5('obsolete:' || ordinal) || md5('obsolete:' || ordinal), 'hex') END,
+         CASE WHEN ordinal <= 256 THEN 'explain-requested-old:' || ordinal ELSE $2 END
+       FROM posts post CROSS JOIN generate_series(1, 512) ordinal WHERE post.id = $1
        ON CONFLICT DO NOTHING RETURNING id`,
-        [DELETED_PARENT_MODERATION_POST_ID],
+        [DELETED_PARENT_MODERATION_POST_ID, POST_MODERATION_POLICY_REVISION],
       )
       historicalVersions.push(...rows)
-      assert.equal(historicalVersions.length, 256)
+      assert.equal(historicalVersions.length, 512)
       assert.equal(unrelatedVersions.length, unrelatedPostIds.length)
       await write('/* analyzeRequestedModerationPolicyCohort */ ANALYZE post_moderation_versions')
       registerScenarioContract(
@@ -53,7 +56,7 @@ export async function runModerationVersionPageScenarios(): Promise<void> {
         expectations: [
           {
             kind: 'usesIndexes',
-            indexes: ['idx_post_moderation_versions__post_id__policy_revision__id'],
+            indexes: ['idx_post_moderation_versions__post_hash_policy_id'],
           },
           { kind: 'maxProcessedRows', relation: 'post_moderation_versions', max: pageSize + 1 },
           { kind: 'maxProcessedRows', relation: 'posts', max: pageSize + 1 },
@@ -79,7 +82,7 @@ export async function runModerationVersionPageScenarios(): Promise<void> {
       expectations: [
         {
           kind: 'usesIndexes',
-          indexes: ['idx_post_moderation_versions__post_id__policy_revision__id'],
+          indexes: ['idx_post_moderation_versions__post_hash_policy_id'],
         },
         { kind: 'maxProcessedRows', relation: 'post_moderation_versions', max: 20 },
         { kind: 'maxProcessedRows', relation: 'posts', max: 10 },
