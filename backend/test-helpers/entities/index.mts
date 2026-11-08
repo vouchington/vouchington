@@ -105,6 +105,7 @@ export * from './oauth-token-ciphertexts.mts'
 export * from './follows.mts'
 export * from './friends.mts'
 export * from './memberships.mts'
+export * from './membership-change-references.mts'
 export * from './memberships/provider-lineages.mts'
 export {
   holdTestMembershipRowLock,

@@ -562,7 +562,7 @@
           line: 139,
         }
       # no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed: Promise.all over claim-token groups of one claim call; each group completes its whole id batch with one UPDATE.
-      - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query', line: 79 }
+      - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query', line: 90 }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: counter-bounded loop, batch < maxBatches with LIMIT batchSize per page (getMembershipWorkLimits, expire-elapsed.mts:24).
       - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query', line: 29 }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loops advance chunks of capture_batch_size (getPostPublicationWorkLimit), one unnest ORDER BY statement per chunk.

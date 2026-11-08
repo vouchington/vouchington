@@ -92,7 +92,7 @@ describe('changes', () => {
           changeType: 'renewal',
           stripeEventId: duplicateEventId,
         }),
-      ).rejects.toThrow(Error)
+      ).rejects.toMatchObject({ code: '23505' })
     })
 
     it('rejects mutually exclusive lifecycle snapshots', async () => {

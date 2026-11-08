@@ -12,21 +12,32 @@ export type MembershipEntitlementEffect = {
   deliveryClaimToken: string
 }
 
-export async function recordMembershipEntitlementEffect(
-  membershipChangeId: string,
-  userId: string,
+export async function recordMembershipEntitlementEffects(
+  effects: readonly { membershipChangeId: string; userId: string }[],
   query?: QueryExecutor,
 ): Promise<void> {
+  if (effects.length === 0) return
   if (!query) {
     await using transactionQuery = await beginTransaction()
-    await recordMembershipEntitlementEffect(membershipChangeId, userId, transactionQuery)
+    await recordMembershipEntitlementEffects(effects, transactionQuery)
     await transactionQuery.commit()
     return
   }
-  await query(sql`/* recordMembershipEntitlementEffect */
+  await query(buildMembershipEntitlementEffectsInsert(effects))
+}
+
+export function buildMembershipEntitlementEffectsInsert(
+  effects: readonly { membershipChangeId: string; userId: string }[],
+) {
+  return sql`/* recordMembershipEntitlementEffects */
     INSERT INTO membership_entitlement_effects (membership_change_id, user_id)
-    VALUES (${membershipChangeId}, ${userId})
-    ON CONFLICT (membership_change_id) DO NOTHING`)
+    SELECT input.change_id, input.user_id
+    FROM unnest(
+      ${effects.map(effect => effect.membershipChangeId)}::uuid[],
+      ${effects.map(effect => effect.userId)}::uuid[]
+    ) AS input(change_id, user_id)
+    ORDER BY input.change_id
+    ON CONFLICT (membership_change_id) DO NOTHING`
 }
 
 export async function claimPendingMembershipEntitlementEffects(

@@ -14,7 +14,7 @@ import {
   claimPendingMembershipEntitlementEffects,
   completeMembershipEntitlementEffects,
   deliverPendingMembershipEntitlementEffects,
-  recordMembershipEntitlementEffect,
+  recordMembershipEntitlementEffects,
 } from './entitlement-effects.mts'
 import { recordMembershipChange } from './changes.mts'
 
@@ -57,7 +57,7 @@ describe('membership entitlement effects', () => {
     const membershipChangeId = rawMembership.latest_change_id
 
     await expect(
-      recordMembershipEntitlementEffect(membershipChangeId, user.id),
+      recordMembershipEntitlementEffects([{ membershipChangeId, userId: user.id }]),
     ).resolves.toBeUndefined()
     expect(await getTestMembershipEntitlementEffects(membershipChangeId)).toHaveLength(1)
   })
