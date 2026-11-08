@@ -139,25 +139,35 @@ describe('reviewed CI dependency mirror', () => {
     expect(result.calls.some(call => call.join(' ').includes('ghcr.io/'))).toBe(false)
   })
 
-  it('publishes the reviewed distroless GCR source through the same verified path', async () => {
-    const distroless = {
-      package: 'dependency-distroless-nodejs',
-      source: 'gcr.io/distroless/nodejs26-debian13',
-      tag: 'nonroot',
-      digest: second,
+  it('accepts every entry in the committed inventory', async () => {
+    const inventory = JSON.parse(await readFile('ci/dependency-mirror/images.json', 'utf8')) as {
+      images: Array<{ package: string; source: string; tag: string; digest: string }>
     }
-    const result = await runMirror({ images: [distroless] })
-    expect(result.code).toBe(0)
-    const copies = result.calls.filter(call => call[0] === 'image' && call[1] === 'copy')
-    expect(copies.some(call => call.at(-2) === `${distroless.source}@${distroless.digest}`)).toBe(
-      true,
-    )
-    expect(
-      copies.some(
-        call => call.at(-2) === `ghcr.io/vouchington/${distroless.package}@${distroless.digest}`,
-      ),
-    ).toBe(true)
+    const result = await runMirror({ images: inventory.images })
+    expect(result.stderr).not.toContain('Invalid or duplicate reviewed dependency image entry')
+    expect(result.calls.length).toBeGreaterThan(0)
   })
+
+  it.each([
+    ['dependency-distroless-nodejs', 'gcr.io/distroless/nodejs26-debian13'],
+    ['dependency-distroless-cc', 'gcr.io/distroless/cc-debian13'],
+  ])(
+    'publishes the reviewed distroless GCR source %s through the same verified path',
+    async (pkg, source) => {
+      const distroless = { package: pkg, source, tag: 'nonroot', digest: second }
+      const result = await runMirror({ images: [distroless] })
+      expect(result.code).toBe(0)
+      const copies = result.calls.filter(call => call[0] === 'image' && call[1] === 'copy')
+      expect(copies.some(call => call.at(-2) === `${distroless.source}@${distroless.digest}`)).toBe(
+        true,
+      )
+      expect(
+        copies.some(
+          call => call.at(-2) === `ghcr.io/vouchington/${distroless.package}@${distroless.digest}`,
+        ),
+      ).toBe(true)
+    },
+  )
 
   it.each(['quay.io/distroless/nodejs26-debian13', 'gcr.io/unreviewed/nodejs26-debian13'])(
     'rejects an unreviewed source registry or repository: %s',
