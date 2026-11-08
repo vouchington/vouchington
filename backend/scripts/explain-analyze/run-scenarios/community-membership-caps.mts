@@ -57,7 +57,14 @@ export async function runCommunityMembershipCapScenarios(): Promise<void> {
 
   registerScenarioContract('community-moderator-capacity', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_community_members__active_moderators'] },
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'idx_community_members__active_moderators',
+          'idx_community_members__active_moderator_user_id',
+        ],
+        anyOf: true,
+      },
       { kind: 'maxProcessedRows', relation: 'community_members', max: 120 },
     ],
   })
@@ -130,7 +137,11 @@ export async function runCommunityMembershipCapScenarios(): Promise<void> {
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['idx_community_members__active_moderators'],
+        indexes: [
+          'idx_community_members__active_moderators',
+          'idx_community_members__active_moderator_user_id',
+        ],
+        anyOf: true,
       },
       // The target community has 100 moderators, including its owner; the plan budget adds 20%.
       { kind: 'maxProcessedRows', relation: 'community_members', max: 120 },

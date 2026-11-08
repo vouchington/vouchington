@@ -91,36 +91,26 @@ export async function listLiveTopicMergeItemsPage(
   }
 }
 
-/** One item's many-to-many source feed fanout has its own indexed continuation. */
+/** One item's source feeds are paged from the live feed set in source-id order. */
 export async function listLiveItemSourceFeedsPage(
   itemId: string,
   after: string | null,
 ): Promise<IdPage> {
   const limit = getPostPublicationWorkLimit('capture_batch_size')
-  const { rows } = await write<{ id: string; kept: boolean }>(
+  const { rows } = await write<{ id: string }>(
     `/* listLiveItemSourceFeedsPage */
-    WITH source_page AS MATERIALIZED (
-      SELECT source.rss_feed_id AS id
-      FROM rss_feed_item_sources source
-      WHERE source.rss_feed_item_id = $1::uuid
-        AND source.rss_feed_id > COALESCE($2::uuid, $4::uuid)
-      ORDER BY source.rss_feed_id
-      LIMIT $3
-    )
-    SELECT page.id, (feed.id IS NOT NULL) AS kept
-    FROM source_page page
-    LEFT JOIN LATERAL (
-      SELECT feed.id
-      FROM rss_feeds feed
-      WHERE feed.id = page.id AND feed.deleted_at IS NULL
-      LIMIT 1
-    ) feed ON TRUE
-    ORDER BY page.id`,
+    SELECT source.rss_feed_id AS id FROM rss_feed_item_sources source
+    WHERE source.rss_feed_item_id = $1::uuid
+      AND source.rss_feed_id > COALESCE($2::uuid, $4::uuid)
+      AND (SELECT TRUE FROM rss_feeds feed
+           WHERE feed.id = source.rss_feed_id AND feed.deleted_at IS NULL) = TRUE
+    ORDER BY source.rss_feed_id LIMIT $3 + 1`,
     [itemId, after, limit, MIN_UUID],
   )
+  const pageRows = rows.slice(0, limit)
   return {
-    ids: rows.flatMap(row => (row.kept ? [row.id] : [])),
-    cursor: rows.length === limit ? rows.at(-1)!.id : null,
+    ids: pageRows.map(row => row.id),
+    cursor: rows.length > limit ? pageRows.at(-1)!.id : null,
   }
 }
 

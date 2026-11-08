@@ -18,6 +18,53 @@ const {
   updateTopicRatingStats,
 } = services
 
+export async function runTopicAliasSearchScenarios(): Promise<void> {
+  // The alias keyset owns the order; topics are looked up by alias target id before limiting.
+  registerScenarioContract('search-topic-aliases', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['topic_aliases_alias_key', 'topics_pkey'],
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
+      { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
+    ],
+  })
+  const firstAliasPage = await searchTopicAliases({ prefixQuery: 'seed', limit: 25 })
+  await runAndCapture('search-topic-aliases', () =>
+    searchTopicAliases({ prefixQuery: 'seed', limit: 25 }),
+  )
+  if (firstAliasPage.hasNextPage && firstAliasPage.endAlias) {
+    registerScenarioContract('search-topic-aliases-cursor', {
+      expectations: [
+        {
+          kind: 'usesIndexes',
+          indexes: ['topic_aliases_alias_key', 'topics_pkey'],
+          noSort: true,
+        },
+        { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
+        { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
+      ],
+    })
+    await runAndCapture('search-topic-aliases-cursor', () =>
+      searchTopicAliases({ prefixQuery: 'seed', limit: 25, after: firstAliasPage.endAlias! }),
+    )
+  }
+  registerScenarioContract('search-topic-aliases-unfiltered', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['topic_aliases_alias_key', 'topics_pkey'],
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
+      { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
+    ],
+  })
+  await runAndCapture('search-topic-aliases-unfiltered', () => searchTopicAliases({ limit: 25 }))
+}
+
 export async function runEntityTailScenarios(): Promise<void> {
   await runAndCapture('topic-data-point-insights', () => getTopicDataPointInsights(seedTopicId))
 
@@ -27,16 +74,7 @@ export async function runEntityTailScenarios(): Promise<void> {
 
   await runAdminUserSearchScenarios()
 
-  // Prefix ILIKE is not served by text_pattern_ops; the page cap is the alias table, and topics stay a lookup.
-  registerScenarioContract('search-topic-aliases', {
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
-      { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
-    ],
-  })
-  await runAndCapture('search-topic-aliases', () =>
-    searchTopicAliases({ prefixQuery: 'seed', limit: 25 }),
-  )
+  await runTopicAliasSearchScenarios()
 
   await runDataPointSearchScenarios()
 

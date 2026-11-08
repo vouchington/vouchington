@@ -28,6 +28,17 @@ describe('landing page submitted selections', () => {
     expect(candidates.reviews.map(review => review.id)).toEqual([reviewId])
     expect(candidates.referral_links).toEqual([])
     expect(page_info.has_next_page).toBe(false)
+    const first = await getMyLandingPageCandidates(user.id, { limit: 1 })
+    expect(first.candidates.profile_links.map(link => link.id)).toEqual([reviewId])
+    expect(first.candidates.reviews).toEqual([])
+    expect(first.page_info.has_next_page).toBe(true)
+    const next = await getMyLandingPageCandidates(user.id, {
+      limit: 1,
+      after: first.page_info.end_cursor,
+    })
+    expect(next.candidates.profile_links).toEqual([])
+    expect(next.candidates.reviews.map(review => review.id)).toEqual([reviewId])
+    expect(next.page_info.has_next_page).toBe(false)
   })
 
   it('accepts an older selected review beyond the candidate page and hydrates it for editing', async () => {

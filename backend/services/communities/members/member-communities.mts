@@ -21,52 +21,29 @@ export async function listUserMemberCommunities(
   const cursorId = after
     ? decodeScopedUuidCursor(after, scope, 'Invalid member-community cursor').id
     : undefined
-  const seesOwnMemberships = currentUser?.id === targetUserId
   const query = sql`/* listUserMemberCommunities */
-    WITH gate AS MATERIALIZED (
-      SELECT member_user.id
-      FROM users member_user
-      WHERE member_user.id = ${targetUserId}
-        AND member_user.deleted_at IS NULL
-        AND `
-  if (seesOwnMemberships) query.append(sql`TRUE`)
-  else appendUserMembershipPrivacyFilter(query, currentUser, 'member_user.id')
-  query.append(sql`
-    ), membership_page AS MATERIALIZED (
-      SELECT cm.*
-      FROM community_members cm
-      WHERE cm.user_id >= ${targetUserId}
-        AND cm.user_id <= ${targetUserId}
-        AND cm.removed_at IS NULL
-        AND EXISTS (SELECT 1 FROM gate)
-  `)
+    SELECT loaded.*
+    FROM (
+    SELECT cm.id
+    FROM community_members cm
+    INNER JOIN users member_user ON member_user.id = cm.user_id
+    INNER JOIN communities c ON c.id = cm.community_id
+    WHERE cm.user_id = ${targetUserId}
+      AND cm.removed_at IS NULL
+      AND member_user.deleted_at IS NULL
+      AND c.deleted_at IS NULL
+      AND `
+  appendMemberCommunityVisibilityFilters(query, targetUserId, currentUser)
   if (cursorId) query.append(sql` AND cm.id > ${cursorId}`)
-  query.append(sql`
-      ORDER BY cm.user_id ASC, cm.id ASC
-      LIMIT ${limit + 1}
-    )
-    SELECT cm.*, (c.id IS NOT NULL) AS kept
-    FROM membership_page cm
-    LEFT JOIN LATERAL (
-      SELECT community.*
-      FROM communities community
-      WHERE community.id = cm.community_id
-        AND community.deleted_at IS NULL
-      LIMIT 1
-    ) c ON TRUE
-  `)
-  if (!seesOwnMemberships) appendVisibleCommunityMembershipFilter(query, currentUser)
-  query.append(sql` ORDER BY cm.user_id ASC, cm.id ASC`)
-  const { rows } = await read<CommunityMember & { kept: boolean }>(query, options)
+  query.append(sql` ORDER BY cm.id ASC LIMIT ${limit + 1}
+    ) page
+    INNER JOIN community_members loaded ON loaded.id = page.id
+    ORDER BY page.id ASC`)
+  const { rows } = await read<CommunityMember>(query, options)
   const hasNextPage = rows.length > limit
-  const inspected = rows.slice(0, limit)
-  const results = inspected.flatMap(row => {
-    if (!row.kept) return []
-    const { kept, ...member } = row
-    void kept
-    return [member]
-  })
-  const end = inspected.at(-1)
+  const results = rows.slice(0, limit)
+  const end = results.at(-1)
+
   return {
     results,
     page_info: {

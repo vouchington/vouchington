@@ -1,3 +1,4 @@
+import { runCommunityDigestRecipientScenarios } from './community-digest-recipients.mts'
 import { read } from '@data-stores/psql'
 import { SEED_PREFIX, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -30,7 +31,6 @@ const {
   searchUrlHostnames,
   TOPIC_ELECTION_CONFIG,
   aggregateCommunityActivityDigestBatch,
-  listCommunityActivityDigestRecipientPage,
 } = services
 
 export async function runFeedAndMetricScenarios() {
@@ -65,18 +65,7 @@ export async function runFeedAndMetricScenarios() {
   await runAndCapture('notifications-unread-summary', () =>
     getUnreadNotificationsSummary(seedUser.id, 10),
   )
-  registerScenarioContract('community-activity-digest-recipients', {
-    expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_community_members__active_moderator_user_id'] },
-      // Default batch is 250. One live lookup per inspected row stays under this cap.
-      { kind: 'maxProcessedRows', relation: 'community_members', max: 1200 },
-      { kind: 'maxProcessedRows', relation: 'users', max: 600 },
-      { kind: 'maxProcessedRows', relation: 'communities', max: 600 },
-    ],
-  })
-  await runAndCapture('community-activity-digest-recipients', () =>
-    listCommunityActivityDigestRecipientPage(),
-  )
+  await runCommunityDigestRecipientScenarios()
   const digestWindowStart = new Date('2020-01-01T00:00:00.000Z')
   const digestWindowEnd = new Date('2030-01-01T00:00:00.000Z')
   await runAndCapture('community-activity-digest-aggregation', () =>

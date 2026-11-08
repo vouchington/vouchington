@@ -28,9 +28,8 @@ export async function getMyLandingPageCandidates(
   const cursor = options.after ? decodeLandingPageCandidateCursor(options.after, scope) : null
   const candidates = await getLandingPageCandidateIds(userId, limit + 1, cursor)
   const hasNextPage = candidates.length > limit
-  const inspected = candidates.slice(0, limit)
-  const results = inspected.filter(row => row.kept)
-  const end = inspected.at(-1)
+  const results = candidates.slice(0, limit)
+  const end = results.at(-1)
   const [canCreate, profileLinks, reviews, referralLinks] = await Promise.all([
     canCreateLandingPages(userId),
     getLandingPageProfileLinksByIds(

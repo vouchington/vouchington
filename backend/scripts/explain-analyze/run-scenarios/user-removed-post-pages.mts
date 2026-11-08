@@ -3,10 +3,13 @@ import { listUserRemovedPosts } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import { runRemovalEligiblePageScenarios } from './removal-eligible-pages.mts'
 
 const REMOVED_COUNT = 2_000
+const PAGE_SIZE = 25
+const LOOKAHEAD = PAGE_SIZE + 1
 
-/** Community removals and the platform/community union each stay on their own index. */
+/** Compare the eligible event streams without reading the full author cohort. */
 export async function runUserRemovedPostPageScenarios(): Promise<void> {
   const userId = seedUser.id
   const postIds = Array.from({ length: REMOVED_COUNT }, (_, index) => seedUuid(index, '18'))
@@ -23,12 +26,12 @@ export async function runUserRemovedPostPageScenarios(): Promise<void> {
     registerScenarioContract('user-removed-community-posts-page', {
       expectations: [
         { kind: 'usesIndexes', indexes: ['idx_comm_post_reviews__user_removed'] },
-        { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 80 },
-        { kind: 'maxProcessedRows', relation: 'posts', max: 80 },
+        { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: LOOKAHEAD * 2 },
+        { kind: 'maxProcessedRows', relation: 'posts', max: LOOKAHEAD * 3 },
       ],
     })
     await runAndCapture('user-removed-community-posts-page', () =>
-      listUserRemovedPosts(userId, { includePlatform: false, limit: 25 }),
+      listUserRemovedPosts(userId, { includePlatform: false, limit: PAGE_SIZE }),
     )
     registerScenarioContract('user-removed-posts-page', {
       expectations: [
@@ -40,11 +43,11 @@ export async function runUserRemovedPostPageScenarios(): Promise<void> {
             'idx_comm_post_reviews__user_removed',
           ],
         },
-        { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 80 },
+        { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: LOOKAHEAD * 2 },
       ],
     })
     await runAndCapture('user-removed-posts-page', () =>
-      listUserRemovedPosts(userId, { includePlatform: true, limit: 25 }),
+      listUserRemovedPosts(userId, { includePlatform: true, limit: PAGE_SIZE }),
     )
   } finally {
     await write(
@@ -52,4 +55,5 @@ export async function runUserRemovedPostPageScenarios(): Promise<void> {
       [postIds],
     )
   }
+  await runRemovalEligiblePageScenarios()
 }

@@ -58,8 +58,9 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__escalated_by_id
 -- community, including ban-evasion system reports, are one pending row per community.
 -- A cleared community_id keeps its transparency snapshot and leaves both unique indexes.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Post-first also serves pending-report existence probes for a community post.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_post_unique
-  ON moderation_reports (reporter_user_id, post_id)
+  ON moderation_reports (post_id, reporter_user_id)
   WHERE reviewed_at IS NULL AND post_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

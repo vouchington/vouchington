@@ -71,16 +71,10 @@ export async function listUserRemovedPosts(
   const { cursor, cursorScope, includePlatform } = traversal
 
   const query = buildUserRemovedPostsQuery(userId, { limit, includePlatform, cursor })
-  const { rows } = await read<UserRemovedPost & { kept: boolean }>(query, options)
+  const { rows } = await read<UserRemovedPost>(query, options)
   const hasNextPage = rows.length > limit
-  const inspected = rows.slice(0, limit)
-  const results = inspected.flatMap(row => {
-    if (!row.kept) return []
-    const { kept, ...result } = row
-    void kept
-    return [result]
-  })
-  const end = inspected.at(-1)
+  const results = rows.slice(0, limit)
+  const end = results.at(-1)
   const encodeResultCursor = (post: UserRemovedPost): string =>
     includePlatform
       ? encodeScopedTierPreciseUuidCursor(

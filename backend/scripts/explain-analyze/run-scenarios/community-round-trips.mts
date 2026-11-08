@@ -27,7 +27,12 @@ async function seededCommunityId(): Promise<string> {
 async function runPostReviewLoad(communityId: string): Promise<void> {
   registerScenarioContract('community-post-review-load', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['communities_pkey', 'idx_community_members__unique'] },
+      { kind: 'usesIndexes', indexes: ['communities_pkey'] },
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_community_members__unique', 'idx_community_members__user_id_id'],
+        anyOf: true,
+      },
       // Both modes read one post, one community and one membership row; budgets add 20%.
       { kind: 'maxProcessedRows', relation: 'posts', max: 2 },
       { kind: 'maxProcessedRows', relation: 'communities', max: 2 },

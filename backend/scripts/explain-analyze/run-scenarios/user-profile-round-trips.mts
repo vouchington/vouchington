@@ -11,6 +11,10 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { runLandingPageCandidateScenarios } from './landing-page-candidates.mts'
+import {
+  deleteLandingPageCreateIndexFixture,
+  seedLandingPageCreateIndexFixture,
+} from '../seed-data/round-trip-shapes.mts'
 
 export async function runUserProfileRoundTripScenarios(): Promise<void> {
   await runLandingPageCandidateScenarios()
@@ -75,23 +79,28 @@ export async function runUserProfileRoundTripScenarios(): Promise<void> {
     ],
   })
   const landingPageSlug = `explain-${crypto.randomUUID()}`
-  await runAndCapture(
-    'landing-page-create',
-    () =>
-      createMyLandingPage(seedUser.id, {
-        title: 'Explain landing page',
-        slug: landingPageSlug,
-      }),
-    undefined,
-    'createMyLandingPage',
-    {
-      afterCapture: async () => {
-        await write(sql`/* explain-cleanup-landing-page */
-          DELETE FROM user_landing_pages WHERE user_id = ${seedUser.id} AND slug = ${landingPageSlug}
-        `)
+  const landingPageFixtureIds = await seedLandingPageCreateIndexFixture()
+  try {
+    await runAndCapture(
+      'landing-page-create',
+      () =>
+        createMyLandingPage(seedUser.id, {
+          title: 'Explain landing page',
+          slug: landingPageSlug,
+        }),
+      undefined,
+      'createMyLandingPage',
+      {
+        afterCapture: async () => {
+          await write(sql`/* explain-cleanup-landing-page */
+            DELETE FROM user_landing_pages WHERE user_id = ${seedUser.id} AND slug = ${landingPageSlug}
+          `)
+        },
       },
-    },
-  )
+    )
+  } finally {
+    await deleteLandingPageCreateIndexFixture(landingPageFixtureIds)
+  }
 
   registerScenarioContract('data-request-create', {
     // Both modes insert one data-request row; budget adds 20%.

@@ -54,6 +54,6 @@ describe('deleted community removals', () => {
     }
 
     expect(seen).toEqual([postIds[0]!, postIds[2]!])
-    expect(emptyContinuation).toBe(true)
+    expect(emptyContinuation).toBe(false)
   })
 })

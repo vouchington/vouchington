@@ -43,6 +43,6 @@ describe('pending community posts past deleted posts', () => {
     }
 
     expect(seen).toEqual(expected)
-    expect(emptyContinuation).toBe(true)
+    expect(emptyContinuation).toBe(false)
   })
 })

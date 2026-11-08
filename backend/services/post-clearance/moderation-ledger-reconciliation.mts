@@ -34,36 +34,27 @@ export async function reconcilePostModerationWork(
     1,
     Math.min(Math.trunc(limit), getPostClearanceWorkLimit('reconciliation_batch_size')),
   )
-  const versionPage = postIds
-    ? `WITH version_page AS MATERIALIZED (
-        SELECT version.version_id, version.post_id, version.content_sha256, version.deadline_at,
-          version.through_id
-        FROM unnest($3::uuid[]) AS requested(post_id)
+  // Requested posts are distinct so duplicate input ids cannot duplicate source work.
+  // Probe each live post's exact content and policy version before merging work.
+  const versionSource = postIds
+    ? `(
+        SELECT version.* FROM (SELECT DISTINCT unnest($3::uuid[]) AS post_id) requested
+        JOIN posts post ON post.id = requested.post_id AND post.deleted_at IS NULL
         JOIN LATERAL (
-          SELECT version.id AS version_id, version.post_id, version.content_sha256, version.deadline_at,
-            COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond')) AS through_id
+          SELECT version.id, version.post_id, version.content_sha256,
+            version.policy_revision, version.deadline_at
           FROM post_moderation_versions version
-          WHERE version.post_id = requested.post_id
-            AND version.policy_revision = $2
+          WHERE version.id = (
+            SELECT current.id FROM post_moderation_versions current
+            WHERE (current.post_id, current.content_sha256, current.policy_revision)::post_moderation_version_keys
+              = (post.id, post.llm_moderation_content_sha256, $2::text)::post_moderation_version_keys
+          )
             AND version.id < COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond'))
-            AND ($4::uuid IS NULL OR version.id > $4::uuid OR version.id = $4::uuid)
+            AND ($4::uuid IS NULL OR version.id >= $4::uuid)
           ORDER BY version.id
-          LIMIT $1 + 1
         ) version ON TRUE
-        ORDER BY version.version_id
-        LIMIT $1 + 1
       )`
-    : `WITH version_page AS MATERIALIZED (
-        SELECT version.id AS version_id, version.post_id, version.content_sha256, version.deadline_at,
-          COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond')) AS through_id
-        FROM post_moderation_versions version
-        WHERE version.policy_revision = $2
-          AND version.id < COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond'))
-          AND ($4::uuid IS NULL OR version.id > $4::uuid OR version.id = $4::uuid)
-          AND ($3::uuid[] IS NULL OR version.post_id = ANY($3::uuid[]))
-        ORDER BY version.id
-        LIMIT $1 + 1
-      )`
+    : `post_moderation_versions`
   const { rows } = await write<{
     row_kind: 'due' | 'exhausted' | 'continuation'
     post_id: string
@@ -72,30 +63,33 @@ export async function reconcilePostModerationWork(
     source: AutomatedPostModerationSource
   }>(
     `/* reconcilePostModerationWork */
-      ${versionPage}, expanded AS MATERIALIZED (
-        SELECT version_page.version_id, source.source::post_moderation_sources AS source,
-          version_page.post_id, version_page.deadline_at, version_page.through_id
-        FROM version_page
-        JOIN LATERAL (
-          SELECT post.id
-          FROM posts post
-          WHERE post.id = version_page.post_id
-            AND post.llm_moderation_content_sha256 = version_page.content_sha256
-            AND post.deleted_at IS NULL
-          LIMIT 1
-        ) post ON TRUE
+      WITH page AS (
+        SELECT version.id AS version_id, source.source::post_moderation_sources AS source,
+          version.post_id, version.deadline_at,
+          COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond')) AS through_id
+        FROM ${versionSource} version
         CROSS JOIN unnest($7::text[]) AS source(source)
-        WHERE ($4::uuid IS NULL OR (version_page.version_id, source.source::post_moderation_sources)
+        WHERE version.policy_revision = $2
+          AND version.id < COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond'))
+          ${
+            postIds
+              ? ''
+              : `AND $3::uuid[] IS NULL
+          AND (SELECT post.deleted_at IS NULL
+                 AND post.llm_moderation_content_sha256 = version.content_sha256
+               FROM posts post WHERE post.id = version.post_id) IS TRUE`
+          }
+          AND ($4::uuid IS NULL OR (version.id, source.source::post_moderation_sources)
             > ($4::uuid, $5::post_moderation_sources))
           AND NOT EXISTS (
             SELECT 1 FROM post_moderation_dispositions disposition
-            WHERE disposition.version_id = version_page.version_id
+            WHERE disposition.version_id = version.id
               AND disposition.source = source.source::post_moderation_sources
           )
-      ), ordered_sources AS MATERIALIZED (
-        SELECT * FROM expanded ORDER BY version_id, source
-      ), selected AS MATERIALIZED (
-        SELECT * FROM ordered_sources LIMIT $1
+        ORDER BY version.id, source.source::post_moderation_sources
+        LIMIT $1 + 1
+      ), selected AS (
+        SELECT * FROM page ORDER BY version_id, source LIMIT $1
       ), exhausted_dispositions AS (
         INSERT INTO post_moderation_dispositions (
           version_id, source, attempt_id, disposition, reason_code, evidence
@@ -110,34 +104,10 @@ export async function reconcilePostModerationWork(
         ON CONFLICT (attempt_id) DO NOTHING
         RETURNING version_id, source
       ), continuation AS (
-        (
-          SELECT version_id, source, post_id, through_id FROM selected
-          WHERE (SELECT count(*) FROM ordered_sources) > $1
-            OR (
-              EXISTS (SELECT 1 FROM selected)
-              AND (SELECT count(*) FROM version_page) > $1
-              AND (SELECT count(*) FROM ordered_sources) <= $1
-            )
-          ORDER BY version_id DESC, source DESC
-          LIMIT 1
-        )
-        UNION ALL
-        (
-          SELECT inspected.version_id,
-            (
-              SELECT source.source::post_moderation_sources
-              FROM unnest($7::text[]) AS source(source)
-              ORDER BY source.source::post_moderation_sources DESC
-              LIMIT 1
-            ),
-            inspected.post_id, inspected.through_id
-          FROM version_page inspected
-          WHERE NOT EXISTS (SELECT 1 FROM selected)
-            AND (SELECT count(*) FROM version_page) > $1
-          -- The raw page re-includes the cursor, so the first row is not progress.
-          ORDER BY inspected.version_id DESC
-          LIMIT 1
-        )
+        SELECT version_id, source, post_id, through_id FROM selected
+        WHERE (SELECT count(*) FROM page) > $1
+        ORDER BY version_id DESC, source DESC
+        LIMIT 1
       )
       SELECT 'exhausted'::text AS row_kind, selected.post_id, selected.version_id, selected.source,
         selected.through_id

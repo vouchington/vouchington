@@ -47,6 +47,22 @@ describe('profile candidate cursor ties', () => {
     })
     expect(next.candidates.profile_links.map(link => link.id)).toEqual([newer.profileLinkId])
     expect(next.page_info.has_next_page).toBe(false)
+    const beyondIntegerPosition = encodeCursor({
+      ...decodeCursor(first.page_info.end_cursor!),
+      sort_order: Number.MAX_SAFE_INTEGER,
+    })
+    const beyond = await getMyLandingPageCandidates(user.id, { after: beyondIntegerPosition })
+    expect(beyond.candidates.profile_links).toEqual([])
+    expect(beyond.page_info.has_next_page).toBe(false)
+    const beforeIntegerPosition = encodeCursor({
+      ...decodeCursor(first.page_info.end_cursor!),
+      sort_order: Number.MIN_SAFE_INTEGER,
+    })
+    expect(
+      (
+        await getMyLandingPageCandidates(user.id, { after: beforeIntegerPosition })
+      ).candidates.profile_links.map(link => link.id),
+    ).toEqual([older.profileLinkId, newer.profileLinkId])
     const malformedCursor = {
       ...decodeCursor(first.page_info.end_cursor!),
       sort_order: null,

@@ -1,21 +1,12 @@
 import sql from 'sql-template-strings'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
 
-export function buildLandingPageSourceQuery(options?: {
+export function buildLandingPagesQuery(options?: {
   highWaterId?: string
   afterId?: string
   limit: number
 }) {
   const query = sql`/* buildSitemapLandingPagesQuery */
-    WITH landing_page AS MATERIALIZED (
-      SELECT ulp.id, ulp.user_id, ulp.is_default, ulp.slug, ulp.updated_at
-      FROM user_landing_pages ulp
-      WHERE TRUE
-  `
-  if (options?.highWaterId) query.append(sql` AND ulp.id <= ${options.highWaterId}`)
-  if (options?.afterId) query.append(sql` AND ulp.id < ${options.afterId}`)
-  if (options) query.append(sql` ORDER BY ulp.id DESC LIMIT ${options.limit}`)
-  query.append(sql`)
     SELECT landing_page.id,
       CASE
         WHEN landing_page.is_default THEN CONCAT('/@', u.username)
@@ -76,8 +67,16 @@ export function buildLandingPageSourceQuery(options?: {
             ON group_referral_lastmod.id = ulpgm_lastmod.referral_link_id
           WHERE ulpi_lastmod.landing_page_id = landing_page.id
         ), landing_page.updated_at)
-      ) AS updated_at,
-      (u.id IS NOT NULL AND EXISTS (
+      ) AS updated_at
+    FROM user_landing_pages landing_page
+    JOIN users u ON u.id = landing_page.user_id
+    WHERE u.deleted_at IS NULL
+      AND u.username IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM user_suspensions us
+        WHERE us.user_id = u.id AND us.lifted_at IS NULL
+      )
+      AND EXISTS (
         SELECT 1
         FROM user_landing_page_items ulpi
         WHERE ulpi.landing_page_id = landing_page.id
@@ -111,7 +110,7 @@ export function buildLandingPageSourceQuery(options?: {
                   SELECT 1
                   FROM posts root_post
                   WHERE root_post.id = COALESCE(p.root_post_id, p.id)
-                    AND `)
+                    AND `
   query.append(buildPublicPostEligibilityFilter('p', 'root_post')).append(sql`
                 )
             )
@@ -157,32 +156,9 @@ export function buildLandingPageSourceQuery(options?: {
                 AND (group_review.id IS NOT NULL OR group_link.id IS NOT NULL)
             )
           )
-      )) AS kept
-    FROM landing_page
-    LEFT JOIN LATERAL (
-      SELECT u.id, u.username, u.updated_at
-      FROM users u
-      WHERE u.id = landing_page.user_id
-        AND u.deleted_at IS NULL
-        AND u.username IS NOT NULL
-        AND NOT EXISTS (
-          SELECT 1 FROM user_suspensions us
-          WHERE us.user_id = u.id AND us.lifted_at IS NULL
-        )
-      LIMIT 1
-    ) u ON TRUE
-    ORDER BY landing_page.id DESC
+      )
   `)
-  return query
-}
-
-export function buildLandingPagesQuery(options?: {
-  highWaterId?: string
-  afterId?: string
-  limit: number
-}) {
-  const query = sql`SELECT id, path, updated_at FROM (`
-  query.append(buildLandingPageSourceQuery(options))
-  query.append(sql`) landing_source WHERE kept`)
+  if (options?.highWaterId) query.append(sql` AND landing_page.id <= ${options.highWaterId}`)
+  if (options?.afterId) query.append(sql` AND landing_page.id < ${options.afterId}`)
   return query
 }

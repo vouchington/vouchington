@@ -668,6 +668,30 @@ CREATE OR REPLACE FUNCTION public.fn_project_transparency_rollup()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_user_landing_page_candidate_profile_link`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_user_landing_page_candidate_profile_link()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_user_landing_page_candidate_referral_link`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_user_landing_page_candidate_referral_link()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_user_landing_page_candidate_review_post`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_user_landing_page_candidate_review_post()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_user_profile_image_placement`
 
 ```sql

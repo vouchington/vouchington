@@ -23,8 +23,9 @@ export async function claimRecoverableDataRequests(
     'processing_timeout_minutes',
   )
   await using transaction = await beginTransaction()
-  // Both mutation streams consume one shared, globally ordered candidate page.
-  const { rows: candidateRows } = await transaction<{ id: string; user_id: string | null }>(sql`
+  // This is the final work page: failing a deleted-owner request and reclaiming an active
+  // request both consume the processing batch. Lifecycle locks fence those actions after selection.
+  const { rows: workRows } = await transaction<{ id: string; user_id: string | null }>(sql`
     /* claimRecoverableDataRequests:candidates */
     -- cross-partition: unfinished exports remain recoverable across every retained request range
     -- no-mistakes-disable-next-line postgres-required-predicates: unfinished exports span all retained request ranges
@@ -39,11 +40,9 @@ export async function claimRecoverableDataRequests(
     ORDER BY request.id
     LIMIT ${batchSize}
   `)
-  const selectedIds = candidateRows.map(row => row.id)
+  const requestPageIds = workRows.map(row => row.id)
   // Sorted lifecycle locks fence every candidate before a request-row lock.
-  const candidateUserIds = [
-    ...new Set(candidateRows.flatMap(row => (row.user_id ? [row.user_id] : []))),
-  ]
+  const candidateUserIds = [...new Set(workRows.flatMap(row => (row.user_id ? [row.user_id] : [])))]
   const activeUsers = await lockActiveDataRequestUsers(transaction, candidateUserIds)
   const activeUserIds = candidateUserIds.filter(userId => activeUsers.has(userId))
   const deletedUserIds = candidateUserIds.filter(userId => !activeUsers.has(userId))
@@ -51,7 +50,7 @@ export async function claimRecoverableDataRequests(
     await transaction(sql`/* claimRecoverableDataRequests:deletedUsers */
     WITH candidates AS (
       SELECT request.id FROM user_data_requests request
-      WHERE request.id = ANY(${selectedIds}::uuid[])
+      WHERE request.id = ANY(${requestPageIds}::uuid[])
         AND request.completed_at IS NULL AND request.failed_at IS NULL
         AND (
           request.user_id IS NULL
@@ -67,7 +66,7 @@ export async function claimRecoverableDataRequests(
     await transaction.commit()
     return {
       requests: [],
-      hasMore: candidateRows.length === batchSize || candidateRows.length > (deletedCount ?? 0),
+      hasMore: workRows.length === batchSize || workRows.length > (deletedCount ?? 0),
     }
   }
 
@@ -75,7 +74,7 @@ export async function claimRecoverableDataRequests(
       WITH candidates AS (
         SELECT request.id
       FROM user_data_requests request
-      WHERE request.id = ANY(${selectedIds}::uuid[])
+      WHERE request.id = ANY(${requestPageIds}::uuid[])
         AND request.completed_at IS NULL
         AND request.failed_at IS NULL
         AND request.user_id = ANY(${activeUserIds}::uuid[])
@@ -115,7 +114,6 @@ export async function claimRecoverableDataRequests(
   return {
     requests,
     hasMore:
-      candidateRows.length === batchSize ||
-      candidateRows.length > (deletedCount ?? 0) + requests.length,
+      workRows.length === batchSize || workRows.length > (deletedCount ?? 0) + requests.length,
   }
 }

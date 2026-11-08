@@ -5,6 +5,10 @@ are limited to compile-time/static catalogs and mutation-enforced semantic sets 
 cardinality is encoded and tested in backend code. Operationally small tables, current row counts,
 and unenforced top-N product expectations are not exemptions.
 
+The landing-page picker keeps an owner-ordered projection of its distinct source types so one
+keyset walk can preserve their combined order. Source writes maintain it atomically; reads check
+eligibility against current source rows.
+
 ## Runtime Page Limits
 
 `pagination-config` owns runtime defaults and effective maxima. Pure parsers receive numeric
@@ -25,12 +29,14 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   the standard base64 alphabet. Callers must not construct or inspect cursor payloads.
 - The cursor contains every key in the deterministic keyset order, including a unique ID
   tie-breaker. A continuation predicate uses the same keys and direction as `ORDER BY`.
-- Apply visibility, filters, and semantic deduplication before pagination. Membership-ordered lists
-  (saved posts, personal lists, community lists, entity relations) walk the membership index and
-  join the targets with eligibility in WHERE. Saved posts and list items have no write cap (#4979),
-  so the keyset walk, not a write limit, bounds each page. A page is short only at the end.
-  Preserve filter inputs on every continuation request and reject a cursor whose encoded query or
-  sort shape is incompatible.
+- Apply visibility, filters, and semantic deduplication in `WHERE` before the final ordered
+  keyset limit. Membership-ordered lists (saved posts, personal lists, community lists, entity
+  relations) walk the membership index and join the targets with eligibility in WHERE; they do not
+  page raw memberships and discard targets afterward. Saved posts and list items have no write cap
+  (#4979), so the keyset walk, not a write limit, bounds each page. A nonterminal page is full and
+  its cursor names the last returned row; a page is short only at the end. Small viewer-scoped sets
+  may be subqueries or semijoins. Preserve filter inputs on every continuation request and reject a
+  cursor whose encoded query or sort shape is incompatible.
 - Relevance-ranked RSS search uses the same rule with a score, microsecond publication timestamp,
   and UUID keyset. Its opaque scope binds normalized semantic query input, effective filters, and
   viewer identity only when a viewer-dependent filter is active.
@@ -45,8 +51,8 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   from another owner or status, or a plain REST score cursor, is refused, and the unfiltered REST
   listing refuses a scoped one.
 - Private post relation collections use the same scope binding with a timestamp-and-UUID keyset.
-  Post type, clearance, audience, and community access are applied in the same walk as the live
-  relation keyset.
+  The page uses the live relation keyset. Post type, clearance, audience, and community access are
+  eligibility predicates in the same walk, applied before the ordered limit.
 - Fetch `limit + 1`, return at most `limit`, and derive `has_next_page` from the extra row. A result
   count equal to `limit` does not prove another page exists.
 - List responses use `{ results, page_info, ...pageLocalSidecars }`. `page_info` includes accurate
