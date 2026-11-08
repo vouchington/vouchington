@@ -3,13 +3,13 @@
  * not one key per hostname and parent suffix. This module lives in urls-hostnames so
  * hostname ownership can take the same stripes. Hostname blocking already depends here.
  */
-export const HOSTNAME_BLOCK_LOCK_STRIPES = 64
+const HOSTNAME_BLOCK_LOCK_STRIPES = 64
 
 /** Keeps stripe keys out of the bare-hostname-id advisory lock space. */
-export const HOSTNAME_BLOCK_LOCK_STRIPE_NAMESPACE = 'hostname-block-stripe:'
+const HOSTNAME_BLOCK_LOCK_STRIPE_NAMESPACE = 'hostname-block-stripe:'
 
 /** Stripe of one hostname id. `idSql` is a trusted SQL expression, never a value. */
-export function hostnameBlockLockStripeSql(idSql: string): string {
+function hostnameBlockLockStripeSql(idSql: string): string {
   return `((hashtext((${idSql})::text) & 2147483647) % ${HOSTNAME_BLOCK_LOCK_STRIPES})`
 }
 
