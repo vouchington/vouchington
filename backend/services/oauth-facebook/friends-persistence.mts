@@ -23,24 +23,32 @@ export async function persistFacebookFriendPage(
   return true
 }
 
+/**
+ * Deletes stale edges for at most one run's batch cap. Returns the last deleted friend id (the
+ * position the follow-up run resumes after) when it must continue, or null when cleanup is done.
+ */
 export async function finalizeFacebookFriendSync(
   facebookAccountId: string,
   userId: string,
   syncStartTime: string,
-): Promise<void> {
+  after = '',
+): Promise<string | null> {
   const batchSize = getOauthFacebookWorkLimit('friend_mutation_batch_size')
-  while (true) {
+  const maxBatches = getOauthFacebookWorkLimit('max_finalize_batches_per_run')
+  let lastFinalizedKey = after
+  for (let batch = 0; batch < maxBatches; batch += 1) {
     // Candidate discovery does not hold the deletion fence; only the bounded mutation page does.
-    // oxlint-disable-next-line no-await-in-loop -- each page commits before selecting its successor.
+    // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
     const staleFriendIds = await getStaleFacebookFriendIds(
       facebookAccountId,
       syncStartTime,
       batchSize,
+      lastFinalizedKey,
     )
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
       await markFacebookFriendSyncComplete(facebookAccountId, userId, syncStartTime)
-      return
+      return null
     }
     // oxlint-disable-next-line no-await-in-loop -- each page reacquires the deletion fence.
     const deleted = await deleteFacebookFriendBatch(
@@ -49,8 +57,10 @@ export async function finalizeFacebookFriendSync(
       syncStartTime,
       staleFriendIds,
     )
-    if (!deleted) return
+    if (!deleted) return null
+    lastFinalizedKey = staleFriendIds.at(-1)!
   }
+  return lastFinalizedKey
 }
 
 async function persistFacebookFriendBatch(
@@ -86,14 +96,15 @@ async function getStaleFacebookFriendIds(
   facebookAccountId: string,
   syncStartTime: string,
   batchSize: number,
+  after: string,
 ): Promise<string[]> {
   const { rows } = await write(
     `/* getStaleFacebookFriendIds */ SELECT facebook_friend_id
      FROM facebook_friends
-     WHERE facebook_account_id = $1 AND last_observed_at < $2::timestamptz
+     WHERE facebook_account_id = $1 AND last_observed_at < $2::timestamptz AND facebook_friend_id > $4
      ORDER BY facebook_friend_id
      LIMIT $3`,
-    [facebookAccountId, syncStartTime, batchSize],
+    [facebookAccountId, syncStartTime, batchSize, after],
   )
   return rows.map(row => (row as { facebook_friend_id: string }).facebook_friend_id)
 }

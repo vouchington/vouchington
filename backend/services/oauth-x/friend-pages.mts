@@ -18,24 +18,39 @@ export async function persistXFriendPage(
   return true
 }
 
+/**
+ * Deletes stale edges for at most one run's batch cap. Returns the last deleted friend id (the
+ * position the follow-up run resumes after) when it must continue, or null when cleanup is done.
+ */
 export async function finalizeXFriendSync(
   xAccountId: string,
   userId: string,
   syncStartTime: string,
-): Promise<void> {
+  after = '',
+): Promise<string | null> {
   const batchSize = getOauthXWorkLimit('friend_mutation_batch_size')
-  while (true) {
+  const maxBatches = getOauthXWorkLimit('max_finalize_batches_per_run')
+  let lastFinalizedKey = after
+  for (let batch = 0; batch < maxBatches; batch += 1) {
+    // Candidate discovery does not hold the deletion fence; only the bounded mutation page does.
     // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
-    const staleFriendIds = await getStaleXFriendIds(xAccountId, syncStartTime, batchSize)
+    const staleFriendIds = await getStaleXFriendIds(
+      xAccountId,
+      syncStartTime,
+      batchSize,
+      lastFinalizedKey,
+    )
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
       await markXFriendSyncComplete(xAccountId, userId, syncStartTime)
-      return
+      return null
     }
     // oxlint-disable-next-line no-await-in-loop -- each page reacquires the deletion fence.
     const deleted = await deleteXFriendBatch(xAccountId, userId, syncStartTime, staleFriendIds)
-    if (!deleted) return
+    if (!deleted) return null
+    lastFinalizedKey = staleFriendIds.at(-1)!
   }
+  return lastFinalizedKey
 }
 
 async function persistXFriendBatch(
@@ -70,14 +85,15 @@ async function getStaleXFriendIds(
   xAccountId: string,
   syncStartTime: string,
   batchSize: number,
+  after: string,
 ): Promise<string[]> {
   const { rows } = await write(
     `/* getStaleXFriendIds */ SELECT x_friend_id
      FROM x_friends
-     WHERE x_account_id = $1 AND last_observed_at < $2::timestamptz
+     WHERE x_account_id = $1 AND last_observed_at < $2::timestamptz AND x_friend_id > $4
      ORDER BY x_friend_id
      LIMIT $3`,
-    [xAccountId, syncStartTime, batchSize],
+    [xAccountId, syncStartTime, batchSize, after],
   )
   return rows.map(row => (row as { x_friend_id: string }).x_friend_id)
 }

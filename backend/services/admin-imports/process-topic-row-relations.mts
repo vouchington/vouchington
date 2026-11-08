@@ -35,11 +35,10 @@ export async function processTopicParentRelations(
     predicate: 'parent',
   })
   const parentTopics = await getTopicsBySlugBatch(parentSlugs)
-  await Promise.all(
-    parentTopics.flatMap(topic =>
-      topic
-        ? [upsertEntityRelation(admin, parentRelation, { id: topicId }, [{ id: topic.id }])]
-        : [],
-    ),
+  await upsertEntityRelation(
+    admin,
+    parentRelation,
+    { id: topicId },
+    parentTopics.flatMap(topic => (topic ? [{ id: topic.id }] : [])),
   )
 }

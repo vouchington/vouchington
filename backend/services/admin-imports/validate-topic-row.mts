@@ -7,6 +7,8 @@ import {
 import { validateRssFeedFields } from './validate-topic-row-rss-feed.mts'
 
 const VALID_EXTENSIONS = new Set(['spending_category', 'retailer'])
+// Bounds the single parent-relation upsert processTopicParentRelations makes per row.
+const MAX_PARENT_SLUGS_PER_ROW = 20
 
 export type TopicRowValidationContext = {
   seenSlugs: Set<string>
@@ -23,6 +25,7 @@ export function validateTopicRow(
   validateReferralUrlFields(row, errors)
   validateRssFeedFields(row, errors)
   validateExtensions(row, errors)
+  validateParentSlugs(row, errors)
   validateReferralFields(row, errors, context.seenReferralValidationSlugs)
   return errors
 }
@@ -68,5 +71,12 @@ function validateExtensions(row: Record<string, string>, errors: string[]): void
         `extensions contains invalid value "${ext}"; must be one of: ${[...VALID_EXTENSIONS].join(', ')}`,
       )
     }
+  }
+}
+
+function validateParentSlugs(row: Record<string, string>, errors: string[]): void {
+  const parentSlugs = row.parent_slugs?.split('|').filter(slug => slug.trim()) ?? []
+  if (parentSlugs.length > MAX_PARENT_SLUGS_PER_ROW) {
+    errors.push(`parent_slugs must contain at most ${MAX_PARENT_SLUGS_PER_ROW} slugs`)
   }
 }

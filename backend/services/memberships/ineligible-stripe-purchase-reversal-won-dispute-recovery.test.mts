@@ -10,7 +10,7 @@ import {
   createWonDisputeRecoveryFixture,
 } from '../../test-helpers/services/memberships/won-dispute-recovery-fixtures.mts'
 import { getIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/case-read.mts'
-import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
+import { failIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { claimWonStripeDisputeRecovery } from './ineligible-stripe-purchase-reversal/won-dispute-recovery-ledger.mts'
 import { reconcileWonStripeDispute } from './reconcile-won-stripe-dispute.mts'
 
@@ -113,7 +113,7 @@ describe('won Stripe dispute reversal recovery', () => {
     const target = getTarget(fixture, fixture.paymentIntentIds[0]!)
     const initial = await claimWonStripeDisputeRecovery(reversalCase, fixture.disputeId, target)
     if (!initial) throw new Error('Expected won-dispute recovery claim')
-    await failIneligiblePurchaseReversal(initial, new Error('provider response was lost'))
+    await failIneligiblePurchaseReversals([initial], new Error('provider response was lost'))
 
     const retried = await claimWonStripeDisputeRecovery(reversalCase, fixture.disputeId, {
       ...target,

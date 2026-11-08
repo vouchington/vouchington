@@ -1,7 +1,7 @@
 import { mapWithConcurrency } from '@vouchington/utils/async'
 import {
   completeIneligiblePurchaseReversal,
-  failIneligiblePurchaseReversal,
+  failIneligiblePurchaseReversals,
   markIneligiblePurchaseReversalCompleted,
 } from '../ineligible-stripe-purchase-reversal-execution.mts'
 import {
@@ -46,10 +46,9 @@ export async function executeIneligibleStripePurchaseReversal(
       })
     })
   } catch (err) {
-    await Promise.all(
-      [...pending, ...(cancellation && !cancellation.completed ? [cancellation] : [])].map(
-        operation => failIneligiblePurchaseReversal(operation, err),
-      ),
+    await failIneligiblePurchaseReversals(
+      [...pending, ...(cancellation && !cancellation.completed ? [cancellation] : [])],
+      err,
     )
     throw err
   }

@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { createTestSku, createTestUser } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
-import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
+import { failIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { claimPersistedIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
 import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
@@ -25,7 +25,7 @@ describe('ineligible Stripe purchase reversal case cap', () => {
     }))!
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
-        failIneligiblePurchaseReversal(operation, new Error('provider call interrupted')),
+        failIneligiblePurchaseReversals([operation], new Error('provider call interrupted')),
       ),
     )
     const lateTarget = {

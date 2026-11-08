@@ -121,4 +121,12 @@ describe('validateTopicRows (basic)', () => {
     ])
     expect(result.valid).toBe(true)
   })
+
+  it('rejects a row with more than 20 parent_slugs', () => {
+    const suffix = randomSuffix()
+    const parents = Array.from({ length: 21 }, (_, index) => `parent-${index}`).join('|')
+    const result = validateTopicRows([{ slug: `topic-${suffix}`, parent_slugs: parents }])
+    expect(result.valid).toBe(false)
+    expect(JSON.stringify(result)).toContain('parent_slugs must contain at most 20 slugs')
+  })
 })

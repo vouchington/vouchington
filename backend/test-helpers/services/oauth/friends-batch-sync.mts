@@ -22,7 +22,7 @@ import { createTestUserDirect } from '../../entities/users-direct.mts'
 import { softDeleteUser } from '../../entities/users-lifecycle.mts'
 
 type FriendsBatchProvider = 'facebook' | 'x'
-type FriendsBatchSync = (providerUserId: string) => Promise<void>
+type FriendsBatchSync = (providerUserId: string) => Promise<unknown>
 type FriendsBatchFetchSpy = {
   mockResolvedValueOnce(page: { ok: true; json: () => Promise<unknown> }): void
 }
@@ -105,7 +105,7 @@ export async function assertBoundedStaleFriendCleanup(
   const friendIds = makeFriendIds(input.staleFriendIdPrefix)
   await insertTestFriends(input.provider, providerUserId, friendIds)
   const rowLock = await acquireTestFriendRowLock(input.provider, providerUserId, friendIds.at(-1)!)
-  let sync: Promise<void> | undefined
+  let sync: Promise<unknown> | undefined
   let rowLockReleased = false
   let restoreWorkLimit: (() => void) | undefined
   let pageRead: Awaited<ReturnType<typeof captureStaleFriendPageRead>> | undefined
@@ -128,7 +128,7 @@ export async function assertBoundedStaleFriendCleanup(
     await expect(countTestFriends(input.provider, providerUserId)).resolves.toBe(1)
     await rowLock.release()
     rowLockReleased = true
-    await expect(sync).resolves.toBeUndefined()
+    await expect(sync).resolves.toBeNull()
     await expect(countTestFriends(input.provider, providerUserId)).resolves.toBe(0)
   } finally {
     try {

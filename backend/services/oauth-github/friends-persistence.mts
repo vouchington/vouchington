@@ -18,21 +18,33 @@ export async function persistGithubFriendPage(
   return true
 }
 
+/**
+ * Deletes stale edges for at most one run's batch cap. Returns the last deleted friend id (the
+ * position the follow-up run resumes after) when it must continue, or null when cleanup is done.
+ */
 export async function finalizeGithubFriendSync(
   githubAccountId: string,
   userId: string,
   syncStartTime: string,
-  options?: { onStaleFriendPage?: (friendIds: string[]) => void },
-): Promise<void> {
+  options?: { after?: string; onStaleFriendPage?: (friendIds: string[]) => void },
+): Promise<string | null> {
   const batchSize = getOauthGithubWorkLimit('friend_mutation_batch_size')
-  while (true) {
+  const maxBatches = getOauthGithubWorkLimit('max_finalize_batches_per_run')
+  let lastFinalizedKey = options?.after ?? ''
+  for (let batch = 0; batch < maxBatches; batch += 1) {
+    // Candidate discovery does not hold the deletion fence; only the bounded mutation page does.
     // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
-    const staleFriendIds = await getStaleGithubFriendIds(githubAccountId, syncStartTime, batchSize)
+    const staleFriendIds = await getStaleGithubFriendIds(
+      githubAccountId,
+      syncStartTime,
+      batchSize,
+      lastFinalizedKey,
+    )
     options?.onStaleFriendPage?.(staleFriendIds)
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
       await markGithubFriendSyncComplete(githubAccountId, userId, syncStartTime)
-      return
+      return null
     }
     // oxlint-disable-next-line no-await-in-loop -- each page reacquires the deletion fence.
     const deleted = await deleteGithubFriendBatch(
@@ -41,8 +53,10 @@ export async function finalizeGithubFriendSync(
       syncStartTime,
       staleFriendIds,
     )
-    if (!deleted) return
+    if (!deleted) return null
+    lastFinalizedKey = staleFriendIds.at(-1)!
   }
+  return lastFinalizedKey
 }
 
 async function persistGithubFriendBatch(
@@ -78,14 +92,15 @@ async function getStaleGithubFriendIds(
   githubAccountId: string,
   syncStartTime: string,
   batchSize: number,
+  after: string,
 ): Promise<string[]> {
   const { rows } = await write(
     `/* getStaleGithubFriendIds */ SELECT github_friend_id
      FROM github_friends
-     WHERE github_account_id = $1 AND last_observed_at < $2::timestamptz
+     WHERE github_account_id = $1 AND last_observed_at < $2::timestamptz AND github_friend_id > $4
      ORDER BY github_friend_id
      LIMIT $3`,
-    [githubAccountId, syncStartTime, batchSize],
+    [githubAccountId, syncStartTime, batchSize, after],
   )
   return rows.map(row => (row as { github_friend_id: string }).github_friend_id)
 }

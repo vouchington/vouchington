@@ -6,7 +6,12 @@ import { getOAuthTokenPurpose } from '@services/oauth-accounts/upsert'
 import { fetch } from 'undici'
 import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
+import type { FriendSyncResume } from '@queues/find-your-friends/types'
 import { finalizeFacebookFriendSync, persistFacebookFriendPage } from './friends-persistence.mts'
+import { getOauthFacebookWorkLimit } from './work-limits.mts'
+
+/** Requested provider page size; a longer response is rejected so one page bounds its persist chunks. */
+const FACEBOOK_FRIENDS_PAGE_LIMIT = 200
 
 type FacebookFriendsResponse = {
   data: Array<{ id: string; name: string }>
@@ -24,7 +29,7 @@ async function fetchFacebookFriends(
 ): Promise<FacebookFriendsResponse> {
   const params = new URLSearchParams({
     fields: 'id,name',
-    limit: '200',
+    limit: String(FACEBOOK_FRIENDS_PAGE_LIMIT),
     access_token: accessToken,
   })
   if (after) params.set('after', after)
@@ -63,33 +68,54 @@ async function getSyncStartTime(): Promise<string> {
   return now as string
 }
 
-export async function syncFacebookFriends(facebookUserId: string): Promise<void> {
+/**
+ * Syncs one run of provider pages, then stale-edge cleanup. Returns the position the follow-up
+ * job resumes from when a per-run cap is reached, or null once the sync is complete or superseded.
+ */
+export async function syncFacebookFriends(
+  facebookUserId: string,
+  resume?: FriendSyncResume,
+): Promise<FriendSyncResume | null> {
   const account = await getFacebookSyncAccount(facebookUserId)
-  if (!account?.user_id || !account.access_token_ciphertext) return
-  const accessToken = decryptSecret(
-    account.access_token_ciphertext,
-    getOAuthTokenPurpose('facebook', facebookUserId, 'access_token'),
-  )
+  if (!account?.user_id || !account.access_token_ciphertext) return null
+  const syncStartTime = resume?.syncStartTime ?? (await getSyncStartTime())
 
-  const syncStartTime = await getSyncStartTime()
-
-  let after: string | undefined
-
-  do {
-    // oxlint-disable-next-line no-await-in-loop -- the next Facebook cursor comes from the current response
-    const result = await fetchFacebookFriends(accessToken, after)
-    if (result.error) throw createHttpError(502, `Facebook friends error: ${result.error.message}`)
-    // oxlint-disable-next-line no-await-in-loop -- each provider page commits before requesting its successor.
-    const persisted = await persistFacebookFriendPage(
-      account.id,
-      account.user_id,
-      result.data.map(friend => friend.id),
-      syncStartTime,
+  if (resume?.phase !== 'finalize') {
+    const accessToken = decryptSecret(
+      account.access_token_ciphertext,
+      getOAuthTokenPurpose('facebook', facebookUserId, 'access_token'),
     )
-    if (!persisted) return
-    after = result.paging?.cursors?.after
-    if (!result.paging?.next) break
-  } while (after)
+    const maxPages = getOauthFacebookWorkLimit('max_provider_pages_per_run')
+    let after = resume?.cursor
+    let exhausted = false
+    for (let page = 0; page < maxPages && !exhausted; page += 1) {
+      // oxlint-disable-next-line no-await-in-loop -- the next Facebook cursor comes from the current response
+      const result = await fetchFacebookFriends(accessToken, after)
+      if (result.error)
+        throw createHttpError(502, `Facebook friends error: ${result.error.message}`)
+      if (result.data.length > FACEBOOK_FRIENDS_PAGE_LIMIT)
+        throw createHttpError(502, 'Facebook /me/friends returned more friends than requested')
+      // oxlint-disable-next-line no-await-in-loop -- each provider page commits before requesting its successor.
+      const persisted = await persistFacebookFriendPage(
+        account.id,
+        account.user_id,
+        result.data.map(friend => friend.id),
+        syncStartTime,
+      )
+      if (!persisted) return null
+      after = result.paging?.cursors?.after
+      exhausted = !result.paging?.next || !after
+    }
+    if (!exhausted) return { phase: 'pages', syncStartTime, cursor: after }
+  }
 
-  await finalizeFacebookFriendSync(account.id, account.user_id, syncStartTime)
+  const lastFinalizedKey = await finalizeFacebookFriendSync(
+    account.id,
+    account.user_id,
+    syncStartTime,
+    resume?.phase === 'finalize' ? resume.cursor : undefined,
+  )
+  return lastFinalizedKey === null
+    ? null
+    : { phase: 'finalize', syncStartTime, cursor: lastFinalizedKey }
 }

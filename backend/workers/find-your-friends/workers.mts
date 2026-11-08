@@ -1,6 +1,12 @@
 import { createWorker, processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { QUEUE_NAME } from '@queues/find-your-friends/config'
+import {
+  enqueueResumeSyncFacebookFriends,
+  enqueueResumeSyncGithubFriends,
+  enqueueResumeSyncXFriends,
+} from '@queues/find-your-friends/enqueues'
+import type { FriendSyncResume } from '@queues/find-your-friends/types'
 import { processFindYourFriendsDispatcher } from './processors.mts'
 import { syncFacebookFriends } from '@services/oauth-facebook/friends'
 import { syncXFriends } from '@services/oauth-x/friends'
@@ -25,21 +31,39 @@ export const findYourFriends = createWorker(
         const facebookAccountId = job.data?.facebookAccountId
         if (!facebookAccountId)
           throw new Error('syncFacebookFriends: facebookAccountId is required')
-        return syncProviderFriends('facebook', facebookAccountId, syncFacebookFriends)
+        return syncProviderFriends(
+          'facebook',
+          facebookAccountId,
+          job.data.resume,
+          syncFacebookFriends,
+          enqueueResumeSyncFacebookFriends,
+        )
       }
       case 'sync_x': {
         if (job.name !== 'syncXFriends')
           throw new Error(`find-your-friends sync_x job ${job.name} not found`)
         const xAccountId = job.data?.xAccountId
         if (!xAccountId) throw new Error('syncXFriends: xAccountId is required')
-        return syncProviderFriends('x', xAccountId, syncXFriends)
+        return syncProviderFriends(
+          'x',
+          xAccountId,
+          job.data.resume,
+          syncXFriends,
+          enqueueResumeSyncXFriends,
+        )
       }
       case 'sync_github': {
         if (job.name !== 'syncGithubFriends')
           throw new Error(`find-your-friends sync_github job ${job.name} not found`)
         const githubAccountId = job.data?.githubAccountId
         if (!githubAccountId) throw new Error('syncGithubFriends: githubAccountId is required')
-        return syncProviderFriends('github', githubAccountId, syncGithubFriends)
+        return syncProviderFriends(
+          'github',
+          githubAccountId,
+          job.data.resume,
+          syncGithubFriends,
+          enqueueResumeSyncGithubFriends,
+        )
       }
       case undefined:
         break
@@ -55,8 +79,12 @@ export const findYourFriends = createWorker(
 async function syncProviderFriends(
   provider: FriendSyncProvider,
   accountId: string,
-  sync: (providerUserId: string) => Promise<void>,
+  resume: FriendSyncResume | undefined,
+  sync: (providerUserId: string, resume?: FriendSyncResume) => Promise<FriendSyncResume | null>,
+  enqueueResume: (accountId: string, resume: FriendSyncResume) => Promise<void>,
 ): Promise<void> {
   const providerUserId = await getFriendSyncProviderUserId(provider, accountId)
-  if (providerUserId) await sync(providerUserId)
+  if (!providerUserId) return
+  const continuation = await sync(providerUserId, resume)
+  if (continuation) await enqueueResume(accountId, continuation)
 }

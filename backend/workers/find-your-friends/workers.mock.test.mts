@@ -17,6 +17,8 @@ import {
   enqueueSyncXFriends,
 } from '@queues/find-your-friends/enqueues'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { oauthGithubWorkConfig } from '@services/oauth-github/work-limits'
 import { findYourFriends } from './workers.mts'
 
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -160,6 +162,52 @@ describe('friend sync worker account identities', () => {
 
     await enqueueSyncGithubFriends(account.account_id)
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('enqueues a continuation job when the page cap is reached', async () => {
+    const owner = await createTestUser()
+    const providerUserId = String(randomInt(1_000_000_000, 2_000_000_000))
+    const account = await insertTestOAuthAccount('github', providerUserId)
+    if (!account.account_id) throw new Error('Expected a GitHub account UUID')
+    await connectTestOAuthAccount('github', owner.id, providerUserId)
+    await setTestOAuthAccountTokens('github', providerUserId, {
+      accessToken: `test-github-${randomUUID()}`,
+    })
+    const restore = overrideDynamicConfigFieldsForTest(oauthGithubWorkConfig, {
+      max_provider_pages_per_run: 1,
+    })
+    const originalAdd = findYourFriendsQueue.add
+    // Capture the continuation instead of running it in the background.
+    const add = vi
+      .spyOn(findYourFriendsQueue, 'add')
+      .mockImplementation((name, data, opts) =>
+        'resume' in (data as object)
+          ? Promise.resolve(null)
+          : Reflect.apply(originalAdd, findYourFriendsQueue, [name, data, opts]),
+      )
+    fetchSpy.mockResolvedValueOnce(
+      new Response(JSON.stringify([]), {
+        headers: {
+          Link: '<https://api.github.com/user/following?per_page=100&page=2>; rel="next"',
+        },
+      }),
+    )
+    try {
+      await enqueueSyncGithubFriends(account.account_id)
+    } finally {
+      restore()
+    }
+
+    expect(add).toHaveBeenCalledWith(
+      'syncGithubFriends',
+      expect.objectContaining({
+        githubAccountId: account.account_id,
+        resume: expect.objectContaining({ phase: 'pages', cursor: '2' }),
+      }),
+      expect.objectContaining({ ordering: expect.objectContaining({ key: 'sync_github' }) }),
+    )
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    expect(await getTestOAuthAccountFriendsSyncedAt('github', providerUserId)).toBeNull()
   })
 
   it('saves dispatcher progress on the dispatch job', async () => {

@@ -11,7 +11,12 @@ import {
   persistXRefreshedTokens,
   type XCredentialGeneration,
 } from './friends-persistence.mts'
+import type { FriendSyncResume } from '@queues/find-your-friends/types'
 import { finalizeXFriendSync, persistXFriendPage } from './friend-pages.mts'
+import { getOauthXWorkLimit } from './work-limits.mts'
+
+/** Requested provider page size; a longer response is rejected so one page bounds its persist chunks. */
+const X_FOLLOWING_PAGE_SIZE = 1000
 
 type XFollowingResponse = {
   data?: Array<{ id: string; name: string; username: string }>
@@ -53,7 +58,7 @@ async function fetchXFollowing(
   accessToken: string,
   nextToken?: string,
 ): Promise<XFollowingResponse> {
-  const params = new URLSearchParams({ max_results: '1000' })
+  const params = new URLSearchParams({ max_results: String(X_FOLLOWING_PAGE_SIZE) })
   if (nextToken) params.set('pagination_token', nextToken)
   const response = await fetch(
     `https://api.x.com/2/users/${xUserId}/following?${params.toString()}`,
@@ -67,10 +72,13 @@ async function fetchXFollowing(
   return response.json() as Promise<XFollowingResponse>
 }
 
-export async function syncXFriends(xUserId: string): Promise<void> {
-  const account = await getXSyncAccount(xUserId)
-  if (!account?.userId) return
+type XSyncAccount = NonNullable<Awaited<ReturnType<typeof getXSyncAccount>>>
 
+/** Returns a usable access token, refreshing and persisting it first; null when the credentials were superseded. */
+async function resolveXAccessToken(
+  xUserId: string,
+  account: XSyncAccount & { userId: string },
+): Promise<string | null> {
   const credentialGeneration: XCredentialGeneration = {
     accessTokenCiphertext: account.accessTokenCiphertext,
     refreshTokenCiphertext: account.refreshTokenCiphertext,
@@ -112,28 +120,53 @@ export async function syncXFriends(xUserId: string): Promise<void> {
       credentialGeneration,
       refreshedTokens,
     )
-    if (!persisted) return
+    if (!persisted) return null
+  }
+  return accessToken
+}
+
+/**
+ * Syncs one run of provider pages, then stale-edge cleanup. Returns the position the follow-up
+ * job resumes from when a per-run cap is reached, or null once the sync is complete or superseded.
+ */
+export async function syncXFriends(
+  xUserId: string,
+  resume?: FriendSyncResume,
+): Promise<FriendSyncResume | null> {
+  const account = await getXSyncAccount(xUserId)
+  if (!account?.userId) return null
+  const syncStartTime = resume?.syncStartTime ?? (await getXFriendSyncStartTime())
+
+  if (resume?.phase !== 'finalize') {
+    const accessToken = await resolveXAccessToken(xUserId, { ...account, userId: account.userId })
+    if (accessToken === null) return null
+    const maxPages = getOauthXWorkLimit('max_provider_pages_per_run')
+    let nextToken = resume?.cursor
+    let exhausted = false
+    for (let page = 0; page < maxPages && !exhausted; page += 1) {
+      // oxlint-disable-next-line no-await-in-loop -- the next X pagination token comes from the current response
+      const result = await fetchXFollowing(xUserId, accessToken, nextToken)
+      if (result.errors?.length)
+        throw createHttpError(502, `X following error: ${result.errors[0].message}`)
+      const ids = (result.data ?? []).map(user => user.id)
+      if (ids.length > X_FOLLOWING_PAGE_SIZE)
+        throw createHttpError(502, 'X /following returned more users than requested')
+      // oxlint-disable-next-line no-await-in-loop -- each provider page commits before requesting its successor.
+      const persisted = await persistXFriendPage(account.id, account.userId, ids, syncStartTime)
+      if (!persisted) return null
+      nextToken = result.meta?.next_token
+      exhausted = !nextToken
+    }
+    if (!exhausted) return { phase: 'pages', syncStartTime, cursor: nextToken }
   }
 
-  const syncStartTime = await getXFriendSyncStartTime()
-
-  let nextToken: string | undefined
-
-  do {
-    // oxlint-disable-next-line no-await-in-loop -- the next X pagination token comes from the current response
-    const result = await fetchXFollowing(xUserId, accessToken, nextToken)
-    if (result.errors?.length)
-      throw createHttpError(502, `X following error: ${result.errors[0].message}`)
-    // oxlint-disable-next-line no-await-in-loop -- each provider page commits before requesting its successor.
-    const persisted = await persistXFriendPage(
-      account.id,
-      account.userId,
-      (result.data ?? []).map(user => user.id),
-      syncStartTime,
-    )
-    if (!persisted) return
-    nextToken = result.meta?.next_token
-  } while (nextToken)
-
-  await finalizeXFriendSync(account.id, account.userId, syncStartTime)
+  const lastFinalizedKey = await finalizeXFriendSync(
+    account.id,
+    account.userId,
+    syncStartTime,
+    resume?.phase === 'finalize' ? resume.cursor : undefined,
+  )
+  return lastFinalizedKey === null
+    ? null
+    : { phase: 'finalize', syncStartTime, cursor: lastFinalizedKey }
 }

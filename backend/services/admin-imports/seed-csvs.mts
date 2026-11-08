@@ -5,6 +5,7 @@ import { mintUUIDv7 } from '@modules/utils/ids'
 import { upsertSystemUser } from '@services/users/system-users'
 import { getPrivateUserByAny } from '@services/users/get'
 import { processTopicRow } from './process-topic-row.mts'
+import { validateTopicRows } from './validate-topics.mts'
 import { runSystemTopicSeedImport } from '@services/topics/seed-import-authority'
 import type { PrivateUser } from '@services/users/types'
 import type { ImportRow } from './types.mts'
@@ -60,9 +61,21 @@ async function seedTopicsFromRows(
 
 async function importSeedRows(
   actor: PrivateUser,
-  allRows: Record<string, string>[],
+  rawRows: Record<string, string>[],
 ): Promise<SeedCsvsResult> {
   const errors: SeedCsvsResult['errors'] = []
+  // Seeds use the same row rules as admin imports (including the parent_slugs cap).
+  const validation = validateTopicRows(rawRows)
+  const allRows = rawRows.filter((_, index) => validation.rows[index]?.valid)
+  for (const result of validation.rows) {
+    if (result.valid) continue
+    errors.push({
+      slug: rawRows[result.row_index]?.slug?.trim() || `row-${result.row_index}`,
+      error: new Error(result.errors.join('; ')),
+    })
+  }
+
+  const validationErrorCount = errors.length
 
   // Pass 1: create / update every topic (establishes within-file parent relations)
   for (let i = 0; i < allRows.length; i++) {
@@ -79,7 +92,7 @@ async function importSeedRows(
   // - parent_slugs: silently skipped when parent didn't exist yet (cross-file links)
   // - pass-1 errors: may have failed due to referral_company_slug pointing to a
   //   topic defined in a later file; retrying after all topics exist may succeed.
-  const pass1ErrorSlugs = new Set(errors.map(e => e.slug))
+  const pass1ErrorSlugs = new Set(errors.slice(validationErrorCount).map(e => e.slug))
   const rowsToRetry = allRows.flatMap((row, originalIndex) =>
     row.parent_slugs?.trim() || pass1ErrorSlugs.has(row.slug?.trim() || '')
       ? [{ row, originalIndex }]
@@ -91,7 +104,9 @@ async function importSeedRows(
       // oxlint-disable-next-line no-await-in-loop -- retry rows remain serialized so a successful retry clears the matching first-pass error
       await processTopicRow(actor, makeSyntheticRow(row, originalIndex))
       // If pass 1 recorded an error for this row but pass 2 succeeded, clear it
-      const errorIdx = errors.findIndex(e => e.slug === slug)
+      const errorIdx = errors.findIndex(
+        (e, index) => index >= validationErrorCount && e.slug === slug,
+      )
       if (errorIdx >= 0) errors.splice(errorIdx, 1)
     } catch (err) {
       // Record pass-2 failures only for rows that succeeded in pass 1
@@ -102,7 +117,7 @@ async function importSeedRows(
     }
   }
 
-  return { processed: allRows.length - errors.length, errors }
+  return { processed: rawRows.length - errors.length, errors }
 }
 
 /** The seed script imports the shipped catalog; callers may supply an actor and a bounded batch. */

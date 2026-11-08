@@ -13,7 +13,7 @@ import {
 import { createMembership } from '../create.mts'
 import {
   completeIneligiblePurchaseReversal,
-  failIneligiblePurchaseReversal,
+  failIneligiblePurchaseReversals,
   markIneligiblePurchaseReversalCompleted,
 } from '../ineligible-stripe-purchase-reversal-execution.mts'
 import { claimPersistedIneligiblePurchaseReversalCase } from './claim-ledger.mts'
@@ -97,7 +97,7 @@ describe('family collision reversal ledger', () => {
     })
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
-        failIneligiblePurchaseReversal(operation, new Error('retry after provider timeout')),
+        failIneligiblePurchaseReversals([operation], new Error('retry after provider timeout')),
       ),
     )
 

@@ -108,6 +108,10 @@ export const backgroundWorkEntries4 = [
     maxValues: oauthGithubWorkMaxValues,
     descriptions: {
       friend_mutation_batch_size: 'Friend mutation batch size for oauth github processing.',
+      max_provider_pages_per_run:
+        'Provider friend pages one GitHub sync job reads before it continues in a follow-up job.',
+      max_finalize_batches_per_run:
+        'Stale friend delete batches one GitHub sync job runs before it continues in a follow-up job.',
     },
   }),
   defineBoundedWorkNamespace({
@@ -117,6 +121,10 @@ export const backgroundWorkEntries4 = [
     maxValues: oauthXWorkMaxValues,
     descriptions: {
       friend_mutation_batch_size: 'Friend mutation batch size for oauth x processing.',
+      max_provider_pages_per_run:
+        'Provider friend pages one X sync job reads before it continues in a follow-up job.',
+      max_finalize_batches_per_run:
+        'Stale friend delete batches one X sync job runs before it continues in a follow-up job.',
     },
   }),
 ]

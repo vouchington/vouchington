@@ -9,7 +9,7 @@ import {
   releaseMembershipSourceForRebindForTest,
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
-import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
+import { failIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal-execution.mts'
 
 describe('ineligible Stripe purchase reversal binding retry', () => {
   it('reuses the immutable case after its original binding is released and rebound', async () => {
@@ -49,7 +49,7 @@ describe('ineligible Stripe purchase reversal binding retry', () => {
     ))!
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
-        failIneligiblePurchaseReversal(operation, new Error('provider call interrupted')),
+        failIneligiblePurchaseReversals([operation], new Error('provider call interrupted')),
       ),
     )
     const context = await getTestIneligiblePurchaseReversalCaseContext(
