@@ -96,7 +96,8 @@ separate diagnostic artifact; they cannot add an exception or weaken a productio
 
 The cold/warm labels concern PostgreSQL shared buffers. Before each cold replay, the administrator
 evicts only non-shared current-database heaps and indexes named by that statement's plan and records
-evicted, flushed and skipped buffers. Skipped buffers fail preparation. A warm measurement follows
+evicted, flushed and skipped buffers. A relation whose buffers were skipped (briefly pinned by another backend) is evicted again, at
+most five times; buffers still skipped after that fail preparation. A warm measurement follows
 the same statement and plan mode immediately. OS and storage caches remain uncontrolled; neither
 the ordinary repeat pass nor a WAL checkpoint establishes a cold read cache. This instrumentation
 requires the disposable database's PostgreSQL administrator and the `pg_buffercache` extension;
