@@ -1,3 +1,4 @@
+import { DISPATCH_AND_CRAWL_SCENARIO_IDS } from './dispatch-and-crawl-scenario-ids.mts'
 import { MEDIA_DELIVERY_LOCK_SCENARIOS } from './media-delivery-lock-scenario-ids.mts'
 import { MEMBERSHIP_COLLISION_REVIEW_SCENARIO_IDS } from './membership-collision-review-scenario-ids.mts'
 import { ELIGIBLE_LIST_SCENARIO_IDS } from './eligible-list-scenario-ids.mts'
@@ -186,17 +187,5 @@ export const BOUNDED_WORK_SCENARIOS = [
   'search-pending-posts-dense-approved',
   'landing-page-candidates-among-other-posts',
   'user-removed-community-posts-page',
-  'dispatch-hostname-url-selectivity',
-  'dispatch-tier1-url-selectivity',
-  'dispatch-tier2-url-selectivity',
-  'dispatch-referral-crawl-due-selectivity',
-  'dispatch-referral-unfurl-due-selectivity',
-  'bloom-repair-window',
-  'bloom-repair-capped',
-  'bloom-repair-resumed',
-  'crawl-hostname-threshold-seek',
-  'crawl-hostnames-due',
-  'crawl-hostnames-due-capped',
-  'bluesky-followee-receipts-page',
-  'bluesky-followee-receipts-continuation',
+  ...DISPATCH_AND_CRAWL_SCENARIO_IDS,
 ] as const
