@@ -123,7 +123,7 @@ runs:
         package-manager-cache: false
     - name: Resolve pnpm version
       id: pnpm-version
-      uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@6569fcf1d4e98120ba0b06654767ea91ed8fb159 # v0.76.0
+      uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@90e878e740edd47d19dae5d0dd28866afd719a01 # v0.85.3
     - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
       with:
         node-version-file: 'false'
@@ -179,82 +179,14 @@ runs:
         IMAGE_TAG: ${{ env.SHA_TAG }}
         TRIVY_FINDINGS_EXIT_CODE: '10'
         ACTIVE_WORKER_IMAGES: ${{ steps.images.outputs.active_worker_images }}
-      run: |
-        set -euo pipefail
-        findings_detected=0
-        scan_error_exit=0
-        for target in api $ACTIVE_WORKER_IMAGES; do
-          image="$IMAGE_REPOSITORY/$target:$IMAGE_TAG"
-          target_exit=0
-          trivy image \
-            --scanners vuln \
-            --quiet \
-            --pkg-types os \
-            --skip-db-update \
-            --exit-code "$TRIVY_FINDINGS_EXIT_CODE" \
-            --severity CRITICAL,HIGH \
-            --ignore-unfixed \
-            --ignorefile .trivyignore.yaml \
-            --format table \
-            --table-mode detailed \
-            --output "trivy-${target}-os-table.txt" \
-            "$image" 2> "trivy-${target}-os-stderr.txt" || target_exit=$?
-          if [ "$target_exit" -eq "$TRIVY_FINDINGS_EXIT_CODE" ]; then
-            findings_detected=1
-            echo "::error title=Trivy OS vulnerability findings::$target contains CRITICAL/HIGH fixable OS vulnerabilities."
-            {
-              echo "### $target"
-              echo ""
-              echo '```'
-              cat "trivy-${target}-os-table.txt"
-              echo '```'
-              echo ""
-            } >> "$GITHUB_STEP_SUMMARY"
-            cat "trivy-${target}-os-table.txt"
-          elif [ "$target_exit" -ne 0 ]; then
-            if [ "$scan_error_exit" -eq 0 ]; then
-              scan_error_exit="$target_exit"
-            fi
-            echo "::error title=Trivy scanner error::Trivy could not complete the OS package scan for $image (exit $target_exit)."
-            echo "✗ Trivy scanner error while scanning OS packages in $image (exit $target_exit)"
-            cat "trivy-${target}-os-stderr.txt" >&2
-          fi
-        done
-        if [ "$scan_error_exit" -ne 0 ]; then
-          if [ "$findings_detected" -ne 0 ]; then
-            echo "✗ Trivy scanner error for one or more images; OS vulnerability findings were also detected"
-          else
-            echo "✗ Trivy scanner error for one or more images"
-          fi
-          exit "$scan_error_exit"
-        fi
-        if [ "$findings_detected" -ne 0 ]; then
-          echo "✗ Trivy found CRITICAL/HIGH fixable OS vulnerabilities in one or more images"
-          exit "$TRIVY_FINDINGS_EXIT_CODE"
-        fi
+      run: '"$GITHUB_ACTION_PATH/trivy-scan.sh"'
 
     - name: Generate Trivy SBOMs
       shell: bash
       env:
         IMAGE_TAG: ${{ env.SHA_TAG }}
         ACTIVE_WORKER_IMAGES: ${{ steps.images.outputs.active_worker_images }}
-      run: |
-        set -euo pipefail
-        # Gating already happened in "Scan OS packages in images with Trivy" above; this step only
-        # runs once that step has passed, so a vulnerability filter here can never
-        # trigger. Keep the SBOM free of vulnerability filters so it remains a
-        # complete OS and language package component inventory, not a truncated
-        # copy of the gate.
-        for target in api $ACTIVE_WORKER_IMAGES; do
-          image="$IMAGE_REPOSITORY/$target:$IMAGE_TAG"
-          trivy image \
-            --quiet \
-            --skip-db-update \
-            --exit-code 0 \
-            --format cyclonedx \
-            --output "sbom-${target}.cdx.json" \
-            "$image"
-        done
+      run: '"$GITHUB_ACTION_PATH/trivy-sbom.sh"'
 
     - name: Upload Trivy artifacts
       if: ${{ !cancelled() }}

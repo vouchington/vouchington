@@ -62,7 +62,8 @@ describe('backend main fallback', () => {
     expect(publish.env?.['MISSING_TARGETS']).toBe(
       '${{ needs.resolve-main-images.outputs.missing_targets }}',
     )
-    expect(publish.run).toContain(`targets=$(jq -r '.[]' <<<"$MISSING_TARGETS")`)
-    expect(publish.run).toContain('targets="api $ACTIVE_WORKER_IMAGES"')
+    const script = readFileSync('.github/actions/build-backend-images/publish-images.sh', 'utf8')
+    expect(script).toContain(`targets=$(jq -r '.[]' <<<"$MISSING_TARGETS")`)
+    expect(script).toContain('targets="api $ACTIVE_WORKER_IMAGES"')
   })
 })
