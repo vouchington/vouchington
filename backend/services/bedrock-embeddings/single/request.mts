@@ -4,7 +4,6 @@ import { trackAIEmbeddingCall } from '@services/analytics'
 import {
   buildInvokeEmbeddingInput,
   estimateEmbeddingTokens,
-  parseEmbeddingResponseBody,
   truncateEmbeddingText,
 } from '@vouchington/utils/bedrock-embeddings'
 import { BEDROCK_NOVA_MULTIMODAL_MODEL_NAME } from '../config.mts'
@@ -15,7 +14,7 @@ type CreateBedrockEmbeddingOptions = {
 }
 
 type BedrockEmbeddingResult = {
-  embedding: number[]
+  embedding: unknown
   tokens: number | null
 }
 
@@ -57,7 +56,7 @@ export const createBedrockEmbedding = async (
 async function requestBedrockEmbedding(
   text: string,
   abortSignal?: AbortSignal,
-): Promise<{ embedding: number[]; estimatedTokens: number }> {
+): Promise<{ embedding: unknown; estimatedTokens: number }> {
   const command = new InvokeModelCommand(buildInvokeEmbeddingInput(text))
   const response = await BedrockEmbeddingsClient.send(
     command,
@@ -67,10 +66,24 @@ async function requestBedrockEmbedding(
     throw new Error('Bedrock embedding response body is empty')
   }
 
-  const embedding = parseEmbeddingResponseBody(response.body)
+  const parsed: unknown = JSON.parse(new TextDecoder().decode(response.body))
+  const embedding = extractResponseEmbedding(parsed)
+  if (!embedding) {
+    throw new Error('Bedrock embedding response did not include an embedding')
+  }
 
   return {
     embedding,
     estimatedTokens: estimateEmbeddingTokens(truncateEmbeddingText(text)),
   }
+}
+
+function extractResponseEmbedding(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return undefined
+  if ('embedding' in value && value.embedding) return value.embedding
+  if (!('embeddings' in value) || !Array.isArray(value.embeddings)) return undefined
+  const first: unknown = value.embeddings[0]
+  if (Array.isArray(first)) return first
+  if (typeof first === 'object' && first !== null && 'embedding' in first) return first.embedding
+  return undefined
 }

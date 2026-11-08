@@ -20,8 +20,12 @@ describe('Bedrock Nova multimodal embeddings', () => {
         entityType: 'search',
       })
 
-      expect(result.embedding).toHaveLength(EMBEDDING_DIMENSION)
-      expect(result.embedding.every(value => Number.isFinite(value))).toBe(true)
+      const embedding: unknown = result.embedding
+      expect(Array.isArray(embedding)).toBe(true)
+      if (!Array.isArray(embedding)) throw new TypeError('Bedrock returned no embedding array')
+      const values: unknown[] = embedding
+      expect(values).toHaveLength(EMBEDDING_DIMENSION)
+      expect(values.every(value => typeof value === 'number' && Number.isFinite(value))).toBe(true)
       expect(result.tokens === null || result.tokens >= 0).toBe(true)
     },
   )
