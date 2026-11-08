@@ -125416,6 +125416,101 @@
       },
       "uniqueConstraints": {}
     },
+    "rss_feed_item_category_projection_results": {
+      "checkConstraints": {
+        "chk_rss_feed_item_category_projection_results__categories": "CHECK (((jsonb_typeof(categories) = 'array'::text) AND (NOT jsonb_path_exists(categories, '$[*]?(@.type() != \"string\")'::jsonpath))))"
+      },
+      "columns": {
+        "categories": {
+          "collation": null,
+          "comment": "Normalized category strings used by the last fully completed projection.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "jsonb"
+        },
+        "change_id": {
+          "collation": null,
+          "comment": "Opaque identity of the completed category projection, including direct category writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": "Time the category projection last finished successfully.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "RSS feed item whose category projection finished.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Last fully completed category projection per RSS item; an unfinished attempt is never committed here.",
+      "foreignKeys": {
+        "fk_rss_feed_item_category_projection_results__item": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "rss_feed_item_category_projection_results_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX rss_feed_item_category_projection_results_pkey ON public.rss_feed_item_category_projection_results USING btree (rss_feed_item_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["rss_feed_item_id"],
+        "definition": "PRIMARY KEY (rss_feed_item_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "rss_feed_item_category_rejections": {
       "checkConstraints": {},
       "columns": {
