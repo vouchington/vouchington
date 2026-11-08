@@ -11,21 +11,28 @@ export async function repairFailedImageDeliveryMutation(input: {
   imageIds?: string[]
 }): Promise<void> {
   if (!isMediaDeliveryRegistryPublicationEnabled()) return
+  // The explicit placement-key restriction keeps the registry join from scanning unrelated rows.
   const { rows } = await write<{
     media_delivery_registry_record_id: string
     marker_token: string
   }>(sql`
     /* repairFailedImageDeliveryMutation */
+    WITH bindings AS MATERIALIZED (
+      SELECT placement_id, image_id FROM image_placements
+      WHERE post_id = ANY(${input.postIds ?? []}::uuid[])
+      UNION
+      SELECT placement_id, image_id FROM image_placements
+      WHERE image_id = ANY(${input.imageIds ?? []}::uuid[])
+      UNION
+      SELECT placement_id, image_id FROM image_surface_placements
+      WHERE image_id = ANY(${input.imageIds ?? []}::uuid[])
+    )
     SELECT DISTINCT marker.media_delivery_registry_record_id, marker.marker_token
     FROM media_delivery_repair_markers marker
     JOIN media_delivery_registry_records registry ON registry.id = marker.media_delivery_registry_record_id
-    JOIN (
-      SELECT placement_id, image_id, post_id FROM image_placements
-      UNION ALL SELECT placement_id, image_id, NULL::uuid FROM image_surface_placements
-    ) binding ON registry.placement_id = binding.placement_id
+    JOIN bindings binding ON registry.placement_id = binding.placement_id
       AND registry.image_id = binding.image_id
-    WHERE binding.post_id = ANY(${input.postIds ?? []}::uuid[])
-      OR binding.image_id = ANY(${input.imageIds ?? []}::uuid[])
+      AND registry.placement_id = ANY(ARRAY(SELECT placement_id FROM bindings))
     ORDER BY marker.media_delivery_registry_record_id
     LIMIT ${getMediaDeliverySafetyWorkLimit('recovery_page_size')}
   `)

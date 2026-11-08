@@ -3,6 +3,7 @@ import { stageImagePlacementDeliveryRecordPage } from '@services/media-delivery-
 import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+import { runMediaDeliveryLockPlans } from './media-delivery-lock-plans.mts'
 import { runImagePlacementCapacityScenarios } from './image-placement-capacity.mts'
 
 const POPULAR_COUNT = 2_000
@@ -99,4 +100,5 @@ export async function runMediaDeliveryPopularImageScenario(): Promise<void> {
   if (!second || second.staged !== 100)
     throw new Error('Popular-image continuation must reach and stage 100 later active placements')
   await runImagePlacementCapacityScenarios()
+  await runMediaDeliveryLockPlans()
 }
