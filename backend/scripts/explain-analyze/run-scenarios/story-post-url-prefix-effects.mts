@@ -19,8 +19,9 @@ import { captureLoweredCapPrune } from './story-post-url-prefix-lowered-prune.mt
 import { MAXIMUM_LEASE, projectionWork } from './story-post-url-prefix-setup.mts'
 
 const RECEIPT_PK = 'story_post_related_url_projection_receipts_pkey'
+const RECEIPT_URL_INDEX = 'idx_story_post_related_url_projection_receipts__url_id'
 const HARD_MAX = relationLimitsMaxValues.post_related_url
-// One post owns this fixture, so a custom plan seq-scans it. Production shares the tables.
+// One post owns the fixture. Sequential scans are off, so a custom plan may probe by url id.
 const indexPlan = { enable_seqscan: 'off' }
 
 /** Receipt writes, the pending-crawl read, active relations, and a lowered-cap prune at the hard max. */
@@ -165,7 +166,7 @@ function registerRelationContract(
 function registerReceiptContract(id: string, queryContains: string, max: number): void {
   registerScenarioContract(id, {
     expectations: [
-      { kind: 'usesIndexes', indexes: [RECEIPT_PK], queryContains },
+      { kind: 'usesIndexes', indexes: [RECEIPT_PK, RECEIPT_URL_INDEX], anyOf: true, queryContains },
       { kind: 'maxProcessedRows', relation: 'story_post_related_url_projection_receipts', max },
     ],
     forbidSequentialScans: ['story_post_related_url_projection_receipts'],

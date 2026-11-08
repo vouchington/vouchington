@@ -107,3 +107,25 @@ describe('media replay read budgets', () => {
     expect(() => assertRequiredPlanShape(audit)).toThrow('each replayed UUID')
   })
 })
+
+describe('insert conflict arbiter', () => {
+  afterEach(() => {
+    vi.resetModules()
+  })
+
+  it('counts the conflict arbiter as the index an insert uses', async () => {
+    const { registerScenarioContract, assertRequiredPlanShape } = await loadGates()
+    registerScenarioContract('post-search-new', {
+      expectations: [{ kind: 'usesIndexes', indexes: ['posts_pkey'] }],
+    })
+    expect(() =>
+      assertRequiredPlanShape(
+        result('post-search-new', {
+          'Node Type': 'ModifyTable',
+          'Conflict Arbiter Indexes': ['posts_pkey'],
+          'Actual Rows': 1,
+        }),
+      ),
+    ).not.toThrow()
+  })
+})

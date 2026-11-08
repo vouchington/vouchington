@@ -32,10 +32,11 @@ const URL_HOSTNAME_PROBE_LIMIT = 5
 
 /** Admission, prefix hostname locks, and the post-bounded prune at both relation caps. */
 export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
-  const [itemIndexes, pruneIndexes, newestIndexes] = await Promise.all([
+  const [itemIndexes, pruneIndexes, newestIndexes, activeReverseIndexes] = await Promise.all([
     partitionIndexNames(ITEM_INDEX),
     partitionIndexNames(PRUNE_INDEX),
     partitionIndexNames(NEWEST_INDEX),
+    partitionIndexNames('idx_relation__post__related__url__active_reverse'),
   ])
   try {
     await attachPrefixItems()
@@ -61,7 +62,11 @@ export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
       MAXIMUM_LEASE,
       [...pruneIndexes, ...newestIndexes],
     )
-    await captureStoryPostUrlPrefixEffectScenarios([...pruneIndexes, ...newestIndexes])
+    await captureStoryPostUrlPrefixEffectScenarios([
+      ...pruneIndexes,
+      ...newestIndexes,
+      ...activeReverseIndexes,
+    ])
   } finally {
     await restorePrefixItems()
   }
