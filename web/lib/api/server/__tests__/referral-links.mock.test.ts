@@ -148,7 +148,10 @@ describe('referral-links server api helpers', () => {
 
       const result = await getReferralProgramValidations('program-1')
 
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/program-1/referral-program/validations')
+      expect(mockGet).toHaveBeenCalledWith(
+        '/api/v1/topics/program-1/referral-program/validations',
+        { searchParams: { limit: 100 } },
+      )
       expect(result).toEqual({ results })
     })
 

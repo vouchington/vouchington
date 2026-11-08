@@ -37,6 +37,7 @@ export function createTopicSettingsValidationsPage() {
     const validationsData = await returnNullForMissingEntity(
       serverApi.get<{ results: ReferralLinkValidation[] }>(
         `/api/v1/topics/${topicId}/referral-program/validations`,
+        { searchParams: { limit: 100 } },
       ),
     )
     if (!validationsData) notFound()

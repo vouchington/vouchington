@@ -38,7 +38,7 @@ describe('listReferralLinkValidationsForProgram', () => {
     await assignValidationToReferralProgram(programId, v1Id)
     await assignValidationToReferralProgram(programId, v2Id)
 
-    const results = await listReferralLinkValidationsForProgram(programId)
+    const { results } = await listReferralLinkValidationsForProgram(programId)
 
     const ids = results.map(v => v.id)
     assert.ok(ids.includes(v1Id), 'v1 should be present')
@@ -61,8 +61,45 @@ describe('listReferralLinkValidationsForProgram', () => {
     })
     await enableReferralProgramByTopicId(programId)
 
-    const results = await listReferralLinkValidationsForProgram(programId)
-    assert.deepEqual(results, [])
+    const page = await listReferralLinkValidationsForProgram(programId)
+    assert.deepEqual(page.results, [])
+    assert.equal(page.page_info.has_next_page, false)
+    assert.equal(page.page_info.end_cursor, null)
+  })
+
+  it('returns one keyset page and continues after the last slug', async () => {
+    const suffix = Math.random().toString(36).slice(7)
+    const programId = await insertTestTopic({
+      name: `Paged Referral Program ${suffix}`,
+      slug: `paged-referral-program-${suffix}`,
+      createdById: adminUser!.id,
+      topicType: 'referral_program',
+    })
+    await enableReferralProgramByTopicId(programId)
+
+    const firstId = await createReferralProgramLinkValidation(`aaa_page_${suffix}`, 'Help 1')
+    const secondId = await createReferralProgramLinkValidation(`bbb_page_${suffix}`, 'Help 2')
+    const thirdId = await createReferralProgramLinkValidation(`ccc_page_${suffix}`, 'Help 3')
+    await assignValidationToReferralProgram(programId, firstId)
+    await assignValidationToReferralProgram(programId, secondId)
+    await assignValidationToReferralProgram(programId, thirdId)
+
+    const page = await listReferralLinkValidationsForProgram(programId, { limit: 2 })
+    assert.deepEqual(
+      page.results.map(row => row.id),
+      [firstId, secondId],
+    )
+    assert.equal(page.page_info.has_next_page, true)
+
+    const next = await listReferralLinkValidationsForProgram(programId, {
+      limit: 2,
+      after: page.page_info.end_cursor ?? undefined,
+    })
+    assert.deepEqual(
+      next.results.map(row => row.id),
+      [thirdId],
+    )
+    assert.equal(next.page_info.has_next_page, false)
   })
 
   it('throws 422 for an invalid UUID', async () => {

@@ -10390,6 +10390,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/topics':
         specifier: workspace:^
         version: link:../topics

@@ -81,6 +81,7 @@ export const getReferralProgramValidations = cache(
   (referralProgramId: string): Promise<{ results: ReferralLinkValidationSummary[] }> => {
     return serverApi.get<{ results: ReferralLinkValidationSummary[] }>(
       `/api/v1/topics/${referralProgramId}/referral-program/validations`,
+      { searchParams: { limit: 100 } },
     )
   },
 )

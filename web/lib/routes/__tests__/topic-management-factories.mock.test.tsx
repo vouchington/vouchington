@@ -270,6 +270,10 @@ describe('topic management factories', () => {
     it('renders ReferralValidationsSettings with linked validations', async () => {
       const result = await ValidationsPage({ params: Promise.resolve({ id: 'rp-alias' }) })
       expect(result.key).toBe('rp-alias')
+      expect(mockServerApiGet).toHaveBeenCalledWith(
+        '/api/v1/topics/rp-topic-1/referral-program/validations',
+        { searchParams: { limit: 100 } },
+      )
       expect(result.props.linkedValidations).toEqual([fakeValidation])
     })
 

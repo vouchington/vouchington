@@ -78,7 +78,7 @@ describe('active link count', () => {
 
   it('fills a link-count page after a higher program topic is soft-deleted', async () => {
     const creator = await createTestUser()
-    const count = (await readHighestActiveLinkCount()) + 1
+    const count = (await readHighestActiveLinkCount()) + 2
     const first = await createReferralProgramFixture({ createdById: creator.id })
     const second = await createReferralProgramFixture({ createdById: creator.id })
     const hidden = await createReferralProgramFixture({ createdById: creator.id })
@@ -95,6 +95,7 @@ describe('active link count', () => {
       for (const topicId of topicIds.slice(0, 4)) {
         await setReferralProgramActiveLinkCountForTest(topicId, count)
       }
+      await setReferralProgramActiveLinkCountForTest(tail.referralProgramId, count - 1)
       await disableReferralProgramByTopicId(disabled.referralProgramId)
       await softDeleteTopic(hidden.referralProgramId, creator.id)
 
@@ -119,6 +120,34 @@ describe('active link count', () => {
       expect(next.results.map(row => row.id)).toEqual([first.referralProgramId])
     } finally {
       for (const topicId of topicIds) await hardDeleteTestTopic(topicId)
+    }
+  })
+
+  it('excludes an enabled program whose active link count is 0', async () => {
+    const creator = await createTestUser()
+    const empty = await createReferralProgramFixture({ createdById: creator.id })
+    const linked = await createReferralProgramFixture({ createdById: creator.id })
+    const count = (await readHighestActiveLinkCount()) + 1
+    try {
+      await setReferralProgramActiveLinkCountForTest(linked.referralProgramId, count)
+      expect(await readReferralProgramActiveLinkCount(empty.referralProgramId)).toBe(0)
+
+      const top = await getTopicIds({ sort: 'link_count', limit: 10 })
+      const topIds = top.results.map(row => row.id)
+      expect(topIds).toContain(linked.referralProgramId)
+      expect(topIds).not.toContain(empty.referralProgramId)
+
+      // A cursor below 1 would otherwise walk the zero-count tail of the same index.
+      const zeros = await getTopicIds({
+        sort: 'link_count',
+        limit: 25,
+        after: encodeCursor({ score: 1, id: '00000000-0000-7000-8000-000000000000' }),
+      })
+      expect(zeros.results).toEqual([])
+      expect(zeros.page_info.has_next_page).toBe(false)
+    } finally {
+      await hardDeleteTestTopic(empty.referralProgramId)
+      await hardDeleteTestTopic(linked.referralProgramId)
     }
   })
 

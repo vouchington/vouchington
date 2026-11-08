@@ -8,17 +8,25 @@ import {
   listReferralLinkValidationsForProgram,
 } from '@services/referral-program-link-validations'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
+import { createPaginationParser } from '@modules/pagination'
 import { validateUUID } from '@modules/utils'
 import app from '../../../app.mts'
+import { apiQuery } from '../../../api-query-contract.mts'
 import {
   parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
 } from '../../../response-helpers.mts'
+import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'
 
 type LinkReferralProgramValidationBody = { validation_id: string }
 type CreateReferralProgramValidationBody = { slug: string; user_help_text?: string | null }
+
+const programValidationsParser = createPaginationParser({
+  cursor: { type: 'name' as const },
+  limit: { min: 1, max: 100, default: 50 },
+})
 
 // POST /api/v1/topics/:referralProgramId/referral-program/link-validations
 app
@@ -72,23 +80,25 @@ app
 app
   .route('/api/v1/topics/:referralProgramId/referral-program/validations')
   .get(async (ctx: Context) => {
+    apiQuery(
+      'GET:/api/v1/topics/:referralProgramId/referral-program/validations',
+      programValidationsParser,
+    )
     await requireAuthAndRateLimit(
       ctx,
       currentUserCanUpdateTopic,
       'GET:/api/v1/topics/:referralProgramId/referral-program/validations',
     )
-    validateRequestContract(
+    const page = parseAndValidatePaginatedRequest(
       ctx,
       'GET:/api/v1/topics/:referralProgramId/referral-program/validations',
-      {
-        path: ctx.params,
-      },
+      programValidationsParser,
+      { path: true },
     )
-
     const referralProgramId = validateUUIDParam(ctx, 'referralProgramId')
-    const results = await listReferralLinkValidationsForProgram(referralProgramId)
+    const result = await listReferralLinkValidationsForProgram(referralProgramId, page)
 
-    ctx.json({ results })
+    ctx.json({ results: result.results, page_info: result.page_info })
   })
   .post(async (ctx: Context) => {
     const currentUser = await requireAuthAndRateLimit(

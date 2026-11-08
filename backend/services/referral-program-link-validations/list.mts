@@ -5,6 +5,7 @@ import { validateUUID } from '@modules/utils'
 import { escapeLikePattern } from '@services/topics/search/query-builder-utils'
 import type { PageInfo } from '@voucha/types/pagination'
 import { decodeUuidCursor, encodeCursor, isNameCursor } from '@modules/pagination'
+import { clampLimit } from '@services/pagination'
 import type { ReferralLinkValidation } from './validations.mts'
 
 export async function listReferralLinkValidations(
@@ -88,19 +89,61 @@ export async function listReferralLinkValidations(
 
 export async function listReferralLinkValidationsForProgram(
   referralProgramId: string,
-  options?: QueryOptions,
-): Promise<ReferralLinkValidation[]> {
+  options?: QueryOptions & {
+    limit?: number
+    after?: string
+  },
+): Promise<{
+  results: ReferralLinkValidation[]
+  page_info: PageInfo
+}> {
   validateUUID(referralProgramId)
-  const { rows } = await read<ReferralLinkValidation>(
-    sql`/* listReferralLinkValidationsForProgram */
-      SELECT v.id, v.slug, v.user_help_text, v.updated_at
-      FROM referral_program_link_validation_rule_sets v
-      JOIN referral_program_topic_link_validation_rule_sets j
-        ON j.referral_program_link_validation_rule_set_id = v.id
-      WHERE j.referral_program_topic_id = ${referralProgramId}
-      ORDER BY v.slug ASC, v.id ASC
-    `,
-    options,
-  )
-  return rows
+  const limit = clampLimit(options?.limit, 50)
+  let cursorSlug: string | undefined
+  let cursorId: string | undefined
+  if (options?.after) {
+    const cursor = decodeUuidCursor(
+      options.after,
+      isNameCursor,
+      'Invalid cursor format: expected name cursor',
+    )
+    cursorSlug = cursor.name
+    cursorId = cursor.id
+  }
+  const { limit: _limit, after: _after, ...queryOptions } = options ?? {}
+
+  const query = sql`/* listReferralLinkValidationsForProgram */
+    SELECT v.id, v.slug, v.user_help_text, v.updated_at
+    FROM referral_program_link_validation_rule_sets v
+    JOIN referral_program_topic_link_validation_rule_sets j
+      ON j.referral_program_link_validation_rule_set_id = v.id
+    WHERE j.referral_program_topic_id = ${referralProgramId}`
+  if (cursorSlug !== undefined && cursorId !== undefined) {
+    query.append(sql` AND (v.slug, v.id) > (${cursorSlug}, ${cursorId})`)
+  }
+  query.append(sql`
+    ORDER BY v.slug ASC, v.id ASC
+    LIMIT ${limit + 1}
+  `)
+
+  const { rows } = await read<ReferralLinkValidation>(query, queryOptions)
+  const hasNextPage = rows.length > limit
+  const results: typeof rows = []
+  const itemCount = Math.min(rows.length, limit)
+  for (let i = 0; i < itemCount; i++) {
+    results.push(rows[i]!)
+  }
+
+  return {
+    results,
+    page_info: {
+      has_next_page: hasNextPage,
+      end_cursor:
+        hasNextPage && results.length > 0
+          ? encodeCursor({ name: results.at(-1)!.slug, id: results.at(-1)!.id })
+          : null,
+      start_cursor:
+        results.length > 0 ? encodeCursor({ name: results[0].slug, id: results[0].id }) : null,
+    },
+  }
 }

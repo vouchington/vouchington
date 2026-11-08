@@ -5,7 +5,8 @@ import { runAndCapture } from '../run-support.mts'
 
 const PROGRAM_COUNT = 5_000
 
-// Enough enabled programs that the partial keyset index is cheaper than sorting the table.
+// The first 100 programs have a positive count and the rest are 0. The partial keyset
+// index walks the positive leading column and stops at LIMIT, before the zero tail.
 async function seedLinkCountPrograms(): Promise<void> {
   await write(
     `/* seedLinkCountPrograms */ INSERT INTO topics
@@ -22,10 +23,17 @@ async function seedLinkCountPrograms(): Promise<void> {
     [PROGRAM_COUNT - 1],
   )
   await write(
-    `/* seedLinkCountPrograms */ INSERT INTO referral_program_topics (topic_id, enabled_at)
-     SELECT id, CURRENT_TIMESTAMP
-     FROM topics
-     WHERE slug LIKE 'link-count-sort-%'
+    `/* seedLinkCountPrograms */ INSERT INTO referral_program_topics
+       (topic_id, enabled_at, active_link_count)
+     SELECT
+       id,
+       CURRENT_TIMESTAMP,
+       CASE WHEN suffix < 100 THEN 100 - suffix ELSE 0 END
+     FROM (
+       SELECT id, substring(slug FROM 'link-count-sort-([0-9]+)$')::integer AS suffix
+       FROM topics
+       WHERE slug LIKE 'link-count-sort-%'
+     ) seeded
      ON CONFLICT DO NOTHING`,
   )
   await write(`/* seedLinkCountPrograms */ ANALYZE referral_program_topics, topics`)
@@ -33,7 +41,7 @@ async function seedLinkCountPrograms(): Promise<void> {
 
 export async function runTopicLinkCountSortScenario(): Promise<void> {
   await seedLinkCountPrograms()
-  // Measured at limit 25 in both plan cache modes: 26 referral_program_topics rows and 26 topics rows.
+  // Limit 25 reads 26 rows. The partial index stops on the positive-count prefix.
   registerScenarioContract('topic-link-count-sort', {
     expectations: [
       {
