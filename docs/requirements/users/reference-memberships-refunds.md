@@ -100,4 +100,9 @@ cursor pages; the slot summary continues to cover their allocations across every
 - Slots are freed when a prompt is deallocated or when the moderator is removed from a community
 - Removing a moderator deactivates and frees all of their allocated prompts in that community
 
+Slot admission uses stored capacity so allocating a prompt does not lock the creator’s other
+prompts. A downgrade leaves existing allocations in place: the oldest eligible prompts
+remain active up to the lower plan limit, and another allocation is rejected until the count drops
+below that limit. Upgrading reveals retained allocations again.
+
 See: `backend/services/community-agent-prompts/slots.mts`

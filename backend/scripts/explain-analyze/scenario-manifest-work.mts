@@ -17,6 +17,8 @@ export const BOUNDED_WORK_SCENARIOS = [
   'community-agent-prompt-capacity',
   'community-agent-prompts-first-page',
   'community-agent-prompts-deep-page',
+  'community-agent-prompt-slot-count',
+  'community-agent-prompt-slot-allocation',
   'fk-actor-images-deleted-by-no-match',
   'fk-actor-agent-moderations-deleted-by-no-match',
   'fk-actor-moderation-cases-resolved-by-no-match',

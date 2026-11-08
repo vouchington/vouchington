@@ -140,7 +140,7 @@ describe('get-active-prompts', () => {
     it('keeps ten prompts for a pro plan', async () => {
       const { community: proCommunity, prompts } = await activatedPrompts({
         plan: 'pro',
-        hoursAgo: Array.from({ length: 12 }, (_, index) => 12 - index),
+        hoursAgo: Array.from({ length: 10 }, (_, index) => 10 - index),
       })
 
       const results = await getActiveCommunityAgentPrompts(proCommunity.id)

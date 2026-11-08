@@ -10,14 +10,12 @@ export const SLOT_LIMITS_BY_PLAN: Record<MembershipPlanSlug, number> = {
 export async function getUsedSlotsForUser(userId: string): Promise<number> {
   const { rows } = await read(
     sql`/* getUsedSlotsForUser */
-    SELECT COUNT(*) AS count
-    FROM community_agent_prompts
-    WHERE created_by_id = ${userId}
-      AND is_slot_allocated = true
-      AND deleted_at IS NULL
+    SELECT allocated_count
+    FROM community_agent_prompt_slot_counts
+    WHERE creator_user_id = ${userId}
     `,
   )
-  return Number((rows[0] as { count: string }).count)
+  return (rows[0] as { allocated_count: number } | undefined)?.allocated_count ?? 0
 }
 
 export function getSlotLimitForMembership(plan: MembershipPlanSlug | null | undefined): number {

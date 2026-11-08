@@ -1602,6 +1602,9 @@
     "fn_project_community_active_count": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_active_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  is_member BOOLEAN := TG_TABLE_NAME = 'community_members';\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    IF OLD.removed_at IS NULL THEN\n      UPDATE community_search_counts SET\n        member_count = member_count - CASE WHEN is_member THEN 1 ELSE 0 END,\n        list_item_count = list_item_count - CASE WHEN is_member THEN 0 ELSE 1 END\n      WHERE community_id = OLD.community_id;\n    END IF;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    IF NEW.removed_at IS NULL THEN\n      UPDATE community_search_counts SET\n        member_count = member_count + CASE WHEN is_member THEN 1 ELSE 0 END,\n        list_item_count = list_item_count + CASE WHEN is_member THEN 0 ELSE 1 END\n      WHERE community_id = NEW.community_id;\n    END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_project_community_agent_prompt_slot_counts": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_agent_prompt_slot_counts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  changed RECORD;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    FOR changed IN\n      SELECT created_by_id AS creator_id, COUNT(*)::integer AS slot_delta\n      FROM new_prompts\n      WHERE created_by_id IS NOT NULL AND is_slot_allocated AND deleted_at IS NULL\n      GROUP BY created_by_id ORDER BY created_by_id\n    LOOP\n      PERFORM fn_update_community_agent_prompt_slot_count(changed.creator_id, changed.slot_delta);\n    END LOOP;\n  ELSIF TG_OP = 'DELETE' THEN\n    FOR changed IN\n      SELECT created_by_id AS creator_id, -COUNT(*)::integer AS slot_delta\n      FROM old_prompts\n      WHERE created_by_id IS NOT NULL AND is_slot_allocated AND deleted_at IS NULL\n      GROUP BY created_by_id ORDER BY created_by_id\n    LOOP\n      PERFORM fn_update_community_agent_prompt_slot_count(changed.creator_id, changed.slot_delta);\n    END LOOP;\n  ELSE\n    FOR changed IN\n      SELECT creator_id, SUM(slot_delta)::integer AS slot_delta\n      FROM (\n        SELECT created_by_id AS creator_id, -1 AS slot_delta FROM old_prompts\n        WHERE created_by_id IS NOT NULL AND is_slot_allocated AND deleted_at IS NULL\n        UNION ALL\n        SELECT created_by_id AS creator_id, 1 AS slot_delta FROM new_prompts\n        WHERE created_by_id IS NOT NULL AND is_slot_allocated AND deleted_at IS NULL\n      ) changed_rows\n      GROUP BY creator_id HAVING SUM(slot_delta) <> 0 ORDER BY creator_id\n    LOOP\n      PERFORM fn_update_community_agent_prompt_slot_count(changed.creator_id, changed.slot_delta);\n    END LOOP;\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
+    },
     "fn_project_community_image_placements": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NULL, NULL, NULL, NEW.id, NULL);\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NULL, NULL, NULL, NEW.id, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NEW.profile_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.banner_image_id IS DISTINCT FROM OLD.banner_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NEW.banner_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1610,6 +1613,9 @@
     },
     "fn_project_copyright_form_screening_work": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_form_screening_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' AND NEW.completed_at IS NULL AND NEW.failed_at IS NULL THEN\n    INSERT INTO copyright_notice_form_screening_work_items(copyright_notice_form_intake_id, attempt_id)\n      VALUES (NEW.copyright_notice_form_intake_id, NEW.id)\n    ON CONFLICT (copyright_notice_form_intake_id) DO UPDATE SET attempt_id = EXCLUDED.attempt_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL, attempt_count = 0, available_at = clock_timestamp();\n  ELSIF NEW.completed_at IS NOT NULL OR NEW.failed_at IS NOT NULL THEN\n    DELETE FROM copyright_notice_form_screening_work_items WHERE attempt_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_project_deleted_user_prompt_slot_counts": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_deleted_user_prompt_slot_counts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  DELETE FROM community_agent_prompt_slot_counts counts\n  USING deleted_users\n  WHERE counts.creator_user_id = deleted_users.id\n    AND counts.allocated_count = 0;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_project_domain_blocklist_hostname_block_lifts": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_domain_blocklist_hostname_block_lifts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE url_hostname_blocks block\n  SET lifted_at = CURRENT_TIMESTAMP\n  FROM deleted_domains deleted\n  WHERE block.url_hostname_id = deleted.url_hostname_id\n    AND block.domain_blocklist_source_id = deleted.source_id\n    AND block.lifted_at IS NULL;\n  RETURN NULL;\nEND;\n$function$\n"
@@ -2048,6 +2054,9 @@
     },
     "fn_update_clearance_transparency_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_clearance_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_update_community_agent_prompt_slot_count(creator_id uuid, slot_delta integer)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_community_agent_prompt_slot_count(creator_id uuid, slot_delta integer)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF slot_delta = 0 THEN\n    RETURN;\n  END IF;\n  IF slot_delta > 0 THEN\n    INSERT INTO community_agent_prompt_slot_counts (creator_user_id, allocated_count)\n    VALUES (creator_id, slot_delta)\n    ON CONFLICT (creator_user_id) DO UPDATE\n      SET allocated_count = community_agent_prompt_slot_counts.allocated_count + EXCLUDED.allocated_count;\n  ELSE\n    UPDATE community_agent_prompt_slot_counts\n    SET allocated_count = allocated_count + slot_delta\n    WHERE creator_user_id = creator_id;\n    IF NOT FOUND THEN\n      RAISE EXCEPTION 'Missing community agent prompt slot count for creator %', creator_id\n        USING ERRCODE = '23514';\n    END IF;\n    -- FK SET NULL can run after the users statement trigger. Remove the now-empty\n    -- projection once the live creator is gone, regardless of native trigger order.\n    DELETE FROM community_agent_prompt_slot_counts counts\n    WHERE counts.creator_user_id = creator_id\n      AND counts.allocated_count = 0\n      AND NOT EXISTS (SELECT 1 FROM users WHERE id = creator_id);\n  END IF;\nEND;\n$function$\n"
     },
     "fn_update_copyright_action_work": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_action_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.completed_at_reason IN ('blocked', 'failed') AND NEW.completed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.completed_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '5 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -17230,6 +17239,79 @@
       },
       "uniqueConstraints": {}
     },
+    "community_agent_prompt_slot_counts": {
+      "checkConstraints": {
+        "chk_community_agent_prompt_slot_counts__allocated_count": "CHECK (((allocated_count >= 0) AND (allocated_count <= 10)))"
+      },
+      "columns": {
+        "allocated_count": {
+          "collation": null,
+          "comment": "Current allocated prompt count; zero-valued rows may remain until creator deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "smallint"
+        },
+        "creator_user_id": {
+          "collation": null,
+          "comment": "Retained creator identity used for counter integrity, not authorization.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Exact number of non-deleted allocated community agent prompts for a creator.",
+      "foreignKeys": {
+        "community_agent_prompt_slot_counts_creator_user_id_fkey": {
+          "columns": ["creator_user_id"],
+          "definition": "FOREIGN KEY (creator_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "community_agent_prompt_slot_counts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_agent_prompt_slot_counts_pkey ON public.community_agent_prompt_slot_counts USING btree (creator_user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "creator_user_id",
+              "descending": false,
+              "expression": "creator_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["creator_user_id"],
+        "definition": "PRIMARY KEY (creator_user_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "community_agent_prompts": {
       "checkConstraints": {
         "chk_community_agent_prompts__lifecycle": "CHECK ((NOT ((activated_at IS NOT NULL) AND (deactivated_at IS NOT NULL))))"
@@ -17589,6 +17671,9 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_community_agent_prompts_slot_count_delete": "CREATE TRIGGER trigger_community_agent_prompts_slot_count_delete AFTER DELETE ON public.community_agent_prompts REFERENCING OLD TABLE AS old_prompts FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts()",
+        "trigger_community_agent_prompts_slot_count_insert": "CREATE TRIGGER trigger_community_agent_prompts_slot_count_insert AFTER INSERT ON public.community_agent_prompts REFERENCING NEW TABLE AS new_prompts FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts()",
+        "trigger_community_agent_prompts_slot_count_update": "CREATE TRIGGER trigger_community_agent_prompts_slot_count_update AFTER UPDATE ON public.community_agent_prompts REFERENCING OLD TABLE AS old_prompts NEW TABLE AS new_prompts FOR EACH STATEMENT EXECUTE FUNCTION fn_project_community_agent_prompt_slot_counts()",
         "trigger_moderation_transparency_community_prompts_lock": "CREATE TRIGGER trigger_moderation_transparency_community_prompts_lock BEFORE INSERT OR DELETE OR UPDATE ON public.community_agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_community_prompt()"
       },
       "uniqueConstraints": {
@@ -154360,6 +154445,7 @@
         "trigger_retire_deleted_user_image_surfaces": "CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_user_image_surfaces()",
         "trigger_sync_user_profile_image_placement": "CREATE TRIGGER trigger_sync_user_profile_image_placement AFTER INSERT OR UPDATE OF profile_image_id ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_user_profile_image_placement()",
         "trigger_users_create_individual_household": "CREATE TRIGGER trigger_users_create_individual_household AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_individual_household()",
+        "trigger_users_delete_community_agent_prompt_slot_counts": "CREATE TRIGGER trigger_users_delete_community_agent_prompt_slot_counts AFTER DELETE ON public.users REFERENCING OLD TABLE AS deleted_users FOR EACH STATEMENT EXECUTE FUNCTION fn_project_deleted_user_prompt_slot_counts()",
         "trigger_users_platform_account_kind": "CREATE TRIGGER trigger_users_platform_account_kind BEFORE UPDATE OF platform_account_kind ON public.users FOR EACH ROW EXECUTE FUNCTION fn_reject_platform_account_kind_change()",
         "trigger_users_updated_at": "CREATE TRIGGER trigger_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },

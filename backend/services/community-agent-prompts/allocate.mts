@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { CommunityAgentPrompt } from './types.mts'
@@ -31,36 +31,22 @@ export async function allocateCommunityAgentPromptSlot(
   const slotLimit = getSlotLimitForMembership(hasPlusTier(membership) ? membership?.plan : null)
   assert(slotLimit > 0, 403, 'A paid membership is required to allocate agent prompt slots')
 
-  await using query = await beginTransaction()
-  // Lock ALL of the user's non-deleted prompts to serialize concurrent allocation attempts.
-  // Without this, two concurrent requests on different prompts would both see usedSlots=0
-  // (each only locking its own target row) and both exceed the limit unchecked.
-  const { rows: lockedRows } = await query(sql`/* allocateCommunityAgentPromptSlot */
-    SELECT id, is_slot_allocated FROM community_agent_prompts
-    WHERE created_by_id = ${currentUserId}
-      AND deleted_at IS NULL
-    ORDER BY id
-    FOR UPDATE
-  `)
-
-  // Count allocated slots excluding the target prompt itself
-  const usedSlots = lockedRows.filter(r => r.is_slot_allocated && r.id !== promptId).length
-  assert(usedSlots < slotLimit, 422, `Slot limit reached (${usedSlots}/${slotLimit})`)
-
-  const { rows: updated } = await query(sql`/* allocateCommunityAgentPromptSlot */
-    UPDATE community_agent_prompts
-    SET is_slot_allocated = true,
-        activated_at = CURRENT_TIMESTAMP,
-        deactivated_at = NULL
-    WHERE id = ${promptId}
-      AND created_by_id = ${currentUserId}
-      AND is_slot_allocated = false
-      AND deleted_at IS NULL
-    RETURNING is_slot_allocated, activated_at, deactivated_at
-  `)
-  assert(updated.length === 1, 422, 'Prompt could not be allocated')
-
-  await query.commit()
+  let slotState: SlotState
+  try {
+    await using query = await beginTransaction()
+    slotState = await allocateCommunityAgentPromptSlotInTransaction(
+      currentUserId,
+      promptId,
+      slotLimit,
+      query,
+    )
+    await query.commit()
+  } catch (err) {
+    if (isSlotCountLimitViolation(err)) {
+      assert(false, 422, `Slot limit reached (${slotLimit}/${slotLimit})`)
+    }
+    throw err
+  }
 
   await recordCommunityAgentPromptChange(
     currentUserId,
@@ -68,7 +54,49 @@ export async function allocateCommunityAgentPromptSlot(
     promptId,
     'allocated',
     snapshotCommunityAgentPrompt(prompt),
-    snapshotCommunityAgentPrompt({ ...prompt, ...(updated[0] as SlotState) }),
+    snapshotCommunityAgentPrompt({ ...prompt, ...slotState }),
+  )
+}
+
+/** The caller owns the transaction; the prompt transition projects the count before this read. */
+export async function allocateCommunityAgentPromptSlotInTransaction(
+  creatorUserId: string,
+  promptId: string,
+  slotLimit: number,
+  query: TransactionQuery,
+): Promise<SlotState> {
+  const { rows: updated } = await query(sql`/* allocateCommunityAgentPromptSlot */
+    UPDATE community_agent_prompts
+    SET is_slot_allocated = true,
+        activated_at = CURRENT_TIMESTAMP,
+        deactivated_at = NULL
+    WHERE id = ${promptId}
+      AND created_by_id = ${creatorUserId}
+      AND is_slot_allocated = false
+      AND deleted_at IS NULL
+    RETURNING is_slot_allocated, activated_at, deactivated_at
+  `)
+  assert(updated.length === 1, 422, 'Prompt could not be allocated')
+  const { rows: counts } = await query<{
+    allocated_count: number
+  }>(sql`/* allocateCommunityAgentPromptSlot:count */
+    SELECT allocated_count FROM community_agent_prompt_slot_counts
+    WHERE creator_user_id = ${creatorUserId}
+  `)
+  const usedSlots = counts[0]?.allocated_count
+  assert(usedSlots !== undefined, 500, 'Prompt slot count is missing')
+  assert(usedSlots <= slotLimit, 422, `Slot limit reached (${usedSlots - 1}/${slotLimit})`)
+  return updated[0] as SlotState
+}
+
+function isSlotCountLimitViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === '23514' &&
+    'constraint' in error &&
+    error.constraint === 'chk_community_agent_prompt_slot_counts__allocated_count'
   )
 }
 

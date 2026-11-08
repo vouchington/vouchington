@@ -10,13 +10,16 @@ import {
   COMMUNITY_AGENT_PROMPT_PAGE_COMMUNITY_ID,
 } from '../community-agent-prompt-page-ids.mts'
 
-/** One owner and 99 moderators each retain the default maximum of 25 unallocated drafts. */
+/** One owner and 99 moderators each retain 25 drafts, one of them allocated. */
 export async function seedCommunityAgentPromptPages(): Promise<void> {
   const creatorIds = Array.from({ length: COMMUNITY_AGENT_PROMPT_CREATOR_COUNT }, (_, i) =>
     seedUuid(i, 'ec'),
   )
   const promptIds = Array.from({ length: COMMUNITY_AGENT_PROMPT_TOTAL_ROWS }, (_, i) =>
     seedUuid(i, 'ef'),
+  )
+  const allocatedPromptIds = creatorIds.map(
+    (_, i) => promptIds[i * COMMUNITY_AGENT_PROMPTS_PER_CREATOR]!,
   )
   const systemUserIds = promptIds.map((_, i) => seedUuid(i, 'ed'))
   const agentIds = promptIds.map((_, i) => seedUuid(i, 'ee'))
@@ -110,7 +113,17 @@ export async function seedCommunityAgentPromptPages(): Promise<void> {
     ON CONFLICT (id) DO NOTHING`,
     [promptIds, promptCommunityIds, promptCreatorIds],
   )
+  // One allocated prompt per creator makes the quota PK selective while each creator still
+  // owns 24 unallocated prompts; a target allocation must never lock those siblings.
+  await query(
+    `/* seedCommunityAgentPromptPages:allocated */
+    UPDATE community_agent_prompts
+    SET is_slot_allocated = true, activated_at = CURRENT_TIMESTAMP
+    WHERE id = ANY($1::uuid[]) AND is_slot_allocated = false AND deleted_at IS NULL`,
+    [allocatedPromptIds],
+  )
   await query(`/* seedCommunityAgentPromptPages:analyze */
-    ANALYZE community_agent_prompts, agent_prompts, agents, users, communities, community_members`)
+    ANALYZE community_agent_prompts, community_agent_prompt_slot_counts,
+      agent_prompts, agents, users, communities, community_members`)
   await query.commit()
 }
