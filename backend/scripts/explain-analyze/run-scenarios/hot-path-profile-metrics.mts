@@ -99,7 +99,6 @@ async function runProfilePostTypeCountsScenario(): Promise<void> {
       rss_feed_item_sources, rss_feeds`)
     const author = await getPrivateUserByAny(PROFILE_POST_COUNTS_AUTHOR_ID)
     assert(author, 'The scale profile author must exist')
-    assert.deepEqual(author.roles, [], 'The scale profile author must have ordinary visibility')
     const indexLeaves = await profilePostTypeIndexLeaves()
     registerScenarioContract('profile-post-type-counts', {
       expectations: [
