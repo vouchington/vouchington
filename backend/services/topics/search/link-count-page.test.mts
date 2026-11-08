@@ -63,6 +63,19 @@ describe('active link count', () => {
     expect(await readReferralProgramActiveLinkCount(purged.referralProgramId)).toBeNull()
   })
 
+  it('decrements the count when an active link is deleted after the program topic is soft-deleted', async () => {
+    const creator = await createTestUser()
+    const owner = await createTestUser()
+    const program = await createReferralProgramFixture({ createdById: creator.id })
+    await insertActiveLink(owner.id, program.referralProgramId)
+    expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(1)
+
+    await softDeleteTopic(program.referralProgramId, creator.id)
+    await hardDeleteTestUser(owner.id)
+
+    expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(0)
+  })
+
   it('fills a link-count page after a higher program topic is soft-deleted', async () => {
     const creator = await createTestUser()
     const count = (await readHighestActiveLinkCount()) + 1
