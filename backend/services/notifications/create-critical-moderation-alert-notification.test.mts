@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { addUserRole } from '@services/users/roles-permissions'
-import { background } from '@queues/background/queues'
+import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
 import { getNotificationRecipientDispatchPageHardMax } from '@queues/notifications/enqueues'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -54,7 +54,7 @@ describe('createCriticalModerationAlertNotification', () => {
     await createCriticalModerationAlertNotification(reportId)
 
     const afterUserId = expectedFirst.nextAfterUserId!
-    const queued = await background.getJob(
+    const queued = await backgroundQueue.getJob(
       `notifications__critical-moderation-alert__${reportId}__${afterUserId}`,
     )
     expect(queued?.data).toMatchObject({ reportId, afterUserId })
