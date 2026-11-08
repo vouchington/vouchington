@@ -78,7 +78,7 @@ export async function eraseIntakePage(
   for (const table of children) {
     if (remaining === 0) return { complete: false, erased: true }
     // oxlint-disable-next-line no-await-in-loop -- each FK child must be deleted before its parent.
-    remaining -= await deleteChildPage(childQuery, intakeId, remaining, table) // no-mistakes-disable-line query-reached-per-item: three fixed FK child tables share one capped physical-row budget and parent lock.
+    remaining -= await deleteChildPage(childQuery, intakeId, remaining, table)
   }
   if (remaining === 0) return { complete: false, erased: true }
   if (edgeCursor.phase !== 'unlinked_ancestor_edges') {

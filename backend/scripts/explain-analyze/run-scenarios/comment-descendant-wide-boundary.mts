@@ -33,7 +33,6 @@ export async function verifyWideBoundaryExpansion(
   const pending = fixture.boundaryPendingLeafIds.toSorted()
   let afterId: string | undefined
   for (let index = 0; index < 6; index++) {
-    // no-mistakes-disable-next-line query-reached-per-item: exactly six bounded production service pages prove empty-page continuation to the valid reply
     const page = await getVisibleCommentDescendantIdsPage(
       null,
       fixture.boundaryRootId,

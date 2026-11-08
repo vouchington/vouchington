@@ -40,7 +40,6 @@ export async function runCommunityMemberRolePageScenarios(): Promise<void> {
         { kind: 'maxProcessedRows', relation: 'users', max: 80 },
       ],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: three fixed role pages need separate plan captures
     await runAndCapture(scenario.id, scenario.run)
   }
 }

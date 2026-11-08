@@ -25,7 +25,6 @@ export async function seedVoteWeightDirtyMarkers(): Promise<void> {
         `($${offset}::uuid, $${offset + 1}::timestamptz, $${offset + 2}::timestamptz, $${offset + 3}::timestamptz)`,
       )
     }
-    // no-mistakes-disable-next-line query-reached-per-item: fixed 200-row fixture pages stay below bind limits
     await write(
       `/* seedVoteWeightDispatch */ INSERT INTO users
          (id, deleted_at, vote_weight_admin_set_at, vote_weight_recalculated_at)

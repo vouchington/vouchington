@@ -12,7 +12,6 @@ export async function preparePublicationScopePlans(): Promise<void> {
     'rss_feed_categories',
     'rss_feed_item_categories',
   ] as const) {
-    // no-mistakes-disable-next-line query-reached-per-item: six fixed fixture relations need separate VACUUM statements outside transactions before their owning captures.
     await write(`/* preparePublicationScopePlans */ VACUUM (ANALYZE) ${table}`)
   }
 }

@@ -19,7 +19,6 @@ export async function seedLandingPageCandidates(): Promise<void> {
   )
   for (let start = 0; start < LANDING_PAGE_REVIEW_COUNT; start += 500) {
     const ids = Array.from({ length: 500 }, (_, offset) => landingPageReviewId(start + offset))
-    // no-mistakes-disable-next-line query-reached-per-item: twenty fixed 500-review chunks bulk-insert the deterministic heavy-author fixture
     await transaction(
       `/* seedLandingPageCandidates.posts */ INSERT INTO posts
        (id, created_via, post_type, title, markdown, created_by_id,
@@ -36,7 +35,6 @@ export async function seedLandingPageCandidates(): Promise<void> {
        ON CONFLICT DO NOTHING`,
       [ids, LANDING_PAGE_REVIEW_OWNER_ID, contentHash('landing-page-candidates'), start],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: each fixed chunk bulk-inserts two ratings for each of its 500 review ids
     await transaction(
       `/* seedLandingPageCandidates.ratings */ INSERT INTO post_review_topic_ratings
        (post_id, topic_id, rating, order_index)
@@ -46,7 +44,6 @@ export async function seedLandingPageCandidates(): Promise<void> {
        ON CONFLICT DO NOTHING`,
       [ids, [seedUuid(2498, '04'), seedUuid(2499, '04')]],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: each fixed chunk bulk-inserts slugs for its 500 deterministic review ids
     await transaction(
       `/* seedLandingPageCandidates.slugs */ INSERT INTO post_slugs (id, post_id, slug)
        SELECT input.slug_id, input.post_id, 'explain-landing-review-' || input.slug_id

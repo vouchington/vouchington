@@ -26,7 +26,6 @@ export async function seedCommunityMembershipCaps(): Promise<void> {
       const base = values.length - 3
       rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}, 'system')`)
     }
-    // no-mistakes-disable-next-line query-reached-per-item: each statement inserts one bounded chunk of community fixtures, not one statement per row
     await transaction(
       `/* seedCommunityMembershipCaps */ INSERT INTO communities
          (id, name, slug, created_by_id, created_via)
@@ -44,7 +43,6 @@ export async function seedCommunityMembershipCaps(): Promise<void> {
       const base = values.length - 2
       rows.push(`($${base}, $${base + 1}, $${base + 2}, 'owner'::community_member_roles)`)
     }
-    // no-mistakes-disable-next-line query-reached-per-item: each statement inserts one bounded chunk of membership fixtures, not one statement per row
     await transaction(
       `/* seedCommunityMembershipCaps */ INSERT INTO community_members (id, community_id, user_id, role)
        VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
