@@ -13,30 +13,23 @@ import {
   type McpPostReadabilityFixtures,
 } from '@voucha/test-helpers/mcp-post-readability-fixtures'
 import type { PrivateUser } from '@services/users/types'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Page = { results: { id: string }[] }
 type Caller = PrivateUser & { membership_plan: null }
 
 const SCOPES = ['posts:read'] as const
-const EMPTY_PAGE = {
-  success: true,
-  results: [],
-  page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-}
-
 const asCaller = (user: PrivateUser): Caller => ({ ...user, membership_plan: null })
 
-// read_posts reads as the credential owner minus private data, like read_posts: the owner's own
-// private, audience-limited and not-yet-cleared posts stay out of the results, and so do the
-// comments of a thread that read_posts would refuse. Every fixture matches all three search modes, so
-// what a search leaves out is left out by the read policy alone.
-describe('read_posts.search read policy — real DB', () => {
+// Discovery shares GET /api/v1/posts visibility, including owner and administrator access.
+describe('read_posts.search discovery visibility — real DB', () => {
   const token = `srchpriv${crypto.randomUUID().replaceAll('-', '')}`
   const semanticQuery = `private post search ${crypto.randomUUID()}`
   const queryEmbedding = makeRandomEmbedding()
   let author: Caller
   let admin: Caller
+  let stranger: Caller
   let fixtures: McpPostReadabilityFixtures
   let similarSeedId: string
 
@@ -55,6 +48,26 @@ describe('read_posts.search read policy — real DB', () => {
     return ids
   }
 
+  const restSearch = async (as: Caller, args: Record<string, unknown>): Promise<string[]> => {
+    const request = createRequest()
+    await request.authenticateAs(as)
+    const { similar_post_id, ...restArgs } = args
+    const ids: string[] = []
+    for (const post_type of [undefined, 'comment']) {
+      const response = await request
+        .get('/api/v1/posts')
+        .query({
+          ...restArgs,
+          ...(typeof similar_post_id === 'string' && { similar_post: similar_post_id }),
+          ...(post_type && { post_types: post_type }),
+          limit: 100,
+        })
+        .expect(200)
+      ids.push(...(response.body.results as { id: string }[]).map(result => result.id))
+    }
+    return ids
+  }
+
   const modes = (): [string, Record<string, unknown>][] => [
     ['text_search_query', { text_search_query: token }],
     ['semantic_search_query', { semantic_search_query: semanticQuery }],
@@ -65,6 +78,7 @@ describe('read_posts.search read policy — real DB', () => {
     const authorUser = await createTestUser()
     author = asCaller(authorUser)
     admin = asCaller(await createTestUser({ administrator: true }))
+    stranger = asCaller(await createTestUser())
     await seedSearchEmbeddingCache(semanticQuery, queryEmbedding)
     fixtures = await seedMcpPostReadabilityFixtures(authorUser, {
       token,
@@ -76,54 +90,56 @@ describe('read_posts.search read policy — real DB', () => {
   })
 
   it.each(['text_search_query', 'semantic_search_query', 'similar_post_id'])(
-    'finds the public posts and none of the hidden ones through %s, for the author and an admin',
+    'matches REST and keeps unrelated follower-only posts private through %s',
     async mode => {
       const args = modes().find(([name]) => name === mode)![1]
-
-      for (const caller of [author, admin]) {
-        const ids = await search(caller, args)
-
-        expect(ids).toEqual(expect.arrayContaining(fixtures.readable.map(post => post.id)))
-        // The labels name the leaked fixtures when this fails.
-        expect(
-          [...fixtures.hidden, ...fixtures.placeholders]
-            .filter(post => ids.includes(post.id))
-            .map(post => post.label),
-        ).toEqual([])
+      const followerOnly = fixtures.hidden.find(post => post.label === 'followers-only post')!
+      const mutualOnly = fixtures.hidden.find(post => post.label === 'mutual-followers-only post')!
+      const recommendation = fixtures.hidden.find(post => post.label === 'topic recommendation')!
+      const idsByCaller = new Map<string, string[]>()
+      for (const caller of [author, admin, stranger]) {
+        const mcpIds = await search(caller, args)
+        idsByCaller.set(caller.id, mcpIds)
+        const restIds = await restSearch(caller, args)
+        expect(mcpIds.toSorted()).toEqual(restIds.toSorted())
+        expect(mcpIds).toContain(fixtures.readable[0]!.id)
+        expect(mcpIds).toContain(recommendation.id)
       }
+      expect(idsByCaller.get(stranger.id)).not.toContain(followerOnly.id)
+      expect(idsByCaller.get(stranger.id)).not.toContain(mutualOnly.id)
+      expect(idsByCaller.get(author.id)).toEqual(
+        expect.arrayContaining([followerOnly.id, mutualOnly.id]),
+      )
+      expect(idsByCaller.get(admin.id)).toEqual(
+        expect.arrayContaining([followerOnly.id, mutualOnly.id]),
+      )
     },
   )
 
-  it('answers a hidden similar_post_id exactly like an id that matches nothing', async () => {
-    for (const caller of [author, admin]) {
-      const answers: Record<string, unknown> = {}
-      for (const seed of [...fixtures.hidden, ...fixtures.placeholders]) {
-        answers[seed.label] = await callStructuredMcpTool(
-          caller,
-          'read_posts',
-          optionArgs('search', { similar_post_id: seed.id }),
-          SCOPES,
-        )
+  it('uses REST discovery visibility when a similar-post source is private or pending', async () => {
+    for (const caller of [author, admin, stranger]) {
+      for (const label of ['followers-only post', 'post awaiting review']) {
+        const seed = fixtures.hidden.find(post => post.label === label)!
+        const mcpIds = await search(caller, { similar_post_id: seed.id })
+        const restIds = await restSearch(caller, { similar_post_id: seed.id })
+        expect(mcpIds.toSorted()).toEqual(restIds.toSorted())
       }
-
-      expect(answers).toEqual(
-        Object.fromEntries(
-          [...fixtures.hidden, ...fixtures.placeholders].map(seed => [seed.label, EMPTY_PAGE]),
-        ),
-      )
     }
   })
 
-  it('still keeps the owner’s muted authors out of the public results', async () => {
+  it('matches REST discovery for a muted author', async () => {
     const mutedAuthor = await createTestUser()
     const viewer = await createTestUser({ administrator: true })
     await muteUser(viewer, mutedAuthor)
     const post = await createTestPost({ user: mutedAuthor, title: `${token} muted public` })
     await addDummyEmbeddingToPost(post.id, { embedding: makeNearbyEmbedding(queryEmbedding) })
 
+    const mutedViewer = asCaller(viewer)
     for (const [, args] of modes().slice(0, 2)) {
-      expect(await search(asCaller(viewer), args)).not.toContain(post.id)
-      expect(await search(admin, args)).toContain(post.id)
+      const mcpIds = await search(mutedViewer, args)
+      const restIds = await restSearch(mutedViewer, args)
+      expect(mcpIds).toContain(post.id)
+      expect(mcpIds.toSorted()).toEqual(restIds.toSorted())
     }
   })
 })

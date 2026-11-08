@@ -65,7 +65,7 @@ describe('index.generated', () => {
       ).toBe(topicTitle)
     })
 
-    it('keeps topic recommendations out of generic post search', async () => {
+    it('lists an authored pending recommendation in generic post search', async () => {
       const requestAsUser = createRequest()
       await requestAsUser.authenticateAs(user)
 
@@ -80,11 +80,13 @@ describe('index.generated', () => {
         })
         .expect(201)
       const postsResponse = await requestAsUser.get(`/api/v1/posts?creator=${user.id}`).expect(200)
-      expect(
-        postsResponse.body.results.find(
-          (result: { id: string }) => result.id === createResponse.body.post.id,
-        ),
-      ).toBeUndefined()
+      const found = postsResponse.body.results.find(
+        (result: { id: string }) => result.id === createResponse.body.post.id,
+      )
+      expect(found).toBeDefined()
+      expect(postsResponse.body.posts[createResponse.body.post.id]?.post_type).toBe(
+        'topic_recommendation',
+      )
 
       await requestAsUser.get(`/api/v1/posts/${createResponse.body.post.id}`).expect(404)
     })

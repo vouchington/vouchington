@@ -69,7 +69,7 @@ export function indexServedPostType(
     : null
 }
 
-export function isRecommendationScope(options: PostSearchOptions): boolean {
+function isRecommendationScope(options: PostSearchOptions): boolean {
   return (
     options.post_types?.includes('topic_recommendation') === true ||
     options.topic_recommendation_status !== undefined ||
