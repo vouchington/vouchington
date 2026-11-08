@@ -35,7 +35,6 @@ export async function seedDueCaseEvidenceVolume(
   // Chunked so each statement stays inside the database statement timeout.
   for (let low = 0; low < PURGE_EVIDENCE_VOLUME_ROWS; low += CHUNK) {
     const bounds = [low, Math.min(low + CHUNK, PURGE_EVIDENCE_VOLUME_ROWS)]
-    // no-mistakes-disable-next-line query-reached-per-item: each statement is one bounded chunk of a set-based seed
     await write(
       `/* seedExplainCopyrightPurgeVolume:objects */
       INSERT INTO copyright_notice_storage_objects (storage_key)
@@ -43,7 +42,6 @@ export async function seedDueCaseEvidenceVolume(
         CROSS JOIN (VALUES ($3::text), ($4::text)) AS prefix(value)`,
       [...bounds, ARTIFACT_KEY, EMAIL_KEY],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: each statement is one bounded chunk of a set-based seed
     await write(
       `/* seedExplainCopyrightPurgeVolume:artifacts */
       INSERT INTO copyright_notice_evidence_artifacts
@@ -53,7 +51,6 @@ export async function seedDueCaseEvidenceVolume(
         JOIN copyright_notice_storage_objects object ON object.storage_key = $5::text || n`,
       [submissionId, mediaTypeId, ...bounds, ARTIFACT_KEY],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: each statement is one bounded chunk of a set-based seed
     await write(
       `/* seedExplainCopyrightPurgeVolume:receipts */
       INSERT INTO copyright_notice_email_intake_receipts
@@ -64,7 +61,6 @@ export async function seedDueCaseEvidenceVolume(
         JOIN copyright_notice_storage_objects object ON object.storage_key = $3::text || n`,
       [...bounds, EMAIL_KEY],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: each statement is one bounded chunk of a set-based seed
     await write(
       `/* seedExplainCopyrightPurgeVolume:intakes */
       INSERT INTO copyright_notice_email_intakes

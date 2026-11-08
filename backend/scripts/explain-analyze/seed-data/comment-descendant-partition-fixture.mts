@@ -119,7 +119,6 @@ export async function seedCommentDescendantPartitionFixture(): Promise<CommentDe
       wideBoundaryPathIds.push(nextBoundaryChild.id)
       wideBoundaryParentId = nextBoundaryChild.id
     }
-    // no-mistakes-disable-next-line query-reached-per-item: each depth frontier is inserted in bounded 5,000-row batches
     await insertCommentRows(transaction, children, hash)
     parents = children
   }

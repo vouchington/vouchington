@@ -84,7 +84,6 @@ async function seedMembershipSignals(): Promise<void> {
     }
     await using transaction = await beginTransaction()
     const requested = `WITH requested (lineage_id, source_id, membership_id, evidence_id, observation_id, user_id, source_kind, effective_at, event_at) AS (VALUES ${rows.join(', ')})`
-    // no-mistakes-disable-next-line query-reached-per-item: fixed fixture batches retain FK-dependent writes in one transaction
     await transaction(
       `/* seedVoteWeightDispatch */ ${requested}
        INSERT INTO membership_provider_lineages (id, membership_provider_context_id, provider_lineage_id)
@@ -92,7 +91,6 @@ async function seedMembershipSignals(): Promise<void> {
        ON CONFLICT (id) DO NOTHING`,
       [...values, contextId],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: fixed fixture batches retain FK-dependent writes in one transaction
     await transaction(
       `/* seedVoteWeightDispatch */ ${requested}
        INSERT INTO membership_sources (id, user_id, source_kind, membership_provider_lineage_id)
@@ -100,7 +98,6 @@ async function seedMembershipSignals(): Promise<void> {
        ON CONFLICT (id) DO NOTHING`,
       values,
     )
-    // no-mistakes-disable-next-line query-reached-per-item: fixed fixture batches retain FK-dependent writes in one transaction
     await transaction(
       `/* seedVoteWeightDispatch */ ${requested}
        INSERT INTO membership_provider_evidence_records
@@ -110,7 +107,6 @@ async function seedMembershipSignals(): Promise<void> {
        FROM requested ON CONFLICT (id) DO NOTHING`,
       [...values, contextId],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: fixed fixture batches retain FK-dependent writes in one transaction
     await transaction(
       `/* seedVoteWeightDispatch */ ${requested}
        INSERT INTO membership_provider_observations
@@ -123,7 +119,6 @@ async function seedMembershipSignals(): Promise<void> {
        FROM requested ON CONFLICT (id) DO NOTHING`,
       [...values, contextId, providerProductId, productId],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: fixed fixture batches retain FK-dependent writes in one transaction
     await transaction(
       `/* seedVoteWeightDispatch */ ${requested}
        INSERT INTO membership_source_states
@@ -134,7 +129,6 @@ async function seedMembershipSignals(): Promise<void> {
        FROM requested ON CONFLICT (membership_source_id) DO NOTHING`,
       [...values, productId],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: fixed fixture batches retain FK-dependent writes in one transaction
     await transaction(
       `/* seedVoteWeightDispatch */ ${requested}
        INSERT INTO memberships
@@ -143,7 +137,6 @@ async function seedMembershipSignals(): Promise<void> {
        FROM requested ON CONFLICT (id) DO NOTHING`,
       [...values, productId],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: fixed fixture batches retain FK-dependent writes in one transaction
     await transaction(
       `/* seedVoteWeightDispatch */ ${requested}
        UPDATE membership_provider_evidence_records evidence

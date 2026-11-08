@@ -135,7 +135,6 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
       ],
       crossPartition: { posts: scenario.description },
     })
-    // no-mistakes-disable-next-line query-reached-per-item: independent plan capture.
     await runAndCapture(scenario.id, scenario.run)
   }
 

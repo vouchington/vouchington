@@ -15,7 +15,6 @@ export async function runMembershipRenewalSelectionScenario(): Promise<void> {
   const renewalAt = new Date(Date.now() + 15 * 86_400_000)
   for (let index = 0; index < 20; index++) {
     // Each fixture has its own user and direct provider source.
-    // no-mistakes-disable-next-line query-reached-per-item: 20 fixed FK-valid provider fixtures are sequential on one test database.
     await createObservedRenewingMembership(
       seedUuid(15_000 + index, '01'),
       currentSku,

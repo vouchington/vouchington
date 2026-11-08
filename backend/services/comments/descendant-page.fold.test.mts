@@ -42,9 +42,11 @@ describe('batched comment descendant previews', () => {
         getCommentDescendantsPage(null, { id: root.id, root_post_id: null }, { limit: 100 }),
       )
       expect(captured.result.ids).toEqual([...heads, ...boundaries].toSorted())
-      expect(
-        captured.queries.filter(query => query.text.includes('/* bounded-frontier */')),
-      ).toHaveLength(1)
+      const frontierQueries = captured.queries.filter(query =>
+        query.text.includes('/* bounded-frontier */'),
+      )
+      expect(frontierQueries).toHaveLength(1)
+      expect(frontierQueries[0]?.text).toContain('AND p.id > frontier.parent_id')
       expect(
         captured.queries.filter(query => query.text.includes('/* boundary-lookdown */')),
       ).toHaveLength(1)
