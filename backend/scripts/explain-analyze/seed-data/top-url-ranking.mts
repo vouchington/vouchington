@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { paginationMaxima } from '../../../services/pagination/config.mts'
+import { paginationMaxima } from '@services/pagination/config'
 import { rssFeedItemsWorkMaxValues } from '@services/rss-feed-items/work-limits'
 import { TOP_URLS_PER_HOSTNAME } from '@services/urls-hostnames/top-urls'
 import { seedUuid, seedUuidAtTimestamp } from './common.mts'
