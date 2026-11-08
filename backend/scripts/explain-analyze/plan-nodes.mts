@@ -27,6 +27,12 @@ export function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNo
 
 const partitionParents = [...PARTITION_POLICIES.keys()].toSorted((a, b) => b.length - a.length)
 
+export function planNodeUsesIndex(node: PlanNode, index: string): boolean {
+  if (node['Index Name'] === index) return true
+  const arbiters = node['Conflict Arbiter Indexes']
+  return Array.isArray(arbiters) && arbiters.includes(index)
+}
+
 export function baseRelationName(node: PlanNode): string {
   const name = stringFromUnknown(node['Relation Name'] ?? '')
   for (const parent of partitionParents)

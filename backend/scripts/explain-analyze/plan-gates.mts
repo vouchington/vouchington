@@ -3,7 +3,13 @@ import {
   PARTITION_POLICIES,
   UNBOUNDED_UNPARTITIONED_TABLES,
 } from '@data-stores/psql/schema-growth-registry'
-import { collectPlanNodes, processedRows, baseRelationName, type PlanNode } from './plan-nodes.mts'
+import {
+  collectPlanNodes,
+  planNodeUsesIndex,
+  processedRows,
+  baseRelationName,
+  type PlanNode,
+} from './plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { executingPartitionLeaves } from './pruning/plan-gate.mts'
 import {
@@ -42,12 +48,6 @@ export function assertRequiredPlanShape(result: ExplainResult): void {
   assertUniversalPlanShape(result, nodes, contract)
 }
 
-function conflictArbiters(node: PlanNode): readonly string[] {
-  const indexes = node['Conflict Arbiter Indexes']
-  if (!Array.isArray(indexes)) return []
-  return indexes.filter((index): index is string => typeof index === 'string')
-}
-
 function evaluateExpectation(
   result: ExplainResult,
   nodes: readonly PlanNode[],
@@ -79,8 +79,7 @@ function evaluateExpectation(
     case 'usesIndexes': {
       if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
         return
-      const used = (index: string) =>
-        nodes.some(node => node['Index Name'] === index || conflictArbiters(node).includes(index))
+      const used = (index: string) => nodes.some(node => planNodeUsesIndex(node, index))
       const missing = expectation.anyOf
         ? expectation.indexes.some(used)
           ? []
