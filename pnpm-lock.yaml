@@ -14641,6 +14641,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
+      '@queues/rss-feed-maintenance':
+        specifier: workspace:^
+        version: link:../../queues/rss-feed-maintenance
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../../queues/sitemaps
