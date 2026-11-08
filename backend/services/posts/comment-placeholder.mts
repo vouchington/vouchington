@@ -74,8 +74,8 @@ export function maskCommentPlaceholders<T extends Post>(
 }
 
 /**
- * Reduces the metrics of each placeholder to its reply counts. A placeholder keeps its place in the
- * thread, so what people saved or followed on it is not part of the answer.
+ * Clears bookmarks on a placeholder. A placeholder keeps its place in the thread, so what people
+ * saved or followed on it is not part of the answer. Reply counts stay as stored.
  */
 export function maskPlaceholderMetrics(
   posts: Array<Pick<Post, 'id' | 'placeholder_state'> | null | undefined>,
@@ -87,7 +87,6 @@ export function maskPlaceholderMetrics(
     metric && placeholderIds.has(metric.id)
       ? {
           ...metric,
-          count: { ...metric.count, ancestors: 0 },
           bookmarks: { follow: 0, save: 0 },
         }
       : metric,

@@ -29,7 +29,7 @@ describe('getPostMetricsByAny', () => {
     expect(metrics).toMatchObject({
       __entity_type: 'post_metrics',
       id,
-      count: { descendants: 0, children: 0, ancestors: 0 },
+      count: { descendants: 0, children: 0 },
     })
     expect(metrics?.updated_at).toBeInstanceOf(Date)
   })

@@ -2,7 +2,6 @@ import { it, expect, describe } from 'vitest'
 import { getPostMetricsByAnyBatch } from './metrics-batch.mts'
 import {
   createTestUser,
-  deleteTestPost,
   insertEntityRelation,
   insertTestPost,
   updatePostUpdatedAt,
@@ -45,7 +44,6 @@ describe('metrics-batch', () => {
     expect(results[0]).toHaveProperty('count')
     expect(results[0]?.count).toHaveProperty('descendants')
     expect(results[0]?.count).toHaveProperty('children')
-    expect(results[0]?.count).toHaveProperty('ancestors')
     expect(results[0]).toHaveProperty('bookmarks')
   })
 
@@ -134,10 +132,15 @@ describe('metrics-batch', () => {
       updatePostUpdatedAt(grandchildId, grandchildUpdatedAt),
     ])
 
-    const [metrics] = await getPostMetricsByAnyBatch([rootId])
+    const [rootMetrics, childMetrics, slugMetrics, duplicateChildMetrics] =
+      await getPostMetricsByAnyBatch([rootId, childId, `batch-freshness-root-${random}`, childId])
 
-    expect(metrics?.count).toMatchObject({ descendants: 2, children: 1 })
-    expect(metrics?.updated_at).toEqual(grandchildUpdatedAt)
+    expect(rootMetrics?.count).toEqual({ descendants: 2, children: 1 })
+    expect(childMetrics?.count).toEqual({ descendants: 0, children: 1 })
+    expect(rootMetrics?.updated_at).toEqual(grandchildUpdatedAt)
+    expect(childMetrics?.updated_at).toEqual(grandchildUpdatedAt)
+    expect(slugMetrics).toEqual(rootMetrics)
+    expect(duplicateChildMetrics).toEqual(childMetrics)
   })
 
   it('counts follow/save relations and preserves duplicate inputs', async () => {
@@ -160,74 +163,6 @@ describe('metrics-batch', () => {
     expect(metrics).toHaveLength(2)
     expect(metrics[0]?.bookmarks).toEqual({ follow: 2, save: 1 })
     expect(metrics[1]).toEqual(metrics[0])
-  })
-
-  it('counts only publicly eligible ancestors in batch metrics', async () => {
-    const user = (await createTestUser({ administrator: true })) as PrivateUser
-    const random = Math.random().toString(36).slice(2, 15)
-    const rootId = await insertTestPost({
-      title: `Batch ancestor root ${random}`,
-      slug: `batch-ancestor-root-${random}`,
-      createdById: user.id,
-      markdown: 'Root',
-    })
-    const deletedParentId = await insertTestPost({
-      title: '',
-      slug: `batch-ancestor-deleted-${random}`,
-      createdById: user.id,
-      markdown: 'Deleted parent',
-      postType: 'comment',
-      rootId,
-      parentId: rootId,
-    })
-    const childId = await insertTestPost({
-      title: '',
-      slug: `batch-ancestor-child-${random}`,
-      createdById: user.id,
-      markdown: 'Approved child',
-      postType: 'comment',
-      rootId,
-      parentId: deletedParentId,
-    })
-    await deleteTestPost(deletedParentId)
-
-    const [metrics] = await getPostMetricsByAnyBatch([childId])
-
-    expect(metrics?.count.ancestors).toBe(1)
-  })
-
-  it('does not count a pending-clearance ancestor', async () => {
-    const user = (await createTestUser({ administrator: true })) as PrivateUser
-    const random = Math.random().toString(36).slice(2, 15)
-    const rootId = await insertTestPost({
-      title: `Batch pending root ${random}`,
-      slug: `batch-pending-root-${random}`,
-      createdById: user.id,
-      markdown: 'Root',
-    })
-    const pendingParentId = await insertTestPost({
-      title: '',
-      slug: `batch-pending-parent-${random}`,
-      createdById: user.id,
-      markdown: 'Pending parent',
-      postType: 'comment',
-      rootId,
-      parentId: rootId,
-      clearanceStatus: 'pending',
-    })
-    const childId = await insertTestPost({
-      title: '',
-      slug: `batch-pending-child-${random}`,
-      createdById: user.id,
-      markdown: 'Approved child',
-      postType: 'comment',
-      rootId,
-      parentId: pendingParentId,
-    })
-
-    const [metrics] = await getPostMetricsByAnyBatch([childId])
-
-    expect(metrics?.count.ancestors).toBe(1)
   })
 
   it('getPostMetricsByAnyBatch fetches by slugs', async () => {

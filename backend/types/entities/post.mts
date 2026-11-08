@@ -144,7 +144,6 @@ export type PostMetrics = {
   count: {
     descendants: number
     children: number
-    ancestors: number
   }
   updated_at: Date
   bookmarks: {

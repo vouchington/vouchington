@@ -71,7 +71,7 @@ describe('comment placeholders', () => {
     const metrics = (id: string) =>
       ({
         id,
-        count: { descendants: 4, children: 2, ancestors: 3 },
+        count: { descendants: 4, children: 2 },
         bookmarks: { follow: 5, save: 6 },
       }) as PostMetrics
     const placeholder = { id: 'p', placeholder_state: 'deleted' as const }
@@ -83,7 +83,7 @@ describe('comment placeholders', () => {
     )
 
     expect(masked).toMatchObject({
-      count: { descendants: 4, children: 2, ancestors: 0 },
+      count: { descendants: 4, children: 2 },
       bookmarks: { follow: 0, save: 0 },
     })
     expect(untouched).toEqual(metrics('r'))
