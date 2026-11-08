@@ -1,3 +1,4 @@
+import { runMembershipChangeScenarios } from './membership-changes.mts'
 import { read } from '@data-stores/psql'
 import { buildAlreadyRefundedMinorUnitsQuery } from '@services/memberships/refund-stripe-operations'
 import { runAndCapture } from '../run-support.mts'
@@ -30,4 +31,10 @@ export async function runMembershipRefundScenarios() {
       ),
     ),
   )
+}
+
+// Seed the membership write corpus last so it cannot change unrelated plans in this run.
+export async function runMembershipScenarios(): Promise<void> {
+  await runMembershipRefundScenarios()
+  await runMembershipChangeScenarios()
 }

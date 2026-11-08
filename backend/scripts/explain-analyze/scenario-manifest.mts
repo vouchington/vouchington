@@ -1,3 +1,4 @@
+import { MEMBERSHIP_SCENARIO_IDS } from './membership-scenario-ids.mts'
 import { VOTE_SCORE_SCENARIO_IDS } from './vote-score-scenario-ids.mts'
 import { COMMENT_SCENARIO_IDS } from './comment-scenario-ids.mts'
 import { INGESTION_PAGE_SCENARIO_IDS } from './ingestion-page-scenario-ids.mts'
@@ -57,7 +58,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'individual-cards-page',
   ...USER_PROFILE_SCENARIO_IDS,
   ...SHARED_LOADER_SCENARIO_IDS,
-  'membership-refunds-already-refunded-batch',
+  ...MEMBERSHIP_SCENARIO_IDS,
   'point-valuations-page',
   'spending-categories-page',
   'rewards-program-statuses-page',

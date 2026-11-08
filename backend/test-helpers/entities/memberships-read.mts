@@ -4,6 +4,7 @@ import type { MembershipPlanSlug } from '@voucha/types/entities/membership'
 
 export type TestMembershipRaw = {
   id: string
+  membership_source_id: string
   plan: MembershipPlanSlug
   sku_id: string
   stripe_subscription_id: string | null

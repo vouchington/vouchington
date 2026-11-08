@@ -35,7 +35,7 @@ import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
 import { runHeavyFollowScenarios } from './run-scenarios/heavy-follows.mts'
 import { runHotPathLoaderScenarios } from './run-scenarios/hot-path-loaders.mts'
 import { runStorySearchScenarios } from './run-scenarios/story-search.mts'
-import { runMembershipRefundScenarios } from './run-scenarios/memberships.mts'
+import { runMembershipScenarios } from './run-scenarios/memberships.mts'
 import { runMembershipWorkSelectionScenarios } from './run-scenarios/membership-work-selection.mts'
 import { runEngagementEmailRecipientScenarios } from './run-scenarios/engagement-email-recipients.mts'
 import { runTopicAliasCategoryWorkScenarios } from './run-scenarios/topic-alias-category-work.mts'
@@ -122,7 +122,6 @@ async function main() {
     // that table, and the generic plan sorts once those rows exist.
     await runStep(runStorySearchScenarios.name, runStorySearchScenarios)
     await runStep(runSharedLoaderScenarios.name, runSharedLoaderScenarios)
-    await runStep(runMembershipRefundScenarios.name, runMembershipRefundScenarios)
     await runStep(runMembershipWorkSelectionScenarios.name, runMembershipWorkSelectionScenarios)
     await runStep(runEngagementEmailRecipientScenarios.name, runEngagementEmailRecipientScenarios)
     await runStep(runRemoteFollowerScenarios.name, runRemoteFollowerScenarios)
@@ -171,6 +170,7 @@ async function main() {
     await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
     await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
     await runStep(runCommentDescendantPartitionedPages.name, runCommentDescendantPartitionedPages)
+    await runStep(runMembershipScenarios.name, runMembershipScenarios)
     const runErrors: unknown[] = []
     try {
       assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
