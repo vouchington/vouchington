@@ -23,11 +23,6 @@ async function reconsiderChangedPostById(
   batchSize: number,
   postIds?: readonly string[],
 ): Promise<{ processed: boolean; hasMore: boolean }> {
-  await query(
-    `/* lockChangedAgentModerationRetentionPost */
-    SELECT id FROM posts WHERE id = $1::uuid FOR SHARE`,
-    [postId],
-  )
   const { rows: lockedWork } = await query<{ cursor_moderation_record_id: string }>(
     `/* lockChangedAgentModerationRetentionCursor */
      SELECT cursor_moderation_record_id FROM agent_moderation_retention_post_work_items

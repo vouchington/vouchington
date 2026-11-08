@@ -21,7 +21,8 @@ export async function deleteAgentModerationRetentionPage(
          SELECT 1 FROM agent_moderations newer
          WHERE newer.post_id = moderation.post_id
            AND newer.prompt_id = moderation.prompt_id AND newer.id > moderation.id
-         LIMIT 1 FOR SHARE
+         -- Keep the bounded successor probe correlated instead of pulling it into a join.
+         LIMIT 1 OFFSET 0
        )
        AND (
          moderation.deleted_at IS NOT NULL OR EXISTS (
@@ -29,7 +30,7 @@ export async function deleteAgentModerationRetentionPage(
            WHERE newer_live.post_id = moderation.post_id
              AND newer_live.prompt_id = moderation.prompt_id
              AND newer_live.id > moderation.id AND newer_live.deleted_at IS NULL
-           LIMIT 1 FOR SHARE
+           LIMIT 1
          )
        )
        AND NOT EXISTS (

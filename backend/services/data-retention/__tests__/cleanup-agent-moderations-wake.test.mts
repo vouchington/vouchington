@@ -12,6 +12,7 @@ import {
   testAgentModerationExists,
   testAgentModerationRetentionPostHasWork,
 } from '@voucha/test-helpers/entities/agent-moderation-retention'
+import { updateTestRetentionPostMarkdownWithLockTimeout } from '@voucha/test-helpers/agent-moderation-retention-concurrency'
 import {
   getTestModerationTransparencyRollupCount,
   getTestReleasedModerationTransparencyRollupCount,
@@ -22,6 +23,17 @@ import { cleanupObsoleteAgentModerations } from '../cleanup-agent-moderations.mt
 import { reconsiderChangedPost } from '../cleanup-agent-moderation-hash-work.mts'
 
 describe('agent moderation retention wake-ups', () => {
+  it('does not hold a post read lock while processing its retention work', async () => {
+    const fixture = await createTestAgentModerationRetentionFixture()
+    await insertTestAgentModerationRetentionPostWork([fixture.postId], new Date())
+    await using reader = await beginTransaction()
+    expect(await reconsiderChangedPost(reader, 1, [fixture.postId])).toMatchObject({
+      processed: true,
+    })
+    const updatedMarkdown = await updateTestRetentionPostMarkdownWithLockTimeout(fixture.postId)
+    expect(updatedMarkdown).toMatch(/^Retention post update /)
+  })
+
   it('does not revisit old keeper rows on an unchanged daily run', async () => {
     const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
     const fixture = await createTestAgentModerationRetentionFixture()
@@ -47,7 +59,7 @@ describe('agent moderation retention wake-ups', () => {
     expect(await testAgentModerationExists(fixture.postId, oldKeeper)).toBe(true)
     await insertTestAgentModerationRetentionPostWork([fixture.postId], now)
     onTestFinished(
-      runBeforePostgresStatementForTest('lockChangedAgentModerationRetentionPost', async () => {
+      runBeforePostgresStatementForTest('lockChangedAgentModerationRetentionCursor', async () => {
         await using competing = await beginTransaction()
         await reconsiderChangedPost(competing, 1, [fixture.postId])
         await competing.commit()
@@ -117,7 +129,7 @@ describe('agent moderation retention wake-ups', () => {
       (await createTestAgentModerationRetentionFixture()).postId,
     ]
     onTestFinished(
-      runBeforePostgresStatementForTest('lockChangedAgentModerationRetentionPost', transaction =>
+      runBeforePostgresStatementForTest('lockChangedAgentModerationRetentionCursor', transaction =>
         insertTestAgentModerationRetentionPostWork(
           unrelatedPostIds,
           new Date('2000-01-01T00:00:00.000Z'),
