@@ -13,7 +13,7 @@ import {
   seedMembershipExpiryPages,
 } from '../seed-data/membership-expiry-pages.mts'
 
-const PAGE_CHANGES = 2 // One expiration and one replacement per current-projection page.
+const FIXTURE_PROJECTIONS = 2
 
 export async function runMembershipExpiryPageScenarios(): Promise<void> {
   // Seed after the ordinary aggregate plans, so their established corpus and gates stay intact.
@@ -30,7 +30,8 @@ export async function runMembershipExpiryPageScenarios(): Promise<void> {
        membership_product_id,expires_at FROM memberships WHERE id = ANY($1::uuid[]) ORDER BY id`,
     [EXPIRY_PAGE_MEMBERSHIP_IDS],
   )
-  if (rows.length !== PAGE_CHANGES) throw new Error('Membership expiry fixture is incomplete')
+  if (rows.length !== FIXTURE_PROJECTIONS)
+    throw new Error('Membership expiry fixture is incomplete')
   const closed = rows.find(row => row.user_id === EXPIRY_PAGE_USER_IDS[0])!
   registerScenarioContract('membership-expiry-page-activation', {
     seededRows: { membership_grant_activation_periods: EXPIRY_PAGE_CLOSED_ACTIVATIONS },
@@ -67,4 +68,3 @@ export async function runMembershipExpiryPageScenarios(): Promise<void> {
     'activateOldestQueuedGrant: lock user',
   )
 }
-
