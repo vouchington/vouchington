@@ -12,14 +12,26 @@ import { SOURCE_RUN_GUARD_SHELL } from './source-run-guard-shell.mts'
 export type SourceRunSiteDisposition = 'guarded' | 'gated' | 'exempt' | 'unguarded'
 
 const CHECKED_OUT_GUARD_RUN = 'node ci/source-run-state.mts'
+const SHELL_GUARD_RUN =
+  'bash --noprofile --norc -e -o pipefail ci/automation-inline/source-run-guard.sh'
 const GATE_CONDITION =
   /needs\.([a-z_][a-z0-9_-]*)\.outputs\.(?:current|source-current)\s*==\s*'true'/gi
 
 function hasOwnGuardStep(job: WorkflowJobLike): boolean {
-  return (job.steps ?? []).some(step => {
+  return (job.steps ?? []).some((step, index, steps) => {
     if (step.id !== 'source-state' || step.if !== undefined) return false
     const run = step.run?.trim()
-    return run === SOURCE_RUN_GUARD_SHELL.trim() || run === CHECKED_OUT_GUARD_RUN
+    const checkout = steps
+      .slice(0, index)
+      .findLast(item => item.uses?.startsWith('actions/checkout@'))
+    return (
+      run === SOURCE_RUN_GUARD_SHELL.trim() ||
+      run === CHECKED_OUT_GUARD_RUN ||
+      (run === SHELL_GUARD_RUN &&
+        checkout?.if === undefined &&
+        checkout?.with?.['ref'] === '${{ github.sha }}' &&
+        checkout?.with?.['persist-credentials'] === false)
+    )
   })
 }
 

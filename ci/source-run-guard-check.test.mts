@@ -100,6 +100,70 @@ describe('classifySourceRunSite', () => {
     ).toBe('guarded')
   })
 
+  it.each([
+    ['missing checkout', []],
+    [
+      'later untrusted checkout',
+      [
+        {
+          uses: `actions/checkout@${'a'.repeat(40)}`,
+          with: { ref: '${{ github.sha }}', 'persist-credentials': false },
+        },
+        {
+          uses: `actions/checkout@${'a'.repeat(40)}`,
+          with: { ref: '${{ github.event.workflow_run.head_sha }}', 'persist-credentials': false },
+        },
+      ],
+    ],
+    [
+      'untrusted ref',
+      [
+        {
+          uses: `actions/checkout@${'a'.repeat(40)}`,
+          with: { ref: '${{ github.event.workflow_run.head_sha }}', 'persist-credentials': false },
+        },
+      ],
+    ],
+    [
+      'credentials persisted',
+      [
+        {
+          uses: `actions/checkout@${'a'.repeat(40)}`,
+          with: { ref: '${{ github.sha }}', 'persist-credentials': true },
+        },
+      ],
+    ],
+    [
+      'conditional checkout',
+      [
+        {
+          uses: `actions/checkout@${'a'.repeat(40)}`,
+          if: 'false',
+          with: { ref: '${{ github.sha }}', 'persist-credentials': false },
+        },
+      ],
+    ],
+  ])('does not accept the shell guard with %s', (_name, precedingSteps) => {
+    const workflows: Record<string, WorkflowLike> = {
+      'synthetic.yml': {
+        jobs: {
+          worker: {
+            steps: [
+              ...precedingSteps,
+              {
+                id: 'source-state',
+                run: 'bash --noprofile --norc -e -o pipefail ci/automation-inline/source-run-guard.sh',
+              },
+            ],
+          },
+        },
+      },
+    }
+    expect(classifySourceRunSite(workflows, [], { workflow: 'synthetic.yml', job: 'worker' })).toBe(
+      'unguarded',
+    )
+  })
+
   it('does not treat a gate on an upstream that is itself only gated as guarding', () => {
     const workflows: Record<string, WorkflowLike> = {
       'synthetic.yml': {

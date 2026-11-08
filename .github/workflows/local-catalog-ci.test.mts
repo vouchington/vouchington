@@ -14,10 +14,11 @@ describe('repository catalog and reference checks', () => {
       expect(selected[0]!['timeout-minutes']).toBeGreaterThan(0)
       expect(selected[0]!['timeout-minutes']).toBeLessThanOrEqual(2)
     }
-    const aggregate = steps.filter(step =>
-      step.run?.includes('--checks config-inventory-policy,repo-file-policy,'),
-    )
+    const aggregate = steps.filter(step => step.run === 'source ci/run-repository-static-checks.sh')
     expect(aggregate).toHaveLength(1)
     expect(aggregate[0]!['timeout-minutes']).toBeLessThanOrEqual(5)
+    expect(readFileSync('ci/run-repository-static-checks.sh', 'utf8')).toContain(
+      '--checks config-inventory-policy,repo-file-policy,',
+    )
   })
 })

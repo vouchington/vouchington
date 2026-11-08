@@ -26,9 +26,8 @@ export const FAILED_CONCLUSIONS = new Set(['failure', 'timed_out', 'cancelled'])
  * A source run older than this is presumed superseded by later main activity; escalating on it
  * risks reviving an already-fixed failure with a stale, contentless issue. Kept comfortably
  * inside the 3-day artifact/log retention window so anything that clears this bound still has
- * fetchable logs. fix-main.yml's no-checkout guards splice in this bound via
- * ci/source-run-guard-shell.mts, which interpolates it from here, so the two cannot drift out of
- * sync.
+ * fetchable logs. The checked-out shell guard is tested against the version generated from
+ * this bound in ci/source-run-guard-shell.mts, so the two cannot drift out of sync.
  */
 export const MAX_SOURCE_RUN_AGE_MS = 48 * 60 * 60 * 1000
 

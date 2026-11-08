@@ -89,17 +89,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
-        run: |
-          set -euo pipefail
-          # Ground truth for "did a human already get notified for this Fix Main run", independent
-          # of anything decide.mts concludes here. Scoped to the attempt that just completed — the
-          # unscoped /jobs endpoint returns the latest attempt, which normally is the same thing,
-          # but attempt-scoping removes any doubt if a later attempt starts before this step runs.
-          conclusion="$(
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/attempts/$SOURCE_RUN_ATTEMPT/jobs?per_page=100" \
-              --jq '[.jobs[] | select(.name == "Escalate to human")][0].conclusion // "not-found"'
-          )"
-          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/self-retry-escalation-state.sh
       - name: Set disposition output
         timeout-minutes: 2
         id: disposition
@@ -111,16 +101,7 @@ jobs:
           FAILED_JOBS_RERUN_OUTCOME: ${{ steps.rerun-failed-jobs.outcome }}
           ESCALATE_STATE_OUTCOME: ${{ steps.escalate-state.outcome }}
           ESCALATE_CONCLUSION: ${{ steps.escalate-state.outputs.conclusion }}
-        run: |
-          if [[ "$ESCALATE_STATE_OUTCOME" == "success" && "$ESCALATE_CONCLUSION" == "success" ]]; then
-            echo "disposition=handled" >> "$GITHUB_OUTPUT"
-          elif [[ "$SOURCE_OUTCOME" == "success" && "$SOURCE_CURRENT" == "false" ]]; then
-            echo "disposition=handled" >> "$GITHUB_OUTPUT"
-          elif [[ "$DECISION" == "rerun" && "$FAILED_JOBS_RERUN_OUTCOME" == "success" ]]; then
-            echo "disposition=handled" >> "$GITHUB_OUTPUT"
-          else
-            echo "disposition=unhandled" >> "$GITHUB_OUTPUT"
-          fi
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/self-retry-disposition.sh
 
   escalate-retry-failure:
     name: Escalate unconfirmed self-retry
@@ -129,6 +110,7 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 10
     permissions:
+      contents: read
       issues: write
     steps:
       - name: Escalate to human — open or update issue
@@ -140,45 +122,5 @@ jobs:
           FIX_MAIN_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
         run: |
           set -euo pipefail
-
-          THIS_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          # Keyed on the Fix Main run id alone (not id+attempt): gh run rerun keeps the same run
-          # id across attempts, so every watcher invocation for the same underlying incident
-          # converges on one issue via the search-then-comment below instead of filing a new one
-          # each time this watcher itself has trouble.
-          TITLE="Fix Main self-retry incomplete: run $FIX_MAIN_RUN_ID — needs human"
-
-          EXISTING="$(gh issue list \
-            --repo "$GITHUB_REPOSITORY" \
-            --search "\"$TITLE\" in:title" \
-            --state open \
-            --json number \
-            -q '.[0].number' || true)"
-
-          BODY="$(cat <<EOF
-          ## Fix Main failure handling could not be confirmed
-
-          The watcher could not confirm any safe terminal outcome for the Fix Main failure (attempt $FIX_MAIN_RUN_ATTEMPT):
-          the original run did not have a confirmed human escalation, the source was not confirmed
-          superseded, and no rerun request was confirmed accepted.
-
-          **Fix Main run:** $FIX_MAIN_RUN_URL
-          **Watcher run (logs/artifact):** $THIS_RUN_URL
-
-          Please inspect the Fix Main run above and apply a fix manually.
-          EOF
-          )"
-
-          if [[ "$EXISTING" =~ ^[0-9]+$ ]]; then
-            echo "Commenting on existing issue #$EXISTING"
-            gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" --body "$BODY"
-          else
-            echo "Opening new issue: $TITLE"
-            gh issue create \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "$TITLE" \
-              --body "$BODY" \
-              --label "automation" \
-              --label "needs-human"
-          fi
+          gh api --method GET -H 'Accept: application/vnd.github.raw+json' "repos/${GITHUB_REPOSITORY}/contents/ci/automation-inline/self-retry-escalate.sh?ref=${GITHUB_SHA:?Missing trusted workflow SHA}" > "$RUNNER_TEMP/self-retry-escalate.sh"
+          bash --noprofile --norc -e -o pipefail "$RUNNER_TEMP/self-retry-escalate.sh"

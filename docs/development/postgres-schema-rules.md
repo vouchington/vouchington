@@ -16,7 +16,8 @@ recovery follow [One current contract](../../AGENTS.md).
 - An internal entity reference is a column or child row with a concrete foreign key and a
   supporting index, including a reference inside a primary or unique key. The same id may also be
   copied in JSON or inside a fingerprint; the foreign key is the relation. Leave the rest of the
-  document in JSON. Do not replace a document with a typed column per field.
+  document in JSON. Build deduplication keys from those foreign-key columns. Do not replace a
+  document with a typed column per field.
 - Structured documents and data points stay JSON. A data-point field that references an entity (a
   topic id) is a foreign-key column; counts, amounts, and the rest stay in the JSON.
 - Change history stays JSON. Do not extract before/after values or add foreign keys for ids that
@@ -101,6 +102,13 @@ recovery follow [One current contract](../../AGENTS.md).
   net-score magnitude preserves topic votes' influence on crawl tiers alongside follower counts.
 
 ## R4 — One shape per concept
+
+The owning row stores the final result that readers use. Audit and transition history explains
+how it got there; `_changes`, `_revisions`, `_attempts`, lifecycle and audit logs never supply
+current state. History tables are monthly `RANGE (id)` partitions, dropped through
+`cleanupPartitions` once their retention window passes. Live rows must not block that retirement: no `latest_*_id` pointer
+into history, no RESTRICT foreign key from a live row to history, and no reader deriving current
+state from the latest history row.
 
 - Field-diff history (`_revisions`): who edited content, `revised_by_id` to users `SET NULL`,
   append-only.

@@ -14,6 +14,10 @@ on:
       - '.github/workflows/docs-publish.yml'
       - '.github/workflows/docs-publish-build-and-validate.sh'
       - '.github/actions/**'
+      - 'ci/build-infra/validate-shared-build-cache-mode.sh'
+      - 'ci/build-infra/validate-restored-web-targets.sh'
+      - 'ci/build-infra/build-web-targets.sh'
+      - 'ci/build-infra/start-valkey.sh'
       - 'package.json'
       - 'pnpm-lock.yaml'
 

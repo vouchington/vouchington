@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -8,8 +8,9 @@ import { describe, expect, it } from 'vitest'
 
 type Workflow = { jobs?: Record<string, { steps?: Array<{ run?: string }> }> }
 
+const TRUSTED_WORKFLOW_SHA = 'a'.repeat(40)
 const parsed = load(readFileSync('.github/workflows/fix-main-self-retry.yml', 'utf8')) as Workflow
-const escalationScript = parsed.jobs?.['escalate-retry-failure']?.steps?.[0]?.run
+const escalationScript = parsed.jobs?.['escalate-retry-failure']?.steps?.find(step => step.run)?.run
 const expectedBody = `## Fix Main failure handling could not be confirmed
 
 The watcher could not confirm any safe terminal outcome for the Fix Main failure (attempt 2):
@@ -46,21 +47,46 @@ describe('Fix Main self-retry fallback shell', () => {
     },
   ])('uses a factual body for $command', ({ existingIssue, command, expectedArgs }) => {
     const invocation = runEscalation(existingIssue)
+    expect(invocation.status).toBe(0)
+    expect(invocation.stderr).toBe('')
     expect(invocation.command).toBe(command)
     expect(invocation.body).toBe(expectedBody)
     expect(invocation.args).toEqual(expectedArgs)
+    expect(invocation.downloadArgs).toEqual([
+      'api',
+      '--method',
+      'GET',
+      '-H',
+      'Accept: application/vnd.github.raw+json',
+      `repos/vouchington/vouchington/contents/ci/automation-inline/self-retry-escalate.sh?ref=${TRUSTED_WORKFLOW_SHA}`,
+    ])
+  })
+
+  it('does not execute a partial script when trusted-source retrieval fails', () => {
+    const invocation = runEscalation('', true)
+
+    expect(invocation.status).toBe(17)
+    expect(invocation.command).toBe('')
+    expect(invocation.args).toEqual([])
   })
 })
 
-function runEscalation(existingIssue: string) {
+function runEscalation(existingIssue: string, downloadFails = false) {
   const directory = mkdtempSync(join(tmpdir(), 'fix-main-escalation-'))
   const fakeGh = join(directory, 'gh')
   const commandFile = join(directory, 'command')
   const argumentsFile = join(directory, 'arguments')
+  const downloadArgumentsFile = join(directory, 'download-arguments')
   writeFileSync(
     fakeGh,
     `#!/bin/bash
 set -euo pipefail
+if [[ "$1" == "api" ]]; then
+  printf '%s\\0' "$@" > "$FAKE_GH_DOWNLOAD_ARGUMENTS_FILE"
+  printf '%s' "$FAKE_GH_SCRIPT_BODY"
+  if [[ "$FAKE_DOWNLOAD_FAILS" == "true" ]]; then exit 17; fi
+  exit 0
+fi
 command="$1 $2"
 shift 2
 if [[ "$command" == "issue list" ]]; then
@@ -83,22 +109,32 @@ printf '%s\\0' "$@" > "$FAKE_GH_ARGUMENTS_FILE"
       env: {
         ...process.env,
         PATH: `${directory}:${process.env.PATH ?? ''}`,
+        GITHUB_SERVER_URL: 'https://github.test',
+        GITHUB_RUN_ID: '777',
+        GITHUB_SHA: TRUSTED_WORKFLOW_SHA,
         GITHUB_REPOSITORY: 'vouchington/vouchington',
+        RUNNER_TEMP: directory,
         FIX_MAIN_RUN_ID: '1234',
         FIX_MAIN_RUN_URL: 'https://github.test/fix-main/1234',
         FIX_MAIN_RUN_ATTEMPT: '2',
         FAKE_EXISTING_ISSUE: existingIssue,
         FAKE_GH_COMMAND_FILE: commandFile,
         FAKE_GH_ARGUMENTS_FILE: argumentsFile,
+        FAKE_GH_DOWNLOAD_ARGUMENTS_FILE: downloadArgumentsFile,
+        FAKE_GH_SCRIPT_BODY: readFileSync('ci/automation-inline/self-retry-escalate.sh', 'utf8'),
+        FAKE_DOWNLOAD_FAILS: downloadFails ? 'true' : 'false',
       },
     })
-    expect(result.stderr).toBe('')
-    expect(result.status).toBe(0)
-    const args = readFileSync(argumentsFile).toString().split('\0').filter(Boolean)
+    const args = existsSync(argumentsFile)
+      ? readFileSync(argumentsFile).toString().split('\0').filter(Boolean)
+      : []
     return {
-      command: readFileSync(commandFile, 'utf8'),
+      status: result.status,
+      stderr: result.stderr,
+      command: existsSync(commandFile) ? readFileSync(commandFile, 'utf8') : '',
       args,
       body: args[args.indexOf('--body') + 1] ?? '',
+      downloadArgs: readFileSync(downloadArgumentsFile).toString().split('\0').filter(Boolean),
     }
   } finally {
     rmSync(directory, { recursive: true })

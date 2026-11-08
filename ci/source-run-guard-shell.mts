@@ -13,15 +13,12 @@ if (
 const MAX_SOURCE_RUN_AGE_SECONDS = MAX_SOURCE_RUN_AGE_MS / 1000
 const MAX_SOURCE_RUN_AGE_HOURS = MAX_SOURCE_RUN_AGE_MS / 3_600_000
 
-/** fix-main.yml's no-checkout jobs that splice in {@link SOURCE_RUN_GUARD_SHELL}. */
+/** Fix Main jobs that execute the checked-out shell guard. */
 export const SOURCE_RUN_GUARD_JOB_NAMES = ['escalate'] as const
 
 /**
- * Canonical no-checkout revalidation guard for the fix-main.yml jobs named in
- * {@link SOURCE_RUN_GUARD_JOB_NAMES}, plus fix-dependabot.yml's `revalidate-dispatch` and
- * `escalate` jobs. Those jobs never check out the repository, so they cannot import
- * ci/source-run-state.mts directly and instead splice this shell verbatim into a `run: |` step
- * (see ci/source-run-guard-shell.test.mts for the per-site equality lock).
+ * Canonical shell guard used by Fix Main escalation and Dependabot revalidation jobs.
+ * The checked-out script is locked to this generated guard by the differential test.
  *
  * Mirrors assessSourceRunState's bucketing and check order from ci/source-run-assessment.mts:
  * fetch failure and a repository or run-id mismatch fail closed (exit 1, the source run cannot be

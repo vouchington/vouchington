@@ -177,12 +177,18 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
+      contents: read
       issues: write
     env:
       GH_TOKEN: ${{ github.token }}
       ISSUE_NUMBER: ${{ github.event.issue.number }}
       TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Revalidate trigger comment
         timeout-minutes: 1
         uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@bd89d56c941ff4aa3b3c09edf1eb597ab93f1718 # v0.85.2
@@ -193,17 +199,7 @@ jobs:
       - name: Check the trigger is still open and valid
         timeout-minutes: 1
         id: check
-        run: |
-          set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" --jq \
-            'select(.state == "open") | .number' | grep -qx "$ISSUE_NUMBER"
-          COMMENT_JSON="$(gh api "repos/$GITHUB_REPOSITORY/issues/comments/$TRIGGER_COMMENT_ID")"
-          COMMAND="$(jq -r '.body | split("\n")[0]' <<< "$COMMENT_JSON" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
-          if [[ "$COMMAND" != "/fix" ]]; then
-            echo "Suppressing failure comment because the triggering /fix command is no longer valid."
-            exit 0
-          fi
-          echo "valid=true" >> "$GITHUB_OUTPUT"
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/issue-validate-trigger.sh
 
       - name: Comment failure on source issue
         timeout-minutes: 1

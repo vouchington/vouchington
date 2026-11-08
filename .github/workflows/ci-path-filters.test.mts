@@ -49,6 +49,54 @@ const pr9389Files = [
 ] as const
 
 describe('detect-changes path filters', () => {
+  it('routes moved shared CI action bodies through the original action selector', () => {
+    const shared = loadDetectChangesFilters()['workflow-action-changes']
+    for (const path of [
+      'ci/build-infra/validate-shared-build-cache-mode.sh',
+      'ci/build-infra/validate-restored-web-targets.sh',
+      'ci/build-infra/build-web-targets.sh',
+      'ci/build-infra/start-valkey.sh',
+      'ci/run-repository-static-checks.sh',
+      'ci/check-backend-query-profile-manifests.sh',
+      'ci/automation-inline/source-run-guard.sh',
+    ]) {
+      expect(filterMatches(shared, path)).toBe(true)
+    }
+  })
+
+  it('keeps shared build infrastructure scripts in every original main push route', () => {
+    const scripts = [
+      'validate-shared-build-cache-mode.sh',
+      'validate-restored-web-targets.sh',
+      'build-web-targets.sh',
+      'start-valkey.sh',
+    ].map(name => `ci/build-infra/${name}`)
+    for (const workflowName of [
+      'docs-publish.yml',
+      'main-backend.yml',
+      'main-web.yml',
+      'main-cloudflare-worker.yml',
+      'main-lambdas.yml',
+      'main-storybook.yml',
+    ]) {
+      const workflow = load(readFileSync(`.github/workflows/${workflowName}`, 'utf8')) as {
+        on?: { push?: { paths?: string[] } }
+      }
+      for (const script of scripts) {
+        expect(filterMatches(workflow.on?.push?.paths, script)).toBe(true)
+      }
+    }
+  })
+
+  it('keeps the backend query-profile wrapper in its main push route', () => {
+    const workflow = load(readFileSync('.github/workflows/main-backend.yml', 'utf8')) as {
+      on?: { push?: { paths?: string[] } }
+    }
+    expect(
+      filterMatches(workflow.on?.push?.paths, 'ci/check-backend-query-profile-manifests.sh'),
+    ).toBe(true)
+  })
+
   it('routes Trivy ignore-only changes to tooling', () => {
     expect(loadDetectChangesFilters().tooling).toContain('.trivyignore.yaml')
   })

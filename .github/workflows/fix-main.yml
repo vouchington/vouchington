@@ -106,12 +106,7 @@ jobs:
           HARNESS_AGENT_DISPATCH_ENABLED: ${{ vars.HARNESS_AGENT_DISPATCH_ENABLED }}
           SOURCE_CURRENT: ${{ steps.source-state.outputs.current }}
           DECISION: ${{ steps.decide.outputs.decision }}
-        run: |
-          if [[ "$SOURCE_CURRENT" == "true" && "$DECISION" == "dispatch" && "$HARNESS_AGENT_DISPATCH_ENABLED" == "true" ]]; then
-            echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
-          fi
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/fix-main-dispatch-decision.sh
 
   related-candidates:
     name: Find related open PRs or issues
@@ -286,12 +281,7 @@ jobs:
         env:
           DECISION: ${{ steps.decide.outputs.decision }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
-        run: |
-          if [[ "$DECISION" == "rerun" && "$RUN_ATTEMPT" -lt 3 ]]; then
-            echo "retry_pending=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "retry_pending=false" >> "$GITHUB_OUTPUT"
-          fi
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/fix-main-retry-pending.sh
 
   escalate:
     name: Escalate to human
@@ -310,6 +300,7 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 3
     permissions:
+      contents: read
       actions: read
       issues: write
     env:
@@ -320,6 +311,11 @@ jobs:
       DISPATCH_RESULT: ${{ needs.dispatch.result }}
       SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Revalidate source run
         timeout-minutes: 2
         id: source-state
@@ -328,117 +324,11 @@ jobs:
           SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
           SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
-        run: |
-          set -euo pipefail
-          fail_closed() {
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "::error::$1"
-            exit 1
-          }
-          suppress_stale() {
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::$1"
-            exit 0
-          }
-
-          # The age check happens inside jq (fromdateiso8601/now) rather than shell `date` arithmetic:
-          # `date -d`/`date -j` differ between GNU and BSD, and workflow scripts must also run on macOS.
-          # `fromdateiso8601` is resolved by gojq, the jq processor `gh` bundles for --jq, not the host's
-          # system jq — so no separate jq install/version floor applies. This whole step is generated from
-          # ci/source-run-guard-shell.mts, which interpolates MAX_SOURCE_RUN_AGE_MS from
-          # ci/source-run-assessment.mts, so the bound below cannot drift out of sync with the TS module.
-          # Freshness is measured from `run_started_at`, not `created_at`: `created_at` is fixed at the
-          # run's original creation and does not move on a manual re-run, while `run_started_at` resets to
-          # when the matching attempt actually started — using `created_at` would fail-closed-suppress a
-          # same-attempt re-run that completed seconds ago just because the run was first created over 48h
-          # earlier. A missing/malformed run_started_at makes fromdateiso8601 error, which lands here as a
-          # fetch failure (fail_closed), matching the module's malformed-response handling.
-          if ! source_state="$(
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" \
-              --jq '[.repository.full_name, .id, .run_attempt, .status, .conclusion,
-                     ((now - (.run_started_at | fromdateiso8601)) <= (172800))] | @tsv'
-          )"; then
-            fail_closed "Could not fetch source workflow run $SOURCE_RUN_ID"
-          fi
-
-          IFS=$'\t' read -r actual_repo actual_id actual_attempt actual_status actual_conclusion actual_fresh \
-            <<< "$source_state"
-
-          # Case-insensitive, portable comparison (no ${var,,}: workflow scripts must also run on macOS,
-          # whose /bin/bash is 3.2, which predates bash 4's lowercase parameter expansion).
-          actual_repo_lower="$(printf '%s' "$actual_repo" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-          expected_repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-          if [[ "$actual_repo_lower" != "$expected_repo_lower" ]]; then
-            fail_closed "Source workflow run resolved to a different repository; refusing to act"
-          fi
-          if [[ "$actual_id" != "$SOURCE_RUN_ID" ]]; then
-            fail_closed "Source workflow run id changed; refusing to act on a different run"
-          fi
-          if [[ "$actual_attempt" != "$SOURCE_RUN_ATTEMPT" ||
-                "$actual_status" != "completed" ||
-                "$actual_conclusion" != "$SOURCE_RUN_CONCLUSION" ]]; then
-            suppress_stale "Source workflow run changed; skipping as superseded"
-          fi
-          if [[ "$actual_fresh" != "true" ]]; then
-            suppress_stale "Source workflow run is older than 48h; skipping as superseded"
-          fi
-
-          echo "current=true" >> "$GITHUB_OUTPUT"
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/source-run-guard.sh
 
       - name: Escalate to human — open or update issue
         timeout-minutes: 2
         if: steps.source-state.outputs.current == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          WORKFLOW_NAME="$FAILED_WORKFLOW_NAME"
-          RUN_URL="$FAILED_RUN_URL"
-          COMMIT_SHA="$FAILED_COMMIT_SHA"
-          THIS_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          if [[ "$RENDER_PROMPT_RESULT" == "failure" || "$RENDER_PROMPT_RESULT" == "cancelled" ]]; then
-            FAILED_JOB="render-prompt ($RENDER_PROMPT_RESULT)"
-          elif [[ "$DISPATCH_RESULT" == "failure" || "$DISPATCH_RESULT" == "cancelled" ]]; then
-            FAILED_JOB="dispatch ($DISPATCH_RESULT)"
-          else
-            FAILED_JOB="unknown (unexpected escalation trigger)"
-          fi
-
-          TITLE="Automation fix: $WORKFLOW_NAME @ $COMMIT_SHA — needs human"
-
-          EXISTING="$(gh issue list \
-            --repo "$GITHUB_REPOSITORY" \
-            --search "\"$TITLE\" in:title" \
-            --state open \
-            --json number \
-            -q '.[0].number' || true)"
-
-          SESSION_LINE=""
-          if [[ -n "$SESSION_ID" ]]; then
-            SESSION_LINE="**Harness session:** $SESSION_ID"$'\n'
-          fi
-
-          BODY="$(cat <<EOF
-          ## $WORKFLOW_NAME failed on main — auto-fix could not be dispatched
-
-          **Failing run:** $RUN_URL
-          **Failing commit:** $COMMIT_SHA
-          **Failed job:** $FAILED_JOB
-          ${SESSION_LINE}**Auto-fix run (logs/artifact):** $THIS_RUN_URL
-
-          Please investigate and apply a fix manually.
-          EOF
-          )"
-
-          if [[ "$EXISTING" =~ ^[0-9]+$ ]]; then
-            echo "Commenting on existing issue #$EXISTING"
-            gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" --body "$BODY"
-          else
-            echo "Opening new issue: $TITLE"
-            gh issue create \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "$TITLE" \
-              --body "$BODY" \
-              --label "automation" \
-              --label "needs-human"
-          fi
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/fix-main-escalate.sh
