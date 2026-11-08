@@ -100,10 +100,10 @@ export async function listLiveItemSourceFeedsPage(
   const { rows } = await write<{ id: string }>(
     `/* listLiveItemSourceFeedsPage */
     SELECT source.rss_feed_id AS id FROM rss_feed_item_sources source
-    JOIN rss_feeds feed ON feed.id = source.rss_feed_id
     WHERE source.rss_feed_item_id = $1::uuid
-      AND feed.deleted_at IS NULL
       AND source.rss_feed_id > COALESCE($2::uuid, $4::uuid)
+      AND (SELECT TRUE FROM rss_feeds feed
+           WHERE feed.id = source.rss_feed_id AND feed.deleted_at IS NULL) = TRUE
     ORDER BY source.rss_feed_id LIMIT $3 + 1`,
     [itemId, after, limit, MIN_UUID],
   )

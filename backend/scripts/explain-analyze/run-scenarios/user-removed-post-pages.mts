@@ -6,8 +6,10 @@ import { seedUuid } from '../seed-data/common.mts'
 import { runRemovalEligiblePageScenarios } from './removal-eligible-pages.mts'
 
 const REMOVED_COUNT = 2_000
+const PAGE_SIZE = 25
+const LOOKAHEAD = PAGE_SIZE + 1
 
-/** Compare the eligible event streams, including plans that hash the author cohort. */
+/** Compare the eligible event streams without reading the full author cohort. */
 export async function runUserRemovedPostPageScenarios(): Promise<void> {
   const userId = seedUser.id
   const postIds = Array.from({ length: REMOVED_COUNT }, (_, index) => seedUuid(index, '18'))
@@ -22,28 +24,30 @@ export async function runUserRemovedPostPageScenarios(): Promise<void> {
   await write(`/* analyzeExplainCommunityRemovals */ ANALYZE community_post_reviews`)
   try {
     registerScenarioContract('user-removed-community-posts-page', {
-      // Unlike raw candidate caps, the plain eligible join may hash this full author cohort.
       expectations: [
-        { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: REMOVED_COUNT * 3 },
-        { kind: 'maxProcessedRows', relation: 'posts', max: REMOVED_COUNT * 3 },
+        { kind: 'usesIndexes', indexes: ['idx_comm_post_reviews__user_removed'] },
+        { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: LOOKAHEAD * 2 },
+        { kind: 'maxProcessedRows', relation: 'posts', max: LOOKAHEAD * 3 },
       ],
     })
     await runAndCapture('user-removed-community-posts-page', () =>
-      listUserRemovedPosts(userId, { includePlatform: false, limit: 25 }),
+      listUserRemovedPosts(userId, { includePlatform: false, limit: PAGE_SIZE }),
     )
     registerScenarioContract('user-removed-posts-page', {
-      // Unlike raw candidate caps, the plain eligible join may hash this full author cohort.
       expectations: [
         { kind: 'custom', name: 'userRemovedPosts' },
         {
           kind: 'usesIndexes',
-          indexes: ['idx_posts__default__created_by_rejected_at_id'],
+          indexes: [
+            'idx_posts__default__created_by_rejected_at_id',
+            'idx_comm_post_reviews__user_removed',
+          ],
         },
-        { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: REMOVED_COUNT * 3 },
+        { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: LOOKAHEAD * 2 },
       ],
     })
     await runAndCapture('user-removed-posts-page', () =>
-      listUserRemovedPosts(userId, { includePlatform: true, limit: 25 }),
+      listUserRemovedPosts(userId, { includePlatform: true, limit: PAGE_SIZE }),
     )
   } finally {
     await write(

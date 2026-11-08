@@ -59,11 +59,10 @@ export async function runRemovalEligiblePageScenarios(): Promise<void> {
       for (const later of [false, true]) {
         const scenarioId = `removal-events-deleted-prefix-${includePlatform ? 'combined' : 'community'}-${later ? 'later' : 'first'}`
         registerScenarioContract(scenarioId, {
-          // The legal plain join can hash the eligible author cohort before sorting;
-          // this budget includes the rejected prefix, both event streams, and final hydration.
           expectations: [
-            { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: SIZE * 3 },
-            { kind: 'maxProcessedRows', relation: 'posts', max: SIZE * 4 },
+            { kind: 'usesIndexes', indexes: ['idx_comm_post_reviews__user_removed'] },
+            { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: SIZE },
+            { kind: 'maxProcessedRows', relation: 'posts', max: SIZE * 2 },
           ],
           crossPartition: {
             posts: 'Removal event eligibility and hydration look up posts across id partitions.',

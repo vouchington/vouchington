@@ -16,4 +16,6 @@ export const ELIGIBLE_LIST_SCENARIO_IDS = [
   'removal-events-deleted-prefix-combined-first',
   'removal-events-deleted-prefix-combined-later',
   'moderation-current-policy-page',
+  'moderation-requested-posts-page',
+  'post-by-slug-current-policy-noise',
 ] as const

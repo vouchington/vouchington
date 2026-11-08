@@ -34,6 +34,25 @@ export async function reconcilePostModerationWork(
     1,
     Math.min(Math.trunc(limit), getPostClearanceWorkLimit('reconciliation_batch_size')),
   )
+  // Requested posts are distinct so duplicate input ids cannot duplicate source work.
+  // Probe each live post's exact content and policy version before merging work.
+  const versionSource = postIds
+    ? `(
+        SELECT version.* FROM (SELECT DISTINCT unnest($3::uuid[]) AS post_id) requested
+        JOIN posts post ON post.id = requested.post_id AND post.deleted_at IS NULL
+        JOIN LATERAL (
+          SELECT version.id, version.post_id, version.content_sha256,
+            version.policy_revision, version.deadline_at
+          FROM post_moderation_versions version
+          WHERE version.post_id = post.id
+            AND version.content_sha256 = post.llm_moderation_content_sha256
+            AND version.policy_revision = $2
+            AND version.id < COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond'))
+            AND ($4::uuid IS NULL OR version.id >= $4::uuid)
+          ORDER BY version.id
+        ) version ON TRUE
+      )`
+    : `post_moderation_versions`
   const { rows } = await write<{
     row_kind: 'due' | 'exhausted' | 'continuation'
     post_id: string
@@ -46,14 +65,18 @@ export async function reconcilePostModerationWork(
         SELECT version.id AS version_id, source.source::post_moderation_sources AS source,
           version.post_id, version.deadline_at,
           COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond')) AS through_id
-        FROM post_moderation_versions version
-        JOIN posts post ON post.id = version.post_id
+        FROM ${versionSource} version
+        ${
+          postIds
+            ? ''
+            : `JOIN posts post ON post.id = version.post_id
           AND post.llm_moderation_content_sha256 = version.content_sha256
-          AND post.deleted_at IS NULL
+          AND post.deleted_at IS NULL`
+        }
         CROSS JOIN unnest($7::text[]) AS source(source)
         WHERE version.policy_revision = $2
           AND version.id < COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond'))
-          AND ($3::uuid[] IS NULL OR version.post_id = ANY($3::uuid[]))
+          ${postIds ? '' : 'AND $3::uuid[] IS NULL'}
           AND ($4::uuid IS NULL OR (version.id, source.source::post_moderation_sources)
             > ($4::uuid, $5::post_moderation_sources))
           AND NOT EXISTS (

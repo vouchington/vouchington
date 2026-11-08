@@ -119,12 +119,16 @@ export async function runRssDeletedParentPageScenarios(): Promise<void> {
   assert.ok(sourceItemId, 'Source-feed page requires a seeded item source')
   const sourceFeedIds = await seedSourceFeedPage(sourceItemId)
   try {
+    const sourcePageRows = Math.ceil((getPostPublicationWorkLimit('capture_batch_size') + 1) * 1.2)
     registerScenarioContract('deleted-parent-source-feeds', {
       expectations: [
-        { kind: 'usesIndexes', indexes: ['idx_rss_feed_item_sources__item_feed'] },
-        { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: 1100 },
-        // A custom plan may hash all feeds before sorting the source keyset.
-        { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 2600 },
+        {
+          kind: 'usesIndexes',
+          indexes: ['idx_rss_feed_item_sources__item_feed', 'rss_feeds_pkey'],
+          noSort: true,
+        },
+        { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: sourcePageRows },
+        { kind: 'maxProcessedRows', relation: 'rss_feeds', max: sourcePageRows },
       ],
     })
     await runAndCapture(

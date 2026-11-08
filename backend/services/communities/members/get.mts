@@ -54,22 +54,24 @@ export async function searchCommunityMembers(
   }
 
   const roster = memberRosterFilter(options)
+  if (roster === 'moderators' && options?.role === 'member')
+    return {
+      results: [],
+      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+    }
+  const walkOptions = { cursorId, roster, currentUser: options?.currentUser ?? null, limit }
+  const page =
+    roster === 'moderators' && !options?.role
+      ? sql`SELECT id FROM (`
+          .append(sql`(`)
+          .append(buildMemberRosterWalk(communityId, { ...walkOptions, role: 'owner' }))
+          .append(sql`) UNION ALL (`)
+          .append(buildMemberRosterWalk(communityId, { ...walkOptions, role: 'moderator' }))
+          .append(sql`)) roles ORDER BY id LIMIT ${limit + 1}`)
+      : buildMemberRosterWalk(communityId, { ...walkOptions, role: options?.role })
   const query = sql`/* searchCommunityMembers */
     SELECT loaded.*
-    FROM (
-    SELECT cm.id
-    FROM community_members cm
-    INNER JOIN users member_user ON member_user.id = cm.user_id
-    WHERE cm.community_id = ${communityId}
-      AND cm.removed_at IS NULL
-      AND member_user.deleted_at IS NULL
-  `
-  if (cursorId !== undefined) query.append(sql` AND cm.id > ${cursorId}`)
-  if (options?.role) appendMemberRoleFilter(query, options.role)
-  if (roster === 'moderators') query.append(sql` AND cm.role IN ('owner', 'moderator')`)
-  appendMemberRosterVisibilityFilter(query, roster, options?.currentUser ?? null)
-  query.append(sql` ORDER BY cm.id ASC LIMIT ${limit + 1}
-    ) page
+    FROM (`.append(page).append(sql`) page
     INNER JOIN community_members loaded ON loaded.id = page.id
     ORDER BY page.id ASC`)
 
@@ -86,6 +88,36 @@ export async function searchCommunityMembers(
       start_cursor: results[0] ? encodeCursor({ name: results[0].id, id: results[0].id }) : null,
     },
   }
+}
+
+function buildMemberRosterWalk(
+  communityId: string,
+  options: {
+    cursorId: string | undefined
+    role: CommunityMemberRole | undefined
+    roster: 'all' | 'moderators' | 'privacy'
+    currentUser: PrivateUser | null
+    limit: number
+  },
+): SQLStatement {
+  const needsPrivacy = options.roster === 'privacy' && (!options.role || options.role === 'member')
+  const query = sql`
+    SELECT cm.id
+    FROM community_members cm
+  `
+  if (needsPrivacy) query.append(sql` INNER JOIN users member_user ON member_user.id = cm.user_id`)
+  query.append(sql` WHERE cm.community_id = ${communityId}
+      AND cm.removed_at IS NULL
+  `)
+  if (needsPrivacy) query.append(sql` AND member_user.deleted_at IS NULL`)
+  else
+    query.append(sql` AND (SELECT member_user.deleted_at IS NULL FROM users member_user
+           WHERE member_user.id = cm.user_id) IS TRUE`)
+  if (options.cursorId !== undefined) query.append(sql` AND cm.id > ${options.cursorId}`)
+  if (options.role) appendMemberRoleFilter(query, options.role)
+  if (needsPrivacy) appendMemberRosterVisibilityFilter(query, options.roster, options.currentUser)
+  query.append(sql` ORDER BY cm.id ASC LIMIT ${options.limit + 1}`)
+  return query
 }
 
 function appendMemberRoleFilter(query: SQLStatement, role: CommunityMemberRole): void {

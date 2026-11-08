@@ -7,11 +7,8 @@ import { COMMUNITY_MEMBERSHIP_CAP_COMMUNITY_ID } from '../seed-data/community-me
 export async function runCommunityMemberRolePageScenarios(): Promise<void> {
   const communityId = COMMUNITY_MEMBERSHIP_CAP_COMMUNITY_ID
   const boundedRoleIndexes = [
-    'community_members_pkey',
     'idx_community_members__owner_community_id_id',
     'idx_community_members__active_community_role_id',
-    'idx_community_members__active_community_id_id',
-    'idx_community_members__active_moderators',
     'idx_community_members__moderator_community_id',
   ]
   const scenarios = [
@@ -29,11 +26,9 @@ export async function runCommunityMemberRolePageScenarios(): Promise<void> {
     },
     {
       id: 'search-community-members-moderator-roster',
-      // Fixture churn can make custom plans prefer a PK scan: measured 1,053
-      // inspected memberships plus 26 final-row hydrations; generic plans use an index.
-      maxMembers: 1500,
-      // The sorted staff cohort can validate all 100 users before the final page.
-      maxUsers: 120,
+      // Each eligible role walk has its own page limit before the ordered merge.
+      maxMembers: 240,
+      maxUsers: 80,
       run: () => searchCommunityMembers(communityId, { limit: 25, rosterVisibility: 'moderators' }),
     },
   ] as const

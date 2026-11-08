@@ -17,16 +17,17 @@ export function buildUserRemovedPostsQuery(
     FROM community_post_reviews cpr
     WHERE cpr.submitted_by_id = ${userId}
       AND cpr.unpublished_at IS NOT NULL
-      AND EXISTS (
-        SELECT 1 FROM posts eligible_post
+      AND (SELECT TRUE FROM posts eligible_post
         WHERE eligible_post.id = cpr.post_id
           AND eligible_post.created_by_id = ${userId}
           AND eligible_post.deleted_at IS NULL
-      )
+      ) = TRUE
   `
   appendRemovalCursor(communityPosts, sql`cpr.unpublished_at`, sql`cpr.post_id`, 0, options)
 
-  communityPosts.append(sql` ORDER BY cpr.unpublished_at DESC, cpr.post_id DESC`)
+  communityPosts.append(
+    sql` ORDER BY cpr.unpublished_at DESC, cpr.post_id DESC LIMIT ${options.limit + 1}`,
+  )
 
   const query = sql`/* listUserRemovedPosts */ SELECT page.post_id,
     NULLIF(BTRIM(p.title), '') AS post_title,
@@ -47,7 +48,7 @@ export function buildUserRemovedPostsQuery(
         AND p.rejected_at IS NOT NULL
     `
     appendRemovalCursor(platformPosts, sql`p.rejected_at`, sql`p.id`, 1, options)
-    platformPosts.append(sql` ORDER BY p.rejected_at DESC, p.id DESC`)
+    platformPosts.append(sql` ORDER BY p.rejected_at DESC, p.id DESC LIMIT ${options.limit + 1}`)
     query
       .append(sql`(`)
       .append(platformPosts)

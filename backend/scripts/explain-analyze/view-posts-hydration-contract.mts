@@ -46,8 +46,7 @@ const measuredBudgets = {
     post_slugs: 3,
     posts: 3,
     post_clearance_changes: 2,
-    // The keyed probe filters one seeded historical-policy version (plus 20% rounded up).
-    post_moderation_versions: 2,
+    post_moderation_versions: 0,
     post_moderation_dispositions: 0,
     post_locks: 0,
     users: 2,
