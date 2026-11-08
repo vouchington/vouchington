@@ -2,7 +2,7 @@ import { DISPATCH_AND_CRAWL_SCENARIO_IDS } from './dispatch-and-crawl-scenario-i
 import { MEDIA_DELIVERY_LOCK_SCENARIOS } from './media-delivery-lock-scenario-ids.mts'
 import { MEMBERSHIP_COLLISION_REVIEW_SCENARIO_IDS } from './membership-collision-review-scenario-ids.mts'
 import { ELIGIBLE_LIST_SCENARIO_IDS } from './eligible-list-scenario-ids.mts'
-import { HACKER_NEWS_VIEWER_SCENARIO_IDS } from './hacker-news-viewer-scenario-ids.mts'
+import { HACKER_NEWS_WORK_SCENARIO_IDS } from './hacker-news-work-scenario-ids.mts'
 import { COMMUNITY_BAN_SCENARIO_IDS } from './community-ban-scenario-ids.mts'
 import { COPYRIGHT_CASE_PURGE_SCENARIO_IDS } from './copyright-case-purge-scenario-ids.mts'
 import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
@@ -124,37 +124,7 @@ export const BOUNDED_WORK_SCENARIOS = [
   'import-retention-child-continuation',
   'request-attempt-retention-continuation',
   'request-attempt-retention-delete',
-  'hacker-news-retention-page',
-  'hacker-news-readmission-mostly-fresh-first',
-  'hacker-news-readmission-mostly-fresh-later',
-  'hacker-news-readmission-mostly-fresh-exhausted',
-  ...HACKER_NEWS_VIEWER_SCENARIO_IDS,
-  'hacker-news-posts-new-1m-low',
-  'hacker-news-posts-new-1y-low',
-  'hacker-news-posts-new-all-low',
-  'hacker-news-posts-best-1m-low',
-  'hacker-news-posts-best-1y-low',
-  'hacker-news-posts-best-all-low',
-  'hacker-news-posts-hot-1m-low',
-  'hacker-news-posts-hot-1y-low',
-  'hacker-news-posts-hot-all-low',
-  'hacker-news-posts-new-1m-high',
-  'hacker-news-posts-new-1y-high',
-  'hacker-news-posts-new-all-high',
-  'hacker-news-posts-best-1m-high',
-  'hacker-news-posts-best-1y-high',
-  'hacker-news-posts-best-all-high',
-  'hacker-news-posts-hot-1m-high',
-  'hacker-news-posts-hot-1y-high',
-  'hacker-news-posts-hot-all-high',
-  'hacker-news-rss-new-all-low',
-  'hacker-news-rss-new-all-high',
-  'hacker-news-rss-feed-new-1m-low',
-  'hacker-news-rss-feed-new-1y-low',
-  'hacker-news-rss-feed-new-all-low',
-  'hacker-news-rss-feed-new-1m-high',
-  'hacker-news-rss-feed-new-1y-high',
-  'hacker-news-rss-feed-new-all-high',
+  ...HACKER_NEWS_WORK_SCENARIO_IDS,
   'request-range-retirement-recent',
   ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
   ...COPYRIGHT_CASE_PURGE_SCENARIO_IDS,
