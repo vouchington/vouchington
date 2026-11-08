@@ -22672,6 +22672,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_community_post_reviews__approved_visible_post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_post_reviews__approved_visible_post ON public.community_post_reviews USING btree (community_id, post_id) WHERE ((approved_at IS NOT NULL) AND (unpublished_at IS NULL) AND (rejected_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((approved_at IS NOT NULL) AND (unpublished_at IS NULL) AND (rejected_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_post_reviews__automod_dismissed_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
