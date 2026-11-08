@@ -3,15 +3,11 @@
 import { MODERATION_REPORT_REASON_OPTIONS } from '@ts-shared/utils/moderation-reports'
 import { clientApi } from './instance'
 import type {
-  MemberFlatModerationReportsResponse,
   ModerationReportResolutionResponse,
-  ModerationReportStatus,
   ReportJudgementRunResponse,
   ReportableEntityType,
   ReportReason,
   RerunReportJudgementResponse,
-  StaffClusteredModerationReportsResponse,
-  StaffFlatModerationReportsResponse,
 } from './reports-contracts'
 import type { CommunityModerationReportsResponseBody } from '@/types/api-responses/community-moderation'
 
@@ -57,38 +53,6 @@ export type ModerationReportSortParam =
   | 'most_reported'
   | 'created_at_asc'
   | 'created_at_desc'
-
-interface ModerationReportsParams {
-  status?: ModerationReportStatus
-  sort?: ModerationReportSortParam
-  after?: string
-  limit?: number
-}
-
-type FlatModerationReportsParams = ModerationReportsParams & {
-  cluster?: undefined
-}
-
-type ClusteredModerationReportsParams = ModerationReportsParams & {
-  cluster: 'entity'
-}
-
-type ModerationReportsReturn<T> = T extends ClusteredModerationReportsParams
-  ? StaffClusteredModerationReportsResponse
-  : StaffFlatModerationReportsResponse | MemberFlatModerationReportsResponse
-
-export function getModerationReports<
-  T extends FlatModerationReportsParams | ClusteredModerationReportsParams | undefined = undefined,
->(params?: T): Promise<ModerationReportsReturn<T>> {
-  const searchParams = new URLSearchParams()
-  if (params?.status) searchParams.set('status', params.status)
-  if (params?.sort) searchParams.set('sort', params.sort)
-  if (params?.after) searchParams.set('after', params.after)
-  if (params?.limit) searchParams.set('limit', String(params.limit))
-  if (params?.cluster) searchParams.set('cluster', params.cluster)
-  const qs = searchParams.toString()
-  return clientApi.get(`/api/v1/reports${qs ? `?${qs}` : ''}`)
-}
 
 export function resolveModerationReport(
   reportId: string,

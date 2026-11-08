@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { flush, writeRecord } from './backend-local.mts'
-import { closeConnection, query, refreshViews } from './query.mts'
+import { closeConnection, query } from './query.mts'
 import type { WebPageViewRecord } from './tables.mts'
 
 describe('query lifecycle helpers', () => {
@@ -20,12 +20,11 @@ describe('query lifecycle helpers', () => {
     await fs.promises.rm(testDir, { recursive: true })
   })
 
-  it('refreshViews and closeConnection are no-ops before any connection has been established', async () => {
-    await expect(refreshViews()).resolves.toBeUndefined()
+  it('closeConnection is a no-op before any connection has been established', async () => {
     await expect(closeConnection()).resolves.toBeUndefined()
   })
 
-  it('refreshViews rebuilds the views so rows flushed after connect are queryable', async () => {
+  it('queries rows flushed after a connection was established', async () => {
     const pageId = crypto.randomUUID()
     const eventId = crypto.randomUUID()
     const eventDate = '2024-08-01'
@@ -39,18 +38,21 @@ describe('query lifecycle helpers', () => {
       session_id: crypto.randomUUID(),
     }
 
-    // Establishes the shared connection so refreshViews() below has something to refresh.
+    // Establish the shared connection before the new row is flushed.
     await query('SELECT 1')
 
     writeRecord('web_page_view', record)
     await flush()
-    await expect(refreshViews()).resolves.toBeUndefined()
 
     const rows = await query<{ event_id: string }>(
       `SELECT event_id FROM web_page_view WHERE page_id = $1`,
       [pageId],
     )
     expect(rows).toEqual([{ event_id: eventId }])
+  })
+
+  it('returns no rows when an analytics query is invalid', async () => {
+    await expect(query('SELECT missing_column FROM web_page_view')).resolves.toEqual([])
   })
 
   it('closeConnection tears down the shared connection and lets the next query create a fresh one', async () => {

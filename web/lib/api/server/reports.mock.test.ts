@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getCommunityPendingModerationReports,
   getMemberPendingModerationReports,
-  getPendingModerationReports,
   getStaffPendingModerationReports,
 } from './reports'
 
@@ -31,15 +30,9 @@ describe('reports server api helpers', () => {
 
   it('calls serverApi.get with the reports endpoint and options', async () => {
     const options = { searchParams: { limit: 50, after: 'cursor' } }
-    await getPendingModerationReports(options)
+    await getStaffPendingModerationReports(options)
 
     expect(mockGet).toHaveBeenCalledWith('/api/v1/reports', options)
-  })
-
-  it('calls serverApi.get with default options', async () => {
-    await getPendingModerationReports()
-
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/reports', {})
   })
 
   it('calls serverApi.get with clustered report options', async () => {

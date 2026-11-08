@@ -48,14 +48,6 @@ const getPendingModerationReportsCached = cache(
   },
 )
 
-export function getPendingModerationReports(
-  options: ServerGetModerationReportsOptions = {},
-): Promise<ServerModerationReportsResponse | ServerClusteredModerationReportsResponse> {
-  return getPendingModerationReportsCached<
-    ServerModerationReportsResponse | ServerClusteredModerationReportsResponse
-  >(options)
-}
-
 export function getStaffPendingModerationReports(
   options: ServerGetModerationReportsOptions = {},
 ): Promise<StaffFlatModerationReportsResponse | StaffClusteredModerationReportsResponse> {

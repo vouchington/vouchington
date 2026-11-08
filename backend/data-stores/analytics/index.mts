@@ -1,5 +1,5 @@
 export { emit } from './emit.mts'
-export { query, refreshViews } from './query.mts'
+export { query } from './query.mts'
 export { onGracefulShutdown } from './graceful-shutdown.mts'
 export * from './tables.mts'
 export * from './config.mts'

@@ -13,8 +13,10 @@ vi.mock(
 )
 
 import { clientApi } from '../instance'
+import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
+import type { CommunityModerationReportsResponseBody } from '@/types/api-responses/community-moderation'
 import {
-  getModerationReports,
+  getCommunityPendingModerationReportsClient,
   resolveCommunityModerationReport,
   resolveModerationReport,
   rerunReportJudgement,
@@ -91,76 +93,25 @@ describe('reports client api helpers', () => {
     expect(result).toBe(response)
   })
 
+  it('requests the community pending report page with encoded identifier and options', async () => {
+    const response: CommunityModerationReportsResponseBody = { reports: [] }
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response,
+      call: () =>
+        getCommunityPendingModerationReportsClient('credit cards', { after: 'cursor', limit: 20 }),
+      expectedArgs: [
+        '/api/v1/communities/credit%20cards/reports/pending',
+        { searchParams: { after: 'cursor', limit: 20 } },
+      ],
+    })
+  })
+
   it('PATCHes community report resolutions to the community report endpoint', async () => {
     await resolveCommunityModerationReport('credit-cards', 'report-1', 'dismissed')
 
     expect(mockPatch).toHaveBeenCalledWith('/api/v1/communities/credit-cards/reports/report-1', {
       status: 'dismissed',
-    })
-  })
-
-  describe('getModerationReports', () => {
-    it('GETs /api/v1/reports with no query string when no params provided', async () => {
-      mockGet.mockResolvedValueOnce({
-        results: [],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-      await getModerationReports()
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/reports')
-    })
-
-    it('GETs /api/v1/reports with status query param', async () => {
-      mockGet.mockResolvedValueOnce({
-        results: [],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-      await getModerationReports({ status: 'pending' })
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/reports?status=pending')
-    })
-
-    it('GETs /api/v1/reports with sort query param', async () => {
-      mockGet.mockResolvedValueOnce({
-        results: [],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-      await getModerationReports({ sort: 'most_reported' })
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/reports?sort=most_reported')
-    })
-
-    it('GETs /api/v1/reports with after and limit query params', async () => {
-      mockGet.mockResolvedValueOnce({
-        results: [],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-      await getModerationReports({ after: 'abc123', limit: 20 })
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/reports?after=abc123&limit=20')
-    })
-
-    it('GETs /api/v1/reports with all params combined', async () => {
-      mockGet.mockResolvedValueOnce({
-        results: [],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-      await getModerationReports({
-        status: 'reviewed',
-        sort: 'created_at_desc',
-        after: 'xyz',
-        limit: 10,
-      })
-      expect(mockGet).toHaveBeenCalledWith(
-        '/api/v1/reports?status=reviewed&sort=created_at_desc&after=xyz&limit=10',
-      )
-    })
-
-    it('GETs /api/v1/reports with cluster query param', async () => {
-      mockGet.mockResolvedValueOnce({
-        cluster_mode: 'entity',
-        results: [],
-        duplicate_clusters: [],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-      await getModerationReports({ cluster: 'entity' })
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/reports?cluster=entity')
     })
   })
 })
