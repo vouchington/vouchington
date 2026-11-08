@@ -18,7 +18,6 @@ export async function retainUserCascadeHardDeletedPosts(
 ): Promise<void> {
   const { rows } = await query<{ id: string }>(
     `/* listUserCascadeHardDeletedPostIds */
-    -- no-mistakes-disable-next-line postgres-required-predicates: no-mistakes FP jonathanong/no-mistakes#3112; remove when fixed. LIMIT is USER_CASCADE_CAPTURE_MAX_POSTS + 1 (this file) on idx_posts__created_by_id (created_by_id, id); the cascade victims are one author's posts, not an id range
     SELECT id FROM posts WHERE created_by_id = $1 ORDER BY id LIMIT $2`,
     [userId, USER_CASCADE_CAPTURE_MAX_POSTS + 1],
   )

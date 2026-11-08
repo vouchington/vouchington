@@ -45,7 +45,6 @@ export async function cutCopyrightCasePointerPage(
   if (phaseIndex === 0) {
     const { rows } = await query<{ cut: number }>(sql`/* cutCopyrightCaseDecisionPredecessors */
       WITH page AS MATERIALIZED (
-        -- no-mistakes-disable-next-line postgres-required-predicates: the case spans decision-id partitions; notice_id leads the indexed bounded page and predecessor pointers must be cut in every partition.
         SELECT id FROM copyright_territorial_decisions
         WHERE copyright_notice_id = ${noticeId}::uuid
           AND supersedes_decision_id IS NOT NULL

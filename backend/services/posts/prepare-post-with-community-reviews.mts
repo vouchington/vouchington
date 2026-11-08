@@ -95,7 +95,6 @@ export const preparePostWithCommunityReviews = async (
         SELECT COALESCE(
           (
             SELECT NULLIF(TRIM(rfi.data->>'title'), '')
-            -- no-mistakes-disable-next-line postgres-required-predicates: RSS item URL can change on upsert, so an item may predate its current url_id
             FROM rss_feed_items rfi
             WHERE rfi.url_id = ${updates.url_id}
               AND rfi.deleted_at IS NULL
