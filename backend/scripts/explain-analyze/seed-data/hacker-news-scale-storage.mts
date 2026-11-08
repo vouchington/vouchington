@@ -98,9 +98,12 @@ export async function insertHackerNewsScalePartitions(
     const lower = seedUuidAtTimestamp(partition.month, 0)
     const upper = seedUuidAtTimestamp(addUtcMonths(partition.month, 1), 0)
     // no-mistakes-disable-next-line query-reached-per-item: exactly 24 owned monthly partitions are created once in the disposable EXPLAIN database.
+    // Autovacuum is off: its worker pins leaf buffers while it runs, and cold-cache eviction fails
+    // on any pinned buffer. Statistics come from the explicit ANALYZE calls before each capture.
     await query(
       `/* createHackerNewsScalePartition */ CREATE TABLE ${partition.name} PARTITION OF posts
-       FOR VALUES FROM ('${lower}'::uuid) TO ('${upper}'::uuid)`,
+       FOR VALUES FROM ('${lower}'::uuid) TO ('${upper}'::uuid)
+       WITH (autovacuum_enabled = false)`,
     )
     // no-mistakes-disable-next-line query-reached-per-item: each fixed partition receives at most 41,667 rows through one bounded set-based insert; no individual post calls.
     await query(

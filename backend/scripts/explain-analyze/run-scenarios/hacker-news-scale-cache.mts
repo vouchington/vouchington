@@ -2,9 +2,6 @@ import { explainAnalyze, write, type ExplainPlanCacheMode } from '@data-stores/p
 import { collectPlanNodes } from '../plan-nodes.mts'
 import type { BeforeExplain } from '../capture-passes.mts'
 
-/** Bounded evictions of one relation whose buffers another backend pinned transiently. */
-const EVICTION_ATTEMPTS = 5
-
 export type HackerNewsCacheState = 'cold' | 'warm'
 export type EvictionEvidence = {
   planCacheMode: ExplainPlanCacheMode
@@ -82,29 +79,22 @@ async function evictPlanRelations(input: Parameters<BeforeExplain>[0]): Promise<
     skipped: 0,
   }
   for (const { name } of rows) {
-    // Another backend (autovacuum, background writer, checkpointer) can pin a buffer for an instant.
-    // Re-evict a relation only while buffers were skipped; cold evidence needs a final pass skipping none.
-    let skipped = 0
-    for (let attempt = 0; attempt < EVICTION_ATTEMPTS; attempt++) {
-      // no-mistakes-disable-next-line query-reached-per-item: each of at most 500 plan-selected local relations needs its own PostgreSQL cache eviction, retried at most EVICTION_ATTEMPTS times; no global buffer or OS cache operation.
-      const { rows: evictions } = await write<{
-        buffers_evicted: number | string
-        buffers_flushed: number | string
-        buffers_skipped: number | string
-      }>(
-        `/* evictHackerNewsScaleRelation */
+    // no-mistakes-disable-next-line query-reached-per-item: each of at most 500 plan-selected local relations needs its own PostgreSQL cache eviction; no global buffer or OS cache operation.
+    const { rows: evictions } = await write<{
+      buffers_evicted: number | string
+      buffers_flushed: number | string
+      buffers_skipped: number | string
+    }>(
+      `/* evictHackerNewsScaleRelation */
       SELECT buffers_evicted, buffers_flushed, buffers_skipped
       FROM pg_buffercache_evict_relation($1::regclass)`,
-        [name],
-      )
-      const eviction = evictions[0]
-      if (!eviction) throw new Error(`No HN cache-eviction evidence for ${name}`)
-      evidence.evicted += Number(eviction.buffers_evicted)
-      evidence.flushed += Number(eviction.buffers_flushed)
-      skipped = Number(eviction.buffers_skipped)
-      if (skipped === 0) break
-    }
-    evidence.skipped += skipped
+      [name],
+    )
+    const eviction = evictions[0]
+    if (!eviction) throw new Error(`No HN cache-eviction evidence for ${name}`)
+    evidence.evicted += Number(eviction.buffers_evicted)
+    evidence.flushed += Number(eviction.buffers_flushed)
+    evidence.skipped += Number(eviction.buffers_skipped)
   }
   if (evidence.skipped !== 0)
     throw new Error(`HN cold-buffer preparation skipped ${evidence.skipped} pinned buffers`)
