@@ -55,7 +55,10 @@ export async function runCategoryProjectionScenarios(): Promise<void> {
         {
           kind: 'usesIndexes',
           indexes: sourceUnion
-            ? ['idx_rss_feed_item_source_category_snapshots__item_feed']
+            ? [
+                'idx_rss_feed_item_source_category_snapshots__item_feed',
+                'idx_rss_feed_item_sources__item_feed',
+              ]
             : [
                 queryName === 'isPendingCategorySnapshotCurrent' || acknowledgement
                   ? 'rss_feed_item_category_snapshot_reconciliations_pkey'
@@ -68,11 +71,13 @@ export async function runCategoryProjectionScenarios(): Promise<void> {
         'rss_feed_item_category_projection_results',
         'rss_feed_item_category_snapshot_reconciliations',
         'rss_feed_item_source_category_snapshots',
+        'rss_feed_item_sources',
       ],
       seededRows: {
         rss_feed_item_category_projection_results: CATEGORY_PROJECTION_NOISE_ROWS,
         rss_feed_item_category_snapshot_reconciliations: CATEGORY_PROJECTION_NOISE_ROWS,
         rss_feed_item_source_category_snapshots: CATEGORY_PROJECTION_NOISE_ROWS,
+        rss_feed_item_sources: CATEGORY_PROJECTION_NOISE_ROWS,
       },
     })
     let changeId = ''

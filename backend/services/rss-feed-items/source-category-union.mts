@@ -18,6 +18,7 @@ export async function getRssFeedItemCategorySnapshots(
       CROSS JOIN LATERAL jsonb_array_elements_text(source_snapshot.categories)
         AS source_category(category_text)
       WHERE source_snapshot.rss_feed_item_id = ANY($1::uuid[])
+        AND source.rss_feed_item_id = ANY($1::uuid[])
         AND feed.deleted_at IS NULL
       GROUP BY source_snapshot.rss_feed_item_id`,
     [rssFeedItemIds],

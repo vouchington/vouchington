@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { seedUuid } from './common.mts'
+import { contentHash, seedUuid } from './common.mts'
 
 export const CATEGORY_PROJECTION_NOISE_ROWS = 1000
 export const CATEGORY_PROJECTION_TEXT = 'seed-completed-category-projection'
@@ -13,6 +13,31 @@ export async function seedCategoryProjection(): Promise<string> {
   )
   const itemId = rows[0]?.id
   if (!itemId) throw new Error('Category projection fixture needs the ordinary RSS item seed')
+  // A feed with a long history must not turn this point lookup into a feed-wide scan.
+  await write(
+    `/* seedCategoryProjection:feedHistory */
+      WITH identities AS (
+        INSERT INTO rss_feed_item_guids (url_hostname_id, guid)
+        SELECT $1::uuid, 'seed-category-projection-history-' || ordinal
+        FROM generate_series(1, $2::int) ordinal
+        ON CONFLICT (url_hostname_id, guid) DO UPDATE SET guid = EXCLUDED.guid
+        RETURNING id
+      ), items AS (
+        INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
+        SELECT id, $3::uuid, '{}'::jsonb, $4::bytea FROM identities
+        ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data
+        RETURNING id
+      )
+      INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id)
+      SELECT $5::uuid, id FROM items ON CONFLICT DO NOTHING`,
+    [
+      seedUuid(0, '02'),
+      CATEGORY_PROJECTION_NOISE_ROWS,
+      seedUuid(2500, '03'),
+      contentHash('seed-category-projection-history'),
+      seedUuid(0, '08'),
+    ],
+  )
   await write(
     `/* seedCategoryProjection:results */
       INSERT INTO rss_feed_item_category_projection_results
