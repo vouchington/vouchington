@@ -1,14 +1,13 @@
-import type { ArticleSyncJobStatus, ArticleSyncResult } from '@/lib/api/client/admin'
+import type { ArticleSyncJobStatus } from '@/lib/api/client/admin'
 import { createRecoverableEventSource } from '@/lib/auth/recoverable-event-source'
 import {
   createArticleSyncStreamRecovery,
+  parseArticleSyncStreamStatus,
   isTransientArticleSyncProbeError,
+  type ArticleSyncStreamStatus,
 } from './article-sync-stream-recovery'
 
 type SyncStream = ReturnType<typeof createRecoverableEventSource>
-type SyncStatus =
-  | { status: 'completed'; result: ArticleSyncResult }
-  | { status: 'failed'; error?: string }
 type TerminalArticleSyncStatus = Exclude<ArticleSyncJobStatus, { status: 'active' }>
 
 /**
@@ -18,7 +17,7 @@ type TerminalArticleSyncStatus = Exclude<ArticleSyncJobStatus, { status: 'active
  */
 export function createArticleSyncStreamSession(options: {
   readStatus: (jobId: string) => Promise<ArticleSyncJobStatus>
-  onTerminal: (status: TerminalArticleSyncStatus | SyncStatus) => void
+  onTerminal: (status: TerminalArticleSyncStatus | ArticleSyncStreamStatus) => void
   onTrackingFailure: (error: unknown) => void
 }) {
   let stream: SyncStream | null = null
@@ -38,7 +37,10 @@ export function createArticleSyncStreamSession(options: {
     endStream()
   }
 
-  function finish(status: TerminalArticleSyncStatus | SyncStatus, current: SyncStream) {
+  function finish(
+    status: TerminalArticleSyncStatus | ArticleSyncStreamStatus,
+    current: SyncStream,
+  ) {
     if (stream !== current) return
     recovery.clear()
     activeJobId = null
@@ -91,13 +93,8 @@ export function createArticleSyncStreamSession(options: {
     stream = current
 
     function handleStatus(event: MessageEvent) {
-      let data: SyncStatus
-      try {
-        data = JSON.parse(event.data) as SyncStatus
-      } catch {
-        return
-      }
-      finish(data, current)
+      const status = parseArticleSyncStreamStatus(event.data)
+      if (status) finish(status, current)
     }
 
     function handleError(source: EventSource) {

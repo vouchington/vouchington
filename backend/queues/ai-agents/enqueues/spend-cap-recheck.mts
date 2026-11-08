@@ -1,5 +1,6 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import onError from '@modules/on-error'
+import type { Job } from 'glide-mq'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
@@ -16,7 +17,7 @@ function enqueueSpendCapRecheck(
   day: string,
   generation: string,
   delayMs: number,
-): ReturnType<typeof enqueueRecheck> {
+): Promise<Job<SpendCapRecheckJobData> | null> {
   return enqueueRecheck(
     { day, generation },
     {
@@ -35,7 +36,7 @@ export async function enqueueSpendCapRecheckBestEffort(
   delayMs: number,
   enqueue: typeof enqueueSpendCapRecheck = enqueueSpendCapRecheck,
 ): Promise<void> {
-  let enqueued: ReturnType<typeof enqueueSpendCapRecheck>
+  let enqueued: Promise<Job<SpendCapRecheckJobData> | null>
   try {
     enqueued = enqueue(day, generation, delayMs)
   } catch (err) {

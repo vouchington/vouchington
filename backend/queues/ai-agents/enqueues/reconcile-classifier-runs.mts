@@ -1,4 +1,4 @@
-import type { JobOptions } from 'glide-mq'
+import type { Job, JobOptions } from 'glide-mq'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS } from '../config.mts'
 import type { ReconcileClassifierRunsJobData } from '../types.mts'
 import { createAIAgentEnqueue } from './create-enqueue.mts'
@@ -6,7 +6,7 @@ import { createAIAgentEnqueue } from './create-enqueue.mts'
 const enqueue = createAIAgentEnqueue('reconcile-classifier-runs')
 
 /** The tick that starts a sweep from its first page. */
-export function enqueueReconcileClassifierRuns(): ReturnType<typeof enqueue> {
+export function enqueueReconcileClassifierRuns(): Promise<Job<ReconcileClassifierRunsJobData> | null> {
   return enqueue({}, {
     ...AI_AGENTS_DEFAULTS,
     priority: AGENT_PRIORITY['reconcile-classifier-runs'],
@@ -20,7 +20,7 @@ export function enqueueReconcileClassifierRuns(): ReturnType<typeof enqueue> {
  */
 export function enqueueReconcileClassifierRunsPage(
   data: ReconcileClassifierRunsJobData & { phase: 'incomplete' | 'requests' },
-): ReturnType<typeof enqueue> {
+): Promise<Job<ReconcileClassifierRunsJobData> | null> {
   return enqueue(data, {
     ...AI_AGENTS_DEFAULTS,
     priority: AGENT_PRIORITY['reconcile-classifier-runs'],

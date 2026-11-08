@@ -86,10 +86,6 @@ const NON_TOOL_FILES = new Set([
   'untrusted-output.mts',
 ])
 
-export interface McpToolFileExport {
-  schema?: { name?: string }
-}
-
 export interface McpToolGroup {
   options: readonly { source: object }[]
 }
@@ -124,12 +120,14 @@ export function anonymousMcpSourceCounts(groups: readonly McpToolGroup[]): Map<o
  * referenced once. A missing default export is unregistered.
  */
 export function isUnregisteredMcpToolFile(
-  tool: McpToolFileExport | undefined,
+  tool: unknown,
   registeredNames: ReadonlySet<string>,
   sourceCounts: ReadonlyMap<object, number>,
 ): boolean {
-  if (tool == null) return true
-  const name = tool.schema?.name
+  if (tool === null || (typeof tool !== 'object' && typeof tool !== 'function')) return true
+  const schema = 'schema' in tool ? tool.schema : undefined
+  const name =
+    schema !== null && typeof schema === 'object' && 'name' in schema ? schema.name : undefined
   if (name == null) return sourceCounts.get(tool) !== 1
-  return !registeredNames.has(name)
+  return typeof name !== 'string' || !registeredNames.has(name)
 }

@@ -55,6 +55,20 @@ describe('createBedrockEmbedding', () => {
     expect(send).toHaveBeenCalledExactlyOnceWith(expect.anything(), { abortSignal })
   })
 
+  it('rejects a response entry that has no embedding', async () => {
+    const send = vi.fn<VitestLooseMock>().mockResolvedValueOnce({
+      body: new TextEncoder().encode(JSON.stringify({ embeddings: [{}] })),
+    })
+    Object.defineProperty(BedrockEmbeddingsClient, 'send', {
+      value: send,
+      configurable: true,
+    })
+
+    await expect(createBedrockEmbedding('missing vector')).rejects.toThrow(
+      'Bedrock embedding response did not include an embedding',
+    )
+  })
+
   it('truncates over-limit text before sending to Bedrock', async () => {
     const embedding = new Array(1024).fill(0.1)
     const send = vi.fn<VitestLooseMock>().mockResolvedValueOnce({

@@ -2,7 +2,7 @@
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { renderCheckpoint, type Checkpoint } from './shepherd-checkpoint.mts'
+import { renderCheckpoint, validateCheckpoint, type GitHubComment } from './shepherd-checkpoint.mts'
 import { selectResumeCheckpoint } from './shepherd-checkpoint-resume.mts'
 import { updateExactCheckpoint } from './shepherd-checkpoint-update.mts'
 
@@ -11,7 +11,8 @@ const USAGE = 'Usage: checkpoint.mts render|select|update <path>'
 export function runCheckpointCli(): void {
   const command = process.argv[2]
   if (command === 'render') {
-    const checkpoint = JSON.parse(readFileSync(process.argv[3] ?? '', 'utf8')) as Checkpoint
+    const checkpoint = validateCheckpoint(JSON.parse(readFileSync(process.argv[3] ?? '', 'utf8')))
+    if (!checkpoint) throw new Error('Invalid checkpoint input')
     process.stdout.write(renderCheckpoint(checkpoint))
     return
   }
@@ -26,7 +27,7 @@ export function runCheckpointCli(): void {
     return Number(value)
   }
   if (command === 'update') {
-    const comment = JSON.parse(readFileSync(process.argv[3] ?? '', 'utf8'))
+    const comment = parseGitHubComment(JSON.parse(readFileSync(process.argv[3] ?? '', 'utf8')))
     const status = required('CHECKPOINT_STATUS')
     if (status !== 'running' && status !== 'failed') throw new Error('CHECKPOINT_STATUS is invalid')
     process.stdout.write(
@@ -49,9 +50,10 @@ export function runCheckpointCli(): void {
     return
   }
   if (command !== 'select') throw new Error(USAGE)
-  const comments = JSON.parse(readFileSync(process.argv[3] ?? '', 'utf8')) as Parameters<
-    typeof selectResumeCheckpoint
-  >[0]
+  const parsed: unknown = JSON.parse(readFileSync(process.argv[3] ?? '', 'utf8'))
+  if (!Array.isArray(parsed)) throw new Error('Expected GitHub comments array')
+  const values: unknown[] = parsed
+  const comments = values.map(parseGitHubComment)
   const result = selectResumeCheckpoint(comments, {
     repository: required('GITHUB_REPOSITORY'),
     pr: Number(required('PR_NUMBER')),
@@ -111,4 +113,33 @@ try {
 } catch (err) {
   process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
   process.exitCode = 1
+}
+
+function parseGitHubComment(value: unknown): GitHubComment {
+  if (!isGitHubComment(value)) throw new Error('Invalid GitHub comment input')
+  return value
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function optionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string'
+}
+
+function isGitHubComment(value: unknown): value is GitHubComment {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'number' &&
+    optionalString(value.body) &&
+    optionalString(value.created_at) &&
+    (value.user === undefined ||
+      (isRecord(value.user) &&
+        optionalString(value.user.login) &&
+        optionalString(value.user.type))) &&
+    (value.performed_via_github_app == null ||
+      (isRecord(value.performed_via_github_app) &&
+        optionalString(value.performed_via_github_app.slug)))
+  )
 }

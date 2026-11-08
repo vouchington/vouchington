@@ -5,11 +5,13 @@ export function isBanActive(ban: CommunityBanSummary): boolean {
 }
 
 export function uniqueBans(bans: CommunityBanSummary[]): CommunityBanSummary[] {
-  return [...new Map(bans.map(ban => [ban.id, ban])).values()]
+  return [...new Map<string, CommunityBanSummary>(bans.map(ban => [ban.id, ban] as const)).values()]
 }
 
 export function collectBanUsers(
   pages: CommunityBansResponseBody[],
 ): CommunityBansResponseBody['users'] {
-  return Object.assign({}, ...pages.map(page => page.users))
+  const users: CommunityBansResponseBody['users'] = {}
+  for (const page of pages) Object.assign(users, page.users)
+  return users
 }

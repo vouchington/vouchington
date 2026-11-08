@@ -59,8 +59,11 @@ function buildRssXmlImpl(channel: RssChannel, items: RssItem[]): string {
       categories: item.categories?.map(name => ({ name })),
     })),
   })
-  return xml.replace(CDATA_WHITESPACE_REGEX, (_match, openTag, cdataContent, closeTag) => {
-    const cleanedContent = cdataContent.replace(/(^|]]>)\s*(<!\[CDATA\[|$)/g, '$1$2')
-    return `${openTag}${cleanedContent}${closeTag}`
-  })
+  return xml.replace(
+    CDATA_WHITESPACE_REGEX,
+    (_match: string, openTag: string, cdataContent: string, closeTag: string) => {
+      const cleanedContent = cdataContent.replace(/(^|]]>)\s*(<!\[CDATA\[|$)/g, '$1$2')
+      return `${openTag}${cleanedContent}${closeTag}`
+    },
+  )
 }

@@ -73,14 +73,19 @@ function isSourceEvidence(value: unknown): boolean {
   return (
     Array.isArray(value) &&
     value.length <= 30 &&
-    value.every(
-      item =>
-        item &&
-        typeof item === 'object' &&
-        Object.keys(item).length === 2 &&
-        SOURCE_FIELDS.has((item as Record<string, unknown>).field as string) &&
-        isBoundedString((item as Record<string, unknown>).excerpt, 1000),
-    )
+    value.every(item => {
+      const candidate: unknown = item
+      return (
+        candidate !== null &&
+        typeof candidate === 'object' &&
+        Object.keys(candidate).length === 2 &&
+        'field' in candidate &&
+        typeof candidate.field === 'string' &&
+        SOURCE_FIELDS.has(candidate.field) &&
+        'excerpt' in candidate &&
+        isBoundedString(candidate.excerpt, 1000)
+      )
+    })
   )
 }
 

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { EMBEDDINGS_TABLE } from '../config.mts'
 import { createBedrockEmbedding } from '../single/request.mts'
+import { requireDenseEmbedding } from '../single/require-dense-embedding.mts'
 
 const ONE_DAY_SECONDS = 60 * 60 * 24
 const SEARCH_EMBEDDING_TIMEOUT_MS = 6_000
@@ -24,7 +25,7 @@ async function directFetchEmbedding(normalizedQuery: string): Promise<{ embeddin
     entityType: 'search',
     abortSignal: AbortSignal.timeout(SEARCH_EMBEDDING_TIMEOUT_MS),
   })
-  return { embedding: result.embedding }
+  return { embedding: requireDenseEmbedding(result.embedding) }
 }
 
 async function fetchEmbedding(normalizedQuery: string): Promise<number[]> {

@@ -43,8 +43,13 @@ async function writeGzipFileFromUtf8Chunks(
 function createHashingTransform(hash: ReturnType<typeof createHash>): Transform {
   return new Transform({
     transform(chunk, _encoding, callback): void {
-      hash.update(chunk)
-      callback(null, chunk)
+      const data: unknown = chunk
+      if (typeof data !== 'string' && !(data instanceof Uint8Array)) {
+        callback(new TypeError('Sitemap gzip chunk is not text or bytes'))
+        return
+      }
+      hash.update(data)
+      callback(null, data)
     },
   })
 }

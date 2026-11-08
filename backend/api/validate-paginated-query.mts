@@ -1,6 +1,6 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
-import type { QueryContract } from '@vouchington/pagination'
+import type { QueryContract, QueryParameterContract } from '@vouchington/pagination'
 import type { PaginationRuntimeLimitBounds } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { validateRequestContract } from './response-helpers.mts'
@@ -38,11 +38,10 @@ export function parseAndValidatePaginatedRequest<TParsed extends ParsedPaginatio
   options: ValidatePaginatedRequestOptions = {},
 ): TParsed {
   const parsed = parseRuntimePagination(parser, ctx.query, options.runtimeLimitBounds)
-  const queryContract = Object.assign(
-    {},
-    parser.queryContract,
-    ...(options.extraQueryContracts ?? []),
-  )
+  const queryContract: Record<string, QueryParameterContract> = { ...parser.queryContract }
+  for (const extraContract of options.extraQueryContracts ?? []) {
+    Object.assign(queryContract, extraContract)
+  }
   const query = prepareQueryForValidation(ctx.query, queryContract, options.ignoredKeys)
   if (ctx.query.limit !== undefined) query.limit = parsed.limit
   if (parsed.after !== undefined) query.after = parsed.after

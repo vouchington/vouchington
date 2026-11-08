@@ -65,7 +65,7 @@ export async function verifyAssertionSignature(
 
   const signCountGate = params.signCountFloor === -1 ? -1 : storedKey.sign_count
 
-  let result
+  let result: unknown
   try {
     result = verifyAppAttestAssertion({
       assertion: params.assertion,
@@ -79,5 +79,13 @@ export async function verifyAssertionSignature(
     rejectAssertion(err)
   }
 
+  if (
+    typeof result !== 'object' ||
+    result === null ||
+    !('signCount' in result) ||
+    typeof result.signCount !== 'number'
+  ) {
+    rejectAssertion(new TypeError('Unexpected App Attest assertion result'))
+  }
   return result.signCount
 }

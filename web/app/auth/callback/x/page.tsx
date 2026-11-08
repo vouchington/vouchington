@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getWindowOpener } from '@/lib/auth/window-opener'
 
 const X_CALLBACK_FALLBACK = <XCallbackStatus />
 
@@ -22,8 +23,9 @@ function XCallbackContent() {
     const state = searchParams.get('state')
     const error = searchParams.get('error')
 
-    if (window.opener) {
-      window.opener.postMessage({ provider: 'x', code, state, error }, window.location.origin)
+    const opener = getWindowOpener()
+    if (opener) {
+      opener.postMessage({ provider: 'x', code, state, error }, window.location.origin)
       window.close()
     }
   }, [searchParams])

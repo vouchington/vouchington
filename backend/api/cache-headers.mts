@@ -23,7 +23,7 @@ export function setAnonymousPublicCacheHeaders(
 
 function mergeAuthSensitiveVary(value: HeaderValue | undefined): string {
   const seen = new Set<string>()
-  const values = Array.isArray(value) ? value : [value]
+  const values: readonly (string | number | undefined)[] = Array.isArray(value) ? value : [value]
   for (const rawValue of values) {
     if (addVaryHeaders(rawValue, seen) === '*') return '*'
   }

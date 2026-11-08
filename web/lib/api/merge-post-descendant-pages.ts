@@ -1,8 +1,11 @@
 import type { PostsResponseBody } from '@/types/api-responses'
 
 function mergePageSidecars(pages: PostsResponseBody[]) {
-  const merge = <T>(select: (page: PostsResponseBody) => Record<string, T> | undefined) =>
-    Object.assign({}, ...pages.map(page => select(page) ?? {}))
+  const merge = <T>(select: (page: PostsResponseBody) => Record<string, T> | undefined) => {
+    const merged: Record<string, T> = {}
+    for (const page of pages) Object.assign(merged, select(page) ?? {})
+    return merged
+  }
   return {
     posts: merge(page => page.posts),
     posts_metrics: merge(page => page.posts_metrics),

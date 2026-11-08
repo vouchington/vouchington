@@ -96,8 +96,8 @@ export const handleWebSocket = async (request: Request, url: URL, env: Env): Pro
   server.accept()
   originWs.accept()
 
-  server.addEventListener('message', (e: MessageEvent) => originWs.send(e.data))
-  originWs.addEventListener('message', (e: MessageEvent) => server.send(e.data))
+  server.addEventListener('message', (event: WebSocketMessage) => originWs.send(event.data))
+  originWs.addEventListener('message', (event: WebSocketMessage) => server.send(event.data))
 
   server.addEventListener('close', (e: CloseEvent) => {
     try {
@@ -131,3 +131,6 @@ export const handleWebSocket = async (request: Request, url: URL, env: Env): Pro
 
   return new Response(null, { status: 101, webSocket: client })
 }
+
+// Native WebSocket frames carry text or binary bytes; MessageEvent also models broader APIs.
+type WebSocketMessage = Omit<MessageEvent, 'data'> & { readonly data: string | ArrayBuffer }

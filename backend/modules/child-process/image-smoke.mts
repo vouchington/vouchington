@@ -55,8 +55,8 @@ async function collectStdout(
 ): Promise<string> {
   const chunks: Buffer[] = []
   const stdout = new Writable({
-    write(chunk, _encoding, callback) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+    write(chunk: string | Uint8Array, _encoding, callback) {
+      chunks.push(Buffer.from(chunk))
       callback()
     },
   })

@@ -1,3 +1,4 @@
+/// <reference lib="esnext" />
 'use strict'
 
 /**
@@ -33,10 +34,12 @@ const NON_RUNTIME_SOURCE_PATTERN =
   '^backend/test-helpers/|^backend/scripts/check-materialized-view-contracts\\.mts$|' +
   '^backend/scripts/native-mv-contracts/|(?:^|/)__tests__/|\\.test\\.|\\.d\\.[mc]?ts$'
 
+/** @param {string} absoluteDir */
 function toRepoRelativePosix(absoluteDir) {
   return path.relative(repoRoot, absoluteDir).split(path.sep).join('/')
 }
 
+/** @param {string} pattern */
 function expandWorkspacePattern(pattern) {
   const absolutePattern = path.resolve(backendDir, pattern)
   if (!pattern.includes('*')) return [absolutePattern]
@@ -53,12 +56,25 @@ function expandWorkspacePattern(pattern) {
 }
 
 function discoverWorkspacePackageRoots() {
+  /** @type {unknown} */
   const backendPackageJson = JSON.parse(
     fs.readFileSync(path.join(backendDir, 'package.json'), 'utf8'),
   )
+  const patterns =
+    backendPackageJson !== null &&
+    typeof backendPackageJson === 'object' &&
+    'workspaces' in backendPackageJson
+      ? backendPackageJson.workspaces
+      : []
+  if (!Array.isArray(patterns)) throw new TypeError('backend workspaces must be an array')
+  /** @type {unknown[]} */
+  const workspaces = patterns
+  /** @type {Set<string>} */
   const roots = new Set()
 
-  for (const pattern of backendPackageJson.workspaces ?? []) {
+  for (const pattern of workspaces) {
+    if (typeof pattern !== 'string')
+      throw new TypeError('backend workspace patterns must be strings')
     for (const directory of expandWorkspacePattern(pattern)) {
       if (!fs.existsSync(path.join(directory, 'package.json'))) continue
       roots.add(toRepoRelativePosix(directory))
@@ -77,9 +93,7 @@ function discoverWorkspacePackageRoots() {
     )
   }
 
-  return [...roots].toSorted(
-    (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)),
-  )
+  return [...roots].toSorted((a, b) => Number(a > b) - Number(a < b))
 }
 
 module.exports = discoverWorkspacePackageRoots().map(packageRoot => {

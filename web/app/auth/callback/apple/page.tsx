@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getWindowOpener } from '@/lib/auth/window-opener'
 
 const APPLE_CALLBACK_FALLBACK = <AppleCallbackStatus />
 const APPLE_CALLBACK_PATH = 'voucha://auth/apple/callback'
@@ -32,8 +33,9 @@ function AppleCallbackContent() {
     const userName = readAppleUserName(callbackParams)
     if (userName !== null) callbackUrl.searchParams.set('userName', userName)
 
-    if (window.opener) {
-      window.opener.postMessage(
+    const opener = getWindowOpener()
+    if (opener) {
+      opener.postMessage(
         {
           provider: 'apple',
           id_token: callbackParams.get('id_token'),

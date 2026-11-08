@@ -179,5 +179,7 @@ export function mergeSidecars<T>(
   continuation: StoryPageResponse[],
   pick: (page: RssFeedItemsFeedResponseBody | StoryPageResponse) => Record<string, T> | undefined,
 ): Record<string, T> {
-  return Object.assign({}, ...[...pages, ...continuation].map(page => pick(page) ?? {}))
+  const merged: Record<string, T> = {}
+  for (const page of [...pages, ...continuation]) Object.assign(merged, pick(page) ?? {})
+  return merged
 }

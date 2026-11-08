@@ -1,4 +1,4 @@
-type Validation = (timeout: number, label: string) => number
+type Validation = (timeout: unknown, label: string) => number
 type Watchpoint = { target: object; descriptors: PropertyDescriptorMap; prototype: object | null }
 type Snapshot = { view: object; validate: Validation; watchpoints: Watchpoint[] }
 const snapshots = new WeakMap<object, Snapshot>()
@@ -50,12 +50,12 @@ export function snapshotFixtureTimeouts(fixtures: object, validate: Validation):
     if (!Array.isArray(value)) return value
     const existingTuple = tuples.get(value)
     if (existingTuple !== undefined) return existingTuple
-    const options = knownOptions ?? Reflect.get(value, '1', value)
+    const options: unknown = knownOptions ?? Reflect.get(value, '1', value)
     if (typeof options !== 'object' || options === null) return value
     const captured = snapshotOptionsTimeout(options, validate, 'Playwright fixture timeout')
     const tuple: unknown[] = []
     Object.defineProperties(tuple, {
-      0: { enumerable: true, get: () => Reflect.get(value, '0', value) },
+      0: { enumerable: true, get: (): unknown => Reflect.get(value, '0', value) },
       1: { enumerable: true, value: captured },
     })
     watchpoints.push(watch(value))
@@ -103,9 +103,9 @@ export function snapshotOptionsTimeout(
   validate: Validation,
   label: string,
 ): object {
-  const declared = Reflect.get(options, 'timeout')
+  const declared: unknown = Reflect.get(options, 'timeout')
   const timeout = declared === undefined ? undefined : validate(declared, label)
   return new Proxy(options, {
-    get: (target, key) => (key === 'timeout' ? timeout : Reflect.get(target, key, target)),
+    get: (target, key): unknown => (key === 'timeout' ? timeout : Reflect.get(target, key, target)),
   })
 }

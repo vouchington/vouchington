@@ -49,9 +49,8 @@ export async function openRetirementTransaction(deadline: number) {
     // A pool may remove a client before its physical end event. Retain listeners through both.
     for (const connected of clients) connected.off('error', onClientError)
     pool.off('error', onPoolError)
-    const failures = outcomes.flatMap(result =>
-      result.status === 'rejected' ? [result.reason] : [],
-    )
+    const failures: unknown[] = []
+    for (const result of outcomes) if (result.status === 'rejected') failures.push(result.reason)
     failures.push(...observedErrors)
     if (failures.length)
       throw new AggregateError(failures, 'Retirement pool/client end and observed errors', {

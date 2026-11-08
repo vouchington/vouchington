@@ -149,8 +149,8 @@ function useHydrateLocalCollapse(
 function parseStoredIds(stored: string | null | undefined): string[] {
   if (!stored) return []
   try {
-    const ids = JSON.parse(stored)
-    return Array.isArray(ids) ? ids : []
+    const ids: unknown = JSON.parse(stored)
+    return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : []
   } catch {
     return []
   }

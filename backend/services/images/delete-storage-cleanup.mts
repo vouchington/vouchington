@@ -23,7 +23,11 @@ export async function cleanupDeletedImageStorage(image: LockedStorageImage): Pro
     const results = await Promise.allSettled(
       [...new Set([image.s3_key, image.id])].map(key => deleteImageRenders(key)),
     )
-    const errors = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
+    const errors = results.flatMap((result): unknown[] => {
+      if (result.status !== 'rejected') return []
+      const reason: unknown = result.reason
+      return [reason]
+    })
     if (errors.length > 0)
       throw new AggregateError(errors, `Failed to delete renders for image ${image.id}`)
   } catch (err) {

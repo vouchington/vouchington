@@ -92,9 +92,9 @@ export async function runCatalogGeneration(
     const results = await Promise.allSettled(
       closeResources.map(close => Promise.resolve().then(close)),
     )
-    failures.push(
-      ...results.flatMap(result => (result.status === 'rejected' ? [result.reason] : [])),
-    )
+    for (const result of results) {
+      if (result.status === 'rejected') failures.push(result.reason)
+    }
   }
   if (failures.length === 1) throw failures[0]
   if (failures.length > 1)

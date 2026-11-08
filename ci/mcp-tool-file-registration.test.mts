@@ -55,4 +55,10 @@ describe('MCP tool file registration', () => {
     expect(isUnregisteredMcpToolFile(anonymous, new Set(), counts)).toBe(true)
     expect(isUnregisteredMcpToolFile({ schema: {} }, new Set(), counts)).toBe(true)
   })
+  it.each([null, false, 1, 'tool', { schema: { name: 1 } }])(
+    'rejects malformed dynamically imported tool exports: %j',
+    value => {
+      expect(isUnregisteredMcpToolFile(value, new Set(), new Map())).toBe(true)
+    },
+  )
 })

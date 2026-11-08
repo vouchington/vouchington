@@ -12,7 +12,8 @@ const meta = {
       return new Proxy(result, {
         get(target, prop, receiver) {
           if (prop === 'matches') return false
-          return Reflect.get(target, prop, receiver)
+          const value: unknown = Reflect.get(target, prop, receiver)
+          return value
         },
       })
     }

@@ -61,7 +61,11 @@
         "**/test-helpers/**"
       ],
       "rules": {
-        "typescript/no-explicit-any": "off"
+        // Policy: Test fixtures and helpers intentionally model unchecked external and malformed data.
+        "typescript/no-explicit-any": "off",
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-return": "off",
+        "typescript/no-unsafe-argument": "off"
       }
     },
     {
@@ -93,6 +97,15 @@
       ],
       "rules": {
         "react/only-export-components": "off"
+      }
+    },
+    {
+      // Policy: Plain JavaScript service workers have no TypeScript event/API declarations.
+      "files": ["**/public/service-worker*.js"],
+      "rules": {
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-return": "off",
+        "typescript/no-unsafe-argument": "off"
       }
     }
   ]

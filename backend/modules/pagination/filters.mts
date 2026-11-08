@@ -93,7 +93,8 @@ export function validateMediaTypes(single: unknown, multi: unknown): MediaType[]
   const raw: unknown[] = []
   if (single !== undefined) {
     if (Array.isArray(single)) {
-      raw.push(...single)
+      const values: unknown[] = single
+      raw.push(...values)
     } else if (typeof single === 'string') {
       // Support comma-separated values in the singular param (e.g. ?media_type=audio,video)
       raw.push(...single.split(',').map(v => v.trim()))
@@ -101,7 +102,8 @@ export function validateMediaTypes(single: unknown, multi: unknown): MediaType[]
   }
   if (multi !== undefined) {
     if (Array.isArray(multi)) {
-      raw.push(...multi)
+      const values: unknown[] = multi
+      raw.push(...values)
     } else if (typeof multi === 'string') {
       raw.push(...multi.split(',').map(v => v.trim()))
     }

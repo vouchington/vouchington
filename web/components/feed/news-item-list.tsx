@@ -54,7 +54,7 @@ export function NewsItemList({
     function onItemHidden(event: Event) {
       if (!(event instanceof CustomEvent) || typeof event.detail?.id !== 'string') return
       const { id } = event.detail
-      setHiddenItemIds(prev => new Set([...prev, id]))
+      setHiddenItemIds(prev => new Set<string>([...prev, id]))
     }
     window.addEventListener(RSS_ITEM_HIDDEN_EVENT, onItemHidden)
     return () => window.removeEventListener(RSS_ITEM_HIDDEN_EVENT, onItemHidden)

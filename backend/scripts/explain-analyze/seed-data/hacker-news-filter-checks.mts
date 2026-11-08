@@ -61,11 +61,13 @@ export async function cleanupHackerNewsFilterFixture(
   query: QueryExecutor,
   f: HackerNewsFilterFixture,
 ) {
-  const q = (text: string, values?: unknown[]) =>
-    query(`/* cleanupHackerNewsFilterFixture */ ${text}`, values)
+  const q = <Row extends Record<string, unknown> = Record<string, unknown>>(
+    text: string,
+    values?: unknown[],
+  ) => query<Row>(`/* cleanupHackerNewsFilterFixture */ ${text}`, values)
   for (let offset = 0; offset < f.postCount; offset += f.batchSize) {
     // no-mistakes-disable-next-line query-reached-per-item: each cleanup statement deletes one explicitly limited owned fixture batch; the loop has a finite corpus cap.
-    const { rows } = await q(
+    const { rows } = await q<{ id: string }>(
       `WITH candidates AS(SELECT id FROM posts WHERE created_by_id=$1 ORDER BY id LIMIT $2)
       DELETE FROM posts USING candidates WHERE posts.id=candidates.id RETURNING posts.id`,
       [f.actorId, f.batchSize],
@@ -78,7 +80,7 @@ export async function cleanupHackerNewsFilterFixture(
   }
   for (let offset = 0; offset < f.rssCount; offset += f.batchSize) {
     // no-mistakes-disable-next-line query-reached-per-item: each cleanup statement deletes one explicitly limited owned fixture batch; the loop has a finite corpus cap.
-    const { rows } = await q(
+    const { rows } = await q<{ id: string }>(
       `WITH candidates AS(SELECT id FROM rss_feed_item_guids WHERE url_hostname_id=$1 ORDER BY id LIMIT $2)
       DELETE FROM rss_feed_item_guids USING candidates WHERE rss_feed_item_guids.id=candidates.id RETURNING rss_feed_item_guids.id`,
       [f.hostnameId, f.batchSize],

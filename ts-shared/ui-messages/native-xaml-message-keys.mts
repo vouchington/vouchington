@@ -8,11 +8,12 @@ export function xamlMessageKeys(source: string): string[] {
     if (err instanceof Error && err.name === 'ValidationError') return []
     throw err
   }
-  const document = new XMLParser({
+  const parsed: unknown = new XMLParser({
     attributeNamePrefix: '@_',
     ignoreAttributes: false,
     preserveOrder: true,
-  }).parse(source) as unknown[]
+  }).parse(source)
+  const document: unknown[] = Array.isArray(parsed) ? parsed : []
   const keys: string[] = []
   visitXamlStrings(document, value => {
     for (const match of value.matchAll(/\{DynamicResource\s+([^}\s]+)\}/g)) keys.push(match[1]!)
@@ -26,16 +27,20 @@ export function xamlMessageKeys(source: string): string[] {
 
 function visitXamlStrings(nodes: unknown[], visitValue: (value: string) => void): void {
   for (const node of nodes) {
-    if (typeof node !== 'object' || node === null || Array.isArray(node)) continue
+    if (!isRecord(node)) continue
     for (const [key, value] of Object.entries(node)) {
       if (key === '#comment') continue
       if (typeof value === 'string') visitValue(value)
       else if (Array.isArray(value)) visitXamlStrings(value, visitValue)
-      else if (typeof value === 'object' && value !== null) {
+      else if (isRecord(value)) {
         for (const attributeValue of Object.values(value)) {
           if (typeof attributeValue === 'string') visitValue(attributeValue)
         }
       }
     }
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

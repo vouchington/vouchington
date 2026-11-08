@@ -18,9 +18,9 @@ export async function runLiveMcpCatalogCheck({
     const results = await Promise.allSettled(
       closeResources.map(close => Promise.resolve().then(close)),
     )
-    failures.push(
-      ...results.flatMap(result => (result.status === 'rejected' ? [result.reason] : [])),
-    )
+    for (const result of results) {
+      if (result.status === 'rejected') failures.push(result.reason)
+    }
   }
   if (failures.length === 1) throw failures[0]
   if (failures.length > 1) throw new AggregateError(failures, 'MCP catalog check or cleanup failed')

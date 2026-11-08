@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
 import type { StorybookConfig } from '@storybook/nextjs-vite'
+import type { Alias, AliasOptions } from 'vite'
 import {
   buildStorybookAliases,
   supplyStorybookParentRenderTree,
@@ -16,9 +17,9 @@ const config: StorybookConfig = {
     options: {},
   },
   async viteFinal(viteConfig) {
-    const existingAlias = viteConfig.resolve?.alias ?? []
-    const aliasArray = Array.isArray(existingAlias)
-      ? existingAlias
+    const existingAlias: AliasOptions = viteConfig.resolve?.alias ?? []
+    const aliasArray: Alias[] = isAliasArray(existingAlias)
+      ? [...existingAlias]
       : Object.entries(existingAlias).map(([find, replacement]) => ({ find, replacement }))
     const installedOnLog = viteConfig.build?.rolldownOptions?.onLog
     const directiveLogs = createStorybookUseDirectiveLogFilter({
@@ -88,4 +89,8 @@ export default config
 
 function getAbsolutePath(value: string): string {
   return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`)))
+}
+
+function isAliasArray(aliases: AliasOptions): aliases is readonly Alias[] {
+  return Array.isArray(aliases)
 }

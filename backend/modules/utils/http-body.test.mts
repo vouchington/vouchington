@@ -71,4 +71,25 @@ describe('readResponseBody response compatibility', () => {
 
     expect(response.body?.locked).toBe(false)
   })
+
+  it('rejects non-byte chunks and releases the Undici reader', async () => {
+    const body = new ReadableStream<string>({
+      start(controller) {
+        controller.enqueue('not bytes')
+        controller.close()
+      },
+    })
+    const response = new UndiciResponse()
+    Object.defineProperty(response, 'body', { value: body })
+
+    await expect(
+      readResponseBody({
+        response,
+        url: 'https://example.com',
+        maxSizeBytes: 1000,
+      }),
+    ).rejects.toThrow('Response body chunk is not bytes')
+
+    expect(body.locked).toBe(false)
+  })
 })

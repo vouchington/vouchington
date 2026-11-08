@@ -88,7 +88,10 @@ export async function createDueStatutoryCopyrightRestoreIntentsForDeadline(
   )
   if (failures.length > 0) {
     throw new AggregateError(
-      failures.map(failure => failure.reason),
+      failures.map(failure => {
+        const reason: unknown = failure.reason
+        return reason
+      }),
       'Failed to materialize one or more due copyright restoration intents',
     )
   }

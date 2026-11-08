@@ -3,6 +3,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { chmod, lstat, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
+import { readPlanningImpactStdin } from './planning-impact-input.mts'
 
 export const PLANNING_IMPACT_MARKER_NAME = '.planning-impact-cleanup-sha256'
 
@@ -38,7 +39,6 @@ function parseSession(value: unknown): PlanningImpactSession {
   }
   return { directory: record.directory, cleanupToken: record.cleanupToken }
 }
-
 function markerDigest(token: string, parent: string, basename: string): string {
   return createHash('sha256')
     .update(token)
@@ -158,24 +158,6 @@ export async function cleanupPlanningImpactDirectory(input: unknown): Promise<vo
   await rm(directory, { recursive: true })
 }
 
-async function readStdinJson(): Promise<unknown> {
-  const chunks: Buffer[] = []
-  let bytes = 0
-  for await (const chunk of process.stdin) {
-    const buffer = Buffer.from(chunk)
-    bytes += buffer.length
-    if (bytes > 4096) throw new Error('planning impact session input exceeds 4 KiB')
-    chunks.push(buffer)
-  }
-  const input = Buffer.concat(chunks).toString('utf8').trim()
-  if (!input) throw new Error('planning impact session input is required on stdin')
-  try {
-    return JSON.parse(input) as unknown
-  } catch {
-    throw new Error('planning impact session input must be valid JSON')
-  }
-}
-
 async function main(): Promise<void> {
   const [command, ...extra] = process.argv.slice(2)
   if (extra.length !== 0) throw new Error('planning impact directory command accepts no arguments')
@@ -184,7 +166,7 @@ async function main(): Promise<void> {
     return
   }
   if (command === 'cleanup') {
-    await cleanupPlanningImpactDirectory(await readStdinJson())
+    await cleanupPlanningImpactDirectory(await readPlanningImpactStdin())
     return
   }
   throw new Error('expected the create or cleanup command')
