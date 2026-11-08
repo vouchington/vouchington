@@ -13,7 +13,7 @@ import type {
   DynamicConfigNamespace,
   DynamicConfigNamespaceSummary,
 } from '@/lib/api/client/dynamic-config'
-import type { FeatureFlagsResponse } from '@/lib/api/client/feature-flags'
+import type { getFeatureFlags } from '@/lib/api/server/feature-flags'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 export const DYNAMIC_CONFIG_DECLARATIONS = [
@@ -64,10 +64,9 @@ export const DYNAMIC_CONFIG_DECLARATIONS = [
       fediverse: false,
     }),
   ),
-  defineWebApiFixture<FeatureFlagsResponse>()(
+  defineWebApiFixture<Awaited<ReturnType<typeof getFeatureFlags>>>()(
     'native.feature-flags.default',
     nativeFeatureFlagsDefault,
-    context => context.client.featureFlags.getFeatureFlagsClient(),
-    [context => context.server.featureFlags.getFeatureFlags()],
+    context => context.server.featureFlags.getFeatureFlags(),
   ),
 ] as const satisfies readonly WebApiFixtureDeclaration<string, unknown>[]

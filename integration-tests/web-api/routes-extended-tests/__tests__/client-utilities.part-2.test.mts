@@ -15,7 +15,7 @@ import {
 
 import type { CookieHeader } from '../../routes-extended.mts'
 
-import { clientFetch } from '@/lib/api/client/raw-fetch'
+import { clientFetch } from '@/test-helpers/api-fixture-fetch'
 
 import { getPaginatedPage } from '@/lib/api/client/paginated'
 

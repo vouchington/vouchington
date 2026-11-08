@@ -36,7 +36,7 @@ import type {
 import type { GrowthMetrics } from '@/types/growth-metrics'
 import type { UnmappedCategoryListResponse } from '@/types/rss-feed-categories'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
-import { clientFetch } from '@/lib/api/client/raw-fetch'
+import { clientFetch } from '@/test-helpers/api-fixture-fetch'
 import type { QueueStatsSummary } from '@/test-helpers/api-fixture-response-types'
 
 export const ENGINEERING_DECLARATIONS = [
@@ -119,13 +119,11 @@ export const ENGINEERING_DECLARATIONS = [
     'web.admin.psql.migrations.default',
     adminPsqlMigrationsDefault,
     context => context.client.psql.fetchMigrations(),
-    [context => context.server.psql.getMigrationStatus()],
   ),
   defineWebApiFixture<PartitionStatusResponseBody>()(
     'web.admin.psql.partitions.default',
     adminPsqlPartitionsDefault,
     context => context.client.psql.fetchPartitions(),
-    [context => context.server.psql.getPartitionStatus()],
   ),
   defineWebApiFixture<PsqlJobEnqueueResponse>()(
     'web.admin.psql.jobs.classifier-range',

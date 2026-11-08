@@ -6,14 +6,11 @@ import {
   InternalImageBlockedError,
   InternalImageProcessingTimeoutError,
 } from './image-upload-errors'
-import { internalPollImageUntilTerminal } from './image-upload-polling'
 import { pollImageUntilUploaded } from './image-upload-wait'
 
 export const ImageBlockedError = InternalImageBlockedError
 export const ImageProcessingTimeoutError = InternalImageProcessingTimeoutError
 export { POLL_INTERVAL_MS, POLL_MAX_ERRORS, POLL_TIMEOUT_MS } from './image-upload-polling'
-/** Waits for moderation terminal state when callers explicitly need ready/blocked/failed. */
-export const pollImageUntilTerminal = internalPollImageUntilTerminal
 export { pollImageUntilUploaded } from './image-upload-wait'
 const CROSS_USER_DEDUP_MESSAGE = 'Image upload matched an image that is not available to this user'
 

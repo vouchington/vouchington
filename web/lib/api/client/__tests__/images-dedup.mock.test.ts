@@ -12,40 +12,17 @@ vi.mock(
 )
 
 import { clientApi } from '../instance'
-import { ImageBlockedError, pollImageUntilTerminal, uploadImageFile } from '../images'
+import { ImageBlockedError, uploadImageFile } from '../images'
 
 const mockPost = vi.mocked(clientApi.post)
 const mockGet = vi.mocked(clientApi.get)
 
-// Minimal EventSource mock — dedup tests open SSE only for same-user processing paths.
-type ESListener = (event: MessageEvent) => void
+// Records unexpected subscriptions so deduplicated uploads can assert none were opened.
 class MockEventSource {
   static instances: MockEventSource[] = []
-  readonly url: string
-  readonly listeners = new Map<string, Set<ESListener>>()
-  closed = false
 
-  constructor(url: string) {
-    this.url = url
+  constructor(readonly url: string) {
     MockEventSource.instances.push(this)
-  }
-
-  addEventListener(type: string, fn: ESListener) {
-    if (!this.listeners.has(type)) this.listeners.set(type, new Set())
-    this.listeners.get(type)!.add(fn)
-  }
-
-  removeEventListener(type: string, fn: ESListener) {
-    this.listeners.get(type)?.delete(fn)
-  }
-
-  close() {
-    this.closed = true
-  }
-
-  emit(type: string, data: unknown) {
-    const event = new MessageEvent(type, { data: JSON.stringify(data) })
-    this.listeners.get(type)?.forEach(fn => fn(event))
   }
 }
 
@@ -62,46 +39,13 @@ function makeCompletePost(overrides: { id: string; upload_status: string }) {
   return { image: { upload_error: null, ...overrides } }
 }
 
-describe('pollImageUntilTerminal — malformed SSE event', () => {
-  beforeEach(() => {
-    MockEventSource.instances = []
-    vi.stubGlobal('EventSource', MockEventSource)
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-    vi.unstubAllGlobals()
-  })
-
-  it('ignores malformed SSE state events and continues waiting', async () => {
-    const promise = pollImageUntilTerminal('img-1', { timeoutMs: 5000 })
-    const es = MockEventSource.instances[0]!
-    // Emit a malformed (non-JSON) event — should be silently ignored
-    const badEvent = new MessageEvent('state', { data: 'not-valid-json' })
-    es.listeners.get('state')?.forEach(fn => fn(badEvent))
-    // Stream is still open; emit a valid terminal event
-    const goodEvent = new MessageEvent('state', {
-      data: JSON.stringify({
-        id: 'img-1',
-        upload_status: 'complete',
-        upload_error: null,
-        ready: true,
-        blocked: false,
-      }),
-    })
-    es.listeners.get('state')?.forEach(fn => fn(goodEvent))
-    const result = await promise
-    expect(result.ready).toBe(true)
-  })
-})
-
 describe('uploadImageFile — same-user dedup terminal states from REST probe', () => {
   beforeEach(() => {
     MockEventSource.instances = []
     vi.stubGlobal('EventSource', MockEventSource)
     vi.stubGlobal(
       'fetch',
-      vi.fn<() => unknown>().mockResolvedValue(new Response(null, { status: 200 })),
+      vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 200 })),
     )
   })
 
@@ -189,5 +133,29 @@ describe('uploadImageFile — same-user dedup terminal states from REST probe', 
       name: 'ApiError',
       message: 'processing error',
     })
+  })
+})
+
+describe('uploadImageFile object upload failure', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('reports an unsuccessful object upload before requesting completion', async () => {
+    mockPost.mockResolvedValueOnce(UPLOAD_URL_POST)
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(null, { status: 403, statusText: 'Forbidden' })),
+    )
+    const file = new File(['x'], 'a.png', { type: 'image/png' })
+
+    await expect(uploadImageFile(file)).rejects.toMatchObject({
+      name: 'ApiError',
+      message: 'Failed to upload image: Forbidden',
+    })
+    expect(mockPost).toHaveBeenCalledTimes(1)
   })
 })

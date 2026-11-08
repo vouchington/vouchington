@@ -3,7 +3,7 @@ import hostnameBlockCreateAdmissionDefault from '../../../../api-fixtures/v1/res
 import hostnameBlockOperationCompleted from '../../../../api-fixtures/v1/responses/web.hostname-block-operation.completed.json'
 import type { BlockHostnameResult, CreateHostnameResponse } from '@/types/hostnames'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
-import { clientFetch } from '@/lib/api/client/raw-fetch'
+import { clientFetch } from '@/test-helpers/api-fixture-fetch'
 
 const HOSTNAME_ID = '00000000-0000-7000-8000-000000000001'
 const OPERATION_ID = '00000000-0000-7000-8000-000000000002'

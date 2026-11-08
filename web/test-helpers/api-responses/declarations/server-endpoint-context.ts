@@ -94,10 +94,6 @@ export interface WebFixtureServerEndpointContext {
   >
   readonly oauthApps: Pick<typeof import('@/lib/api/server/oauth-apps'), 'getMyOAuthApps'>
   readonly oauthGrants: Pick<typeof import('@/lib/api/server/oauth-grants'), 'getMyOAuthGrants'>
-  readonly psql: Pick<
-    typeof import('@/lib/api/server/psql'),
-    'getMigrationStatus' | 'getPartitionStatus'
-  >
   readonly referralLinks: Pick<
     typeof import('@/lib/api/server/referral-links'),
     'getAllMyReferralLinks'

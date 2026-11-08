@@ -10,7 +10,7 @@ import type {
   TopicImportResult,
 } from '@/lib/api/client/import-export'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
-import { clientFetch } from '@/lib/api/client/raw-fetch'
+import { clientFetch } from '@/test-helpers/api-fixture-fetch'
 import type { ExportTopic } from '@/test-helpers/api-fixture-response-types'
 
 const importId = '70000000-0000-7000-8000-000000000001'
