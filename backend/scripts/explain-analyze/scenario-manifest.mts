@@ -180,7 +180,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'user-bookmark-counts',
   ...SESSION_LIMIT_SCENARIO_IDS,
   ...(['user-by-username', 'user-metrics-batch'] as const),
-  'user-profile-metrics',
+  ...(['user-profile-metrics', 'profile-post-type-counts'] as const),
   'user-removed-posts-page',
   ...(['vote-aggregation-post', 'vote-aggregation-topic'] as const),
   ...(['vote-weight-factors', ...VOTE_WEIGHT_DISPATCH_SCENARIO_IDS] as const),

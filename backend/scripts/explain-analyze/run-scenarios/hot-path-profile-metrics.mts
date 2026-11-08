@@ -1,7 +1,15 @@
-import { read } from '@data-stores/psql'
+import assert from 'node:assert/strict'
+import { read, write } from '@data-stores/psql'
+import { getUserPostTypeFacets } from '@services/posts/search/get-facets'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
-import { getUserProfileMetricsByAny } from '../run-services.mts'
+import { getPrivateUserByAny, getUserProfileMetricsByAny } from '../run-services.mts'
+import {
+  PROFILE_POST_COUNTS_AUTHOR_ID,
+  PROFILE_POST_COUNT_PER_TYPE,
+  cleanupProfilePostCounts,
+  seedProfilePostCounts,
+} from '../seed-data/profile-post-counts.mts'
 
 const PROFILE_POST_COUNT_QUERIES = [
   'getUserPostTypeFacetsReview',
@@ -78,4 +86,47 @@ export async function runUserProfileMetricsScenario(): Promise<void> {
   await runAndCapture('user-profile-metrics', () =>
     getUserProfileMetricsByAny(seedUser.id, { currentUser: seedUser }),
   )
+  await runProfilePostTypeCountsScenario()
+}
+
+async function runProfilePostTypeCountsScenario(): Promise<void> {
+  try {
+    await seedProfilePostCounts()
+    // Refresh every relation in the publication eligibility predicate, including dormant branches.
+    await write(`/* analyzeProfilePostCounts */ ANALYZE
+      posts, user_suspensions, communities, community_post_reviews, community_members,
+      relation__user__follow__user, story_posts, stories, rss_feed_items,
+      rss_feed_item_sources, rss_feeds`)
+    const author = await getPrivateUserByAny(PROFILE_POST_COUNTS_AUTHOR_ID)
+    assert(author, 'The scale profile author must exist')
+    assert.deepEqual(author.roles, [], 'The scale profile author must have ordinary visibility')
+    const indexLeaves = await profilePostTypeIndexLeaves()
+    registerScenarioContract('profile-post-type-counts', {
+      expectations: [
+        // Each type visits 2,000 candidates and their keyed thread roots, not all 6,000 posts.
+        { kind: 'maxProcessedRows', relation: 'posts', max: 5_000 },
+        { kind: 'maxBitmapIndexRows', max: 2_500 },
+        ...(['review', 'discussion', 'comment'] as const).map((postType, index) => ({
+          kind: 'usesIndexes' as const,
+          indexes: indexLeaves[postType],
+          anyOf: true,
+          queryContains: PROFILE_POST_COUNT_QUERIES[index],
+        })),
+      ],
+      forbidSequentialScans: ['posts'],
+      crossPartition: {
+        posts: "The scale profile counts this author's exact totals across all post id ranges.",
+      },
+    })
+    await runAndCapture('profile-post-type-counts', async () => {
+      const counts = await getUserPostTypeFacets(author.id, author)
+      assert.deepEqual(counts, {
+        review: PROFILE_POST_COUNT_PER_TYPE,
+        discussion: PROFILE_POST_COUNT_PER_TYPE,
+        comment: PROFILE_POST_COUNT_PER_TYPE,
+      })
+    })
+  } finally {
+    await cleanupProfilePostCounts()
+  }
 }

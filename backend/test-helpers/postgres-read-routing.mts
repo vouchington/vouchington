@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { read, readPool, writePool } from '@data-stores/psql'
+import { read, readPool, withPrimaryReads, writePool } from '@data-stores/psql'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
 const observedRouting = new AsyncLocalStorage<symbol>()
@@ -39,6 +39,9 @@ export async function observePostgresReadRoutingForTest(
     replicaAcquisitions: () => replicaAcquisitions,
     run<T>(callback: () => Promise<T>): Promise<T> {
       return observedRouting.run(token, callback)
+    },
+    runOnPrimary<T>(callback: () => Promise<T>): Promise<T> {
+      return observedRouting.run(token, () => withPrimaryReads(callback))
     },
     async probeReplicaRead() {
       await read('/* observePostgresReadRoutingForTest */ SELECT 1')

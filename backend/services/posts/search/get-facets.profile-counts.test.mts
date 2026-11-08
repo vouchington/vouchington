@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestPost } from '@voucha/test-helpers'
+import { observePostgresReadRoutingForTest } from '@voucha/test-helpers/postgres-read-routing'
 import type { PrivateUser } from '@services/users/types'
 import { getUserPostTypeFacets } from './get-facets.mts'
 
@@ -22,6 +23,29 @@ async function publicPost(
 }
 
 describe('profile post facet counts', () => {
+  it.each(['replica', 'primary'] as const)('routes profile counts to %s', async route => {
+    const author = await createTestUser()
+    await publicPost(author, 'review', 'routed-review')
+
+    const routing = await observePostgresReadRoutingForTest()
+    try {
+      const readCounts = () => getUserPostTypeFacets(author.id, author)
+      const counts = await (route === 'primary'
+        ? routing.runOnPrimary(readCounts)
+        : routing.run(readCounts))
+      const [expectedPoolAcquisitions, otherPoolAcquisitions] =
+        route === 'primary'
+          ? [routing.primaryAcquisitions(), routing.replicaAcquisitions()]
+          : [routing.replicaAcquisitions(), routing.primaryAcquisitions()]
+
+      expect(counts).toEqual({ review: 1, discussion: 0, comment: 0 })
+      expect(expectedPoolAcquisitions).toBeGreaterThan(0)
+      expect(otherPoolAcquisitions).toBe(0)
+    } finally {
+      await routing.close()
+    }
+  })
+
   it('counts the posts this viewer can see', async () => {
     const author = await createTestUser()
     const stranger = await createTestUser()

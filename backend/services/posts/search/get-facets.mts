@@ -106,7 +106,7 @@ function countFrom(rows: readonly Record<string, unknown>[], column: string): nu
   return typeof value === 'number' || typeof value === 'string' ? Number(value) : 0
 }
 
-/** One statement per type. A combined count would sum every type into one plan-row budget. */
+/** Each type has its own author-index scan; read() preserves an active primary-read scope. */
 async function readProfileCount(statement: SQLStatement, column: string): Promise<number> {
   const { rows } = await read(statement)
   return countFrom(rows, column)
@@ -116,6 +116,7 @@ export async function getUserPostTypeFacets(
   userId: string,
   currentUser?: PrivateUser,
 ): Promise<UserPostTypeFacets> {
+  // The three types fix the fanout at three pooled reads, regardless of the author's post count.
   const [review, discussion, comment] = await Promise.all([
     readProfileCount(buildReviewProfileCount(userId, currentUser), 'review_count'),
     readProfileCount(buildDiscussionProfileCount(userId, currentUser), 'discussion_count'),
