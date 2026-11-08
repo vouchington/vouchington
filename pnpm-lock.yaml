@@ -8034,6 +8034,9 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -8049,6 +8052,9 @@ importers:
       '@vouchington/postgres':
         specifier: ^0.4.0
         version: 0.4.0
+      '@vouchington/sentry':
+        specifier: ^0.6.0
+        version: 0.6.0(@sentry/browser@11.10.0)(@sentry/core@11.10.0)(@sentry/node@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -20964,11 +20970,6 @@ packages:
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
-    peerDependencies:
-      ajv: ^8.0.0
-    peerDependenciesMeta:
-      ajv:
-        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -28638,6 +28639,20 @@ snapshots:
       rollup: 4.63.4
       webpack: 5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)
 
+  '@sentry/bundler-plugins@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
+    dependencies:
+      '@sentry/core': 11.10.0
+      dotenv: 17.4.2
+      glob: 13.0.6
+      magic-string: 1.4.3
+      oxc-parser: 0.152.0
+      sentry: 0.45.0
+      supports-color: 8.1.1
+    optionalDependencies:
+      rollup: 4.63.4
+      webpack: 5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)
+    optional: true
+
   '@sentry/cloudflare@11.10.0(@cloudflare/workers-types@5.20261104.1)(vite@8.3.6(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.158.0(@cloudflare/workers-types@5.20261104.1)(@types/node@26.6.5))':
     dependencies:
       '@opentelemetry/api': 1.9.1
@@ -28699,6 +28714,20 @@ snapshots:
     transitivePeerDependencies:
       - rollup
       - webpack
+
+  '@sentry/node@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
+    dependencies:
+      '@opentelemetry/api': 1.9.1
+      '@sentry/bundler-plugins': 11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/conventions': 0.29.0
+      '@sentry/core': 11.10.0
+      '@sentry/opentelemetry': 11.10.0(@opentelemetry/api@1.9.1)
+      '@sentry/server-runtime-injection': 11.10.0
+      '@sentry/server-utils': 11.10.0
+    transitivePeerDependencies:
+      - rollup
+      - webpack
+    optional: true
 
   '@sentry/opentelemetry@11.10.0(@opentelemetry/api@1.9.1)':
     dependencies:
@@ -29854,6 +29883,15 @@ snapshots:
       '@sentry/browser': 11.10.0
       '@sentry/node': 11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
 
+  '@vouchington/sentry@0.6.0(@sentry/browser@11.10.0)(@sentry/core@11.10.0)(@sentry/node@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))':
+    dependencies:
+      '@sentry/core': 11.10.0
+      '@vouchington/utils': 0.12.0
+      http-errors: 2.0.1
+    optionalDependencies:
+      '@sentry/browser': 11.10.0
+      '@sentry/node': 11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+
   '@vouchington/session-jwt@0.0.3':
     dependencies:
       '@vouchington/uuid-v7': 0.0.0
@@ -30024,8 +30062,8 @@ snapshots:
       - supports-color
       - zod
 
-  ajv-formats@2.1.1(ajv@8.20.0):
-    optionalDependencies:
+  ajv-formats@2.1.1:
+    dependencies:
       ajv: 8.20.0
     optional: true
 
@@ -33126,7 +33164,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1(ajv@8.20.0)
+      ajv-formats: 2.1.1
       ajv-keywords: 5.1.0(ajv@8.20.0)
     optional: true
 
@@ -33554,6 +33592,19 @@ snapshots:
       esbuild: 0.28.2
       lightningcss: 1.33.0
       postcss: 8.5.29
+    optional: true
+
+  terser-webpack-plugin@5.6.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)):
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      jest-worker: 27.5.1
+      schema-utils: 4.3.3
+      terser: 5.49.0
+      webpack: 5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)
+    optionalDependencies:
+      esbuild: 0.28.2
+      lightningcss: 1.33.0
+      postcss: 8.5.32
     optional: true
 
   terser@5.49.0:
@@ -34067,6 +34118,47 @@ snapshots:
       schema-utils: 4.3.3
       tapable: 2.3.3
       terser-webpack-plugin: 5.6.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
+      watchpack: 2.5.2
+      webpack-sources: 3.5.1
+    transitivePeerDependencies:
+      - '@minify-html/node'
+      - '@swc/core'
+      - '@swc/css'
+      - '@swc/html'
+      - clean-css
+      - cssnano
+      - csso
+      - esbuild
+      - html-minifier-terser
+      - lightningcss
+      - postcss
+      - uglify-js
+    optional: true
+
+  webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32):
+    dependencies:
+      '@types/eslint-scope': 3.7.7
+      '@types/estree': 1.0.9
+      '@types/json-schema': 7.0.15
+      '@webassemblyjs/ast': 1.14.1
+      '@webassemblyjs/wasm-edit': 1.14.1
+      '@webassemblyjs/wasm-parser': 1.14.1
+      acorn: 8.19.0
+      acorn-import-phases: 1.0.4(acorn@8.19.0)
+      browserslist: 4.29.0
+      chrome-trace-event: 1.0.4
+      enhanced-resolve: 5.26.0
+      es-module-lexer: 2.3.2
+      eslint-scope: 5.1.1
+      events: 3.3.0
+      glob-to-regexp: 0.4.1
+      graceful-fs: 4.2.11
+      loader-runner: 4.3.2
+      mime-db: 1.54.0
+      neo-async: 2.6.2
+      schema-utils: 4.3.3
+      tapable: 2.3.3
+      terser-webpack-plugin: 5.6.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       watchpack: 2.5.2
       webpack-sources: 3.5.1
     transitivePeerDependencies:

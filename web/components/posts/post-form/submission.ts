@@ -5,7 +5,6 @@ import {
   setPostImages,
   updatePost,
 } from '@/lib/api/client/post-mutations'
-import { ApiError } from '@vouchington/api-client'
 import type { PostMutationResponseBody } from '@/types/api-responses'
 import type { Post, PostBroadcast, PostPrivacy, PostType } from '@/types/posts'
 import type { StructuredDataState, DataPointVertical } from '../data-point-fields'
@@ -17,6 +16,7 @@ import { syncReviewRatings } from './rating-sync'
 import { getPostStructuredData } from './structured-data'
 import type { RelatedUrl } from './types'
 import type { FinancialProfile } from '@/types/my'
+import { getPostImageUpdateFailureMessage } from '@/lib/api/image-placement-limit'
 
 export interface SubmitPostInput {
   broadcast: PostBroadcast
@@ -109,11 +109,7 @@ async function updateExistingPost(
     }
   }
   await syncImages(saved, post, uploadedImages).catch((err: unknown) => {
-    toast.error(
-      err instanceof ApiError
-        ? `Post saved, but images failed: ${err.message}`
-        : 'Post saved, but images could not be updated. Please try again.',
-    )
+    toast.error(getPostImageUpdateFailureMessage(err))
   })
   return { post: saved }
 }

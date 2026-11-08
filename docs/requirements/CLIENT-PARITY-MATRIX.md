@@ -24,6 +24,16 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## Shared image placement capacity
+
+An image may be attached to posts and profile, topic, or community surfaces. If the API rejects a
+new attachment with `IMAGE_PLACEMENT_LIMIT_REACHED`, clients should explain that removing another
+use of the image frees capacity while preserving existing attachments. Web handles the response
+for post creation and updates, profile images, and topic images. Swift and .NET adoption across
+their supported image attachment flows is tracked in
+[vouchington-clients#559](https://github.com/vouchington/vouchington-clients/issues/559); native
+handling remains partial until those flows and their behavioral evidence are complete.
+
 ## Profile post counts
 
 `GET /api/v1/users/:idOrSlug` returns `user_metrics.count.reviews`,

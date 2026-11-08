@@ -10,6 +10,7 @@ import { prepublishImagePlacementDenial } from './delivery-registry-publish.mts'
 import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 import { lockImageAssetAdmission, assertImagesReadyForSurface } from './asset-admission-lock.mts'
 import { ensureImagePlacementBinding } from './retained-image-identities.mts'
+import { assertImagePlacementCapacity } from './placement-capacity.mts'
 
 export type { ImagePlacementTuple } from '@voucha/types/entities/user'
 
@@ -55,7 +56,7 @@ export type HeldSurfaceAuthority = {
   admission?: boolean
   /** The surface's owner advisory domain is held (`lockUserProfileLinkImageOwners`). */
   ownerDomains?: boolean
-  /** `prepublishImageSurfaceDenials` locked, readiness-checked and denied this surface's change. */
+  /** `prepublishImageSurfaceDenials` locked, readiness- and capacity-checked, then denied this change. */
   prepublished?: boolean
   /** `assertImagesReadyForSurface` covered the requested image (`prepareImageSurfaceAdmission`). */
   ready?: boolean
@@ -87,7 +88,7 @@ export async function syncImageSurfacePlacement(
   if (current?.image_id === imageId) return current
   if (!held.ready && !prepublished)
     await assertImagesReadyForSurface(imageId ? [imageId] : [], query)
-
+  if (imageId && !prepublished) await assertImagePlacementCapacity([imageId], query)
   if (current && current.image_id !== imageId && !prepublished) {
     await prepublishImagePlacementDenial(
       {
@@ -111,7 +112,6 @@ export async function syncImageSurfacePlacement(
   retireStatement.append(surfaceWhere(reference))
   await query(retireStatement)
   if (!imageId) return null
-
   const existingStatement = sql`/* syncImageSurfacePlacement:existing */
     SELECT surface.placement_id, placement.revision AS placement_revision, surface.image_id
     FROM image_surface_placements surface

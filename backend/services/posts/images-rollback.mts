@@ -8,7 +8,7 @@ import {
   restorePostClearanceStatus,
   type ClearanceStatus,
 } from '@services/post-clearance'
-import { syncPostImagePlacements } from './image-placements.mts'
+import { assertPostImagePlacementCapacity, syncPostImagePlacements } from './image-placements.mts'
 import {
   repairFailedImageDeliveryMutation,
   lockImageDeliveryMutation,
@@ -32,9 +32,7 @@ export async function rollbackPostImages(
   await lockImageAssetAdmission(deliveryImageIds, query)
   let ensuredCurrentVersion = false
   async function rollbackImagesInTransaction() {
-    const imageIds = [
-      ...new Set([...rollback.currentImages, ...rollback.images].map(image => image.image_id)),
-    ].toSorted()
+    const imageIds = deliveryImageIds
     await lockImageDeliveryMutation(query, { postIds: [postId], imageIds })
     let rollbackImagesAvailable = true
     if (imageIds.length > 0) {
@@ -95,15 +93,18 @@ export async function rollbackPostImages(
       ensuredCurrentVersion = true
       return false
     }
-
-    // Do not publish an edge deny from a rollback whose snapshot has lost a race. The shared
-    // delivery lock above makes this applicability check and pre-denial one atomic lifecycle step.
+    // ast-grep-ignore: no-three-sequential-awaits -- Capacity refusal must precede external denial, and denial must precede deleting the owner's image bindings.
+    await assertPostImagePlacementCapacity(
+      postId,
+      rollback.images.map(image => image.image_id),
+      query,
+      { admissionHeld: true },
+    )
     await preparePostImageDeliveryMutation(query, {
       postId,
       imageIds: rollback.images.map(image => image.image_id),
       retainImageIds: rollback.images.map(image => image.image_id),
     })
-
     await query(sql`/* rollbackPostImages */ DELETE FROM post_images WHERE post_id = ${postId}`)
     if (rollback.images.length > 0) {
       await query(sql`/* rollbackPostImages */
@@ -122,6 +123,7 @@ export async function rollbackPostImages(
           postId,
           rollback.images.map(image => image.image_id),
           query,
+          { capacityChecked: true },
         ),
       () =>
         query(sql`/* rollbackPostImages */

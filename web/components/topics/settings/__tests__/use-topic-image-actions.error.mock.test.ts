@@ -26,9 +26,17 @@ vi.mock(
 )
 
 vi.mock(import('@/lib/on-error'), () => ({
-  default: (_err: unknown, options: { fallback: string }) => {
-    toastMock.error(options.fallback)
-    return options.fallback
+  default: (
+    err: unknown,
+    options: { fallback: string; displayMessageByCode?: Record<string, string> },
+  ) => {
+    const code =
+      err && typeof err === 'object' && 'code' in err && typeof err.code === 'string'
+        ? err.code
+        : undefined
+    const message = (code && options.displayMessageByCode?.[code]) ?? options.fallback
+    toastMock.error(message)
+    return message
   },
   onSuccess: (message: string) => {
     toastMock.success(message)
@@ -60,6 +68,26 @@ describe('useTopicImageActions error handling', () => {
     })
 
     expect(toastMock.error).toHaveBeenCalledWith('Failed to update image')
+  })
+
+  it('explains how to recover when an image placement limit is reached', async () => {
+    const limitError = Object.assign(new Error('Image placement limit reached'), {
+      code: 'IMAGE_PLACEMENT_LIMIT_REACHED',
+    })
+    mockUpdateTopic.mockRejectedValueOnce(limitError)
+    const dispatch = vi.fn<VitestLooseMock>()
+
+    const { result } = renderHook(() =>
+      useTopicImageActions({ dispatch, id: 'topic-1', state: baseState }),
+    )
+
+    await act(async () => {
+      await result.current.handleHeroUploaded('img-1')
+    })
+
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'This image is already used in many places. Remove it from another profile, topic, community, or post before adding it here.',
+    )
   })
 
   it('reports remove failure when removing logo', async () => {

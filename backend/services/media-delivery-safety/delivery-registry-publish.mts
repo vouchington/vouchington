@@ -67,7 +67,7 @@ export async function prepublishImagePlacementDenialBatch(
   for (let offset = 0; offset < recordIds.length; offset += batchSize) {
     const batchIds = recordIds.slice(offset, offset + batchSize)
     // oxlint-disable-next-line no-await-in-loop -- each constant-size group is claimed, published and acknowledged inside its own lease
-    const claims = await claimMediaDeliveryProjections(query, batchIds) // no-mistakes-disable-line query-reached-per-item: FIX: tracked in vouchington/vouchington#5326
+    const claims = await claimMediaDeliveryProjections(query, batchIds) // no-mistakes-disable-line query-reached-per-item: KEEP: per-image iterations ≤ ceil(max_placements_per_image (hard max 1000) / edge_publish_batch_size); backend/services/media-delivery-safety/work-limits.mts:13. The denial must reach the edge before the owner mutation.
     if (claims.length !== batchIds.length) {
       const claimed = new Set(claims.map(claim => claim.media_delivery_registry_record_id))
       throw new Error(
@@ -75,7 +75,7 @@ export async function prepublishImagePlacementDenialBatch(
       )
     }
     // oxlint-disable-next-line no-await-in-loop -- acknowledge before the next group's lease starts
-    await publishPersistedDeliveryRecords(claims, query) // no-mistakes-disable-line query-reached-per-item: FIX: tracked in vouchington/vouchington#5326
+    await publishPersistedDeliveryRecords(claims, query) // no-mistakes-disable-line query-reached-per-item: KEEP: per-image iterations ≤ ceil(max_placements_per_image (hard max 1000) / edge_publish_batch_size); backend/services/media-delivery-safety/work-limits.mts:13. The denial must reach the edge before the owner mutation.
   }
 }
 

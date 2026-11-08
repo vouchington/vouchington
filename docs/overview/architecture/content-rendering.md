@@ -15,6 +15,11 @@ formats retain their upload ID and show the localized preview-unavailable status
 image IDs, ordering and captions, never local files. Saved rendering uses the authoritative returned
 placement descriptor. See delivery authority.
 
+An uploaded image may be attached to posts and profile, topic, or community surfaces. When an
+image reaches its placement capacity, existing attachments remain usable, but adding another
+attachment is rejected. The recovery path is to remove an existing use of that image before
+attaching it again; web presents this guidance for post, profile, and topic image updates.
+
 All browser-facing external `http(s)://` image URLs are rewritten to
 `${IMAGE_ORIGIN}/sideload/v2/{base64url}?w=1200&sig={hmac}`. Older `/sideload/` paths are removed and are not served. Browsers therefore request the dedicated
 image hostname directly, bypassing both the apex Cloudflare Worker and Next.js image optimization.

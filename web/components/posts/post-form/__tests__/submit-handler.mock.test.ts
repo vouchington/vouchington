@@ -29,9 +29,17 @@ vi.mock(
 )
 
 vi.mock(import('@/lib/on-error'), () => ({
-  default: (_err: unknown, options: { fallback: string }) => {
-    toastMock.error(options.fallback)
-    return options.fallback
+  default: (
+    err: unknown,
+    options: { fallback: string; displayMessageByCode?: Record<string, string> },
+  ) => {
+    const code =
+      err && typeof err === 'object' && 'code' in err && typeof err.code === 'string'
+        ? err.code
+        : undefined
+    const message = (code && options.displayMessageByCode?.[code]) ?? options.fallback
+    toastMock.error(message)
+    return message
   },
   onSuccess: (message: string) => {
     toastMock.success(message)
@@ -112,6 +120,29 @@ describe('usePostFormSubmit', () => {
     expect(result.current.isSubmitting).toBe(true)
     expect(toastMock.error).not.toHaveBeenCalled()
     expect(router.push).not.toHaveBeenCalled()
+  })
+
+  it('shows image placement recovery guidance when post creation hits the limit', async () => {
+    const { ApiError } = await import('@vouchington/api-client')
+    mockedSubmitPost.mockRejectedValueOnce(
+      new (ApiError as unknown as new (msg: string, status: number, code: string) => Error)(
+        'Image placement limit reached',
+        409,
+        'IMAGE_PLACEMENT_LIMIT_REACHED',
+      ),
+    )
+    const router = { push: vi.fn<VitestLooseMock>() }
+    const { result } = renderHook(() =>
+      usePostFormSubmit({ isEdit: false, router, submitInput: buildInput }),
+    )
+
+    await act(async () => {
+      await result.current.handleSubmitPost()
+    })
+
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'This image is already used in many places. Remove it from another profile, topic, community, or post before adding it here.',
+    )
   })
 
   it('routes to the saved post and shows toast on PostSavedWithRatingError', async () => {
