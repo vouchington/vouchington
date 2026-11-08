@@ -145,7 +145,7 @@ describe('topic alias unlink pages', () => {
     })
   })
 
-  it('retains publication keys and enqueues the next page after that page commits', async () => {
+  it('retains publication keys and enqueues the next bounded page', async () => {
     const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
       topic_alias_unlink_page_size: 1,
     })
@@ -174,15 +174,7 @@ describe('topic alias unlink pages', () => {
 
     let next: Awaited<ReturnType<typeof applyTopicAliasUnlinkPage>> = null
     const jobs = await captureAddedPublicationEffectsForScope(alias.id, async () => {
-      await using pageTransaction = await beginTransaction()
-      next = await applyTopicAliasUnlinkPage(page, { query: pageTransaction })
-      if (!next) throw new Error('Expected another unlink page')
-      await expect(
-        rssFeedMaintenance.getJob(
-          `unlink-topic-alias__${next.topicAliasId}__${next.phase}__${next.pageCursor}`,
-        ),
-      ).resolves.toBeNull()
-      await pageTransaction.commit()
+      next = await applyTopicAliasUnlinkPage(page)
     })
     if (!next) throw new Error('Expected another unlink page')
     const continuedPage = next as NonNullable<Awaited<ReturnType<typeof applyTopicAliasUnlinkPage>>>

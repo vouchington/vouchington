@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import type { ClearedCategoryTopicMapping } from './category-topic-votes.mts'
 import createHttpError from 'http-errors'
-import { lockCategoryClearPage } from './category-backfill-locks.mts'
+import { assertNoActiveTopicMerges } from '@services/topics/merge-preflight'
 
 export type ReResolvedCategoryTopicMapping = ClearedCategoryTopicMapping & {
   category_text: string
@@ -14,7 +14,7 @@ export type CategoryClearRawPage = {
   match: 'alias_id' | 'alias_text'
 }
 
-/** Locks candidate items before re-reading and updating their category rows. */
+/** Conditionally updates the bounded category page; locks only changed category rows. */
 export async function clearUnlinkedTopicAliasCategoryBatch(
   query: TransactionQuery,
   topicAliasId: string,
@@ -79,13 +79,12 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
     previous_topic_id: string
     replacement_topic_id: string | null
   }>(candidateSql, rawParameters)
-  const candidateItemIds = [...new Set(candidateItems.map(row => row.rss_feed_item_id))]
   const candidateTopicIds = candidateItems.flatMap(row =>
     [row.previous_topic_id, row.replacement_topic_id].filter(
       (topicId): topicId is string => topicId !== null,
     ),
   )
-  await lockCategoryClearPage(query, candidateTopicIds, candidateItemIds, candidateItems)
+  await assertNoActiveTopicMerges(query, candidateTopicIds)
   if (rawPage.match === 'alias_text') {
     const { rows: linkedOwner } = await query<{ id: string }>(
       `/* clearCategoriesForUnlinkedTopicAlias.currentTextOwner */

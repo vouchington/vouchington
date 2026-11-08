@@ -1,6 +1,11 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { TopicAliasUnlinkPage } from '@queues/rss-feed-maintenance/types'
-import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
+import type {
+  ItemCategoryRow,
+  PostSourceRow,
+  RelationRow,
+  StagedTopicAliasUnlinkPage,
+} from './unlink-topic-alias-stage.mts'
 
 export type AliasUnlinkRow = {
   id: string
@@ -8,16 +13,15 @@ export type AliasUnlinkRow = {
   unlink_topic_id: string
 }
 
-export async function lockPendingAlias(
+export async function getPendingAlias(
   query: TransactionQuery,
   topicAliasId: string,
 ): Promise<AliasUnlinkRow | null> {
   const { rows } = await query<AliasUnlinkRow & { unlink_requested_at: Date | null }>(
-    `/* lockPendingAlias */
+    `/* getPendingAlias */
     SELECT id, alias, unlink_topic_id, unlink_requested_at
     FROM topic_aliases
-    WHERE id = $1::uuid
-    FOR UPDATE`,
+    WHERE id = $1::uuid`,
     [topicAliasId],
   )
   const alias = rows[0]
@@ -29,157 +33,163 @@ export async function finalizeTopicAliasUnlink(
   query: TransactionQuery,
   alias: AliasUnlinkRow,
   preservesHashtag: boolean,
-): Promise<void> {
+): Promise<boolean> {
+  // Ordered scalar probes keep every child check on its alias index in generic plans.
   if (preservesHashtag) {
-    await query(
+    const { rows } = await query<{ id: string }>(
       `/* finalizeTopicAliasUnlink preserveHashtag */
       UPDATE topic_aliases
       SET unlink_requested_at = NULL, unlink_topic_id = NULL
       WHERE id = $1::uuid
-        AND unlink_requested_at IS NOT NULL`,
+        AND unlink_requested_at IS NOT NULL
+        AND (SELECT subject_id FROM relation__post__category__topic_alias
+          WHERE object_id = $1::uuid ORDER BY subject_id LIMIT 1) IS NULL
+        AND (SELECT rss_feed_item_id FROM rss_feed_item_categories
+          WHERE topic_alias_id = $1::uuid
+          ORDER BY rss_feed_item_id DESC, category_identity_id DESC LIMIT 1) IS NULL
+        AND (SELECT subject_id FROM relation__rss_feed_item__category__topic_alias
+          WHERE object_id = $1::uuid ORDER BY subject_id LIMIT 1) IS NULL
+      RETURNING id`,
       [alias.id],
     )
-    return
+    return rows.length > 0
   }
-  await query(
+  const { rows } = await query<{ id: string }>(
     `/* finalizeTopicAliasUnlink deleteOrdinaryAlias */
     DELETE FROM topic_aliases
     WHERE id = $1::uuid
-      AND unlink_requested_at IS NOT NULL`,
+      AND unlink_requested_at IS NOT NULL
+      AND (SELECT post_id FROM post_topic_alias_sources
+        WHERE topic_alias_id = $1::uuid ORDER BY post_id DESC, id DESC LIMIT 1) IS NULL
+      AND (SELECT subject_id FROM relation__post__category__topic_alias
+        WHERE object_id = $1::uuid ORDER BY subject_id LIMIT 1) IS NULL
+      AND (SELECT rss_feed_item_id FROM rss_feed_item_categories
+        WHERE topic_alias_id = $1::uuid
+        ORDER BY rss_feed_item_id DESC, category_identity_id DESC LIMIT 1) IS NULL
+      AND (SELECT subject_id FROM relation__rss_feed_item__category__topic_alias
+        WHERE object_id = $1::uuid ORDER BY subject_id LIMIT 1) IS NULL
+    RETURNING id`,
     [alias.id],
   )
+  return rows.length > 0
 }
 
 export async function deleteTopicAliasUnlinkPhase(
   query: TransactionQuery,
   alias: AliasUnlinkRow,
   page: TopicAliasUnlinkPage,
+  staged: StagedTopicAliasUnlinkPage,
 ): Promise<{ postIds: string[]; rssFeedItemIds: string[] }> {
-  const limit = getPostPublicationWorkLimit('topic_alias_unlink_page_size')
-  if (page.phase === 'post_sources')
-    return deletePostSources(query, alias.id, page.pageCursor, limit)
-  if (page.phase === 'post_relations')
-    return deletePostRelations(query, alias.id, page.pageCursor, limit)
-  if (page.phase === 'rss_item_categories')
-    return clearRssItemCategories(query, alias, page.pageCursor, limit)
-  return deleteRssItemRelations(query, alias.id, page.pageCursor, limit)
+  if (page.phase !== staged.phase) return { postIds: [], rssFeedItemIds: [] }
+  if (staged.phase === 'post_sources')
+    return deletePostSources(query, alias.id, page.pageCursor, staged.rows)
+  if (staged.phase === 'post_relations')
+    return deletePostRelations(query, alias.id, page.pageCursor, staged.rows)
+  if (staged.phase === 'rss_item_categories')
+    return clearRssItemCategories(query, alias.id, page.pageCursor, staged.rows)
+  if (staged.phase === 'rss_item_relations')
+    return deleteRssItemRelations(query, alias.id, page.pageCursor, staged.rows)
+  return { postIds: [], rssFeedItemIds: [] }
 }
 
 async function deletePostSources(
   query: TransactionQuery,
   topicAliasId: string,
   pageCursor: string,
-  limit: number,
+  rows: readonly PostSourceRow[],
 ): Promise<{ postIds: string[]; rssFeedItemIds: string[] }> {
-  const { rows } = await query<{ id: string; post_id: string }>(
-    `/* deletePostSources */
-    SELECT id, post_id
-    FROM post_topic_alias_sources
-    WHERE topic_alias_id = $1::uuid
-    ORDER BY post_id DESC, id DESC
-    LIMIT $2
-    FOR UPDATE`,
-    [topicAliasId, limit],
-  )
   if (rows[0]?.id !== pageCursor) return { postIds: [], rssFeedItemIds: [] }
-  await query(
+  const { rows: deleted } = await query<{ post_id: string }>(
     `/* deletePostSources remove */
     DELETE FROM post_topic_alias_sources AS source
     USING unnest($2::uuid[]) AS locked(id)
     WHERE source.topic_alias_id = $1::uuid
-      AND source.id = locked.id`,
+      AND source.id = locked.id
+      AND source.id = ANY($2::uuid[])
+      AND EXISTS (SELECT 1 FROM topic_aliases alias
+        WHERE alias.id = $1::uuid AND alias.unlink_requested_at IS NOT NULL)
+    RETURNING source.post_id`,
     [topicAliasId, rows.map(row => row.id)],
   )
-  return { postIds: rows.map(row => row.post_id), rssFeedItemIds: [] }
+  return { postIds: deleted.map(row => row.post_id), rssFeedItemIds: [] }
 }
 
 async function deletePostRelations(
   query: TransactionQuery,
   topicAliasId: string,
   pageCursor: string,
-  limit: number,
+  rows: readonly RelationRow[],
 ): Promise<{ postIds: string[]; rssFeedItemIds: string[] }> {
-  const { rows } = await query<{ subject_id: string; id: string }>(
-    `/* deletePostRelations */
-    SELECT subject_id, id
-    FROM relation__post__category__topic_alias
-    WHERE object_id = $1::uuid
-    ORDER BY subject_id, id
-    LIMIT $2
-    FOR UPDATE`,
-    [topicAliasId, limit],
-  )
   if (rows[0]?.id !== pageCursor) return { postIds: [], rssFeedItemIds: [] }
-  await query(
+  const { rows: deleted } = await query<{ subject_id: string }>(
     `/* deletePostRelations remove */
     DELETE FROM relation__post__category__topic_alias AS relation
     USING unnest($2::uuid[], $3::uuid[]) AS locked(subject_id, id)
     WHERE relation.object_id = $1::uuid
       AND relation.subject_id = locked.subject_id
-      AND relation.id = locked.id`,
+      AND relation.id = locked.id
+      AND relation.subject_id = ANY($2::uuid[])
+      AND relation.id = ANY($3::uuid[])
+      AND EXISTS (SELECT 1 FROM topic_aliases alias
+        WHERE alias.id = $1::uuid AND alias.unlink_requested_at IS NOT NULL)
+    RETURNING relation.subject_id`,
     [topicAliasId, rows.map(row => row.subject_id), rows.map(row => row.id)],
   )
-  return { postIds: rows.map(row => row.subject_id), rssFeedItemIds: [] }
+  return { postIds: deleted.map(row => row.subject_id), rssFeedItemIds: [] }
 }
 
 async function clearRssItemCategories(
   query: TransactionQuery,
-  alias: AliasUnlinkRow,
+  topicAliasId: string,
   pageCursor: string,
-  limit: number,
+  rows: readonly ItemCategoryRow[],
 ): Promise<{ postIds: string[]; rssFeedItemIds: string[] }> {
-  const { rows } = await query<{ rss_feed_item_id: string; category_identity_id: string }>(
-    `/* clearRssItemCategories */
-    SELECT rss_feed_item_id, category_identity_id
-    FROM rss_feed_item_categories
-    WHERE topic_alias_id = $1::uuid
-    ORDER BY rss_feed_item_id DESC, category_identity_id
-    LIMIT $2
-    FOR UPDATE`,
-    [alias.id, limit],
-  )
   const first = rows[0]
   if (!first || `${first.rss_feed_item_id}_${first.category_identity_id}` !== pageCursor) {
     return { postIds: [], rssFeedItemIds: [] }
   }
-  await query(
+  const { rows: cleared } = await query<{ rss_feed_item_id: string }>(
     `/* clearRssItemCategories clear */
     UPDATE rss_feed_item_categories AS category
     SET topic_alias_id = NULL
     FROM unnest($2::uuid[], $3::uuid[]) AS locked(rss_feed_item_id, category_identity_id)
     WHERE category.topic_alias_id = $1::uuid
       AND category.rss_feed_item_id = locked.rss_feed_item_id
-      AND category.category_identity_id = locked.category_identity_id`,
-    [alias.id, rows.map(row => row.rss_feed_item_id), rows.map(row => row.category_identity_id)],
+      AND category.category_identity_id = locked.category_identity_id
+      AND category.rss_feed_item_id = ANY($2::uuid[])
+      AND category.category_identity_id = ANY($3::uuid[])
+      AND EXISTS (SELECT 1 FROM topic_aliases alias
+        WHERE alias.id = $1::uuid AND alias.unlink_requested_at IS NOT NULL)
+    RETURNING category.rss_feed_item_id`,
+    [
+      topicAliasId,
+      rows.map(row => row.rss_feed_item_id),
+      rows.map(row => row.category_identity_id),
+    ],
   )
-  return { postIds: [], rssFeedItemIds: rows.map(row => row.rss_feed_item_id) }
+  return { postIds: [], rssFeedItemIds: cleared.map(row => row.rss_feed_item_id) }
 }
 
 async function deleteRssItemRelations(
   query: TransactionQuery,
   topicAliasId: string,
   pageCursor: string,
-  limit: number,
+  rows: readonly RelationRow[],
 ): Promise<{ postIds: string[]; rssFeedItemIds: string[] }> {
-  const { rows } = await query<{ subject_id: string; id: string }>(
-    `/* deleteRssItemRelations */
-    SELECT subject_id, id
-    FROM relation__rss_feed_item__category__topic_alias
-    WHERE object_id = $1::uuid
-    ORDER BY subject_id, id
-    LIMIT $2
-    FOR UPDATE`,
-    [topicAliasId, limit],
-  )
   if (rows[0]?.id !== pageCursor) return { postIds: [], rssFeedItemIds: [] }
-  await query(
+  const { rows: deleted } = await query<{ subject_id: string }>(
     `/* deleteRssItemRelations remove */
     DELETE FROM relation__rss_feed_item__category__topic_alias AS relation
     USING unnest($2::uuid[], $3::uuid[]) AS locked(subject_id, id)
     WHERE relation.object_id = $1::uuid
       AND relation.subject_id = locked.subject_id
-      AND relation.id = locked.id`,
+      AND relation.id = locked.id
+      AND relation.subject_id = ANY($2::uuid[])
+      AND relation.id = ANY($3::uuid[])
+      AND EXISTS (SELECT 1 FROM topic_aliases alias
+        WHERE alias.id = $1::uuid AND alias.unlink_requested_at IS NOT NULL)
+    RETURNING relation.subject_id`,
     [topicAliasId, rows.map(row => row.subject_id), rows.map(row => row.id)],
   )
-  return { postIds: [], rssFeedItemIds: rows.map(row => row.subject_id) }
+  return { postIds: [], rssFeedItemIds: deleted.map(row => row.subject_id) }
 }

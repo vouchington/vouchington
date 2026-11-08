@@ -9,7 +9,6 @@ import type {
 } from './types.mts'
 import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import { assertPlatformAccountVotesAllowed } from './platform-account-votes.mts'
-import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 import { insertElectionVoteRows } from './vote-upsert-rows.mts'
 
 /** Append-only simple-entity vote events; current votes are latest per user and entity. */
@@ -57,11 +56,6 @@ export async function upsertElectionVotesShared(
   values.sort((a, b) => (a.entityId < b.entityId ? -1 : a.entityId > b.entityId ? 1 : 0))
 
   const run = async (query: TransactionQuery): Promise<ElectionVoteMutationResult[]> => {
-    if (config.voteTable === 'topic_votes')
-      await lockTopicRssFeedAttachmentLifecycles(
-        query,
-        values.map(value => value.entityId),
-      )
     await query(sql`/* lockActiveUserForElectionVoteMutation */
       SELECT fn_lock_active_user_for_mutation(${userId}::uuid)
     `)

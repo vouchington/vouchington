@@ -2,10 +2,11 @@ import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
   lockPostPublication,
-  lockTopicRssFeedPublicationScopes,
   recordPostPublicationChange,
   recordRssFeedDiscoverabilityChanges,
 } from '@services/post-publication'
+import { listTopicPublicationFeedsPage } from '@services/post-publication/topic-feed-pages'
+import { enqueueTopicFeedPublicationAfterCommit } from '@services/post-publication/topic-feed-continuation'
 import type { AggregatedElectionStats, EntityElectionConfig } from './types.mts'
 import { buildElectionStatsUpdateQuery } from './vote-stats-update-query.mts'
 
@@ -18,14 +19,19 @@ export async function updateElectionStatsIfChanged(
   entityId: string,
   stats: AggregatedElectionStats,
   transactionQuery?: TransactionQuery,
+  stagedTopicFeeds?: Awaited<ReturnType<typeof listTopicPublicationFeedsPage>>,
 ): Promise<UpdatedElectionStats | undefined> {
   if (!config.entityTable) return undefined
   const entityTable = config.entityTable
+  if (entityTable === 'topics' && transactionQuery && !stagedTopicFeeds)
+    throw new TypeError('Topic vote stats require a pre-captured feed page')
+  const topicFeeds =
+    entityTable === 'topics'
+      ? (stagedTopicFeeds ?? (await listTopicPublicationFeedsPage([entityId], null)))
+      : null
 
   const run = async (query: TransactionQuery): Promise<UpdatedElectionStats | undefined> => {
     if (entityTable === 'posts') await lockPostPublication(query, entityId)
-    const topicRssFeedIds =
-      entityTable === 'topics' ? await lockTopicRssFeedPublicationScopes(query, [entityId]) : []
     const statement = buildElectionStatsUpdateQuery(config, entityId, stats)
 
     const { rows } = await query<UpdatedElectionStats>(statement)
@@ -40,8 +46,11 @@ export async function updateElectionStatsIfChanged(
         scope: { type: 'post', postId: entityId },
         reason: 'post_updated',
       })
-    if (entityTable === 'topics' && updated)
-      await recordRssFeedDiscoverabilityChanges(query, topicRssFeedIds)
+    if (updated && topicFeeds) {
+      await recordRssFeedDiscoverabilityChanges(query, topicFeeds.ids)
+      if (topicFeeds.cursor)
+        enqueueTopicFeedPublicationAfterCommit(query, [entityId], topicFeeds.cursor)
+    }
     return updated
   }
   if (transactionQuery) return withTransactionOptions({ query: transactionQuery }, run)

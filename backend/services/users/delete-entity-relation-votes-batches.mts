@@ -1,11 +1,7 @@
 import { getRelationVoteCandidates } from './get-relation-vote-candidates.mts'
 import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import {
-  lockPostPublicationPostScopes,
-  lockTopicAliasPublicationScopes,
-  lockTopicRssFeedPublicationScopes,
-} from '@services/post-publication'
+import { lockPostPublicationPostScopes } from '@services/post-publication'
 import sql from 'sql-template-strings'
 import { getPublicationVoteTargetScopes } from './delete-publication-vote-targets.mts'
 import {
@@ -104,15 +100,6 @@ async function lockEntityRelationVoteScopes(
   scopes: EntityRelationVoteBatch['scopes'],
 ): Promise<void> {
   await lockPostPublicationPostScopes(query, scopes.postIds)
-  await lockEntityRelationVoteTopicScopes(query, scopes)
-}
-
-async function lockEntityRelationVoteTopicScopes(
-  query: TransactionQuery,
-  scopes: EntityRelationVoteBatch['scopes'],
-): Promise<void> {
-  await lockTopicAliasPublicationScopes(query, scopes.topicAliasIds)
-  await lockTopicRssFeedPublicationScopes(query, scopes.topicIds)
 }
 
 export async function recomputeUserDeletionRelationImpactsBatch(

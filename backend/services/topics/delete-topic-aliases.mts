@@ -7,12 +7,12 @@ import {
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueTopicAliasUnlinkPage } from '@queues/rss-feed-maintenance/enqueues/unlink-topic-alias'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { lockTopicAliasPublicationScopes } from '@services/post-publication'
+import { capturedPublicationKeys } from '@services/post-publication/captured-keys'
+import { enqueueCapturedPublicationChangeAfterCommit } from '@services/post-publication/direct-capture'
 import { createTopicRevision } from '@services/topic-revisions'
 import { normalizeHashtag } from '@ts-shared/utils'
 import assert from 'http-assert'
 import type { TopicAlias, TopicAliasOptions } from './alias-types.mts'
-import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 import { selectTopicAliasUnlinkNextPage } from './unlink-topic-alias-page.mts'
 
 type LockedAlias = TopicAlias & {
@@ -26,7 +26,6 @@ export async function unlinkTopicAlias(
   options: TopicAliasOptions = {},
 ): Promise<TopicAlias | null> {
   const run = async (query: TransactionQuery) => {
-    await lockTopicAliasPublicationScopes(query, [aliasId])
     const { rows: ownerRows } = await query<{
       topic_id: string | null
       unlink_topic_id: string | null
@@ -37,16 +36,6 @@ export async function unlinkTopicAlias(
     )
     const owner = ownerRows[0]
     if (!owner) return null
-    const topicToLock = owner.topic_id ?? owner.unlink_topic_id
-    if (topicToLock) {
-      await query(
-        `/* unlinkTopicAlias lockTopic */
-        SELECT id FROM topics
-        WHERE id = $1 AND deleted_at IS NULL AND merged_into_topic_id IS NULL
-        FOR UPDATE`,
-        [topicToLock],
-      )
-    }
     const { rows: existingRows } = await query<LockedAlias>(
       `/* unlinkTopicAlias lock */
       SELECT
@@ -62,7 +51,7 @@ export async function unlinkTopicAlias(
         ON active_topic.id = topic_aliases.topic_id
         AND active_topic.deleted_at IS NULL
       WHERE topic_aliases.id = $1
-      FOR UPDATE OF topic_aliases`,
+      `,
       [aliasId],
     )
     const existing = existingRows[0]
@@ -100,7 +89,7 @@ export async function unlinkTopicAlias(
       }
     }
     const detachedTopicId = existing.topic_id
-    await query(
+    const { rows: marked } = await query<{ id: string }>(
       `/* unlinkTopicAlias mark */
       UPDATE topic_aliases
       SET topic_id = NULL,
@@ -108,9 +97,30 @@ export async function unlinkTopicAlias(
           unlink_topic_id = COALESCE(unlink_topic_id, $2::uuid)
       WHERE id = $1::uuid
         AND topic_id = $2::uuid
-        AND unlink_requested_at IS NULL`,
+        AND unlink_requested_at IS NULL
+      RETURNING id`,
       [aliasId, detachedTopicId],
     )
+    if (marked.length === 0) {
+      const { rows: concurrentRows } = await query<LockedAlias>(
+        `/* unlinkTopicAlias concurrent */
+         SELECT id, alias, topic_id, unlink_topic_id, unlink_requested_at,
+           NULL::text AS active_topic_slug
+         FROM topic_aliases WHERE id = $1::uuid`,
+        [aliasId],
+      )
+      const concurrent = concurrentRows[0]
+      assert(
+        concurrent?.unlink_requested_at && concurrent.unlink_topic_id === detachedTopicId,
+        409,
+        'Topic alias owner changed; retry the request',
+      )
+      await enqueueUnlinkPage(query, concurrent)
+      return {
+        alias: { id: concurrent.id, alias: concurrent.alias, topic_id: null },
+        previousTopicId: concurrent.unlink_topic_id,
+      }
+    }
     if (options.revisedById) {
       await createTopicRevision(
         detachedTopicId,
@@ -125,14 +135,16 @@ export async function unlinkTopicAlias(
         { query },
       )
     }
-    await recordTopicAliasPublicationChanges(query, [
-      {
-        aliasId: existing.id,
-        alias: existing.alias,
-        previousTopicId: detachedTopicId,
-        nextTopicId: null,
-      },
-    ])
+    enqueueCapturedPublicationChangeAfterCommit(query, {
+      scope: { type: 'topic_alias', topicAliasId: existing.id },
+      reason: 'post_topics_changed',
+      keys: capturedPublicationKeys({
+        scope: { type: 'topic_alias', topicAliasId: existing.id },
+        reason: 'post_topics_changed',
+        impactedTopicIds: [detachedTopicId],
+        topicAliasText: existing.alias,
+      }),
+    })
     await enqueueUnlinkPage(query, { id: existing.id, alias: existing.alias, topic_id: null })
     return {
       alias: { id: existing.id, alias: existing.alias, topic_id: null },

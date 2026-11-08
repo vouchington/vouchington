@@ -2,7 +2,6 @@ import * as postPublication from '@services/post-publication'
 import { beginTransaction, createTestTopic } from '@voucha/test-helpers'
 import { describe, expect, it, vi } from 'vitest'
 import { claimTopicAlias } from './claim-topic-alias.mts'
-import { unlinkTopicAlias } from './delete-topic-aliases.mts'
 import { createTopicAliases, createUnlinkedTopicAlias } from './aliases.mts'
 
 describe('topic alias publication locking', () => {
@@ -25,18 +24,6 @@ describe('topic alias publication locking', () => {
       alias.id,
       `SELECT id FROM topics WHERE id = $1::uuid FOR UPDATE`,
       () => createTopicAliases(topic.id, alias.alias),
-      topic.id,
-    )
-  })
-
-  it('locks an alias scope before unlink topic rows', async () => {
-    expect.hasAssertions()
-    const topic = await createTestTopic({ name: `Unlink alias lock ${crypto.randomUUID()}` })
-    const alias = (await createTopicAliases(topic.id, `unlink-lock-${crypto.randomUUID()}`))[0]!
-    await expectAliasPublicationScopeBeforeRowLock(
-      alias.id,
-      `SELECT id FROM topics WHERE id = $1::uuid FOR UPDATE`,
-      () => unlinkTopicAlias(alias.id),
       topic.id,
     )
   })

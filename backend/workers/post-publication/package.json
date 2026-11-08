@@ -20,6 +20,7 @@
     "@queues/notifications": "workspace:^",
     "@queues/post-publication": "workspace:^",
     "@queues/psql": "workspace:^",
+    "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/sitemaps": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/entity-cache": "workspace:^",

@@ -1,5 +1,4 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
 import type { TopicAliasUnlinkPage } from '../../queues/rss-feed-maintenance/types.mts'
 import { clearTopicAliasUnlinkCategoryPage } from '../../services/rss-feed-items/clear-unlinked-topic-alias-categories.mts'
 import {
@@ -10,12 +9,8 @@ import { processReconcileTopicAliasCategoryMappings } from '../../services/rss-f
 import { normalizeHashtag } from '../../../ts-shared/utils/hashtags.mts'
 
 /** Exercises the same callback wiring as the RSS maintenance worker. */
-export function applyTopicAliasUnlinkPageForTest(
-  page: TopicAliasUnlinkPage,
-  options: QueryOptions = {},
-) {
+export function applyTopicAliasUnlinkPageForTest(page: TopicAliasUnlinkPage) {
   return applyProductionTopicAliasUnlinkPage(page, {
-    ...options,
     clearItemCategoryPage: clearTopicAliasUnlinkCategoryPage,
   })
 }

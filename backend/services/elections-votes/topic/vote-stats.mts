@@ -4,8 +4,7 @@ import { createVoteStatsUpdater } from '../shared/entity-service.mts'
 import { TOPIC_ELECTION_CONFIG } from './config.mts'
 import { invalidate } from '@services/entity-cache'
 import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/vote-aggregation/enqueues/topic-ratings'
-import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
-import { findRssFeedIdsByTopicIds } from '@services/entity-relations/rss-feed-ids-by-topic-ids'
+import { enqueueTopicFeedDiscoverability } from '@services/post-publication/topic-feed-continuation'
 
 export const updateTopicElectionVoteStats = createVoteStatsUpdater(TOPIC_ELECTION_CONFIG, {
   invalidate: invalidate.topic_elections,
@@ -13,8 +12,7 @@ export const updateTopicElectionVoteStats = createVoteStatsUpdater(TOPIC_ELECTIO
     const topicExists = await isTopicActive(topicId)
     if (topicExists) {
       await enqueueBulkUpdateTopicRatingStatsForTopicId([topicId])
-      const rssFeedIds = await findRssFeedIdsByTopicIds([topicId])
-      void enqueueBulkEvaluateRssFeedDiscoverability(rssFeedIds)
+      void enqueueTopicFeedDiscoverability([topicId])
     }
   },
 })

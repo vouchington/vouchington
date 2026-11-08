@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
   createTestUser,
-  createTestTopic,
   getEntityRelation,
   getTopicAliasIdForTest,
   hardDeleteTestTopic,
@@ -17,19 +16,16 @@ import {
   softDeleteTopic,
 } from '@voucha/test-helpers'
 import type { TransactionQuery } from '@data-stores/psql'
-import {
-  lockPostPublicationRssFeedScopes,
-  lockTopicAliasPublicationScopes,
-} from '@services/post-publication'
+import { lockTopicAliasPublicationScopes } from '@services/post-publication'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { PUBLISHER_TYPE_SLUGS } from '@ts-shared/utils/publisher-types'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { getPublisherTypeTopics } from '../topics/publisher-type-topics.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { upsertEntityRelation } from './upsert.mts'
 
 describe('entity relation publication mutation locks', () => {
-  it('locks an RSS item hashtag alias scope before waiting on the item row', async () => {
+  it('publishes an RSS item alias change while the read-only alias scope is held', async () => {
     const user = await createTestUser({ administrator: true })
     const suffix = randomUUID()
     const hostname = `relation-lock-${suffix}.example.test`
@@ -55,54 +51,20 @@ describe('entity relation publication mutation locks', () => {
       objectType: 'topic_alias',
       predicate: 'category',
     })
-    await expectScopeHeldWhileRowLocked({
-      statement: `/* item row lock */ SELECT 1 FROM rss_feed_items WHERE id = $1 FOR UPDATE`,
-      values: [itemId],
-      marker: 'lockTopicAliasPublicationCaptures',
-      write: query =>
-        upsertEntityRelation(user, relation, { id: itemId }, [{ id: aliasId }], {
-          vote: false,
-          query,
+    await using holder = await beginTransaction()
+    await lockTopicAliasPublicationScopes(holder, [aliasId])
+    const jobs = await captureAddedPublicationEffectsForScope(aliasId, async () => {
+      await upsertEntityRelation(user, relation, { id: itemId }, [{ id: aliasId }], { vote: false })
+    })
+    expect(jobs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          scope: { type: 'topic_alias', id: aliasId },
+          reason: 'post_topics_changed',
+          keys: expect.arrayContaining([{ kind: 'impact_rss_feed_item', uuidValue: itemId }]),
         }),
-      contend: () =>
-        expect(
-          lockScopeWithTimeout(query => lockTopicAliasPublicationScopes(query, [aliasId])),
-        ).rejects.toMatchObject({ code: '55P03' }),
-    })
-  })
-
-  it('locks publisher-topic feed scopes before waiting on the subject topic row', async () => {
-    expect.hasAssertions()
-    const user = await createTestUser({ administrator: true })
-    const subject = await createTestTopic({
-      user,
-      hostname: `publisher-relation-lock-${randomUUID()}.example.test`,
-      topic_type: 'rss_feed',
-    })
-    const publisherTypeId = (await getPublisherTypeTopics()).find(
-      topic => topic.slug === 'blog',
-    )?.id
-    if (!publisherTypeId) throw new Error('Expected blog publisher type')
-    const feed = await insertTestRssFeedDirect({ topicId: subject.id })
-    const relation = getEntityRelationMetadataOrThrow({
-      subjectType: 'topic',
-      objectType: 'topic',
-      predicate: 'publisher_type',
-    })
-    await expectScopeHeldWhileRowLocked({
-      statement: `/* topic row lock */ SELECT 1 FROM topics WHERE id = $1::uuid FOR UPDATE`,
-      values: [subject.id],
-      marker: 'lockPostPublicationRssFeedScopes',
-      write: query =>
-        upsertEntityRelation(user, relation, { id: subject.id }, [{ id: publisherTypeId }], {
-          vote: false,
-          query,
-        }),
-      contend: () =>
-        expect(
-          lockScopeWithTimeout(query => lockPostPublicationRssFeedScopes(query, [feed.id])),
-        ).rejects.toMatchObject({ code: '55P03' }),
-    })
+      ]),
+    )
   })
 
   it('rejects a publisher type when its source merges after initial validation', async () => {
@@ -185,7 +147,7 @@ async function expectPublisherTypeRevalidationFailure({
         vote: false,
         query: gateSql(
           transaction,
-          'lockTopicRssFeedAttachmentLifecycle',
+          'assertPublisherTypeObjectsAreValidInTransaction:topics',
           reachedLock,
           releaseLock,
         ),
@@ -216,53 +178,6 @@ async function expectPublisherTypeRevalidationFailure({
     if (publisherTypeTopicId) await hardDeleteTestTopic(publisherTypeTopicId)
   }
   if (publisherTypeSlugMissing) throw new Error('Expected temporary publisher type slug')
-}
-
-async function expectScopeHeldWhileRowLocked(options: {
-  statement: string
-  values: readonly unknown[]
-  marker: string
-  write: (query: TransactionQuery) => Promise<{ length: number }>
-  contend: () => Promise<unknown>
-}): Promise<void> {
-  const rowLocked = Promise.withResolvers<void>()
-  const releaseRow = Promise.withResolvers<void>()
-  const scopeLocked = Promise.withResolvers<void>()
-  const holder = holdRowLock(options.statement, options.values, rowLocked, releaseRow)
-  await rowLocked.promise
-  await using transaction = await beginTransaction()
-  const writing = options.write(gateSql(transaction, options.marker, scopeLocked))
-  try {
-    await scopeLocked.promise
-    await options.contend()
-  } finally {
-    releaseRow.resolve()
-    await holder
-  }
-  await expect(writing).resolves.toHaveLength(1)
-  await transaction.commit()
-}
-
-async function holdRowLock(
-  statement: string,
-  values: readonly unknown[],
-  locked: PromiseWithResolvers<void>,
-  release: PromiseWithResolvers<void>,
-): Promise<void> {
-  await using query = await beginTransaction()
-  await query(statement, values)
-  locked.resolve()
-  await release.promise
-  await query.commit()
-}
-
-async function lockScopeWithTimeout(
-  lock: (query: TransactionQuery) => Promise<unknown>,
-): Promise<void> {
-  await using query = await beginTransaction()
-  await query(`/* testPublicationMutationLocks */ SET LOCAL lock_timeout = '50ms'`)
-  await lock(query)
-  await query.commit()
 }
 
 function gateSql(

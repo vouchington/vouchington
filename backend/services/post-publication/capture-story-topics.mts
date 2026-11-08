@@ -27,13 +27,8 @@ export async function recordStoryTopicPublicationChanges(
     byStory.set(change.storyId, impacts)
   }
   const storyIds = normalizePostPublicationIdentifiers(byStory.keys())
-  const statement = `/* lockStoryTopicPublicationCaptures */
-    SELECT pg_advisory_xact_lock(hashtextextended('story:' || story_id::text, 0))
-    FROM unnest($1::uuid[]) AS input(story_id) ORDER BY story_id`
   for (let offset = 0; offset < storyIds.length; offset += limit) {
     const page = storyIds.slice(offset, offset + limit)
-    // no-mistakes-disable-next-line query-reached-per-item: each ordered lock page uses one bounded array; merging all pages loses the runtime bound.
-    await query(statement, [page]) // oxlint-disable-line no-await-in-loop -- ascending pages preserve global advisory-lock order.
     for (const storyId of page) {
       const impacts = byStory.get(storyId)!
       enqueueCapturedPublicationChangeAfterCommit(query, {

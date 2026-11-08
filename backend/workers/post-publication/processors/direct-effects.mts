@@ -1,5 +1,6 @@
 import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import { enqueuePostPublicationEffects } from '@queues/post-publication/enqueues'
+import { processTopicFeedContinuation } from './direct-topic-feed-effects.mts'
 import { isLiveRssContinuation, processLiveRssContinuation } from './direct-rss-effects.mts'
 import {
   enqueueLiveScopePostEffects,
@@ -41,6 +42,11 @@ export async function processApplyPostPublicationEffects(
   data: PostPublicationEffectsJobData,
 ): Promise<{ affectedPosts: number }> {
   if (data.continuation) {
+    if (
+      data.continuation.kind === 'topic_feed_publication' ||
+      data.continuation.kind === 'topic_feed_discoverability'
+    )
+      return processTopicFeedContinuation(data, data.continuation, processPublicationKeys)
     if (isScopePostContinuation(data.continuation.kind))
       return processLiveScopePostContinuation(data, data.continuation, processPublicationKeys)
     if (isTopicMergeContinuation(data.continuation.kind))

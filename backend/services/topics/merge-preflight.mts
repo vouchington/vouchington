@@ -49,27 +49,14 @@ export async function lockTopicMergeLifecycles(
   )
 }
 
-/** Category cleanup can own alias publication scopes, so it must never wait on a merge page. */
-export async function tryLockAndAssertNoActiveTopicMerges(
+/** Reject an active merge without locking the topic read context. */
+export async function assertNoActiveTopicMerges(
   query: TransactionQuery,
   topicIds: readonly string[],
 ): Promise<void> {
   if (topicIds.length === 0) return
-  const { rows: locks } = await query<{ acquired: boolean }>(
-    `/* tryLockAndAssertNoActiveTopicMerges */
-     SELECT pg_try_advisory_xact_lock(
-       hashtextextended('topic-merge-lifecycle:' || id::text, 0)
-     ) AS acquired
-     FROM (SELECT DISTINCT unnest($1::uuid[]) AS id ORDER BY id) ordered_ids`,
-    [topicIds],
-  )
-  assert(
-    locks.every(row => row.acquired),
-    409,
-    'Topic merge lifecycle is busy; retry category page',
-  )
   const { rows } = await query<{ id: string }>(
-    `/* tryLockAndAssertNoActiveTopicMerges reservation */
+    `/* assertNoActiveTopicMerges */
      SELECT id FROM topic_merge_operations
      WHERE completed_at IS NULL AND failed_at IS NULL
        AND (source_topic_id = ANY($1::uuid[]) OR destination_topic_id = ANY($1::uuid[]))

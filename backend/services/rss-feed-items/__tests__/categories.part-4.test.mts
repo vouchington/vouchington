@@ -222,7 +222,7 @@ describe('categories', () => {
         holderProcessId: await holderProcessId.promise,
         pool: 'write',
         lock: { kind: 'transaction' },
-        queryMarker: 'clearCategoriesForUnlinkedTopicAlias.lockRawCategories',
+        queryMarker: '/* clearCategoriesForUnlinkedTopicAlias */',
         releaseHolder: async () => {
           release.resolve()
           await holder
