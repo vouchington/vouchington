@@ -72,9 +72,11 @@ async function dispatchCopyrightAgentPage(
   const enqueues = await Promise.allSettled(
     pending.flatMap(item => (item.kind === 'form-effect' ? [] : [enqueueDispatch(item)])),
   )
-  const errors: unknown[] = enqueues.flatMap(result =>
-    result.status === 'rejected' ? [result.reason] : [],
-  )
+  const errors: unknown[] = enqueues.flatMap((result): unknown[] => {
+    if (result.status !== 'rejected') return []
+    const reason: unknown = result.reason
+    return [reason]
+  })
   for (const item of pending) {
     if (item.kind !== 'form-effect') continue
     try {

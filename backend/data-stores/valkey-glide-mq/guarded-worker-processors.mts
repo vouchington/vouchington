@@ -74,7 +74,8 @@ async function releaseAfterFailure(releases: Array<() => Promise<void>>): Promis
   for (const result of results) {
     if (result.status !== 'rejected') continue
     try {
-      onError(result.reason)
+      const reason: unknown = result.reason
+      onError(reason instanceof Error ? reason : new Error(String(reason), { cause: reason }))
     } catch (err) {
       // Diagnostics must not replace the original processor or lease error.
       console.error('scheduled_lease_release_reporting_failed', err)

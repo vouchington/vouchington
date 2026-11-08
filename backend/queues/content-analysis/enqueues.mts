@@ -1,5 +1,5 @@
 import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import type { JobOptions } from 'glide-mq'
+import type { Job, JobOptions } from 'glide-mq'
 import { PRIORITY_DEFAULT } from './config.mts'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
@@ -28,7 +28,7 @@ function createLanguageDetectionEnqueue(jobName: LanguageDetectionEntityType) {
   return createBackgroundCpuEnqueueFunction(`content-analysis.${jobName}`)
 }
 
-type LanguageDetectionEnqueueResult = ReturnType<ReturnType<typeof createLanguageDetectionEnqueue>>
+type LanguageDetectionEnqueueResult = Promise<Job<{ id: string }> | null>
 
 const enqueueLanguageDetectionJobs = {
   post: createLanguageDetectionEnqueue('post'),

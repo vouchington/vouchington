@@ -156,12 +156,14 @@ function hasPrivateKeyMaterial(value: unknown): boolean {
   const keys = Reflect.get(value, 'keys')
   if (!Array.isArray(keys)) return false
   const privateMembers = ['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth', 'k']
-  return keys.some(
-    key =>
-      key !== null &&
-      typeof key === 'object' &&
-      privateMembers.some(member => Object.hasOwn(key, member)),
-  )
+  return keys.some(key => {
+    const candidate: unknown = key
+    return (
+      candidate !== null &&
+      typeof candidate === 'object' &&
+      privateMembers.some(member => Object.hasOwn(candidate, member))
+    )
+  })
 }
 
 function isJsonContentType(headers: { get(name: string): string | null }): boolean {

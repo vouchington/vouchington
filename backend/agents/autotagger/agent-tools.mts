@@ -64,12 +64,13 @@ export function parseSubmission(
   candidateIds: ReadonlySet<string>,
 ): { ok: true; topicIds: string[] } | { ok: false; error: string } {
   const ids = (input as { topic_ids?: unknown } | null)?.topic_ids
-  if (!Array.isArray(ids) || ids.some(id => typeof id !== 'string'))
+  if (!Array.isArray(ids) || !ids.every((id: unknown): id is string => typeof id === 'string'))
     return { ok: false, error: 'topic_ids must be an array of candidate topic id strings.' }
-  const unknown = ids.filter(id => !candidateIds.has(id))
+  const topicIds: string[] = ids
+  const unknown = topicIds.filter(id => !candidateIds.has(id))
   if (unknown.length > 0)
     return { ok: false, error: 'topic_ids may only contain ids from the candidate list.' }
-  return { ok: true, topicIds: [...new Set<string>(ids)] }
+  return { ok: true, topicIds: [...new Set(topicIds)] }
 }
 
 /** Runs a search call and renders its result as the tool's JSON text; names are sanitized. */

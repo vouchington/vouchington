@@ -122,6 +122,10 @@ async function deleteAbandonedStorage(image: UploadCleanupRow): Promise<string |
 }
 
 function rejectFailedPageEffects(results: readonly PromiseSettledResult<unknown>[]): void {
-  const errors = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
+  const errors = results.flatMap((result): unknown[] => {
+    if (result.status !== 'rejected') return []
+    const reason: unknown = result.reason
+    return [reason]
+  })
   if (errors.length) throw new AggregateError(errors, 'Upload cleanup page effects failed')
 }

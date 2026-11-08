@@ -99,7 +99,11 @@ async function initializeMigrationSql(): Promise<void> {
     Promise.resolve().then(() => loadSqlParserModule()),
     Promise.resolve().then(() => initSqlAst()),
   ])
-  const failures = settled.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
+  const failures = settled.flatMap((result): unknown[] => {
+    if (result.status !== 'rejected') return []
+    const reason: unknown = result.reason
+    return [reason]
+  })
   if (failures.length === 1) throw failures[0]
   if (failures.length > 1) {
     const cause = failures[0]

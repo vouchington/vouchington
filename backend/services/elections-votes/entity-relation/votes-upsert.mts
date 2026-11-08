@@ -186,10 +186,10 @@ function isSingleElectionRelation(
 }
 
 function electionVoteTargetRelations(
-  relationMetadata: EntityRelationMetadata | readonly EntityRelationMetadata[] | undefined,
+  metadata: EntityRelationMetadata | readonly EntityRelationMetadata[] | undefined,
 ): EntityRelationMetadata[] {
-  if (!relationMetadata) return electionRelations
-  const relations = Array.isArray(relationMetadata) ? [...relationMetadata] : [relationMetadata]
+  if (!metadata) return electionRelations
+  const relations = isSingleElectionRelation(metadata) ? [metadata] : [...metadata]
   for (const relation of relations) {
     if (!relation.election) {
       throw new Error(`Entity relation ${relation.table_name} does not support election votes`)

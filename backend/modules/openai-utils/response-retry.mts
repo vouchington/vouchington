@@ -91,9 +91,15 @@ function getOpenAIResponseRetryDelayMs(error: unknown, retryIndex: number): numb
 
 function getRetryAfterMs(error: unknown): number | null {
   if (!(error instanceof APIError) || !error.headers) return null
-  const retryAfterMs = Number(getHeaderValue(error.headers, 'retry-after-ms'))
+  const rawHeaders: unknown = error.headers
+  if (!isHeaderBag(rawHeaders)) return null
+  const retryAfterMs = Number(getHeaderValue(rawHeaders, 'retry-after-ms'))
   if (Number.isFinite(retryAfterMs) && retryAfterMs >= 0) return retryAfterMs
-  const retryAfter = getHeaderValue(error.headers, 'retry-after')
+  const retryAfter = getHeaderValue(rawHeaders, 'retry-after')
   const value = Array.isArray(retryAfter) ? retryAfter[0] : retryAfter
   return parseRetryAfter(value) ?? null
+}
+
+function isHeaderBag(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

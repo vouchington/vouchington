@@ -26,7 +26,7 @@ export async function verifyAndStoreAttestation(
 
   const bundleIdentifier = getAppleAppAttestBundleId()
 
-  let result
+  let result: unknown
   try {
     result = verifyAttestation({
       attestation: params.attestation,
@@ -38,6 +38,19 @@ export async function verifyAndStoreAttestation(
     })
   } catch (err) {
     throw createHttpError(401, 'App Attest attestation verification failed', { cause: err })
+  }
+
+  if (
+    typeof result !== 'object' ||
+    result === null ||
+    !('publicKey' in result) ||
+    !('keyId' in result) ||
+    !('environment' in result) ||
+    typeof result.publicKey !== 'string' ||
+    typeof result.keyId !== 'string' ||
+    typeof result.environment !== 'string'
+  ) {
+    throw new TypeError('Unexpected App Attest attestation result')
   }
 
   const publicKeyDer = createPublicKey(result.publicKey).export({

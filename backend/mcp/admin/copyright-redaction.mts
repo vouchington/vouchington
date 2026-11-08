@@ -120,7 +120,10 @@ export function redactCopyrightEmailIntake(intake: CopyrightStaffEmailIntake) {
           if (key === 'missing_information' && Array.isArray(value))
             return [
               key,
-              value.map(item => (typeof item === 'string' ? stripPersonalDetails(item) : item)),
+              value.map(item => {
+                const entry: unknown = item
+                return typeof entry === 'string' ? stripPersonalDetails(entry) : entry
+              }),
             ]
           if (key === 'source_evidence' && Array.isArray(value)) {
             return [

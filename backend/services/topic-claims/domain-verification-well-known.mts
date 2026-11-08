@@ -81,7 +81,10 @@ function withAbortableBody(response: Response, signal: AbortSignal): Response {
             release()
             controller.close()
           } else {
-            controller.enqueue(result.value)
+            const chunk: unknown = result.value
+            if (!(chunk instanceof Uint8Array))
+              throw new TypeError('Response body chunk is not bytes')
+            controller.enqueue(chunk)
           }
         } catch (err) {
           release()

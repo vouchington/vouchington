@@ -19,12 +19,15 @@ export async function settlePostCommitEffects(operations: PostCommitOperation[])
     }
   })
   const results = await Promise.allSettled(started)
-  const errors = results.flatMap((result, index) =>
-    result.status === 'rejected' &&
-    (synchronousFailures.has(index) || !operations[index]?.isRejectionReported?.())
-      ? [result.reason]
-      : [],
-  )
+  const errors = results.flatMap((result, index): unknown[] => {
+    if (
+      result.status !== 'rejected' ||
+      (!synchronousFailures.has(index) && operations[index]?.isRejectionReported?.())
+    )
+      return []
+    const reason: unknown = result.reason
+    return [reason]
+  })
   for (const error of errors) {
     try {
       onError(

@@ -4,7 +4,7 @@ import { trackAIEmbeddingCall } from '@services/analytics'
 import {
   buildInvokeEmbeddingInput,
   estimateEmbeddingTokens,
-  extractEmbedding,
+  parseEmbeddingResponseBody,
   truncateEmbeddingText,
 } from '@vouchington/utils/bedrock-embeddings'
 import { BEDROCK_NOVA_MULTIMODAL_MODEL_NAME } from '../config.mts'
@@ -67,10 +67,7 @@ async function requestBedrockEmbedding(
     throw new Error('Bedrock embedding response body is empty')
   }
 
-  const embedding = extractEmbedding(JSON.parse(new TextDecoder().decode(response.body)))
-  if (!embedding) {
-    throw new Error('Bedrock embedding response did not include an embedding')
-  }
+  const embedding = parseEmbeddingResponseBody(response.body)
 
   return {
     embedding,

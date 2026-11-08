@@ -13,11 +13,11 @@ const MAX_DESCRIPTION_LENGTH = 4000
 function normalizePodcastDescription(raw: string): string | null {
   // Decode HTML entities first so entity-escaped tags like &lt;p&gt; are also stripped
   const decoded = raw
-    .replace(/&#(\d+);/g, (match, d) => {
+    .replace(/&#(\d+);/g, (match: string, d: string) => {
       const cp = parseInt(d, 10)
       return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : match
     })
-    .replace(/&#x([0-9a-fA-F]+);/g, (match, h) => {
+    .replace(/&#x([0-9a-fA-F]+);/g, (match: string, h: string) => {
       const cp = parseInt(h, 16)
       return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : match
     })
