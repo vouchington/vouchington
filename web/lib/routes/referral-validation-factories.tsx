@@ -70,6 +70,7 @@ export function createReferralProgramValidationNewPage() {
   return { generateMetadata, default: NewReferralProgramValidationPage }
 }
 
+type NewPageProps = Pick<ListPageProps, 'params'>
 interface ListPageProps {
   params: Promise<{ id: string }>
   searchParams?: Promise<{ after?: string | string[] }>
