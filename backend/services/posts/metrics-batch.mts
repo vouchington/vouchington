@@ -98,19 +98,33 @@ function buildPostMetricsBatchQuery(idInputs: NormalizedInput[], slugInputs: Nor
     requested_posts AS (
       SELECT DISTINCT id, updated_at FROM combined_posts
     ),
+    metric_candidates AS MATERIALIZED (
+      SELECT
+        candidate_post.id,
+        candidate_post.root_post_id,
+        candidate_post.parent_post_id,
+        candidate_post.post_type,
+        candidate_post.updated_at
+      FROM posts candidate_post
+      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
+      WHERE (
+        candidate_post.root_post_id = ANY(ARRAY(SELECT id FROM requested_posts))
+        OR candidate_post.parent_post_id = ANY(ARRAY(SELECT id FROM requested_posts))
+      )
+        AND candidate_post.id > (SELECT id FROM requested_posts ORDER BY id LIMIT 1)
+        AND `
+  query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
+  query.append(sql`
+    ),
     descendant_metrics AS (
       SELECT
         requested.id,
         COUNT(*)::bigint AS count,
         MAX(candidate_post.updated_at) AS updated_at
       FROM requested_posts requested
-      JOIN posts candidate_post
+      JOIN metric_candidates candidate_post
         ON candidate_post.root_post_id = requested.id
        AND candidate_post.id > requested.id
-      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-      WHERE `
-  query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
-  query.append(sql`
       GROUP BY requested.id
     ),
     child_metrics AS (
@@ -119,14 +133,10 @@ function buildPostMetricsBatchQuery(idInputs: NormalizedInput[], slugInputs: Nor
         COUNT(*)::bigint AS count,
         MAX(candidate_post.updated_at) AS updated_at
       FROM requested_posts requested
-      JOIN posts candidate_post
+      JOIN metric_candidates candidate_post
         ON candidate_post.parent_post_id = requested.id
        AND candidate_post.post_type = 'comment'
        AND candidate_post.id > requested.id
-      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-      WHERE `)
-  query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
-  query.append(sql`
       GROUP BY requested.id
     )
     SELECT

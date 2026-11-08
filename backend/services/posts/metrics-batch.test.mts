@@ -132,10 +132,15 @@ describe('metrics-batch', () => {
       updatePostUpdatedAt(grandchildId, grandchildUpdatedAt),
     ])
 
-    const [metrics] = await getPostMetricsByAnyBatch([rootId])
+    const [rootMetrics, childMetrics, slugMetrics, duplicateChildMetrics] =
+      await getPostMetricsByAnyBatch([rootId, childId, `batch-freshness-root-${random}`, childId])
 
-    expect(metrics?.count).toMatchObject({ descendants: 2, children: 1 })
-    expect(metrics?.updated_at).toEqual(grandchildUpdatedAt)
+    expect(rootMetrics?.count).toEqual({ descendants: 2, children: 1 })
+    expect(childMetrics?.count).toEqual({ descendants: 0, children: 1 })
+    expect(rootMetrics?.updated_at).toEqual(grandchildUpdatedAt)
+    expect(childMetrics?.updated_at).toEqual(grandchildUpdatedAt)
+    expect(slugMetrics).toEqual(rootMetrics)
+    expect(duplicateChildMetrics).toEqual(childMetrics)
   })
 
   it('counts follow/save relations and preserves duplicate inputs', async () => {
