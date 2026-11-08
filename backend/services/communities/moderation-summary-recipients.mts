@@ -97,6 +97,7 @@ export async function getModerationSummaryRecipients(now: Date): Promise<Moderat
             )
             OR EXISTS (
               SELECT 1
+              -- no-mistakes-disable-next-line postgres-required-predicates: posts can move into a community, so no post UUID bound is valid; all partitions use the community index
               FROM posts p
               JOIN LATERAL (
                 SELECT 1 FROM moderation_reports mr
