@@ -20,7 +20,6 @@ export {
 export { getPostIds } from '@services/posts/search/get-ids'
 export { getUnreadNotificationsSummary, listNotifications } from '@services/notifications/list'
 export { aggregateCommunityActivityDigestBatch } from '@services/notifications/community-activity-digest-aggregation'
-export { listCommunityActivityDigestRecipientPage } from '@services/notifications/community-activity-digest-recipients'
 export { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 export { getElectionVotesByUser } from '@services/elections-votes/shared/vote-get'
 export { POST_ELECTION_CONFIG } from '@services/elections-votes/post/config'

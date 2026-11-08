@@ -44,9 +44,12 @@ export async function reconcilePostModerationWork(
           SELECT version.id, version.post_id, version.content_sha256,
             version.policy_revision, version.deadline_at
           FROM post_moderation_versions version
-          WHERE version.post_id = post.id
-            AND version.content_sha256 = post.llm_moderation_content_sha256
-            AND version.policy_revision = $2
+          WHERE version.id = (
+            SELECT current.id FROM post_moderation_versions current
+            WHERE current.post_id = post.id
+              AND current.content_sha256 = post.llm_moderation_content_sha256
+              AND current.policy_revision = $2
+          )
             AND version.id < COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond'))
             AND ($4::uuid IS NULL OR version.id >= $4::uuid)
           ORDER BY version.id

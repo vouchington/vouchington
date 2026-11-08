@@ -234,11 +234,13 @@ CREATE OR REPLACE VIEW view_posts AS
   JOIN view_post_clearance_status clearance ON clearance.post_id = posts.id
   LEFT JOIN LATERAL (
     SELECT disposition.disposition
-    FROM post_moderation_versions version
-    JOIN post_moderation_dispositions disposition ON disposition.version_id = version.id
-    WHERE version.post_id = posts.id
-      AND version.content_sha256 = posts.llm_moderation_content_sha256
-      AND version.policy_revision = '2026-09-09.1'
+    FROM post_moderation_dispositions disposition
+    WHERE disposition.version_id = (
+      SELECT version.id FROM post_moderation_versions version
+      WHERE version.post_id = posts.id
+        AND version.content_sha256 = posts.llm_moderation_content_sha256
+        AND version.policy_revision = '2026-09-09.1'
+    )
       AND disposition.source = 'openai_omni'
     ORDER BY disposition.id DESC
     LIMIT 1

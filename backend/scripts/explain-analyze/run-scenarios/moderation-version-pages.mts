@@ -52,14 +52,22 @@ export async function runModerationVersionPageScenarios(): Promise<void> {
       )
       await runAndCapture('post-by-slug-current-policy-noise', () => getPostByAny('seed-post-3'))
       const pageSize = 10
+      const requestedPostIds = [DELETED_PARENT_MODERATION_POST_ID]
       registerScenarioContract('moderation-requested-posts-page', {
         expectations: [
           {
             kind: 'usesIndexes',
-            indexes: ['idx_post_moderation_versions__post_hash_policy_id'],
+            indexes: [
+              'uq_post_modera_versio__post_id__content_sha256__policy_revision',
+              'post_moderation_versions_pkey',
+            ],
           },
-          { kind: 'maxProcessedRows', relation: 'post_moderation_versions', max: pageSize + 1 },
-          { kind: 'maxProcessedRows', relation: 'posts', max: pageSize + 1 },
+          {
+            kind: 'maxProcessedRows',
+            relation: 'post_moderation_versions',
+            max: requestedPostIds.length * 2,
+          },
+          { kind: 'maxProcessedRows', relation: 'posts', max: requestedPostIds.length },
         ],
         crossPartition: {
           posts: 'Requested moderation versions reference exact post ids across retained ranges.',
@@ -67,7 +75,7 @@ export async function runModerationVersionPageScenarios(): Promise<void> {
       })
       await runAndCapture(
         'moderation-requested-posts-page',
-        () => reconcilePostModerationWork(pageSize, [DELETED_PARENT_MODERATION_POST_ID]),
+        () => reconcilePostModerationWork(pageSize, requestedPostIds),
         undefined,
         'reconcilePostModerationWork',
       )
@@ -82,7 +90,10 @@ export async function runModerationVersionPageScenarios(): Promise<void> {
       expectations: [
         {
           kind: 'usesIndexes',
-          indexes: ['idx_post_moderation_versions__post_hash_policy_id'],
+          indexes: [
+            'uq_post_modera_versio__post_id__content_sha256__policy_revision',
+            'post_moderation_versions_pkey',
+          ],
         },
         { kind: 'maxProcessedRows', relation: 'post_moderation_versions', max: 20 },
         { kind: 'maxProcessedRows', relation: 'posts', max: 10 },
@@ -112,5 +123,6 @@ export async function runModerationVersionPageScenarios(): Promise<void> {
     )
   } finally {
     await deleteDeletedParentModerationVersion()
+    await write('/* vacuumCleanedModerationHistory */ VACUUM (ANALYZE) post_moderation_versions')
   }
 }
