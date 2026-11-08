@@ -11,10 +11,10 @@ import {
   createTopHashtagPostSourceForTest,
   createTopHashtagRssSourceForTest,
   getPostHashtagSourcesForTest,
+  getTestRssFeedItemCategoryAliasIds,
   insertTestRssFeedDirect,
   applyTopicAliasUnlinkPageForTest as applyTopicAliasUnlinkPage,
 } from '@voucha/test-helpers'
-import { read } from '@data-stores/psql'
 import { answerPostgresWritesForTest } from '@voucha/test-helpers/injected-failures'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
@@ -195,11 +195,7 @@ describe('topic alias unlink recovery', () => {
     onTestFinished(answerPostgresWritesForTest('stageTopicAliasUnlinkItemCategories', [[]]))
     await expect(applyTopicAliasUnlinkPage(page)).resolves.toEqual(page)
 
-    const { rows } = await read<{ topic_alias_id: string | null }>(
-      `/* unlinkStaged categories */
-       SELECT topic_alias_id FROM rss_feed_item_categories WHERE rss_feed_item_id = $1::uuid`,
-      [item.id],
-    )
+    const rows = await getTestRssFeedItemCategoryAliasIds(item.id)
     expect(rows).toEqual([{ topic_alias_id: alias.id }])
   })
 })

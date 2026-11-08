@@ -1,4 +1,3 @@
-import { read, write } from '@data-stores/psql'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import {
   beginTransaction,
@@ -6,7 +5,9 @@ import {
   createTestPost,
   createTestTopic,
   createTestUser,
+  markTopicAliasPendingUnlinkForTest,
 } from '@voucha/test-helpers'
+import { getTopicAliasUnlinkOwnerForTest } from '@voucha/test-helpers/topic-aliases'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { describe, expect, it } from 'vitest'
 import { createTopicAliases, unlinkTopicAlias } from '../aliases.mts'
@@ -34,12 +35,9 @@ describe('topic alias unlink race', () => {
         if (raced || !text.includes('unlinkTopicAlias mark'))
           return Reflect.apply(target, thisArgument, argumentsList)
         raced = true
-        return write(
-          `/* concurrentUnlinkMark */ UPDATE topic_aliases
-           SET topic_id = NULL, unlink_requested_at = CURRENT_TIMESTAMP, unlink_topic_id = $2::uuid
-           WHERE id = $1::uuid`,
-          [alias.id, topic.id],
-        ).then(() => Reflect.apply(target, thisArgument, argumentsList))
+        return markTopicAliasPendingUnlinkForTest(alias.alias, topic.id).then(() =>
+          Reflect.apply(target, thisArgument, argumentsList),
+        )
       },
     })
 
@@ -51,11 +49,10 @@ describe('topic alias unlink race', () => {
 
     expect(detached).toEqual({ id: alias.id, alias: alias.alias, topic_id: null })
     expect(jobs).toEqual([])
-    const { rows } = await read<{ topic_id: string | null; unlink_topic_id: string | null }>(
-      `/* unlinkRace alias */ SELECT topic_id, unlink_topic_id FROM topic_aliases WHERE id = $1::uuid`,
-      [alias.id],
-    )
-    expect(rows).toEqual([{ topic_id: null, unlink_topic_id: topic.id }])
+    await expect(getTopicAliasUnlinkOwnerForTest(alias.id)).resolves.toEqual({
+      topic_id: null,
+      unlink_topic_id: topic.id,
+    })
     await using lookup = await beginTransaction()
     const page = await selectTopicAliasUnlinkNextPage(lookup, alias.id, false)
     await lookup.rollback()
