@@ -97,9 +97,13 @@ export async function getModerationSummaryRecipients(now: Date): Promise<Moderat
             )
             OR EXISTS (
               SELECT 1
-              FROM moderation_reports mr
-              WHERE mr.reviewed_at IS NULL
-                AND (SELECT p.community_id FROM posts p WHERE p.id = mr.post_id) = c.id
+              FROM posts p
+              JOIN LATERAL (
+                SELECT 1 FROM moderation_reports mr
+                WHERE mr.post_id = p.id AND mr.reviewed_at IS NULL
+                LIMIT 1
+              ) pending_report ON TRUE
+              WHERE p.community_id = c.id
             )
             OR EXISTS (
               SELECT 1

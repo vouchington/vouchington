@@ -13,6 +13,7 @@ import { getCommunitiesWorkLimit } from '@services/communities/work-limits'
 import { detectRssFeedItemLanguage } from '@services/language-detection/entities/rss-feed-items'
 import { detectRssFeedItemLanguageBatch } from '@services/language-detection/batch-detect'
 import { runIneligibleCollectionPageScenarios } from './ineligible-collection-pages.mts'
+import { runModerationSummaryReportScenario } from './moderation-summary-reports.mts'
 import { runAndCapture, seedPostId, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import {
@@ -90,6 +91,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
       return recipients
     }),
   )
+  await runModerationSummaryReportScenario()
 
   const listId = seedUuid(0, '34')
   registerScenarioContract('search-list-items', {

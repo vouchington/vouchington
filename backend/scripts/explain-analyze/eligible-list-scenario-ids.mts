@@ -18,4 +18,5 @@ export const ELIGIBLE_LIST_SCENARIO_IDS = [
   'moderation-current-policy-page',
   'moderation-requested-posts-page',
   'post-by-slug-current-policy-noise',
+  'moderation-summary-report-work',
 ] as const

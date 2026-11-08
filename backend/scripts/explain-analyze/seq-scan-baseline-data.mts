@@ -31,8 +31,6 @@ export const BASELINE_FINGERPRINTS = [
   'mv-trending-communities-refresh|0|mv-trending-communities-refresh:force_generic_plan|force_generic_plan:community_post_reviews',
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_custom_plan|force_custom_plan:notifications',
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_generic_plan|force_generic_plan:notifications',
-  'post-search-following-new-heavy-follows|0|buildPostSearchQuery:following-new-heavy:force_generic_plan|force_generic_plan:posts',
-  'post-search-hot|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'post-search-hybrid-new|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'post-search-hybrid-relevance|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'post-search-semantic-hot|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
