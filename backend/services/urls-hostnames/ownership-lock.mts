@@ -3,13 +3,12 @@ import { createTransactionLockOnce } from '@vouchington/postgres'
 import sql from 'sql-template-strings'
 import { hostnameBlockStripeSetLockSql } from './hostname-block-lock.mts'
 
-// Hostname ownership hashes bare UUIDs; the custom acquisition preserves that key.
+// Hostname ownership hashes bare UUIDs. The stripe CTE finishes before those locks.
 const hostnameOwnershipLocks = createTransactionLockOnce({
   namespace: '',
   annotation: 'lockHostnameOwnership',
   async acquire(query, sortedIds) {
-    await lockHostnameOwnershipStripes(query, sortedIds)
-    const { rows } = await query<{ hostname_id: string }>(sql`/* lockHostnameOwnership */
+    const statement = sql`/* lockHostnameOwnership */
       WITH RECURSIVE hostname_names(hostname) AS (
         SELECT hostname FROM url_hostnames WHERE id = ANY(${sortedIds}::uuid[])
         UNION
@@ -20,39 +19,21 @@ const hostnameOwnershipLocks = createTransactionLockOnce({
         WHERE hostname IN (SELECT hostname FROM hostname_names)
         UNION
         SELECT unnest(${sortedIds}::uuid[])
-      )
+      ), stripe_lock AS MATERIALIZED (`
+    statement.append(hostnameBlockStripeSetLockSql('candidate_ids', 'hostname_id'))
+    statement.append(`)
       SELECT pg_advisory_xact_lock(hashtextextended(ordered.hostname_id::text, 0))
         , ordered.hostname_id
       FROM (
         SELECT hostname_id FROM candidate_ids
         ORDER BY hostname_id
       ) ordered
-    `)
+      -- The count reads the materialized stripe locks before these per-id locks.
+      WHERE (SELECT count(*) FROM stripe_lock) >= 0`)
+    const { rows } = await query<{ hostname_id: string }>(statement)
     return rows.map(row => row.hostname_id)
   },
 })
-
-/** Stripe locks for the same hostname ids ownership then locks one by one. */
-async function lockHostnameOwnershipStripes(
-  query: TransactionQuery,
-  sortedIds: readonly string[],
-): Promise<void> {
-  const statement = sql`/* lockHostnameOwnershipStripes */
-    WITH RECURSIVE hostname_names(hostname) AS (
-      SELECT hostname FROM url_hostnames WHERE id = ANY(${sortedIds}::uuid[])
-      UNION
-      SELECT substring(hostname FROM position('.' IN hostname) + 1)
-      FROM hostname_names WHERE position('.' IN hostname) > 0
-    ), candidate_ids AS (
-      SELECT id AS hostname_id FROM url_hostnames
-      WHERE hostname IN (SELECT hostname FROM hostname_names)
-      UNION
-      SELECT unnest(${sortedIds}::uuid[])
-    )
-  `
-  statement.append(hostnameBlockStripeSetLockSql('candidate_ids', 'hostname_id'))
-  await query(statement)
-}
 
 /** Serializes ownership writers using the same ID key as hostname blocking. */
 export async function lockHostnameOwnership(
