@@ -4,8 +4,8 @@ import { buildPostSearchQuery } from './query-builder.mts'
 import { executePostSearchQuery } from './execute-query.mts'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import { buildCountQuery, hasSemanticSearch } from '@modules/search-utils'
-import { getPostsWorkLimit } from '../work-limits.mts'
-import sql from 'sql-template-strings'
+import { read } from '@data-stores/psql'
+import sql, { type SQLStatement } from 'sql-template-strings'
 
 type PostSearchFacets = {
   total_count: number
@@ -48,61 +48,79 @@ export async function getPostFacets(
   }
 }
 
-type UserPostTypeFacets = Record<'review' | 'discussion' | 'comment', number>
+export type UserPostTypeFacets = Record<'review' | 'discussion' | 'comment', number>
 
-export type UserPostTypeFacetResult = {
-  /** Review, discussion, and comment totals this viewer can see. */
-  counts: UserPostTypeFacets
-  capped: boolean
-}
-
-function emptyFacets(): UserPostTypeFacets {
-  return { review: 0, discussion: 0, comment: 0 }
-}
-
-/** One eligibility scan for this viewer, stopped after cap + 1 matching posts. */
-function buildCappedFacetQuery(userId: string, currentUser: PrivateUser | undefined, cap: number) {
-  const inner = buildPostSearchQuery(currentUser, {
+function profileCountOptions(
+  userId: string,
+  postType: 'review' | 'discussion' | 'comment',
+): PostSearchOptions {
+  return {
     user_id: userId,
-    post_types: ['review', 'discussion', 'comment'],
+    profileCountPostType: postType,
     omitLimit: true,
     omitOrderBy: true,
-  })
-  return sql`/* getUserPostTypeFacets */
-    WITH matched AS (
-      SELECT candidate.post_type
-      FROM (`.append(inner).append(sql`) AS candidate
-      LIMIT ${cap + 1}
-    ),
-    numbered AS (
-      SELECT post_type, row_number() OVER () AS rn
-      FROM matched
-    )
-    SELECT post_type,
-           COUNT(*) FILTER (WHERE rn <= ${cap})::int AS total_count,
-           (SELECT COUNT(*) > ${cap} FROM numbered) AS capped
-    FROM numbered
-    GROUP BY post_type`)
+  }
+}
+
+/** Review count. The type literal is fixed in this statement so its partial index can be proved. */
+function buildReviewProfileCount(
+  userId: string,
+  currentUser: PrivateUser | undefined,
+): SQLStatement {
+  const query = sql`/* getUserPostTypeFacetsReview */
+    -- cross-partition: a profile total counts this author's reviews across id ranges
+    SELECT COUNT(*)::int AS review_count FROM (`
+  query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'review')))
+  query.append(sql`) AS review_posts`)
+  return query
+}
+
+/** Discussion count. The type literal is fixed in this statement so its partial index can be proved. */
+function buildDiscussionProfileCount(
+  userId: string,
+  currentUser: PrivateUser | undefined,
+): SQLStatement {
+  const query = sql`/* getUserPostTypeFacetsDiscussion */
+    -- cross-partition: a profile total counts this author's discussions across id ranges
+    SELECT COUNT(*)::int AS discussion_count FROM (`
+  query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'discussion')))
+  query.append(sql`) AS discussion_posts`)
+  return query
+}
+
+/** Comment count. The type literal is fixed in this statement so its partial index can be proved. */
+function buildCommentProfileCount(
+  userId: string,
+  currentUser: PrivateUser | undefined,
+): SQLStatement {
+  const query = sql`/* getUserPostTypeFacetsComment */
+    -- cross-partition: a profile total counts this author's comments across id ranges
+    SELECT COUNT(*)::int AS comment_count FROM (`
+  query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'comment')))
+  query.append(sql`) AS comment_posts`)
+  return query
+}
+
+function countFrom(rows: readonly Record<string, unknown>[], column: string): number {
+  const value = rows[0]?.[column]
+  return typeof value === 'number' || typeof value === 'string' ? Number(value) : 0
+}
+
+/** Each type has its own author-index scan; read() preserves an active primary-read scope. */
+async function readProfileCount(statement: SQLStatement, column: string): Promise<number> {
+  const { rows } = await read(statement)
+  return countFrom(rows, column)
 }
 
 export async function getUserPostTypeFacets(
   userId: string,
   currentUser?: PrivateUser,
-): Promise<UserPostTypeFacetResult> {
-  const cap = getPostsWorkLimit('profile_post_count_cap')
-  const { rows } = await executePostSearchQuery<{
-    post_type: keyof UserPostTypeFacets
-    total_count: string | number
-    capped: boolean | null
-  }>(buildCappedFacetQuery(userId, currentUser, cap), false)
-  const counts = emptyFacets()
-  let capped = false
-  for (const row of rows) {
-    counts[row.post_type] = Number(row.total_count)
-    capped = capped || row.capped === true
-  }
-  return {
-    counts,
-    capped,
-  }
+): Promise<UserPostTypeFacets> {
+  // The three types fix the fanout at three pooled reads, regardless of the author's post count.
+  const [review, discussion, comment] = await Promise.all([
+    readProfileCount(buildReviewProfileCount(userId, currentUser), 'review_count'),
+    readProfileCount(buildDiscussionProfileCount(userId, currentUser), 'discussion_count'),
+    readProfileCount(buildCommentProfileCount(userId, currentUser), 'comment_count'),
+  ])
+  return { review, discussion, comment }
 }

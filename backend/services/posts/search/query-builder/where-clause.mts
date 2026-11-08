@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { areHackerNewsReferencesVisible } from '@services/urls/hacker-news-visibility-config'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -117,7 +118,9 @@ function closedFilter(
 
 function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchOptions): void {
   const postTypes = options.post_types
-  if (postTypes?.length === 1) {
+  if (options.profileCountPostType) {
+    filters.push(profilePostTypeEquality(options.profileCountPostType))
+  } else if (postTypes?.length === 1) {
     filters.push(
       closedFilter(postTypes[0], POST_TYPE_LITERALS, value => sql`posts.post_type = ${value}`),
     )
@@ -162,6 +165,19 @@ function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchO
   if (areHackerNewsReferencesVisible() && options.has_hacker_news_references !== undefined) {
     const references = buildPostHasHackerNewsReferences()
     filters.push(options.has_hacker_news_references ? references : sql`NOT `.append(references))
+  }
+}
+
+function profilePostTypeEquality(postType: 'review' | 'discussion' | 'comment'): SQLStatement {
+  switch (postType) {
+    case 'review':
+      return sql`posts.post_type = 'review'`
+    case 'discussion':
+      return sql`posts.post_type = 'discussion'`
+    case 'comment':
+      return sql`posts.post_type = 'comment'`
+    default:
+      return assertNever(postType, 'profile count post type')
   }
 }
 

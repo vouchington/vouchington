@@ -318,16 +318,31 @@ CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__review
 ON posts (created_by_id, id)
 WHERE post_type = 'review';
 
+-- Profile counts prove post_type and deleted_at from the query text. is_anonymous = false is a
+-- range on the second column for a stranger or anonymous viewer.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__is_anonymous__review
+ON posts (created_by_id, is_anonymous)
+WHERE post_type = 'review' AND deleted_at IS NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__is_anonymous__discussion
+ON posts (created_by_id, is_anonymous)
+WHERE post_type = 'discussion' AND deleted_at IS NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__is_anonymous__comment
+ON posts (created_by_id, is_anonymous)
+WHERE post_type = 'comment' AND deleted_at IS NULL;
+
 -- first-post and ban-evasion candidate lookups within a community
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__community_id__id
 ON posts (created_by_id, community_id, id)
 WHERE deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__is_anonymous
-ON posts (created_by_id, is_anonymous)
-WHERE deleted_at IS NULL;
+-- Author lists page (created_by_id, id). Profile counts use the per-type partials above.
+-- An all-types (created_by_id, is_anonymous) index lets a custom plan read every type.
 
 -- RI-usable indexes for retained clearance actors and SET NULL audit-column FKs.
 CREATE INDEX IF NOT EXISTS idx_posts__clearance_changed_by_id

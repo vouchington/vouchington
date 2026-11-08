@@ -28,6 +28,8 @@ type PostSearchFilterOptions = {
   text_search_query?: string // Full-text search
   semantic_search_query?: string // Embedding similarity search
   post_types?: PostType[] // Filter by post type
+  // Profile totals inline one type so custom and generic plans use that type's author index.
+  profileCountPostType?: 'review' | 'discussion' | 'comment'
   data_point_vertical?: string // Filter data_point posts by vertical (e.g. 'credit_card', 'bank_account')
   data_point_result?: string // Filter data_point posts by structured_data.result
   data_point_credit_score_range?: string // Filter data_point posts by structured_data.credit_score_range

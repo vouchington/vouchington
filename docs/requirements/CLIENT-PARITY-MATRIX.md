@@ -37,13 +37,10 @@ handling remains partial until those flows and their behavioral evidence are com
 ## Profile post counts
 
 `GET /api/v1/users/:idOrSlug` returns `user_metrics.count.reviews`,
-`user_metrics.count.discussions`, and `user_metrics.count.comments` as the posts this viewer
-can see. `user_metrics.viewer_count` is removed. The same response returns
-`user_metrics.post_counts_capped` when that scan stops at the posts work cap in
-[`posts` work limits](../../backend/services/posts/work-limits.mts). Web profile tabs and
-the profile header put the plus on the number, before the unit, including for the author, a
-stranger, and an anonymous viewer. Swift and .NET should render that plus from the same flag.
-This adds no new route or native parity claim beyond that display.
+`user_metrics.count.discussions`, and `user_metrics.count.comments` as the exact number of
+posts this viewer can see. Web profile tabs and the profile header show that number for the
+author, a stranger, and an anonymous viewer. Swift and .NET show the same numbers. This adds
+no new route or native parity claim.
 
 ## Membership verification outcomes
 

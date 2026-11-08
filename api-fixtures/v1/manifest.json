@@ -62643,12 +62643,6 @@
                   "type": "string"
                 }
               },
-              "post_counts_capped": {
-                "required": false,
-                "schema": {
-                  "type": "boolean"
-                }
-              },
               "private_count": {
                 "required": false,
                 "schema": {
@@ -64300,12 +64294,6 @@
                 "required": true,
                 "schema": {
                   "type": "string"
-                }
-              },
-              "post_counts_capped": {
-                "required": false,
-                "schema": {
-                  "type": "boolean"
                 }
               },
               "private_count": {
