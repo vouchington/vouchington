@@ -37,7 +37,6 @@ export const getPostMetricsByAnyBatch = async (
     input_order: number
     count__descendants: string
     count__children: string
-    count__ancestors: string
     updated_at: Date
     bookmarks__follow: string
     bookmarks__save: string
