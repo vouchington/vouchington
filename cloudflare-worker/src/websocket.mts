@@ -96,8 +96,12 @@ export const handleWebSocket = async (request: Request, url: URL, env: Env): Pro
   server.accept()
   originWs.accept()
 
-  server.addEventListener('message', (e: MessageEvent) => originWs.send(e.data))
-  originWs.addEventListener('message', (e: MessageEvent) => server.send(e.data))
+  server.addEventListener('message', (event: MessageEvent) => {
+    forwardWebSocketMessage(originWs, event.data)
+  })
+  originWs.addEventListener('message', (event: MessageEvent) => {
+    forwardWebSocketMessage(server, event.data)
+  })
 
   server.addEventListener('close', (e: CloseEvent) => {
     try {
@@ -130,4 +134,16 @@ export const handleWebSocket = async (request: Request, url: URL, env: Env): Pro
   })
 
   return new Response(null, { status: 101, webSocket: client })
+}
+
+function forwardWebSocketMessage(socket: WebSocket, data: unknown): void {
+  if (typeof data === 'string' || data instanceof ArrayBuffer || isArrayBufferView(data)) {
+    socket.send(data)
+    return
+  }
+  throw new TypeError('Unsupported WebSocket message data')
+}
+
+function isArrayBufferView(value: unknown): value is ArrayBufferView<ArrayBuffer> {
+  return ArrayBuffer.isView(value) && value.buffer instanceof ArrayBuffer
 }
