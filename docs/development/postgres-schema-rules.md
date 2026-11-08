@@ -163,7 +163,7 @@ state from the latest history row.
   an optimizer fence: outer filters and ordering cannot reach its indexes, so when they reject most
   of its rows, or sort or aggregate them, the query reads every row up to the CTE's own LIMIT. A
   `MATERIALIZED` CTE or subquery must always be bounded: allowed only when it holds the final LIMIT,
-  or when it is a viewer-scoped set (follows, mutes, blocks) capped by a per-type write
+  or when it is a viewer-scoped set (follows, subscriptions) capped by a per-type write
   limit with a hard maximum. A set with no such cap is a candidate pool and is forbidden. Unenforced.
 - **A list or feed read is one walk over the listed entity** or, for membership-ordered lists
   (saved posts, lists), over the membership index joined to the targets, with eligibility in WHERE. Filters go in WHERE and are served by
