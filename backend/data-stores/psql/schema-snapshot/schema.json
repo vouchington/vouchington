@@ -88870,6 +88870,47 @@
           "unique": false,
           "valid": true
         },
+        "idx_post_moderation_versions__post_hash_policy_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_versions__post_hash_policy_id ON public.post_moderation_versions USING btree (post_id, content_sha256, policy_revision, id) INCLUDE (deadline_at)",
+          "includedColumns": ["deadline_at"],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "content_sha256",
+              "descending": false,
+              "expression": "content_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            },
+            {
+              "column": "policy_revision",
+              "descending": false,
+              "expression": "policy_revision",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_moderation_versions__post_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
