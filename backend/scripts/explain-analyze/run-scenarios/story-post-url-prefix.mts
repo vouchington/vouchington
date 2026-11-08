@@ -29,15 +29,16 @@ import { captureStoryPostUrlPrefixEffectScenarios } from './story-post-url-prefi
 
 /** Child hostname row plus parent-suffix probes. The capacity seed host has three labels. */
 const URL_HOSTNAME_PROBE_LIMIT = 5
-
 /** Admission, prefix hostname locks, and the post-bounded prune at both relation caps. */
 export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
-  const [itemIndexes, pruneIndexes, newestIndexes, activeReverseIndexes] = await Promise.all([
-    partitionIndexNames(ITEM_INDEX),
-    partitionIndexNames(PRUNE_INDEX),
-    partitionIndexNames(NEWEST_INDEX),
-    partitionIndexNames('idx_relation__post__related__url__active_reverse'),
-  ])
+  const [itemIndexes, pruneIndexes, newestIndexes, activeReverseIndexes, relationKeyIndexes] =
+    await Promise.all([
+      partitionIndexNames(ITEM_INDEX),
+      partitionIndexNames(PRUNE_INDEX),
+      partitionIndexNames(NEWEST_INDEX),
+      partitionIndexNames('idx_relation__post__related__url__active_reverse'),
+      partitionIndexNames('relation__post__related__url_subject_id_id_key'),
+    ])
   try {
     await attachPrefixItems()
     await leasePruneJobs()
@@ -66,6 +67,7 @@ export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
       ...pruneIndexes,
       ...newestIndexes,
       ...activeReverseIndexes,
+      ...relationKeyIndexes,
     ])
   } finally {
     await restorePrefixItems()
@@ -126,8 +128,7 @@ async function captureHostLocks(id: string, cap: number): Promise<void> {
     () => lockStoryPostRelatedUrlProjectionHostnameBlocks(query, urlIds),
     undefined,
     'lockStoryPostRelatedUrlProjectionHostnameBlocks',
-    // The plan capture takes these transaction advisory locks on another connection.
-    // Release them first so that capture does not wait out the idle-in-transaction timeout.
+    // Release the callback's advisory locks before EXPLAIN reruns them on another connection.
     { afterCapture: () => query.rollback() },
   )
 }
@@ -162,8 +163,7 @@ async function capturePrune(
   assert.equal(liveUrlIds.length, cap)
   const outsidePrefix = liveUrlIds.at(-1)
   assert.ok(outsidePrefix)
-  // One live story-teller URL stays outside the prefix so the update changes a row.
-  // The substitute is already deleted, so the admitted length stays the cap.
+  // One live story-teller URL stays outside the prefix. Its deleted substitute keeps the admitted length at the cap.
   const admittedUrlIds = liveUrlIds.slice(0, -1)
   admittedUrlIds.push(seed.deletedUrl)
   assert.equal(admittedUrlIds.length, cap)

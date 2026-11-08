@@ -21,7 +21,7 @@ import { MAXIMUM_LEASE, projectionWork } from './story-post-url-prefix-setup.mts
 const RECEIPT_PK = 'story_post_related_url_projection_receipts_pkey'
 const RECEIPT_URL_INDEX = 'idx_story_post_related_url_projection_receipts__url_id'
 const HARD_MAX = relationLimitsMaxValues.post_related_url
-// One post owns the fixture. Sequential scans are off, so a custom plan may probe by url id.
+// Sequential scans are off. A generic (subject_id, id) walk also reads this post's deleted rows.
 const indexPlan = { enable_seqscan: 'off' }
 
 /** Receipt writes, the pending-crawl read, active relations, and a lowered-cap prune at the hard max. */
@@ -47,7 +47,7 @@ async function captureActiveRelations(
     id,
     'storyPostRelatedUrlProjectionActiveRelationIds',
     relationIndexes,
-    HARD_MAX,
+    HARD_MAX * 2,
   )
   await captureRollback(
     id,
