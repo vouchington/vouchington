@@ -23,7 +23,12 @@ function readBuildWebImagesSteps(): Step[] {
   const action = load(
     readFileSync('.github/actions/build-web-images/action.yml', 'utf8'),
   ) as CompositeAction
-  return action.runs?.steps ?? []
+  return (action.runs?.steps ?? []).map(step => {
+    const source = /^source "\$GITHUB_ACTION_PATH\/([a-z-]+\.sh)"$/u.exec(step.run ?? '')
+    return source?.[1]
+      ? { ...step, run: readFileSync(`.github/actions/build-web-images/${source[1]}`, 'utf8') }
+      : step
+  })
 }
 
 describe('web image workflow', () => {

@@ -12,6 +12,7 @@ export type WorkflowJobLike = {
   env?: Record<string, string>
   steps?: Array<{
     id?: string
+    uses?: string
     run?: string
     if?: string
     env?: Record<string, string>

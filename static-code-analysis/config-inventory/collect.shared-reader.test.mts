@@ -132,6 +132,45 @@ describe('collectConfigInventory shared reader', () => {
     )
   })
 
+  it('discovers tracked CI shell readers at the root and in script directories', async () => {
+    const rootPath = 'ci/run-repository-static-checks.sh'
+    const automationPath = 'ci/automation-inline/publish.sh'
+    const buildPath = 'ci/build-infra/resolve.sh'
+    const fixture = await makeRepoFixture({
+      '.github/workflows/ci.yml': [
+        'jobs:',
+        '  test:',
+        '    steps:',
+        '      - env:',
+        '          EXPECTED_SHARDS: fixture',
+        '          CI_AUTOMATION_TOKEN: fixture',
+        '          SHARED_BUILD_CACHE_MODE: fixture',
+      ].join('\n'),
+      [rootPath]: 'echo "$EXPECTED_SHARDS"',
+      [automationPath]: 'echo "$CI_AUTOMATION_TOKEN"',
+      [buildPath]: 'echo "$SHARED_BUILD_CACHE_MODE"',
+      'ci/ignored.test.sh': 'echo "$SKIPPED_CI_ENV"',
+    })
+    testDirs.push(fixture.dir)
+    await writeFile(join(fixture.dir, 'ci/untracked.sh'), 'echo "$UNTRACKED_CI_ENV"')
+
+    const inventory = await collectConfigInventory(fixture.ctx)
+
+    for (const [name, path] of [
+      ['EXPECTED_SHARDS', rootPath],
+      ['CI_AUTOMATION_TOKEN', automationPath],
+      ['SHARED_BUILD_CACHE_MODE', buildPath],
+    ]) {
+      expect(inventory.envVars).toContainEqual(expect.objectContaining({ name, readers: [path] }))
+    }
+    expect(inventory.envVars).not.toContainEqual(
+      expect.objectContaining({ name: 'SKIPPED_CI_ENV' }),
+    )
+    expect(inventory.envVars).not.toContainEqual(
+      expect.objectContaining({ name: 'UNTRACKED_CI_ENV' }),
+    )
+  })
+
   it('reads package-manager gates only from pnpm-workspace.yaml', async () => {
     const fixture = await makeRepoFixture({
       'package.json': 'minimumReleaseAge: 2880\n',

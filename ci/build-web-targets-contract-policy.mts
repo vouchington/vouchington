@@ -5,9 +5,12 @@ const POST_DEADLINE_MARGIN_SECONDS = 60
 const RESTORE_LOOKUP_EXTRACT_ALLOWANCE_SECONDS = 60
 const KILL_GRACE_SECONDS = 13
 const ACTION_PATH = '.github/actions/build-web-targets/action.yml'
+const RESTORED_TARGETS_STEP = 'Validate restored web build runtime paths'
+const BUILD_TARGETS_STEP = 'Build web targets'
 
 type Step = { uses?: string; with?: Record<string, unknown>; 'timeout-minutes'?: unknown }
 type Workflow = { jobs?: Record<string, { 'runs-on'?: unknown; steps?: Step[] }> }
+type CompositeAction = { runs?: { steps?: Array<{ name?: string; run?: string }> } }
 export type Deadlines = { restore: number; verify: number; build: number; killGrace: number }
 export type BuildWebTargetsUse = { job: string; runsOn: unknown; mode: unknown }
 export type CallerTimeout = { job: string; timeoutMinutes: unknown }
@@ -60,11 +63,30 @@ export function restoreSeconds(action: string): number {
   if (!match) throw new TypeError('build-web-targets must bound its cache restore download')
   return Number(match[1]) * 60 + RESTORE_LOOKUP_EXTRACT_ALLOWANCE_SECONDS
 }
-export function readDeadlines(action: string): Deadlines {
+function actionScript(
+  action: string,
+  stepName: string,
+  sources: ReadonlyMap<string, string>,
+): string {
+  const composite = load(action) as CompositeAction
+  const run = composite.runs?.steps?.find(step => step.name === stepName)?.run
+  const match = run && /^bash "\$GITHUB_WORKSPACE\/(.+)"$/.exec(run)
+  if (!match) throw new TypeError(`build-web-targets step ${stepName} must run a workspace script`)
+  const script = sources.get(match[1])
+  if (script === undefined) throw new Error(`Missing ${match[1]}`)
+  return script
+}
+export function readDeadlines(action: string, sources: ReadonlyMap<string, string>): Deadlines {
   return {
     restore: restoreSeconds(action),
-    verify: boundedSeconds(action, 'node ci/web-build-cache-manifest\\.mts verify'),
-    build: boundedSeconds(action, 'node ci/setup-web-integration\\.mts'),
+    verify: boundedSeconds(
+      actionScript(action, RESTORED_TARGETS_STEP, sources),
+      'node ci/web-build-cache-manifest\\.mts verify',
+    ),
+    build: boundedSeconds(
+      actionScript(action, BUILD_TARGETS_STEP, sources),
+      'node ci/setup-web-integration\\.mts',
+    ),
     killGrace: KILL_GRACE_SECONDS,
   }
 }
@@ -118,6 +140,6 @@ export function buildWebTargetsContractViolations(sources: ReadonlyMap<string, s
     violations.push('checks-static.yml#static-web must call build-web-targets')
   const action = sources.get(ACTION_PATH)
   if (action === undefined) throw new Error(`Missing ${ACTION_PATH}`)
-  violations.push(...timeoutViolations(callers, readDeadlines(action)))
+  violations.push(...timeoutViolations(callers, readDeadlines(action, sources)))
   return violations
 }

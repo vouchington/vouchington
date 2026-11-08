@@ -106,63 +106,7 @@ jobs:
           HTML_URL: ${{ github.event.workflow_run.html_url }}
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          echo "Upstream workflow: $WORKFLOW_NAME"
-          echo "Conclusion:        $CONCLUSION"
-          echo "Run attempt:       $RUN_ATTEMPT"
-          echo "Run URL:           $HTML_URL"
-          echo "Dependabot branch: $HEAD_BRANCH"
-          echo "PR number:         ${PR_NUMBER:-<not found>}"
-
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-
-          if [[ "$SOURCE_STATE_CURRENT" != "true" ]]; then
-            echo "::notice::Source workflow run is stale; skipping transient classification and Auto Harness dispatch."
-            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if [[ -z "$PR_NUMBER" ]]; then
-            echo "::warning::Workflow run payload did not include a pull request number; skipping automation."
-            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          should_dispatch=false
-
-          if [[ "$TRANSIENT_DECISION" == "rerun" ]]; then
-            echo "Transient retry rule matched: $MATCHED_RULE — rerun already requested."
-          elif [[ "$TRANSIENT_DECISION" == "ignore" ]]; then
-            echo "Transient retry rule chose ignore; skipping automation."
-          elif [[ "$CONCLUSION" == "timed_out" || "$CONCLUSION" == "cancelled" ]]; then
-            if [[ "$RUN_ATTEMPT" -eq 1 ]]; then
-              echo "Uncatalogued $CONCLUSION on attempt 1 — rerunning once."
-              node ci/revalidate-dependabot-rerun.mts
-              echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            else
-              echo "Already retried (attempt $RUN_ATTEMPT) and still $CONCLUSION — dispatching Auto Harness."
-              should_dispatch=true
-            fi
-          else
-            echo "Hard failure — dispatching Auto Harness."
-            should_dispatch=true
-          fi
-
-          if [[ "$should_dispatch" == "true" ]]; then
-            # The dispatch job intentionally checks out the live dependabot/* branch tip, not
-            # the commit this event actually tested. Re-validate the PR is still at the SHA this
-            # event fired for, so a stale
-            # event superseded by a Dependabot rebase can't dispatch Auto Harness with a prompt
-            # describing an already-moot failure. Compare the live headRefOid to the triggering SHA.
-            CURRENT_HEAD_SHA="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq '.headRefOid')"
-            if [[ "$CURRENT_HEAD_SHA" != "$EVENT_HEAD_SHA" ]]; then
-              echo "Skipping automation: PR #$PR_NUMBER moved from $EVENT_HEAD_SHA to $CURRENT_HEAD_SHA since this CI run started (Dependabot rebase). The rebased tip's own CI run will trigger its own triage if it still fails."
-              should_dispatch=false
-            fi
-          fi
-
-          echo "should_dispatch=$should_dispatch" >> "$GITHUB_OUTPUT"
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/dependabot-triage.sh
 
   check-duplicates:
     name: Check for existing automation commits on Dependabot branch
@@ -250,11 +194,17 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 1
     permissions:
+      contents: read
       actions: read
       pull-requests: read
     outputs:
       current: ${{ steps.pr.outputs.current }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Revalidate source run
         timeout-minutes: 1
         id: source-state
@@ -263,62 +213,7 @@ jobs:
           SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
           SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
-        run: |
-          set -euo pipefail
-          fail_closed() {
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "::error::$1"
-            exit 1
-          }
-          suppress_stale() {
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::$1"
-            exit 0
-          }
-
-          # The age check happens inside jq (fromdateiso8601/now) rather than shell `date` arithmetic:
-          # `date -d`/`date -j` differ between GNU and BSD, and workflow scripts must also run on macOS.
-          # `fromdateiso8601` is resolved by gojq, the jq processor `gh` bundles for --jq, not the host's
-          # system jq — so no separate jq install/version floor applies. This whole step is generated from
-          # ci/source-run-guard-shell.mts, which interpolates MAX_SOURCE_RUN_AGE_MS from
-          # ci/source-run-assessment.mts, so the bound below cannot drift out of sync with the TS module.
-          # Freshness is measured from `run_started_at`, not `created_at`: `created_at` is fixed at the
-          # run's original creation and does not move on a manual re-run, while `run_started_at` resets to
-          # when the matching attempt actually started — using `created_at` would fail-closed-suppress a
-          # same-attempt re-run that completed seconds ago just because the run was first created over 48h
-          # earlier. A missing/malformed run_started_at makes fromdateiso8601 error, which lands here as a
-          # fetch failure (fail_closed), matching the module's malformed-response handling.
-          if ! source_state="$(
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" \
-              --jq '[.repository.full_name, .id, .run_attempt, .status, .conclusion,
-                     ((now - (.run_started_at | fromdateiso8601)) <= (172800))] | @tsv'
-          )"; then
-            fail_closed "Could not fetch source workflow run $SOURCE_RUN_ID"
-          fi
-
-          IFS=$'\t' read -r actual_repo actual_id actual_attempt actual_status actual_conclusion actual_fresh \
-            <<< "$source_state"
-
-          # Case-insensitive, portable comparison (no ${var,,}: workflow scripts must also run on macOS,
-          # whose /bin/bash is 3.2, which predates bash 4's lowercase parameter expansion).
-          actual_repo_lower="$(printf '%s' "$actual_repo" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-          expected_repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-          if [[ "$actual_repo_lower" != "$expected_repo_lower" ]]; then
-            fail_closed "Source workflow run resolved to a different repository; refusing to act"
-          fi
-          if [[ "$actual_id" != "$SOURCE_RUN_ID" ]]; then
-            fail_closed "Source workflow run id changed; refusing to act on a different run"
-          fi
-          if [[ "$actual_attempt" != "$SOURCE_RUN_ATTEMPT" ||
-                "$actual_status" != "completed" ||
-                "$actual_conclusion" != "$SOURCE_RUN_CONCLUSION" ]]; then
-            suppress_stale "Source workflow run changed; skipping as superseded"
-          fi
-          if [[ "$actual_fresh" != "true" ]]; then
-            suppress_stale "Source workflow run is older than 48h; skipping as superseded"
-          fi
-
-          echo "current=true" >> "$GITHUB_OUTPUT"
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/source-run-guard.sh
       - name: Require the exact open Dependabot head
         timeout-minutes: 1
         id: pr
@@ -328,12 +223,7 @@ jobs:
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ needs.triage-and-rerun.outputs.pr_number }}
-        run: |
-          set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \
-            'select(.state == "open" and .user.login == "dependabot[bot]" and .head.ref == env.HEAD_BRANCH and .head.sha == env.EVENT_HEAD_SHA) | .head.sha' \
-            | grep -qx "$EVENT_HEAD_SHA"
-          echo 'current=true' >> "$GITHUB_OUTPUT"
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/dependabot-validate-head.sh
 
   dispatch:
     name: Harness dispatch
@@ -412,6 +302,7 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 1
     permissions:
+      contents: read
       actions: read
       pull-requests: write
     env:
@@ -422,6 +313,11 @@ jobs:
       SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
       DISPATCH_RESULT: ${{ needs.dispatch.result }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Revalidate source run
         timeout-minutes: 1
         id: source-state
@@ -430,92 +326,12 @@ jobs:
           SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
           SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
-        run: |
-          set -euo pipefail
-          fail_closed() {
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "::error::$1"
-            exit 1
-          }
-          suppress_stale() {
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::$1"
-            exit 0
-          }
-
-          # The age check happens inside jq (fromdateiso8601/now) rather than shell `date` arithmetic:
-          # `date -d`/`date -j` differ between GNU and BSD, and workflow scripts must also run on macOS.
-          # `fromdateiso8601` is resolved by gojq, the jq processor `gh` bundles for --jq, not the host's
-          # system jq — so no separate jq install/version floor applies. This whole step is generated from
-          # ci/source-run-guard-shell.mts, which interpolates MAX_SOURCE_RUN_AGE_MS from
-          # ci/source-run-assessment.mts, so the bound below cannot drift out of sync with the TS module.
-          # Freshness is measured from `run_started_at`, not `created_at`: `created_at` is fixed at the
-          # run's original creation and does not move on a manual re-run, while `run_started_at` resets to
-          # when the matching attempt actually started — using `created_at` would fail-closed-suppress a
-          # same-attempt re-run that completed seconds ago just because the run was first created over 48h
-          # earlier. A missing/malformed run_started_at makes fromdateiso8601 error, which lands here as a
-          # fetch failure (fail_closed), matching the module's malformed-response handling.
-          if ! source_state="$(
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" \
-              --jq '[.repository.full_name, .id, .run_attempt, .status, .conclusion,
-                     ((now - (.run_started_at | fromdateiso8601)) <= (172800))] | @tsv'
-          )"; then
-            fail_closed "Could not fetch source workflow run $SOURCE_RUN_ID"
-          fi
-
-          IFS=$'\t' read -r actual_repo actual_id actual_attempt actual_status actual_conclusion actual_fresh \
-            <<< "$source_state"
-
-          # Case-insensitive, portable comparison (no ${var,,}: workflow scripts must also run on macOS,
-          # whose /bin/bash is 3.2, which predates bash 4's lowercase parameter expansion).
-          actual_repo_lower="$(printf '%s' "$actual_repo" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-          expected_repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-          if [[ "$actual_repo_lower" != "$expected_repo_lower" ]]; then
-            fail_closed "Source workflow run resolved to a different repository; refusing to act"
-          fi
-          if [[ "$actual_id" != "$SOURCE_RUN_ID" ]]; then
-            fail_closed "Source workflow run id changed; refusing to act on a different run"
-          fi
-          if [[ "$actual_attempt" != "$SOURCE_RUN_ATTEMPT" ||
-                "$actual_status" != "completed" ||
-                "$actual_conclusion" != "$SOURCE_RUN_CONCLUSION" ]]; then
-            suppress_stale "Source workflow run changed; skipping as superseded"
-          fi
-          if [[ "$actual_fresh" != "true" ]]; then
-            suppress_stale "Source workflow run is older than 48h; skipping as superseded"
-          fi
-
-          echo "current=true" >> "$GITHUB_OUTPUT"
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/source-run-guard.sh
       - name: Check the failure comment is still wanted
         timeout-minutes: 1
         id: check
         if: steps.source-state.outputs.current == 'true'
-        run: |
-          set -euo pipefail
-          # harness-dispatch.yml serializes per PR+sha with cancel-in-progress: false, and GitHub keeps
-          # only one pending run per concurrency group, so it cancels the other pending dispatch jobs.
-          # A coalesced job is cancelled with zero steps; a real timeout-minutes cancellation would have
-          # executed steps. The surviving run owns the Harness session, so this run must stay quiet.
-          # Fail open: if the jobs lookup fails, post the comment.
-          if [[ "$DISPATCH_RESULT" == "cancelled" && -z "$SESSION_ID" ]]; then
-            if coalesced="$(
-              gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100" --jq \
-                '[.jobs[] | select(.name | startswith("Harness dispatch"))]
-                 | (length > 0) and all(.conclusion == "cancelled" and ((.steps // []) | length) == 0)'
-            )" && [[ "$coalesced" == "true" ]]; then
-              echo "::notice::Dispatch was cancelled by concurrency coalescing before running any step; another run owns the Harness session. Suppressing failure comment."
-              exit 0
-            fi
-          fi
-
-          if ! gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \
-            'select(.state == "open" and .user.login == "dependabot[bot]" and .head.ref == env.HEAD_BRANCH and .head.sha == env.EVENT_HEAD_SHA) | .head.sha' \
-            | grep -qx "$EVENT_HEAD_SHA"; then
-            echo "Suppressing failure comment because the Dependabot PR is no longer the validated source head."
-            exit 0
-          fi
-
-          echo "post=true" >> "$GITHUB_OUTPUT"
+        run: bash --noprofile --norc -e -o pipefail ci/automation-inline/dependabot-comment-wanted.sh
 
       - name: Comment failure on Dependabot PR
         timeout-minutes: 1

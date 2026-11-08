@@ -125,11 +125,15 @@ describe('fix-main-self-retry workflow', () => {
       SOURCE_RUN_ATTEMPT: '${{ github.event.workflow_run.run_attempt }}',
       SOURCE_RUN_ID: '${{ github.event.workflow_run.id }}',
     })
-    expect(escalateStateStep?.run).toContain(
+    expect(readFileSync('ci/automation-inline/self-retry-escalation-state.sh', 'utf8')).toContain(
       'repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/attempts/$SOURCE_RUN_ATTEMPT/jobs',
     )
-    expect(escalateStateStep?.run).toContain('select(.name == "Escalate to human")')
-    expect(escalateStateStep?.run).toContain('conclusion=')
+    expect(readFileSync('ci/automation-inline/self-retry-escalation-state.sh', 'utf8')).toContain(
+      'select(.name == "Escalate to human")',
+    )
+    expect(readFileSync('ci/automation-inline/self-retry-escalation-state.sh', 'utf8')).toContain(
+      'conclusion=',
+    )
     expect(stepIds?.indexOf('escalate-state')).toBeLessThan(stepIds?.indexOf('disposition') ?? -1)
   })
 
@@ -145,12 +149,18 @@ describe('fix-main-self-retry workflow', () => {
       ESCALATE_STATE_OUTCOME: '${{ steps.escalate-state.outcome }}',
       ESCALATE_CONCLUSION: '${{ steps.escalate-state.outputs.conclusion }}',
     })
-    expect(dispositionStep?.run).toContain('disposition=handled')
-    expect(dispositionStep?.run).toContain('disposition=unhandled')
-    expect(dispositionStep?.run).toContain(
+    expect(readFileSync('ci/automation-inline/self-retry-disposition.sh', 'utf8')).toContain(
+      'disposition=handled',
+    )
+    expect(readFileSync('ci/automation-inline/self-retry-disposition.sh', 'utf8')).toContain(
+      'disposition=unhandled',
+    )
+    expect(readFileSync('ci/automation-inline/self-retry-disposition.sh', 'utf8')).toContain(
       '"$ESCALATE_STATE_OUTCOME" == "success" && "$ESCALATE_CONCLUSION" == "success"',
     )
-    expect(dispositionStep?.run).toContain('"$SOURCE_CURRENT" == "false"')
+    expect(readFileSync('ci/automation-inline/self-retry-disposition.sh', 'utf8')).toContain(
+      '"$SOURCE_CURRENT" == "false"',
+    )
     expect(retryJob?.outputs).toEqual({
       disposition: '${{ steps.disposition.outputs.disposition }}',
     })
@@ -167,24 +177,40 @@ describe('fix-main-self-retry workflow', () => {
     expect(escalateJob?.if).toContain('always()')
     expect(escalateJob?.if).toContain("needs.retry.result != 'skipped'")
     expect(escalateJob?.if).toContain("needs.retry.outputs.disposition != 'handled'")
-    expect(escalateJob?.permissions).toEqual({ issues: 'write' })
+    expect(escalateJob?.permissions).toEqual({ contents: 'read', issues: 'write' })
   })
 
   it('escalation issue body points at the Fix Main run, not the monitored workflow', () => {
-    const step = escalateJob?.steps?.[0]
+    const step = escalateJob?.steps?.find(
+      s => s.name === 'Escalate to human — open or update issue',
+    )
 
     expect(step?.env).toMatchObject({
       FIX_MAIN_RUN_ID: '${{ github.event.workflow_run.id }}',
       FIX_MAIN_RUN_URL: '${{ github.event.workflow_run.html_url }}',
       FIX_MAIN_RUN_ATTEMPT: '${{ github.event.workflow_run.run_attempt }}',
     })
-    expect(step?.run).toContain('Fix Main self-retry incomplete: run $FIX_MAIN_RUN_ID')
-    expect(step?.run).toContain('gh issue list')
-    expect(step?.run).toContain('--search "\\"$TITLE\\" in:title"')
-    expect(step?.run).toContain('gh issue comment')
-    expect(step?.run).toContain('gh issue create')
-    expect(step?.run).toContain('--label "automation"')
-    expect(step?.run).toContain('--label "needs-human"')
+    expect(readFileSync('ci/automation-inline/self-retry-escalate.sh', 'utf8')).toContain(
+      'Fix Main self-retry incomplete: run $FIX_MAIN_RUN_ID',
+    )
+    expect(readFileSync('ci/automation-inline/self-retry-escalate.sh', 'utf8')).toContain(
+      'gh issue list',
+    )
+    expect(readFileSync('ci/automation-inline/self-retry-escalate.sh', 'utf8')).toContain(
+      '--search "\\"$TITLE\\" in:title"',
+    )
+    expect(readFileSync('ci/automation-inline/self-retry-escalate.sh', 'utf8')).toContain(
+      'gh issue comment',
+    )
+    expect(readFileSync('ci/automation-inline/self-retry-escalate.sh', 'utf8')).toContain(
+      'gh issue create',
+    )
+    expect(readFileSync('ci/automation-inline/self-retry-escalate.sh', 'utf8')).toContain(
+      '--label "automation"',
+    )
+    expect(readFileSync('ci/automation-inline/self-retry-escalate.sh', 'utf8')).toContain(
+      '--label "needs-human"',
+    )
   })
 
   it('uses a per-watcher-run concurrency group so independent Fix Main runs never cross-cancel', () => {

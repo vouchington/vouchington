@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
@@ -45,6 +46,7 @@ describe('fix-main source state', () => {
 
     expect(escalateJob?.permissions).toEqual({
       actions: 'read',
+      contents: 'read',
       issues: 'write',
     })
     expect(escalateJob?.env?.['GH_TOKEN']).toBeUndefined()
@@ -54,15 +56,25 @@ describe('fix-main source state', () => {
 
     // The pipeline never polls a dispatched Harness session to completion, so escalation always
     // means the pipeline broke before an agent was assigned, not that a fix attempt failed.
-    expect(escalationIssueStep?.run).toContain('auto-fix could not be dispatched')
-    expect(escalationIssueStep?.run).not.toContain('auto-fix could not complete')
-    expect(escalationIssueStep?.run).toContain('**Failed job:**')
+    expect(readFileSync('ci/automation-inline/fix-main-escalate.sh', 'utf8')).toContain(
+      'auto-fix could not be dispatched',
+    )
+    expect(readFileSync('ci/automation-inline/fix-main-escalate.sh', 'utf8')).not.toContain(
+      'auto-fix could not complete',
+    )
+    expect(readFileSync('ci/automation-inline/fix-main-escalate.sh', 'utf8')).toContain(
+      '**Failed job:**',
+    )
     expect(escalateJob?.env).toMatchObject({
       DISPATCH_RESULT: '${{ needs.dispatch.result }}',
       RENDER_PROMPT_RESULT: '${{ needs.render-prompt.result }}',
     })
-    expect(escalationIssueStep?.run).toContain('$RENDER_PROMPT_RESULT')
-    expect(escalationIssueStep?.run).toContain('$DISPATCH_RESULT')
+    expect(readFileSync('ci/automation-inline/fix-main-escalate.sh', 'utf8')).toContain(
+      '$RENDER_PROMPT_RESULT',
+    )
+    expect(readFileSync('ci/automation-inline/fix-main-escalate.sh', 'utf8')).toContain(
+      '$DISPATCH_RESULT',
+    )
   })
 
   it('revalidates the source run before transient classification and any automatic rerun in triage-and-rerun', () => {
@@ -97,28 +109,22 @@ describe('fix-main source state', () => {
 
     // A stale source run must also be unable to set should_dispatch=true.
     expect(triageStep?.env?.['SOURCE_CURRENT']).toBe('${{ steps.source-state.outputs.current }}')
-    expect(triageStep?.run).toContain('"$SOURCE_CURRENT" == "true"')
+    expect(readFileSync('ci/automation-inline/fix-main-dispatch-decision.sh', 'utf8')).toContain(
+      '"$SOURCE_CURRENT" == "true"',
+    )
   })
 
-  it('keeps the no-checkout revalidation guard identical across every no-checkout job', () => {
-    // The exact shell content (including the 48h age bound) is locked byte-for-byte against the
-    // shared ci/source-run-guard-shell.mts constant in ci/source-run-guard-shell.test.mts, which
-    // also verifies that constant is generated from MAX_SOURCE_RUN_AGE_MS. This test owns the
-    // structural invariant that gave rise to the fix: these jobs must have no checkout, so they
-    // cannot silently fall back to calling ci/source-run-state.mts directly (which errors with no
-    // checkout, as revalidate-existing-pr's guard used to before this convergence).
-    const sourceStateSteps = NO_CHECKOUT_SOURCE_STATE_JOBS.map(jobName => {
+  it('uses the checked-out guard from a trusted workflow revision', () => {
+    for (const jobName of NO_CHECKOUT_SOURCE_STATE_JOBS) {
       const job = parsedMain.jobs?.[jobName]
-      expect(job?.steps?.some(s => s.uses?.startsWith('actions/checkout'))).toBe(false)
-      expect(job?.steps?.some(s => s.uses?.startsWith('./.github/actions/'))).toBe(false)
-      return job?.steps?.find(s => s.id === 'source-state')
-    })
-
-    for (const step of sourceStateSteps) {
-      expect(step?.run).not.toContain('node ci/source-run-state.mts')
-      expect(step?.run).toContain('gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID"')
-      expect(step?.run).toContain('fail_closed')
-      expect(step?.run).toContain('suppress_stale')
+      const checkout = job?.steps?.find(s => s.uses?.startsWith('actions/checkout@'))
+      expect(checkout?.with).toMatchObject({
+        ref: '${{ github.sha }}',
+        'persist-credentials': false,
+      })
+      const guard = job?.steps?.find(s => s.id === 'source-state')
+      expect(guard?.run).toContain('ci/automation-inline/source-run-guard.sh')
+      expect(job?.steps?.indexOf(checkout!)).toBeLessThan(job?.steps?.indexOf(guard!) ?? -1)
     }
   })
 
@@ -159,9 +165,18 @@ describe('fix-main source state', () => {
     })
 
     const retryPendingStep = classifyJob?.steps?.find(s => s.id === 'retry-pending')
-    expect(retryPendingStep?.run).toContain('retry_pending=true')
-    expect(retryPendingStep?.run).toContain('retry_pending=false')
-    expect(retryPendingStep?.run).toContain('-lt 3')
+    expect(retryPendingStep?.run).toBe(
+      'bash --noprofile --norc -e -o pipefail ci/automation-inline/fix-main-retry-pending.sh',
+    )
+    expect(readFileSync('ci/automation-inline/fix-main-retry-pending.sh', 'utf8')).toContain(
+      'retry_pending=true',
+    )
+    expect(readFileSync('ci/automation-inline/fix-main-retry-pending.sh', 'utf8')).toContain(
+      'retry_pending=false',
+    )
+    expect(readFileSync('ci/automation-inline/fix-main-retry-pending.sh', 'utf8')).toContain(
+      '-lt 3',
+    )
     expect(classifyJob?.outputs?.['retry_pending']).toContain(
       'steps.retry-pending.outputs.retry_pending',
     )

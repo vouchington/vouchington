@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -63,12 +64,16 @@ describe('fix-dependabot workflow', () => {
     expect(revalidate?.needs).toEqual(needs)
     expect(revalidate?.permissions).toMatchObject({ actions: 'read', 'pull-requests': 'read' })
     expect(sourceStateStep?.run).not.toContain('node ci/source-run-state.mts')
-    expect(sourceStateStep?.run).toContain(
+    expect(readFileSync('ci/automation-inline/source-run-guard.sh', 'utf8')).toContain(
       'gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID"',
     )
     expect(prStep?.if).toBe("steps.source-state.outputs.current == 'true'")
-    expect(prStep?.run).toContain('.user.login == "dependabot[bot]"')
-    expect(prStep?.run).toContain('.head.sha == env.EVENT_HEAD_SHA')
+    expect(readFileSync('ci/automation-inline/dependabot-validate-head.sh', 'utf8')).toContain(
+      '.user.login == "dependabot[bot]"',
+    )
+    expect(readFileSync('ci/automation-inline/dependabot-validate-head.sh', 'utf8')).toContain(
+      '.head.sha == env.EVENT_HEAD_SHA',
+    )
     expect(jobs.dispatch?.needs).toContain('revalidate-dispatch')
     expect(jobs.dispatch?.if).toContain("needs.revalidate-dispatch.outputs.current == 'true'")
     expect(jobs.escalate?.needs).toContain('revalidate-dispatch')
@@ -135,12 +140,18 @@ describe('fix-dependabot workflow', () => {
     const triageStep = triageJob?.steps?.find(s => s.id === 'triage')
 
     expect(triageStep?.env?.['EVENT_HEAD_SHA']).toContain('github.event.workflow_run.head_sha')
-    expect(triageStep?.run).toContain(
+    expect(readFileSync('ci/automation-inline/dependabot-triage.sh', 'utf8')).toContain(
       'gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq \'.headRefOid\'',
     )
-    expect(triageStep?.run).toContain('CURRENT_HEAD_SHA')
-    expect(triageStep?.run).toContain('"$CURRENT_HEAD_SHA" != "$EVENT_HEAD_SHA"')
-    expect(triageStep?.run).toContain('Skipping automation: PR #$PR_NUMBER moved from')
+    expect(readFileSync('ci/automation-inline/dependabot-triage.sh', 'utf8')).toContain(
+      'CURRENT_HEAD_SHA',
+    )
+    expect(readFileSync('ci/automation-inline/dependabot-triage.sh', 'utf8')).toContain(
+      '"$CURRENT_HEAD_SHA" != "$EVENT_HEAD_SHA"',
+    )
+    expect(readFileSync('ci/automation-inline/dependabot-triage.sh', 'utf8')).toContain(
+      'Skipping automation: PR #$PR_NUMBER moved from',
+    )
     // gh pr view reads PR metadata via the API, which needs the pull-requests scope; without it
     // this call 403s on the hard-failure path (the one that should actually dispatch Harness) and
     // the job fails before writing should_dispatch.
@@ -200,12 +211,16 @@ describe('fix-dependabot workflow', () => {
     expect(escalateJob?.env?.['PR_NUMBER']).toContain('triage-and-rerun.outputs.pr_number')
     expect(escalateJob?.env?.['SESSION_ID']).toContain('dispatch.outputs.session-id')
     expect(sourceStateStep?.run).not.toContain('node ci/source-run-state.mts')
-    expect(sourceStateStep?.run).toContain(
+    expect(readFileSync('ci/automation-inline/source-run-guard.sh', 'utf8')).toContain(
       'gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID"',
     )
     expect(checkStep?.if).toBe("steps.source-state.outputs.current == 'true'")
-    expect(checkStep?.run).toContain('Suppressing failure comment')
-    expect(checkStep?.run).toContain('.head.sha == env.EVENT_HEAD_SHA')
+    expect(readFileSync('ci/automation-inline/dependabot-comment-wanted.sh', 'utf8')).toContain(
+      'Suppressing failure comment',
+    )
+    expect(readFileSync('ci/automation-inline/dependabot-comment-wanted.sh', 'utf8')).toContain(
+      '.head.sha == env.EVENT_HEAD_SHA',
+    )
     expect(commentStep?.if).toBe("steps.check.outputs.post == 'true'")
     expect(commentStep?.uses).toContain('/comment-harness-session@')
     expect(commentStep?.with).toMatchObject({

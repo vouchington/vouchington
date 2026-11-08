@@ -5,7 +5,9 @@ export function bucketsForFile(file: string): SourceBucket[] {
   if (file.startsWith('docs/') || file.endsWith('.md')) buckets.push('docs')
   if (isLambdaDeploymentSource(file) || file.endsWith('Dockerfile')) buckets.push('deployment')
   if (isGithubYaml(file)) buckets.push('workflows')
-  if (file.startsWith('.github/') && file.endsWith('.sh')) buckets.push('readers')
+  if ((file.startsWith('.github/') || file.startsWith('ci/')) && file.endsWith('.sh')) {
+    buckets.push('readers')
+  }
   if (file === 'pnpm-workspace.yaml' || file === 'package.json') buckets.push('packageGates')
   if (file === '.env.example' || (file.startsWith('dev/') && !file.endsWith('.md'))) {
     buckets.push('localSetup')

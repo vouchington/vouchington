@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -51,7 +52,8 @@ describe('fix-dependabot rerun routes', () => {
   it('routes the uncatalogued first-attempt fallback through the same helper before exiting', () => {
     const triageJob = parsed.jobs?.['triage-and-rerun']
     const triage = triageJob?.steps?.find(s => s.id === 'triage')
-    const script = triage?.run ?? ''
+    expect(triage?.run).toContain('ci/automation-inline/dependabot-triage.sh')
+    const script = readFileSync('ci/automation-inline/dependabot-triage.sh', 'utf8')
     const staleCheckIndex = script.indexOf('"$SOURCE_STATE_CURRENT" != "true"')
     const helperIndex = script.indexOf('node ci/revalidate-dependabot-rerun.mts')
 

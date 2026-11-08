@@ -17,7 +17,7 @@ import { sourceStateExitCode } from './source-run-state.mts'
 // precomputed by the test from MAX_SOURCE_RUN_AGE_MS, so this differential test exercises the
 // guard's bucketing (the bash comparisons), not the real jq date arithmetic. The embedded --jq
 // program itself is never executed or parsed by any suite here, so a syntactically broken filter
-// would still ship green and only fail closed live, on every splice site at once. A real-jq
+// would still ship green and only fail closed live, on every call site at once. A real-jq
 // canary is deferred to #10167's totality work rather than added here.
 const FAKE_GH_SCRIPT = '#!/bin/sh\nprintf \'%s\\n\' "$FAKE_GH_TSV_OUTPUT"\n'
 
@@ -72,6 +72,12 @@ describe('SOURCE_RUN_GUARD_SHELL', () => {
 
   afterAll(() => {
     rmSync(fakeGhDir, { force: true, recursive: true })
+  })
+
+  it('keeps the checked-out shell identical to the generated guard', () => {
+    expect(readFileSync('ci/automation-inline/source-run-guard.sh', 'utf8').trim()).toBe(
+      SOURCE_RUN_GUARD_SHELL.trim(),
+    )
   })
 
   it.each(SOURCE_RUN_STATE_FIXTURES.map(fixture => [fixture.name, fixture] as const))(

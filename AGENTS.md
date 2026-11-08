@@ -2,26 +2,24 @@
 
 - Work from this non-main worktree or a trusted GitHub Actions checkout;
   do not change main or discard local work without explicit direction.
-- **One current contract:** Voucha has not launched. Rewrite current producers, consumers, and
-  canonical schema together; remove replaced paths. Do not add shims, dual readers/writers,
-  backfills, activation flags, or upgrade-only migrations for historical app versions. Preserve external
-  protocols, exact replay, key rotation, and fresh-bootstrap safety. Follow the
-  [schema policy](docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
-- Joined ids and relations are foreign keys. Structured JSON, data points, and change history stay
-  JSON and are not joined. Retained-identity rows survive deletion and do not authorize the deleted
-  entity. Read [PostgreSQL instructions](backend/data-stores/psql/AGENTS.md) for schema changes.
+- **One current contract:** Voucha has not launched. Read the
+  [prelaunch schema policy](docs/development/postgres-schema-rules.md#prelaunch-relational-storage):
+  rewrite current producers, consumers and canonical schema together; remove replaced paths.
+  It forbids historical-version compatibility paths while preserving external protocols, exact
+  replay, key rotation and fresh-bootstrap safety.
+- Follow that policy for foreign-key relations, unjoined JSON and retained identities that never
+  authorize deleted entities. Read [PostgreSQL instructions](backend/data-stores/psql/AGENTS.md)
+  for schema changes.
 - Non-main databases and Valkey are disposable; recreate via [dev workflow](dev/AGENTS.md).
   Main's shared database remains guarded.
 - For user/staff UI or shared API changes, coordinate Vouchington and client work through the
   [client parity matrix](docs/requirements/CLIENT-PARITY-MATRIX.md).
-- Before editing, read all `AGENTS.md` from this root through each target directory.
-  Startup omits subtrees. For skills, read
-  [.agents/skills/AGENTS.md](.agents/skills/AGENTS.md).
-- Use the [local workflow](.agents/skills/agent-workflow/SKILL.md) and only its relevant phase.
-  Prefer local adapters; they load shared guidance and repository policy.
-  Select procedures from the [skill catalog](.agents/catalog/README.md).
-- Save plans outside Git: an issue/comment, PR description, or native plan file suffices.
-  No new Plan issue or template required.
+- Before editing, read every target's `AGENTS.md` ancestry and
+  [skill instructions](.agents/skills/AGENTS.md); startup omits subtrees.
+- Use the relevant [local workflow](.agents/skills/agent-workflow/SKILL.md) phase and local adapters
+  from the [skill catalog](.agents/catalog/README.md).
+- Save plans outside Git in an issue/comment, PR description or native plan file; no new Plan issue
+  or template required.
 - Search [docs](docs/README.md); update owning page. Docs hold only why, impact, architecture,
   runbooks, and unenforced invariants; no restated code or drifting numbers ([rules](docs/AGENTS.md)).
 - Agent hooks and harness configuration follow [hook instructions](dev/codex-hooks/AGENTS.md).

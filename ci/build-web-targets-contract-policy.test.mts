@@ -17,9 +17,15 @@ const action = `runs:
     - uses: actions/cache/restore@sha
       env:
         SEGMENT_DOWNLOAD_TIMEOUT_MINS: '1'
-    - run: python3 "run-bounded.py" 30 node ci/web-build-cache-manifest.mts verify
-    - run: python3 "run-bounded.py" 300 node ci/setup-web-integration.mts
+    - name: Validate restored web build runtime paths
+      run: bash "$GITHUB_WORKSPACE/ci/build-infra/validate-restored-web-targets.sh"
+    - name: Build web targets
+      run: bash "$GITHUB_WORKSPACE/ci/build-infra/build-web-targets.sh"
 `
+const restoredTargetsScript =
+  'python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 30 node ci/web-build-cache-manifest.mts verify\n'
+const buildTargetsScript =
+  'python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 300 node ci/setup-web-integration.mts\n'
 const producer = `jobs:
   static-web:
     runs-on: label-one
@@ -40,6 +46,8 @@ const consumer = `jobs:
 `
 const sources = new Map([
   ['.github/actions/build-web-targets/action.yml', action],
+  ['ci/build-infra/validate-restored-web-targets.sh', restoredTargetsScript],
+  ['ci/build-infra/build-web-targets.sh', buildTargetsScript],
   ['.github/workflows/checks-static.yml', producer],
   ['.github/workflows/test.yml', consumer],
 ])
@@ -101,6 +109,45 @@ describe('build-web-targets contracts', () => {
     )
     expect(buildWebTargetsContractViolations(broken)).toEqual([
       'test.yml#test: timeout-minutes is 6, expected 9 (restore, verify, build and kill grace deadlines plus 60s)',
+    ])
+  })
+
+  it('rejects an action script reference without its tracked source input', () => {
+    const missingScript = new Map(sources)
+    missingScript.delete('ci/build-infra/build-web-targets.sh')
+
+    expect(() => buildWebTargetsContractViolations(missingScript)).toThrow(
+      'Missing ci/build-infra/build-web-targets.sh',
+    )
+  })
+
+  it('rejects an action step that does not invoke its workspace script', () => {
+    const invalidAction = new Map(sources)
+    invalidAction.set(
+      '.github/actions/build-web-targets/action.yml',
+      action.replace(
+        'bash "$GITHUB_WORKSPACE/ci/build-infra/build-web-targets.sh"',
+        'echo unbounded',
+      ),
+    )
+
+    expect(() => buildWebTargetsContractViolations(invalidAction)).toThrow(
+      'build-web-targets step Build web targets must run a workspace script',
+    )
+  })
+
+  it('requires the tracked composite action and producer caller', () => {
+    const missingAction = new Map(sources)
+    missingAction.delete('.github/actions/build-web-targets/action.yml')
+    expect(() => buildWebTargetsContractViolations(missingAction)).toThrow(
+      'Missing .github/actions/build-web-targets/action.yml',
+    )
+
+    const missingProducer = new Map(sources)
+    missingProducer.delete('.github/workflows/checks-static.yml')
+    expect(buildWebTargetsContractViolations(missingProducer)).toEqual([
+      'build-web-targets must have producer and consumer callers',
+      'checks-static.yml#static-web must call build-web-targets',
     ])
   })
 

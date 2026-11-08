@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { fixMainSubscriptionViolations, type OpsWorkflow } from '../../ci/workflow-ops-policy.mts'
 import { fixMainPrompt, parsedMain } from '../test-helpers/fix-main.fixtures.mts'
@@ -216,9 +217,15 @@ describe('fix-main workflow', () => {
     const triageStep = triageJob?.steps?.find(s => s.id === 'triage')
     expect(triageStep).toBeDefined()
     expect(triageStep?.env?.['DECISION']).toBe('${{ steps.decide.outputs.decision }}')
-    expect(triageStep?.run).toContain('"$DECISION" == "dispatch"')
-    expect(triageStep?.run).toContain('should_dispatch=true')
-    expect(triageStep?.run).toContain('should_dispatch=false')
+    expect(readFileSync('ci/automation-inline/fix-main-dispatch-decision.sh', 'utf8')).toContain(
+      '"$DECISION" == "dispatch"',
+    )
+    expect(readFileSync('ci/automation-inline/fix-main-dispatch-decision.sh', 'utf8')).toContain(
+      'should_dispatch=true',
+    )
+    expect(readFileSync('ci/automation-inline/fix-main-dispatch-decision.sh', 'utf8')).toContain(
+      'should_dispatch=false',
+    )
 
     expect(triageJob?.outputs?.['should_dispatch']).toContain(
       'steps.triage.outputs.should_dispatch',

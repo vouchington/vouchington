@@ -124,8 +124,10 @@ describe('no-mistakes config', () => {
 
   it('runs the repository policy check in static CI', () => {
     const workflow = readRepoFile('.github/workflows/static-code-analysis.yml')
-    expect(workflow).toContain('node static-code-analysis/run-node-checks.mts --checks')
-    expect(workflow).toContain('repo-file-policy')
+    expect(workflow).toContain('source ci/run-repository-static-checks.sh')
+    const script = readRepoFile('ci/run-repository-static-checks.sh')
+    expect(script).toContain('node static-code-analysis/run-node-checks.mts --checks')
+    expect(script).toContain('repo-file-policy')
   })
 
   it('keeps extracted native sources and native-only helpers out of Vouchington', () => {
