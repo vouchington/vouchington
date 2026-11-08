@@ -14,9 +14,9 @@ export async function blockedUrlIdsForHostnameBlocks(
     urlIds.length <= relationLimitsMaxValues.post_related_url,
     `blockedUrlIdsForHostnameBlocks received ${urlIds.length} URL ids; relationLimitsMaxValues.post_related_url is ${relationLimitsMaxValues.post_related_url}`,
   )
+  // No result LIMIT: hiding a blocked URL would admit it. The prefix length is already capped.
   const { rows } = await write<{ url_id: string }>(
     sql`/* blockedUrlIdsForHostnameBlocks */
-      -- no-mistakes-disable-next-line postgres-bounded-statements: blockedUrlIdsForHostnameBlocks asserts urlIds.length is at most relationLimitsMaxValues.post_related_url; a LIMIT on this result would hide a blocked URL and admit it
       SELECT requested.id AS url_id
       FROM (SELECT DISTINCT id FROM unnest(${[...urlIds]}::uuid[]) AS input(id)) AS requested
       CROSS JOIN LATERAL (

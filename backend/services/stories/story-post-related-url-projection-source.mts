@@ -20,7 +20,7 @@ export async function getStoryPostRelatedUrlProjectionPrefix(
 ): Promise<SourceRow[]> {
   const statement = `/* getStoryPostRelatedUrlProjectionPrefix */
     SELECT items.id, items.url_id, urls.url
-    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
+    -- Item ids may predate the story, so this walk is story_id plus id, not a time bound.
     FROM rss_feed_items items
     JOIN urls ON urls.id = items.url_id
     WHERE items.story_id = $1 AND items.deleted_at IS NULL AND items.id <= $2

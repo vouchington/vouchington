@@ -155,7 +155,7 @@ async function removeExtraPrefixItems(): Promise<void> {
 export async function prefixUrlIds(cap: number): Promise<string[]> {
   const { rows } = await write<{ url_id: string }>(
     `/* storyPostUrlPrefixUrlIds */
-     -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
+     -- Item ids may predate the story, so this walk is story_id plus id, not a time bound.
      SELECT url_id FROM rss_feed_items
      WHERE story_id = $1 AND deleted_at IS NULL AND id <= $2
      ORDER BY story_id, id
