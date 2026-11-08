@@ -111,7 +111,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@bd89d56c941ff4aa3b3c09edf1eb597ab93f1718 # v0.85.2
+      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@90e878e740edd47d19dae5d0dd28866afd719a01 # v0.85.3
         timeout-minutes: 1
         with:
           results: >-
