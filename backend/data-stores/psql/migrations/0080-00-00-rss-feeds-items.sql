@@ -457,8 +457,12 @@ ON rss_feed_items (url_id, id);
 
 -- One ordered index probe per item-ID partition finds this URL's maximum,
 -- including soft-deleted items (the old MAX had no deletion predicate).
+-- The always-true url_id predicate is deliberate: only URL-equality lookups imply it, so
+-- the planner never offers this index to published_at-range feed walks (it otherwise
+-- bitmap-ANDs it with the item pkey in generic plans and abandons the published_at walk).
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__url_id__published_at
-ON rss_feed_items (url_id, published_at DESC NULLS LAST);
+ON rss_feed_items (url_id, published_at DESC NULLS LAST)
+WHERE url_id IS NOT NULL;
 
 -- The same inlinable query is used by the maintenance trigger and EXPLAIN probes.
 CREATE OR REPLACE FUNCTION fn_url_latest_rss_feed_item_published_at(p_url_id UUID)
