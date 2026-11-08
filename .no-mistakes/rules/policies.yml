@@ -321,7 +321,10 @@
           file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'processBatch',
         }
-      # One remote Bluesky delete per follow receipt (disconnect.mts:36), an external call that cannot be one statement. UNVERIFIED: receipts are uncapped here; the P3 receipts-cap PR (baseline/nm-p3 bluesky) adds the cap.
+      # Follower-side cleanup deletes one remote Bluesky record per receipt before revocation; the
+      # receipts are at most the user's follow_user limit (default 10000, ceiling 50000 in
+      # backend/services/entity-relations/relation-limits-config.mts), paged by backfill_batch_size
+      # in listBlueskyFollowReceiptsForFollower. Redesign tracked in #5312.
       - {
           file: backend/services/bluesky-follows/disconnect.mts,
           callee: 'deleteBlueskyFollowReceipt',

@@ -14,7 +14,8 @@ import { BACKFILL_DEDUPLICATION_TTL_MS } from './config.mts'
 export type { DisconnectRequestedData, ReconcileFollowData }
 
 export function disconnectRequestedJobOptions(data: DisconnectRequestedData): Partial<JobOptions> {
-  const logicalId = `disconnect_${data.userId}_${data.linkAuthorizationId}`
+  // A continuation needs its own id: the plain logical id would dedupe against the running job.
+  const logicalId = `disconnect_${data.userId}_${data.linkAuthorizationId}${data.after ? `__${data.after}` : ''}`
   return {
     jobId: logicalId,
     deduplication: { id: logicalId, mode: 'simple' },

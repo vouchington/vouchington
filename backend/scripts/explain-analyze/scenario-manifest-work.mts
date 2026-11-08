@@ -184,4 +184,6 @@ export const BOUNDED_WORK_SCENARIOS = [
   'crawl-hostname-threshold-seek',
   'crawl-hostnames-due',
   'crawl-hostnames-due-capped',
+  'bluesky-followee-receipts-page',
+  'bluesky-followee-receipts-continuation',
 ] as const

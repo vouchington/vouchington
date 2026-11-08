@@ -12,6 +12,11 @@ export type DisconnectRequestedData = {
   userId: string
   blueskyDid: string
   linkAuthorizationId: string
+  /**
+   * Last follower id already cleaned. Only a continuation carries it; the first run and a sweep
+   * re-drive start from the head.
+   */
+  after?: string
 }
 /** One page of follow pairs after the cursor pair; the first page has no cursor. */
 export type BackfillBlueskyFollowPropagationData = { after?: ReconcileFollowData }

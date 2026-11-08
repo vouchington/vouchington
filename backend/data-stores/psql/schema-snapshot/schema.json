@@ -10022,16 +10022,23 @@
           "unique": true,
           "valid": true
         },
-        "idx_bluesky_follow_records__followee_user_id": {
+        "idx_bluesky_follow_records__followee_follower": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bluesky_follow_records__followee_user_id ON public.bluesky_follow_records USING btree (followee_user_id)",
+          "definition": "CREATE INDEX idx_bluesky_follow_records__followee_follower ON public.bluesky_follow_records USING btree (followee_user_id, follower_user_id)",
           "includedColumns": [],
           "keys": [
             {
               "column": "followee_user_id",
               "descending": false,
               "expression": "followee_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "follower_user_id",
+              "descending": false,
+              "expression": "follower_user_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }

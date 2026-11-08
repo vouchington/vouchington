@@ -26,8 +26,11 @@ CREATE TABLE IF NOT EXISTS bluesky_follow_records (
 );
 
 -- followee_user_id is only the second column of the PK, so it has no RI-usable leading index of
--- its own (see docs/development/postgres-schema-rules.md).
-CREATE INDEX IF NOT EXISTS idx_bluesky_follow_records__followee_user_id ON bluesky_follow_records (followee_user_id);
+-- its own (see docs/development/postgres-schema-rules.md). Adding follower_user_id as the second
+-- column keeps this index the foreign-key index and also serves the disconnect drain's keyset
+-- page (WHERE followee_user_id = $1 AND follower_user_id > $2 ORDER BY follower_user_id LIMIT n)
+-- without a Sort.
+CREATE INDEX IF NOT EXISTS idx_bluesky_follow_records__followee_follower ON bluesky_follow_records (followee_user_id, follower_user_id);
 CREATE INDEX IF NOT EXISTS idx_bluesky_follow_records__follower_account_auth
   ON bluesky_follow_records (follower_account_link_authorization_id);
 

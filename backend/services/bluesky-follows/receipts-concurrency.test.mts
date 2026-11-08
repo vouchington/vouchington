@@ -14,9 +14,10 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import {
   deleteBlueskyFollowReceipt,
-  deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers,
+  deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage,
   getBlueskyFollowReceipt,
   saveBlueskyFollowReceipt,
+  START_OF_IDS,
 } from './receipts.mts'
 import { blueskyFollowsWorkConfig } from './work-limits.mts'
 
@@ -49,7 +50,7 @@ describe('Bluesky followee receipt cleanup concurrency', () => {
         holderProcessId,
         pool: 'write',
         lock: { kind: 'transaction' },
-        queryMarker: 'deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers',
+        queryMarker: 'deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage',
         releaseHolder: () => holder[Symbol.asyncDispose](),
       },
       async waitForLock => {
@@ -57,7 +58,13 @@ describe('Bluesky followee receipt cleanup concurrency', () => {
         const cleanup = (async () => {
           await using query = await beginTransaction()
           cleanupProcessId = await getTestPostgresBackendProcessId(query)
-          await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers(followee.id, { query })
+          await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
+            followee.id,
+            START_OF_IDS,
+            {
+              query,
+            },
+          )
           await query.commit()
         })()
         void cleanup.catch(() => {})

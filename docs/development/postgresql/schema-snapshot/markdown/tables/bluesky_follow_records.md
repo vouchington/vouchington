@@ -32,7 +32,7 @@ _none_
 **Indexes:**
 
 - `bluesky_follow_records_pkey`: `CREATE UNIQUE INDEX bluesky_follow_records_pkey ON public.bluesky_follow_records USING btree (follower_user_id, followee_user_id)`
-- `idx_bluesky_follow_records__followee_user_id`: `CREATE INDEX idx_bluesky_follow_records__followee_user_id ON public.bluesky_follow_records USING btree (followee_user_id)`
+- `idx_bluesky_follow_records__followee_follower`: `CREATE INDEX idx_bluesky_follow_records__followee_follower ON public.bluesky_follow_records USING btree (followee_user_id, follower_user_id)`
 - `idx_bluesky_follow_records__follower_account_auth`: `CREATE INDEX idx_bluesky_follow_records__follower_account_auth ON public.bluesky_follow_records USING btree (follower_account_link_authorization_id)`
 
 **Triggers:**
