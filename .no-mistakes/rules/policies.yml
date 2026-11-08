@@ -2373,14 +2373,7 @@
   options:
     sqlInclude:
       - backend/data-stores/psql/migrations/**/*.sql
-    # 0420 creates moderator_actions before 0625 creates the reversal-case table.
-    allowedMigrations:
-      - path: backend/data-stores/psql/migrations/0625-00-00-membership-ineligible-purchase-reversal-cases.sql
-        table: moderator_actions
-        column: membership_ineligible_purchase_reversal_case_id
-        type: UUID
-        nullable: true
-        default: null
+    allowedMigrations: []
 
 - name: DML must not write PostgreSQL generated columns
   rule: postgres-no-generated-column-writes

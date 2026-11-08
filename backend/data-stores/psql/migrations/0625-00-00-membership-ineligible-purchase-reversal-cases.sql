@@ -122,15 +122,13 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- moderator_actions is not partitioned. 0420 creates it before this table exists.
--- squawk-ignore adding-foreign-key-constraint -- A column REFERENCES clause cannot take NOT VALID. This file is edited in place before any deployment, and the referenced table is created above.
-ALTER TABLE moderator_actions ADD COLUMN IF NOT EXISTS membership_ineligible_purchase_reversal_case_id uuid CONSTRAINT fk_moderator_actions__ineligible_purchase_reversal_case_id REFERENCES membership_ineligible_purchase_reversal_cases (id) ON DELETE SET NULL;
-COMMENT ON COLUMN moderator_actions.membership_ineligible_purchase_reversal_case_id IS
-  'Reversal case created by disposing a Stripe purchase collision review. The review id stays in metadata because that review row is deleted.';
--- Target foreign keys use a partial index on the column. The full column name does not fit after idx_moderator_actions__ within 63 bytes.
-CREATE INDEX IF NOT EXISTS idx_moderator_actions__ineligible_purchase_reversal_case_id
-  ON moderator_actions (membership_ineligible_purchase_reversal_case_id)
-  WHERE membership_ineligible_purchase_reversal_case_id IS NOT NULL;
+ALTER TABLE moderator_actions DROP CONSTRAINT IF EXISTS fk_moderator_actions__ineligible_purchase_reversal_case_id;
+ALTER TABLE moderator_actions ADD CONSTRAINT fk_moderator_actions__ineligible_purchase_reversal_case_id
+  FOREIGN KEY (membership_ineligible_purchase_reversal_case_id)
+  REFERENCES membership_ineligible_purchase_reversal_cases (id)
+  ON DELETE SET NULL
+  NOT VALID;
+ALTER TABLE moderator_actions VALIDATE CONSTRAINT fk_moderator_actions__ineligible_purchase_reversal_case_id;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__invoice
