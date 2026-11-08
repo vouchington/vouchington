@@ -26147,6 +26147,10 @@
           "definition": "CHECK ((user_id IS NOT NULL))",
           "validated": true
         },
+        "chk_conversation_participants__participant_slot": {
+          "definition": "CHECK (((participant_slot >= 1) AND (participant_slot <= 50)))",
+          "validated": true
+        },
         "chk_conversation_participants__removed": {
           "definition": "CHECK (((removed_at IS NOT NULL) OR (removed_by_id IS NULL)))",
           "validated": true
@@ -26171,7 +26175,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "id": {
           "comment": null,
@@ -26183,6 +26187,16 @@
           "nullable": false,
           "ordinalPosition": 2
         },
+        "participant_slot": {
+          "comment": "Unique position from 1 to 50 within this conversation, retained while the participant is removed.",
+          "dataType": "smallint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
         "removed_at": {
           "comment": "When set, this participant has been removed from the conversation (soft-remove).",
           "dataType": "timestamp with time zone",
@@ -26191,7 +26205,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "removed_by_id": {
           "comment": "The user who removed this participant. NULL if removed_at is not set, or if the actor was hard-deleted.",
@@ -26201,7 +26215,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "role": {
           "comment": "owner = conversation initiator; admin = support staff.",
@@ -26211,7 +26225,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "updated_at": {
           "comment": null,
@@ -26221,7 +26235,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "user_id": {
           "comment": "Registered user participant.",
@@ -26290,6 +26304,38 @@
           "live": true,
           "predicate": null,
           "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_conversation_participants__conversation_slot": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_conversation_participants__conversation_slot ON public.conversation_participants USING btree (conversation_id, participant_slot)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "conversation_id",
+              "descending": false,
+              "expression": "conversation_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "participant_slot",
+              "descending": false,
+              "expression": "participant_slot",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int2_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true

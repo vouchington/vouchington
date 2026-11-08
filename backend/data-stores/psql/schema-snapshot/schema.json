@@ -24628,6 +24628,7 @@
     "conversation_participants": {
       "checkConstraints": {
         "chk_conversation_participants__identity": "CHECK ((user_id IS NOT NULL))",
+        "chk_conversation_participants__participant_slot": "CHECK (((participant_slot >= 1) AND (participant_slot <= 50)))",
         "chk_conversation_participants__removed": "CHECK (((removed_at IS NOT NULL) OR (removed_by_id IS NULL)))"
       },
       "columns": {
@@ -24650,7 +24651,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -24664,6 +24665,17 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
+        "participant_slot": {
+          "collation": null,
+          "comment": "Unique position from 1 to 50 within this conversation, retained while the participant is removed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "smallint"
+        },
         "removed_at": {
           "collation": null,
           "comment": "When set, this participant has been removed from the conversation (soft-remove).",
@@ -24672,7 +24684,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "removed_by_id": {
@@ -24683,7 +24695,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "role": {
@@ -24694,7 +24706,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "conversation_participant_roles"
         },
         "updated_at": {
@@ -24705,7 +24717,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -24775,6 +24787,33 @@
           ],
           "predicate": null,
           "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_conversation_participants__conversation_slot": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_conversation_participants__conversation_slot ON public.conversation_participants USING btree (conversation_id, participant_slot)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "conversation_id",
+              "descending": false,
+              "expression": "conversation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "participant_slot",
+              "descending": false,
+              "expression": "participant_slot",
+              "nullsFirst": false,
+              "opclass": "int2_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
