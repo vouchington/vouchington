@@ -753,7 +753,7 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_roles__role_type_id ON user_roles (role_type_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles__role_type_id ON user_roles (role_type_id, user_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_permissions (

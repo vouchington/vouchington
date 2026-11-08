@@ -1,5 +1,6 @@
 import { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
 import { reconcileNotificationsForRssFeedItem } from '@services/notifications/reconcile-rss-feed-item'
+import { createCriticalModerationAlertNotificationPage } from '@services/notifications/create-critical-moderation-alert-notification'
 import { deleteNotification, markAllNotificationsRead } from '@services/notifications/mutations'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { getFollowerInfoForNotification } from '@services/notifications/get-follower-info'
@@ -82,6 +83,23 @@ export async function processReconcileRssFeedItemNotifications(data: {
     onCreatedNotifications: dispatchCreatedNotificationPushes,
   })
   return result
+}
+
+/** One bounded page of currently eligible staff recipients for a critical report. */
+export function processCriticalModerationAlertNotification(
+  data: {
+    reportId: string
+    afterUserId: string
+    pageSize?: number
+  },
+  recipientUserIds?: readonly string[],
+) {
+  return createCriticalModerationAlertNotificationPage(
+    data.reportId,
+    data.afterUserId,
+    data.pageSize,
+    recipientUserIds,
+  )
 }
 
 /** A continuation reads current eligibility again before updating its bounded page. */

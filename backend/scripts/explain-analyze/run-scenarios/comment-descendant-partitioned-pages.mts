@@ -12,6 +12,7 @@ import {
 import { verifyWideBoundaryExpansion } from './comment-descendant-wide-boundary.mts'
 import { seedCommentDescendantPartitionFixture } from '../seed-data/comment-descendant-partition-fixture.mts'
 import { logCommentFixturePhase } from '../seed-data/comment-descendant-partition-storage.mts'
+import { runCriticalAlertRecipientPageScenarios } from './critical-alert-recipient-pages.mts'
 
 const SEEDED_POSTS = 428_636
 
@@ -189,4 +190,5 @@ export async function runCommentDescendantPartitionedPages(): Promise<void> {
     return page
   })
   assertScenarioReadBudget('comment-descendants-partitioned-boundary-lookdown', 100)
+  await runCriticalAlertRecipientPageScenarios()
 }

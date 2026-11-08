@@ -3,13 +3,18 @@ import { describe, expect, it } from 'vitest'
 import { addUserRole } from '@services/users/roles-permissions'
 import {
   createTestUserDirect,
-  hardDeleteTestUserAndWaitBeforeCommit,
+  deleteCriticalAlertRecipientDuringInsertForTest,
   insertTestModerationReport,
   insertTestPost,
   insertTestTotpAuthenticator,
   safeUsername,
 } from '@voucha/test-helpers'
-import { createCriticalModerationAlertNotification } from './create-critical-moderation-alert-notification.mts'
+import { removeTestUserRole } from '@voucha/test-helpers/entities/user-role-removal'
+import {
+  createCriticalModerationAlertNotification,
+  createCriticalModerationAlertNotificationPage,
+  listCriticalAlertRecipientPage,
+} from './create-critical-moderation-alert-notification.mts'
 import { listNotifications } from './list.mts'
 
 describe('createCriticalModerationAlertNotification', () => {
@@ -23,6 +28,7 @@ describe('createCriticalModerationAlertNotification', () => {
     ])
     await insertTestTotpAuthenticator(admin!.id, 'critical-alert-admin')
     await Promise.all([addUserRole(admin!.id, 'administrator'), addUserRole(mod!.id, 'moderator')])
+    await addUserRole(admin!.id, 'moderator')
 
     const postId = await insertTestPost({
       createdById: postOwner!.id,
@@ -62,6 +68,49 @@ describe('createCriticalModerationAlertNotification', () => {
     expect(adminAlert?.title).toBe('Critical moderation alert')
     expect(adminAlert?.body).toBe('A report requiring urgent review has been filed.')
     expect(adminAlert?.target_path).toBe('/reports')
+  })
+
+  it('advances a bounded staff cursor and applies role grants on later pages', async () => {
+    const users = await Promise.all(
+      Array.from({ length: 3 }, () =>
+        createTestUserDirect({ username: safeUsername('cman-page') }),
+      ),
+    )
+    const [first, middle, last] = users.toSorted((a, b) => a.id.localeCompare(b.id))
+    await Promise.all([addUserRole(first!.id, 'moderator'), addUserRole(last!.id, 'moderator')])
+
+    const firstPage = await listCriticalAlertRecipientPage(
+      null,
+      1,
+      undefined,
+      users.map(user => user.id),
+    )
+    expect(firstPage).toEqual({ recipientIds: [first!.id], nextAfterUserId: first!.id })
+
+    await addUserRole(middle!.id, 'moderator')
+    const secondPage = await listCriticalAlertRecipientPage(
+      firstPage.nextAfterUserId,
+      1,
+      undefined,
+      users.map(user => user.id),
+    )
+    expect(secondPage).toEqual({ recipientIds: [middle!.id], nextAfterUserId: middle!.id })
+    const thirdPage = await listCriticalAlertRecipientPage(
+      secondPage.nextAfterUserId,
+      1,
+      undefined,
+      users.map(user => user.id),
+    )
+    expect(thirdPage).toEqual({ recipientIds: [last!.id], nextAfterUserId: null })
+
+    await removeTestUserRole(last!.id, 'moderator')
+    const afterRemoval = await listCriticalAlertRecipientPage(
+      secondPage.nextAfterUserId,
+      1,
+      undefined,
+      users.map(user => user.id),
+    )
+    expect(afterRemoval).toEqual({ recipientIds: [], nextAfterUserId: null })
   })
 
   it('deduplicates repeated calls for the same report', async () => {
@@ -106,6 +155,10 @@ describe('createCriticalModerationAlertNotification', () => {
     })
     await insertTestTotpAuthenticator(admin!.id, 'critical-alert-delete-race')
     await addUserRole(admin!.id, 'administrator')
+    const survivor = await createTestUserDirect({
+      username: safeUsername('cman-delete-race-survivor'),
+    })
+    await addUserRole(survivor.id, 'moderator')
 
     const postOwner = await createTestUserDirect({
       username: safeUsername('cman-delete-race-owner'),
@@ -126,25 +179,20 @@ describe('createCriticalModerationAlertNotification', () => {
       reason: 'illegal_content',
     })
 
-    let releaseDelete: () => void = () => {}
-    const deleteMayCommit = new Promise<void>(resolve => {
-      releaseDelete = resolve
-    })
-    let markDeleteHoldingLock: () => void = () => {}
-    const deleteHoldingLock = new Promise<void>(resolve => {
-      markDeleteHoldingLock = resolve
-    })
-    const deleteStarted = hardDeleteTestUserAndWaitBeforeCommit(
-      admin!.id,
-      deleteMayCommit,
-      markDeleteHoldingLock,
+    const outcome = await deleteCriticalAlertRecipientDuringInsertForTest(admin!.id, () =>
+      createCriticalModerationAlertNotificationPage(reportId, null, undefined, [
+        admin!.id,
+        survivor.id,
+      ]),
     )
-
-    await deleteHoldingLock
-    const alertCreated = createCriticalModerationAlertNotification(reportId)
-    releaseDelete()
-
-    await expect(alertCreated).resolves.toBeUndefined()
-    await deleteStarted
+    expect(outcome).toEqual({ value: { nextAfterUserId: null } })
+    const { notifications } = await listNotifications(survivor.id)
+    expect(
+      Object.values(notifications).filter(
+        notification =>
+          notification.entity_type === 'critical_moderation_alert' &&
+          notification.moderation_report_id === reportId,
+      ),
+    ).toHaveLength(1)
   })
 })

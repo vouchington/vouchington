@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 import { BACKGROUND_DOMAINS, isBackgroundDomain } from '../config.mts'
+import { getBackgroundOrderingLimits } from './ordering-caps.mts'
 import {
   BACKGROUND_JOBS,
   getBackgroundJob,
@@ -42,6 +43,12 @@ describe('background registry', () => {
     expect(
       getBackgroundJob('notifications.processDeliverNotificationPushIntent')?.options.ordering?.key,
     ).toBe('notifications')
+  })
+
+  it('maps per-report critical alert ordering keys to the shared bulk cap', () => {
+    expect(
+      getBackgroundOrderingLimits('notifications:bulk:critical-moderation-alert:report-id'),
+    ).toEqual({ configKey: 'notifications:bulk', defaultValue: 1, maxValue: 1 })
   })
 
   it('ranks tasks at the default tier and dispatchers at 100', () => {

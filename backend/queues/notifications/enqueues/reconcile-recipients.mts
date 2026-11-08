@@ -15,6 +15,7 @@ import type {
 } from '@queues/background/enqueues/notifications-domain'
 import { background } from '@queues/background/queues'
 import type { JobOptions } from 'glide-mq'
+import { continuationOptions } from './reconcile-recipients-options.mts'
 
 const CONTINUATION = { priority: PRIORITY_DISPATCH, removeOnComplete: true, removeOnFail: true }
 // Visibility pages retry indefinitely (see VISIBILITY), so removeOnFail never drops a chain.
@@ -104,14 +105,6 @@ export function enqueueBulkReconcilePostNotifications(postIds: string[], changeI
     jobIdOf: postJobId,
     enqueueBulk: enqueuePostJobs,
   })
-}
-
-function continuationOptions(options?: Partial<JobOptions>): Partial<JobOptions> | undefined {
-  if (!options) return undefined
-  // The dispatcher supplies retry and admission-fence options. The page's accepted change and
-  // cursor remain its stable identity, and every page stays on the item's serial bulk lane.
-  const { jobId: _jobId, ordering: _ordering, ...rest } = options
-  return rest
 }
 
 export function enqueueContinueReconcilePostNotifications(

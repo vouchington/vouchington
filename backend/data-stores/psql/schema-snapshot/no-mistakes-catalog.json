@@ -159245,7 +159245,7 @@
         "idx_user_roles__role_type_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_roles__role_type_id ON public.user_roles USING btree (role_type_id)",
+          "definition": "CREATE INDEX idx_user_roles__role_type_id ON public.user_roles USING btree (role_type_id, user_id)",
           "immediate": true,
           "keys": [
             {
@@ -159255,6 +159255,15 @@
               "expression": "role_type_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],

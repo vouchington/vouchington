@@ -150666,7 +150666,7 @@
         "idx_user_roles__role_type_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_roles__role_type_id ON public.user_roles USING btree (role_type_id)",
+          "definition": "CREATE INDEX idx_user_roles__role_type_id ON public.user_roles USING btree (role_type_id, user_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -150675,6 +150675,13 @@
               "expression": "role_type_id",
               "nullsFirst": false,
               "opclass": "int8_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
