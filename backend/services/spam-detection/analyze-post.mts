@@ -4,11 +4,10 @@ import { SPAM_SCORE_THRESHOLD, SIGNAL_WEIGHTS } from './config.mts'
 import {
   checkExcessiveLinks,
   checkSpamKeywords,
-  checkContentHashDuplicate,
   checkLowQualityText,
-  checkEmbeddingsSimilarity,
   checkReferralLinkInPost,
 } from './spam-signals.mts'
+import { checkContentHashDuplicate, checkEmbeddingsSimilarity } from './duplicate-signals.mts'
 import type { SpamDetectionResult } from './types.mts'
 
 export async function analyzePostForSpam(post: Post): Promise<SpamDetectionResult> {

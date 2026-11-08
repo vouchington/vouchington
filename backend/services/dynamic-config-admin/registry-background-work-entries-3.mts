@@ -11,6 +11,10 @@ import {
   followerDistributionsWorkMaxValues,
 } from '@services/follower-distributions/work-limits'
 import {
+  spamDetectionWorkConfig,
+  spamDetectionWorkMaxValues,
+} from '@services/spam-detection/work-limits'
+import {
   oauthFacebookWorkConfig,
   oauthFacebookWorkMaxValues,
 } from '@services/oauth-facebook/work-limits'
@@ -75,6 +79,18 @@ export const backgroundWorkEntries3 = [
         'Provider friend pages one Facebook sync job reads before it continues in a follow-up job.',
       max_finalize_batches_per_run:
         'Stale friend delete batches one Facebook sync job runs before it continues in a follow-up job.',
+    },
+  }),
+  defineBoundedWorkNamespace({
+    namespace: 'spam-detection-work-config',
+    config: spamDetectionWorkConfig,
+    label: 'Spam Detection',
+    maxValues: spamDetectionWorkMaxValues,
+    descriptions: {
+      content_hash_lookback_days:
+        'Days of recent posts searched for another user posting identical content.',
+      embeddings_similarity_lookback_days:
+        'Days of recent posts searched for another user posting a near-identical embedding.',
     },
   }),
 ]

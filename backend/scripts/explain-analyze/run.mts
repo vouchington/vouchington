@@ -83,6 +83,7 @@ import { runPostModerationRetentionScenarios } from './run-scenarios/post-modera
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
 import { runCommentDescendantPartitionedPages } from './run-scenarios/comment-descendant-partitioned-pages.mts'
 import { assertNoLeftoverCommentPartitions } from './seed-data/comment-descendant-partition-storage.mts'
+import { runSpamSignalScenarios } from './run-scenarios/spam-signals.mts'
 import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
 async function main() {
   prepareOutputDir()
@@ -105,6 +106,7 @@ async function main() {
     await runStep(runStoryMemberPageScenarios.name, runStoryMemberPageScenarios)
     await runStep(runStoryByIdScenario.name, runStoryByIdScenario)
     await runStep(runSearchAndFacetScenarios.name, runSearchAndFacetScenarios)
+    await runStep(runSpamSignalScenarios.name, runSpamSignalScenarios)
     await runStep(runOAuthClientVerificationScenarios.name, runOAuthClientVerificationScenarios)
     await runStep(runFollowerDistributionScenarios.name, runFollowerDistributionScenarios)
     await runStep(runEntityAndCommunityScenarios.name, runEntityAndCommunityScenarios)

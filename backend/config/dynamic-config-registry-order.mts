@@ -79,6 +79,7 @@ export const REGISTRY_ORDER = [
   'communities-work-config',
   'admin-imports-work-config',
   'follower-distributions-work-config',
+  'spam-detection-work-config',
   'oauth-facebook-work-config',
   'oauth-account-friend-work-config',
   'oauth-github-work-config',

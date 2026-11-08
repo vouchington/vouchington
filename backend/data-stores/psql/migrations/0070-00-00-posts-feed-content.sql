@@ -375,6 +375,11 @@ CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_input_sha256
 ON posts (bedrock_nova_multimodal_v1_input_sha256)
 WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
 
+-- content-hash duplicate probe: another user's recent post with the same moderated content
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_posts__llm_moderation_content_sha256__id
+ON posts (llm_moderation_content_sha256, id);
+
 -- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_embedding
