@@ -215,5 +215,40 @@ describe('sequential scan near-ties', () => {
         `new []; stale [${FINGERPRINT}]`,
       )
     })
+
+    it('prices a looped index probe by its executions', () => {
+      // One loop at 20 is far under a 10_000 sequential scan. Five hundred loops cost the same
+      // as that scan, which is the hash-join versus nested-loop coin flip.
+      const forced = { total_cost: INDEX_COST * 1e6, scan_cost: 10_000 }
+      const probe = (loops: number) =>
+        seqScanResult({
+          plan: {
+            Plan: {
+              'Node Type': 'Limit',
+              'Total Cost': INDEX_COST,
+              Plans: [
+                {
+                  'Node Type': 'Index Only Scan',
+                  'Relation Name': 'posts__default',
+                  'Total Cost': 20,
+                  'Actual Loops': loops,
+                },
+              ],
+            },
+          },
+          forced_seq_scans: { posts: forced },
+        })
+      const looped = [probe(500)]
+      expect(isStaleSeqScanNearTie(looped[0], 'posts')).toBe(true)
+      expect(assertNoNewSeqScans(looped, looped, baseline)).toEqual({
+        onlyFirst: [],
+        onlyRepeated: [],
+      })
+      const once = [probe(1)]
+      expect(isStaleSeqScanNearTie(once[0], 'posts')).toBe(false)
+      expect(() => assertNoNewSeqScans(once, once, baseline)).toThrow(
+        `new []; stale [${FINGERPRINT}]`,
+      )
+    })
   })
 })

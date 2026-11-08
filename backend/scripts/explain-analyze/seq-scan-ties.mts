@@ -77,12 +77,17 @@ export function forcedSeqScan(probePlan: unknown, relation: string): ForcedSeqSc
     : undefined
 }
 
-/** Cost of the chosen plan's own scan nodes on `relation`, whatever scan type the planner picked. */
+/**
+ * Cost of the chosen plan's scans of `relation`. Postgres prices `Total Cost` for one loop,
+ * so a nested-loop index probe is the per-loop cost times its executions.
+ */
 function chosenRelationCost(plan: unknown, relation: string): number | undefined {
   const scans = collectNodes(plan).filter(
     node => node.relationName && parentRelationName(node.relationName) === relation,
   )
-  return scans.length > 0 ? scans.reduce((sum, node) => sum + node.cost, 0) : undefined
+  return scans.length > 0
+    ? scans.reduce((sum, node) => sum + node.cost * node.actualLoops, 0)
+    : undefined
 }
 
 /**
@@ -90,7 +95,9 @@ function chosenRelationCost(plan: unknown, relation: string): number | undefined
  * costs at most SEQ_SCAN_TIE_RATIO of that scan more than the chosen plan. The forced plan
  * disables every index path, so its total also moves unrelated joins (CI run 40427732470: a
  * 4e12 total for a statement chosen at 6e7). The scan nodes' own costs are compared as well,
- * which keeps a 321 versus 318 `topics` choice a tie however the rest of the statement replans.
+ * each chosen node times its loops. That keeps a 321 versus 318 `topics` choice a tie however
+ * the rest of the statement replans, and a nested-loop index probe is not a fix merely because
+ * one execution is cheap.
  */
 export function isStaleSeqScanNearTie(result: ProbedExplainResult, relation: string): boolean {
   const forced = result.forced_seq_scans?.[relation]
