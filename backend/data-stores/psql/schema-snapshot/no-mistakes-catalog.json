@@ -99804,7 +99804,7 @@
         "idx_referral_program_topic_link_validation_rule_sets__rule_set": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_referral_program_topic_link_validation_rule_sets__rule_set ON public.referral_program_topic_link_validation_rule_sets USING btree (referral_program_link_validation_rule_set_id)",
+          "definition": "CREATE INDEX idx_referral_program_topic_link_validation_rule_sets__rule_set ON public.referral_program_topic_link_validation_rule_sets USING btree (referral_program_link_validation_rule_set_id, referral_program_topic_id)",
           "immediate": true,
           "keys": [
             {
@@ -99812,6 +99812,15 @@
               "column": "referral_program_link_validation_rule_set_id",
               "descending": false,
               "expression": "referral_program_link_validation_rule_set_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "referral_program_topic_id",
+              "descending": false,
+              "expression": "referral_program_topic_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
