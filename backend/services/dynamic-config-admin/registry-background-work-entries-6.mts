@@ -65,8 +65,6 @@ export const backgroundWorkRegistryEntries6 = {
     maxValues: entityRelationsWorkMaxValues,
     descriptions: {
       alias_resolution_batch_size: 'Alias resolution batch size for entity relations processing.',
-      rss_feed_publisher_batch_size:
-        'Rss feed publisher batch size for entity relations processing.',
     },
   }),
 }

@@ -1,9 +1,9 @@
+import { recordPublisherTypeFeedPublicationWork } from '@services/post-publication/publisher-type-feeds'
 import { recomputeRegisteredPostHackerNewsFlags } from './post-hacker-news-flag-registry.mts'
 import { getEntityRelationsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
-  recordRssFeedDiscoverabilityChanges,
   recordPostPublicationChanges,
   recordTopicAliasPublicationWork,
 } from '@services/post-publication'
@@ -67,7 +67,10 @@ export async function recordPostTopicRelationPublicationChanges(
   }
 
   if (relationTable === TOPIC_PUBLISHER_TYPE_TABLE) {
-    await recordPublisherTypeRelationPublicationChanges(query, changes)
+    recordPublisherTypeFeedPublicationWork(
+      query,
+      changes.map(change => change.subject_id),
+    )
     return
   }
 
@@ -102,47 +105,6 @@ export async function recordPostTopicRelationPublicationChanges(
       postId,
       impactedTopicIds: [...topicIds],
     })),
-  )
-}
-
-/** Hard page cap for one publisher-type feed fanout; the page size is rss_feed_publisher_batch_size. */
-const MAX_PUBLISHER_TYPE_FEED_PAGES = 1000
-
-/** Captures every feed whose discoverability derives from a changed publisher-type relation. */
-async function recordPublisherTypeRelationPublicationChanges(
-  query: TransactionQuery,
-  changes: readonly PostTopicRelationChange[],
-): Promise<void> {
-  const PUBLISHER_TYPE_RSS_FEED_BATCH_SIZE = getEntityRelationsWorkLimit(
-    'rss_feed_publisher_batch_size',
-  )
-  const topicIds = [...new Set(changes.map(change => change.subject_id))].toSorted()
-  let afterRssFeedId: string | null = null
-  for (let page = 0; page < MAX_PUBLISHER_TYPE_FEED_PAGES; page += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each feed fanout page is bounded and sorted.
-    const result = await query<{ id: string }>(
-      `/* recordPublisherTypeRelationPublicationChanges */
-      SELECT id
-      FROM rss_feeds
-      WHERE topic_id = ANY($1::uuid[])
-        AND deleted_at IS NULL
-        AND ($2::uuid IS NULL OR id > $2::uuid)
-      ORDER BY id
-      LIMIT $3`,
-      [topicIds, afterRssFeedId, PUBLISHER_TYPE_RSS_FEED_BATCH_SIZE],
-    )
-    const rows: Array<{ id: string }> = result.rows
-    if (rows.length === 0) return
-    // oxlint-disable-next-line no-await-in-loop -- one set-based capture per bounded feed page.
-    await recordRssFeedDiscoverabilityChanges(
-      query,
-      rows.map(row => row.id),
-    )
-    afterRssFeedId = rows.at(-1)!.id
-  }
-  // Safety cap: exceeding it fails the transaction instead of running unbounded; redesign tracked in vouchington/vouchington#5328
-  throw new Error(
-    `publisher-type feed fanout exceeded ${MAX_PUBLISHER_TYPE_FEED_PAGES} pages; continuation after rss_feed ${afterRssFeedId}`,
   )
 }
 

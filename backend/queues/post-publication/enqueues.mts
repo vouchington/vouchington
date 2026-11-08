@@ -1,6 +1,10 @@
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import { createHash } from 'node:crypto'
-import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
+import {
+  PUBLISHER_TYPE_FEED_PUBLICATION_JOB,
+  type PublisherTypeFeedJobData,
+  POST_PUBLICATION_EFFECTS_JOB,
+} from '@queues/background/enqueues/post-publication-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { POST_PUBLICATION_EFFECTS_JOB_ID_PREFIX } from './config.mts'
@@ -47,3 +51,18 @@ function postPublicationEffectJobId(data: PostPublicationEffectsJobData): string
     .digest('hex')
   return `${POST_PUBLICATION_EFFECTS_JOB_ID_PREFIX}__${owner}__${data.changeId}__${descriptorHash}`
 }
+
+const enqueuePublisherFeeds = createBackgroundEnqueue(PUBLISHER_TYPE_FEED_PUBLICATION_JOB)
+
+export function enqueuePublisherTypeFeedPublication(
+  data: PublisherTypeFeedJobData,
+  options: Parameters<typeof enqueuePublisherFeeds>[1] = {},
+) {
+  return enqueuePublisherFeeds(data, { jobId: publisherTypeFeedJobId(data), ...options })
+}
+
+function publisherTypeFeedJobId(data: PublisherTypeFeedJobData): string {
+  return `${PUBLISHER_TYPE_FEED_PUBLICATION_JOB.name}__${data.changeId}__${data.afterTopicId ?? 'root'}`
+}
+
+export type { PublisherTypeFeedJobData } from '@queues/background/enqueues/post-publication-jobs'

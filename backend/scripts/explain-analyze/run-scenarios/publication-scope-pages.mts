@@ -1,3 +1,4 @@
+import { listPublisherTypeFeedPublicationPage } from '@services/post-publication/publisher-type-feeds'
 import { capturePublicationHardDeleteScenarios } from './publication-hard-delete.mts'
 import assert from 'node:assert/strict'
 import {
@@ -39,6 +40,17 @@ export async function runPublicationScopePageScenarios(): Promise<void> {
 
 async function capturePublicationScopePages(): Promise<void> {
   const limit = getPostPublicationWorkLimit('capture_batch_size')
+  registerScenarioContract('publication-publisher-type-feed-page', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_rss_feeds__topic_id__unique'] },
+      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 2 },
+    ],
+  })
+  await runAndCapture('publication-publisher-type-feed-page', async () => {
+    const page = await listPublisherTypeFeedPublicationPage([seed.topic, seed.negativeTopic], null)
+    assert.ok(page.rssFeedIds.includes(seed.feed))
+    assert.equal(page.hasMore, false)
+  })
   const scopes: Array<[string, LiveScopePostKind, string, string, string]> = [
     ['author', 'author_posts', seed.author, 'posts', 'posts__default_created_by_id_id_idx'],
     ['community', 'community_posts', seed.community, 'posts', 'posts__default_community_id_id_idx'],

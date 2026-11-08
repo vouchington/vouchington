@@ -1,5 +1,9 @@
+import { processPublisherTypeFeedContinuation } from './processors/publisher-type-feeds.mts'
 import { backgroundHandler } from '@queues/background/enqueues/define-handler'
-import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
+import {
+  PUBLISHER_TYPE_FEED_PUBLICATION_JOB,
+  POST_PUBLICATION_EFFECTS_JOB,
+} from '@queues/background/enqueues/post-publication-jobs'
 import type { BackgroundJobDefinition } from '@queues/background/types'
 import { processApplyPostPublicationEffects } from './processors/direct-effects.mts'
 
@@ -9,5 +13,6 @@ function delegate<TData>(job: BackgroundJobDefinition<TData>, process: (data: TD
 }
 
 export const postPublicationHandlers = [
+  backgroundHandler(PUBLISHER_TYPE_FEED_PUBLICATION_JOB, processPublisherTypeFeedContinuation),
   delegate(POST_PUBLICATION_EFFECTS_JOB, processApplyPostPublicationEffects),
 ]

@@ -751,7 +751,7 @@
     "maxCount": null,
     "reason": "A later relation mutation resolves canonical topics after its own write so it sees aliases inserted earlier in the request.",
     "permanent": true,
-    "code": "backend/services/entity-relations/post-topic-publication.mts:169",
+    "code": "backend/services/entity-relations/post-topic-publication.mts:getCanonicalTopicIdsByAliasId",
     "routes": ["POST /api/v1/mcp", "POST /api/v1/posts"]
   },
   {

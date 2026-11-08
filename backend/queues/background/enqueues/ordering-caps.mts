@@ -12,6 +12,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   'story-post-related-url-projections': 1,
   'post-publication': 1,
   'post-publication:effects': 5,
+  'post-publication:publisher-type-feeds': 1,
   'vote-aggregation': 10,
   'entity-listeners': 5,
   'account-lifecycle': 2,
