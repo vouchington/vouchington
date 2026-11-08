@@ -10,7 +10,6 @@ describe('hostname, list and user read tool gating', () => {
     scopes: ['hostnames:read', 'users:read', 'lists:read'],
     tools: [
       ['read_hostnames', 'hostnames:read', optionArgs('search', {})],
-      ['read_hostnames', 'hostnames:read', optionArgs('top', {})],
       ['read_users', 'users:read', optionArgs('details', { user_id: 'some-user' })],
       ['read_users', 'users:read', optionArgs('search', { q: 'some' })],
       ['read_my_lists', 'lists:read', optionArgs('list', {})],
@@ -19,7 +18,6 @@ describe('hostname, list and user read tool gating', () => {
     ],
     pagedTools: [
       ['read_hostnames', 'search'],
-      ['read_hostnames', 'top'],
       ['read_users', 'search'],
       ['read_my_lists', 'list'],
       ['read_my_lists', 'items'],

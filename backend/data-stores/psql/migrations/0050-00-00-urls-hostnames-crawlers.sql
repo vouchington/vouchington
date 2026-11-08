@@ -778,9 +778,9 @@ COMMENT ON COLUMN crawl_chunks.crawl_id IS 'The crawl this chunk was extracted f
 COMMENT ON COLUMN crawl_chunks.order_index IS 'Position of this chunk within the crawl''s content (0-based).';
 COMMENT ON COLUMN crawl_chunks.markdown IS 'The markdown content of this chunk.';
 
--- NOTE: idx_url_hostnames__top_sort and idx_url_hostnames__top_sort_by_topic are in
--- config-driven/0190-00-00-hostname-elections-indexes.mts because they reference
--- votes_score_net/votes_count_up columns added by the elections config-driven generator.
+-- NOTE: idx_url_hostnames__topic_id__votes_score_sort__id is in
+-- config-driven/0190-00-00-hostname-elections-indexes.mts because it references the
+-- votes_score_sort column added by the elections config-driven generator.
 
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

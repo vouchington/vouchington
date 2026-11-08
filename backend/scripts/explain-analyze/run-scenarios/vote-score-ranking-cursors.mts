@@ -1,7 +1,6 @@
 import { encodeCursor } from '@modules/pagination'
 import { read } from '@data-stores/psql'
 import { searchUrlHostnames } from '@services/urls-hostnames/search'
-import { searchTopHostnames } from '@services/urls-hostnames/search-top'
 import sql from 'sql-template-strings'
 
 const PAGE_SIZE = 25
@@ -49,18 +48,29 @@ async function getScoreCursorForHostname(
   return encodeCursor({ score: row.score, id: row.id })
 }
 
-export async function runTopHostnameContinuation(
+export async function runTrustHostnameContinuation(
   cursor: string,
   topicId?: string,
 ): Promise<unknown> {
-  const page = await searchTopHostnames({ topic_id: topicId, limit: PAGE_SIZE, after: cursor })
+  const page = await searchUrlHostnames({
+    sort: 'trust',
+    is_blocked: false,
+    topic_id: topicId,
+    limit: PAGE_SIZE,
+    after: cursor,
+  })
   if (page.results.length !== PAGE_SIZE || !page.page_info.has_next_page)
     throw new Error('Deep voted-hostname continuation must have a full page')
   return page
 }
 
 export async function runZeroTrustContinuation(cursor: string): Promise<unknown> {
-  const page = await searchUrlHostnames({ sort: 'trust', limit: PAGE_SIZE, after: cursor })
+  const page = await searchUrlHostnames({
+    sort: 'trust',
+    is_blocked: false,
+    limit: PAGE_SIZE,
+    after: cursor,
+  })
   if (
     page.results.length !== PAGE_SIZE ||
     !page.page_info.has_next_page ||

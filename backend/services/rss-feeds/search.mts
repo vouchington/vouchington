@@ -2,8 +2,10 @@ import { escapeLikePattern } from '@modules/search-utils'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendTopicDescendantsCte } from '@services/topics/descendants-sql'
-import type { SearchRssFeedsOptions, ViewRssFeed } from './types.mts'
+import type { RssFeedSearchRow, SearchRssFeedsOptions } from './types.mts'
 import { mutedPublisherTypeFilter, publisherTypeCandidateJoin } from './search-publisher-types.mts'
+import { feedStateFilters } from './search-state-filters.mts'
+import { searchTrendingRssFeeds } from './search-trending.mts'
 export type { SearchRssFeedsOptions }
 
 export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
@@ -24,7 +26,13 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     feed_type,
     category_topic_id,
     cursorId,
+    sort,
+    time_range,
+    cursorScore,
   } = options
+  if (sort === 'trending') {
+    return searchTrendingRssFeeds({ current_user_id, limit, time_range, cursorScore, cursorId })
+  }
 
   const filters: ReturnType<typeof sql>[] = [sql`rss_feeds.deleted_at IS NULL`]
   let sortBy = sql`rss_feeds.id DESC`
@@ -83,17 +91,7 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     )`)
   }
   if (cursorId) filters.push(sql`rss_feeds.id < ${cursorId}::uuid`)
-  // is_enabled/discoverable === null means no filter
-  if (is_enabled === true) {
-    filters.push(sql`rss_feeds.is_enabled = TRUE`)
-  } else if (is_enabled === false) {
-    filters.push(sql`rss_feeds.is_enabled = FALSE`)
-  }
-  if (discoverable === true) {
-    filters.push(sql`rss_feeds.is_discoverable = TRUE`)
-  } else if (discoverable === false) {
-    filters.push(sql`rss_feeds.is_discoverable = FALSE`)
-  }
+  filters.push(...feedStateFilters(is_enabled, discoverable))
 
   const hasTextSearch = text_search_query && typeof text_search_query === 'string'
   const shouldIncludeTopicDescendants = include_descendants && effectiveTopicIds.length > 0
@@ -124,8 +122,8 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
   } else {
     query.append(sql`
       rss_feed_ids AS MATERIALIZED (
-        SELECT id
-    `)
+        SELECT `)
+    query.append(sql`id`)
   }
   if (joinTopicDescendants) {
     // Active topic_id is unique, so each descendant contributes at most one feed.
@@ -157,7 +155,8 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     )
 
     SELECT
-      view_rss_feeds.*
+      view_rss_feeds.*`)
+  query.append(sql`
     FROM rss_feed_ids
     JOIN LATERAL (
       WITH keyed_feed AS MATERIALIZED (
@@ -170,6 +169,6 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
   // Browse path: outer ORDER BY for deterministic end_cursor (join doesn't preserve CTE order).
   if (!hasTextSearch) query.append(sql` ORDER BY view_rss_feeds.id DESC`)
 
-  const { rows } = await read<ViewRssFeed>(query)
+  const { rows } = await read<RssFeedSearchRow>(query)
   return rows
 }

@@ -1,5 +1,6 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { CommunitySortMode } from '../search-types.mts'
+import { startTrendingCommunityCandidates } from './trending-candidates.mts'
 
 export function startCommunityCandidates(
   sort: CommunitySortMode,
@@ -8,6 +9,8 @@ export function startCommunityCandidates(
   search?: string,
   memberUserId?: string,
 ): SQLStatement {
+  if (sort === 'trending')
+    return startTrendingCommunityCandidates(hasListItems, search, memberUserId)
   const listedVirtual = hasListItems && sort === 'virtual_subscriptions'
   // Memberships are the only materialized candidate set. Text stays a correlated probe on the
   // ordered walk so a common term stops at the page in both plan-cache modes.

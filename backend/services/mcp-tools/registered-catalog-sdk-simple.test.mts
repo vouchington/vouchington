@@ -42,14 +42,24 @@ describe('registered catalog SDK', () => {
   afterAll(() => expectSdkSuccessNames(observedMergedNames, sdkMergedSuccessNames.simple))
 
   it.each([
-    { testCase: cases[0]!, name: 'discover_communities', option: 'trending', args: {} },
+    {
+      testCase: cases[0]!,
+      name: 'discover_communities',
+      option: 'search',
+      args: { sort: 'trending' },
+    },
     { testCase: cases[0]!, name: 'discover_topics', option: 'trending', args: {} },
-    { testCase: cases[0]!, name: 'discover_rss_feeds', option: 'trending', args: {} },
+    {
+      testCase: cases[0]!,
+      name: 'discover_rss_feeds',
+      option: 'search',
+      args: { sort: 'trending' },
+    },
     { testCase: cases[0]!, name: 'read_reference_data', option: 'countries', args: {} },
     { testCase: cases[0]!, name: 'read_rss_feed_item', option: 'list', args: {} },
     { testCase: cases[0]!, name: 'read_feed', option: 'posts', args: { feed_type: 'any' } },
     { testCase: cases[0]!, name: 'read_posts', option: 'trending', args: {} },
-    { testCase: cases[0]!, name: 'read_hostnames', option: 'top', args: {} },
+    { testCase: cases[0]!, name: 'read_hostnames', option: 'search', args: { sort: 'trust' } },
     { testCase: cases[0]!, name: 'read_my_review_disputes', option: 'list', args: {} },
     { testCase: cases[0]!, name: 'read_my_moderation_appeals', option: 'list', args: {} },
     { testCase: cases[0]!, name: 'read_my_lists', option: 'list', args: {} },

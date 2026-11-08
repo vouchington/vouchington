@@ -293,6 +293,51 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
   WHERE (aggregate.contributor_count >= 3);
 ```
 
+## `mv_trending_communities` (materialized)
+
+Rolling 30-day community scores, refreshed on the PostgreSQL materialized-view schedule.
+
+```sql
+ WITH recent_posts AS (
+         SELECT p.community_id,
+            (count(*))::integer AS post_count
+           FROM ((posts p
+             JOIN community_post_reviews review ON (((review.post_id = p.id) AND (review.community_id = p.community_id) AND (review.approved_at IS NOT NULL) AND (review.unpublished_at IS NULL) AND (review.rejected_at IS NULL))))
+             JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = p.id)))
+          WHERE ((p.community_id IS NOT NULL) AND (p.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))))
+          GROUP BY p.community_id
+        ), members AS (
+         SELECT member.community_id,
+            (count(*))::integer AS member_count
+           FROM (recent_posts recent_posts_1
+             JOIN community_members member ON ((member.community_id = recent_posts_1.community_id)))
+          WHERE (member.removed_at IS NULL)
+          GROUP BY member.community_id
+        ), recent_follows AS (
+         SELECT relation.object_id AS community_id,
+            (count(*))::integer AS follow_count
+           FROM (relation__user__proxy_follow__community relation
+             JOIN recent_posts recent_posts_1 ON ((recent_posts_1.community_id = relation.object_id)))
+          WHERE ((relation.deleted_at IS NULL) AND (relation.created_at >= (CURRENT_TIMESTAMP - '30 days'::interval)))
+          GROUP BY relation.object_id
+        ), recent_mutes AS (
+         SELECT relation.object_id AS community_id,
+            (count(*))::integer AS mute_count
+           FROM (relation__user__proxy_mute__community relation
+             JOIN recent_posts recent_posts_1 ON ((recent_posts_1.community_id = relation.object_id)))
+          WHERE ((relation.deleted_at IS NULL) AND (relation.created_at >= (CURRENT_TIMESTAMP - '30 days'::interval)))
+          GROUP BY relation.object_id
+        )
+ SELECT community.id,
+    ((((COALESCE(members.member_count, 0) + recent_posts.post_count) + COALESCE(recent_follows.follow_count, 0)) + COALESCE(recent_mutes.mute_count, 0)))::double precision AS trending_score
+   FROM ((((recent_posts
+     JOIN communities community ON ((community.id = recent_posts.community_id)))
+     LEFT JOIN members ON ((members.community_id = community.id)))
+     LEFT JOIN recent_follows ON ((recent_follows.community_id = community.id)))
+     LEFT JOIN recent_mutes ON ((recent_mutes.community_id = community.id)))
+  WHERE ((community.deleted_at IS NULL) AND (community.visibility = 'public'::privacy_types));
+```
+
 ## `mv_trending_rss_feeds` (materialized)
 
 Rolling feed scores for day, week and month, refreshed on the PostgreSQL materialized-view schedule.

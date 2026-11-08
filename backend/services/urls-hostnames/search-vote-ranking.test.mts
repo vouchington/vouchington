@@ -7,7 +7,6 @@ import {
   setUrlHostnameVotes,
 } from '@voucha/test-helpers'
 import { searchUrlHostnames } from './search.mts'
-import { searchTopHostnames } from './search-top.mts'
 
 describe('hostname vote ranking', () => {
   const prefix = `vote-ranking-${randomUUID()}`
@@ -66,21 +65,21 @@ describe('hostname vote ranking', () => {
     expect(third.page_info.has_next_page).toBe(false)
   })
 
-  it('paginates top hostnames within a topic using confidence and the existing upvote filter', async () => {
-    const options = { topic_id: topicId, limit: 1 }
-    const first = await searchTopHostnames(options)
+  it('paginates trust within a topic using confidence', async () => {
+    const options = { topic_id: topicId, sort: 'trust' as const, limit: 1 }
+    const first = await searchUrlHostnames(options)
     expect(first.results.map(row => row.id)).toEqual([confidentId])
     expect(first.page_info.has_next_page).toBe(true)
     expect(first.results[0]).not.toHaveProperty('cursor_score')
     expect(first.results[0]).not.toHaveProperty('votes_score_sort')
 
-    const second = await searchTopHostnames({ ...options, after: first.page_info.end_cursor! })
+    const second = await searchUrlHostnames({ ...options, after: first.page_info.end_cursor! })
     expect(second.results.map(row => row.id)).toEqual([contestedId])
     expect(second.page_info.has_next_page).toBe(true)
 
-    const third = await searchTopHostnames({ ...options, after: second.page_info.end_cursor! })
+    const third = await searchUrlHostnames({ ...options, after: second.page_info.end_cursor! })
     expect(third.results.map(row => row.id)).toEqual([mixedNegativeId])
     expect(third.results[0]?.votes_score_net).toBe(-99)
-    expect(third.page_info.has_next_page).toBe(false)
+    expect(third.page_info.has_next_page).toBe(true)
   })
 })

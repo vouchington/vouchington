@@ -111,8 +111,8 @@ const API_FAMILY_STATIC_SUBROUTES: Readonly<Record<string, ReadonlySet<string>>>
   topics: new Set(['compare', 'publisher-types', 'aliases']),
   communities: new Set(['invite-redemptions']),
   lists: new Set(['contains']),
-  hostnames: new Set(['top', 'compare', 'social', 'blocked']),
-  'rss-feeds': new Set(['trending', 'recommended']),
+  hostnames: new Set(['compare', 'social', 'blocked']),
+  'rss-feeds': new Set(['recommended']),
 }
 
 // `.md` alias routes (`cloudflare-worker/src/markdown-aliases.mts`) rewrite web paths like

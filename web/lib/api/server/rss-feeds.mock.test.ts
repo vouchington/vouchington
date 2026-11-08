@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getRssFeeds,
-  getTrendingRssFeeds,
   getTopicRssFeeds,
   getServerRssFeedCrawls,
   getServerRssFeedCrawl,
@@ -40,21 +39,6 @@ describe('rss-feeds server api helpers', () => {
       await getRssFeeds()
 
       expect(mockGet).toHaveBeenCalledWith('/api/v1/rss-feeds', {})
-    })
-  })
-
-  describe('getTrendingRssFeeds', () => {
-    it('calls serverApi.get with correct endpoint and options', async () => {
-      const options = { searchParams: { time_range: 'week' } }
-      await getTrendingRssFeeds(options)
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/rss-feeds/trending', options)
-    })
-
-    it('calls serverApi.get with no options when called with defaults', async () => {
-      await getTrendingRssFeeds()
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/rss-feeds/trending', {})
     })
   })
 

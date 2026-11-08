@@ -49,7 +49,7 @@ export const entityRelations: EntityRelations = {
       follow: {
         extra_indexes: [
           // Partial index for time-window queries on rss_feed follow relations.
-          // Used by getTrendingRssFeeds to count recent follows within a time window.
+          // Used by the trending RSS feeds view to count recent follows within a time window.
           `CREATE INDEX IF NOT EXISTS idx_relation__user__follow__rss_feed__created_at
 ON relation__user__follow__rss_feed (created_at, object_id)
 WHERE deleted_at IS NULL;`,

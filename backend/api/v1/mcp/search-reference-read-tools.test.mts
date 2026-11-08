@@ -120,7 +120,7 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
     const communities = await readTool(
       token,
       'discover_communities',
-      optionArgs('trending', { limit: 1 }),
+      optionArgs('search', { sort: 'trending', limit: 1 }),
     )
     const programs = await readTool(
       token,

@@ -239,6 +239,20 @@ copy. Native client adoption is tracked in
 [clients #368](https://github.com/vouchington/vouchington-clients/issues/368); the producer lands
 first.
 
+## Trending and top sorts
+
+Trending and top are sort options on the search routes, not routes of their own. `GET /api/v1/rss-feeds`
+and MCP `discover_rss_feeds` option `search` take `sort=trending` and `time_range` (`day`, `week`,
+`month`). `GET /api/v1/communities` and MCP `discover_communities` option `search` take
+`sort=trending`. `GET /api/v1/hostnames` and MCP `read_hostnames` option `search` take
+`sort=trust`, which replaces the old top list. Each returns the ordinary search shape with a
+sort-key plus id cursor. Trending carries no `trending_score` or count fields. RSS trending takes no
+other filter and answers 400 for one. Community and RSS trending read a materialized score
+refreshed every five minutes, so a new post or follow can take that long to rank. Removed with no alias: `GET /api/v1/hostnames/top`,
+`GET /api/v1/rss-feeds/trending`, `GET /api/v1/trending-communities`, and the MCP options
+`read_hostnames.top`, `discover_rss_feeds.trending` and `discover_communities.trending`. Native
+adoption is a dependent issue in the clients repository; the producer lands first.
+
 ## Staff RSS feed deletion
 
 The staff REST `DELETE /api/v1/rss-feeds/:id` accepts an asynchronous hard delete with HTTP 202

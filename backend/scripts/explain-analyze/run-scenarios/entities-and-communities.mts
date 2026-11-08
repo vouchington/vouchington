@@ -19,9 +19,9 @@ const {
   getPublicUserByAny,
   getRecommendedRssFeeds,
   getTopicByAny,
-  getTrendingCommunities,
   getTrendingPosts,
-  getTrendingRssFeeds,
+  searchCommunities,
+  searchRssFeeds,
   POST_ELECTION_CONFIG,
   TOPIC_ELECTION_CONFIG,
 } = services
@@ -89,18 +89,25 @@ export async function runEntityAndCommunityScenarios() {
     getTrendingPosts({ timeRange: 'week', topicId: seedTopicId, limit: 25 }),
   )
 
-  // Trending communities — candidates come from windowed post activity, then counts aggregate only for those
-  registerScenarioContract('trending-communities', {
-    expectations: [{ kind: 'custom', name: 'trendingCommunities' }],
+  // Trending communities — one keyset page over the materialized score
+  registerScenarioContract('search-communities-trending', {
+    // The fixture has only a handful of public communities, below the point where the planner
+    // prefers the ranking index to a seq scan plus top-N sort, so the page bound is the contract.
+    expectations: [{ kind: 'maxProcessedRows', relation: 'mv_trending_communities', max: 26 }],
   })
-  await runAndCapture('trending-communities', () => getTrendingCommunities({ limit: 25 }))
+  await runAndCapture('search-communities-trending', () =>
+    searchCommunities({ sort: 'trending', limit: 25 }),
+  )
 
   // Trending RSS feeds — 3 CTEs with aggregations across follows and items
-  registerScenarioContract('trending-rss-feeds', {
-    expectations: [{ kind: 'maxProcessedRows', relation: 'mv_trending_rss_feeds', max: 26 }],
+  registerScenarioContract('search-rss-feeds-trending', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_mv_trending_rss_feeds__ranking'] },
+      { kind: 'maxProcessedRows', relation: 'mv_trending_rss_feeds', max: 26 },
+    ],
   })
-  await runAndCapture('trending-rss-feeds', () =>
-    getTrendingRssFeeds({ timeRange: 'week', limit: 25 }),
+  await runAndCapture('search-rss-feeds-trending', () =>
+    searchRssFeeds({ sort: 'trending', time_range: 'week', limit: 25 }),
   )
 
   // Friend trusted hostnames — 3 CTEs joining follows, hostname votes, and social graph

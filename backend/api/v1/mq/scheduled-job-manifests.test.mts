@@ -98,6 +98,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'psql/refresh-rss-feed-crawl-tiers',
   'psql/refresh-top-hashtags',
   'psql/refresh-trending-rss-feeds',
+  'psql/refresh-trending-communities',
   'background/dispatchRssFeeds',
   'rss-feed-maintenance/reconcileRssFeedItemCategorySnapshots',
   'rss-feed-maintenance/reconcileTopicAliasCategoryMappings',
