@@ -112,8 +112,10 @@ stopped at a setup step.
   re-analyzing every large relation a plan touched took most of the run. The captures share one database, so they cannot reveal a scan
   that is a coin flip across databases: each large scan is also planned with `enable_seqscan = off`,
   and when avoiding it costs at most a quarter more (`SEQ_SCAN_TIE_RATIO`) it is a near-tie and
-  advisory. A missing index keeps the scan in the probe plan and a real regression costs far more,
-  so both still fail.
+  advisory. A baselined scan the planner drops is the same coin flip when the replacement's
+  per-execution cost times its loops stays within that margin: Postgres prices a node for one
+  loop, so a nested-loop index probe is not a fix merely because one execution is cheap. A missing
+  index keeps the scan in the probe plan and a real regression costs far more, so both still fail.
 - **Resource-pressure baseline** (temp I/O, spills, multi-batch hashes, excess WAL) is keyed by exact
   query/node/relation fingerprint, so a new fingerprint fails even if the warning total is
   unchanged. Excess WAL fails only when both captures show it: a checkpoint can add full page

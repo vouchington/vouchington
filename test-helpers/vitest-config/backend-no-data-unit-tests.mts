@@ -15,6 +15,7 @@ export const backendNoDataUnitTestFiles = [
   'backend/scripts/explain-analyze/scenario-failures.test.mts',
   'backend/scripts/explain-analyze/seed-data/hacker-news-readmission-cleanup.test.mts',
   'backend/scripts/explain-analyze/seed-data/materialized-view-maintenance.test.mts',
+  'backend/scripts/explain-analyze/seq-scan-ties.test.mts',
   'backend/services/oauth/__tests__/authorization-provider-url.test.mts',
   'backend/services/users/settle-deletion-operations.test.mts',
   'backend/services/users/enqueue-delete-user-bookmark-bloom-filter.test.mts',
