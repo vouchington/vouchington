@@ -90,7 +90,11 @@ export async function runMediaDeliveryLockPlans(): Promise<void> {
             max: scenario.surfaceBound,
           },
           { kind: 'maxProcessedRows', relation: 'media_placements', max: scenario.placementBound },
-          { kind: 'maxBitmapIndexRows', max: scenario.postBound + scenario.surfaceBound },
+          // Bitmap work includes binding probe hits and distinct parent primary-key hits.
+          {
+            kind: 'maxBitmapIndexRows',
+            max: scenario.postBound + scenario.surfaceBound + scenario.placementBound,
+          },
         ],
         seededRows: {
           image_placements: NOISE_PER_FAMILY + TARGET_COUNT,
