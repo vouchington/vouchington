@@ -16,7 +16,10 @@ import {
 } from '@services/media-delivery-safety'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import type { PostImageRollback } from './images-rollback-types.mts'
+import { postImagesEqual } from './images-rollback-state.mts'
 import { runSequentially } from '@modules/utils/run-sequentially'
+import { IMAGE_PLACEMENT_LIMIT_REACHED } from '@modules/on-error/error-codes'
+import { isHttpError } from 'http-errors'
 
 export type { PostImageRollback } from './images-rollback-types.mts'
 
@@ -31,6 +34,11 @@ export async function rollbackPostImages(
   await using query = await beginTransaction()
   await lockImageAssetAdmission(deliveryImageIds, query)
   let ensuredCurrentVersion = false
+  async function keepCurrentModerationVersion(): Promise<false> {
+    await ensureCurrentPostModerationVersion(postId, { query })
+    ensuredCurrentVersion = true
+    return false
+  }
   async function rollbackImagesInTransaction() {
     const imageIds = deliveryImageIds
     await lockImageDeliveryMutation(query, { postIds: [postId], imageIds })
@@ -73,11 +81,7 @@ export async function rollbackPostImages(
       ) ||
       post.clearance_version !== rollback.currentClearanceVersion
     ) {
-      if (post) {
-        await ensureCurrentPostModerationVersion(postId, { query })
-        ensuredCurrentVersion = true
-      }
-      return false
+      return post ? keepCurrentModerationVersion() : false
     }
 
     const { rows: currentImages } = await query<PostImageRollback['currentImages'][number]>(
@@ -89,17 +93,20 @@ export async function rollbackPostImages(
       `,
     )
     if (!postImagesEqual(currentImages, rollback.currentImages)) {
-      await ensureCurrentPostModerationVersion(postId, { query })
-      ensuredCurrentVersion = true
-      return false
+      return keepCurrentModerationVersion()
     }
-    // ast-grep-ignore: no-three-sequential-awaits -- Capacity refusal must precede external denial, and denial must precede deleting the owner's image bindings.
-    await assertPostImagePlacementCapacity(
-      postId,
-      rollback.images.map(image => image.image_id),
-      query,
-      { admissionHeld: true },
-    )
+    try {
+      await assertPostImagePlacementCapacity(
+        postId,
+        rollback.images.map(image => image.image_id),
+        query,
+        { admissionHeld: true },
+      )
+    } catch (err) {
+      if (!isHttpError(err) || err.status !== 409 || err['code'] !== IMAGE_PLACEMENT_LIMIT_REACHED)
+        throw err
+      return keepCurrentModerationVersion()
+    }
     await preparePostImageDeliveryMutation(query, {
       postId,
       imageIds: rollback.images.map(image => image.image_id),
@@ -178,23 +185,4 @@ function getRollbackClearanceStatus(rollback: PostImageRollback): ClearanceStatu
 
 function bufferEquals(actual: Buffer | null, expected: Buffer): boolean {
   return actual !== null && Buffer.compare(actual, expected) === 0
-}
-
-function postImagesEqual(
-  actual: PostImageRollback['currentImages'],
-  expected: PostImageRollback['currentImages'],
-): boolean {
-  if (actual.length !== expected.length) return false
-  for (let index = 0; index < actual.length; index++) {
-    const image = actual[index]!
-    const expectedImage = expected[index]!
-    if (
-      image.image_id !== expectedImage.image_id ||
-      image.order_index !== expectedImage.order_index ||
-      image.caption !== expectedImage.caption
-    ) {
-      return false
-    }
-  }
-  return true
 }
