@@ -91,12 +91,16 @@ export function createArticleSyncStreamSession(options: {
     stream = current
 
     function handleStatus(event: MessageEvent) {
-      let data: SyncStatus
+      let parsed: unknown
+      const raw: unknown = event.data
+      if (typeof raw !== 'string') return
       try {
-        data = JSON.parse(event.data) as SyncStatus
+        parsed = JSON.parse(raw)
       } catch {
         return
       }
+      if (!isSyncStatus(parsed)) return
+      const data: SyncStatus = parsed
       finish(data, current)
     }
 
@@ -132,4 +136,34 @@ export function createArticleSyncStreamSession(options: {
     },
     stop,
   }
+}
+
+function isSyncStatus(value: unknown): value is SyncStatus {
+  if (!isRecord(value)) return false
+  if (value.status === 'failed') return !('error' in value) || typeof value.error === 'string'
+  if (value.status !== 'completed' || !isRecord(value.result)) return false
+  const { results, summary } = value.result
+  return (
+    Array.isArray(results) &&
+    results.every(
+      item =>
+        isRecord(item) &&
+        typeof item.file === 'string' &&
+        typeof item.slug === 'string' &&
+        (item.action === 'created' ||
+          item.action === 'updated' ||
+          item.action === 'skipped' ||
+          item.action === 'error') &&
+        (!('error' in item) || typeof item.error === 'string'),
+    ) &&
+    isRecord(summary) &&
+    typeof summary.created === 'number' &&
+    typeof summary.updated === 'number' &&
+    typeof summary.skipped === 'number' &&
+    typeof summary.errored === 'number'
+  )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

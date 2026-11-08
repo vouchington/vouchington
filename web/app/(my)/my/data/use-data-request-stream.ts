@@ -6,7 +6,7 @@ import { createDownloadLinkRetry, needsDownloadLinkRetry } from './data-request-
 import { createClosedStatusProbeRetry } from './data-request-stream-probe-retry'
 import { createRecoverableEventSource } from '@/lib/auth/recoverable-event-source'
 import { shouldKeepStreamReconnecting } from './data-request-stream-transport'
-import { loadDataRequest, type StreamPayload } from './data-request-utils'
+import { isStreamPayload, loadDataRequest, type StreamPayload } from './data-request-utils'
 
 const TERMINAL_STATUSES = new Set(['ready', 'failed', 'expired'])
 
@@ -61,12 +61,16 @@ export function useDataRequestStream({
 
     function onStatus(event: MessageEvent) {
       if (!isCurrent()) return
-      let data: StreamPayload
+      let parsed: unknown
+      const raw: unknown = event.data
+      if (typeof raw !== 'string') return
       try {
-        data = JSON.parse(event.data) as StreamPayload
+        parsed = JSON.parse(raw)
       } catch {
         return
       }
+      if (!isStreamPayload(parsed)) return
+      const data: StreamPayload = parsed
 
       loadDataRequest(userId)
         .then(updated => {
@@ -103,7 +107,7 @@ export function useDataRequestStream({
       if (!latestRequest) return
       applyCurrentRequest({
         ...latestRequest,
-        status: data.status as DataRequest['status'],
+        status: data.status,
         download_url: data.download_url ?? latestRequest.download_url,
       })
       if (data.status === 'failed') setCurrentError('Your data export failed. Please try again.')
@@ -114,14 +118,14 @@ export function useDataRequestStream({
       const latestRequest = currentRequest()
       if (!latestRequest) return
       if (data.status === 'failed') {
-        applyCurrentRequest({ ...latestRequest, status: data.status as DataRequest['status'] })
+        applyCurrentRequest({ ...latestRequest, status: data.status })
         setCurrentError('Your data export failed. Please try again.')
       } else if (data.status === 'ready' && !data.download_url) {
         downloadLinkRetry.schedule()
       } else {
         applyCurrentRequest({
           ...latestRequest,
-          status: data.status as DataRequest['status'],
+          status: data.status,
           download_url: data.download_url ?? latestRequest.download_url,
         })
         setCurrentError(null)

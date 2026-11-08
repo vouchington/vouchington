@@ -41,7 +41,7 @@ export function useNewsItemClusters(
   useEffect(() => {
     function onItemHidden(event: Event) {
       if (!(event instanceof CustomEvent) || typeof event.detail?.id !== 'string') return
-      setHiddenItemIds(prev => new Set([...prev, event.detail.id]))
+      setHiddenItemIds(prev => new Set<string>([...prev, event.detail.id]))
     }
     window.addEventListener(RSS_ITEM_HIDDEN_EVENT, onItemHidden)
     return () => window.removeEventListener(RSS_ITEM_HIDDEN_EVENT, onItemHidden)

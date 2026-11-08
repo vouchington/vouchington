@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { acknowledgeOAuthAuthorization, completeOAuthAuthorization } from '@/lib/api/client'
 import { ApiError } from '@vouchington/api-client'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { getWindowOpener } from '@/lib/auth/window-opener'
 import { waitForOAuthBrokerReceipt } from './oauth-broker-receipt'
 
 const POLL_INTERVAL_MS = 1000
@@ -61,7 +62,7 @@ function OAuthBrokerCallbackContent() {
           pending.cancelPoll = scheduleOAuthCompletion(complete)
           return
         }
-        const opener = window.opener
+        const opener = getWindowOpener()
         if (!opener) {
           setFailed(true)
           return
@@ -96,8 +97,9 @@ function OAuthBrokerCallbackContent() {
             pending.cancelPoll = scheduleOAuthCompletion(complete)
             return
           }
-          if (window.opener) {
-            window.opener.postMessage(
+          const opener = getWindowOpener()
+          if (opener) {
+            opener.postMessage(
               {
                 type: 'voucha:oauth-broker:complete',
                 flowId: activeFlowId,

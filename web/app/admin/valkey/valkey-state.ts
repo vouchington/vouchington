@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchCacheGroups } from '@/lib/api/client/valkey'
 import type { CacheGroup, FlushConcern } from '@/types/api-responses'
+import { isValkeySnapshot, type ValkeySnapshot } from '../stream-snapshots'
 import { useBloomFilterActions, useCacheActions, useFlushActions } from './valkey-action-hooks'
 
 export type PendingValkeyAction =
@@ -51,13 +52,6 @@ export const FLUSH_CONCERN_METADATA: Record<
     description: 'Empties every queue. Enqueued jobs will be lost.',
     requiresForce: false,
   },
-}
-
-interface ValkeySnapshot {
-  groups: CacheGroup[] | null
-  errors?: {
-    groups?: string
-  }
 }
 
 const STREAM_FALLBACK_INTERVAL_MS = 10_000
@@ -117,12 +111,16 @@ function useValkeyData() {
     }
 
     function onSnapshot(event: MessageEvent) {
-      let data: ValkeySnapshot
+      let parsed: unknown
+      const raw: unknown = event.data
+      if (typeof raw !== 'string') return
       try {
-        data = JSON.parse(event.data) as ValkeySnapshot
+        parsed = JSON.parse(raw)
       } catch {
         return
       }
+      if (!isValkeySnapshot(parsed)) return
+      const data: ValkeySnapshot = parsed
       if (data.groups !== null) {
         streamGroupsAppliedRef.current = true
         setCacheGroups(data.groups ?? [])

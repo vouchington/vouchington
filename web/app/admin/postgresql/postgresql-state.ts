@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import onError, { onSuccess } from '@/lib/on-error'
 import { enqueuePsqlJob, fetchMigrations } from '@/lib/api/client/psql'
 import type { MigrationStatusResponse } from '@/types/api-responses'
+import { isPostgreSQLStreamSnapshot } from '../stream-snapshots'
 export type PartitionAction = 'createPartitions' | 'cleanupPartitions'
 export type ClassifierPartitionRange = { fromDate: string; toDate: string; maxDefaultRows?: number }
 export type RequestPartitionRange = ClassifierPartitionRange
@@ -25,7 +26,6 @@ export const PARTITION_ACTION_TOOLTIPS: Record<PartitionAction, string> = {
   createPartitions: 'Creates future monthly crawl and RSS history partitions',
   cleanupPartitions: 'Drops expired partitions that are past their retention period',
 }
-type PostgreSQLStreamSnapshot = MigrationStatusResponse | { error: string }
 const STREAM_FALLBACK_INTERVAL_MS = 30_000
 export function usePostgreSQLAdminState() {
   const [status, setStatus] = useState<MigrationStatusResponse | null>(null)
@@ -85,18 +85,21 @@ export function usePostgreSQLAdminState() {
     }
 
     function onSnapshot(event: MessageEvent) {
-      let data: PostgreSQLStreamSnapshot
+      let parsed: unknown
+      const raw: unknown = event.data
+      if (typeof raw !== 'string') return
       try {
-        data = JSON.parse(event.data) as PostgreSQLStreamSnapshot
+        parsed = JSON.parse(raw)
       } catch {
         return
       }
-      if ('error' in data) {
-        setError(data.error)
+      if (!isPostgreSQLStreamSnapshot(parsed)) return
+      if ('error' in parsed) {
+        setError(parsed.error)
         setLoading(false)
         return
       }
-      setStatus(data)
+      setStatus(parsed)
       stopRestFallback()
       setError(null)
       setLoading(false)

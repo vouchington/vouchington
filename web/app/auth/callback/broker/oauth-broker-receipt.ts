@@ -7,7 +7,7 @@ type OAuthBrokerReceiptMessage = {
 }
 
 export function waitForOAuthBrokerReceipt(
-  opener: Window,
+  opener: WindowOpener,
   flowId: string,
 ): { result: Promise<boolean>; cancel: () => void } {
   let cancel: () => void = () => {}
@@ -15,7 +15,7 @@ export function waitForOAuthBrokerReceipt(
     let settled = false
     const timeout = window.setTimeout(() => finish(false), RECEIPT_TIMEOUT_MS)
     const openerCheck = window.setInterval(() => {
-      if (opener.closed) finish(false)
+      if (opener.closed === true) finish(false)
     }, RECEIPT_CHECK_INTERVAL_MS)
     window.addEventListener('message', handleMessage)
 
@@ -40,3 +40,4 @@ export function waitForOAuthBrokerReceipt(
   })
   return { result, cancel }
 }
+import type { WindowOpener } from '@/lib/auth/window-opener'
