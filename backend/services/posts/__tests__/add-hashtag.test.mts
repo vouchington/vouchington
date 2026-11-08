@@ -232,7 +232,7 @@ describe('addPostHashtag', () => {
         holderProcessId: holderPid,
         pool: 'write',
         lock: { kind: 'advisory', key: `post:${post.id.toLowerCase()}` },
-        queryMarker: 'lockPostPublicationCaptures',
+        queryMarker: 'lockPostPublicationScope',
         releaseHolder: () => holder[Symbol.asyncDispose](),
       },
       async waitForLock => {
