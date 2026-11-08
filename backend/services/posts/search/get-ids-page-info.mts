@@ -12,7 +12,12 @@ import type { PostSearchOptions } from './types.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { stableHotCursorScope } from './stable-hot-rank.mts'
-import { decodeFollowingCursor, decodeRelevanceCursor } from './bounded-cursors.mts'
+import {
+  decodeFollowingCursor,
+  decodeRelevanceCursor,
+  decodeTopicBestCursor,
+} from './bounded-cursors.mts'
+import { usesTopicBestCohort } from './topic-best-cohort.mts'
 
 export type PostSearchCursorValues = {
   id_lt?: string
@@ -51,6 +56,19 @@ export function decodePostSearchCursor(
     return { ranking_lt: cursor.ranking, id_lt: cursor.id }
   }
   if (sort === 'best') {
+    if (boundedCandidates && usesTopicBestCohort(options, sort)) {
+      const cursor = decodeTopicBestCursor(options.after)
+      return cursor.kind === 'next'
+        ? { cohort_before_id: cursor.id }
+        : {
+            cohort_hi: cursor.hi,
+            cohort_lo: cursor.lo,
+            cohort_cap: cursor.cap,
+            cohort_older: cursor.older,
+            vote_score_lt: cursor.ranking,
+            id_lt: cursor.id,
+          }
+    }
     const cursor = decodeUuidCursor(options.after, isScoreCursor, 'Invalid cursor for sort=best')
     return { vote_score_lt: cursor.score, id_lt: cursor.id }
   }

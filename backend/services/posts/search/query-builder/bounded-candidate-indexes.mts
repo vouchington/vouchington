@@ -1,6 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { PostSearchOptions } from '../types.mts'
-import type { CandidateSort } from './bounded-candidate-raw.mts'
+import type { PostSearchOptions, PostSearchSort } from '../types.mts'
 
 /** An absent similarity source makes the candidate page conclusively empty. */
 export function appendSourceEmbeddingGuards(query: SQLStatement, options: PostSearchOptions): void {
@@ -13,15 +12,20 @@ export function appendSourceEmbeddingGuards(query: SQLStatement, options: PostSe
 
 export function buildDataPointTopicRawCandidates(
   topicId: string,
-  idLt: string | undefined,
   cap: number,
   options: PostSearchOptions,
+  topicBestCohort: boolean,
 ): SQLStatement {
   const query = sql`raw_post_search_candidates AS MATERIALIZED (
     SELECT topic_post.post_id AS id
     FROM post_data_point_topics topic_post
     WHERE topic_post.topic_id = ${topicId}`
-  if (idLt) query.append(sql` AND topic_post.post_id < ${idLt}`)
+  if (topicBestCohort && options.cohort_hi && options.cohort_lo)
+    query.append(sql` AND topic_post.post_id <= ${options.cohort_hi}
+      AND topic_post.post_id >= ${options.cohort_lo}`)
+  else if (topicBestCohort && options.cohort_before_id)
+    query.append(sql` AND topic_post.post_id < ${options.cohort_before_id}`)
+  else if (options.id_lt) query.append(sql` AND topic_post.post_id < ${options.id_lt}`)
   appendSourceEmbeddingGuards(query, options)
   return query.append(sql` ORDER BY topic_post.post_id DESC LIMIT ${cap + 1}
   )`)
@@ -29,7 +33,7 @@ export function buildDataPointTopicRawCandidates(
 
 export function indexServedDataPointFilter(
   options: PostSearchOptions,
-  sort: CandidateSort,
+  sort: PostSearchSort,
 ): SQLStatement | null {
   if (sort !== 'new' && sort !== 'best') return null
   if (options.community_id) return null
@@ -48,7 +52,7 @@ export function indexServedDataPointFilter(
 
 export function indexServedPostType(
   options: PostSearchOptions,
-  sort: CandidateSort,
+  sort: PostSearchSort,
 ): SQLStatement | null {
   if (options.community_id) return null
   if (options.post_types?.length === 1) {

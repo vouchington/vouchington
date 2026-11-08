@@ -53,7 +53,11 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   the viewer’s follow set as a subquery. Keyword relevance ranks only within each bounded newest-first
   cohort. Its opaque cursor carries the cohort boundary and rank/ID position, so older posts enter
   the next cohort rather than disappearing beyond the cap. Relevant posts in newer cohorts precede
-  higher-scoring posts in older cohorts. Resolved semantic search retains its finite vector window.
+  higher-scoring posts in older cohorts. Data-point best sorting with a topic filter also ranks only
+  inside bounded newest-first topic cohorts. A higher-scoring older post can therefore appear in a
+  later cohort. Its cursor retains the cohort boundary, score and ID until that cohort is exhausted,
+  then advances to older topic keys; posts beyond the cap remain reachable. Resolved semantic search
+  retains its finite vector window.
 - Friend recommendation cursors use the exact
   `{"resource":"my-friend-recommendations","owner_id":"…","order":"id-asc"}` scope. Unscoped
   simple ID cursors are rejected.

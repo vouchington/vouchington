@@ -1,6 +1,6 @@
 import { getPostsWorkLimit } from '../../work-limits.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { PostSearchOptions } from '../types.mts'
+import type { PostSearchOptions, PostSearchSort } from '../types.mts'
 import { buildStablePostHotRankExpression } from '../stable-hot-rank.mts'
 import { appendCandidateCursor, candidateOrder } from './bounded-candidate-cursor.mts'
 import {
@@ -9,8 +9,7 @@ import {
   indexServedDataPointFilter,
   indexServedPostType,
 } from './bounded-candidate-indexes.mts'
-
-export type CandidateSort = 'new' | 'best' | 'hot' | 'trending' | 'relevance' | 'following_new'
+import { indexServedDataPointTopicId } from '../topic-best-cohort.mts'
 
 export function candidateCap(options: PostSearchOptions): number {
   return options.cohort_cap ?? getPostsWorkLimit('post_search_filter_candidate_limit')
@@ -19,17 +18,12 @@ export function candidateCap(options: PostSearchOptions): number {
 /** Only index-served predicates precede LIMIT; every selective residual follows the cap. */
 export function buildRawCandidates(
   options: PostSearchOptions,
-  sort: CandidateSort,
+  sort: PostSearchSort,
   cap: number,
+  topicBestCohort = false,
 ): SQLStatement {
-  const topicId =
-    sort === 'new' &&
-    options.post_types?.length === 1 &&
-    options.post_types[0] === 'data_point' &&
-    options.data_point_topic_ids?.length === 1
-      ? options.data_point_topic_ids[0]
-      : undefined
-  if (topicId) return buildDataPointTopicRawCandidates(topicId, options.id_lt, cap, options)
+  const topicId = indexServedDataPointTopicId(options, topicBestCohort ? 'best' : sort)
+  if (topicId) return buildDataPointTopicRawCandidates(topicId, cap, options, topicBestCohort)
   const query = sql`raw_post_search_candidates AS MATERIALIZED (
     SELECT posts.id`
   if (sort === 'best') query.append(sql`, posts.votes_score_sort`)

@@ -264,6 +264,7 @@ test.describe('Topic Detail Pages', () => {
       .first()
 
     await expect(followedReview).toBeVisible()
+    await page.keyboard.press('End')
     await expect(unfollowedReview).toBeVisible()
 
     const followedBox = await followedReview.boundingBox()

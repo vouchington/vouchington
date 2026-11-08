@@ -22,7 +22,9 @@ import {
   buildDefaultBoundedPage,
   buildFollowingBoundedPage,
   buildRelevanceBoundedPage,
+  buildTopicBestBoundedPage,
 } from './get-ids-bounded-page.mts'
+import { usesTopicBestCohort } from './topic-best-cohort.mts'
 
 type PostSearchResponse = {
   results: PostSearchResult[]
@@ -114,16 +116,18 @@ export async function getPostIds(
   const pageInfo =
     boundedCandidates && sort === 'following_new'
       ? buildFollowingBoundedPage(typedRows, rows[0], limit, cursor)
-      : boundedCandidates && sort === 'relevance' && hasRankingScore
-        ? buildRelevanceBoundedPage(typedRows, rows[0], limit, cursor)
-        : buildDefaultBoundedPage(
-            typedRows,
-            rows[0],
-            limit,
-            sort,
-            hasRankingScore,
-            boundedCandidates,
-          )
+      : boundedCandidates && usesTopicBestCohort(options, sort)
+        ? buildTopicBestBoundedPage(typedRows, rows[0], limit, cursor)
+        : boundedCandidates && sort === 'relevance' && hasRankingScore
+          ? buildRelevanceBoundedPage(typedRows, rows[0], limit, cursor)
+          : buildDefaultBoundedPage(
+              typedRows,
+              rows[0],
+              limit,
+              sort,
+              hasRankingScore,
+              boundedCandidates,
+            )
   return {
     results,
     page_info: pageInfo,

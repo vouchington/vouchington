@@ -19,6 +19,7 @@ export function appendTopicFilters(
     url_id,
   }: PostSearchOptions,
   useBoundedCandidates = false,
+  indexedDataPointTopicId?: string,
 ): void {
   if (url_id) appendUrlFilter(filters)
   if (related_topic_ids?.length) appendRelatedTopicFilters(filters, related_topic_ids)
@@ -26,7 +27,12 @@ export function appendTopicFilters(
   if (hashtag_alias_ids?.length) appendHashtagAliasFilters(filters, hashtag_alias_ids)
   if (review_topic_ids?.length) appendReviewTopicFilters(filters, review_topic_ids)
   if (data_point_topic_ids?.length)
-    appendDataPointTopicFilters(filters, data_point_topic_ids, useBoundedCandidates)
+    appendDataPointTopicFilters(
+      filters,
+      data_point_topic_ids,
+      useBoundedCandidates,
+      indexedDataPointTopicId,
+    )
   if (universal_topic_ids?.length) appendUniversalTopicFilters(filters, universal_topic_ids)
 }
 
@@ -85,9 +91,13 @@ function appendDataPointTopicFilters(
   filters: SQLStatement[],
   topicIds: string[],
   useBoundedCandidates: boolean,
+  indexedDataPointTopicId?: string,
 ): void {
   filters.push(sql`posts.post_type = 'data_point'`)
-  for (const topicId of topicIds) filters.push(dataPointTopicExists(topicId, useBoundedCandidates))
+  for (const topicId of topicIds) {
+    if (topicId !== indexedDataPointTopicId)
+      filters.push(dataPointTopicExists(topicId, useBoundedCandidates))
+  }
 }
 
 function dataPointTopicExists(topicId: string, useBoundedCandidates: boolean): SQLStatement {

@@ -2,7 +2,9 @@ import type { PageInfo } from '@voucha/types/pagination'
 import {
   encodeFollowingCursor,
   encodeRelevanceCursor,
+  encodeTopicBestCursor,
   FOLLOWING_PHASE_START_ID,
+  type RankedCohortCursor,
 } from './bounded-cursors.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
 import { buildPostSearchPageInfo, type PostSearchCursorValues } from './get-ids-page-info.mts'
@@ -91,6 +93,40 @@ export function buildRelevanceBoundedPage(
   limit: number,
   cursor: PostSearchCursorValues,
 ): PageInfo {
+  return buildRankedCohortBoundedPage(
+    rows,
+    first,
+    limit,
+    cursor,
+    'ranking_score',
+    encodeRelevanceCursor,
+  )
+}
+
+export function buildTopicBestBoundedPage(
+  rows: readonly PostSearchRow[],
+  first: CandidateMetadata | undefined,
+  limit: number,
+  cursor: PostSearchCursorValues,
+): PageInfo {
+  return buildRankedCohortBoundedPage(
+    rows,
+    first,
+    limit,
+    cursor,
+    'vote_score',
+    encodeTopicBestCursor,
+  )
+}
+
+function buildRankedCohortBoundedPage(
+  rows: readonly PostSearchRow[],
+  first: CandidateMetadata | undefined,
+  limit: number,
+  cursor: PostSearchCursorValues,
+  scoreColumn: 'ranking_score' | 'vote_score',
+  encode: (cursor: RankedCohortCursor) => string,
+): PageInfo {
   const results = rows.slice(0, limit)
   const firstResult = results[0]
   const lastResult = results.at(-1)
@@ -106,7 +142,7 @@ export function buildRelevanceBoundedPage(
     lo,
     cap,
     older,
-    ranking: requiredRanking(row),
+    ranking: requiredRanking(row[scoreColumn]),
     id: row.id,
   })
   const next =
@@ -117,13 +153,13 @@ export function buildRelevanceBoundedPage(
         : null
   return {
     has_next_page: next !== null,
-    start_cursor: firstResult ? encodeRelevanceCursor(within(firstResult)) : null,
-    end_cursor: next ? encodeRelevanceCursor(next) : null,
+    start_cursor: firstResult ? encode(within(firstResult)) : null,
+    end_cursor: next ? encode(next) : null,
   }
 }
 
-function requiredRanking(row: PostSearchRow): number {
-  const ranking = Number(row.ranking_score)
+function requiredRanking(value: string | number | undefined): number {
+  const ranking = Number(value)
   if (!Number.isFinite(ranking)) throw new Error('Bounded relevance rank missing')
   return ranking
 }

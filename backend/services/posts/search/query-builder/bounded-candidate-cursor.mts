@@ -1,12 +1,11 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { PostSearchOptions } from '../types.mts'
+import type { PostSearchOptions, PostSearchSort } from '../types.mts'
 import { buildStablePostHotRankExpression } from '../stable-hot-rank.mts'
-import type { CandidateSort } from './bounded-candidate-raw.mts'
 
 export function appendCandidateCursor(
   query: SQLStatement,
   options: PostSearchOptions,
-  sort: CandidateSort,
+  sort: PostSearchSort,
 ): void {
   if (sort === 'relevance' && options.cohort_hi && options.cohort_lo) {
     query.append(sql` AND posts.id <= ${options.cohort_hi} AND posts.id >= ${options.cohort_lo}`)
@@ -35,13 +34,13 @@ export function appendCandidateCursor(
   }
 }
 
-export function candidateOrder(sort: CandidateSort): SQLStatement {
+export function candidateOrder(sort: PostSearchSort): SQLStatement {
   if (sort === 'new' || sort === 'relevance' || sort === 'following_new') return sql`id DESC`
   if (sort === 'best') return sql`votes_score_sort DESC, id DESC`
   return sql`stable_hot_rank DESC, id DESC`
 }
 
-export function candidateReverseOrder(sort: CandidateSort): SQLStatement {
+export function candidateReverseOrder(sort: PostSearchSort): SQLStatement {
   if (sort === 'new' || sort === 'relevance' || sort === 'following_new') return sql`id ASC`
   if (sort === 'best') return sql`votes_score_sort ASC, id ASC`
   return sql`stable_hot_rank ASC, id ASC`

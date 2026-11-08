@@ -53,15 +53,15 @@ test.describe('Community Posts', () => {
     })
   })
 
-  test('creates a community post without adding it to global discussions', async ({ page }) => {
+  test('creates a community post visible in global discovery', async ({ page }) => {
     await navigateTo(page, `/communities/${COMMUNITY_SLUG}/posts/create`)
     await waitForBelowFoldHydration(page)
 
-    const title = `Community-only discussion ${randomSuffix()}`
+    const title = `Community discussion ${randomSuffix()}`
     await page.getByTestId('post-form-title-input').fill(title)
     await page
       .getByTestId('post-form-content-textarea')
-      .fill('This discussion belongs only to the community.')
+      .fill('This discussion is published in a public community.')
     await page.getByTestId('post-form-submit').click()
 
     await expect(page.getByTestId('post-detail-heading')).toContainText(title)
@@ -75,7 +75,7 @@ test.describe('Community Posts', () => {
       const data = (await res.json()) as { posts?: Record<string, { title: string }> }
       return Object.values(data.posts ?? {}).some(post => post.title === query)
     }, title)
-    expect(appearsInGlobal).toBe(false)
+    expect(appearsInGlobal).toBe(true)
   })
 
   test('starts a community discussion from a global post', async ({ page }) => {

@@ -4,10 +4,11 @@ import { isUUID } from '@modules/utils'
 import { postsWorkMaxValues } from '../work-limits.mts'
 
 const RELEVANCE_SCOPE = 'post-relevance-cohort-1'
+const TOPIC_BEST_SCOPE = 'post-best-topic-cohort-1'
 const FOLLOWING_SCOPE = 'post-following-phase-1'
 export const FOLLOWING_PHASE_START_ID = '00000000-0000-7000-8000-000000000000'
 
-export type RelevanceCursor =
+export type RankedCohortCursor =
   | {
       kind: 'within'
       hi: string
@@ -24,11 +25,33 @@ export type FollowingCursor =
 
 /** These shapes are intentionally opaque to REST and MCP clients. */
 export function encodeRelevanceCursor(cursor: RelevanceCursor): string {
-  return encodeCursor({ scope: RELEVANCE_SCOPE, ...cursor })
+  return encodeRankedCohortCursor(cursor, RELEVANCE_SCOPE)
 }
 
 export function decodeRelevanceCursor(encoded: string): RelevanceCursor {
-  const cursor = decodeRecord(encoded, RELEVANCE_SCOPE)
+  return decodeRankedCohortCursor(encoded, RELEVANCE_SCOPE, 'Invalid relevance cohort cursor')
+}
+
+export function encodeTopicBestCursor(cursor: RankedCohortCursor): string {
+  return encodeRankedCohortCursor(cursor, TOPIC_BEST_SCOPE)
+}
+
+export function decodeTopicBestCursor(encoded: string): RankedCohortCursor {
+  return decodeRankedCohortCursor(encoded, TOPIC_BEST_SCOPE, 'Invalid topic best cohort cursor')
+}
+
+export type RelevanceCursor = RankedCohortCursor
+
+function encodeRankedCohortCursor(cursor: RankedCohortCursor, scope: string): string {
+  return encodeCursor({ scope, ...cursor })
+}
+
+function decodeRankedCohortCursor(
+  encoded: string,
+  scope: string,
+  errorMessage: string,
+): RankedCohortCursor {
+  const cursor = decodeRecord(encoded, scope)
   if (
     cursor.kind === 'next' &&
     exactKeys(cursor, ['scope', 'kind', 'id']) &&
@@ -62,7 +85,7 @@ export function decodeRelevanceCursor(encoded: string): RelevanceCursor {
       id: cursor.id,
     }
   }
-  throw createHttpError(400, 'Invalid relevance cohort cursor')
+  throw createHttpError(400, errorMessage)
 }
 
 export function encodeFollowingCursor(cursor: FollowingCursor): string {

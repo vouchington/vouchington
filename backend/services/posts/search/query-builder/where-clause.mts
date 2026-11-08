@@ -26,6 +26,7 @@ export function appendPostSearchWhereClause(
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
+    indexedDataPointTopicId,
     options,
     rankingScoreExpression,
     sort,
@@ -37,6 +38,7 @@ export function appendPostSearchWhereClause(
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
     hasTextSearch: boolean
+    indexedDataPointTopicId?: string
     options: PostSearchOptions
     rankingScoreExpression: SQLStatement | null
     sort: string
@@ -50,7 +52,7 @@ export function appendPostSearchWhereClause(
   // A materialized eligible cohort already applied these filters in this statement's snapshot.
   if (!paginationOnly) {
     appendBaseFilters(filters, currentUser, options, useBoundedCandidates)
-    appendTopicFilters(filters, options, useBoundedCandidates)
+    appendTopicFilters(filters, options, useBoundedCandidates, indexedDataPointTopicId)
     appendSimpleColumnFilters(filters, options)
     appendPostSearchSpecialFilters(filters, options, decisionInstant)
     appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })

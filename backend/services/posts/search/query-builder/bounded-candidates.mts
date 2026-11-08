@@ -7,8 +7,9 @@ import { appendCtes, buildPostSearchCtes } from './ctes.mts'
 import { appendPostSearchOrderAndLimit } from './order-and-limit.mts'
 import { appendPostSearchSelectAndJoins } from './select-and-joins.mts'
 import { appendPostSearchWhereClause } from './where-clause.mts'
-import { buildRawCandidates, candidateCap, type CandidateSort } from './bounded-candidate-raw.mts'
+import { buildRawCandidates, candidateCap } from './bounded-candidate-raw.mts'
 import { candidateOrder, candidateReverseOrder } from './bounded-candidate-cursor.mts'
+import { indexServedDataPointTopicId, usesTopicBestCohort } from '../topic-best-cohort.mts'
 
 /** Every non-semantic list inspects a finite index-ordered raw prefix. */
 export function usesBoundedPostSearchCandidates(
@@ -32,21 +33,22 @@ export function usesBoundedPostSearchCandidates(
 export function buildBoundedPostSearchQuery(
   currentUser: BasicUser | undefined,
   options: PostSearchOptions,
-  sort: CandidateSort,
+  sort: PostSearchSort,
   decisionInstant: Date,
   hasTextSearch: boolean,
   hasSemanticSearch: boolean,
 ): SQLStatement {
   const cap = candidateCap(options)
+  const rawSort = usesTopicBestCohort(options, sort) ? 'relevance' : sort
   const ctes = buildPostSearchCtes({ ...options, hasSemanticSearch, hasTextSearch })
-  ctes.push(buildRawCandidates(options, sort, cap))
+  ctes.push(buildRawCandidates(options, rawSort, cap, rawSort !== sort))
   ctes.push(
     sql`bounded_post_search_candidates AS MATERIALIZED (
-      SELECT * FROM raw_post_search_candidates ORDER BY `.append(candidateOrder(sort))
+      SELECT * FROM raw_post_search_candidates ORDER BY `.append(candidateOrder(rawSort))
       .append(sql` LIMIT ${cap}
     )`),
   )
-  ctes.push(buildBoundaryCte(sort))
+  ctes.push(buildBoundaryCte(rawSort))
   const query = sql`/* buildPostSearchQuery */
   `
   appendCtes(query, ctes)
@@ -62,6 +64,7 @@ export function buildBoundedPostSearchQuery(
     hasSemanticSearch,
     hasTextSearch,
     options,
+    indexedDataPointTopicId: indexServedDataPointTopicId(options, sort),
     rankingScoreExpression: buildPostRankingScoreExpression({ hasTextSearch, hasSemanticSearch }),
     sort,
   }
@@ -86,7 +89,7 @@ export function buildBoundedPostSearchQuery(
     LEFT JOIN post_search_candidate_boundary boundary ON TRUE`)
 }
 
-function buildBoundaryCte(sort: CandidateSort): SQLStatement {
+function buildBoundaryCte(sort: PostSearchSort): SQLStatement {
   const boundaryScore =
     sort === 'best'
       ? 'votes_score_sort'

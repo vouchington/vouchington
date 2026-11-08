@@ -241,7 +241,7 @@ describe('query-builder (basic)', () => {
     expect(known.sql).toContain("posts.data_point_vertical = 'bank_account'")
     expect(known.sql).toContain("posts.structured_data->>'result' = 'pending'")
     expect(known.sql).toContain("posts.structured_data->>'credit_score_range' = '300-579'")
-    expect(known.sql).toContain("'019e0000-ee00-7000-8000-000000000001'::uuid")
+    expect(known.values).toContain('019e0000-ee00-7000-8000-000000000001')
     expect(known.values).not.toContain('bank_account')
     expect(known.values).not.toContain('pending')
     expect(known.values).not.toContain('300-579')

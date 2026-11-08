@@ -78,7 +78,8 @@ export function PostList({
     pages,
     page => page.post_hacker_news_references ?? {},
   )
-  if (allResults.length === 0) {
+  const canLoadMore = hasNextPage && !!nextPageEndpoint && !!endCursor
+  if (allResults.length === 0 && !canLoadMore) {
     return emptyState !== undefined ? (
       emptyState
     ) : (
@@ -88,8 +89,6 @@ export function PostList({
       />
     )
   }
-
-  const canLoadMore = hasNextPage && !!nextPageEndpoint
 
   return (
     <InfiniteScroll

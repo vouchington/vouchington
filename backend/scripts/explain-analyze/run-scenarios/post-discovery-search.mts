@@ -85,11 +85,14 @@ async function captureScopeSort(scope: PostDiscoveryScope, sort: PostDiscoverySo
 export async function runPostDiscoverySearchScenarios(): Promise<void> {
   await runPostDiscoveryUnscopedScenarios()
 
-  for (const scope of ['community', 'recommendation'] as const)
-    for (const sort of ['new', 'best', 'hot', 'trending'] as const) {
-      // no-mistakes-disable-next-line query-reached-per-item: each fixed scope/sort pair needs separate custom and generic plans.
-      await captureScopeSort(scope, sort)
-    }
+  await captureScopeSort('community', 'new')
+  await captureScopeSort('community', 'best')
+  await captureScopeSort('community', 'hot')
+  await captureScopeSort('community', 'trending')
+  await captureScopeSort('recommendation', 'new')
+  await captureScopeSort('recommendation', 'best')
+  await captureScopeSort('recommendation', 'hot')
+  await captureScopeSort('recommendation', 'trending')
 
   const globalHot = { sort: 'hot', time_range: 'all', limit: PAGE_SIZE } as const
   const globalHotFirst = await getPage(globalHot)

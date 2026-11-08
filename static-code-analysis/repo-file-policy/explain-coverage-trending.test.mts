@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { reportCoverage } from '../explain-coverage.mts'
 
 describe('assembled EXPLAIN reads', () => {
-  it('keeps trending and batch access reads visible', async () => {
+  it('keeps topic trending and batch access reads visible', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-trending-'))
     try {
       const resultsPath = join(fixtureDir, 'results.json')
@@ -17,7 +17,7 @@ describe('assembled EXPLAIN reads', () => {
         }),
       )
       const paths = [
-        'backend/services/trending-posts/get-trending-posts.mts',
+        'backend/services/trending-topics/get-trending-topics.mts',
         'backend/services/posts/check-privacy-access-batch.mts',
       ]
       const sources = paths.map(fileName => ({
@@ -25,14 +25,13 @@ describe('assembled EXPLAIN reads', () => {
         source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
       }))
       const report = await reportCoverage(sources, resultsPath, ['fixture'])
-      expect(report.reads).toBe(0)
+      expect(report.reads).toBe(4)
       expect(
         report.unclassifiedStatements.map(statement => [statement.name, statement.reason]),
-      ).toEqual([
-        ['getTrendingPosts', 'unresolved-sql-fragment'],
-        ['canViewPostsBatch', 'unresolved-sql-fragment'],
-      ])
-      expect(report.uncoveredReads.map(read => read.name)).toEqual([])
+      ).toEqual([['canViewPostsBatch', 'unresolved-sql-fragment']])
+      expect(report.uncoveredReads.map(read => read.name)).toEqual(
+        Array(4).fill('getTrendingTopics'),
+      )
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
