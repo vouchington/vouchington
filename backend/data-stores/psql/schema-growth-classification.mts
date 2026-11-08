@@ -178,6 +178,10 @@ export function buildUnboundedUnpartitionedTables(
         'One projected row per community grows with community adoption; indexed count order and keyed hydration bound search reads.',
       ],
       [
+        'community_agent_prompt_slot_counts',
+        'At most one current-state count row per creator; rows grow with creators who have allocated prompts, remain after deallocation, and are deleted by the deferred trigger when the live user is hard-deleted. Primary-key reads stay creator-scoped.',
+      ],
+      [
         'classifier_run_requests',
         'Minimal request identity survives run payload retirement for pending recovery and exact deduplication while its real subject exists; bounded cleanup removes requests whose subject is gone before retained identity roots retire.',
       ],
