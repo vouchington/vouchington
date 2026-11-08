@@ -32,6 +32,7 @@ import {
   getOfficialReferralLinks,
   getReferralProgramValidationInfo,
   getReferralProgramValidations,
+  referralProgramLinksValidation,
 } from '../referral-links'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 
@@ -153,6 +154,53 @@ describe('referral-links server api helpers', () => {
         { searchParams: { limit: 100 } },
       )
       expect(result).toEqual({ results })
+    })
+
+    it('passes the name cursor when a later page is requested', async () => {
+      mockGet.mockResolvedValueOnce({
+        results: [],
+        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+      })
+
+      await getReferralProgramValidations('program-1', 'cursor-1')
+
+      expect(mockGet).toHaveBeenCalledWith(
+        '/api/v1/topics/program-1/referral-program/validations',
+        { searchParams: { limit: 100, after: 'cursor-1' } },
+      )
+    })
+
+    it('follows the cursor until the validation id is found', async () => {
+      const later = {
+        id: 'val-2',
+        slug: 'amex',
+        user_help_text: '',
+        updated_at: '2026-01-02',
+      }
+      mockGet
+        .mockResolvedValueOnce({
+          results: [{ id: 'val-1', slug: 'chase', user_help_text: '', updated_at: '2026-01-01' }],
+          page_info: { has_next_page: true, end_cursor: 'cursor-1', start_cursor: 'cursor-0' },
+        })
+        .mockResolvedValueOnce({
+          results: [later],
+          page_info: { has_next_page: false, end_cursor: null, start_cursor: 'cursor-1' },
+        })
+
+      await expect(referralProgramLinksValidation('program-1', 'val-2')).resolves.toBe(true)
+      expect(mockGet).toHaveBeenLastCalledWith(
+        '/api/v1/topics/program-1/referral-program/validations',
+        { searchParams: { limit: 100, after: 'cursor-1' } },
+      )
+    })
+
+    it('returns false when the cursor ends without the validation', async () => {
+      mockGet.mockResolvedValueOnce({
+        results: [],
+        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+      })
+
+      await expect(referralProgramLinksValidation('program-1', 'missing')).resolves.toBe(false)
     })
 
     it('returns empty results when no validations are linked', async () => {

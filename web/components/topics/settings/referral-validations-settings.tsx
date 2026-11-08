@@ -9,6 +9,8 @@ export async function ReferralValidationsSettings({
   referralProgramId,
   linkedValidations,
   validationsBasePath,
+  previousHref,
+  nextHref,
 }: ReferralValidationsSettingsProps) {
   const t = await getTranslations()
   return (
@@ -16,6 +18,8 @@ export async function ReferralValidationsSettings({
       referralProgramId={referralProgramId}
       linkedValidations={linkedValidations}
       validationsBasePath={validationsBasePath}
+      previousHref={previousHref}
+      nextHref={nextHref}
       labels={referralValidationsSettingsLabels(t)}
     />
   )

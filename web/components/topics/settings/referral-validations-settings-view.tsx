@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { AdminPagination } from '@/components/admin/admin-pagination'
 import { LinkValidationForm } from '@/components/referral-links/validations/link-validation-form'
 import { UnlinkValidationButton } from '@/components/referral-links/validations/unlink-validation-button'
 import type { ReferralLinkValidation } from '@/lib/api/client/referral-link-validations'
@@ -9,6 +10,8 @@ export interface ReferralValidationsSettingsProps {
   linkedValidations: ReferralLinkValidation[]
   /** Base path for this program's validation routes, e.g. `/referral-program/<slug>/validations`. */
   validationsBasePath: string
+  previousHref?: string | null
+  nextHref?: string | null
 }
 
 export interface ReferralValidationsSettingsViewProps extends ReferralValidationsSettingsProps {
@@ -19,6 +22,8 @@ export function ReferralValidationsSettingsView({
   referralProgramId,
   linkedValidations,
   validationsBasePath,
+  previousHref,
+  nextHref,
   labels,
 }: ReferralValidationsSettingsViewProps) {
   return (
@@ -95,6 +100,12 @@ export function ReferralValidationsSettingsView({
             ))}
           </ul>
         )}
+        {previousHref || nextHref ? (
+          <AdminPagination
+            previousHref={previousHref}
+            nextHref={nextHref}
+          />
+        ) : null}
       </section>
     </div>
   )

@@ -77,11 +77,42 @@ export interface ReferralLinkValidationSummary {
   updated_at: string
 }
 
+export interface ReferralProgramValidationPage {
+  results: ReferralLinkValidationSummary[]
+  page_info: {
+    has_next_page: boolean
+    end_cursor: string | null
+    start_cursor: string | null
+  }
+}
+
+const PROGRAM_VALIDATION_PAGE_LIMIT = 100
+
 export const getReferralProgramValidations = cache(
-  (referralProgramId: string): Promise<{ results: ReferralLinkValidationSummary[] }> => {
-    return serverApi.get<{ results: ReferralLinkValidationSummary[] }>(
+  (referralProgramId: string, after?: string): Promise<ReferralProgramValidationPage> => {
+    return serverApi.get<ReferralProgramValidationPage>(
       `/api/v1/topics/${referralProgramId}/referral-program/validations`,
-      { searchParams: { limit: 100 } },
+      {
+        searchParams: after
+          ? { limit: PROGRAM_VALIDATION_PAGE_LIMIT, after }
+          : { limit: PROGRAM_VALIDATION_PAGE_LIMIT },
+      },
     )
   },
 )
+
+// Each call is one keyset page. The next call waits on that cursor, so this cannot be a parallel loop.
+export async function referralProgramLinksValidation(
+  referralProgramId: string,
+  validationId: string,
+  after?: string,
+  seen?: ReadonlySet<string>,
+): Promise<boolean> {
+  const page = await getReferralProgramValidations(referralProgramId, after)
+  if (page.results.some(row => row.id === validationId)) return true
+  const next = page.page_info?.has_next_page ? page.page_info.end_cursor : null
+  if (!next || seen?.has(next)) return false
+  const cursors = new Set(seen)
+  cursors.add(next)
+  return referralProgramLinksValidation(referralProgramId, validationId, next, cursors)
+}
