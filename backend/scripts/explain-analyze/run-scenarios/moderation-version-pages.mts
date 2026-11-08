@@ -29,15 +29,18 @@ export async function runModerationVersionPageScenarios(): Promise<void> {
        ON CONFLICT DO NOTHING RETURNING id`,
       [unrelatedPostIds, POST_MODERATION_POLICY_REVISION],
     )
-    const { rows: historicalVersions } = await write<{ id: string }>(
-      `/* seedRequestedModerationHistory */
+    const historicalVersions: { id: string }[] = []
+    try {
+      const { rows } = await write<{ id: string }>(
+        `/* seedRequestedModerationHistory */
        INSERT INTO post_moderation_versions (post_id, content_sha256, policy_revision)
        SELECT post.id, post.llm_moderation_content_sha256, 'explain-requested-old:' || ordinal
        FROM posts post CROSS JOIN generate_series(1, 256) ordinal WHERE post.id = $1
        ON CONFLICT DO NOTHING RETURNING id`,
-      [DELETED_PARENT_MODERATION_POST_ID],
-    )
-    try {
+        [DELETED_PARENT_MODERATION_POST_ID],
+      )
+      historicalVersions.push(...rows)
+      assert.equal(historicalVersions.length, 256)
       assert.equal(unrelatedVersions.length, unrelatedPostIds.length)
       await write('/* analyzeRequestedModerationPolicyCohort */ ANALYZE post_moderation_versions')
       registerScenarioContract(
