@@ -61,12 +61,13 @@ export type CommunityApplication = Serialized<BackendCommunityApplication>
 export type CommunityApplicationSummary = Serialized<BackendCommunityApplicationSummary>
 export type CommunityApplicationStatus = CommunityApplicationSummary['status']
 
-export type CommunityBan = Serialized<BackendCommunityBan>
+export type CommunityBan = Omit<Serialized<BackendCommunityBan>, 'case_id'>
+export type CommunityBanSummary = Omit<CommunityBan, 'reason'>
 
 export interface CommunityBansResponseBody {
   results: Array<{ __entity_type: 'community_ban'; id: string }>
   page_info: PageInfo
-  community_bans: Record<string, CommunityBan>
+  community_bans: Record<string, CommunityBanSummary>
   users: Record<string, PublicUser>
 }
 

@@ -2,6 +2,7 @@ import type { ToolOutputSchema } from '@services/openai-agents/tool-types'
 import {
   array,
   ban,
+  banSummary,
   boolean,
   changeComponent,
   component,
@@ -131,7 +132,10 @@ export function communityModerationReadOutput(option: string): ToolOutputSchema 
     case 'list_automod_actions':
       return automodActions()
     case 'list_bans':
-      return indexed('community_ban', 'community_bans', ban(), true)
+    case 'list_active_bans':
+      return indexed('community_ban', 'community_bans', banSummary(), true)
+    case 'read_ban':
+      return object({ community_ban: ban() })
     case 'list_invites':
       return indexed('community_invite', 'community_invites', component('CommunityInvite'))
     case 'read_moderation_analytics':

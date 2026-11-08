@@ -4,6 +4,7 @@ import { seedSessionLimits } from './session-limits.mts'
 import { seedUploadCleanup } from './upload-cleanup.mts'
 import { seedRssFeedWeeklyWorkload } from './rss-feed-weekly-workload.mts'
 import { seedRssFeedWeeklyProxy } from './rss-feed-weekly-proxy.mts'
+import { seedCommunityBanPages } from './community-ban-pages.mts'
 
 /** Finish the standalone workload cohorts before the seed runner analyzes every relation. */
 export async function seedFinalExplainFixtures(): Promise<void> {
@@ -13,4 +14,5 @@ export async function seedFinalExplainFixtures(): Promise<void> {
   await seedIneligibleCollectionPages()
   await seedRssFeedWeeklyWorkload()
   await seedRssFeedWeeklyProxy()
+  await seedCommunityBanPages()
 }

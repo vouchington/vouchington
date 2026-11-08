@@ -20,8 +20,25 @@ export function banMember(
   })
 }
 
-export function liftBan(idOrSlug: string, userId: string): Promise<void> {
-  return clientApi.delete(`/api/v1/communities/${idOrSlug}/bans/${userId}`)
+export interface CommunityBanLiftResult {
+  community_id: string
+  user_id: string
+  lifted_ban_ids: string[]
+}
+
+export function liftBan(idOrSlug: string, banId: string): Promise<CommunityBanLiftResult> {
+  return clientApi.delete(`/api/v1/communities/${idOrSlug}/bans/${banId}`)
+}
+
+export function liftAllBans(idOrSlug: string, userId: string): Promise<CommunityBanLiftResult> {
+  return clientApi.delete(`/api/v1/communities/${idOrSlug}/bans/users/${userId}`)
+}
+
+export function fetchCommunityBan(
+  idOrSlug: string,
+  banId: string,
+): Promise<{ community_ban: CommunityBan }> {
+  return clientApi.get(`/api/v1/communities/${idOrSlug}/bans/${banId}`)
 }
 
 export function fetchCommunityBans(

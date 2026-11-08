@@ -100,6 +100,14 @@ app.errorHandler((ctx, error: unknown) => {
     typeof error.limit === 'number'
   ) {
     ctx.json({ ...body, limit: error.limit })
+  } else if (
+    status === 409 &&
+    body.code === 'COMMUNITY_BAN_LIFT_ALL_LIMIT_REACHED' &&
+    error instanceof Error &&
+    'cap' in error &&
+    typeof error.cap === 'number'
+  ) {
+    ctx.json({ ...body, cap: error.cap })
   } else {
     ctx.json(body)
   }

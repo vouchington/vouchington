@@ -12,7 +12,13 @@ import type {
   CommunityPostTypeSettingsResponseBody,
 } from '@/types/api-responses'
 import type { CommunityApplicationResponseBody } from '@/types/api-responses/community-applications'
-export { banMember, liftBan, fetchCommunityBans } from './community-bans'
+export {
+  banMember,
+  liftBan,
+  liftAllBans,
+  fetchCommunityBan,
+  fetchCommunityBans,
+} from './community-bans'
 export { fetchCommunities, searchMyCommunities } from './community-search'
 export { archiveCommunity, unarchiveCommunity } from './community-archive'
 

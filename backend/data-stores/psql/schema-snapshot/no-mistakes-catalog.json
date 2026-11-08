@@ -19887,6 +19887,56 @@
           "unique": true,
           "valid": true
         },
+        "idx_community_bans__active_expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_bans__active_expiry ON public.community_bans USING btree (community_id, user_id, COALESCE(expires_at, 'infinity'::timestamp with time zone), id) WHERE (lifted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(expires_at, 'infinity'::timestamp with time zone)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(lifted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_bans__banned_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -19933,10 +19983,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_community_bans__community_id": {
+        "idx_community_bans__community_id_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_bans__community_id ON public.community_bans USING btree (community_id) WHERE (community_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_community_bans__community_id_id ON public.community_bans USING btree (community_id, id)",
           "immediate": true,
           "keys": [
             {
@@ -19947,10 +19997,19 @@
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
             }
           ],
           "live": true,
-          "predicate": "(community_id IS NOT NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -19974,38 +20033,6 @@
           ],
           "live": true,
           "predicate": "(lifted_by_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_community_bans__lookup": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_bans__lookup ON public.community_bans USING btree (community_id, user_id) WHERE (lifted_at IS NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(lifted_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { fn } from 'storybook/test'
 import { BanDialog } from '@/components/communities/community-ban-dialog'
+import { LiftAllBansDialog } from '@/components/communities/lift-all-bans-dialog'
 import { CommunityBansPanel } from '@/components/communities/community-bans-panel'
 import type {
   Community,
-  CommunityBan,
+  CommunityBanSummary,
   CommunityBansResponseBody,
   CommunityMember,
 } from '@/types/api-responses'
@@ -99,14 +100,12 @@ export const BanDialogOpen: Story = {
   ),
 }
 
-const ban1: CommunityBan = {
+const ban1: CommunityBanSummary = {
   __entity_type: 'community_ban',
   id: 'ban-1',
   community_id: 'community-1',
   user_id: 'user-2',
   banned_by_id: 'user-owner',
-  case_id: '00000000-0000-0000-0000-000000000001',
-  reason: 'Repeated spam',
   expires_at: null,
   created_at: '2026-05-01T10:00:00.000Z',
   updated_at: '2026-05-01T10:00:00.000Z',
@@ -114,30 +113,19 @@ const ban1: CommunityBan = {
   lifted_by_id: null,
 }
 
-const ban2: CommunityBan = {
-  __entity_type: 'community_ban',
+const ban2: CommunityBanSummary = {
+  ...ban1,
   id: 'ban-2',
-  community_id: 'community-1',
   user_id: 'user-3',
-  banned_by_id: 'user-owner',
-  case_id: '00000000-0000-0000-0000-000000000002',
-  reason: null,
   expires_at: '2026-07-01T00:00:00.000Z',
   created_at: '2026-06-01T10:00:00.000Z',
   updated_at: '2026-06-01T10:00:00.000Z',
-  lifted_at: null,
-  lifted_by_id: null,
 }
 
-const ban3: CommunityBan = {
-  __entity_type: 'community_ban',
+const ban3: CommunityBanSummary = {
+  ...ban1,
   id: 'ban-3',
-  community_id: 'community-1',
   user_id: 'user-4',
-  banned_by_id: 'user-owner',
-  case_id: '00000000-0000-0000-0000-000000000003',
-  reason: 'Off-topic posts',
-  expires_at: null,
   created_at: '2026-04-01T10:00:00.000Z',
   updated_at: '2026-04-15T10:00:00.000Z',
   lifted_at: '2026-04-15T10:00:00.000Z',
@@ -194,6 +182,18 @@ export const BansPanelEmpty: Story = {
       <CommunityBansPanel
         community={community}
         initialData={emptyBansData}
+      />
+    </EntityStoryFrame>
+  ),
+}
+
+export const LiftAllBansConfirmation: Story = {
+  render: () => (
+    <EntityStoryFrame title='Lift all bans'>
+      <LiftAllBansDialog
+        userLabel='testuser'
+        disabled={false}
+        onConfirm={fn()}
       />
     </EntityStoryFrame>
   ),

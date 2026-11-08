@@ -1,5 +1,4 @@
 'use client'
-
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -7,17 +6,17 @@ import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { liftBan, fetchCommunityBans } from '@/lib/api/client'
-import type { Community, CommunityBansResponseBody } from '@/types/api-responses'
-import { isBanActive } from './community-bans-panel-state'
+import { liftBan, liftAllBans, fetchCommunityBan, fetchCommunityBans } from '@/lib/api/client'
+import { LiftAllBansDialog } from './lift-all-bans-dialog'
+import { ApiError } from '@vouchington/api-client'
+import type { Community, CommunityBan, CommunityBansResponseBody } from '@/types/api-responses'
+import { collectBanUsers, isBanActive, uniqueBans } from './community-bans-panel-state'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getUserLabel } from '@/lib/users/user-helpers'
-
 interface Props {
   community: Community
   initialData: CommunityBansResponseBody
 }
-
 export function CommunityBansPanel({ community, initialData }: Props) {
   const t = useTranslations()
   const router = useRouter()
@@ -30,13 +29,11 @@ export function CommunityBansPanel({ community, initialData }: Props) {
         loadPage: cursor => fetchCommunityBans(community.slug, cursor),
       },
     )
-  const [liftingUserId, setLiftingUserId] = useState<string | null>(null)
+  const [liftingId, setLiftingId] = useState<string | null>(null)
+  const [details, setDetails] = useState<Record<string, CommunityBan>>({})
   const [liftError, setLiftError] = useState<string | null>(null)
   const [liftedAtByBanId, setLiftedAtByBanId] = useState<Record<string, string>>({})
-  const users = Object.assign(
-    {},
-    ...pages.map(page => page.users),
-  ) as CommunityBansResponseBody['users']
+  const users = collectBanUsers(pages)
   const bans = uniqueBans(
     pages.flatMap(page =>
       page.results.flatMap(result => {
@@ -48,28 +45,42 @@ export function CommunityBansPanel({ community, initialData }: Props) {
     const liftedAt = liftedAtByBanId[ban.id]
     return liftedAt ? { ...ban, lifted_at: ban.lifted_at ?? liftedAt } : ban
   })
-
-  async function handleLiftBan(userId: string) {
-    setLiftingUserId(userId)
+  async function handleLiftBan(id: string, all: boolean) {
+    setLiftingId(id)
     setLiftError(null)
     try {
-      await liftBan(community.slug, userId)
-      // The API lifts every active ban for the user; expired and already-lifted rows keep their status.
-      const liftedBanIds = bans.flatMap(ban =>
-        ban.user_id === userId && isBanActive(ban) ? [ban.id] : [],
-      )
-      setLiftedAtByBanId(prev => {
-        const liftedAt = new Date().toISOString()
-        return { ...prev, ...Object.fromEntries(liftedBanIds.map(id => [id, liftedAt])) }
-      })
-      setLiftingUserId(null)
+      const result = all ? await liftAllBans(community.slug, id) : await liftBan(community.slug, id)
+      const liftedAt = new Date().toISOString()
+      const lifted = Object.fromEntries(result.lifted_ban_ids.map(banId => [banId, liftedAt]))
+      setLiftedAtByBanId(prev => ({ ...prev, ...lifted }))
       router.refresh()
     } catch (err) {
-      setLiftingUserId(null)
-      setLiftError(err instanceof Error ? err.message : 'Failed to lift ban')
+      if (err instanceof ApiError && err.code === 'COMMUNITY_BAN_LIFT_ALL_FORBIDDEN') {
+        setLiftError(t('moderation.communityBans.liftAllForbidden'))
+      } else if (err instanceof ApiError && err.code === 'COMMUNITY_BAN_LIFT_ALL_LIMIT_REACHED') {
+        const cap =
+          err.data && typeof err.data === 'object' && 'cap' in err.data ? err.data.cap : undefined
+        setLiftError(
+          typeof cap === 'number'
+            ? t('moderation.communityBans.liftAllLimit', { cap })
+            : t('moderation.communityBans.liftAllLimitUnknown'),
+        )
+      } else {
+        setLiftError(t('moderation.communityBans.liftFailed'))
+      }
+    } finally {
+      setLiftingId(null)
     }
   }
-
+  async function handleShowDetails(banId: string) {
+    setLiftError(null)
+    try {
+      const { community_ban } = await fetchCommunityBan(community.slug, banId)
+      setDetails(prev => ({ ...prev, [banId]: community_ban }))
+    } catch {
+      setLiftError(t('moderation.communityBans.liftFailed'))
+    }
+  }
   return (
     <Card>
       <CardHeader>
@@ -102,8 +113,7 @@ export function CommunityBansPanel({ community, initialData }: Props) {
           {bans.map(ban => {
             const user = users[ban.user_id]
             const isActive = isBanActive(ban)
-            const statusLabel = isActive ? 'Active' : ban.lifted_at ? 'Lifted' : 'Expired'
-            const isLifting = liftingUserId === ban.user_id
+            const isLifting = liftingId === ban.id || liftingId === ban.user_id
             return (
               <div
                 key={ban.id}
@@ -119,15 +129,28 @@ export function CommunityBansPanel({ community, initialData }: Props) {
                       variant={isActive ? 'destructive' : 'secondary'}
                       suppressHydrationWarning
                     >
-                      {statusLabel}
+                      {isActive
+                        ? t('moderation.communityBans.active')
+                        : ban.lifted_at
+                          ? t('moderation.communityBans.lifted')
+                          : t('moderation.communityBans.expired')}
                     </Badge>
                   </div>
-                  {ban.reason && (
+                  {details[ban.id]?.reason && (
                     <p className='text-muted-foreground'>
                       {t('extracted.communities.communityBansPanel.reasonReason_ae08e67f', {
-                        reason: ban.reason,
+                        reason: details[ban.id]!.reason!,
                       })}
                     </p>
+                  )}
+                  {!details[ban.id] && (
+                    <Button
+                      size='sm'
+                      variant='ghost'
+                      onClick={() => handleShowDetails(ban.id)}
+                    >
+                      {t('extracted.communities.applicationReview.showDetails_1af77ee2')}
+                    </Button>
                   )}
                   <p
                     className='text-muted-foreground'
@@ -147,16 +170,23 @@ export function CommunityBansPanel({ community, initialData }: Props) {
                   )}
                 </div>
                 {isActive && (
-                  <Button
-                    size='sm'
-                    variant='outline'
-                    loading={isLifting}
-                    disabled={isLifting}
-                    data-pw='community-ban-lift'
-                    onClick={() => handleLiftBan(ban.user_id)}
-                  >
-                    {isLifting ? 'Lifting…' : 'Lift ban'}
-                  </Button>
+                  <div className='flex gap-2'>
+                    <Button
+                      size='sm'
+                      disabled={liftingId !== null}
+                      data-pw='community-ban-lift'
+                      onClick={() => handleLiftBan(ban.id, false)}
+                    >
+                      {isLifting
+                        ? t('moderation.communityBans.lifting')
+                        : t('moderation.communityBans.liftBan')}
+                    </Button>
+                    <LiftAllBansDialog
+                      userLabel={getUserLabel(user, t('shared.user.deletedUser'))}
+                      disabled={liftingId !== null}
+                      onConfirm={() => handleLiftBan(ban.user_id, true)}
+                    />
+                  </div>
                 )}
               </div>
             )
@@ -165,8 +195,4 @@ export function CommunityBansPanel({ community, initialData }: Props) {
       </CardContent>
     </Card>
   )
-}
-
-function uniqueBans(bans: CommunityBansResponseBody['community_bans'][string][]) {
-  return [...new Map(bans.map(ban => [ban.id, ban])).values()]
 }

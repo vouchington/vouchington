@@ -72,7 +72,7 @@ describe('registered community moderation catalog SDK', () => {
       const name = `SDK community ${crypto.randomUUID()}`
       await call('update_community_moderation', 'update_community_settings', { name })
       expect((await getCommunityOrThrow(community.id)).name).toBe(name)
-      await call('remove_community_moderation', 'lift_ban', { userId: target.id })
+      await call('remove_community_moderation', 'lift_ban', { banId: ban!.id })
       expect(await getTestActiveCommunityBan(community.id, target.id)).toBeNull()
       expect([...observed].toSorted()).toEqual(
         [...sdkMergedSuccessNames.communityModerationFixture].toSorted(),

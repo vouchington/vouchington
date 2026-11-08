@@ -68,7 +68,7 @@ describe('Community Ban Routes (read + lift)', () => {
     })
   })
 
-  describe('DELETE /api/v1/communities/:slug/bans/:userId', () => {
+  describe('DELETE /api/v1/communities/:slug/bans/:banId', () => {
     it('returns 401 without auth', async () => {
       const owner = await createTestUser()
       const target = await createTestUser()
@@ -82,7 +82,7 @@ describe('Community Ban Routes (read + lift)', () => {
       await request.delete(`/api/v1/communities/${community.slug}/bans/${target.id}`).expect(401)
     })
 
-    it('owner lifts a ban and returns 204', async () => {
+    it('owner lifts only the selected ban', async () => {
       const [owner, target] = await Promise.all([createTestUser(), createTestUser()])
       const random = createRandomString(8)
       const community = await insertTestCommunity({
@@ -94,15 +94,41 @@ describe('Community Ban Routes (read + lift)', () => {
         userId: owner!.id,
         role: 'owner',
       })
-      await insertTestCommunityBan({
+      const ban = await insertTestCommunityBan({
         communityId: community.id,
         userId: target!.id,
         bannedById: owner!.id,
       })
 
+      const sibling = await insertTestCommunityBan({
+        communityId: community.id,
+        userId: target!.id,
+        bannedById: owner!.id,
+      })
       const request = createRequest()
       await request.authenticateAs(owner!)
-      await request.delete(`/api/v1/communities/${community.slug}/bans/${target!.id}`).expect(204)
+      const response = await request
+        .delete(`/api/v1/communities/${community.slug}/bans/${ban.id}`)
+        .expect(200)
+      expect(response.body).toMatchObject({
+        community_id: community.id,
+        user_id: target!.id,
+        lifted_ban_ids: [ban.id],
+      })
+      const active = await request
+        .get(`/api/v1/communities/${community.slug}/bans/users/${target!.id}`)
+        .expect(200)
+      expect(active.body.results).toEqual([{ __entity_type: 'community_ban', id: sibling.id }])
+      expect(active.body.community_bans[sibling.id]).not.toHaveProperty('reason')
+      const detail = await request
+        .get(`/api/v1/communities/${community.slug}/bans/${sibling.id}`)
+        .expect(200)
+      expect(detail.body.community_ban.id).toBe(sibling.id)
+      expect(detail.body.community_ban).toHaveProperty('reason')
+      const liftedAll = await request
+        .delete(`/api/v1/communities/${community.slug}/bans/users/${target!.id}`)
+        .expect(200)
+      expect(liftedAll.body.lifted_ban_ids).toEqual([sibling.id])
     })
 
     it('returns 403 for regular member', async () => {

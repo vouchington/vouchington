@@ -4,6 +4,7 @@ import {
   activateCommunityRestrictions,
   banUserFromCommunity,
   liftCommunityBan,
+  liftAllCommunityBans,
   liftCommunityRestriction,
   loadCommunityWithViewer,
   getCommunityOrThrow,
@@ -89,8 +90,11 @@ export const communityModerationOtherWrites: Record<string, CommunityModerationH
   },
   async lift_ban(user, args) {
     const { community } = await communityWithGuard(user, args.community, 'bans')
-    await liftCommunityBan(user, community.id, args.userId as string)
-    return communityModerationNoContent()
+    return liftCommunityBan(user, community.id, args.banId as string)
+  },
+  async lift_all_bans(user, args) {
+    const { community } = await communityWithGuard(user, args.community, 'bans')
+    return liftAllCommunityBans(user, community.id, args.userId as string)
   },
   async dismiss_ban_evasion(user, args) {
     const community = await getBanEvasionCommunity(args.community)

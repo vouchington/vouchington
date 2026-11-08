@@ -40653,6 +40653,215 @@
         "user_id"
       ],
       "type": "object"
+    },
+    "CommunityBanDetailResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "community_id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "banned_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "lifted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "lifted_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "community_id",
+        "user_id",
+        "banned_by_id",
+        "expires_at",
+        "created_at",
+        "updated_at",
+        "lifted_at",
+        "lifted_by_id",
+        "reason"
+      ],
+      "type": "object"
+    },
+    "CommunityBanLiftResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "community_id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "lifted_ban_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["community_id", "user_id", "lifted_ban_ids"],
+      "type": "object"
+    },
+    "CommunityBanPageResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "results": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "__entity_type": {
+                "const": "community_ban"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": ["__entity_type", "id"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
+        "community_bans": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/components/schemas/CommunityBanSummaryResponse"
+          }
+        },
+        "users": {
+          "$ref": "#/components/schemas/Record_string_PublicUser"
+        }
+      },
+      "required": ["results", "page_info", "community_bans", "users"],
+      "type": "object"
+    },
+    "CommunityBanSummaryResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "community_id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "banned_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "lifted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "lifted_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "community_id",
+        "user_id",
+        "banned_by_id",
+        "expires_at",
+        "created_at",
+        "updated_at",
+        "lifted_at",
+        "lifted_by_id"
+      ],
+      "type": "object"
     }
   },
   "operations": {
@@ -41040,20 +41249,6 @@
       }
     },
     "DELETE:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
-      "path": {
-        "properties": {
-          "idOrSlug": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          }
-        },
-        "required": ["idOrSlug", "userId"],
-        "type": "object"
-      }
-    },
-    "DELETE:/api/v1/communities/:idOrSlug/bans/:userId": {
       "path": {
         "properties": {
           "idOrSlug": {
@@ -51764,6 +51959,75 @@
         "required": ["userId"],
         "type": "object"
       }
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/bans/:banId": {
+      "path": {
+        "properties": {
+          "idOrSlug": {
+            "type": "string"
+          },
+          "banId": {
+            "type": "string"
+          }
+        },
+        "required": ["idOrSlug", "banId"],
+        "type": "object"
+      }
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/bans/users/:userId": {
+      "path": {
+        "properties": {
+          "idOrSlug": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": ["idOrSlug", "userId"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/communities/:idOrSlug/bans/:banId": {
+      "path": {
+        "properties": {
+          "idOrSlug": {
+            "type": "string"
+          },
+          "banId": {
+            "type": "string"
+          }
+        },
+        "required": ["idOrSlug", "banId"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/communities/:idOrSlug/bans/users/:userId": {
+      "path": {
+        "properties": {
+          "idOrSlug": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": ["idOrSlug", "userId"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
     }
   },
   "responses": {
@@ -52406,6 +52670,28 @@
     },
     "PUT:/api/v1/communities/:idOrSlug/moderator-vacation": {
       "$ref": "#/components/schemas/CommunityMemberVacationSettings"
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/bans/:banId": {
+      "$ref": "#/components/schemas/CommunityBanLiftResponse"
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/bans/users/:userId": {
+      "$ref": "#/components/schemas/CommunityBanLiftResponse"
+    },
+    "GET:/api/v1/communities/:idOrSlug/bans": {
+      "$ref": "#/components/schemas/CommunityBanPageResponse"
+    },
+    "GET:/api/v1/communities/:idOrSlug/bans/:banId": {
+      "additionalProperties": false,
+      "properties": {
+        "community_ban": {
+          "$ref": "#/components/schemas/CommunityBanDetailResponse"
+        }
+      },
+      "required": ["community_ban"],
+      "type": "object"
+    },
+    "GET:/api/v1/communities/:idOrSlug/bans/users/:userId": {
+      "$ref": "#/components/schemas/CommunityBanPageResponse"
     }
   },
   "source": "checked-in-request-contracts",

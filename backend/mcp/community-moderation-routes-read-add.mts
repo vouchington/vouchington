@@ -23,6 +23,12 @@ export const communityModerationReadAddRoutes = [
     option: 'list_automod_actions',
   },
   { method: 'GET', path: '/api/v1/communities/:idOrSlug/bans', option: 'list_bans' },
+  {
+    method: 'GET',
+    path: '/api/v1/communities/:idOrSlug/bans/users/:userId',
+    option: 'list_active_bans',
+  },
+  { method: 'GET', path: '/api/v1/communities/:idOrSlug/bans/:banId', option: 'read_ban' },
   { method: 'GET', path: '/api/v1/communities/:idOrSlug/invites', option: 'list_invites' },
   {
     method: 'GET',

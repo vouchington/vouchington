@@ -22,12 +22,11 @@ CREATE INDEX IF NOT EXISTS idx_community_bans__lifted_by_id
 CREATE OR REPLACE TRIGGER trigger_community_bans_updated_at
   BEFORE UPDATE ON community_bans FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- Not-lifted bans (active or naturally expired) are looked up by (community_id, user_id). This is
--- intentionally NOT a unique index: multiple active bans per user are allowed (e.g. a re-ban on an
--- already-active user inserts a second row). Naturally expired bans (lifted_at IS NULL, expires_at
--- in the past) are left untouched so moderation history preserves their original expiry. A partial
--- unique index could not express "currently active" anyway, since CURRENT_TIMESTAMP is not immutable.
-CREATE INDEX IF NOT EXISTS idx_community_bans__lookup ON community_bans (community_id, user_id) WHERE lifted_at IS NULL;
+-- Multiple active bans per user are allowed. Naturally expired rows retain lifted_at NULL;
+-- sorting NULL expiry at infinity lets active pages and capped lifts skip expired history.
+CREATE INDEX IF NOT EXISTS idx_community_bans__active_expiry
+  ON community_bans (community_id, user_id, (COALESCE(expires_at, 'infinity'::timestamptz)), id)
+  WHERE lifted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_community_bans__user
   ON community_bans (user_id, id DESC)
   WHERE lifted_at IS NULL;
@@ -46,9 +45,9 @@ COMMENT ON COLUMN community_bans.lifted_by_id IS 'Who lifted the ban early.';
 COMMENT ON COLUMN community_bans.case_id IS 'The moderation case this ban belongs to.';
 
 -- Current indexes for fresh schema bootstrap.
-CREATE INDEX IF NOT EXISTS idx_community_bans__community_id
-  ON community_bans (community_id)
-  WHERE community_id IS NOT NULL;
+-- History pages use id order; the leading community id also backs the community foreign key.
+CREATE INDEX IF NOT EXISTS idx_community_bans__community_id_id
+  ON community_bans (community_id, id);
 
 CREATE INDEX IF NOT EXISTS idx_community_bans__user_id
   ON community_bans (user_id)
