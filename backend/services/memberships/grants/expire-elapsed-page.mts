@@ -8,7 +8,6 @@ import { activateOldestQueuedGrantForLockedUser } from './activate-queued.mts'
 export async function expireElapsedMembershipPage(
   userId: string,
   query: QueryExecutor,
-  batchSize: number,
   options: {
     activateQueuedGrants?: boolean
     expiresThrough?: Date
@@ -24,7 +23,7 @@ export async function expireElapsedMembershipPage(
         AND membership.projection_ended_at IS NULL AND membership.cancelled_at IS NULL
         AND membership.expired_at IS NULL AND membership.expires_at IS NOT NULL
         AND membership.expires_at <= COALESCE(${options.expiresThrough ?? null}::timestamptz, CURRENT_TIMESTAMP)
-      ORDER BY membership.expires_at, membership.id LIMIT ${batchSize} FOR UPDATE OF membership
+      ORDER BY membership.expires_at, membership.id LIMIT 1 FOR UPDATE OF membership
     )
     UPDATE memberships membership
     SET expired_at = membership.expires_at, cancelled_at = NULL, past_due_at = NULL,

@@ -1,3 +1,4 @@
+import { runMembershipExpiryCandidateScenario } from './membership-expiry-candidate.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import {
   activateOldestQueuedGrant,
@@ -17,6 +18,7 @@ const PAGE_CHANGES = 2 // One expiration and one replacement per current-project
 export async function runMembershipExpiryPageScenarios(): Promise<void> {
   // Seed after the ordinary aggregate plans, so their established corpus and gates stay intact.
   await seedMembershipExpiryPages()
+  await runMembershipExpiryCandidateScenario()
   const { rows } = await read<{
     id: string
     user_id: string

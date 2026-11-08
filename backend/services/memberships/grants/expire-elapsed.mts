@@ -20,11 +20,11 @@ export async function expireElapsedMemberships(
 ): Promise<MembershipExpiryResult> {
   await query(sql`/* expireElapsedMemberships: lock user */
     SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
-  const { batchSize, maxBatches } = options.limits ?? getMembershipWorkLimits()
-  // One current projection is the schema-bounded work unit, even when the SQL limit is larger.
+  const { maxBatches } = options.limits ?? getMembershipWorkLimits()
+  // Each page expires one current projection before considering its queued replacement.
   const { processed: expired, hasMore: reachedPageLimit } = await runBoundedPages(
     { batchSize: 1, maxBatches },
-    () => expireElapsedMembershipPage(userId, query, batchSize, options),
+    () => expireElapsedMembershipPage(userId, query, options),
   )
   if (!reachedPageLimit) return { expired, hasMore: false }
 
