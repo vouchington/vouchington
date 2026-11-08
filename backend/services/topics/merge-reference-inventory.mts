@@ -23,6 +23,7 @@ export const TOPIC_MERGE_REFERENCE_GROUPS = {
   'post_explicit_topic_categories.topic_id': 'collisions',
   'post_review_topic_ratings.topic_id': 'collisions',
   'post_topic_recommendations.created_topic_id': 'references',
+  'referral_program_link_counts.topic_id': 'derived',
   'referral_program_topic_link_validation_rule_sets.referral_program_topic_id': 'subtype',
   'referral_program_topics.company_topic_id': 'references',
   'referral_program_topics.topic_id': 'subtype',

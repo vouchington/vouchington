@@ -56,9 +56,8 @@ function decodeActiveLinkCountCursor(after: string | undefined): {
   return { count: cursor.score, id: cursor.id }
 }
 
-// One index walk of enabled programs that have an active link. active_link_count is the
-// leading index column, so the descending walk stops at 0. Deleted and merged topics are
-// filtered in this statement, so LIMIT still fills the page.
+// Lifecycle and count triggers maintain this eligible-only projection in the same transaction.
+// The positive-count index stops at page+1 without scanning retained inactive topics.
 export async function readActiveLinkCountTopicPage(options: {
   limit?: number
   after?: string
@@ -72,13 +71,11 @@ export async function readActiveLinkCountTopicPage(options: {
       t.slug,
       t.topic_type,
       rp.active_link_count
-    FROM referral_program_topics rp
+    FROM referral_program_link_counts rp
     INNER JOIN topics t ON t.id = rp.topic_id
       AND t.deleted_at IS NULL
       AND t.merged_into_topic_id IS NULL
-    WHERE rp.enabled_at IS NOT NULL
-      AND rp.disabled_at IS NULL
-      AND rp.active_link_count > 0`
+    WHERE rp.active_link_count > 0`
 
   if (cursor.count !== null && cursor.id !== null) {
     query.append(sql`

@@ -26,9 +26,18 @@ export async function readHighestActiveLinkCount(): Promise<number> {
   const { rows } = await read<{ max_count: number | string | null }>(
     sql`/* readHighestActiveLinkCount */
       SELECT COALESCE(MAX(active_link_count), 0) AS max_count
-      FROM referral_program_topics`,
+      FROM referral_program_link_counts`,
   )
   return Number(rows[0]?.max_count ?? 0)
+}
+
+export async function readReferralProgramRankedLinkCount(topicId: string): Promise<number | null> {
+  const { rows } = await read<{ active_link_count: number }>(
+    sql`/* readReferralProgramRankedLinkCount */
+      SELECT active_link_count FROM referral_program_link_counts
+      WHERE topic_id = ${topicId} LIMIT 1`,
+  )
+  return rows[0]?.active_link_count ?? null
 }
 
 // Places owned programs at the front of the link-count keyset. The row trigger owns real

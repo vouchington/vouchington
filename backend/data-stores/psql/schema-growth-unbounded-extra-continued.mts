@@ -20,6 +20,7 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'post_topic_recommendation_landing_page_urls',
   'referral_program_link_validation_rule_sets',
   'referral_program_link_validation_rules',
+  'referral_program_link_counts',
   'retained_api_key_identities',
   'retained_membership_identities',
   'retained_topic_identities',
