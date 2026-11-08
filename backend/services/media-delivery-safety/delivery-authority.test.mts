@@ -26,7 +26,7 @@ import {
 } from './index.mts'
 import {
   recordImageDeliveryRepairMarker,
-  reconcileDeliveryRepairMarker,
+  reconcileDeliveryRepairMarkers,
 } from './delivery-repair-markers.mts'
 import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
 
@@ -120,10 +120,8 @@ describe('delivery authority and durable denial repair', () => {
     const observed = await getTestDeliveryRepairMarker(mediaDeliveryRegistryRecordId)
     if (!observed) throw new Error('Committed repair marker missing')
     await recordImageDeliveryRepairMarker(tuple)
-    await reconcileDeliveryRepairMarker({
-      media_delivery_registry_record_id: mediaDeliveryRegistryRecordId,
-      marker_token: observed,
-    })
+    const marker = { media_delivery_registry_record_id: mediaDeliveryRegistryRecordId }
+    await reconcileDeliveryRepairMarkers([{ ...marker, marker_token: observed }])
     const newer = await getTestDeliveryRepairMarker(mediaDeliveryRegistryRecordId)
     expect(newer).not.toBeNull()
     expect(newer).not.toBe(observed)

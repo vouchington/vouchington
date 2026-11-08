@@ -2,7 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
-import { prepublishImagePlacementDenial } from './delivery-registry-publish.mts'
+import { prepublishImagePlacementDenialBatch } from './delivery-registry-publish.mts'
 
 export async function prepublishImagePlacementDenials(
   input: { postId?: string; imageId?: string; retainImageIds?: string[] },
@@ -34,17 +34,14 @@ export async function prepublishImagePlacementDenials(
       AND NOT (binding.image_id = ANY(${input.retainImageIds ?? []}::uuid[]))
     ORDER BY placement.id FOR UPDATE OF placement
   `)
-  for (const row of rows) {
-    // oxlint-disable-next-line no-await-in-loop -- each prior tuple is denied before retirement.
-    await prepublishImagePlacementDenial(
-      {
-        placementId: row.placement_id,
-        revision: row.revision,
-        imageId: row.image_id,
-      },
-      { query },
-    )
-  }
+  await prepublishImagePlacementDenialBatch(
+    rows.map(row => ({
+      placementId: row.placement_id,
+      revision: row.revision,
+      imageId: row.image_id,
+    })),
+    { query },
+  )
 }
 
 /** Denies every externally routable form before the owner's safety mutation. */

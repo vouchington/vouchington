@@ -5,7 +5,7 @@ import {
   lockImageSurfacePlacements,
   type ImageSurfaceReference,
 } from './surface-lock.mts'
-import { prepublishImagePlacementDenial } from './delivery-registry-publish.mts'
+import { prepublishImagePlacementDenialBatch } from './delivery-registry-publish.mts'
 import { lockImageAssetAdmission, assertImagesReadyForSurface } from './asset-admission-lock.mts'
 
 export * from './delivery-registry.mts'
@@ -91,15 +91,12 @@ export async function prepublishImageSurfaceDenials(
     }
   }
   await assertImagesReadyForSurface(changedImageIds, query)
-  for (const current of tuples) {
-    // oxlint-disable-next-line no-await-in-loop -- every tuple denial precedes the owner mutation.
-    await prepublishImagePlacementDenial(
-      {
-        placementId: current.placement_id,
-        revision: current.placement_revision,
-        imageId: current.image_id,
-      },
-      { query, placementLocked: true },
-    )
-  }
+  await prepublishImagePlacementDenialBatch(
+    tuples.map(current => ({
+      placementId: current.placement_id,
+      revision: current.placement_revision,
+      imageId: current.image_id,
+    })),
+    { query, placementLocked: true },
+  )
 }

@@ -53,6 +53,9 @@ export async function lockTopicAliasPublicationScopes(
   }
 }
 
+/** Hard page cap for one alias unlink capture; the page size is effect_payload_key_batch_size. */
+const MAX_ALIAS_IMPACT_PAGES = 1000
+
 /** Captures pre-delete relation-only posts before an atomic ordinary-alias unlink. */
 export async function captureDestroyedTopicAliasPostImpacts(
   query: TransactionQuery,
@@ -61,7 +64,7 @@ export async function captureDestroyedTopicAliasPostImpacts(
 ): Promise<void> {
   const pageSize = getPostPublicationWorkLimit('effect_payload_key_batch_size')
   let afterPostId: string | null = null
-  while (true) {
+  for (let page = 0; page < MAX_ALIAS_IMPACT_PAGES; page += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each pre-delete ownership read is one configured page.
     const result = await query<{ post_id: string }>(
       `/* listTopicAliasPublicationPostImpacts */
@@ -97,4 +100,8 @@ export async function captureDestroyedTopicAliasPostImpacts(
     })
     afterPostId = rows.at(-1)!.post_id
   }
+  // Safety cap: exceeding it fails the transaction instead of running unbounded; redesign tracked in vouchington/vouchington#5327
+  throw new Error(
+    `topic alias ${topicAliasId} impact capture exceeded ${MAX_ALIAS_IMPACT_PAGES} pages; continuation after post ${afterPostId}`,
+  )
 }
