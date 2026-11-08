@@ -1,4 +1,4 @@
-import { read, write, beginTransaction } from '@data-stores/psql'
+import { read, write, beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueOnConversationMessageCreated } from '@queues/entity-listeners/enqueues'
 import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
@@ -8,6 +8,7 @@ import type { ContentProvenance } from '@voucha/types/entities/content-provenanc
 import { admitConversationParticipants } from './participant-admission.mts'
 import { conversationMessageInsert } from './conversation-message-insert.mts'
 import { createModInternalMessageForLiveStaff } from './create-mod-internal-message.mts'
+import { createMessageWithAdmission } from './create-message-with-admission.mts'
 
 export async function findOrCreateDirectConversation(
   currentUserId: string,
@@ -127,23 +128,28 @@ export async function createConversationMessage(
   provenance: ContentProvenance,
   conversationId: string,
   bodyText: string,
-  options?: { observedTime?: Date | null },
+  options?: {
+    observedTime?: Date | null
+    /** Run admission in the same transaction as the message insert. */
+    beforeInsert?: (query: TransactionQuery) => Promise<void>
+  },
 ): Promise<DirectMessage> {
   assertObservedTime(options?.observedTime)
-  // Direct messages keep the single-statement participant check. A staff-only miss admits
-  // a live owner or moderator in a later transaction, then inserts the message there.
-  const { rows } = await write(
-    conversationMessageInsert(currentUserId, provenance, conversationId, bodyText),
-  )
-  const message =
-    (rows[0] as DirectMessage | undefined) ??
-    (await createModInternalMessageForLiveStaff(
-      currentUserId,
-      provenance,
-      conversationId,
-      bodyText,
-      options?.observedTime,
-    ))
+  const message = options?.beforeInsert
+    ? await createMessageWithAdmission(
+        currentUserId,
+        provenance,
+        conversationId,
+        bodyText,
+        options.beforeInsert,
+      )
+    : await createMessageWithExistingParticipant(
+        currentUserId,
+        provenance,
+        conversationId,
+        bodyText,
+        options?.observedTime,
+      )
   if (!message) throw createHttpError(403, 'Not a participant')
 
   await awaitReportedEnqueueAdmission(() =>
@@ -151,6 +157,31 @@ export async function createConversationMessage(
   )
 
   return message
+}
+
+async function createMessageWithExistingParticipant(
+  currentUserId: string,
+  provenance: ContentProvenance,
+  conversationId: string,
+  bodyText: string,
+  observedTime?: Date | null,
+): Promise<DirectMessage | undefined> {
+  // Direct messages use the single-statement participant check. Mod-internal messages
+  // retain their existing live-staff fallback.
+  const { rows } = await write<DirectMessage>(
+    conversationMessageInsert(currentUserId, provenance, conversationId, bodyText),
+  )
+  return (
+    rows[0] ??
+    (await createModInternalMessageForLiveStaff(
+      currentUserId,
+      provenance,
+      conversationId,
+      bodyText,
+      observedTime,
+    )) ??
+    undefined
+  )
 }
 
 function assertObservedTime(observedTime: Date | null | undefined): void {

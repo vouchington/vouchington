@@ -12,6 +12,8 @@ import {
   runInviteRedeem,
   runParticipantRead,
 } from './community-write-round-trips.mts'
+import { runModmailFirstReplyScenario } from './modmail-first-reply.mts'
+import { runModmailOpeningScenario } from './modmail-option-a.mts'
 import { runConversationParticipantAdmission } from './conversation-participant-admission.mts'
 import { runAndCapture, seedUser, heavyFollowUser, seedPostId } from '../run-support.mts'
 
@@ -129,6 +131,8 @@ export async function runCommunityRoundTripScenarios(): Promise<void> {
   await runCommunityCreate()
   await runParticipantRead()
   await runConversationParticipantAdmission(communityId)
+  await runModmailOpeningScenario()
+  await runModmailFirstReplyScenario()
   await runInviteRedeem(communityId)
   await runApplicationQuestions(communityId)
 }

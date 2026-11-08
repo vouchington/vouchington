@@ -1,7 +1,4 @@
-import {
-  loadModmailReplyAccess,
-  admitModmailReplyParticipant,
-} from '@services/modmail/member-actions'
+import { loadModmailReplyAccess, replyToModmailThread } from '@services/modmail/member-actions'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
@@ -11,7 +8,7 @@ import { parseJsonBody, requireAuth, validateRequestContract } from '../../respo
 import { assertNotSuspended } from '@services/users'
 import { loadCommunityWithViewer } from '@services/communities'
 import { getModmailThread, currentUserCanViewModmailThread } from '@services/modmail'
-import { createConversationMessage, getConversationMessages } from '@services/messaging'
+import { getConversationMessages } from '@services/messaging'
 import {
   decodeUuidCursor,
   encodeCursor,
@@ -94,14 +91,7 @@ app
       'POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages',
       { path: ctx.params, body },
     )
-    await admitModmailReplyParticipant(currentUser, access)
-
-    const message = await createConversationMessage(
-      currentUser.id,
-      provenance,
-      conversationId,
-      body.text as string,
-    )
+    const message = await replyToModmailThread(currentUser, access, provenance, body.text as string)
 
     ctx.setStatus(201)
     ctx.json({ message })

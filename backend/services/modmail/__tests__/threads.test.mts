@@ -1,13 +1,19 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
 import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
+  insertTestCommunityVacation,
   getTestConversationParticipants,
   getTestConversationThreadFields,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { openModmailThread, assignModmailThread, resolveModmailThread } from '../threads.mts'
 import { getCommunityModmailInbox, getMyModmailThreads } from '../threads-get.mts'
+import { loadModmailReplyAccess, replyToModmailThread } from '../member-actions.mts'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { conversationParticipantLimitsConfig } from '@services/messaging/participant-limits'
 
 async function createTestCommunity(ownerId: string) {
   const community = await insertTestCommunity({ createdById: ownerId })
@@ -32,7 +38,7 @@ describe('openModmailThread', () => {
     expect(thread.subject_user_id).toBe(subject.id)
   })
 
-  it('adds all community mods as admin participants', async () => {
+  it('opens with the subject only, leaving other live staff outside the participant roster', async () => {
     const owner = await createTestUser()
     const mod1 = await createTestUser()
     const mod2 = await createTestUser()
@@ -45,19 +51,7 @@ describe('openModmailThread', () => {
 
     const participants = await getTestConversationParticipants(thread.id)
 
-    const adminUserIds = participants
-      .reduce<string[]>((acc, p) => {
-        if (p.role === 'admin') acc.push(p.user_id)
-        return acc
-      }, [])
-      .toSorted()
-
-    expect(adminUserIds).toContain(owner.id)
-    expect(adminUserIds).toContain(mod1.id)
-    expect(adminUserIds).toContain(mod2.id)
-
-    const memberParticipant = participants.find(p => p.role === 'member')
-    expect(memberParticipant?.user_id).toBe(subject.id)
+    expect(participants).toEqual([expect.objectContaining({ user_id: subject.id, role: 'member' })])
   })
 
   it('adds non-subject caller as admin participant on new thread', async () => {
@@ -73,7 +67,7 @@ describe('openModmailThread', () => {
     expect(staffParticipant?.role).toBe('admin')
   })
 
-  it('adds non-subject caller as admin participant on existing thread', async () => {
+  it('does not admit another staff member just for opening an existing thread', async () => {
     const owner = await createTestUser()
     const staff = await createTestUser()
     const subject = await createTestUser()
@@ -82,13 +76,109 @@ describe('openModmailThread', () => {
     // Create the thread as the subject first
     const thread = await openModmailThread(subject.id, community.id, subject.id)
 
-    // Staff opens the same thread (returns existing) — staff must be added as participant
+    // Live staff can inspect this thread without spending a participant slot.
     const sameThread = await openModmailThread(staff.id, community.id, subject.id)
     expect(sameThread.id).toBe(thread.id)
 
     const participants = await getTestConversationParticipants(thread.id)
-    const staffParticipant = participants.find(p => p.user_id === staff.id)
-    expect(staffParticipant?.role).toBe('admin')
+    expect(participants).toEqual([expect.objectContaining({ user_id: subject.id, role: 'member' })])
+  })
+})
+
+describe('modmail staff first reply', () => {
+  it('allows a moderator on vacation to join through a successful reply', async () => {
+    const owner = await createTestUser()
+    const moderator = await createTestUser()
+    const subject = await createTestUser()
+    const community = await createTestCommunity(owner.id)
+    await addModToCommunity(community.id, moderator.id)
+    const thread = await openModmailThread(subject.id, community.id, subject.id)
+    await insertTestCommunityVacation({
+      communityId: community.id,
+      userId: moderator.id,
+      startsAt: new Date(Date.now() - 60_000).toISOString(),
+    })
+    const access = await loadModmailReplyAccess(moderator, community.id, thread.id)
+
+    await expect(
+      replyToModmailThread(moderator, access, WEB_PROVENANCE, 'Reply while on vacation'),
+    ).resolves.toMatchObject({ created_by_id: moderator.id })
+    expect(await getTestConversationParticipants(thread.id)).toContainEqual(
+      expect.objectContaining({ user_id: moderator.id, role: 'admin' }),
+    )
+  })
+
+  it('admits a moderator with the successful first message', async () => {
+    const owner = await createTestUser()
+    const moderator = await createTestUser()
+    const subject = await createTestUser()
+    const community = await createTestCommunity(owner.id)
+    await addModToCommunity(community.id, moderator.id)
+    const thread = await openModmailThread(subject.id, community.id, subject.id)
+    const access = await loadModmailReplyAccess(moderator, community.id, thread.id)
+
+    const message = await replyToModmailThread(
+      moderator,
+      access,
+      WEB_PROVENANCE,
+      'First moderator reply',
+    )
+
+    expect(message.conversation_id).toBe(thread.id)
+    expect(message.created_by_id).toBe(moderator.id)
+    const participants = await getTestConversationParticipants(thread.id)
+    expect(participants).toHaveLength(2)
+    expect(participants).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ user_id: subject.id, role: 'member' }),
+        expect.objectContaining({ user_id: moderator.id, role: 'admin' }),
+      ]),
+    )
+  })
+
+  it('rolls back first-reply admission when the message insert fails', async () => {
+    const owner = await createTestUser()
+    const moderator = await createTestUser()
+    const subject = await createTestUser()
+    const community = await createTestCommunity(owner.id)
+    await addModToCommunity(community.id, moderator.id)
+    const thread = await openModmailThread(subject.id, community.id, subject.id)
+    const access = await loadModmailReplyAccess(moderator, community.id, thread.id)
+
+    onTestFinished(
+      runBeforePostgresStatementForTest('/* createConversationMessage */', async () => {
+        throw new Error('injected first-message write failure')
+      }),
+    )
+    await expect(
+      replyToModmailThread(moderator, access, WEB_PROVENANCE, 'Valid first reply'),
+    ).rejects.toThrow('injected first-message write failure')
+    expect(await getTestConversationParticipants(thread.id)).toEqual([
+      expect.objectContaining({ user_id: subject.id, role: 'member' }),
+    ])
+  })
+
+  it('does not admit a moderator when the conversation is at its participant cap', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(conversationParticipantLimitsConfig, {
+        participants_per_conversation: 2,
+      }),
+    )
+    const owner = await createTestUser()
+    const moderator = await createTestUser()
+    const subject = await createTestUser()
+    const community = await createTestCommunity(owner.id)
+    await addModToCommunity(community.id, moderator.id)
+    const thread = await openModmailThread(owner.id, community.id, subject.id)
+    const access = await loadModmailReplyAccess(moderator, community.id, thread.id)
+
+    await expect(
+      replyToModmailThread(moderator, access, WEB_PROVENANCE, 'No room for this reply'),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'Conversation has reached the maximum of 2 participants',
+    })
+    expect(await getTestConversationParticipants(thread.id)).toHaveLength(2)
   })
 })
 

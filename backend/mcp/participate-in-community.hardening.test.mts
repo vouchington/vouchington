@@ -3,6 +3,7 @@ import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import {
   insertTestCommunity,
   insertTestCommunityMember,
+  getTestConversationParticipants,
   removeTestCommunityMember,
   suspendTestUser,
   unsuspendTestUser,
@@ -124,6 +125,9 @@ describe('participate_in_community(reply_modmail) — REST twin and real Postgre
     ).toContainEqual(
       expect.objectContaining({ body_text: lateRestText, created_by_id: lateModerator.id }),
     )
+    expect(await getTestConversationParticipants(conversationId)).toContainEqual(
+      expect.objectContaining({ user_id: lateModerator.id, role: 'admin' }),
+    )
 
     const laterModerator = await createTestPlusMcpCaller()
     await insertTestCommunityMember({
@@ -145,6 +149,9 @@ describe('participate_in_community(reply_modmail) — REST twin and real Postgre
       (await readMessages(subject, community.slug, conversationId)).body.results,
     ).toContainEqual(
       expect.objectContaining({ body_text: lateMcpText, created_by_id: laterModerator.id }),
+    )
+    expect(await getTestConversationParticipants(conversationId)).toContainEqual(
+      expect.objectContaining({ user_id: laterModerator.id, role: 'admin' }),
     )
 
     await removeTestCommunityMember(community.id, subject.id)

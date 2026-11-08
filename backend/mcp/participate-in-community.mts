@@ -1,11 +1,10 @@
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import { getCommunityOrThrow, joinCommunity } from '@services/communities'
-import { createConversationMessage } from '@services/messaging/create'
 import {
   loadModmailOpeningAccess,
   openAuthorizedModmailThread,
   loadModmailReplyAccess,
-  admitModmailReplyParticipant,
+  replyToModmailThread,
 } from '@services/modmail/member-actions'
 import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
@@ -25,13 +24,10 @@ type Args = {
   text?: string
 }
 
-async function admitModmailReply(
-  user: Parameters<typeof loadModmailReplyAccess>[0],
-  args: Args,
-): Promise<void> {
+async function replyToModmail(user: Parameters<typeof loadModmailReplyAccess>[0], args: Args) {
   const access = await loadModmailReplyAccess(user, args.community_id, args.conversationId!)
   await readMessageBody({ text: args.text })
-  return admitModmailReplyParticipant(user, access)
+  return replyToModmailThread(user, access, getRequestContentProvenance(), args.text!)
 }
 
 const endpoints: Record<Option, ToolApiEndpoint> = {
@@ -109,14 +105,8 @@ function source(option: Option): MergedToolSource<Args> {
           thread: await openAuthorizedModmailThread(user, access, subjectUserId),
         })
       }
-      await admitModmailReply(user, args)
       return wrapAdminOutput({
-        message: await createConversationMessage(
-          user.id,
-          getRequestContentProvenance(),
-          args.conversationId!,
-          args.text!,
-        ),
+        message: await replyToModmail(user, args),
       })
     },
   }

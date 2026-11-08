@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
+  getTestConversationParticipants,
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
@@ -81,6 +82,24 @@ describe('modmail API', () => {
         .get(`/api/v1/communities/${community.slug}/modmail`)
         .expect(200)
       expect(response.body).toHaveProperty('results')
+    })
+
+    it('includes a subject thread before the moderator becomes a participant', async () => {
+      const subject = await createTestUser()
+      await insertTestCommunityMember({ communityId: community.id, userId: subject.id })
+      const threadId = await openMemberModmailThread(subject, community.slug)
+
+      expect(await getTestConversationParticipants(threadId)).toEqual([
+        expect.objectContaining({ user_id: subject.id, role: 'member' }),
+      ])
+
+      const request = createRequest()
+      await request.authenticateAs(mod)
+      const response = await request
+        .get(`/api/v1/communities/${community.slug}/modmail`)
+        .expect(200)
+
+      expect(response.body.results.map((thread: { id: string }) => thread.id)).toContain(threadId)
     })
 
     it('returns member own threads for a regular member', async () => {
