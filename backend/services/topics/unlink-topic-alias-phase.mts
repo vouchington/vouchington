@@ -1,11 +1,11 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { TopicAliasUnlinkPage } from '@queues/rss-feed-maintenance/types'
 import type {
-  ItemCategoryRow,
   PostSourceRow,
   RelationRow,
   StagedTopicAliasUnlinkPage,
 } from './unlink-topic-alias-stage.mts'
+import { clearRssItemCategories } from './unlink-topic-alias-category-phase.mts'
 
 export type AliasUnlinkRow = {
   id: string
@@ -136,38 +136,6 @@ async function deletePostRelations(
     [topicAliasId, rows.map(row => row.subject_id), rows.map(row => row.id)],
   )
   return { postIds: deleted.map(row => row.subject_id), rssFeedItemIds: [] }
-}
-
-async function clearRssItemCategories(
-  query: TransactionQuery,
-  topicAliasId: string,
-  pageCursor: string,
-  rows: readonly ItemCategoryRow[],
-): Promise<{ postIds: string[]; rssFeedItemIds: string[] }> {
-  const first = rows[0]
-  if (!first || `${first.rss_feed_item_id}_${first.category_identity_id}` !== pageCursor) {
-    return { postIds: [], rssFeedItemIds: [] }
-  }
-  const { rows: cleared } = await query<{ rss_feed_item_id: string }>(
-    `/* clearRssItemCategories clear */
-    UPDATE rss_feed_item_categories AS category
-    SET topic_alias_id = NULL
-    FROM unnest($2::uuid[], $3::uuid[]) AS locked(rss_feed_item_id, category_identity_id)
-    WHERE category.topic_alias_id = $1::uuid
-      AND category.rss_feed_item_id = locked.rss_feed_item_id
-      AND category.category_identity_id = locked.category_identity_id
-      AND category.rss_feed_item_id = ANY($2::uuid[])
-      AND category.category_identity_id = ANY($3::uuid[])
-      AND EXISTS (SELECT 1 FROM topic_aliases alias
-        WHERE alias.id = $1::uuid AND alias.unlink_requested_at IS NOT NULL)
-    RETURNING category.rss_feed_item_id`,
-    [
-      topicAliasId,
-      rows.map(row => row.rss_feed_item_id),
-      rows.map(row => row.category_identity_id),
-    ],
-  )
-  return { postIds: [], rssFeedItemIds: cleared.map(row => row.rss_feed_item_id) }
 }
 
 async function deleteRssItemRelations(

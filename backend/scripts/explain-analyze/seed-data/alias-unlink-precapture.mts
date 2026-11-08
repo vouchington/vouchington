@@ -90,6 +90,15 @@ export async function seedAliasUnlinkFixture(): Promise<void> {
     [seed.alias, seed.author, '019e0000-ed00-7000-8000-000000000000', itemEndId()],
   )
   await query(
+    `/* seedAliasUnlinkMarkRelation */
+     INSERT INTO relation__rss_feed_item__category__topic_alias
+       (subject_id, object_id, created_by_id, votes_score_up)
+     SELECT id, $1::uuid, $2::uuid, 1 FROM rss_feed_items
+     WHERE id >= $3::uuid AND id < $4::uuid
+     ORDER BY id LIMIT 1 ON CONFLICT DO NOTHING`,
+    [ALIAS_UNLINK_MARK_ID, seed.author, '019e0000-ed00-7000-8000-000000000000', itemEndId()],
+  )
+  await query(
     `/* seedAliasUnlinkPending */ UPDATE topic_aliases
      SET topic_id = NULL, unlink_topic_id = $2::uuid, unlink_requested_at = CURRENT_TIMESTAMP
      WHERE id = ANY($1::uuid[])`,
@@ -105,8 +114,8 @@ export async function cleanupAliasUnlinkFixture(): Promise<void> {
   await using query = await beginTransaction()
   const bounds = ['019e0000-ed00-7000-8000-000000000000', itemEndId()]
   await query(
-    `/* cleanupAliasUnlinkRelations */ DELETE FROM relation__rss_feed_item__category__topic_alias WHERE object_id = $1::uuid`,
-    [seed.alias],
+    `/* cleanupAliasUnlinkRelations */ DELETE FROM relation__rss_feed_item__category__topic_alias WHERE object_id = ANY($1::uuid[])`,
+    [[seed.alias, ALIAS_UNLINK_MARK_ID]],
   )
   await query(
     `/* cleanupAliasUnlinkHashtagSource */ DELETE FROM post_topic_alias_sources

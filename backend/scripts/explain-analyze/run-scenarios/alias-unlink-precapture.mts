@@ -120,7 +120,7 @@ export async function captureAliasUnlinkPrecaptureScenarios(): Promise<void> {
           await transaction.rollback()
         },
         undefined,
-        deleteName,
+        phase === 'rss_item_categories' ? undefined : deleteName,
       )
     }
     registerScenarioContract('publication-alias-unlink-finalize-guard', {
