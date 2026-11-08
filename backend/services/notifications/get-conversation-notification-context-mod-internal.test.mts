@@ -6,8 +6,10 @@ import {
   insertTestCommunityVacation,
   insertTestModerationReport,
   insertTestPost,
+  removeTestCommunityMember,
 } from '@voucha/test-helpers'
 import { createTestModInternalConversation } from '@voucha/test-helpers/entities/conversation-participant-rows'
+import { removeTestConversationParticipant } from '@voucha/test-helpers/entities/conversations'
 import { getConversationNotificationContext } from './get-conversation-notification-context.mts'
 
 describe('mod_internal notification recipients', () => {
@@ -63,5 +65,11 @@ describe('mod_internal notification recipients', () => {
     expect(context?.participant_user_ids).not.toContain(vacationMod.id)
     expect(context?.participant_user_ids).not.toContain(reporter.id)
     expect(context?.participant_user_ids).not.toContain(postAuthor.id)
+
+    await removeTestCommunityMember(community.id, activeMod.id)
+    await removeTestConversationParticipant(conversationId, staffParticipant.id)
+    const afterRemoval = await getConversationNotificationContext(conversationId, owner.id)
+    expect(afterRemoval?.participant_user_ids).not.toContain(activeMod.id)
+    expect(afterRemoval?.participant_user_ids).not.toContain(staffParticipant.id)
   })
 })

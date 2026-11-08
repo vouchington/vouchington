@@ -17,31 +17,42 @@ export async function runConversationParticipantAdmission(communityId: string): 
   const conversationId = rows[0]?.id
   if (!conversationId) throw new Error('The admission scenario needs a mod_internal conversation')
   await write(sql`/* explainParticipantAdmissionFixture */
-    INSERT INTO conversation_participants (conversation_id, user_id, role)
-    VALUES (${conversationId}, ${seedUser.id}, 'admin')
+    INSERT INTO conversation_participants (conversation_id, user_id, role, participant_slot)
+    VALUES (${conversationId}, ${seedUser.id}, 'admin', 1)
   `)
 
   registerScenarioContract('conversation-participant-admission', {
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['idx_conversation_participants__conversation_user'],
+        indexes: [
+          'idx_conversation_participants__conversation_user',
+          'idx_conversation_participants__conversation_slot',
+        ],
         queryContains: 'reactivated',
       },
       {
         kind: 'usesIndexes',
-        indexes: ['idx_community_members__unique', 'idx_community_members__active_moderators'],
+        indexes: [
+          'idx_community_members__unique',
+          'idx_community_members__active_moderators',
+          'idx_community_members__active_moderator_user_id',
+        ],
         anyOf: true,
         queryContains: 'userHasLiveCommunityStaffRole',
       },
       {
         kind: 'usesIndexes',
-        indexes: ['idx_community_members__active_moderators', 'idx_community_members__unique'],
+        indexes: [
+          'idx_community_members__active_moderators',
+          'idx_community_members__unique',
+          'idx_community_members__active_moderator_user_id',
+        ],
         anyOf: true,
         queryContains: 'mod-internal-recipients',
       },
       // Point lookups on one conversation and its two live staff. Budgets add headroom.
-      { kind: 'maxProcessedRows', relation: 'conversation_participants', max: 16 },
+      { kind: 'maxProcessedRows', relation: 'conversation_participants', max: 8 },
       { kind: 'maxProcessedRows', relation: 'community_members', max: 8 },
       { kind: 'maxProcessedRows', relation: 'community_member_vacations', max: 8 },
       { kind: 'maxProcessedRows', relation: 'users', max: 8 },
@@ -70,7 +81,6 @@ export async function runConversationParticipantAdmission(communityId: string): 
       undefined,
       [
         'userHasLiveCommunityStaffRole',
-        'admitConversationParticipants:lock',
         'admitConversationParticipants',
         'getConversationNotificationContext:mod-internal-recipients',
       ],

@@ -12,6 +12,7 @@ import {
   createConversationMessage,
 } from '../create.mts'
 import { getConversationMessages, getConversationParticipants } from '../get.mts'
+import { removeConversationParticipant } from '../participants.mts'
 
 describe('findOrCreateDirectConversation', () => {
   it('creates a new direct_message conversation between two users', async () => {
@@ -79,6 +80,31 @@ describe('createGroupConversation', () => {
 })
 
 describe('createConversationMessage', () => {
+  it('rejects an invalid observed time before inserting a message', async () => {
+    const sender = await createTestUser()
+    const recipient = await createTestUser()
+    const conversation = await findOrCreateDirectConversation(sender.id, recipient.id)
+
+    await expect(
+      createConversationMessage(sender.id, WEB_PROVENANCE, conversation.id, 'invalid clock', {
+        observedTime: new Date(Number.NaN),
+      }),
+    ).rejects.toBeInstanceOf(RangeError)
+    expect(await getConversationMessages(conversation.id)).toEqual([])
+  })
+
+  it('refuses a removed direct-message participant without storing their message', async () => {
+    const sender = await createTestUser()
+    const recipient = await createTestUser()
+    const conversation = await findOrCreateDirectConversation(sender.id, recipient.id)
+    await removeConversationParticipant(sender.id, conversation.id, recipient.id)
+
+    await expect(
+      createConversationMessage(recipient.id, WEB_PROVENANCE, conversation.id, 'removed'),
+    ).rejects.toMatchObject({ status: 403 })
+    expect(await getConversationMessages(conversation.id)).toEqual([])
+  })
+
   it('returns after the committed message job is admitted', async () => {
     const sender = await createTestUser()
     const recipient = await createTestUser()

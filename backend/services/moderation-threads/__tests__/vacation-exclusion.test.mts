@@ -8,11 +8,13 @@ import {
   insertTestPost,
   insertTestModerationReport,
   getTestConversationParticipants,
+  removeTestCommunityMember,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { createConversationMessage } from '@services/messaging/create'
 import { openModInternalThread } from '../create.mts'
+import { assertLiveModInternalReader } from '../access.mts'
 
 const vacationStart = new Date('2030-07-31T23:59:59.000Z')
 const vacationEnd = new Date('2030-08-01T00:00:01.000Z')
@@ -58,6 +60,25 @@ describe('mod_internal live staff access', () => {
     activeMod = await createTestUser()
     postAuthor = await createTestUser()
     reporter = await createTestUser()
+  })
+
+  it('authorizes readers from live community staff membership even without a participant row', async () => {
+    const community = await createTestCommunity(owner.id)
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: activeMod.id,
+      role: 'moderator',
+    })
+    const outsider = await createTestUser()
+
+    await expect(assertLiveModInternalReader(activeMod.id, community.id)).resolves.toBeUndefined()
+    await expect(assertLiveModInternalReader(outsider.id, community.id)).rejects.toMatchObject({
+      status: 403,
+    })
+    await removeTestCommunityMember(community.id, activeMod.id)
+    await expect(assertLiveModInternalReader(activeMod.id, community.id)).rejects.toMatchObject({
+      status: 403,
+    })
   })
 
   it('does not snapshot moderators when the thread opens', async () => {

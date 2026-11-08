@@ -43,8 +43,8 @@ export async function insertDeletedConversationFixtureForTest(
 
   await query(
     `/* insertDeletedConversationParticipantForTest */
-     INSERT INTO conversation_participants (conversation_id, user_id, role)
-     VALUES ($1, $2, 'owner')`,
+     INSERT INTO conversation_participants (conversation_id, user_id, role, participant_slot)
+     VALUES ($1, $2, 'owner', 1)`,
     [id, userId],
   )
   await query(

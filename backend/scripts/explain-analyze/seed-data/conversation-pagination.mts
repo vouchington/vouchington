@@ -59,11 +59,11 @@ export async function seedConversationPaginationRows(count = 1000): Promise<void
       for (let index = offset; index < offset + batch; index += 1) {
         values.push(seedUuid(index, '0c'), inboxUserId)
         const base = values.length - 1
-        rows.push(`($${base}, $${base + 1}, 'owner')`)
+        rows.push(`($${base}, $${base + 1}, 'owner', 1)`)
       }
       await query(
         `/* seedExplainData */ INSERT INTO conversation_participants (
-           conversation_id, user_id, role
+           conversation_id, user_id, role, participant_slot
          ) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
