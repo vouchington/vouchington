@@ -1,6 +1,8 @@
-import { assertTestRelationPublicationLockOrder } from '@voucha/test-helpers/entity-relation-publication-order'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
+import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { createHash, randomUUID } from 'node:crypto'
 import {
+  beginTransaction,
   getEntityRelation,
   getTopicAliasIdForTest,
   createTestUser,
@@ -17,7 +19,7 @@ import { updateEntityRelationElectionVoteStatsFromPrimary } from './vote-stats.m
 import { upsertEntityRelationElectionVotes } from './votes-upsert.mts'
 
 describe('single entity relation vote stats publication locking', () => {
-  it('locks an RSS item hashtag alias scope before waiting on its relation row', async () => {
+  it('publishes changed item impacts while the alias context scope is held', async () => {
     const suffix = randomUUID()
     const hostname = `single-vote-stats-lock-${suffix}.example.test`
     const feed = await createTestRssFeed({
@@ -56,11 +58,18 @@ describe('single entity relation vote stats publication locking', () => {
       relation,
       { enqueueVoteStats: false },
     )
-    await assertTestRelationPublicationLockOrder({
-      relationId: row.id,
-      aliasId,
-      update: () => updateEntityRelationElectionVoteStatsFromPrimary(target),
+    await using holder = await beginTransaction()
+    await lockTopicAliasPublicationScopes(holder, [aliasId])
+    const jobs = await captureAddedPublicationEffectsForScope(aliasId, async () => {
+      await updateEntityRelationElectionVoteStatsFromPrimary(target)
     })
+    expect(jobs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          keys: expect.arrayContaining([{ kind: 'impact_rss_feed_item', uuidValue: itemId }]),
+        }),
+      ]),
+    )
     const [updated] = (await getEntityRelation(relation.table_name, itemId, aliasId)) as Array<{
       votes_score_net: number
     }>
