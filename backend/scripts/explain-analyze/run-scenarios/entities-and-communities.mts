@@ -91,8 +91,7 @@ export async function runEntityAndCommunityScenarios() {
 
   // Trending communities — one keyset page over the materialized score
   registerScenarioContract('search-communities-trending', {
-    // The fixture has only a handful of public communities, below the point where the planner
-    // prefers the ranking index to a seq scan plus top-N sort, so the page bound is the contract.
+    // The ranked fixture includes matching and unrelated communities; the page bound is unchanged.
     expectations: [{ kind: 'maxProcessedRows', relation: 'mv_trending_communities', max: 26 }],
   })
   await runAndCapture('search-communities-trending', () =>

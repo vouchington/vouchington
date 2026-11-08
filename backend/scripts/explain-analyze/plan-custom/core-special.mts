@@ -128,6 +128,11 @@ export function assertCorePlanCheck(name: string, result: ExplainResult): void {
 }
 
 const COMMUNITY_TEXT_DRIVING_SCANS = {
+  'search-communities-text-trending': { index: 'idx_mv_trending_communities__ranking', cap: 26 },
+  'search-communities-text-trending-after': {
+    index: 'idx_mv_trending_communities__ranking',
+    cap: 26,
+  },
   'search-communities-text': { index: 'idx_communities__search_name', cap: 33 },
   'search-communities-text-members': { index: 'idx_community_search_counts__members', cap: 40 },
   'search-communities-text-virtual-subscriptions': {

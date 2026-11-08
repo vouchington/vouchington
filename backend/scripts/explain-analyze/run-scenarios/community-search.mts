@@ -2,10 +2,12 @@ import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { searchCommunities } from '../run-services.mts'
+import { runTrendingTextScenarios } from './community-search-trending.mts'
 
 const COMMUNITY_SEARCH_PAGE_SIZE = 25
 
 export async function runCommunitySearchScenarios() {
+  await runTrendingTextScenarios()
   // Bounds follow fixture cardinality and page size in both modes and repeat passes:
   // member/virtual pages 26 → 32, listed page 26, ordered text walks 27 → 33 and 33 → 40,
   // member filter 1 → 2. Correlated statistics and key hydration are budgeted independently below.

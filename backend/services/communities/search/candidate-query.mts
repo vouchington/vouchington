@@ -1,6 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { CommunitySortMode } from '../search-types.mts'
 import { startTrendingCommunityCandidates } from './trending-candidates.mts'
+import { appendCommunityTextProbe } from './text-filter.mts'
 
 export function startCommunityCandidates(
   sort: CommunitySortMode,
@@ -12,13 +13,13 @@ export function startCommunityCandidates(
   if (sort === 'trending')
     return startTrendingCommunityCandidates(hasListItems, search, memberUserId)
   const listedVirtual = hasListItems && sort === 'virtual_subscriptions'
-  // Memberships are the only materialized candidate set. Text stays a correlated probe on the
-  // ordered walk so a common term stops at the page in both plan-cache modes.
+  // Viewer memberships stay a plain set. Text stays a correlated probe on the ordered walk
+  // so a common term stops at the page in both plan-cache modes.
   const textFromMembers = Boolean(search) && Boolean(memberUserId) && !listedVirtual
   const textFromCounts = Boolean(search) && !memberUserId && sort !== 'name' && !listedVirtual
   const query = sql`/* searchCommunities */ WITH `
   if (memberUserId)
-    query.append(sql`member_matches AS MATERIALIZED (
+    query.append(sql`member_matches AS (
       SELECT community_id AS id FROM community_members
       WHERE user_id = ${memberUserId} AND removed_at IS NULL
     ), `)
@@ -64,17 +65,5 @@ function appendCandidateFrom(
   } else {
     query.append(sql` FROM communities c`)
   }
-  if (search) appendTextProbe(query, search)
-}
-
-function appendTextProbe(query: SQLStatement, search: string): void {
-  // LIMIT 1 keeps the probe correlated. A bare WHERE or EXISTS is pulled up, and the generic
-  // plan then reads every match through the GIN index before sorting. c stays the communities
-  // row so ORDER BY c.id matches the driving index.
-  query.append(sql` JOIN LATERAL (
-    SELECT 1 FROM communities text_match
-    WHERE text_match.id = c.id
-      AND text_match.search_vector @@ websearch_to_tsquery('voucha_english', ${search})
-    LIMIT 1
-  ) text_match ON TRUE`)
+  if (search) appendCommunityTextProbe(query, search)
 }
