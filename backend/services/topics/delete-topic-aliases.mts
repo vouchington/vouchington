@@ -14,6 +14,7 @@ import { normalizeHashtag } from '@ts-shared/utils'
 import assert from 'http-assert'
 import type { TopicAlias, TopicAliasOptions } from './alias-types.mts'
 import { selectTopicAliasUnlinkNextPage } from './unlink-topic-alias-page.mts'
+import { getPendingAlias } from './unlink-topic-alias-phase.mts'
 
 type LockedAlias = TopicAlias & {
   unlink_topic_id: string | null
@@ -102,22 +103,16 @@ export async function unlinkTopicAlias(
       [aliasId, detachedTopicId],
     )
     if (marked.length === 0) {
-      const { rows: concurrentRows } = await query<LockedAlias>(
-        `/* unlinkTopicAlias concurrent */
-         SELECT id, alias, topic_id, unlink_topic_id, unlink_requested_at,
-           NULL::text AS active_topic_slug
-         FROM topic_aliases WHERE id = $1::uuid`,
-        [aliasId],
-      )
-      const concurrent = concurrentRows[0]
+      const concurrent = await getPendingAlias(query, aliasId)
       assert(
-        concurrent?.unlink_requested_at && concurrent.unlink_topic_id === detachedTopicId,
+        concurrent && concurrent.unlink_topic_id === detachedTopicId,
         409,
         'Topic alias owner changed; retry the request',
       )
-      await enqueueUnlinkPage(query, concurrent)
+      const detachedAlias = { id: concurrent.id, alias: concurrent.alias, topic_id: null }
+      await enqueueUnlinkPage(query, detachedAlias)
       return {
-        alias: { id: concurrent.id, alias: concurrent.alias, topic_id: null },
+        alias: detachedAlias,
         previousTopicId: concurrent.unlink_topic_id,
       }
     }

@@ -92,19 +92,14 @@ export async function captureAliasUnlinkControlScenarios(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'topics', max: 1 },
     ],
   })
-  await runAndCapture(
-    'publication-alias-unlink-mark',
-    async () => {
-      await using transaction = await beginTransaction()
-      const marked = await unlinkTopicAlias(ALIAS_UNLINK_MARK_ID, {
-        query: transaction,
-        expectedTopicId: seed.topic,
-        skipSideEffects: true,
-      })
-      assert.equal(marked?.topic_id, null)
-      await transaction.rollback()
-    },
-    undefined,
-    'unlinkTopicAlias mark',
-  )
+  await runAndCapture('publication-alias-unlink-mark', async () => {
+    await using transaction = await beginTransaction()
+    const marked = await unlinkTopicAlias(ALIAS_UNLINK_MARK_ID, {
+      query: transaction,
+      expectedTopicId: seed.topic,
+      skipSideEffects: true,
+    })
+    assert.equal(marked?.topic_id, null)
+    await transaction.rollback()
+  })
 }
