@@ -10,8 +10,9 @@ const RSS_FEED_WEEKLY_PROXY_TOPIC_ID_BASE = 800_000
 const RSS_FEED_WEEKLY_PROXY_TOPIC_CANDIDATE_COUNT = 10_000
 const RSS_FEED_WEEKLY_PROXY_NOISE_COMMUNITY_COUNT = 200
 const RSS_FEED_WEEKLY_PROXY_NOISE_USER_COUNT = 200
-export const RSS_FEED_WEEKLY_PROXY_NOISE_FOLLOW_COUNT =
-  RSS_FEED_WEEKLY_PROXY_NOISE_COMMUNITY_COUNT * RSS_FEED_WEEKLY_PROXY_NOISE_USER_COUNT
+// Followers sit on the viewer's list only: noise communities keep zero virtual
+// subscriptions so they never outrank matches in community search's ordered walk.
+export const RSS_FEED_WEEKLY_PROXY_NOISE_FOLLOW_COUNT = RSS_FEED_WEEKLY_PROXY_NOISE_USER_COUNT
 
 /** Gives a viewer without direct feed/topic follows one large, realistic proxy list. */
 export async function seedRssFeedWeeklyProxy(): Promise<void> {
@@ -98,15 +99,14 @@ export async function seedRssFeedWeeklyProxy(): Promise<void> {
   await transaction(
     `/* seedRssFeedWeeklyProxy.noiseFollows */
       INSERT INTO relation__user__proxy_follow__community (subject_id, object_id)
-      SELECT user_id, community_id
+      SELECT user_id, $2::uuid
       FROM unnest($1::uuid[]) AS users(user_id)
-      CROSS JOIN unnest($2::uuid[]) AS communities(community_id)
       ON CONFLICT DO NOTHING`,
     [
       Array.from({ length: RSS_FEED_WEEKLY_PROXY_NOISE_USER_COUNT }, (_, index) =>
         seedUuid(10_000 + index, '01'),
       ),
-      noiseCommunityIds,
+      RSS_FEED_WEEKLY_PROXY_COMMUNITY_ID,
     ],
   )
   await transaction.commit()
