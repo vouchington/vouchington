@@ -125555,7 +125555,7 @@
         "idx_rss_feed_items__url_id__published_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_items__url_id__published_at ON ONLY public.rss_feed_items USING btree (url_id, published_at DESC NULLS LAST)",
+          "definition": "CREATE INDEX idx_rss_feed_items__url_id__published_at ON ONLY public.rss_feed_items USING btree (url_id, published_at DESC NULLS LAST) WHERE (url_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -125573,7 +125573,7 @@
               "opclass": "timestamptz_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(url_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
