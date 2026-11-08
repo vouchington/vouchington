@@ -45,16 +45,18 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   an exact resource scope built from normalized identifiers, filters, and ordering. Reject scoped
   cursors with missing, additional, tampered, or mismatched fields.
 - Post-search hot and trending ranks use a fixed epoch, keeping order stable across requests
-  when vote scores are unchanged. Near ties can differ from the previous age-decayed calculation. Their opaque cursor binds that
-  ordering, and cursors from the prior ranking are intentionally rejected. A bounded candidate walk
-  can return a short or empty page with `has_next_page` true; clients continue with its cursor.
+  when vote scores are unchanged. Future timestamps participate in the rank; near ties can differ
+  from an age-decayed calculation. Their opaque cursor binds that ordering.
+- Post search inspects a bounded index-ordered prefix before applying visibility and other residual
+  filters. A short or empty page can have `has_next_page` true; clients continue with its cursor.
+  Following-first search exhausts the followed phase before scanning the remaining authors, using
+  the viewer’s follow set as a subquery. Keyword relevance ranks only within each bounded newest-first
+  cohort. Its opaque cursor carries the cohort boundary and rank/ID position, so older posts enter
+  the next cohort rather than disappearing beyond the cap. Relevant posts in newer cohorts precede
+  higher-scoring posts in older cohorts. Resolved semantic search retains its finite vector window.
 - Friend recommendation cursors use the exact
   `{"resource":"my-friend-recommendations","owner_id":"…","order":"id-asc"}` scope. Unscoped
   simple ID cursors are rejected.
-- The owner-filtered topic recommendation listing, which the MCP `list_my_topic_recommendations`
-  tool uses, carries a scope of the resource, owner, status, text filter and `best` order. A cursor
-  from another owner or status, or a plain REST score cursor, is refused, and the unfiltered REST
-  listing refuses a scoped one.
 - Private post relation collections use the same scope binding with a timestamp-and-UUID keyset.
   The page uses the live relation keyset. Post type, clearance, audience, and community access are
   eligibility predicates in the same walk, applied before the ordered limit.

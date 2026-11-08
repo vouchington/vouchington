@@ -608,7 +608,9 @@ viewer-aware discovery eligibility to community and topic-recommendation filters
 pagination uses an opaque cursor tied to a fixed-epoch rank; near-tie order can differ from
 request-clock ranking, and cursors from the prior rank are refused. A bounded read may return a
 short or empty page while `has_next_page` is true, so clients follow the returned cursor and treat
-it as an opaque string. Native catalog and result-fixture adoption remains tracked in
+it as an opaque string. Keyword relevance is local to bounded newest-first cohorts; the cursor
+retains each cohort’s boundary and ranking position before advancing to older posts. Following-first
+search preserves followed-author priority while continuing past inspected keys. Native catalog and result-fixture adoption remains tracked in
 [vouchington-clients#398](https://github.com/vouchington/vouchington-clients/issues/398); this
 producer contract makes no new native UI parity claim.
 

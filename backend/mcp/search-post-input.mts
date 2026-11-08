@@ -26,7 +26,7 @@ export function postSearchFilterSchemaProperties() {
       type: 'string',
       enum: [...POST_SORTS],
       description:
-        'Sort by new, best, hot, trending, relevance, or following_new. Hot and trending use a stable age-weighted rank.',
+        'Sort by new, best, hot, trending, relevance, or following_new. Hot/trending use a stable age-weighted rank. Keyword relevance ranks bounded newest-first cohorts; its cursor finishes each cohort before advancing to older posts. Any sort can return a short or empty page with a continuation cursor.',
     },
     post_type: {
       type: 'string',

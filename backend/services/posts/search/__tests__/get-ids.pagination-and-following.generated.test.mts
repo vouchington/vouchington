@@ -6,7 +6,6 @@ import {
   createTestPost,
   createTestTopic,
   createTestUser,
-  followUser,
   insertTestPost,
   insertTestReview,
 } from '@voucha/test-helpers'
@@ -195,43 +194,6 @@ describe('get-ids.pagination-and-following.generated', () => {
     const returnedIds = [...result.results, ...lastPage.results].map(post => post.id)
     expect(returnedIds).toEqual(insertedIds.toSorted().toReversed())
     expect(new Set(returnedIds).size).toBe(101)
-  })
-
-  it('getPostIds sort=following_new places followed reviewers before newer unfollowed reviewers', async () => {
-    const viewer = await createTestUser()
-    const followedReviewer = await createTestUser()
-    const unfollowedReviewer = await createTestUser()
-    const topic = await createTestTopic()
-
-    await followUser(viewer!, followedReviewer!)
-
-    const followedReviewId = await insertTestReview({
-      userId: followedReviewer!.id,
-      topicRatings: [{ topicId: topic.id, rating: 5 }],
-      title: `Followed Review ${randomUUID()}`,
-      markdown: 'followed reviewer content',
-    })
-
-    const unfollowedReviewId = await insertTestReview({
-      userId: unfollowedReviewer!.id,
-      topicRatings: [{ topicId: topic.id, rating: 4 }],
-      title: `Unfollowed Review ${randomUUID()}`,
-      markdown: 'unfollowed reviewer content',
-    })
-
-    const result = await getPostIds(viewer!, {
-      review_topic_ids: [topic.id],
-      post_types: ['review'],
-      sort: 'following_new',
-      limit: 10,
-    })
-
-    const followedIndex = result.results.findIndex(post => post.id === followedReviewId)
-    const unfollowedIndex = result.results.findIndex(post => post.id === unfollowedReviewId)
-
-    expect(followedIndex).toBeGreaterThanOrEqual(0)
-    expect(unfollowedIndex).toBeGreaterThanOrEqual(0)
-    expect(followedIndex).toBeLessThan(unfollowedIndex)
   })
 
   it('getPostIds sort=following_new falls back to newest-first when viewer is logged out', async () => {

@@ -33,10 +33,7 @@ export function buildPostSearchQuery(
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
   const rawSort = detectSearchSort(options)
   const sort = rawSort === 'following_new' && !currentUser ? 'new' : rawSort
-  if (
-    (sort === 'new' || sort === 'best' || sort === 'hot' || sort === 'trending') &&
-    usesBoundedPostSearchCandidates(options, sort)
-  ) {
+  if (usesBoundedPostSearchCandidates(options, sort)) {
     return buildBoundedPostSearchQuery(
       currentUser,
       options,

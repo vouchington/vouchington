@@ -99,16 +99,8 @@
       "classification": "mixed-discovery-sql"
     },
     {
-      "path": "backend/services/communities/publications/approved-posts.mts",
-      "classification": "mixed-discovery-sql"
-    },
-    {
       "path": "backend/services/communities/publications/pinned.mts",
       "classification": "mixed-discovery-sql"
-    },
-    {
-      "path": "backend/services/trending-posts/get-trending-posts.mts",
-      "classification": "public-sql"
     },
     {
       "path": "backend/services/data-points/insights.mts",
@@ -259,13 +251,6 @@
       "owner_classification": "public-view"
     },
     {
-      "path": "backend/services/communities/publications/approved-posts-sort-sql.mts",
-      "classification": "raw-hydrator",
-      "reason": "Sort fragments; approved-posts owns public eligibility composition for the assembled query.",
-      "owner_path": "backend/services/communities/publications/approved-posts.mts",
-      "owner_classification": "mixed-discovery-sql"
-    },
-    {
       "path": "backend/services/entity-relations/build-select-query.mts",
       "classification": "raw-hydrator",
       "reason": "Relation read assembler delegates its subject and object post predicates to post-access.",
@@ -276,28 +261,28 @@
       "path": "backend/services/communities/publications/get.mts",
       "classification": "staff-reader",
       "reason": "Community publication administration reader.",
-      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
       "owner_classification": "mixed-discovery-sql"
     },
     {
       "path": "backend/services/communities/publications/add.mts",
       "classification": "mutation",
       "reason": "Community publication mutation.",
-      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
       "owner_classification": "mixed-discovery-sql"
     },
     {
       "path": "backend/services/communities/publications/automod-flag.mts",
       "classification": "mutation",
       "reason": "Automod flag dismissal mutation; returns only a flag count and never serializes post rows.",
-      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
       "owner_classification": "mixed-discovery-sql"
     },
     {
       "path": "backend/services/communities/publications/moderation-run.mts",
       "classification": "mutation",
       "reason": "Community moderation run request locks a still-published post and records durable classifier work; it never serializes post rows.",
-      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
       "owner_classification": "mixed-discovery-sql"
     },
     {
@@ -318,21 +303,14 @@
       "path": "backend/services/communities/publications/list-user-removed-query.mts",
       "classification": "private-reader",
       "reason": "Viewer-specific removed-publication history.",
-      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
       "owner_classification": "mixed-discovery-sql"
     },
     {
       "path": "backend/services/communities/publications/moderation-queue-review-sql.mts",
       "classification": "staff-reader",
       "reason": "Moderator queue reader.",
-      "owner_path": "backend/services/communities/publications/approved-posts.mts",
-      "owner_classification": "mixed-discovery-sql"
-    },
-    {
-      "path": "backend/services/communities/publications/search-filters.mts",
-      "classification": "staff-reader",
-      "reason": "Moderator publication search filter.",
-      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
       "owner_classification": "mixed-discovery-sql"
     },
     {
@@ -375,6 +353,41 @@
       "classification": "mutation",
       "reason": "Private-root consent snapshot for a relation write. The caller already limited the ids through the named-scope gate in post-access.",
       "owner_path": "backend/services/entity-relations/post-access.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/bounded-candidates.mts",
+      "classification": "raw-hydrator",
+      "reason": "Bounded candidate assembler applies the shared search visibility predicate through where-clause and base-filters after limiting keys.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/special-filters.mts",
+      "classification": "raw-hydrator",
+      "reason": "Supplementary community and recommendation filters are composed alongside the shared search visibility predicate in base-filters.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/bounded-candidate-raw.mts",
+      "classification": "raw-hydrator",
+      "reason": "Raw candidate keyset is capped before the bounded search assembler applies the shared eligibility filters; it never serializes candidates directly.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/bounded-candidate-indexes.mts",
+      "classification": "raw-hydrator",
+      "reason": "Index-served candidate predicates and bounded topic keysets feed the shared bounded search assembler, whose base-filters apply discovery eligibility after the cap.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/bounded-candidate-cursor.mts",
+      "classification": "raw-hydrator",
+      "reason": "Keyset and order fragments serve the capped raw search prefix; base-filters apply eligibility after candidate hydration.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
       "owner_classification": "mixed-discovery-sql"
     }
   ]

@@ -12,18 +12,26 @@ import type { PostSearchOptions } from './types.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { stableHotCursorScope } from './stable-hot-rank.mts'
+import { decodeFollowingCursor, decodeRelevanceCursor } from './bounded-cursors.mts'
 
 export type PostSearchCursorValues = {
   id_lt?: string
   vote_score_lt?: number
   ranking_lt?: number
   hot_score_lt?: number
+  cohort_hi?: string
+  cohort_lo?: string
+  cohort_before_id?: string
+  cohort_cap?: number
+  cohort_older?: boolean
+  following_phase?: 'followed' | 'other'
 }
 
 export function decodePostSearchCursor(
   options: PostSearchOptions,
   sort: string,
   hasRankingScore: boolean,
+  boundedCandidates = false,
 ): PostSearchCursorValues {
   if (!options.after) return {}
   if (sort === 'new') {
@@ -31,6 +39,10 @@ export function decodePostSearchCursor(
     return { id_lt: cursor.id }
   }
   if (sort === 'following_new') {
+    if (boundedCandidates) {
+      const cursor = decodeFollowingCursor(options.after)
+      return { following_phase: cursor.phase, ...(!('start' in cursor) && { id_lt: cursor.id }) }
+    }
     const cursor = decodeUuidCursor(
       options.after,
       isRankingCursor,
@@ -53,6 +65,19 @@ export function decodePostSearchCursor(
     return { hot_score_lt: cursor.score, id_lt: cursor.id }
   }
   if (sort === 'relevance') {
+    if (boundedCandidates && hasRankingScore) {
+      const cursor = decodeRelevanceCursor(options.after)
+      return cursor.kind === 'next'
+        ? { cohort_before_id: cursor.id }
+        : {
+            cohort_hi: cursor.hi,
+            cohort_lo: cursor.lo,
+            cohort_cap: cursor.cap,
+            cohort_older: cursor.older,
+            ranking_lt: cursor.ranking,
+            id_lt: cursor.id,
+          }
+    }
     if (hasRankingScore) {
       const cursor = decodeUuidCursor(
         options.after,

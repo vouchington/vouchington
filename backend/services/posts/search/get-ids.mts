@@ -17,9 +17,12 @@ import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-
 import type { PostSearchRow } from './get-ids-types.mts'
 import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
 import { postsWorkConfig } from '../work-limits.mts'
-import { encodeCursor } from '@modules/pagination'
 import { usesBoundedPostSearchCandidates } from './query-builder/bounded-candidates.mts'
-import { stableHotCursorScope } from './stable-hot-rank.mts'
+import {
+  buildDefaultBoundedPage,
+  buildFollowingBoundedPage,
+  buildRelevanceBoundedPage,
+} from './get-ids-bounded-page.mts'
 
 type PostSearchResponse = {
   results: PostSearchResult[]
@@ -31,6 +34,9 @@ type BoundedSearchRow = Omit<PostSearchRow, 'id'> & {
   candidate_has_more?: boolean
   inspected_id?: string | null
   inspected_score?: string | number | null
+  cohort_hi?: string | null
+  cohort_lo?: string | null
+  candidate_cap?: number
 }
 
 export async function getPostIds(
@@ -77,11 +83,7 @@ export async function getPostIds(
   const effectiveTimeRange =
     options.time_range ??
     (isOwnDraftsListing(currentUser, options) ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
-  const { id_lt, vote_score_lt, ranking_lt, hot_score_lt } = decodePostSearchCursor(
-    options,
-    sort,
-    hasRankingScore,
-  )
+  const cursor = decodePostSearchCursor(options, sort, hasRankingScore, boundedCandidates)
   // Build query - pass decoded cursor values and use limit + 1
   const queryOptions: PostSearchOptions = {
     ...options,
@@ -89,15 +91,10 @@ export async function getPostIds(
     semanticSearchEmbedding,
     limit: limit + 1,
   }
-  if (id_lt !== undefined) queryOptions.id_lt = id_lt
-  if (vote_score_lt !== undefined) queryOptions.vote_score_lt = vote_score_lt
-  if (ranking_lt !== undefined) queryOptions.ranking_lt = ranking_lt
-  if (hot_score_lt !== undefined) queryOptions.hot_score_lt = hot_score_lt
+  Object.assign(queryOptions, cursor)
   const query = buildPostSearchQuery(currentUser, queryOptions)
   const { rows } = await executePostSearchQuery<BoundedSearchRow>(query, hasSemanticSearch)
   const typedRows = rows.filter((row): row is BoundedSearchRow & PostSearchRow => row.id !== null)
-  const rawHasMore = boundedCandidates && rows[0]?.candidate_has_more === true
-  const hasNextPage = typedRows.length > limit || rawHasMore
   const resultRows = typedRows.slice(0, limit)
   const results: PostSearchResult[] = resultRows.map(row => ({
     __entity_type: 'post',
@@ -114,21 +111,19 @@ export async function getPostIds(
       ? { trending_score: Number(row.trending_score) }
       : {}),
   }))
-  let pageInfo = buildPostSearchPageInfo(resultRows, hasNextPage, sort, hasRankingScore)
-  if (rawHasMore && resultRows.length < limit && rows[0]?.inspected_id) {
-    const boundaryId = rows[0].inspected_id
-    const endCursor =
-      sort === 'best'
-        ? encodeCursor({ score: Number(rows[0].inspected_score), id: boundaryId })
-        : sort === 'hot' || sort === 'trending'
-          ? encodeCursor({
-              score: Number(rows[0].inspected_score),
-              id: boundaryId,
-              scope: stableHotCursorScope(sort),
-            })
-          : encodeCursor({ id: boundaryId })
-    pageInfo = { ...pageInfo, end_cursor: endCursor }
-  }
+  const pageInfo =
+    boundedCandidates && sort === 'following_new'
+      ? buildFollowingBoundedPage(typedRows, rows[0], limit, cursor)
+      : boundedCandidates && sort === 'relevance' && hasRankingScore
+        ? buildRelevanceBoundedPage(typedRows, rows[0], limit, cursor)
+        : buildDefaultBoundedPage(
+            typedRows,
+            rows[0],
+            limit,
+            sort,
+            hasRankingScore,
+            boundedCandidates,
+          )
   return {
     results,
     page_info: pageInfo,

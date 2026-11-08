@@ -194,15 +194,6 @@ describe('query-builder (pagination and moderation)', () => {
     expect(query.sql).not.toContain('hot_score')
   })
 
-  it('buildPostSearchQuery throws when following_new cursor is missing ranking_lt', () => {
-    expect(() =>
-      buildPostSearchQuery({ id: 'user-1' } as unknown as PrivateUser, {
-        sort: 'following_new',
-        id_lt: '123e4567-e89b-12d3-a456-426614174000',
-      }),
-    ).toThrow('following_new cursor requires ranking_lt')
-  })
-
   it('buildPostSearchQuery hides non-approved posts for anonymous users', () => {
     const query = buildPostSearchQuery(undefined, {})
 

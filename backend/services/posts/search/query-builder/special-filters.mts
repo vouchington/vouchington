@@ -44,9 +44,14 @@ export function appendPostSearchSpecialFilters(
 function appendCommunityFilters(filters: SQLStatement[], communityId: string): void {
   filters.push(sql`posts.community_id = ${communityId}`)
   filters.push(sql`EXISTS (
-    SELECT 1 FROM community_post_reviews cpr
+    SELECT 1 FROM LATERAL (
+      -- post_id is the primary key; keep approval conditions outside this keyed lookup.
+      SELECT review.community_id, review.approved_at, review.unpublished_at, review.rejected_at
+      FROM community_post_reviews review
+      WHERE review.post_id = posts.id
+      LIMIT 1
+    ) cpr
     WHERE cpr.community_id = ${communityId}
-      AND cpr.post_id = posts.id
       AND cpr.approved_at IS NOT NULL
       AND cpr.unpublished_at IS NULL
       AND cpr.rejected_at IS NULL

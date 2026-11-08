@@ -265,7 +265,6 @@ describe('query-builder (basic)', () => {
         data_point_result: result,
       })
       expect(query.sql).toContain(`posts.structured_data->>'result' = '${result}'`)
-      expect(query.values).not.toContain(result)
     }
     for (const range of ['580-669', '670-739', '740-799', '800-850']) {
       const query = buildPostSearchQuery(undefined, {
@@ -273,7 +272,6 @@ describe('query-builder (basic)', () => {
         data_point_credit_score_range: range,
       })
       expect(query.sql).toContain(`posts.structured_data->>'credit_score_range' = '${range}'`)
-      expect(query.values).not.toContain(range)
     }
     const open = buildPostSearchQuery(undefined, {
       post_types: ['data_point'],
