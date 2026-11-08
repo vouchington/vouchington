@@ -9,8 +9,8 @@ import {
   liftSuspendedClaimantAutomaticRestrictions,
   recoverMissingDecisionAssessments,
   recoverRejectedCopyrightFormReviewEffect,
-  recoverBlockedCopyrightHoldRestorations,
-  searchBlockedCopyrightHoldRestorationNoticeIds,
+  recoverBlockedCopyrightHoldRestoration,
+  searchBlockedCopyrightHoldRestorationIntentIds,
   searchDueStatutoryCopyrightRestorationDeadlineIds,
   searchPendingCopyrightEnforcementAssessmentIds,
   searchRecoverableCopyrightActionIntentIds,
@@ -100,10 +100,10 @@ export async function processReconcileCopyrightActionIntents(
     () =>
       runCopyrightSweepStage(tally, () =>
         walkCopyrightSweep(
-          page => searchBlockedCopyrightHoldRestorationNoticeIds({ ...page, ids: requestedIds }),
+          page => searchBlockedCopyrightHoldRestorationIntentIds({ ...page, ids: requestedIds }),
           ids =>
             settleCopyrightSweepSequentially(ids, id =>
-              recoverBlockedCopyrightHoldRestorations(id, evaluatedAt),
+              recoverBlockedCopyrightHoldRestoration(id, evaluatedAt),
             ),
           options('blocked'),
         ),

@@ -1,4 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
+import { lockAdvisoryKeysInOrder } from './advisory-key-locks.mts'
 
 /** Advisory account locks precede rationale row locks and the caller's fresh eligibility check. */
 export async function lockCopyrightRationaleRetentionPage(
@@ -19,16 +20,11 @@ export async function lockCopyrightRationaleRetentionPage(
      ORDER BY account_user_id`,
     [ids],
   )
-  /* oxlint-disable no-await-in-loop -- advisory locks must follow one stable account order. */
-  for (const account of accounts.rows) {
-    // One sorted advisory lock per distinct account in this capped rationale page, at most batchSize.
-    await transaction(
-      `/* lockCopyrightRationaleRetentionAccount */
-       SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`,
-      [account.account_user_id],
-    )
-  }
-  /* oxlint-enable no-await-in-loop */
+  // One sorted advisory lock per distinct account, taken in the account order of the query above.
+  await lockAdvisoryKeysInOrder(
+    transaction,
+    accounts.rows.map(account => account.account_user_id),
+  )
   // Fence party additions before reading held-case scope in the following DELETE statement.
   await transaction(`/* lockCopyrightRationaleRetentionParties */
     LOCK TABLE copyright_notice_thread_party_generations IN SHARE MODE`)

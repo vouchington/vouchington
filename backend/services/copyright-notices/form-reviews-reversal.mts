@@ -2,6 +2,7 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import sql from 'sql-template-strings'
 import { getImagePlacementKey } from '@services/images/placements'
+import { lockAdvisoryKeysInOrder } from './advisory-key-locks.mts'
 import { buildCopyrightReviewOutcomeDeliveries } from './review-outcome-notices.mts'
 import { createCopyrightStatementDeliveriesInTransaction } from './statement-delivery.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
@@ -47,12 +48,11 @@ export async function reverseAutomatedCopyrightRestrictionsInTransaction(
       AND restriction.lifted_at IS NULL AND restriction.human_review_action IS NULL
     ORDER BY target.placement_id
   `)
-  for (const placement of placements) {
-    // oxlint-disable-next-line no-await-in-loop -- placement locks must use canonical order.
-    await transaction(sql`/* reviewCopyrightFormIntake:reverseAutomatedRestrictions:lock */
-      SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(placement.placement_id)}, 0))
-    `)
-  }
+  // Placement locks use the canonical placement order of the query above.
+  await lockAdvisoryKeysInOrder(
+    transaction,
+    placements.map(placement => getImagePlacementKey(placement.placement_id)),
+  )
   const { rows } = await transaction<{ id: string }>(sql`
     /* reviewCopyrightFormIntake:reverseAutomatedRestrictions */
     UPDATE copyright_restrictions restriction

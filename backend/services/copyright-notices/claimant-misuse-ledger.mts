@@ -38,6 +38,24 @@ export async function recordClaimantMisuseEvent(
   `)
 }
 
+/** Appends one appeal-reversal event per restriction of one notice in a single statement. */
+export async function recordRestrictionAppealReversalEvents(
+  transaction: TransactionQuery,
+  input: { noticeId: string; restrictionIds: readonly string[]; recordedAt: Date },
+): Promise<void> {
+  if (input.restrictionIds.length === 0) return
+  await transaction(sql`/* recordRestrictionAppealReversalEvents */
+    INSERT INTO copyright_claimant_misuse_events (
+      copyright_notice_id, outcome, copyright_restriction_id, occurred_at
+    )
+    SELECT ${input.noticeId}, 'restriction_reversed_by_appeal'::copyright_claimant_misuse_event_outcomes,
+      restriction_id, ${input.recordedAt}
+    FROM unnest(${input.restrictionIds}::uuid[]) AS reversal(restriction_id)
+    ORDER BY restriction_id ASC NULLS LAST
+    ON CONFLICT (copyright_restriction_id) DO NOTHING
+  `)
+}
+
 /** A counter-notice restoration decided for this restriction: the claimant's notice was contested. */
 export function recordCounterNoticeRestoration(
   transaction: TransactionQuery,

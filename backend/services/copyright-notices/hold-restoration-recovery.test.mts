@@ -12,7 +12,7 @@ import {
 import {
   resolveCopyrightLegalHold,
   processCopyrightActionIntent,
-  recoverBlockedCopyrightHoldRestorations,
+  recoverBlockedCopyrightHoldRestoration,
 } from './index.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { claimCopyrightActionIntent } from './action-delivery-state.mts'
@@ -115,8 +115,8 @@ describe('blocked copyright restoration recovery', () => {
         resolutionKind: 'dismissed',
         rationale: `The test's ${blocker} gate remains active.`,
       })
-    await expect(recoverBlockedCopyrightHoldRestorations(scene.notice.id, now)).resolves.toBe(0)
-    await expect(recoverBlockedCopyrightHoldRestorations(scene.notice.id, now)).resolves.toBe(0)
+    await expect(recoverBlockedCopyrightHoldRestoration(scene.restore.id, now)).resolves.toBe(0)
+    await expect(recoverBlockedCopyrightHoldRestoration(scene.restore.id, now)).resolves.toBe(0)
     const retained = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     expect(retained?.actionIntents.find(intent => intent.id === scene.restore.id)).toEqual(original)
     expect(
