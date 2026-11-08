@@ -86,19 +86,15 @@ export async function processReconcileRssFeedItemNotifications(data: {
 }
 
 /** One bounded page of currently eligible staff recipients for a critical report. */
-export function processCriticalModerationAlertNotification(
-  data: {
-    reportId: string
-    afterUserId: string
-    pageSize?: number
-  },
-  recipientUserIds?: readonly string[],
-) {
+export function processCriticalModerationAlertNotification(data: {
+  reportId: string
+  afterUserId: string
+  pageSize?: number
+}) {
   return createCriticalModerationAlertNotificationPage(
     data.reportId,
     data.afterUserId,
     data.pageSize,
-    recipientUserIds,
   )
 }
 

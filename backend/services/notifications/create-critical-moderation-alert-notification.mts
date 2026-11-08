@@ -21,7 +21,6 @@ export async function createCriticalModerationAlertNotificationPage(
   reportId: string,
   afterUserId: string | null,
   pageSize = getNotificationRecipientDispatchPageLimit(),
-  recipientUserIds?: readonly string[],
 ): Promise<{ nextAfterUserId: string | null }> {
   if (!(await isCriticalAlertReportLive(reportId))) return { nextAfterUserId: null }
   const limit = getNotificationRecipientDispatchPageLimit()
@@ -31,8 +30,6 @@ export async function createCriticalModerationAlertNotificationPage(
   const { recipientIds, nextAfterUserId } = await listCriticalAlertRecipientPage(
     afterUserId,
     effectivePageSize,
-    write,
-    recipientUserIds,
   )
   const created = await insertCriticalAlertNotifications(reportId, recipientIds)
   if (created.length > 0)
@@ -57,7 +54,6 @@ export async function listCriticalAlertRecipientPage(
   afterUserId: string | null,
   pageSize: number,
   query: QueryExecutor = write,
-  recipientUserIds?: readonly string[],
 ): Promise<{ recipientIds: string[]; nextAfterUserId: string | null }> {
   if (
     !Number.isSafeInteger(pageSize) ||
@@ -65,27 +61,22 @@ export async function listCriticalAlertRecipientPage(
     pageSize > getNotificationRecipientDispatchPageHardMax()
   )
     throw new RangeError('Invalid alert page size')
-  const statement = sql`/* listCriticalAlertRecipientPage */
+  const { rows } = await query<{ user_id: string }>(sql`/* listCriticalAlertRecipientPage */
     WITH administrators AS MATERIALIZED (
       SELECT ur.user_id FROM user_roles ur
       WHERE ur.role_type_id = (SELECT id FROM user_role_types WHERE slug = 'administrator')
-        AND ur.user_id > COALESCE(${afterUserId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)`
-  if (recipientUserIds) statement.append(sql` AND ur.user_id = ANY(${recipientUserIds}::uuid[])`)
-  statement.append(sql`
+        AND ur.user_id > COALESCE(${afterUserId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
       ORDER BY ur.user_id LIMIT ${pageSize + 1}
     ), moderators AS MATERIALIZED (
       SELECT ur.user_id FROM user_roles ur
       WHERE ur.role_type_id = (SELECT id FROM user_role_types WHERE slug = 'moderator')
-        AND ur.user_id > COALESCE(${afterUserId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)`)
-  if (recipientUserIds) statement.append(sql` AND ur.user_id = ANY(${recipientUserIds}::uuid[])`)
-  statement.append(sql`
+        AND ur.user_id > COALESCE(${afterUserId}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
       ORDER BY ur.user_id LIMIT ${pageSize + 1}
     )
     SELECT DISTINCT user_id FROM (
       SELECT user_id FROM administrators UNION ALL SELECT user_id FROM moderators
     ) staff
     ORDER BY user_id LIMIT ${pageSize + 1}`)
-  const { rows } = await query<{ user_id: string }>(statement)
   const recipientIds = rows.slice(0, pageSize).map(row => row.user_id)
   return {
     recipientIds,

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
+import { addUserRole } from '@services/users/roles-permissions'
 import { background } from '@queues/background/queues'
 import { NOTIFICATIONS_CRITICAL_MODERATION_ALERT_JOB } from '@queues/background/enqueues/critical-moderation-alert-job'
 import { enqueueContinueCriticalModerationAlertNotification } from '@queues/notifications/enqueues'
@@ -9,10 +10,17 @@ import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-co
 import { createCriticalModerationAlertNotificationPage } from '@services/notifications/create-critical-moderation-alert-notification'
 import { deleteNotification } from '@services/notifications/mutations'
 import { listNotifications } from '@services/notifications/list'
-import { createTestUser, insertTestModerationReport, insertTestPost } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  createTestUserWithId,
+  insertTestModerationReport,
+  insertTestPost,
+  safeUsername,
+} from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
-import { createCriticalModerationAlertNotificationHandler } from './critical-moderation-alert.mts'
+import { uuidAfter, uuidBefore } from '@voucha/test-helpers/uuid-before'
+import { handleCriticalModerationAlertNotification } from './critical-moderation-alert.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
@@ -22,10 +30,16 @@ describe('critical moderation alert worker paging', () => {
       overrideDynamicConfigFieldsForTest(pagedDispatchConfig, { notifications_page_size: 1 }),
     )
     const reporter = await createTestUser()
-    const recipients = await Promise.all(
-      Array.from({ length: 3 }, () => createTestUser({ extraRoles: ['moderator'] })),
+    const firstRecipientId = (await createTestUser({ extraRoles: ['moderator'] })).id
+    const secondRecipientId = uuidAfter(firstRecipientId)
+    const thirdRecipientId = uuidAfter(secondRecipientId)
+    const recipientIds = [firstRecipientId, secondRecipientId, thirdRecipientId]
+    await Promise.all(
+      [secondRecipientId, thirdRecipientId].map(id =>
+        createTestUserWithId(id, safeUsername('critical-alert-worker')),
+      ),
     )
-    const recipientIds = recipients.map(user => user.id).toSorted()
+    await Promise.all([secondRecipientId, thirdRecipientId].map(id => addUserRole(id, 'moderator')))
     const postId = await insertTestPost({
       createdById: reporter.id,
       title: `critical alert ${randomUUID()}`,
@@ -51,9 +65,8 @@ describe('critical moderation alert worker paging', () => {
 
     const firstPage = await createCriticalModerationAlertNotificationPage(
       reportId,
-      null,
-      undefined,
-      recipientIds,
+      uuidBefore(firstRecipientId),
+      1,
     )
     expect(firstPage.nextAfterUserId).toBe(recipientIds[0])
     await enqueueContinueCriticalModerationAlertNotification({
@@ -76,7 +89,7 @@ describe('critical moderation alert worker paging', () => {
     if (!firstContinuation) throw new Error('Expected the first critical alert continuation')
     ownedQueueJobs.push(firstContinuation)
 
-    const handle = createCriticalModerationAlertNotificationHandler(recipientIds)
+    const handle = handleCriticalModerationAlertNotification
     const harness = await startRealGlideBackgroundLifecycle({
       queueNamePrefix: 'critical_alert_dispatch_page',
       connection: { connection: workerQueueConnection, prefix: workerQueuePrefix },
@@ -103,9 +116,8 @@ describe('critical moderation alert worker paging', () => {
           dispatchReceipt?: { result: { nextAfterUserId: string | null } }
         }>
       ).data.dispatchReceipt
-      expect(receipt?.result.nextAfterUserId).toBe(
-        recipient === recipientIds.at(-1) ? null : recipient,
-      )
+      const expectedCursors = recipient === recipientIds.at(-1) ? [null, recipient] : [recipient]
+      expect(expectedCursors).toContain(receipt?.result.nextAfterUserId)
       await expect(
         handle(current as Job<{ reportId: string; afterUserId: string }>),
       ).resolves.toEqual(receipt?.result)
@@ -125,7 +137,7 @@ describe('critical moderation alert worker paging', () => {
         )
         if (!next) throw new Error('Expected the next critical alert continuation')
         ownedQueueJobs.push(next)
-        current = await execute(next)
+        if (recipient !== recipientIds.at(-1)) current = await execute(next)
       }
     }
 

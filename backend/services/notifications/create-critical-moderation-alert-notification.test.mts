@@ -5,8 +5,11 @@ import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
 import { getNotificationRecipientDispatchPageHardMax } from '@queues/notifications/enqueues'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { uuidAfter, uuidBefore } from '@voucha/test-helpers/uuid-before'
+import { deleteCriticalAlertReportDuringInsertForTest } from '@voucha/test-helpers/critical-alert-report-delete-race'
 import {
   createTestUserDirect,
+  createTestUserWithId,
   deleteCriticalAlertRecipientDuringInsertForTest,
   insertTestModerationReport,
   insertTestPost,
@@ -136,46 +139,26 @@ describe('createCriticalModerationAlertNotification', () => {
   })
 
   it('advances a bounded staff cursor and applies role grants on later pages', async () => {
-    const users = await Promise.all(
-      Array.from({ length: 3 }, () =>
-        createTestUserDirect({ username: safeUsername('cman-page') }),
-      ),
+    const firstId = (await createTestUserDirect({ username: safeUsername('cman-page') })).id
+    const middleId = uuidAfter(firstId)
+    const lastId = uuidAfter(middleId)
+    await Promise.all(
+      [middleId, lastId].map(id => createTestUserWithId(id, safeUsername('cman-page'))),
     )
-    const [first, middle, last] = users.toSorted((a, b) => a.id.localeCompare(b.id))
-    await Promise.all([addUserRole(first!.id, 'moderator'), addUserRole(last!.id, 'moderator')])
+    await Promise.all([addUserRole(firstId, 'moderator'), addUserRole(lastId, 'moderator')])
 
-    const firstPage = await listCriticalAlertRecipientPage(
-      null,
-      1,
-      undefined,
-      users.map(user => user.id),
-    )
-    expect(firstPage).toEqual({ recipientIds: [first!.id], nextAfterUserId: first!.id })
+    const firstPage = await listCriticalAlertRecipientPage(uuidBefore(firstId), 1)
+    expect(firstPage).toEqual({ recipientIds: [firstId], nextAfterUserId: firstId })
 
-    await addUserRole(middle!.id, 'moderator')
-    const secondPage = await listCriticalAlertRecipientPage(
-      firstPage.nextAfterUserId,
-      1,
-      undefined,
-      users.map(user => user.id),
-    )
-    expect(secondPage).toEqual({ recipientIds: [middle!.id], nextAfterUserId: middle!.id })
-    const thirdPage = await listCriticalAlertRecipientPage(
-      secondPage.nextAfterUserId,
-      1,
-      undefined,
-      users.map(user => user.id),
-    )
-    expect(thirdPage).toEqual({ recipientIds: [last!.id], nextAfterUserId: null })
+    await addUserRole(middleId, 'moderator')
+    const secondPage = await listCriticalAlertRecipientPage(firstPage.nextAfterUserId, 1)
+    expect(secondPage).toEqual({ recipientIds: [middleId], nextAfterUserId: middleId })
+    const thirdPage = await listCriticalAlertRecipientPage(secondPage.nextAfterUserId, 1)
+    expect(thirdPage.recipientIds).toEqual([lastId])
 
-    await removeTestUserRole(last!.id, 'moderator')
-    const afterRemoval = await listCriticalAlertRecipientPage(
-      secondPage.nextAfterUserId,
-      1,
-      undefined,
-      users.map(user => user.id),
-    )
-    expect(afterRemoval).toEqual({ recipientIds: [], nextAfterUserId: null })
+    await removeTestUserRole(lastId, 'moderator')
+    const afterRemoval = await listCriticalAlertRecipientPage(secondPage.nextAfterUserId, 1)
+    expect(afterRemoval.recipientIds).not.toContain(lastId)
   })
 
   it('deduplicates repeated calls for the same report', async () => {
@@ -214,16 +197,43 @@ describe('createCriticalModerationAlertNotification', () => {
     expect(alerts).toHaveLength(1)
   })
 
+  it('propagates a report FK failure instead of retrying a different deleted target', async () => {
+    const staff = await createTestUserDirect({ extraRoles: ['moderator'] })
+    const postId = await insertTestPost({
+      createdById: staff.id,
+      slug: `cman-report-race-${randomUUID()}`,
+      title: 'Critical report deletion race',
+      markdown: 'Body',
+    })
+    const reportId = await insertTestModerationReport({
+      reporterUserId: staff.id,
+      entityType: 'post',
+      entityId: postId,
+      reason: 'illegal_content',
+    })
+    const outcome = await deleteCriticalAlertReportDuringInsertForTest(reportId, () =>
+      createCriticalModerationAlertNotificationPage(reportId, uuidBefore(staff.id), 1),
+    )
+    expect(outcome).toEqual({
+      error: expect.objectContaining({
+        code: '23503',
+        constraint: 'fk_notifications__moderation_report_id',
+      }),
+    })
+    const { notifications } = await listNotifications(staff.id)
+    expect(
+      Object.values(notifications).filter(
+        notification => notification.moderation_report_id === reportId,
+      ),
+    ).toHaveLength(0)
+  })
+
   it('does not fail when a staff user is hard-deleted during recipient selection', async () => {
-    const admin = await createTestUserDirect({
-      username: safeUsername('cman-delete-race'),
-    })
-    await insertTestTotpAuthenticator(admin!.id, 'critical-alert-delete-race')
-    await addUserRole(admin!.id, 'administrator')
-    const survivor = await createTestUserDirect({
-      username: safeUsername('cman-delete-race-survivor'),
-    })
-    await addUserRole(survivor.id, 'moderator')
+    const adminId = (await createTestUserDirect({ username: safeUsername('cman-delete-race') })).id
+    const survivorId = uuidAfter(adminId)
+    await createTestUserWithId(survivorId, safeUsername('cman-delete-race-survivor'))
+    await insertTestTotpAuthenticator(adminId, 'critical-alert-delete-race')
+    await Promise.all([addUserRole(adminId, 'administrator'), addUserRole(survivorId, 'moderator')])
 
     const postOwner = await createTestUserDirect({
       username: safeUsername('cman-delete-race-owner'),
@@ -244,14 +254,13 @@ describe('createCriticalModerationAlertNotification', () => {
       reason: 'illegal_content',
     })
 
-    const outcome = await deleteCriticalAlertRecipientDuringInsertForTest(admin!.id, () =>
-      createCriticalModerationAlertNotificationPage(reportId, null, undefined, [
-        admin!.id,
-        survivor.id,
-      ]),
+    const outcome = await deleteCriticalAlertRecipientDuringInsertForTest(adminId, () =>
+      createCriticalModerationAlertNotificationPage(reportId, uuidBefore(adminId), 2),
     )
-    expect(outcome).toEqual({ value: { nextAfterUserId: null } })
-    const { notifications } = await listNotifications(survivor.id)
+    if (!('value' in outcome))
+      throw new Error('Critical alert FK race failed', { cause: outcome.error })
+    expect([null, survivorId]).toContain(outcome.value.nextAfterUserId)
+    const { notifications } = await listNotifications(survivorId)
     expect(
       Object.values(notifications).filter(
         notification =>
