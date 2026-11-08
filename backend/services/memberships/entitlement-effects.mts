@@ -12,14 +12,6 @@ export type MembershipEntitlementEffect = {
   deliveryClaimToken: string
 }
 
-export async function recordMembershipEntitlementEffect(
-  membershipChangeId: string,
-  userId: string,
-  query?: QueryExecutor,
-): Promise<void> {
-  await recordMembershipEntitlementEffects([{ membershipChangeId, userId }], query)
-}
-
 export async function recordMembershipEntitlementEffects(
   effects: readonly { membershipChangeId: string; userId: string }[],
   query?: QueryExecutor,
