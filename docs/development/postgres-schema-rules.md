@@ -166,9 +166,8 @@ state from the latest history row.
   or when it is a viewer-scoped set (follows, subscriptions) capped by a per-type write
   limit with a hard maximum. A set with no such cap is a candidate pool and is forbidden. Unenforced.
 - **A list or feed read is one walk over the listed entity** or, for membership-ordered lists
-  (saved posts, list items: uncapped user content; only follows, subscriptions and a post's related
-  URLs have write caps, #4979), over the membership index joined to the targets, with eligibility in
-  WHERE. Filters go in WHERE and are served by an index. Use, for example, `ORDER BY key DESC, id DESC LIMIT page+1` with a `(key, id) < ($1, $2)` keyset
+  (saved posts and list items are uncapped user content, #4979), over the membership index joined to
+  the targets, with eligibility in WHERE. Filters go in WHERE and are served by an index. Use, for example, `ORDER BY key DESC, id DESC LIMIT page+1` with a `(key, id) < ($1, $2)` keyset
   cursor; the cursor predicate matches every ordering key and direction.
   A keyset alone does not bound rows scanned. When a filter can reject long runs, such as a
   viewer's blocks or mutes, the time window is the scan bound where the sort has one, and EXPLAIN at
