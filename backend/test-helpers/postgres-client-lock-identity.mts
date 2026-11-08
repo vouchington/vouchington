@@ -22,7 +22,7 @@ export type TestHeldPostgresLock =
   | { kind: 'advisory'; tag: string; waiterMode: 'exclusive' | 'shared' }
   | { kind: 'transaction'; transactionId: string }
 export type TestOwnedPostgresWaitOptions = TestPostgresLockIdentity & {
-  pool: 'advisory' | 'write'
+  pool: 'advisory' | 'write' | 'job-serialization'
   queryMarker: string
   requestId?: string
   releaseHolder: () => PromiseLike<void>

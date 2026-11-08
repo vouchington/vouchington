@@ -756,6 +756,27 @@ COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.generation IS 
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.created_at IS 'When this item first entered the durable category snapshot backlog.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.updated_at IS 'When this item category snapshot was most recently replaced.';
 
+-- A completed projection is a real per-item result. Reconcilers write this row before starting
+-- their multi-transaction category work and commit it only after that work finishes; a failed
+-- attempt rolls the result write back while the durable request remains pending.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS rss_feed_item_category_projection_results (
+  rss_feed_item_id UUID PRIMARY KEY CONSTRAINT fk_rss_feed_item_category_projection_results__item REFERENCES rss_feed_items ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+  change_id UUID NOT NULL,
+  categories JSONB NOT NULL,
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_rss_feed_item_category_projection_results__categories CHECK (
+    jsonb_typeof(categories) = 'array'
+    AND NOT jsonb_path_exists(categories, '$[*] ? (@.type() != "string")')
+  )
+);
+
+COMMENT ON TABLE rss_feed_item_category_projection_results IS 'Last fully completed category projection per RSS item; an unfinished attempt is never committed here.';
+COMMENT ON COLUMN rss_feed_item_category_projection_results.rss_feed_item_id IS 'RSS feed item whose category projection finished.';
+COMMENT ON COLUMN rss_feed_item_category_projection_results.change_id IS 'Opaque identity of the completed category projection, including direct category writes.';
+COMMENT ON COLUMN rss_feed_item_category_projection_results.categories IS 'Normalized category strings used by the last fully completed projection.';
+COMMENT ON COLUMN rss_feed_item_category_projection_results.completed_at IS 'Time the category projection last finished successfully.';
+
 -------------------------------------------------------------------------------
 -- rss_feed_crawls
 -------------------------------------------------------------------------------

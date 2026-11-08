@@ -121,8 +121,8 @@ export async function getRelatablePostIds(
 
 /**
  * Rechecks ordinary post visibility before inspecting delegated private-content ownership. Call
- * this after the canonical publication scopes are locked: a root can become private or change
- * between an initial preflight and the mutation.
+ * this in the mutation transaction: a root can become private or change between an initial
+ * preflight and the mutation.
  */
 export async function assertPostMutationAccess(
   viewer: EntityRelationViewer,

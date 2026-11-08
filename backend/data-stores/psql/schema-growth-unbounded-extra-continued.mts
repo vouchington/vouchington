@@ -30,6 +30,7 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'rss_feed_categories',
   'rss_feed_setting_changes',
   'rss_feed_item_category_rejections',
+  'rss_feed_item_category_projection_results',
   'rss_feed_item_unmapped_category_counts',
   'spending_entries',
   'stories',

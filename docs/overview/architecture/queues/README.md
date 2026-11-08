@@ -322,7 +322,12 @@ RSS alias category recovery checkpoints raw item and feed positions with fixed s
 each alias generation, so a page with no mapping changes still makes progress. It acknowledges a
 generation only after its item and feed effects finish. A deleted alias rechecks current text
 ownership after locking its affected category page; a newer owner's generation can then restore
-the final mapping. Topic name and slug jobs keep their own frozen continuation cursor. Community
+the final mapping. Complete RSS category snapshots keep pending source changes separate from their
+last completed projection. This lets ingestion advance without waiting on a projection's result
+row, while competing projections serialize their own completion writes. Failed application or
+notification admission leaves the source change pending for replay.
+
+Topic name and slug jobs keep their own frozen continuation cursor. Community
 digest recovery admits a bounded set of closed windows after its
 sent-through cursor. Each window retains recipient-page progress on its GlideMQ job, yields under
 backpressure, and advances the cursor only after the last page. Native job identities suppress

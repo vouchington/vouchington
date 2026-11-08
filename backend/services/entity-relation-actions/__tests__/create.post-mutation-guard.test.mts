@@ -11,6 +11,10 @@ import {
   insertTestTopic,
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
+import {
+  makeRelationParticipantPrivateForTest,
+  withRelationPairPrivacyChangeForTest,
+} from '@voucha/test-helpers/relation-read-context'
 import { withPublicationWait } from '@voucha/test-helpers/post-publication-lock-race'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { PrivateUser } from '@services/users/types'
@@ -18,7 +22,7 @@ import { lockPostPublication } from '@services/post-publication'
 
 describe('createEntityRelationAction post mutation guard', () => {
   it.each(['subject', 'object'] as const)(
-    'rechecks delegated private access after a public %s post becomes private while waiting for publication',
+    'rejects delegated access after the public %s post becomes private',
     async participant => {
       const owner = (await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)) as PrivateUser
       const post = await createTestPost({ user: owner })
@@ -49,27 +53,16 @@ describe('createEntityRelationAction post mutation guard', () => {
           ? { subjectType: 'post', predicate: 'category', objectType: 'topic' }
           : { subjectType: 'topic', predicate: 'faq', objectType: 'post' },
       )
-      const locked = Promise.withResolvers<number>()
-      const release = Promise.withResolvers<void>()
-      const holder = holdPublicationLockThenMutate(post.id, locked, release, query =>
-        query(
-          `/* testCreate */ UPDATE posts SET privacy = 'private', broadcast = 'followers' WHERE id = $1`,
-          [post.id],
-        ),
-      )
-      const holderPid = await locked.promise
-
-      const creating = withPublicationWait(holderPid, post.id, release, holder, () =>
-        createEntityRelationAction(
-          owner,
-          {
-            kind: 'delegated',
-            credentialOwnerId: owner.id,
-            grantedScopes: ['entity-relations:read', 'entity-relations:write'],
-          },
-          input,
-        ).catch((err: unknown) => err),
-      )
+      await makeRelationParticipantPrivateForTest(post.id)
+      const creating = createEntityRelationAction(
+        owner,
+        {
+          kind: 'delegated',
+          credentialOwnerId: owner.id,
+          grantedScopes: ['entity-relations:read', 'entity-relations:write'],
+        },
+        input,
+      ).catch((err: unknown) => err)
       await expect(creating).resolves.toMatchObject({ statusCode: 403 })
       await expect(
         getEntityRelation(relation.table_name, input.entityId, input.objectId),
@@ -77,21 +70,11 @@ describe('createEntityRelationAction post mutation guard', () => {
     },
   )
 
-  it('rolls back both directions when a public post relation becomes private while locked', async () => {
+  it('rechecks privacy after waiting on the symmetric relation pair being written', async () => {
     const owner = (await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)) as PrivateUser
     const subject = await createTestPost({ user: owner })
     const object = await createTestPost({ user: owner })
-    const locked = Promise.withResolvers<number>()
-    const release = Promise.withResolvers<void>()
-    const holder = holdPublicationLockThenMutate(subject.id, locked, release, query =>
-      query(
-        `/* testCreate */ UPDATE posts SET privacy = 'private', broadcast = 'followers' WHERE id = $1`,
-        [subject.id],
-      ),
-    )
-    const holderPid = await locked.promise
-
-    const creating = withPublicationWait(holderPid, subject.id, release, holder, () =>
+    const creating = withRelationPairPrivacyChangeForTest(subject.id, object.id, () =>
       createEntityRelationAction(
         owner,
         {

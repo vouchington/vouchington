@@ -11,7 +11,7 @@ export type PostTargetGuard = NonNullable<UpsertEntityRelationOptions['postMutat
  * Authorizes naming one post as the target of a write. Ordinary existence and visibility come
  * first, so a hidden post is never disclosed. A delegated credential then needs the exact
  * `post-relations.owned-private:write` grant, and must own the post and its root, to reach a
- * private post. Returns the same check for a write that repeats it once its locks are held.
+ * private post. Returns the same plain check for the write transaction.
  */
 export async function assertPostTargetAccess(
   currentUser: PrivateUser,
@@ -22,7 +22,6 @@ export async function assertPostTargetAccess(
   const posts = { subjectIds: [], objectIds: [postId] }
   const rootIds = await assertPostMutationAccess(viewer, authority, posts)
   return {
-    postIds: [postId, ...rootIds.values()],
     assertAllowed: query =>
       assertPostMutationAccess(viewer, authority, posts, { query }, rootIds).then(() => undefined),
   }

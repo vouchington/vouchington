@@ -96,7 +96,6 @@ export async function createEntityRelationAction(
       ...(postIds.subjectIds.length > 0 || postIds.objectIds.length > 0
         ? {
             postMutationGuard: {
-              postIds: [...postIds.subjectIds, ...postIds.objectIds, ...postRootIds.values()],
               assertAllowed: query =>
                 assertPostMutationAccess(viewer, authority, postIds, { query }, postRootIds).then(
                   () => undefined,

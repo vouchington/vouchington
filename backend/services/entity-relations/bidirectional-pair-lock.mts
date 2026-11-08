@@ -1,6 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
-import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 
 /**
  * Serializes opposite directions of the same symmetric relation before either physical direction
@@ -25,19 +23,4 @@ export async function lockBidirectionalRelationPairs(
     ORDER BY first_id, second_id`,
     [relationTable, subjectId, objectIds],
   )
-}
-
-/** Acquires every bidirectional mutation fence in the one required global order. */
-export async function lockBidirectionalRelationMutation(
-  query: TransactionQuery,
-  relationTable: string,
-  subjectId: string,
-  objectIds: readonly string[],
-  userSubjectIds: readonly string[],
-  topicReferenceIds: readonly string[] = [],
-): Promise<void> {
-  if (topicReferenceIds.length > 0)
-    await lockTopicRssFeedAttachmentLifecycles(query, topicReferenceIds)
-  await lockBidirectionalRelationPairs(query, relationTable, subjectId, objectIds)
-  await lockActiveUserSubjectsForMutation(query, userSubjectIds)
 }

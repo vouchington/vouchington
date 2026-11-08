@@ -1,5 +1,5 @@
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
-import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
+import { runFinalWorkScenarios } from './run-scenarios/final-work.mts'
 import { runHackerNewsFilterScenarios } from './run-scenarios/hacker-news-filter.mts'
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
 import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
@@ -43,8 +43,6 @@ import { runTopicAliasCategoryWorkScenarios } from './run-scenarios/topic-alias-
 import { runMembershipProviderRecoveryScenarios } from './run-scenarios/membership-provider-recovery.mts'
 import { runRetentionStagePageScenarios } from './run-scenarios/retention-stage-pages.mts'
 import { runStripeEventRecoveryScenario } from './run-scenarios/stripe-event-recovery.mts'
-import { runPaymentLedgerRetentionScenarios } from './run-scenarios/payment-ledger-retention.mts'
-import { runVoteScoreRankingScenarios } from './run-scenarios/vote-score-ranking.mts'
 import { runMembershipRenewalSelectionScenario } from './run-scenarios/membership-renewal-selection.mts'
 import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts'
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
@@ -82,7 +80,6 @@ import { runModerationReportContextScenarios } from './run-scenarios/moderation-
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
-import { runCommentDescendantPartitionedPages } from './run-scenarios/comment-descendant-partitioned-pages.mts'
 import { assertNoLeftoverCommentPartitions } from './seed-data/comment-descendant-partition-storage.mts'
 import { runSpamSignalScenarios } from './run-scenarios/spam-signals.mts'
 import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
@@ -167,10 +164,7 @@ async function main() {
     await runStep(runMembershipRenewalSelection.name, runMembershipRenewalSelection)
     const measureReferralCache = runPrioritizedReferralCacheMeasurement
     await runStep(measureReferralCache.name, measureReferralCache)
-    await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios)
-    await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
-    await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
-    await runStep(runCommentDescendantPartitionedPages.name, runCommentDescendantPartitionedPages)
+    await runStep(runFinalWorkScenarios.name, runFinalWorkScenarios)
     await runStep(runMembershipScenarios.name, runMembershipScenarios)
     // Expiry fixtures come after the shared membership writer's corpus and all ordinary plans.
     await runStep(runMembershipExpiryPageScenarios.name, runMembershipExpiryPageScenarios)
