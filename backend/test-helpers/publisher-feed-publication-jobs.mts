@@ -1,3 +1,4 @@
+import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
 import type { Job } from 'glide-mq'
 import {
   PUBLISHER_TYPE_FEED_PUBLICATION_JOB,
@@ -92,4 +93,22 @@ export async function readPublisherTypeFeedJob(id: string): Promise<Job<Publishe
   )
     throw new TypeError('Invalid publisher feed dispatcher payload')
   return job as Job<PublisherTypeFeedJobData>
+}
+
+/** Own the real transaction lifecycle for publisher-capture commit and rollback assertions. */
+export async function withPublisherFeedCaptureTransaction(
+  operation: (query: TransactionQuery) => Promise<void>,
+  commit = true,
+): Promise<void> {
+  await using query = await beginTransaction()
+  await operation(query)
+  if (commit) await query.commit()
+}
+
+/** A successful nested capture joins the outer commit; a rejection rolls back its action scope. */
+export async function withPublisherFeedCaptureSavepoint(
+  query: TransactionQuery,
+  operation: (query: TransactionQuery) => Promise<void>,
+): Promise<void> {
+  await withTransactionOptions({ client: query.client }, operation)
 }

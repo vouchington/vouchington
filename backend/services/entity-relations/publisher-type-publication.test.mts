@@ -1,9 +1,12 @@
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
 import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
 import { randomUUID } from 'node:crypto'
-import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { capturePublisherFeedPublicationJobs } from '@voucha/test-helpers/publisher-feed-publication-jobs'
+import {
+  capturePublisherFeedPublicationJobs,
+  withPublisherFeedCaptureTransaction,
+  withPublisherFeedCaptureSavepoint,
+} from '@voucha/test-helpers/publisher-feed-publication-jobs'
 import { recordPublisherTypeFeedPublicationWork } from '@services/post-publication/publisher-type-feeds'
 import { recordPostTopicRelationPublicationChanges } from './post-topic-publication.mts'
 
@@ -15,28 +18,27 @@ describe('publisher-type publication admission', () => {
     const jobs = await capturePublisherFeedPublicationJobs(
       [committed, rejected, rolledBack],
       async () => {
-        {
-          await using query = await beginTransaction()
+        await withPublisherFeedCaptureTransaction(async query => {
           recordPublisherTypeFeedPublicationWork(query, [rolledBack])
-        }
-        await using query = await beginTransaction()
-        await expect(
-          withTransactionOptions({ client: query.client }, async nested => {
-            recordPublisherTypeFeedPublicationWork(nested, [rejected])
-            throw new Error('reject nested capture')
-          }),
-        ).rejects.toThrow('reject nested capture')
-        const beforeCommit = await capturePublisherFeedPublicationJobs([committed], async () => {
-          await withTransactionOptions({ client: query.client }, async nested => {
-            await recordPostTopicRelationPublicationChanges(
-              nested,
-              'relation__topic__publisher_type__topic',
-              [{ subject_id: committed, object_id: randomUUID() }],
-            )
+        }, false)
+        await withPublisherFeedCaptureTransaction(async query => {
+          await expect(
+            withPublisherFeedCaptureSavepoint(query, async nested => {
+              recordPublisherTypeFeedPublicationWork(nested, [rejected])
+              throw new Error('reject nested capture')
+            }),
+          ).rejects.toThrow('reject nested capture')
+          const beforeCommit = await capturePublisherFeedPublicationJobs([committed], async () => {
+            await withPublisherFeedCaptureSavepoint(query, async nested => {
+              await recordPostTopicRelationPublicationChanges(
+                nested,
+                'relation__topic__publisher_type__topic',
+                [{ subject_id: committed, object_id: randomUUID() }],
+              )
+            })
           })
+          expect(beforeCommit).toEqual([])
         })
-        expect(beforeCommit).toEqual([])
-        await query.commit()
       },
     )
     expect(jobs).toHaveLength(1)
@@ -52,15 +54,15 @@ describe('publisher-type publication admission', () => {
       overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, { capture_batch_size: 1 }),
     )
     const capture = () =>
-      capturePublisherFeedPublicationJobs(topicIds, async () => {
-        await using query = await beginTransaction()
-        await recordPostTopicRelationPublicationChanges(
-          query,
-          'relation__topic__publisher_type__topic',
-          topicIds.map(subject_id => ({ subject_id, object_id: randomUUID() })),
-        )
-        await query.commit()
-      })
+      capturePublisherFeedPublicationJobs(topicIds, () =>
+        withPublisherFeedCaptureTransaction(async query => {
+          await recordPostTopicRelationPublicationChanges(
+            query,
+            'relation__topic__publisher_type__topic',
+            topicIds.map(subject_id => ({ subject_id, object_id: randomUUID() })),
+          )
+        }),
+      )
     const first = await capture()
     const second = await capture()
     expect(first).toHaveLength(1)
