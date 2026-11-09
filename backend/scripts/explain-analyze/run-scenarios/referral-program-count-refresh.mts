@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { read, write } from '@data-stores/psql'
+import { DEDICATED_MATERIALIZED_VIEW_SCENARIOS } from '../materialized-view-scenarios.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 
-const SCENARIO_ID = 'mv-referral-program-link-counts-refresh'
-const VIEW_NAME = 'mv_referral_program_link_counts'
+const [[SCENARIO_ID, VIEW_NAME]] = DEDICATED_MATERIALIZED_VIEW_SCENARIOS
 
 export async function runReferralProgramCountRefreshScenario(): Promise<void> {
   // The owner chose an exact all-time count. These source cardinalities make the intended
