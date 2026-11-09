@@ -142,6 +142,7 @@ export async function dispatchMcpRequest(
 
       return handleMcpHttpRequest({
         user,
+        authenticatedOwner: owner,
         permissions: scopes,
         request: new Request(`http://localhost${config.routePath}`, {
           method: 'POST',
@@ -157,9 +158,8 @@ export async function dispatchMcpRequest(
         clientIp: ctx.ip,
         rateLimitedCalls,
         ...(audit ? { onToolError: audit.recordToolError } : {}),
-        onToolCallSettled: (messageIndex, settlement) => {
-          usage.toolCalls.settleDispatchedCall(messageIndex, settlement)
-        },
+        onToolCallSettled: (messageIndex, settlement) =>
+          usage.toolCalls.settleDispatchedCall(messageIndex, settlement),
         onToolRateLimited: async (toolName, messageIndex, option) => {
           usage.markRateLimited(messageIndex)
           await audit?.recordToolRateLimit(toolName, option)

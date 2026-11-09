@@ -83,10 +83,11 @@ When changing a tool description or input/output schema, regenerate the MCP cata
 catalog contracts before pushing. The generator's `--check` verifies generated files; it does not
 validate description limits, pinned catalog digests, grant budgets, SDK listings, or operation
 inventories. Recompute pins from the intended catalog and keep the existing semantic and size guards.
-Run the MCP boundary suite so a new tool or changed authority reaches every inventory consumer.
+Run the MCP boundary and ingress suites so a new tool or changed authority reaches inventory
+consumers and the actual OAuth, suspension, and HTTP admission boundaries.
 
 ```sh
-pnpm exec vitest run --project backend-data-stores backend/services/mcp-tools
+pnpm exec vitest run --project backend-data-stores backend/services/mcp-tools backend/api/v1/mcp
 ```
 
 ## Native API Parity

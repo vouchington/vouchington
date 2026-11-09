@@ -5,7 +5,7 @@ import { mcpToolCallIsDispatched } from './classify-calls.mts'
 import { buildRateLimitedToolResult } from './rate-limited-result.mts'
 import { handleStatelessMcpRequest } from '@vouchington/mcp-server/http'
 import { MCP_SERVER_INSTRUCTIONS } from './instructions.mts'
-import type { BasicUser } from '@services/users/types'
+import type { BasicUser, PrivateUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
 import type { ApiScope } from '@modules/scopes'
 import type { McpHttpResponse } from './http-response.mts'
@@ -16,6 +16,8 @@ type McpRequestContext = {
     membership_plan: 'plus' | 'pro' | null
     suspended?: boolean
   }
+  /** Primary-loaded owner supplied only by bearer admission; direct tool callers hydrate normally. */
+  authenticatedOwner?: PrivateUser
   permissions: readonly ApiScope[]
   request: Request
   parsedBody: unknown
@@ -51,6 +53,7 @@ export function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpHttpRes
         ctx.config,
         ctx.copyrightDecisionToolsEnabled,
         { ip: ctx.clientIp, ...controls },
+        ctx.authenticatedOwner,
       ),
     isDispatchedToolCall: mcpToolCallIsDispatched,
     rateLimitedCalls: ctx.rateLimitedCalls,
