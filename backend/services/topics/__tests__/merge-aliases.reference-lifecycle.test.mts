@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { getTopicMergeLiveSourceReferences } from '@voucha/test-helpers/topic-merge-live-references'
+import {
+  seedTopicMergeLifecycleGroups,
+  deleteTopicMergeLifecycleClassifier,
+} from '@voucha/test-helpers/topic-merge-lifecycle-fixture'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import {
@@ -78,6 +83,46 @@ describe('topic merge reference lifecycle', () => {
     await expect(getTopicMergeRelations(topic.id, topic.id, user.id)).resolves.toMatchObject({
       follows: [{ object_id: topic.id }],
     })
+  })
+
+  it('leaves no live inventory reference to the merged source', async () => {
+    const user = await createTestUser({ administrator: true })
+    const source = await createTestTopic({
+      user,
+      hostname: `merge-reference-${randomUUID()}.example.com`,
+    })
+    const destination = await createTestTopic({ user })
+    const classifierSlug = await seedTopicMergeLifecycleGroups({
+      sourceId: source.id,
+      userId: user.id,
+      alias: `${source.slug}-live-reference`,
+    })
+    onTestFinished(() => deleteTopicMergeLifecycleClassifier(classifierSlug))
+    const before = await getTopicMergeLiveSourceReferences(source.id, TOPIC_MERGE_REFERENCE_GROUPS)
+    const expectedGroups = [
+      ...new Set(
+        Object.values(TOPIC_MERGE_REFERENCE_GROUPS).filter(
+          group => group !== 'history' && group !== 'derived',
+        ),
+      ),
+    ].toSorted()
+    expect(
+      [...new Set(before.filter(row => row.hasSourceReference).map(row => row.group))].toSorted(),
+    ).toEqual(expectedGroups)
+
+    const [fullSource, fullDestination] = await Promise.all([
+      getTopicByAny(source.id),
+      getTopicByAny(destination.id),
+    ])
+    await mergeTopicAliases(user, fullSource!, fullDestination!)
+
+    const after = await getTopicMergeLiveSourceReferences(source.id, TOPIC_MERGE_REFERENCE_GROUPS)
+    for (const row of after) {
+      expect({ reference: row.reference, hasSourceReference: row.hasSourceReference }).toEqual({
+        reference: row.reference,
+        hasSourceReference: false,
+      })
+    }
   })
 
   it('rejects stale writes after a merge and bookmarks the canonical destination', async () => {
