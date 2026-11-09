@@ -38,7 +38,7 @@ describe('localization route handler', () => {
   it('publishes a required public-consumer enum in both API contracts', () => {
     const bundle = JSON.parse(
       readFileSync(
-        new URL('../../../../api-fixtures/v1/request-contracts.json', import.meta.url),
+        new URL('../../../../api-contracts/v1/request-contracts.json', import.meta.url),
         'utf8',
       ),
     ) as {

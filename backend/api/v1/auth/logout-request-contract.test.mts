@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 const openApi = JSON.parse(
   readFileSync(
-    new URL('../../../../api-fixtures/v1/request-contracts.json', import.meta.url),
+    new URL('../../../../api-contracts/v1/request-contracts.json', import.meta.url),
     'utf8',
   ),
 ) as {

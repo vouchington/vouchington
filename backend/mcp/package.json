@@ -98,7 +98,7 @@
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@voucha/api-fixtures": "workspace:^",
+    "@voucha/api-contracts": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/mcp-server": "^0.2.0",
     "@vouchington/sentry": "^0.6.0",

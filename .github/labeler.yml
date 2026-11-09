@@ -74,6 +74,7 @@ email:
 client-parity:
   - changed-files:
       - any-glob-to-any-file: 'api-fixtures/**'
+      - any-glob-to-any-file: 'api-contracts/**'
 
 content:
   - changed-files:

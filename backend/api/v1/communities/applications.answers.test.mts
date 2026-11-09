@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
-import contracts from '../../../../api-fixtures/v1/request-contracts.json' with { type: 'json' }
+import contracts from '../../../../api-contracts/v1/request-contracts.json' with { type: 'json' }
 import {
   createRandomString,
   createTestUser,

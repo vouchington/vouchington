@@ -8,7 +8,7 @@ import { signSessionJwt, verifySessionJwt } from '@ts-shared/session-jwt'
 import { COOKIE_OPTIONS } from '@modules/api-utils'
 import { readSessionDeviceAuthority } from '@services/jwt-session/device-authority'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
-import requestContracts from '../../../../../api-fixtures/v1/request-contracts.json' with { type: 'json' }
+import requestContracts from '../../../../../api-contracts/v1/request-contracts.json' with { type: 'json' }
 
 const origin = 'https://dbsc.example'
 const userAgent = 'Synthetic browser/1.0'

@@ -2,6 +2,7 @@
   "$schema": "./node_modules/syncpack/schema.json",
   "source": [
     "package.json",
+    "api-contracts/package.json",
     "api-fixtures/package.json",
     "backend/package.json",
     "backend/{api,config,md,rss,scripts,test-helpers,mcp,types}/package.json",

@@ -19,7 +19,7 @@ type RequestContracts = {
 }
 
 const contracts = JSON.parse(
-  readFileSync(new URL('../../api-fixtures/v1/request-contracts.json', import.meta.url), 'utf8'),
+  readFileSync(new URL('../../api-contracts/v1/request-contracts.json', import.meta.url), 'utf8'),
 ) as RequestContracts
 
 // Each tool returns a leaner shape than its REST twin, so it owns its result schema. Every field

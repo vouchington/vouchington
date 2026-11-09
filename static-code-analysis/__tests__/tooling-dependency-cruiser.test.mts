@@ -118,6 +118,11 @@ describe('tooling dependency-cruiser runner', () => {
   })
 })
 
+const cruisedRoots = [
+  ...['backend', 'web', 'lambdas', 'ci', 'ts-shared'],
+  ...['email-templates', 'cloudflare-worker'],
+]
+
 describe('production test-helper dependency boundary', () => {
   const rules = require('../production-test-helper-boundary.cjs') as DependencyCruiserRule[]
 
@@ -149,6 +154,14 @@ describe('production test-helper dependency boundary', () => {
       'backend/entrypoints/api/relative.mts':
         "export { value } from '../../test-helpers/value.mts'",
       'backend/mcp/relative.mts': "export { value } from '../test-helpers/value.mts'",
+      'api-fixtures/v1/value.json': '{}',
+      'api-contracts/v1/value.json': '{}',
+      'backend/mcp/fixture-relative.mts':
+        "export { default as value } from '../../api-fixtures/v1/value.json'",
+      'backend/services/fixture-package.mts':
+        "export { default as value } from '@voucha/api-fixtures/v1/value.json'",
+      'backend/services/contract-package.mts':
+        "export { default as value } from '@voucha/api-contracts/v1/value.json'",
       'backend/md/relative.mts': "export { value } from '../test-helpers/value.mts'",
       'backend/services/alias.mts':
         "import type { Value } from '@voucha/test-helpers/value'; export type Result = Value",
@@ -185,6 +198,8 @@ describe('production test-helper dependency boundary', () => {
           baseUrl: '.',
           paths: {
             '@voucha/test-helpers/*': ['backend/test-helpers/*.mts'],
+            '@voucha/api-fixtures/*': ['api-fixtures/*'],
+            '@voucha/api-contracts/*': ['api-contracts/*'],
             '@/test-helpers/*': ['web/test-helpers/*'],
           },
         },
@@ -200,23 +215,13 @@ describe('production test-helper dependency boundary', () => {
         join(root, 'dependency-rules.cjs'),
         `const root = require(${JSON.stringify(fileURLToPath(new URL('../../.dependency-cruiser.cjs', import.meta.url)))}); module.exports = { ...root, forbidden: [...root.forbidden, ...require(${JSON.stringify(fileURLToPath(new URL('../../backend/dependency-cruiser-rules/data-stores-primary.cjs', import.meta.url)))})], options: { ...root.options, tsConfig: { fileName: 'tsconfig.json' } } }`,
       )
-      const result = spawnSync(
-        fileURLToPath(new URL('../../node_modules/.bin/dependency-cruiser', import.meta.url)),
-        [
-          '--config',
-          'dependency-rules.cjs',
-          '--output-type',
-          'json',
-          'backend',
-          'web',
-          'lambdas',
-          'ci',
-          'ts-shared',
-          'email-templates',
-          'cloudflare-worker',
-        ],
-        { cwd: root, encoding: 'utf8' },
-      )
+      const cruise = (outputType: string) =>
+        spawnSync(
+          fileURLToPath(new URL('../../node_modules/.bin/dependency-cruiser', import.meta.url)),
+          ['--config', 'dependency-rules.cjs', '--output-type', outputType, ...cruisedRoots],
+          { cwd: root, encoding: 'utf8' },
+        )
+      const result = cruise('json')
       expect(result.error).toBeUndefined()
       expect(result.stderr).toBe('')
       expect(result.status).toBe(0)
@@ -242,23 +247,7 @@ describe('production test-helper dependency boundary', () => {
       )
       await writeFile(join(root, 'cloudflare-worker/src/relative.mts'), "import './missing.mts'")
       await writeFile(join(root, 'web/app/page.ts'), "import 'cloudflare:workers'")
-      const failing = spawnSync(
-        fileURLToPath(new URL('../../node_modules/.bin/dependency-cruiser', import.meta.url)),
-        [
-          '--config',
-          'dependency-rules.cjs',
-          '--output-type',
-          'err',
-          'backend',
-          'web',
-          'lambdas',
-          'ci',
-          'ts-shared',
-          'email-templates',
-          'cloudflare-worker',
-        ],
-        { cwd: root, encoding: 'utf8' },
-      )
+      const failing = cruise('err')
       expect(failing.status).toBeGreaterThan(0)
       expect(failing.stdout + failing.stderr).toContain('mcp-catalog-cli-datastore-lifecycle-only')
       expect(failing.stdout + failing.stderr).toContain('backend/data-stores/psql/index.mts')
@@ -273,6 +262,7 @@ describe('production test-helper dependency boundary', () => {
         'backend/api/relative.mts',
         'backend/config/relative.mts',
         'backend/entrypoints/api/relative.mts',
+        'backend/mcp/fixture-relative.mts',
         'backend/mcp/relative.mts',
         'backend/md/relative.mts',
         'backend/queues/relative.mts',
@@ -280,6 +270,7 @@ describe('production test-helper dependency boundary', () => {
         'backend/scripts/other-generator.mts',
         'backend/service-registrations/relative.mts',
         'backend/services/alias.mts',
+        'backend/services/fixture-package.mts',
         'backend/types/relative.mts',
         'backend/worker-runtime/relative.mts',
         'ci/check-runtime.mts',

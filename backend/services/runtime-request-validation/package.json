@@ -13,7 +13,7 @@
     }
   },
   "dependencies": {
-    "@voucha/api-fixtures": "workspace:^",
+    "@voucha/api-contracts": "workspace:^",
     "@vouchington/request-contract-validation": "^0.0.3"
   }
 }

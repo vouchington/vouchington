@@ -23,9 +23,10 @@ import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 // Every non-GET request-contract or exempt operation must map to exactly one tool option on one
 // audience or have an explicit categorized exclusion.
 
-const requestContracts = JSON.parse(
-  readFileSync(new URL('../../../api-fixtures/v1/request-contracts.json', import.meta.url), 'utf8'),
-) as { operations: Record<string, unknown> }
+const contractsUrl = new URL('../../../api-contracts/v1/request-contracts.json', import.meta.url)
+const requestContracts = JSON.parse(readFileSync(contractsUrl, 'utf8')) as {
+  operations: Record<string, unknown>
+}
 const normalizePath = (path: string) => path.replace(/\{([^}]+)\}/g, ':$1')
 const isWrite = (key: string) => !key.startsWith('GET:')
 

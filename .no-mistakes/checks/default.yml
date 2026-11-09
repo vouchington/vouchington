@@ -29,6 +29,7 @@ commands:
     command: [bash, -c, 'pnpm run backend-row-contracts:check && pnpm run api-fixtures:check']
     fileArgs: none
     include:
+      - 'api-contracts/**'
       - 'api-fixtures/**'
       - 'backend/test-helpers/api-fixtures/**'
       - 'backend/modules/scheduled-job-manifest/**'
@@ -44,6 +45,7 @@ commands:
       - 'backend/services/mcp-tools/**'
       - 'backend/scripts/*mcp*'
       - 'backend/test-helpers/**/*mcp*'
+      - 'api-contracts/**'
       - 'api-fixtures/v1/mcp*.json'
       - docs/overview/architecture/mcp/catalog.md
   - name: web-route-selector-map

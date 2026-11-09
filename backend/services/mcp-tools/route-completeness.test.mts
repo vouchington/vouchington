@@ -76,9 +76,9 @@ const additions = Object.entries(baselineData.additions).flatMap(([route, additi
   })),
 )
 const expectedRecords = [...baselineRecords, ...additions]
-const requestContracts = JSON.parse(
-  readFileSync(new URL('../../../api-fixtures/v1/request-contracts.json', import.meta.url), 'utf8'),
-) as { operations: Record<string, { body?: unknown }>; components: Record<string, unknown> }
+const contractsUrl = new URL('../../../api-contracts/v1/request-contracts.json', import.meta.url)
+type C = { operations: Record<string, { body?: unknown }>; components: Record<string, unknown> }
+const requestContracts = JSON.parse(readFileSync(contractsUrl, 'utf8')) as C
 type RouteSource = Pick<Tool, 'roles' | 'meta'> & { schema: Pick<Tool['schema'], 'parameters'> }
 type SourceEntry = { publicName: string; option: string | null; source: RouteSource }
 const mergedGroups = [

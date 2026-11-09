@@ -151,10 +151,10 @@ describe('checks-static workflow', () => {
       run: 'source .github/workflows/checks-static-api-snapshot-git-state.sh',
     })
     expect(apiSnapshotScript).toContain(
-      'git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json',
+      'git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-contracts/v1/request-contracts.json',
     )
     expect(apiSnapshotScript).toContain(
-      'git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/request-contracts.json',
+      'git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-contracts/v1/request-contracts.json',
     )
     expect(apiSnapshotScript).toContain('if [ -n "$untracked_generated_files" ]; then')
     expect(apiSnapshotScript).toContain('Generated API fixture files are untracked:')

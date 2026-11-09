@@ -14,6 +14,7 @@ backend:
   - 'ci/validate-generated-ddl-inserts.mts'
   - 'ci/generated-ddl-inserts/**'
   - 'ci/package.json'
+  - 'api-contracts/**'
   - 'api-fixtures/**'
   - 'vitest.config.mts'
   - 'package.json'
@@ -97,6 +98,7 @@ web:
   - 'ci/setup-web-integration.mts'
   - 'ci/run-pnpm-command.mts'
   - 'ci/stale-test-cache-cleanup.mts'
+  - 'api-contracts/**'
   - 'api-fixtures/**'
   - 'vitest.config.mts'
   - 'test-helpers/vitest-config/web-projects.mts'
@@ -184,6 +186,7 @@ web-integration:
   - '.github/ci-path-filters.yml'
   - 'ci/run-pnpm-command.mts'
   - 'ci/write-web-build-timings-summary.mts'
+  - 'api-contracts/**'
   - 'api-fixtures/**'
   - 'vitest.config.mts'
   - 'package.json'
@@ -369,6 +372,7 @@ build-backend-infra:
   - '.hadolint.yaml'
   - '.trivyignore.yaml'
   - 'pnpm-workspace.yaml'
+  - 'api-contracts/package.json'
   - 'api-fixtures/package.json'
   - 'backend/package.json'
   - 'backend/*/package.json'
@@ -419,7 +423,7 @@ portability:
 
 # Runtime filters use the every quantifier; primary filters above use some.
 runtime-web:
-  - '{.github/ci-path-filters.yml,ci/setup-web-integration.mts,ci/run-pnpm-command.mts,ci/stale-test-cache-cleanup.mts,api-fixtures/**,vitest.config.mts,test-helpers/vitest-config/web-projects.mts,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,backend/types/**,ts-shared/**,web/**}'
+  - '{.github/ci-path-filters.yml,ci/setup-web-integration.mts,ci/run-pnpm-command.mts,ci/stale-test-cache-cleanup.mts,api-contracts/**,api-fixtures/**,vitest.config.mts,test-helpers/vitest-config/web-projects.mts,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,backend/types/**,ts-shared/**,web/**}'
 runtime-storybook:
   - '{.github/ci-path-filters.yml,ci/storybook-pages*.mts,cloudflare-worker/package.json,cloudflare-worker/src/basic-auth-credentials.mts,cloudflare-worker/src/storybook-pages-auth.mts,cloudflare-worker/src/timing-safe-credential-match.mts,web/**,vitest.config.mts,test-helpers/vitest-config/environment.mts,test-helpers/vitest-config/storybook-browser-project.mts,test-helpers/vitest-config/storybook-browser-optimize-deps.mts,test-helpers/vitest-config/web-projects.mts,pnpm-lock.yaml}'
   - '!web/.dependency-cruiser.cjs'
@@ -462,7 +466,7 @@ runtime-playwright:
   - '!lambdas/image-resize/**/*.spec.mts'
   - '!lambdas/image-resize/**/test-helpers/**'
 runtime-web-integration:
-  - '{.github/ci-path-filters.yml,ci/run-pnpm-command.mts,ci/write-web-build-timings-summary.mts,api-fixtures/**,vitest.config.mts,package.json,backend/**,ts-shared/**,web/**,cloudflare-worker/**,lambdas/image-resize/**,integration-tests/web/**,integration-tests/web-api/**}'
+  - '{.github/ci-path-filters.yml,ci/run-pnpm-command.mts,ci/write-web-build-timings-summary.mts,api-contracts/**,api-fixtures/**,vitest.config.mts,package.json,backend/**,ts-shared/**,web/**,cloudflare-worker/**,lambdas/image-resize/**,integration-tests/web/**,integration-tests/web-api/**}'
   - '!web/.dependency-cruiser.cjs'
   - '!**/*.md'
   - '!**/*.mdx'

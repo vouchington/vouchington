@@ -1,0 +1,10 @@
+{
+  "name": "@voucha/api-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./v1/request-contracts.json": "./v1/request-contracts.json"
+  }
+}
