@@ -249,10 +249,51 @@ COMMENT ON COLUMN moderation_report_clusters.resolution_action IS 'NULL for pend
 COMMENT ON COLUMN moderation_report_clusters.first_reported_at IS 'Earliest UUIDv7 report timestamp in this target and outcome cluster.';
 COMMENT ON COLUMN moderation_report_clusters.last_reported_at IS 'Latest UUIDv7 report timestamp in this target and outcome cluster.';
 
--- Take the destination cluster lock before the report insert's case foreign key.
--- Resolution locks that cluster and then the case; the reverse order deadlocks.
+-- A genuine insert locks the destination cluster before the case foreign key.
+-- A pending duplicate locks that report first and skips the cluster: its update
+-- does not change the cluster, and resolution already locks the report then the cluster.
 CREATE OR REPLACE FUNCTION fn_lock_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  pending_report uuid;
 BEGIN
+  IF NEW.post_id IS NOT NULL THEN
+    SELECT report.id INTO pending_report FROM moderation_reports report
+    WHERE report.post_id = NEW.post_id
+      AND report.reporter_user_id = NEW.reporter_user_id
+      AND report.reviewed_at IS NULL
+    ORDER BY report.id FOR UPDATE;
+  ELSIF NEW.reported_user_id IS NOT NULL AND NEW.community_id IS NOT NULL THEN
+    SELECT report.id INTO pending_report FROM moderation_reports report
+    WHERE report.reporter_user_id = NEW.reporter_user_id
+      AND report.reported_user_id = NEW.reported_user_id
+      AND report.community_id = NEW.community_id
+      AND report.reviewed_at IS NULL
+    ORDER BY report.id FOR UPDATE;
+  ELSIF NEW.reported_user_id IS NOT NULL
+    AND NEW.community_id IS NULL
+    AND NEW.moderation_transparency_community_id IS NULL THEN
+    SELECT report.id INTO pending_report FROM moderation_reports report
+    WHERE report.reporter_user_id = NEW.reporter_user_id
+      AND report.reported_user_id = NEW.reported_user_id
+      AND report.community_id IS NULL
+      AND report.moderation_transparency_community_id IS NULL
+      AND report.reviewed_at IS NULL
+    ORDER BY report.id FOR UPDATE;
+  ELSIF NEW.hostname_id IS NOT NULL THEN
+    SELECT report.id INTO pending_report FROM moderation_reports report
+    WHERE report.reporter_user_id = NEW.reporter_user_id
+      AND report.hostname_id = NEW.hostname_id
+      AND report.reviewed_at IS NULL
+    ORDER BY report.id FOR UPDATE;
+  ELSIF NEW.rss_feed_item_id IS NOT NULL THEN
+    SELECT report.id INTO pending_report FROM moderation_reports report
+    WHERE report.reporter_user_id = NEW.reporter_user_id
+      AND report.rss_feed_item_id = NEW.rss_feed_item_id
+      AND report.reviewed_at IS NULL
+    ORDER BY report.id FOR UPDATE;
+  END IF;
+  IF pending_report IS NOT NULL THEN RETURN NEW; END IF;
+
   PERFORM cluster.id FROM moderation_report_clusters cluster
   WHERE cluster.resolution_action IS NOT DISTINCT FROM NEW.resolution_action
     AND cluster.post_id IS NOT DISTINCT FROM NEW.post_id
