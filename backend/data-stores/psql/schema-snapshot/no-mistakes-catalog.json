@@ -153284,7 +153284,7 @@
         "idx_urls__hostname_feed_rank_latest_published_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_urls__hostname_feed_rank_latest_published_id ON public.urls USING btree (hostname_id, feed_rank, COALESCE(latest_published_at, '1969-12-31 16:00:00-08'::timestamp with time zone) DESC, id DESC)",
+          "definition": "CREATE INDEX idx_urls__hostname_feed_rank_latest_published_id ON public.urls USING btree (hostname_id, feed_rank, COALESCE(latest_published_at, '1970-01-01 00:00:00+00'::timestamp with time zone) DESC, id DESC)",
           "immediate": true,
           "keys": [
             {
@@ -153309,7 +153309,7 @@
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "COALESCE(latest_published_at, '1969-12-31 16:00:00-08'::timestamp with time zone)",
+              "expression": "COALESCE(latest_published_at, '1970-01-01 00:00:00+00'::timestamp with time zone)",
               "nullsFirst": true,
               "opclass": "pg_catalog.timestamptz_ops",
               "orderingSupported": true
