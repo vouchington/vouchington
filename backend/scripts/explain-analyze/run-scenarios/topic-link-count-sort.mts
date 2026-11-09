@@ -112,9 +112,17 @@ export async function runTopicLinkCountSortScenario(): Promise<void> {
   )
   await write('/* analyzeStaleLinkCountFixture */ ANALYZE referral_program_topics, topics')
   register('topic-link-count-live-eligibility', 226)
+  const staleIds = new Set(
+    Array.from({ length: STALE_COUNT }, (_, index) => topicId(PROGRAM_COUNT - STALE_COUNT + index)),
+  )
   await runAndCapture('topic-link-count-live-eligibility', async () => {
-    const page = await readActiveLinkCountTopicPage({ limit: 25 })
+    // Start immediately before this cohort so unrelated high-ranking programs do not hide
+    // the 200 stale keys whose live-eligibility work this scenario measures.
+    const page = await readActiveLinkCountTopicPage({
+      limit: 25,
+      after: encodeCursor({ score: 1, id: topicId(PROGRAM_COUNT) }),
+    })
     assert.equal(page.rows.length, 25)
-    assert.ok(page.rows.every(row => row.id < topicId(PROGRAM_COUNT - STALE_COUNT)))
+    assert.ok(page.rows.every(row => !staleIds.has(row.id)))
   })
 }
