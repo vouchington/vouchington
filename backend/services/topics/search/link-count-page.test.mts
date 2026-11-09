@@ -159,5 +159,11 @@ describe('active link count', () => {
     await expect(
       getTopicIds({ sort: 'link_count', after: encodeCursor({ score: 1.5, id: HIGHEST_ID }) }),
     ).rejects.toThrow(/Invalid cursor/)
+    await expect(
+      getTopicIds({
+        sort: 'link_count',
+        after: encodeCursor({ score: 2_147_483_648, id: HIGHEST_ID }),
+      }),
+    ).rejects.toMatchObject({ status: 400, message: expect.stringContaining('Invalid cursor') })
   })
 })

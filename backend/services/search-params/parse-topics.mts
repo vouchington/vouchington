@@ -40,10 +40,7 @@ const topicsQueryContract = defineQueryContract({
   rss_feed: queryBoolean(),
 })
 
-export function prepareTopicsSearchParams(
-  query: Record<string, unknown>,
-  runtimeLimits?: PaginationRuntimeLimitBounds,
-) {
+export function assertLinkCountQueryStandsAlone(query: Record<string, unknown>): void {
   // An unresolved filter would otherwise return an empty page before the link-count guard runs.
   if (
     query.sort === 'link_count' &&
@@ -53,6 +50,13 @@ export function prepareTopicsSearchParams(
   ) {
     throw createHttpError(400, 'sort=link_count does not combine with topic search filters')
   }
+}
+
+export function prepareTopicsSearchParams(
+  query: Record<string, unknown>,
+  runtimeLimits?: PaginationRuntimeLimitBounds,
+) {
+  assertLinkCountQueryStandsAlone(query)
   const validationQuery = prepareQueryForValidation(query, {
     ...topicsParser.queryContract,
     ...topicsQueryContract.queryContract,

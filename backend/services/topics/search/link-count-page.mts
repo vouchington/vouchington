@@ -50,7 +50,7 @@ function decodeActiveLinkCountCursor(after: string | undefined): {
 } {
   if (!after) return { count: null, id: null }
   const cursor = decodeUuidCursor(after, isScoreCursor, 'Invalid cursor for sort=link_count')
-  if (!Number.isInteger(cursor.score) || cursor.score < 0) {
+  if (!Number.isInteger(cursor.score) || cursor.score < 0 || cursor.score > 2_147_483_647) {
     throw createHttpError(400, 'Invalid cursor for sort=link_count')
   }
   return { count: cursor.score, id: cursor.id }

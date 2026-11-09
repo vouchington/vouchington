@@ -3,7 +3,11 @@ import { getPaginationLimits } from '@services/pagination'
 import { VALID_TOPIC_TYPES } from '@modules/pagination/filters'
 import type { BasicUser } from '@services/users/types'
 import { getTopicIds } from '@services/topics/search/get-ids'
-import { prepareTopicsSearchParams, resolveTopicsSearchParams } from '@services/search-params'
+import {
+  assertLinkCountQueryStandsAlone,
+  prepareTopicsSearchParams,
+  resolveTopicsSearchParams,
+} from '@services/search-params'
 import {
   EMPTY_PAGE_INFO,
   findPageOrNull,
@@ -82,18 +86,17 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const query = {
+        ...pagedSearchQuery(args),
+        rss_feed: args.rss_feed,
+        slugs: args.slugs,
+        sort: args.sort,
+        spending_category: args.spending_category,
+        topic_types: args.topic_types,
+      }
+      assertLinkCountQueryStandsAlone(query)
       const page = await findPageOrNull(args.after, async () => {
-        const prepared = prepareTopicsSearchParams(
-          {
-            ...pagedSearchQuery(args),
-            rss_feed: args.rss_feed,
-            slugs: args.slugs,
-            sort: args.sort,
-            spending_category: args.spending_category,
-            topic_types: args.topic_types,
-          },
-          getPaginationLimits(25),
-        )
+        const prepared = prepareTopicsSearchParams(query, getPaginationLimits(25))
         const { shouldReturnEmpty, searchOptions } = await resolveTopicsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 
