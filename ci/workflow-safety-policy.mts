@@ -89,10 +89,14 @@ export function workflowSafetyViolations(
       }
       if (/\bnpx --yes skills update\b/.test(step.run ?? '') && !step.env?.GH_TOKEN)
         violations.push(`${label}: skills update needs GH_TOKEN`)
-      if (step.uses?.startsWith('actions/download-artifact@')) {
+      // The Codecov upload job holds OIDC and runs no repository action code; it is non-gating.
+      if (step.uses?.startsWith('actions/download-artifact@') && slug !== 'ci-upload-codecov')
+        violations.push(
+          `${label}: use ./.github/actions/download-artifact; the upstream action stays alive after success (#5453)`,
+        )
+      if (step.uses === './.github/actions/download-artifact') {
         for (const key of ['github-token', 'repository', 'run-id']) {
-          if (!step.with?.[key])
-            violations.push(`${label}: actions/download-artifact must set ${key}`)
+          if (!step.with?.[key]) violations.push(`${label}: download-artifact must set ${key}`)
         }
       }
       const run = step.run ?? ''

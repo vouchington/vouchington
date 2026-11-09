@@ -140,7 +140,11 @@ Dedicated native migration-control scenarios still execute migrations as the beh
 Snapshot validation runs on fresh migration output because PostgreSQL can re-parenthesize equivalent
 conditions during dump/restore.
 
-Artifact transfer success does not guarantee that the download action returned. If a backend-unit
+`actions/download-artifact` v8.0.2 logs success and then stays alive until the step deadline
+(#4328, #5453), so no workflow uses it. `./.github/actions/download-artifact` lists the run's
+artifacts over the REST API, downloads each with a finite curl deadline, verifies the SHA-256 digest
+GitHub recorded at upload (a missing or mismatched digest fails), extracts it, and exits. It has no
+retry and no forced exit; the workflow safety policy rejects the upstream action everywhere except the non-gating Codecov upload job, which holds OIDC and runs no repository action code. If a backend-unit
 shard's prepared database download fails, inspect that step's error before investigating missing
 coverage: database restore, backend setup, and tests have not started, so missing coverage is a
 downstream consequence.

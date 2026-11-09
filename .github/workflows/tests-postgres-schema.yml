@@ -61,7 +61,7 @@ jobs:
         run: source "$GITHUB_WORKSPACE/.github/workflows/tests-postgres-schema-set-service-connections.sh"
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 5
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+      - uses: ./.github/actions/download-artifact
         timeout-minutes: 2
         with:
           name: backend-postgres-${{ github.run_id }}
