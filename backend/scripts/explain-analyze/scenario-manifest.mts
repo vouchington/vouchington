@@ -179,7 +179,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   ...(['url-search', 'url-search-hostname', 'url-search-text'] as const),
   'user-bookmark-counts',
   ...SESSION_LIMIT_SCENARIO_IDS,
-  ...(['user-by-username', 'user-metrics-batch'] as const),
+  'user-by-username',
   ...(['user-profile-metrics', 'profile-post-type-counts'] as const),
   'user-removed-posts-page',
   ...(['vote-aggregation-post', 'vote-aggregation-topic'] as const),

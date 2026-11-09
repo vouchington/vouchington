@@ -47,6 +47,13 @@ header render this for the author, a stranger, and an anonymous viewer. Swift an
 native work is a vouchington-clients follow-up and does not gate this producer change. MCP has no
 user-metrics tool, so the change adds no MCP surface.
 
+The owner and administrators also get `user_metrics.private_count` (saved, hidden, blocked, muted,
+viewed and similar), read to the same cap. `user_metrics.private_count_capped` carries one boolean
+per `private_count` key with the same meaning as `count_capped`. The earlier `user_metrics.bookmarks`,
+`user_metrics.bookmarkers` and `user_metrics.bookmarks__updated_at` fields are removed: they repeated
+`count.topics_following`, `count.users_following`, `count.users_followers` and
+`private_count.posts_following`. Swift and .NET drop those fields from their models and fixtures.
+
 ## Membership verification outcomes
 
 The billing feature's verification-outcomes row in `client-feature-parity.json` tracks native adoption.

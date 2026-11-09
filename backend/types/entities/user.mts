@@ -127,6 +127,37 @@ export type PrivateUser = BasicUser & {
   lingua_rs_detected_language?: string | null
 } & UserPrivacySettings
 
+export type UserPrivateMetricsCount = {
+  posts_saved: number
+  posts_hidden: number
+  posts_following: number
+  posts_subscribed: number
+  topics_blocked: number
+  topics_muted: number
+  topics_viewed: number
+  topics_subscribed_posts: number
+  topics_subscribed_news: number
+  topics_dismissed_recommendations: number
+  users_blocked: number
+  users_muted: number
+  users_subscribed_posts: number
+  users_dismissed_recommendations: number
+  rss_feeds_subscribed: number
+  rss_feeds_muted: number
+  rss_feeds_viewed: number
+  rss_feed_items_saved: number
+  rss_feed_items_hidden: number
+  rss_feed_items_viewed: number
+  urls_saved: number
+  domains_blocked: number
+  domains_muted: number
+  communities_saved: number
+  communities_proxy_following: number
+  communities_proxy_muted: number
+}
+
+export type UserPrivateMetricsCapped = { [Key in keyof UserPrivateMetricsCount]: boolean }
+
 export type UserMetrics = {
   __entity_type: 'user_metrics'
   id: string
@@ -157,43 +188,7 @@ export type UserMetrics = {
     rss_feeds_following: boolean
     communities_member: boolean
   }
-  private_count?: {
-    posts_saved: number
-    posts_hidden: number
-    posts_following: number
-    posts_subscribed: number
-    topics_blocked: number
-    topics_muted: number
-    topics_viewed: number
-    topics_subscribed_posts: number
-    topics_subscribed_news: number
-    topics_dismissed_recommendations: number
-    users_blocked: number
-    users_muted: number
-    users_subscribed_posts: number
-    users_dismissed_recommendations: number
-    rss_feeds_subscribed: number
-    rss_feeds_muted: number
-    rss_feeds_viewed: number
-    rss_feed_items_saved: number
-    rss_feed_items_hidden: number
-    rss_feed_items_viewed: number
-    urls_saved: number
-    domains_blocked: number
-    domains_muted: number
-    communities_saved: number
-    communities_proxy_following: number
-    communities_proxy_muted: number
-  }
-  bookmarks: {
-    follow: {
-      topics: number
-      posts: number
-      users: number
-    }
-  }
-  bookmarkers: {
-    follow: number
-  }
-  bookmarks__updated_at: Date
+  private_count?: UserPrivateMetricsCount
+  /** `true` means that private count is larger than the cap and `private_count` holds the cap. */
+  private_count_capped?: UserPrivateMetricsCapped
 }

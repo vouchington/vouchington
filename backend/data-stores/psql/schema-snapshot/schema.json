@@ -2178,9 +2178,6 @@
     "fn_update_url_latest_published_at": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_latest_published_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  affected_url_id UUID;\n  next_published_at TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    -- A new item can only raise the maximum. The write is unconditional so\n    -- every insert row-locks its URL even when it is older than the current\n    -- maximum; that lock is what serializes inserts with downward recomputes\n    -- (a skipped write would let a concurrent delete recompute without seeing\n    -- the uncommitted item). GREATEST ignores NULLs. No hostname or item\n    -- read-set locks are taken.\n    UPDATE urls\n    SET latest_published_at = GREATEST(latest_published_at, NEW.published_at)\n    WHERE id = NEW.url_id;\n    RETURN NULL;\n  END IF;\n\n  IF TG_OP = 'UPDATE' AND OLD.url_id = NEW.url_id\n      AND OLD.published_at IS NOT DISTINCT FROM NEW.published_at THEN\n    RETURN NULL;\n  END IF;\n\n  FOR affected_url_id IN\n    SELECT DISTINCT candidate_url_id\n    FROM unnest(ARRAY[\n      OLD.url_id,\n      CASE WHEN TG_OP = 'UPDATE' THEN NEW.url_id ELSE NULL END\n    ]) AS candidate_url_id\n    WHERE candidate_url_id IS NOT NULL\n    ORDER BY candidate_url_id\n  LOOP\n    -- Lock and write only affected URL rows. Sort the two URLs in a move\n    -- to keep their lock order stable.\n    PERFORM 1 FROM urls WHERE id = affected_url_id FOR NO KEY UPDATE;\n    IF NOT FOUND THEN CONTINUE; END IF; -- URL deletion cascade.\n\n    SELECT published_at INTO next_published_at\n    FROM fn_url_latest_rss_feed_item_published_at(affected_url_id);\n    UPDATE urls SET latest_published_at = next_published_at\n    WHERE id = affected_url_id;\n  END LOOP;\n  RETURN NULL;\nEND;\n$function$\n"
     },
-    "fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  UPDATE user_metrics\n  SET\n    bookmarks__updated_at = CURRENT_TIMESTAMP,\n    bookmarks__follow__topics_count = (\n      SELECT COUNT(*) FROM relation__user__follow__topic\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarks__follow__posts_count = (\n      SELECT COUNT(*) FROM relation__user__follow__post\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarks__follow__users_count = (\n      SELECT COUNT(*) FROM relation__user__follow__user\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarkers__follow_count = (\n      SELECT COUNT(*) FROM relation__user__follow__user\n      WHERE object_id = target_user_id AND deleted_at IS NULL\n    )\n  WHERE id = target_user_id;\n$function$\n"
-    },
     "fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)\n RETURNS uuid\n LANGUAGE plpgsql\nAS $function$\nDECLARE context_id UUID;\nBEGIN\n  INSERT INTO membership_provider_contexts (provider, environment, application_id)\n  VALUES (context_provider, context_environment, context_application_id)\n  ON CONFLICT (provider, environment, application_id) DO NOTHING\n  RETURNING id INTO context_id;\n  IF context_id IS NULL THEN\n    SELECT id INTO STRICT context_id FROM membership_provider_contexts\n    WHERE provider = context_provider AND environment = context_environment\n      AND application_id = context_application_id;\n  END IF;\n  RETURN context_id;\nEND $function$\n"
     },
@@ -151178,61 +151175,6 @@
     "user_metrics": {
       "checkConstraints": {},
       "columns": {
-        "bookmarkers__follow_count": {
-          "collation": null,
-          "comment": "Number of users who follow this user.",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "integer"
-        },
-        "bookmarks__follow__posts_count": {
-          "collation": null,
-          "comment": "Number of posts this user bookmarks/follows.",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "integer"
-        },
-        "bookmarks__follow__topics_count": {
-          "collation": null,
-          "comment": "Number of topics this user bookmarks/follows.",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "integer"
-        },
-        "bookmarks__follow__users_count": {
-          "collation": null,
-          "comment": "Number of users this user follows.",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "integer"
-        },
-        "bookmarks__updated_at": {
-          "collation": null,
-          "comment": "When the bookmark/follow metrics were last recalculated.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
-        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -151267,7 +151209,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Aggregated metrics for users: bookmark counts and follower counts.",
+      "comment": "One row per user for profile metrics reads; counts are read live and capped, not stored.",
       "foreignKeys": {
         "user_metrics_id_fkey": {
           "columns": ["id"],
@@ -162160,7 +162102,7 @@
     },
     "view_user_metrics": {
       "comment": "User activity metrics for public profile reads.",
-      "definition": " SELECT 'user_metrics'::text AS __entity_type,\n    id,\n    bookmarks__follow__topics_count,\n    bookmarks__follow__posts_count,\n    bookmarks__follow__users_count,\n    bookmarkers__follow_count,\n    bookmarks__updated_at\n   FROM user_metrics;",
+      "definition": " SELECT 'user_metrics'::text AS __entity_type,\n    id\n   FROM user_metrics;",
       "materialized": false
     },
     "view_users_private": {

@@ -21,7 +21,6 @@ export { getConversationMessagesByConversationId } from '@services/conversations
 export { getElectionVotesByUser } from '@services/elections-votes/shared/vote-get'
 export { POST_ELECTION_CONFIG } from '@services/elections-votes/post/config'
 export { TOPIC_ELECTION_CONFIG } from '@services/elections-votes/topic/config'
-export { getUserMetricsByAnyBatch } from '@services/users/metrics-batch'
 export { getTopicMetricsByAnyBatch } from '@services/topics/metrics-batch'
 export { getTopicViewerCounts } from '@services/topics/metrics'
 export { getPostMetricsByAny } from '@services/posts/metrics'

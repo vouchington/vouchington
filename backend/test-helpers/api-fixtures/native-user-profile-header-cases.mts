@@ -73,11 +73,6 @@ export const nativeUserProfileHeaderApiFixtureCases: ApiFixtureCase[] = [
           rss_feeds_following: false,
           communities_member: false,
         },
-        bookmarks: {
-          follow: { topics: 1, posts: 2, users: 3 },
-        },
-        bookmarkers: { follow: 4 },
-        bookmarks__updated_at: '2026-07-01T16:00:00Z',
       },
       profile_links: [
         {
@@ -180,11 +175,6 @@ export const nativeUserProfileHeaderApiFixtureCases: ApiFixtureCase[] = [
           rss_feeds_following: false,
           communities_member: false,
         },
-        bookmarks: {
-          follow: { topics: 0, posts: 0, users: 0 },
-        },
-        bookmarkers: { follow: 0 },
-        bookmarks__updated_at: '2026-07-01T16:00:00Z',
       },
       profile_links: [],
     },

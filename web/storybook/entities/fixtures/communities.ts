@@ -1,5 +1,4 @@
 import type { UserMetrics } from '@/types/user-metrics'
-import { now } from './shared'
 import { publicUsers } from './users'
 
 export const userMetrics: UserMetrics = {
@@ -25,9 +24,6 @@ export const userMetrics: UserMetrics = {
     rss_feeds_following: false,
     communities_member: false,
   },
-  bookmarks: { follow: { topics: 44, posts: 9, users: 22 } },
-  bookmarkers: { follow: 180 },
-  bookmarks__updated_at: now,
 }
 export const communities = [
   {

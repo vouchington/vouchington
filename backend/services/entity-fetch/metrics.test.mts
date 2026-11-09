@@ -5,7 +5,6 @@ import {
   createUserProfileFixture,
   insertEntityRelation,
   insertTestRssFeedDirect,
-  setTestUserLegacyBookmarkMetrics,
 } from '@voucha/test-helpers'
 import { softDeleteTopic } from '../../test-helpers/entities/topics/deletion.mts'
 import { upsertRecentlyViewed } from '@services/recently-viewed'
@@ -26,18 +25,7 @@ describe('metrics', () => {
       expect(metrics).toMatchObject({
         __entity_type: 'user_metrics',
         id: user.id,
-        bookmarks: {
-          follow: {
-            topics: 0,
-            posts: 0,
-            users: 0,
-          },
-        },
-        bookmarkers: {
-          follow: 0,
-        },
       })
-      expect(metrics?.bookmarks__updated_at).toBeInstanceOf(Date)
     })
 
     it('retrieves metrics by username', async () => {
@@ -50,16 +38,6 @@ describe('metrics', () => {
       expect(metrics).toMatchObject({
         __entity_type: 'user_metrics',
         id: testUser!.id,
-        bookmarks: {
-          follow: {
-            topics: 0,
-            posts: 0,
-            users: 0,
-          },
-        },
-        bookmarkers: {
-          follow: 0,
-        },
       })
     })
 
@@ -144,12 +122,6 @@ describe('metrics', () => {
         fixture.owner.id,
         fixture.discussion.id,
       )
-      await setTestUserLegacyBookmarkMetrics(fixture.owner.id, {
-        topics: 1,
-        posts: 1,
-        users: 1,
-        followers: 1,
-      })
       await updateUserFields(fixture.owner.id, {
         follows_visibility: 'nobody',
         followers_visibility: 'nobody',
@@ -169,12 +141,6 @@ describe('metrics', () => {
           topics_following: 0,
           rss_feeds_following: 0,
         })
-        expect(metrics?.bookmarks.follow).toEqual({
-          topics: 0,
-          posts: 0,
-          users: 0,
-        })
-        expect(metrics?.bookmarkers.follow).toBe(0)
       }
     })
 
@@ -187,12 +153,6 @@ describe('metrics', () => {
         fixture.owner.id,
         fixture.discussion.id,
       )
-      await setTestUserLegacyBookmarkMetrics(fixture.owner.id, {
-        topics: 1,
-        posts: 1,
-        users: 1,
-        followers: 1,
-      })
       await updateUserFields(fixture.owner.id, {
         follows_visibility: 'followers',
         followers_visibility: 'followers',
@@ -213,36 +173,18 @@ describe('metrics', () => {
         topics_following: 1,
         rss_feeds_following: 1,
       })
-      expect(ownerMetrics?.bookmarks.follow).toEqual({
-        topics: 1,
-        posts: 1,
-        users: 1,
-      })
-      expect(ownerMetrics?.bookmarkers.follow).toBe(1)
       expect(followerMetrics?.count).toMatchObject({
         users_following: 1,
         users_followers: 1,
         topics_following: 1,
         rss_feeds_following: 1,
       })
-      expect(followerMetrics?.bookmarks.follow).toEqual({
-        topics: 1,
-        posts: 0,
-        users: 1,
-      })
-      expect(followerMetrics?.bookmarkers.follow).toBe(1)
 
       await insertEntityRelation(
         'relation__user__follow__user',
         fixture.owner.id,
         fixture.follower.id,
       )
-      await setTestUserLegacyBookmarkMetrics(fixture.owner.id, {
-        topics: 1,
-        posts: 1,
-        users: 2,
-        followers: 1,
-      })
       await updateUserFields(fixture.owner.id, {
         follows_visibility: 'mutual_followers',
         followers_visibility: 'mutual_followers',
@@ -259,12 +201,6 @@ describe('metrics', () => {
         topics_following: 1,
         rss_feeds_following: 1,
       })
-      expect(mutualFollowerMetrics?.bookmarks.follow).toEqual({
-        topics: 1,
-        posts: 0,
-        users: 2,
-      })
-      expect(mutualFollowerMetrics?.bookmarkers.follow).toBe(1)
     })
 
     it('excludes soft-deleted relation targets from private profile counts', async () => {

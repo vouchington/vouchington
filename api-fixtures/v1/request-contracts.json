@@ -38091,42 +38091,6 @@
         "__entity_type": {
           "const": "user_metrics"
         },
-        "bookmarkers": {
-          "additionalProperties": false,
-          "properties": {
-            "follow": {
-              "type": "number"
-            }
-          },
-          "required": ["follow"],
-          "type": "object"
-        },
-        "bookmarks": {
-          "additionalProperties": false,
-          "properties": {
-            "follow": {
-              "additionalProperties": false,
-              "properties": {
-                "posts": {
-                  "type": "number"
-                },
-                "topics": {
-                  "type": "number"
-                },
-                "users": {
-                  "type": "number"
-                }
-              },
-              "required": ["posts", "topics", "users"],
-              "type": "object"
-            }
-          },
-          "required": ["follow"],
-          "type": "object"
-        },
-        "bookmarks__updated_at": {
-          "type": "string"
-        },
         "count": {
           "additionalProperties": false,
           "properties": {
@@ -38321,16 +38285,121 @@
             "users_subscribed_posts"
           ],
           "type": "object"
+        },
+        "private_count_capped": {
+          "additionalProperties": false,
+          "properties": {
+            "communities_proxy_following": {
+              "type": "boolean"
+            },
+            "communities_proxy_muted": {
+              "type": "boolean"
+            },
+            "communities_saved": {
+              "type": "boolean"
+            },
+            "domains_blocked": {
+              "type": "boolean"
+            },
+            "domains_muted": {
+              "type": "boolean"
+            },
+            "posts_following": {
+              "type": "boolean"
+            },
+            "posts_hidden": {
+              "type": "boolean"
+            },
+            "posts_saved": {
+              "type": "boolean"
+            },
+            "posts_subscribed": {
+              "type": "boolean"
+            },
+            "rss_feed_items_hidden": {
+              "type": "boolean"
+            },
+            "rss_feed_items_saved": {
+              "type": "boolean"
+            },
+            "rss_feed_items_viewed": {
+              "type": "boolean"
+            },
+            "rss_feeds_muted": {
+              "type": "boolean"
+            },
+            "rss_feeds_subscribed": {
+              "type": "boolean"
+            },
+            "rss_feeds_viewed": {
+              "type": "boolean"
+            },
+            "topics_blocked": {
+              "type": "boolean"
+            },
+            "topics_dismissed_recommendations": {
+              "type": "boolean"
+            },
+            "topics_muted": {
+              "type": "boolean"
+            },
+            "topics_subscribed_news": {
+              "type": "boolean"
+            },
+            "topics_subscribed_posts": {
+              "type": "boolean"
+            },
+            "topics_viewed": {
+              "type": "boolean"
+            },
+            "urls_saved": {
+              "type": "boolean"
+            },
+            "users_blocked": {
+              "type": "boolean"
+            },
+            "users_dismissed_recommendations": {
+              "type": "boolean"
+            },
+            "users_muted": {
+              "type": "boolean"
+            },
+            "users_subscribed_posts": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "communities_proxy_following",
+            "communities_proxy_muted",
+            "communities_saved",
+            "domains_blocked",
+            "domains_muted",
+            "posts_following",
+            "posts_hidden",
+            "posts_saved",
+            "posts_subscribed",
+            "rss_feed_items_hidden",
+            "rss_feed_items_saved",
+            "rss_feed_items_viewed",
+            "rss_feeds_muted",
+            "rss_feeds_subscribed",
+            "rss_feeds_viewed",
+            "topics_blocked",
+            "topics_dismissed_recommendations",
+            "topics_muted",
+            "topics_subscribed_news",
+            "topics_subscribed_posts",
+            "topics_viewed",
+            "urls_saved",
+            "users_blocked",
+            "users_dismissed_recommendations",
+            "users_muted",
+            "users_subscribed_posts"
+          ],
+          "type": "object"
         }
       },
-      "required": [
-        "__entity_type",
-        "bookmarkers",
-        "bookmarks",
-        "bookmarks__updated_at",
-        "count",
-        "id"
-      ],
+      "required": ["__entity_type", "count", "id"],
       "type": "object"
     },
     "UserModNote": {

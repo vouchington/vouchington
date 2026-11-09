@@ -729,17 +729,7 @@ COMMENT ON COLUMN amazon_ses_bounce_events.dedup_key IS 'SHA-256 hex digest of a
 CREATE TABLE IF NOT EXISTS user_metrics (
   id UUID PRIMARY KEY REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-  -- Bookmark counts (how many entities this user bookmarked)
-  bookmarks__follow__topics_count INT DEFAULT 0,
-  bookmarks__follow__posts_count INT DEFAULT 0,
-  bookmarks__follow__users_count INT DEFAULT 0,
-
-  -- Bookmarkers counts (how many users bookmarked this user)
-  bookmarkers__follow_count INT DEFAULT 0,
-
-  bookmarks__updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -748,12 +738,7 @@ BEFORE UPDATE ON user_metrics
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE user_metrics IS 'Aggregated metrics for users: bookmark counts and follower counts.';
-COMMENT ON COLUMN user_metrics.bookmarks__follow__topics_count IS 'Number of topics this user bookmarks/follows.';
-COMMENT ON COLUMN user_metrics.bookmarks__follow__posts_count IS 'Number of posts this user bookmarks/follows.';
-COMMENT ON COLUMN user_metrics.bookmarks__follow__users_count IS 'Number of users this user follows.';
-COMMENT ON COLUMN user_metrics.bookmarkers__follow_count IS 'Number of users who follow this user.';
-COMMENT ON COLUMN user_metrics.bookmarks__updated_at IS 'When the bookmark/follow metrics were last recalculated.';
+COMMENT ON TABLE user_metrics IS 'One row per user for profile metrics reads; counts are read live and capped, not stored.';
 
 -- Function to auto-create user_metrics row when user is created
 
