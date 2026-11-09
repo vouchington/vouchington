@@ -252,6 +252,27 @@ BEGIN
       AND OLD.rss_feed_item_id IS NOT DISTINCT FROM NEW.rss_feed_item_id THEN
       RETURN NEW;
     END IF;
+
+    IF OLD.resolution_action IS DISTINCT FROM NEW.resolution_action
+      OR OLD.post_id IS DISTINCT FROM NEW.post_id
+      OR OLD.reported_user_id IS DISTINCT FROM NEW.reported_user_id
+      OR OLD.hostname_id IS DISTINCT FROM NEW.hostname_id
+      OR OLD.rss_feed_item_id IS DISTINCT FROM NEW.rss_feed_item_id THEN
+      -- Both existing clusters will be written. Lock them in one order before the OLD
+      -- decrement and NEW upsert, so opposite status/target moves cannot form ABBA.
+      PERFORM cluster.id FROM moderation_report_clusters cluster
+      WHERE (cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
+          AND (cluster.post_id = OLD.post_id
+            OR cluster.reported_user_id = OLD.reported_user_id
+            OR cluster.hostname_id = OLD.hostname_id
+            OR cluster.rss_feed_item_id = OLD.rss_feed_item_id))
+        OR (cluster.resolution_action IS NOT DISTINCT FROM NEW.resolution_action
+          AND (cluster.post_id = NEW.post_id
+            OR cluster.reported_user_id = NEW.reported_user_id
+            OR cluster.hostname_id = NEW.hostname_id
+            OR cluster.rss_feed_item_id = NEW.rss_feed_item_id))
+      ORDER BY cluster.id FOR UPDATE;
+    END IF;
   END IF;
 
   IF TG_OP IN ('DELETE', 'UPDATE') THEN

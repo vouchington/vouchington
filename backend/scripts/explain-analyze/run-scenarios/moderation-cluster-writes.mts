@@ -25,14 +25,8 @@ const LOOKUP_NAMES = [
   'moderationClusterWriterHostnamePending',
   'moderationClusterWriterRssPending',
 ] as const
-const LOOKUP_INDEXES = [
-  CLUSTER_INDEXES[0],
-  CLUSTER_INDEXES[0],
-  CLUSTER_INDEXES[1],
-  CLUSTER_INDEXES[2],
-  CLUSTER_INDEXES[3],
-] as const
 const EDGE_NAMES = ['moderationClusterWriterFirst', 'moderationClusterWriterLast'] as const
+const LOCK_ORDER_NAME = 'moderationClusterWriterOrderedMove'
 
 type ClusterLookup = {
   name: (typeof LOOKUP_NAMES)[number]
@@ -55,9 +49,10 @@ export async function runModerationClusterWriteScenarios(): Promise<void> {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'moderation_report_clusters', max: 4 },
       { kind: 'maxBitmapIndexRows', max: 4 },
+      // The first two witnesses are post outcomes; the rest follow the other FK indexes.
       ...LOOKUP_NAMES.map((name, index) => ({
         kind: 'usesIndexes' as const,
-        indexes: [LOOKUP_INDEXES[index]!],
+        indexes: [CLUSTER_INDEXES[Math.max(0, index - 1)]!],
         queryContains: name,
       })),
     ],
@@ -102,6 +97,23 @@ export async function runModerationClusterWriteScenarios(): Promise<void> {
     { exactCapturedNames: LOOKUP_NAMES },
   )
 
+  registerScenarioContract('moderation-cluster-writer-ordered-update', {
+    forbidSequentialScans: ['moderation_report_clusters'],
+    expectations: [
+      { kind: 'usesIndexes', indexes: [CLUSTER_INDEXES[0]] },
+      { kind: 'maxProcessedRows', relation: 'moderation_report_clusters', max: 8 },
+      { kind: 'maxBitmapIndexRows', max: 8 },
+      { kind: 'queryBinds', token: 'ORDER' },
+    ],
+  })
+  await runAndCapture(
+    'moderation-cluster-writer-ordered-update',
+    captureOrderedMove,
+    undefined,
+    LOCK_ORDER_NAME,
+    { exactCapturedNames: [LOCK_ORDER_NAME] },
+  )
+
   registerScenarioContract('moderation-cluster-writer-hot-edges', {
     seededRows: {
       moderation_reports: REPORT_CONTEXT_SEED_ROW_COUNT + MODERATION_CLUSTER_REPORT_COUNT,
@@ -126,6 +138,28 @@ export async function runModerationClusterWriteScenarios(): Promise<void> {
     undefined,
     EDGE_NAMES,
     { exactCapturedNames: EDGE_NAMES },
+  )
+}
+
+/** Same OLD/NEW predicate and sort as the UPDATE trigger; EXPLAIN does not take row locks. */
+async function captureOrderedMove(): Promise<void> {
+  const postId = clusterFixturePostIds(0)[0]!
+  const { rows } = await read<{ id: string }>(
+    `/* ${LOCK_ORDER_NAME} */
+    SELECT cluster.id FROM moderation_report_clusters cluster
+    WHERE (cluster.resolution_action IS NOT DISTINCT FROM $1::moderation_report_resolution_actions
+        AND (cluster.post_id = $2::uuid OR cluster.reported_user_id = $3::uuid
+          OR cluster.hostname_id = $4::uuid OR cluster.rss_feed_item_id = $5::uuid))
+      OR (cluster.resolution_action IS NOT DISTINCT FROM $6::moderation_report_resolution_actions
+        AND (cluster.post_id = $7::uuid OR cluster.reported_user_id = $8::uuid
+          OR cluster.hostname_id = $9::uuid OR cluster.rss_feed_item_id = $10::uuid))
+    ORDER BY cluster.id`,
+    [null, postId, null, null, null, 'reviewed', postId, null, null, null],
+  )
+  assert.equal(rows.length, 2)
+  assert.deepEqual(
+    rows.map(row => row.id),
+    rows.map(row => row.id).toSorted(),
   )
 }
 
