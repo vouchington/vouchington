@@ -3,7 +3,15 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-type Step = { env?: Record<string, string>; id?: string; if?: string; run?: string }
+type Step = {
+  'continue-on-error'?: string
+  env?: Record<string, string>
+  id?: string
+  if?: string
+  name?: string
+  run?: string
+  uses?: string
+}
 type Job = { if?: string; needs?: string; outputs?: Record<string, string>; steps?: Step[] }
 type Workflow = { jobs?: Record<string, Job> }
 
