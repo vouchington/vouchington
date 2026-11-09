@@ -3,11 +3,11 @@ import { HOSTNAME_COUNT, seedUuid } from './common.mts'
 
 export const FRIEND_TRUST_VIEWER_INDEX = 19_998
 export const FRIEND_TRUST_FOLLOW_COUNT = 10_000
-// Longer than the default votes_per_friend_limit (50), so the per-friend bound is exercised.
-export const FRIEND_TRUST_VOTES_PER_FRIEND = 60
+// Longer than the default votes_per_friend_limit (20), so the per-friend bound is exercised.
+export const FRIEND_TRUST_VOTES_PER_FRIEND = 25
 export const FRIEND_TRUST_VOTE_ROWS = FRIEND_TRUST_FOLLOW_COUNT * FRIEND_TRUST_VOTES_PER_FRIEND
 // Votes wrap over this many hostnames, so every friend re-votes (and sometimes flips) hostnames.
-const DISTINCT_HOSTNAMES_PER_FRIEND = 45
+const DISTINCT_HOSTNAMES_PER_FRIEND = 12
 const FIRST_FRIEND_INDEX = 100
 
 /**

@@ -3,7 +3,7 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   friend_follow_limit: 1000,
-  votes_per_friend_limit: 50,
+  votes_per_friend_limit: 20,
 }
 
 /** Hard ceilings: the follow ceiling is the per-user follow cap; votes per friend stay a short recent window. */

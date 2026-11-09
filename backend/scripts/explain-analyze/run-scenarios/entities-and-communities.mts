@@ -144,7 +144,7 @@ export async function runEntityAndCommunityScenarios() {
       },
       { kind: 'usesIndexes', indexes: ['hostname_votes__default_user_id_id_idx'] },
       { kind: 'maxProcessedRows', relation: 'relation__user__follow__user', max: 1_100 },
-      { kind: 'maxProcessedRows', relation: 'hostname_votes', max: 50_000 },
+      { kind: 'maxProcessedRows', relation: 'hostname_votes', max: 20_000 },
     ],
   })
   await runAndCapture('friend-trusted-hostnames', () =>
