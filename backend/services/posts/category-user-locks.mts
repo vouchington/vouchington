@@ -64,12 +64,15 @@ export async function lockPostUpdateMutationScopes(
     editorId,
     postUpdateMayAffectCategories(changes, !!hashtagIntent),
   )
-  if (delegated)
+  if (delegated) {
     await runSequentially([
       () => lockAuthorPublicationLifecycle(query, editorId),
       () => assertDelegatedPostActorActive(editorId, { query }),
+      () => lockPostPublication(query, postId),
       () => lockDelegatedPostThread(query, postId),
     ])
+    return ownerId
+  }
   await lockPostPublication(query, postId)
   return ownerId
 }
