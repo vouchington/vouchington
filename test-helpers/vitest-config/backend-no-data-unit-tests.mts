@@ -10,6 +10,7 @@ export const backendNoDataUnitTestFiles = [
   'backend/services/urls-domains-robots/__tests__/fetch-pinned-budget.test.mts',
   'backend/scripts/build/compile-source-rewrites.test.mts',
   'backend/scripts/explain-analyze/analyze-command.test.mts',
+  'backend/scripts/explain-analyze/materialized-view-scenarios.test.mts',
   'backend/scripts/explain-analyze/pruning/migration-command-failure.test.mts',
   'backend/scripts/explain-analyze/pruning/migration-control-clients.test.mts',
   'backend/scripts/explain-analyze/scenario-failures.test.mts',

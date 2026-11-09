@@ -232,7 +232,8 @@ statement (for example `= ANY($1)` or a `VALUES`/`unnest` join), not a loop of a
 loop multiplies lock hold time by the row count, so every writer waiting on those locks queues behind
 it. See [lock scope](postgresql/reference-transactions.md#lock-scope) for which rows may be locked and
 [set-based IO](../../.agents/skills/postgres-node-performance-tuning/SKILL.md) for batching.
-Unenforced.
+The configured `query-reached-per-item` check reports statically traceable PostgreSQL and Valkey
+effects reached from per-item loops. Lock scope remains a separate review invariant.
 
 ## Materialized views: bounded refresh, indexed read
 
@@ -243,9 +244,10 @@ index matching its read order, and reads are one keyset walk on that ranking ind
 [R6](#r6--query-shape)). The defining query has an
 [explain-analyze scenario](postgresql/explain-analyze/README.md), which explains it from
 `pg_get_viewdef` because `REFRESH` cannot be explained. View composition rules live in
-[views](postgresql/reference-views.md). The advisory `postgres-materialized-view-shape` check reports
-missing refresh and additional indexes or unproved bounds on indexed keys in the defining query.
-Matching the ranking index to the read order and proving keyset read shape remain unenforced.
+[views](postgresql/reference-views.md). Scenario coverage is checked against the schema snapshot. The
+advisory `postgres-materialized-view-shape` check reports missing refresh and additional indexes or
+unproved bounds on indexed keys in the defining query. Matching the ranking index to the read order
+and proving keyset read shape remain unenforced.
 
 The owner-approved referral-program link-count ranking is an exception to the refresh window:
 its all-time count requires a full-history refresh. Ranking freshness may lag one refresh; live

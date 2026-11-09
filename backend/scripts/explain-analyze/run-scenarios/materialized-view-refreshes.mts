@@ -5,20 +5,12 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import assert from 'node:assert/strict'
 import { RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT } from '../seed-data/rss-feed-weekly-proxy.mts'
+import { MATERIALIZED_VIEW_SCENARIOS } from '../materialized-view-scenarios.mts'
 
 const PROXY_TOPIC_ROW_BOUND = Math.ceil(RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT * 1.2)
 
 export async function runMaterializedViewRefreshScenarios(): Promise<void> {
-  for (const [scenarioId, view] of [
-    ['mv-top-hashtags-refresh', 'mv_top_hashtags'],
-    ['mv-rss-feed-crawl-tiers-refresh', 'mv_rss_feed_crawl_tiers'],
-    ['mv-platform-stats-refresh', 'mv_platform_stats'],
-    ['mv-trending-rss-feeds-refresh', 'mv_trending_rss_feeds'],
-    ['mv-trending-communities-refresh', 'mv_trending_communities'],
-    ['mv-trending-topics-refresh', 'mv_trending_topics'],
-    ['mv-revenue-memberships-refresh', 'mv_revenue_memberships'],
-    ['mv-revenue-changes-refresh', 'mv_revenue_changes'],
-  ] as const) {
+  for (const [scenarioId, view] of MATERIALIZED_VIEW_SCENARIOS) {
     const { rows } = await read<{ definition: string }>(
       `/* explainMaterializedViewDefinition */ SELECT pg_get_viewdef($1::regclass) AS definition`,
       [view],
