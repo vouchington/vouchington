@@ -26,7 +26,9 @@ export const userMetrics: UserMetrics = {
     communities_member: false,
   },
   bookmarks: { follow: { topics: 44, posts: 9, users: 22 } },
+  bookmarks_capped: { follow: { topics: false, posts: false, users: false } },
   bookmarkers: { follow: 180 },
+  bookmarkers_capped: { follow: false },
   bookmarks__updated_at: now,
 }
 export const communities = [

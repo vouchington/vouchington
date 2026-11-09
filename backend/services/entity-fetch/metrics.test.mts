@@ -5,7 +5,6 @@ import {
   createUserProfileFixture,
   insertEntityRelation,
   insertTestRssFeedDirect,
-  setTestUserLegacyBookmarkMetrics,
 } from '@voucha/test-helpers'
 import { softDeleteTopic } from '../../test-helpers/entities/topics/deletion.mts'
 import { upsertRecentlyViewed } from '@services/recently-viewed'
@@ -144,12 +143,6 @@ describe('metrics', () => {
         fixture.owner.id,
         fixture.discussion.id,
       )
-      await setTestUserLegacyBookmarkMetrics(fixture.owner.id, {
-        topics: 1,
-        posts: 1,
-        users: 1,
-        followers: 1,
-      })
       await updateUserFields(fixture.owner.id, {
         follows_visibility: 'nobody',
         followers_visibility: 'nobody',
@@ -175,6 +168,14 @@ describe('metrics', () => {
           users: 0,
         })
         expect(metrics?.bookmarkers.follow).toBe(0)
+        expect(metrics?.bookmarks_capped.follow).toEqual({
+          topics: false,
+          posts: false,
+          users: false,
+        })
+        expect(metrics?.bookmarkers_capped.follow).toBe(false)
+        expect(metrics?.private_count).toBeUndefined()
+        expect(metrics?.private_count_capped).toBeUndefined()
       }
     })
 
@@ -187,12 +188,6 @@ describe('metrics', () => {
         fixture.owner.id,
         fixture.discussion.id,
       )
-      await setTestUserLegacyBookmarkMetrics(fixture.owner.id, {
-        topics: 1,
-        posts: 1,
-        users: 1,
-        followers: 1,
-      })
       await updateUserFields(fixture.owner.id, {
         follows_visibility: 'followers',
         followers_visibility: 'followers',
@@ -237,12 +232,6 @@ describe('metrics', () => {
         fixture.owner.id,
         fixture.follower.id,
       )
-      await setTestUserLegacyBookmarkMetrics(fixture.owner.id, {
-        topics: 1,
-        posts: 1,
-        users: 2,
-        followers: 1,
-      })
       await updateUserFields(fixture.owner.id, {
         follows_visibility: 'mutual_followers',
         followers_visibility: 'mutual_followers',

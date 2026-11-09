@@ -113,6 +113,7 @@
     "@services/user-referral-program-links": "workspace:^",
     "@services/users": "workspace:^",
     "@services/vote-weight": "workspace:^",
+    "@ts-shared/user-profile-collections": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/mcp": "workspace:^",

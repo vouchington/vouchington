@@ -57,6 +57,7 @@ export interface UserMetrics {
     communities_member: boolean
   }
   private_count?: UserPrivateMetricsCount
+  private_count_capped?: Record<keyof UserPrivateMetricsCount, boolean>
   bookmarks: {
     follow: {
       topics: number
@@ -64,8 +65,18 @@ export interface UserMetrics {
       users: number
     }
   }
+  bookmarks_capped: {
+    follow: {
+      topics: boolean
+      posts: boolean
+      users: boolean
+    }
+  }
   bookmarkers: {
     follow: number
+  }
+  bookmarkers_capped: {
+    follow: boolean
   }
   bookmarks__updated_at: string
 }

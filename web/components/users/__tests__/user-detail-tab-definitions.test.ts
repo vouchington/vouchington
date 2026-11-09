@@ -41,6 +41,7 @@ function makeUserMetrics(overrides: UserMetricsOverrides = {}): UserMetrics {
       ...overrides.count_capped,
     },
     private_count: overrides.private_count,
+    private_count_capped: overrides.private_count_capped,
     bookmarks: overrides.bookmarks ?? {
       follow: {
         topics: 0,
@@ -48,8 +49,18 @@ function makeUserMetrics(overrides: UserMetricsOverrides = {}): UserMetrics {
         users: 0,
       },
     },
+    bookmarks_capped: overrides.bookmarks_capped ?? {
+      follow: {
+        topics: false,
+        posts: false,
+        users: false,
+      },
+    },
     bookmarkers: overrides.bookmarkers ?? {
       follow: 0,
+    },
+    bookmarkers_capped: overrides.bookmarkers_capped ?? {
+      follow: false,
     },
     bookmarks__updated_at: overrides.bookmarks__updated_at ?? '2026-07-14T00:00:00.000Z',
   }

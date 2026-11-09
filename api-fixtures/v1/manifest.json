@@ -62526,6 +62526,21 @@
                   "type": "object"
                 }
               },
+              "bookmarkers_capped": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "follow": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
               "bookmarks": {
                 "required": true,
                 "schema": {
@@ -62566,6 +62581,42 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "bookmarks_capped": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "follow": {
+                      "required": true,
+                      "schema": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "posts": {
+                            "required": true,
+                            "schema": {
+                              "type": "boolean"
+                            }
+                          },
+                          "topics": {
+                            "required": true,
+                            "schema": {
+                              "type": "boolean"
+                            }
+                          },
+                          "users": {
+                            "required": true,
+                            "schema": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "type": "object"
                 }
               },
               "count": {
@@ -62847,6 +62898,171 @@
                       "required": true,
                       "schema": {
                         "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "private_count_capped": {
+                "required": false,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "communities_proxy_following": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "communities_proxy_muted": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "communities_saved": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "domains_blocked": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "domains_muted": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "posts_following": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "posts_hidden": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "posts_saved": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "posts_subscribed": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feed_items_hidden": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feed_items_saved": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feed_items_viewed": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feeds_muted": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feeds_subscribed": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feeds_viewed": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_blocked": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_dismissed_recommendations": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_muted": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_subscribed_news": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_subscribed_posts": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_viewed": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "urls_saved": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_blocked": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_dismissed_recommendations": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_muted": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_subscribed_posts": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
                       }
                     }
                   },
@@ -64236,6 +64452,21 @@
                   "type": "object"
                 }
               },
+              "bookmarkers_capped": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "follow": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
               "bookmarks": {
                 "required": true,
                 "schema": {
@@ -64276,6 +64507,42 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "bookmarks_capped": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "follow": {
+                      "required": true,
+                      "schema": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "posts": {
+                            "required": true,
+                            "schema": {
+                              "type": "boolean"
+                            }
+                          },
+                          "topics": {
+                            "required": true,
+                            "schema": {
+                              "type": "boolean"
+                            }
+                          },
+                          "users": {
+                            "required": true,
+                            "schema": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "type": "object"
                 }
               },
               "count": {
@@ -64557,6 +64824,171 @@
                       "required": true,
                       "schema": {
                         "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "private_count_capped": {
+                "required": false,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "communities_proxy_following": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "communities_proxy_muted": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "communities_saved": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "domains_blocked": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "domains_muted": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "posts_following": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "posts_hidden": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "posts_saved": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "posts_subscribed": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feed_items_hidden": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feed_items_saved": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feed_items_viewed": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feeds_muted": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feeds_subscribed": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feeds_viewed": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_blocked": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_dismissed_recommendations": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_muted": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_subscribed_news": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_subscribed_posts": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_viewed": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "urls_saved": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_blocked": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_dismissed_recommendations": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_muted": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_subscribed_posts": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
                       }
                     }
                   },
@@ -106982,7 +107414,7 @@
         "include_bio": "1"
       },
       "responseSchema": {
-        "hash": "9916e44bc1ec26c720ff2bf9ddcf3f4c65e25ead8ac9c524b6f6c2b6577ce3c0",
+        "hash": "7d323883bc9fe0756c569c279717e506403c26bbe816b6e8224ac247f3363fe1",
         "key": "native.users.profile.default"
       },
       "route": {
@@ -107033,7 +107465,7 @@
         "include_bio": "1"
       },
       "responseSchema": {
-        "hash": "f1340afa58290ca4f39b6bc4e46c2900766949cefd0f5798680d0660ffffe2d6",
+        "hash": "0e034c4be0f0149fe5d7dc6d1afca2aa0058e539963eb12e0d2715acbd1d4ffd",
         "key": "native.users.profile.restricted"
       },
       "route": {

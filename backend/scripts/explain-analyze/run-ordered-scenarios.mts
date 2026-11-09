@@ -1,4 +1,5 @@
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
+import { runProfilePrivateCountsScenario } from './run-scenarios/profile-private-counts.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
 import { runHackerNewsFilterScenarios } from './run-scenarios/hacker-news-filter.mts'
@@ -155,6 +156,8 @@ export async function runScenariosBeforePartition(): Promise<void> {
   await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios)
   await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
   await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
+  // Keep this owner's dense private relation fixture out of all earlier corpus plans.
+  await runStep(runProfilePrivateCountsScenario.name, runProfilePrivateCountsScenario)
 }
 
 // Late fixture writers seed after every ordinary plan and never read the comment partitions.

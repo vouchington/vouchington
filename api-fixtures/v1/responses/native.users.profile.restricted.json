@@ -20,6 +20,9 @@
     "bookmarkers": {
       "follow": 0
     },
+    "bookmarkers_capped": {
+      "follow": false
+    },
     "bookmarks": {
       "follow": {
         "posts": 0,
@@ -28,6 +31,13 @@
       }
     },
     "bookmarks__updated_at": "2026-07-01T16:00:00Z",
+    "bookmarks_capped": {
+      "follow": {
+        "posts": false,
+        "topics": false,
+        "users": false
+      }
+    },
     "count": {
       "comments": 2,
       "communities_member": 0,

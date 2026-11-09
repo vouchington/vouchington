@@ -2843,7 +2843,7 @@
     },
     "native.users.profile.default": {
       "fixtureIds": ["native.users.profile.default"],
-      "hash": "9916e44bc1ec26c720ff2bf9ddcf3f4c65e25ead8ac9c524b6f6c2b6577ce3c0"
+      "hash": "7d323883bc9fe0756c569c279717e506403c26bbe816b6e8224ac247f3363fe1"
     },
     "native.users.profile.posts.all": {
       "fixtureIds": ["native.users.profile.posts.all"],
@@ -2871,7 +2871,7 @@
     },
     "native.users.profile.restricted": {
       "fixtureIds": ["native.users.profile.restricted"],
-      "hash": "f1340afa58290ca4f39b6bc4e46c2900766949cefd0f5798680d0660ffffe2d6"
+      "hash": "0e034c4be0f0149fe5d7dc6d1afca2aa0058e539963eb12e0d2715acbd1d4ffd"
     },
     "native.users.profile.sources-following.article": {
       "fixtureIds": ["native.users.profile.sources-following.article"],

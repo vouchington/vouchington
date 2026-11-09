@@ -1,3 +1,5 @@
+import type { UserPrivateProfileCounts } from './user-profile-counts.mts'
+
 export type UserPrivacyAudience = 'everyone' | 'users' | 'followers' | 'mutual_followers' | 'nobody'
 
 export type UserPrivacySettings = {
@@ -157,34 +159,8 @@ export type UserMetrics = {
     rss_feeds_following: boolean
     communities_member: boolean
   }
-  private_count?: {
-    posts_saved: number
-    posts_hidden: number
-    posts_following: number
-    posts_subscribed: number
-    topics_blocked: number
-    topics_muted: number
-    topics_viewed: number
-    topics_subscribed_posts: number
-    topics_subscribed_news: number
-    topics_dismissed_recommendations: number
-    users_blocked: number
-    users_muted: number
-    users_subscribed_posts: number
-    users_dismissed_recommendations: number
-    rss_feeds_subscribed: number
-    rss_feeds_muted: number
-    rss_feeds_viewed: number
-    rss_feed_items_saved: number
-    rss_feed_items_hidden: number
-    rss_feed_items_viewed: number
-    urls_saved: number
-    domains_blocked: number
-    domains_muted: number
-    communities_saved: number
-    communities_proxy_following: number
-    communities_proxy_muted: number
-  }
+  private_count?: UserPrivateProfileCounts
+  private_count_capped?: { [Key in keyof UserPrivateProfileCounts]: boolean }
   bookmarks: {
     follow: {
       topics: number
@@ -195,5 +171,7 @@ export type UserMetrics = {
   bookmarkers: {
     follow: number
   }
+  bookmarks_capped: { follow: { topics: boolean; posts: boolean; users: boolean } }
+  bookmarkers_capped: { follow: boolean }
   bookmarks__updated_at: Date
 }

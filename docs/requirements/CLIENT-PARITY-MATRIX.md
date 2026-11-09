@@ -39,11 +39,13 @@ handling remains partial until those flows and their behavioral evidence are com
 `GET /api/v1/users/:idOrSlug` returns `user_metrics.count` (reviews, discussions, comments, users
 following and followers, topics following, RSS feeds following, and communities joined). Each
 number is the exact count up to the profile count cap (1,000 by default, `profile-count-config`).
-`user_metrics.count_capped` carries one boolean per count key: `true` means the real total is larger
-and the number holds the cap. Clients show a capped count as a compact number with a plus sign (web
-shows "1K+") and must not add or compare capped numbers as totals. Web profile tabs and the profile
-header render this for the author, a stranger, and an anonymous viewer. Swift and .NET must add
-`count_capped` to their response models and fixtures and render capped counts the same way; that
+`user_metrics.count_capped`, `private_count_capped`, `bookmarks_capped`, and `bookmarkers_capped`
+carry flags for their corresponding numeric fields: `true` means the real total is larger and the
+number holds the cap. `private_count_capped` is present only when the viewer may read
+`private_count`. Clients show a capped count as a compact number with a plus sign (web shows "1K+")
+and must not add or compare capped numbers as totals. Web profile tabs and the profile header render
+the public profile counts for the author, a stranger, and an anonymous viewer. Swift and .NET must
+add the cap flags to their response models and fixtures and render capped counts the same way; that
 native work is a vouchington-clients follow-up and does not gate this producer change. MCP has no
 user-metrics tool, so the change adds no MCP surface.
 

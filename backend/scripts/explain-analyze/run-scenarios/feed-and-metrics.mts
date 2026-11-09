@@ -17,7 +17,6 @@ import {
   getTopicViewerCounts,
   getTrendingTopics,
   getUnreadNotificationsSummary,
-  getUserMetricsByAnyBatch,
   listNotifications,
   POST_ELECTION_CONFIG,
   searchUrlHostnames,
@@ -97,14 +96,6 @@ export async function runFeedAndMetricScenarios() {
   await runAndCapture('topic-votes-by-user', () =>
     getElectionVotesByUser(TOPIC_ELECTION_CONFIG, seedUser.id, seedAllTopicIds),
   )
-  const seedUserIds = [
-    `${SEED_PREFIX}-0100-7000-8000-000000000000`,
-    `${SEED_PREFIX}-0100-7000-8000-000000000001`,
-    `${SEED_PREFIX}-0100-7000-8000-000000000002`,
-    `${SEED_PREFIX}-0100-7000-8000-000000000003`,
-    `${SEED_PREFIX}-0100-7000-8000-000000000004`,
-  ]
-  await runAndCapture('user-metrics-batch', () => getUserMetricsByAnyBatch(seedUserIds))
   await runTopicMetricsBatchScenario(seedAllTopicIds)
   const seedPostIds = Array.from({ length: 200 }, (_, index) => seedUuid(index, '05'))
   registerScenarioContract('post-metrics-batch', {

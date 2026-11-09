@@ -19,9 +19,9 @@ describe('getPrivateCounts', () => {
     })
     await insertEntityRelation('relation__user__save__post', owner.id, postId)
 
-    expect((await getPrivateCounts(owner.id, {})).posts_saved).toBe(1)
+    expect((await getPrivateCounts(owner.id, {})).counts.posts_saved).toBe(1)
 
     await markTestPostDeletedBy(postId, owner.id)
-    expect((await getPrivateCounts(owner.id, {})).posts_saved).toBe(0)
+    expect((await getPrivateCounts(owner.id, {})).counts.posts_saved).toBe(0)
   })
 })

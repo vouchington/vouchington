@@ -20,10 +20,6 @@ type GetUserMetricsOptions = QueryOptions & {
 
 type UserMetricsRow = {
   id: string
-  bookmarks__follow__topics_count: number | string | null
-  bookmarks__follow__posts_count: number | string | null
-  bookmarks__follow__users_count: number | string | null
-  bookmarkers__follow_count: number | string | null
   bookmarks__updated_at: Date
 }
 
@@ -92,31 +88,42 @@ async function buildUserMetrics(
   const counts = mapCappedCounts(cappedCounts, capped => capped.count)
   const countsCapped = mapCappedCounts(cappedCounts, capped => capped.capped)
 
-  let privateCount: UserMetrics['private_count']
   const allowPrivateCounts = currentUserCanAccessUser(currentUser ?? null, row.id)
-
-  if (allowPrivateCounts) {
-    privateCount = await getPrivateCounts(row.id, queryOptions)
+  const privateCounts = allowPrivateCounts
+    ? await getPrivateCounts(row.id, queryOptions)
+    : undefined
+  const bookmarkFollow = {
+    topics: collectionVisibility.topicFollows ? (bookmarks.topics.follow ?? hidden) : hidden,
+    posts: allowPrivateCounts ? (bookmarks.posts.follow ?? hidden) : hidden,
+    users: collectionVisibility.follows ? (bookmarks.users.follow ?? hidden) : hidden,
   }
-
+  const bookmarkersFollow = collectionVisibility.followers
+    ? (bookmarkCounts.bookmarkers.follow ?? hidden)
+    : hidden
   return {
     __entity_type: 'user_metrics',
     id: row.id,
     count: counts,
     count_capped: countsCapped,
-    ...(privateCount ? { private_count: privateCount } : {}),
+    ...(privateCounts
+      ? { private_count: privateCounts.counts, private_count_capped: privateCounts.capped }
+      : {}),
     bookmarks: {
       follow: {
-        topics: collectionVisibility.topicFollows
-          ? Number(row.bookmarks__follow__topics_count) || 0
-          : 0,
-        posts: allowPrivateCounts ? Number(row.bookmarks__follow__posts_count) || 0 : 0,
-        users: collectionVisibility.follows ? Number(row.bookmarks__follow__users_count) || 0 : 0,
+        topics: bookmarkFollow.topics.count,
+        posts: bookmarkFollow.posts.count,
+        users: bookmarkFollow.users.count,
       },
     },
-    bookmarkers: {
-      follow: collectionVisibility.followers ? Number(row.bookmarkers__follow_count) || 0 : 0,
+    bookmarkers: { follow: bookmarkersFollow.count },
+    bookmarks_capped: {
+      follow: {
+        topics: bookmarkFollow.topics.capped,
+        posts: bookmarkFollow.posts.capped,
+        users: bookmarkFollow.users.capped,
+      },
     },
+    bookmarkers_capped: { follow: bookmarkersFollow.capped },
     bookmarks__updated_at: row.bookmarks__updated_at,
   }
 }

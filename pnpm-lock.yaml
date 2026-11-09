@@ -3936,6 +3936,9 @@ importers:
       '@services/vote-weight':
         specifier: workspace:^
         version: link:../services/vote-weight
+      '@ts-shared/user-profile-collections':
+        specifier: workspace:^
+        version: link:../../ts-shared/user-profile-collections
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../ts-shared/utils
