@@ -5,7 +5,6 @@ import {
   SELECTIVE_OUT_OF_WINDOW_COUNT,
   SELECTIVE_TOPIC_ID,
 } from '../seed-data/data-point-search-selective.mts'
-import { runDataPointTopicBestCohortScenarios } from './data-point-topic-best-cohort.mts'
 import { registerScenarioContract, type PlanExpectation } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { getPostIds } from '../run-services.mts'
@@ -100,7 +99,6 @@ export async function runDataPointSearchScenarios(): Promise<void> {
       HOT_POST_MAX,
       HOT_RANK_INDEXES,
     )
-    await runDataPointTopicBestCohortScenarios()
   } finally {
     await deleteSelectiveDataPointMatches()
   }

@@ -58,7 +58,10 @@ export function indexServedDataPointFilter(
   if (options.data_point_result)
     return sql` AND posts.structured_data IS NOT NULL
       AND posts.structured_data->>'result' = ${options.data_point_result}`
-  if (options.data_point_credit_score_range)
+  // The credit-range best index is cheaper as a bitmap scan over every match on the
+  // seeded corpus. Walk the post-type score index first and apply credit range after
+  // the bounded prefix; the inspected-key cursor reaches older matches on later pages.
+  if (options.data_point_credit_score_range && sort === 'new')
     return sql` AND posts.structured_data IS NOT NULL
       AND posts.structured_data->>'credit_score_range' = ${options.data_point_credit_score_range}`
   return null

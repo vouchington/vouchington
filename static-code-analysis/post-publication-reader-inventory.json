@@ -356,6 +356,13 @@
       "owner_classification": "mixed-discovery-sql"
     },
     {
+      "path": "backend/services/posts/search/query-builder/hacker-news-hot-candidates.mts",
+      "classification": "raw-hydrator",
+      "reason": "The Hacker News cohort selects bounded raw keys and composes the shared discovery eligibility through where-clause and base-filters before returning candidates.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
       "path": "backend/services/posts/search/query-builder/bounded-candidates.mts",
       "classification": "raw-hydrator",
       "reason": "Bounded candidate assembler applies the shared search visibility predicate through where-clause and base-filters after limiting keys.",

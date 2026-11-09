@@ -2,7 +2,6 @@ import { getPostFeedIds, getPostIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { POST_TOPIC_SEMI_JOIN_FIXTURE } from '../seed-data/post-topic-semi-join-fixture.mts'
-import { seedUuid } from '../seed-data/common.mts'
 import { POST_TOPIC_FIXTURES_SEEDED_ROWS } from '../post-discovery-seeded-rows.mts'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 
@@ -115,7 +114,10 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
   await capture('post-topic-semi-join-multi-topic-search', multiTopicOptions)
 
   const feedPage = await getPostFeedIds(seedUser, {
-    universal_topic_ids: [POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId, seedUuid(5, '04')],
+    universal_topic_ids: [
+      POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
+      POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
+    ],
     feed_type: 'any',
     time_range: '1w',
     limit: PAGE_SIZE,
@@ -152,7 +154,10 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
     'post-topic-semi-join-multi-topic-feed',
     () =>
       getPostFeedIds(seedUser, {
-        universal_topic_ids: [POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId, seedUuid(5, '04')],
+        universal_topic_ids: [
+          POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
+          POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
+        ],
         feed_type: 'any',
         time_range: '1w',
         limit: PAGE_SIZE,

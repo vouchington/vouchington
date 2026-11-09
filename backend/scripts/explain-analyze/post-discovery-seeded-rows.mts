@@ -16,5 +16,5 @@ export const POST_TOPIC_FIXTURES_SEEDED_ROWS: Readonly<Record<string, number>> =
   topic_aliases: SEEDED_ROWS_BY_RELATION.topic_aliases! + 600,
   relation__post__category__topic_alias:
     SEEDED_ROWS_BY_RELATION.relation__post__category__topic_alias! + 10_005,
-  relation__post__category__topic: SEEDED_ROWS_BY_RELATION.relation__post__category__topic! + 1,
+  relation__post__category__topic: SEEDED_ROWS_BY_RELATION.relation__post__category__topic! + 2,
 }

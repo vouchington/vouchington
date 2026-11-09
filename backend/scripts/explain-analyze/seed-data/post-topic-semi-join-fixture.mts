@@ -3,6 +3,8 @@ import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
 import sql from 'sql-template-strings'
 import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { seedUuid } from './common.mts'
+import { getPostFeedIds } from '../run-services.mts'
+import { seedUser } from '../run-support.mts'
 
 const ALIASES_PER_TOPIC = 300
 const SPARSE_POST_COUNT = 5
@@ -68,6 +70,9 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
   if (newestPosts.length !== newestPostCohortSize)
     throw new Error('Post topic fixture needs enough eligible newest posts for both raw windows')
 
+  const feedPostId = (await getPostFeedIds(seedUser, { time_range: '1w', limit: 1 })).results[0]
+    ?.entity_id
+  if (!feedPostId) throw new Error('Post topic fixture requires an existing feed delivery witness')
   const sparsePostIds = newestPosts.slice(0, SPARSE_POST_COUNT).map(post => post.id)
   const sparseAliasIds = fixture.sparseAliasIds.slice(0, SPARSE_POST_COUNT)
   await transaction(
@@ -93,15 +98,16 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
      ON CONFLICT DO NOTHING`,
     [densePostIds, denseAliasIds, seedUuid(0, '01')],
   )
-  // Post 5 is a followed user's recent post in the existing feed seed. Give it a second
-  // direct topic so the n>1 feed filter has an actual delivery witness.
+  // Reuse an actual feed delivery rather than assuming a seeded author/post remains
+  // eligible after earlier scenarios. Only this fixture owns the two added memberships.
   await transaction(
     `/* seedPostTopicSemiJoinFixture:feed-topic-membership */
      INSERT INTO relation__post__category__topic
        (subject_id, object_id, created_by_id, votes_score_up, votes_count_up)
-     VALUES ($1, $2, $3, 1, 1)
+     SELECT $1::uuid, topic.topic_id, $2::uuid, 1, 1
+     FROM UNNEST($3::uuid[]) AS topic(topic_id)
      ON CONFLICT DO NOTHING`,
-    [seedUuid(5, '05'), fixture.sparseTopicId, seedUuid(0, '01')],
+    [feedPostId, seedUuid(0, '01'), topicIds],
   )
   await transaction(
     '/* seedPostTopicSemiJoinFixture:analyze */ ANALYZE topic_aliases, relation__post__category__topic_alias, posts',
@@ -121,8 +127,8 @@ export async function cleanupPostTopicSemiJoinFixture(): Promise<void> {
     [aliasIds],
   )
   await transaction(
-    '/* cleanupPostTopicSemiJoinFixture:feed-topic-relation */ DELETE FROM relation__post__category__topic WHERE subject_id = $1 AND object_id = $2',
-    [seedUuid(5, '05'), fixture.sparseTopicId],
+    '/* cleanupPostTopicSemiJoinFixture:feed-topic-relation */ DELETE FROM relation__post__category__topic WHERE object_id = ANY($1::uuid[])',
+    [topicIds],
   )
   await transaction(
     '/* cleanupPostTopicSemiJoinFixture:aliases */ DELETE FROM topic_aliases WHERE id = ANY($1::uuid[])',

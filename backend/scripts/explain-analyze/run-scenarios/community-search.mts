@@ -74,7 +74,8 @@ export async function runCommunitySearchScenarios() {
   registerScenarioContract('search-communities-topic-pair', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
-      { kind: 'maxProcessedRows', relation: 'community_list_topics', max: 2 },
+      // Two matching communities each probe two terms through the live unique key.
+      { kind: 'maxProcessedRows', relation: 'community_list_topics', max: 4 },
     ],
   })
   await runAndCapture('search-communities-topic-pair', async () => {

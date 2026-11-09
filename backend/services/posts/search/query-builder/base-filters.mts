@@ -28,21 +28,41 @@ export function appendBaseFilters(
 
   const viewer = currentUser
   const isAdmin = isAdminUser(viewer ?? null)
-  const rootEligibility = (rootAlias: 'posts' | 'root_post'): SQLStatement =>
-    viewer
-      ? buildViewerPostDiscoveryEligibilityFilter('posts', rootAlias, {
-          currentUserId: viewer.id,
-          includeArchivedCommunities: include_archived_communities === true,
-          isAdministrator: isAdmin,
-        })
-      : buildPublicPostEligibilityFilter('posts', rootAlias, {
-          includeArchivedCommunities: include_archived_communities === true,
-        })
   // Root posts already supply their own access row; only replies need a keyed root probe.
   const discoveryEligibility = sql`CASE WHEN posts.root_post_id IS NULL THEN `
-  discoveryEligibility.append(rootEligibility('posts')).append(sql` ELSE EXISTS (
+  if (viewer) {
+    discoveryEligibility.append(
+      buildViewerPostDiscoveryEligibilityFilter('posts', 'posts', {
+        currentUserId: viewer.id,
+        includeArchivedCommunities: include_archived_communities === true,
+        isAdministrator: isAdmin,
+      }),
+    )
+  } else {
+    discoveryEligibility.append(
+      buildPublicPostEligibilityFilter('posts', 'posts', {
+        includeArchivedCommunities: include_archived_communities === true,
+      }),
+    )
+  }
+  discoveryEligibility.append(sql` ELSE EXISTS (
     SELECT 1 FROM posts root_post WHERE root_post.id = posts.root_post_id AND `)
-  discoveryEligibility.append(rootEligibility('root_post')).append(sql`) END`)
+  if (viewer) {
+    discoveryEligibility.append(
+      buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
+        currentUserId: viewer.id,
+        includeArchivedCommunities: include_archived_communities === true,
+        isAdministrator: isAdmin,
+      }),
+    )
+  } else {
+    discoveryEligibility.append(
+      buildPublicPostEligibilityFilter('posts', 'root_post', {
+        includeArchivedCommunities: include_archived_communities === true,
+      }),
+    )
+  }
+  discoveryEligibility.append(sql`) END`)
   filters.push(discoveryEligibility)
   if (exclude_for_user_id) appendUserExclusionFilters(filters, exclude_for_user_id)
   if (user_id) {
