@@ -1,11 +1,12 @@
 import type { createRequest } from './api/server.mts'
+import type { Response } from 'supertest'
 
 export async function findFeedPost(
   request: ReturnType<typeof createRequest>,
   path: string,
   postId: string,
   deliveryType?: 'share',
-) {
+): Promise<Response> {
   let after: string | undefined
   for (let pageIndex = 0; pageIndex < 30; pageIndex++) {
     const response = await request.get(path).query({ after }).expect(200)
