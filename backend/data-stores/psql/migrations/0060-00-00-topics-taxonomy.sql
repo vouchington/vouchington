@@ -546,12 +546,6 @@ CREATE TABLE IF NOT EXISTS referral_program_topics (
   disabled_at TIMESTAMPTZ,
   CHECK (NOT (enabled_at IS NOT NULL AND disabled_at IS NOT NULL)),
 
-  -- Current active links. A link is active when activated_at is set and deleted_at is null.
-  -- fn_project_referral_program_active_link_count maintains this on every link insert, update,
-  -- and delete, including ON DELETE CASCADE.
-  active_link_count INTEGER NOT NULL DEFAULT 0,
-  CHECK (active_link_count >= 0),
-
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -572,26 +566,6 @@ COMMENT ON COLUMN referral_program_topics.topic_id IS 'The topic that is a refer
 COMMENT ON COLUMN referral_program_topics.company_topic_id IS 'The company topic that operates this referral program.';
 COMMENT ON COLUMN referral_program_topics.enabled_at IS 'When the program was enabled. NULL if currently disabled.';
 COMMENT ON COLUMN referral_program_topics.disabled_at IS 'When the program was disabled. NULL if currently enabled.';
-COMMENT ON COLUMN referral_program_topics.active_link_count IS 'All-time count of active links: activated_at set and deleted_at null, including child links. Maintained by the link row trigger.';
-
--- Current search eligibility is projected separately so a deleted or merged program leaves the
--- ranking keyset while its retained program row keeps the exact count for later cascades.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS referral_program_link_counts (
-  topic_id UUID PRIMARY KEY CONSTRAINT fk_referral_program_link_counts__topic
-    REFERENCES referral_program_topics (topic_id) ON DELETE CASCADE,
-  active_link_count INTEGER NOT NULL CHECK (active_link_count >= 0)
-);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_referral_program_link_counts__active_link_count__topic_id
-ON referral_program_link_counts (active_link_count DESC, topic_id DESC)
-WHERE active_link_count > 0;
-
-COMMENT ON TABLE referral_program_link_counts IS 'Current enabled and live referral programs keyed by their exact active link count.';
-COMMENT ON COLUMN referral_program_link_counts.topic_id IS 'Live enabled referral program represented by this search key.';
-COMMENT ON COLUMN referral_program_link_counts.active_link_count IS 'Exact active link count copied from the program row for ranking.';
-COMMENT ON INDEX idx_referral_program_link_counts__active_link_count__topic_id IS 'Positive-count keyset of current eligible referral programs.';
 
 --------------------------------------------------------------------------------
 -- topics: add rewards_program_topic_id and referral_program_topic_id

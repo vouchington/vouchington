@@ -19,12 +19,6 @@ import { subtypeReferences } from '../backend/services/topics/merge-subtypes.mts
 const schemaPath = fileURLToPath(
   new URL('../backend/data-stores/psql/schema-snapshot/schema.json', import.meta.url),
 )
-// The owning subtype is deleted after direct derived references during topic merge.
-// Its FK must remove these rows at that stage, while the merge source is still visible.
-const cascadedDerivedReferences = [
-  ['referral_program_link_counts', 'topic_id', 'referral_program_topics'],
-] as const
-
 if (import.meta.main) {
   const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
   const failures = topicMergeForeignKeyFailures(schema)
@@ -72,9 +66,6 @@ export function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): st
     ...TOPIC_MERGE_SUBTYPE_TABLES.map(table => [`${table}.topic_id`, 'subtype'] as const),
     ['rewards_program_status_topics.lifetime_version_id', 'subtype'],
     ...derivedReferences.map(([table, column]) => [`${table}.${column}`, 'derived'] as const),
-    ...cascadedDerivedReferences.map(
-      ([table, column]) => [`${table}.${column}`, 'derived'] as const,
-    ),
     ['classifier_candidates.topic_id', 'configuration'],
   ]
   const executed = new Map(executedEntries)
@@ -101,21 +92,6 @@ export function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): st
         `only grouped: ${absentFrom(activeGroups, executedKeys).join(', ') || '(none)'}`,
       ].join('\n'),
     )
-  }
-  const subtypeTables = new Set<string>(TOPIC_MERGE_SUBTYPE_TABLES)
-  for (const [table, column, ownerSubtype] of cascadedDerivedReferences) {
-    const foreignKeyMatches = Object.values(schemaSnapshot.tables[table]?.foreignKeys ?? {}).some(
-      foreignKey =>
-        sameList(foreignKey.columns, [column]) &&
-        foreignKey.referencedTable === ownerSubtype &&
-        sameList(foreignKey.referencedColumns, ['topic_id']) &&
-        foreignKey.onDelete === 'cascade',
-    )
-    if (!subtypeTables.has(ownerSubtype) || !foreignKeyMatches) {
-      topicFailures.push(
-        `${table}.${column}: derived cascade must reference merge subtype ${ownerSubtype}.topic_id ON DELETE CASCADE`,
-      )
-    }
   }
   return topicFailures
 }

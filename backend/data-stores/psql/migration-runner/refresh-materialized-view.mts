@@ -11,6 +11,7 @@ const REFRESHABLE_MATERIALIZED_VIEWS = new Set([
   'mv_trending_communities',
   'mv_revenue_memberships',
   'mv_revenue_changes',
+  'mv_referral_program_link_counts',
 ])
 
 export async function refreshMaterializedView(viewName: string): Promise<void> {

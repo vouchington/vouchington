@@ -19,7 +19,10 @@ describe('GET /api/v1/topics sort=link_count', () => {
   })
 
   it('rejects an out-of-range link-count cursor as a client error', async () => {
-    const after = encodeCursor({ score: 2_147_483_648, id: 'ffffffff-ffff-7fff-bfff-ffffffffffff' })
+    const after = encodeCursor({
+      score: Number.MAX_SAFE_INTEGER + 1,
+      id: 'ffffffff-ffff-7fff-bfff-ffffffffffff',
+    })
     await createRequest().get('/api/v1/topics').query({ sort: 'link_count', after }).expect(400)
   })
 })

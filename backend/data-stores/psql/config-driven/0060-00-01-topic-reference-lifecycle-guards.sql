@@ -8,15 +8,7 @@ DECLARE
   referenced_topic_id UUID;
   previous_topic_id UUID;
   reserved_topic_id UUID;
-  is_count_projection_update BOOLEAN := FALSE;
 BEGIN
-  -- The link-count trigger updates an existing program even after its topic is deleted.
-  -- This guard runs before the program's updated_at trigger, so every other column must match.
-  IF TG_OP = 'UPDATE' AND TG_TABLE_NAME = 'referral_program_topics' AND pg_trigger_depth() > 1 THEN
-    is_count_projection_update :=
-      (to_jsonb(NEW) - 'active_link_count') IS NOT DISTINCT FROM
-      (to_jsonb(OLD) - 'active_link_count');
-  END IF;
   FOREACH reference_column IN ARRAY TG_ARGV LOOP
     -- Inspect both sides: a deletion or non-key edit can change a merge preflight or capture.
     referenced_topic_id := NULL;
@@ -66,10 +58,8 @@ BEGIN
       END IF;
     END LOOP;
     -- Missing identities remain the foreign key constraint's responsibility.
-    -- Retaining an inactive reference is allowed only for the nested counter projection.
     -- Re-enabling a deleted or merged program must not reuse its unchanged topic id.
     IF referenced_topic_id IS NOT NULL
-      AND NOT is_count_projection_update
       AND EXISTS (
         SELECT 1 FROM topics WHERE id = referenced_topic_id
           AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)
@@ -189,7 +179,7 @@ BEGIN
       AND source.relname <> ALL(ARRAY[
         'admin_import_rows', 'fediverse_instance_integration_changes', 'moderator_actions',
         'review_disputes', 'topic_revisions', 'user_import_requests', 'vote_integrity_flags',
-        'image_surface_placements', 'referral_program_link_counts', 'topic_classifier_results',
+        'image_surface_placements', 'topic_classifier_results',
         'topic_metrics', 'bedrock_embedding_batch_entities',
         'classifier_run_candidates', 'post_autotagger_result_topics',
         'rss_feed_item_autotagger_result_topics', 'autotagger_agent_run_topics',

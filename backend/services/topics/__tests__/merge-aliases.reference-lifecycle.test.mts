@@ -5,7 +5,6 @@ import {
   createReferralProgramFixture,
   disableReferralProgramByTopicId,
 } from '@voucha/test-helpers/entities/referral-programs'
-import { setReferralProgramActiveLinkCountForTest } from '@voucha/test-helpers/entities/referral-program-link-counts'
 import { mergeTopicForTest, softDeleteTopic } from '@voucha/test-helpers/entities/topics'
 import {
   getTopicReferenceGuardCoverage,
@@ -147,13 +146,6 @@ describe('topic merge reference lifecycle', () => {
 
       await expect(
         reenableTopicReferenceGuardProgram(program.referralProgramId),
-      ).rejects.toMatchObject({
-        status: 409,
-        code: 'topic_reference_inactive',
-        topic_id: program.referralProgramId,
-      })
-      await expect(
-        setReferralProgramActiveLinkCountForTest(program.referralProgramId, 0),
       ).rejects.toMatchObject({
         status: 409,
         code: 'topic_reference_inactive',

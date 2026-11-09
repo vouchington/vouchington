@@ -68,7 +68,10 @@ describe('search-topics', () => {
   })
 
   it('returns an invalid cursor result for an out-of-range link count', async () => {
-    const after = encodeCursor({ score: 2_147_483_648, id: 'ffffffff-ffff-7fff-bfff-ffffffffffff' })
+    const after = encodeCursor({
+      score: Number.MAX_SAFE_INTEGER + 1,
+      id: 'ffffffff-ffff-7fff-bfff-ffffffffffff',
+    })
     await expect(
       searchTopicsTool.function(null as never)({ sort: 'link_count', after }),
     ).resolves.toEqual({ success: false, error: 'Invalid cursor' })

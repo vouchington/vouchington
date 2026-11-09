@@ -1,169 +1,81 @@
 import { encodeCursor } from '@modules/pagination'
-import { createTestUser } from '@voucha/test-helpers'
-import {
-  insertTestUserReferralProgramLink,
-  softDeleteReferralLink,
-} from '@voucha/test-helpers/entities/referral-links'
-import { createTestUrlWithHostname, hardDeleteTestUrl } from '@voucha/test-helpers/entities/urls'
+import { createTestTopic, createTestUser } from '@voucha/test-helpers'
+import { insertTestUserReferralProgramLink } from '@voucha/test-helpers/entities/referral-links'
 import {
   createReferralProgramFixture,
   disableReferralProgramByTopicId,
 } from '@voucha/test-helpers/entities/referral-programs'
-import {
-  deactivateReferralLinkForCount,
-  readHighestActiveLinkCount,
-  readReferralProgramActiveLinkCount,
-  setReferralProgramActiveLinkCountForTest,
-} from '@voucha/test-helpers/entities/referral-program-link-counts'
-import { hardDeleteTestTopic, softDeleteTopic } from '@voucha/test-helpers/entities/topics'
-import { hardDeleteTestUser } from '@voucha/test-helpers/entities/users-lifecycle'
+import { readReferralProgramRankedLinkCount } from '@voucha/test-helpers/entities/referral-program-link-counts'
+import { mergeTopicForTest, softDeleteTopic } from '@voucha/test-helpers/entities/topics'
+import { createTestUrlWithHostname } from '@voucha/test-helpers/entities/urls'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view-for-test'
 import { describe, expect, it } from 'vitest'
 import { getTopicIds } from './get-ids.mts'
 
 const HIGHEST_ID = 'ffffffff-ffff-7fff-bfff-ffffffffffff'
 
-async function insertActiveLink(
-  userId: string,
-  referralProgramId: string,
-): Promise<{ id: string; urlId: string }> {
-  const urlId = await createTestUrlWithHostname()
-  const id = await insertTestUserReferralProgramLink({ userId, referralProgramId, urlId })
-  return { id, urlId }
+// The immediately greater UUID places this owned row first among equal-score rows.
+function cursorBefore(id: string, score: number): string {
+  const hex = (BigInt(`0x${id.replaceAll('-', '')}`) + 1n).toString(16).padStart(32, '0')
+  const above = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+  return encodeCursor({ score, id: above })
 }
 
-describe('active link count', () => {
-  it('stays exact when a link owner is purged and when a link is deactivated, deleted, or cascaded', async () => {
-    const creator = await createTestUser()
-    const owner = await createTestUser()
-    const other = await createTestUser()
-    const program = await createReferralProgramFixture({ createdById: creator.id })
-    await insertActiveLink(owner.id, program.referralProgramId)
-    const kept = await insertActiveLink(other.id, program.referralProgramId)
+async function firstAfter(id: string, score: number) {
+  const page = await getTopicIds({ sort: 'link_count', limit: 1, after: cursorBefore(id, score) })
+  return page.results[0]?.id
+}
 
-    expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(2)
-
-    await hardDeleteTestUser(owner.id)
-    expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(1)
-
-    await deactivateReferralLinkForCount(kept.id)
-    expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(0)
-
-    const again = await insertActiveLink(other.id, program.referralProgramId)
-    expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(1)
-    await softDeleteReferralLink(again.id)
-    expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(0)
-
-    const cascaded = await insertActiveLink(other.id, program.referralProgramId)
-    await hardDeleteTestUrl(cascaded.urlId)
-    expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(0)
-
-    const purged = await createReferralProgramFixture({ createdById: creator.id })
-    await insertActiveLink(other.id, purged.referralProgramId)
-    await hardDeleteTestTopic(purged.referralProgramId)
-    expect(await readReferralProgramActiveLinkCount(purged.referralProgramId)).toBeNull()
-  })
-
-  it('decrements the count when an active link is deleted after the program topic is soft-deleted', async () => {
-    const creator = await createTestUser()
-    const owner = await createTestUser()
-    const program = await createReferralProgramFixture({ createdById: creator.id })
-    await insertActiveLink(owner.id, program.referralProgramId)
-    expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(1)
-
-    await softDeleteTopic(program.referralProgramId, creator.id)
-    await hardDeleteTestUser(owner.id)
-
-    expect(await readReferralProgramActiveLinkCount(program.referralProgramId)).toBe(0)
-  })
-
-  it('fills a link-count page after a higher program topic is soft-deleted', async () => {
-    const creator = await createTestUser()
-    const count = (await readHighestActiveLinkCount()) + 2
-    const first = await createReferralProgramFixture({ createdById: creator.id })
-    const second = await createReferralProgramFixture({ createdById: creator.id })
-    const hidden = await createReferralProgramFixture({ createdById: creator.id })
-    const disabled = await createReferralProgramFixture({ createdById: creator.id })
-    const tail = await createReferralProgramFixture({ createdById: creator.id })
-    const topicIds = [
-      first.referralProgramId,
-      second.referralProgramId,
-      hidden.referralProgramId,
-      disabled.referralProgramId,
-      tail.referralProgramId,
-    ]
-    try {
-      for (const topicId of topicIds.slice(0, 4)) {
-        await setReferralProgramActiveLinkCountForTest(topicId, count)
-      }
-      await setReferralProgramActiveLinkCountForTest(tail.referralProgramId, count - 1)
-      await disableReferralProgramByTopicId(disabled.referralProgramId)
-      await softDeleteTopic(hidden.referralProgramId, creator.id)
-
-      const page = await getTopicIds({ sort: 'link_count', limit: 2 })
-      expect(page.results.map(row => row.id)).toEqual([
-        second.referralProgramId,
-        first.referralProgramId,
-      ])
-      expect(page.page_info.has_next_page).toBe(true)
-
-      const cursorPage = await getTopicIds({
-        sort: 'link_count',
-        limit: 1,
-        after: encodeCursor({ score: count, id: HIGHEST_ID }),
-      })
-      expect(cursorPage.results.map(row => row.id)).toEqual([second.referralProgramId])
-      const next = await getTopicIds({
-        sort: 'link_count',
-        limit: 1,
-        after: cursorPage.page_info.end_cursor ?? undefined,
-      })
-      expect(next.results.map(row => row.id)).toEqual([first.referralProgramId])
-    } finally {
-      for (const topicId of topicIds) await hardDeleteTestTopic(topicId)
+describe('referral program link-count ranking', () => {
+  it('refreshes counts while applying program and topic eligibility live', async () => {
+    const user = await createTestUser()
+    const programs = await Promise.all(
+      Array.from({ length: 4 }, () => createReferralProgramFixture({ createdById: user.id })),
+    )
+    const [ranked, disabled, deleted, merged] = programs.map(
+      program => program.referralProgramId,
+    ) as [string, string, string, string]
+    const destination = await createTestTopic({ user })
+    const urlId = await createTestUrlWithHostname()
+    await refreshMaterializedViewForTest('mv_referral_program_link_counts')
+    expect(await readReferralProgramRankedLinkCount(ranked)).toBe(0)
+    for (const referralProgramId of [ranked, disabled, deleted, merged]) {
+      await insertTestUserReferralProgramLink({ userId: user.id, referralProgramId, urlId })
     }
-  })
+    // The ranking is deliberately stale until the next refresh.
+    expect(await readReferralProgramRankedLinkCount(ranked)).toBe(0)
+    expect(await firstAfter(ranked, 1)).not.toBe(ranked)
+    await refreshMaterializedViewForTest('mv_referral_program_link_counts')
+    expect(await readReferralProgramRankedLinkCount(ranked)).toBe(1)
+    for (const id of [ranked, disabled, deleted, merged]) expect(await firstAfter(id, 1)).toBe(id)
 
-  it('excludes an enabled program whose active link count is 0', async () => {
-    const creator = await createTestUser()
-    const empty = await createReferralProgramFixture({ createdById: creator.id })
-    const linked = await createReferralProgramFixture({ createdById: creator.id })
-    const count = (await readHighestActiveLinkCount()) + 1
-    try {
-      await setReferralProgramActiveLinkCountForTest(linked.referralProgramId, count)
-      expect(await readReferralProgramActiveLinkCount(empty.referralProgramId)).toBe(0)
-
-      const top = await getTopicIds({ sort: 'link_count', limit: 10 })
-      const topIds = top.results.map(row => row.id)
-      expect(topIds).toContain(linked.referralProgramId)
-      expect(topIds).not.toContain(empty.referralProgramId)
-
-      // A cursor below 1 would otherwise walk the zero-count tail of the same index.
-      const zeros = await getTopicIds({
-        sort: 'link_count',
-        limit: 25,
-        after: encodeCursor({ score: 1, id: '00000000-0000-7000-8000-000000000000' }),
-      })
-      expect(zeros.results).toEqual([])
-      expect(zeros.page_info.has_next_page).toBe(false)
-    } finally {
-      await hardDeleteTestTopic(empty.referralProgramId)
-      await hardDeleteTestTopic(linked.referralProgramId)
+    await disableReferralProgramByTopicId(disabled)
+    await softDeleteTopic(deleted, user.id)
+    await mergeTopicForTest(merged, destination.id, user.id)
+    for (const id of [disabled, deleted, merged]) {
+      expect(await readReferralProgramRankedLinkCount(id)).toBe(1)
+      expect(await firstAfter(id, 1)).not.toBe(id)
     }
+    expect(await firstAfter(ranked, 1)).toBe(ranked)
+    const page = await getTopicIds({ sort: 'link_count', limit: 1, after: cursorBefore(ranked, 1) })
+    expect(page.results[0]?.id).toBe(ranked)
+    const next = await getTopicIds({
+      sort: 'link_count',
+      limit: 1,
+      after: page.page_info.end_cursor ?? undefined,
+    })
+    expect(next.results.some(row => row.id === ranked)).toBe(false)
   })
 
-  it('rejects a link-count page that is filtered, unbounded, or cursor-shaped for another sort', async () => {
+  it('rejects filtered, unbounded and invalid cursor requests', async () => {
     await expect(getTopicIds({ sort: 'link_count', text_search_query: 'cards' })).rejects.toThrow(
       /does not combine/,
     )
     await expect(getTopicIds({ sort: 'link_count', omitLimit: true })).rejects.toThrow(/page limit/)
-    await expect(
-      getTopicIds({ sort: 'link_count', after: encodeCursor({ score: 1.5, id: HIGHEST_ID }) }),
-    ).rejects.toThrow(/Invalid cursor/)
-    await expect(
-      getTopicIds({
-        sort: 'link_count',
-        after: encodeCursor({ score: 2_147_483_648, id: HIGHEST_ID }),
-      }),
-    ).rejects.toMatchObject({ status: 400, message: expect.stringContaining('Invalid cursor') })
+    for (const score of [1.5, -1, Number.MAX_SAFE_INTEGER + 1]) {
+      await expect(
+        getTopicIds({ sort: 'link_count', after: encodeCursor({ score, id: HIGHEST_ID }) }),
+      ).rejects.toMatchObject({ status: 400 })
+    }
   })
 })

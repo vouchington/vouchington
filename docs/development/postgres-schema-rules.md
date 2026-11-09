@@ -240,6 +240,11 @@ index matching its read order, and reads are one keyset walk on that ranking ind
 `pg_get_viewdef` because `REFRESH` cannot be explained. View composition rules live in
 [views](postgresql/reference-views.md). Unenforced.
 
+The owner-approved referral-program link-count ranking is an exception to the refresh window:
+its all-time count requires a full-history refresh. Ranking freshness may lag one refresh; live
+program and topic eligibility still applies in the indexed read. This moves aggregation out of
+request handling without adding synchronous counter writes ([decision](https://github.com/vouchington/vouchington/issues/5220#issuecomment-6735267852)).
+
 ## Related
 
 - [Partitioning strategy](../overview/architecture/partitioning-strategy.md)

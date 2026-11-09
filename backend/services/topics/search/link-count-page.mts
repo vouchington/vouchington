@@ -50,14 +50,14 @@ function decodeActiveLinkCountCursor(after: string | undefined): {
 } {
   if (!after) return { count: null, id: null }
   const cursor = decodeUuidCursor(after, isScoreCursor, 'Invalid cursor for sort=link_count')
-  if (!Number.isInteger(cursor.score) || cursor.score < 0 || cursor.score > 2_147_483_647) {
+  if (!Number.isSafeInteger(cursor.score) || cursor.score < 0) {
     throw createHttpError(400, 'Invalid cursor for sort=link_count')
   }
   return { count: cursor.score, id: cursor.id }
 }
 
-// Lifecycle and count triggers maintain this eligible-only projection in the same transaction.
-// The positive-count index stops at page+1 without scanning retained inactive topics.
+// Counts reflect the latest refresh; current program and topic eligibility is checked live.
+// Stale ineligible rows may require scanning more than a page of the ranking index.
 export async function readActiveLinkCountTopicPage(options: {
   limit?: number
   after?: string
@@ -71,7 +71,9 @@ export async function readActiveLinkCountTopicPage(options: {
       t.slug,
       t.topic_type,
       rp.active_link_count
-    FROM referral_program_link_counts rp
+    FROM mv_referral_program_link_counts rp
+    INNER JOIN referral_program_topics program ON program.topic_id = rp.topic_id
+      AND program.enabled_at IS NOT NULL AND program.disabled_at IS NULL
     INNER JOIN topics t ON t.id = rp.topic_id
       AND t.deleted_at IS NULL
       AND t.merged_into_topic_id IS NULL
@@ -79,7 +81,7 @@ export async function readActiveLinkCountTopicPage(options: {
 
   if (cursor.count !== null && cursor.id !== null) {
     query.append(sql`
-      AND (rp.active_link_count, rp.topic_id) < (${cursor.count}::integer, ${cursor.id}::uuid)`)
+      AND (rp.active_link_count, rp.topic_id) < (${cursor.count}::bigint, ${cursor.id}::uuid)`)
   }
 
   query.append(sql`
