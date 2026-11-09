@@ -61,7 +61,7 @@ export function CommunityFeed({
       t={t}
     />
   ) : null
-  if (pinnedPosts.length === 0 && results.length === 0) {
+  if (pinnedPosts.length === 0 && results.length === 0 && !(hasNextPage && endCursor)) {
     return (
       <EmptyState
         icon='pen-line'
@@ -101,7 +101,7 @@ export function CommunityFeed({
         </div>
       )}
       <InfiniteScroll
-        hasNextPage={hasNextPage}
+        hasNextPage={hasNextPage && !!endCursor}
         endCursor={endCursor}
         onLoadMore={retryReferenceRefresh.handleLoadMore(loadMore)}
         loadingMore={loadingMore}
