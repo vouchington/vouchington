@@ -1,5 +1,6 @@
 import { write } from '@data-stores/psql'
 import {
+  AiUsageMonthPreparationError,
   needsAiUsageMonthCreation,
   prepareAiUsageMonth,
 } from '@data-stores/psql/ai-usage-monthly-partition'
@@ -42,23 +43,36 @@ export interface RecordAiUsageOptions {
 }
 
 export async function recordAiUsage(options: RecordAiUsageOptions): Promise<void> {
-  if (options.createdAt && needsAiUsageMonthCreation(options.createdAt, new Date())) {
-    await prepareAiUsageMonth(options.createdAt)
-  }
-  // Tier registration must commit before the ledger INSERT. Partition attachment takes the
-  // ledger parent before copying its tier FK, so holding a tier row across the INSERT would
-  // invert that DDL lock order.
-  const tierId = await registerAiUsageTier(options.serviceTier)
   const attempts = getAiUsageWorkLimit('record_partition_attempts')
+  let needsPreparation =
+    options.createdAt !== undefined && needsAiUsageMonthCreation(options.createdAt, new Date())
+  let tierId: string | undefined
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
+      if (needsPreparation) {
+        // no-mistakes-disable-next-line query-reached-per-item: prepare one exact month only after a missing-partition signal or for an out-of-window createdAt.
+        await prepareAiUsageMonth(options.createdAt ?? new Date()) // oxlint-disable-line no-await-in-loop -- the bounded retry owns preparation and insertion together.
+        needsPreparation = false
+      }
+      // Tier registration must commit before the ledger INSERT. Partition attachment takes the
+      // ledger parent before copying its tier FK, so holding a tier row across the INSERT would
+      // invert that DDL lock order. Cache the committed tier across retries.
+      if (tierId === undefined) {
+        // no-mistakes-disable-next-line query-reached-per-item: register one tier once before the bounded usage insert attempts.
+        tierId = await registerAiUsageTier(options.serviceTier) // oxlint-disable-line no-await-in-loop -- only the first attempt registers the tier.
+      }
       // no-mistakes-disable-next-line query-reached-per-item: retry the same single usage insert after concurrent partition retirement, never a per-row batch.
       await insertAiUsage(options, tierId) // oxlint-disable-line no-await-in-loop -- only a missing partition permits the next bounded insert attempt.
       return
     } catch (err) {
-      if (attempt + 1 === attempts || !isMissingAiUsagePartition(err)) throw err
-      // A retired empty child can disappear after preparation; do not retry other CHECK failures.
-      await prepareAiUsageMonth(options.createdAt ?? new Date()) // oxlint-disable-line no-await-in-loop -- preparation must commit before retrying the insert.
+      if (
+        attempt + 1 === attempts ||
+        (!(err instanceof AiUsageMonthPreparationError && err.missing) &&
+          !isMissingAiUsagePartition(err))
+      )
+        throw err
+      // A retired empty child can disappear before preparation or after it commits.
+      needsPreparation = true
     }
   }
 }

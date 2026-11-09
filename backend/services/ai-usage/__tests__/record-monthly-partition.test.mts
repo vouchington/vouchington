@@ -46,12 +46,33 @@ describe('backdated AI usage on retired monthly history', () => {
     const releaseMonth = await reserveTestAiUsageMonths([createdAt])
     onTestFinished(() => releaseMonth([]))
     const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
+    const agentSlug = `test-detached-month-${randomUUID()}`
     await withDetachedTestAiUsagePartition(testAiUsageCandidate(partition), async () => {
-      await expect(prepareAiUsageMonth(createdAt)).rejects.toThrow(
-        `AI usage month ${partition} was not attached after preparation`,
-      )
+      await expect(
+        recordAiUsage({
+          createdAt,
+          agentSlug,
+          provider: 'openai',
+          transport: 'direct',
+          model: 'gpt-6-luna',
+          serviceTier: 'flex',
+          usage: {
+            inputTokens: 10,
+            cacheReadTokens: 0,
+            cacheWrite5mTokens: 0,
+            cacheWrite1hTokens: 0,
+            outputTokens: 2,
+            reasoningOutputTokens: 0,
+          },
+        }),
+      ).rejects.toMatchObject({
+        name: 'AiUsageMonthPreparationError',
+        missing: false,
+        message: `AI usage month ${partition} was not attached after preparation`,
+      })
     })
     expect(await isTestAiUsagePartitionAttached(partition)).toBe(true)
+    expect(await readTestAiUsageIdsForMonth(createdAt, agentSlug)).toEqual([])
   })
 
   it('retries when retirement commits after the attached-month probe', async () => {

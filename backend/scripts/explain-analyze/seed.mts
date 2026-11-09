@@ -127,8 +127,7 @@ async function main() {
   await seedSpendingCategories(SPENDING_CATEGORY_SEED_COUNT)
   await seedRewardsProgramStatuses(REWARDS_PROGRAM_STATUS_SEED_COUNT)
   await seedTopicParentRelations(500)
-  // Both cohorts depend only on committed users and write disjoint relations.
-  // Global WAL/checkpointer samples in post diagnostics include both cohorts.
+  // Cohorts read committed users and write disjoint relations; global WAL samples cover both.
   await Promise.all([seedRemoteFollowers(), seedPosts(100_000)])
   await seedPostCreationModerationBypass()
   await seedPostModerationRetention()
