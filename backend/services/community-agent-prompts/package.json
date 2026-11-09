@@ -29,7 +29,6 @@
     "@services/communities": "workspace:^",
     "@services/community-agent-prompt-audit": "workspace:^",
     "@services/memberships": "workspace:^",
-    "@services/moderation": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/sentry": "^0.6.0",

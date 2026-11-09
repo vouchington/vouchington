@@ -207,7 +207,7 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     expect(changed.run.runId).not.toBe(first.runId)
     expect(changed.run.configurationSha256.equals(first.configurationSha256)).toBe(false)
     await expect(processRun(changed.run)).resolves.toEqual({ kind: 'completed' })
-    await expect(handler.reserve(fixture.subject)).resolves.toEqual({ kind: 'no-work' })
+    await expect(handler.reserve(fixture.subject)).resolves.toEqual({ kind: 'not-ready' })
 
     expect(provider).toHaveBeenCalledTimes(2)
     expect(await runFacts(fixture.postId)).toHaveLength(2)

@@ -35,11 +35,11 @@ export async function advanceCommunityModerationRequest(
     pageFlagged: boolean
   },
 ): Promise<{ anyFlagged: boolean; hasMore: boolean }> {
-  const { rows } = await query<{ community_prompt_any_flagged: boolean }>(sql`
+  const { rows } = await query<{ has_flagged_community_prompt: boolean }>(sql`
     /* advanceCommunityModerationRequest */
     UPDATE classifier_run_requests request
     SET community_prompt_cursor = ${input.nextCursor ? JSON.stringify(input.nextCursor) : null}::jsonb,
-      community_prompt_any_flagged = request.community_prompt_any_flagged OR ${input.pageFlagged},
+      has_flagged_community_prompt = request.has_flagged_community_prompt OR ${input.pageFlagged},
       community_prompt_completed_at = CASE
         WHEN ${input.nextCursor === null} THEN COALESCE(request.community_prompt_completed_at, clock_timestamp())
         ELSE NULL END,
@@ -48,10 +48,10 @@ export async function advanceCommunityModerationRequest(
     WHERE request.run_identity_id = ${input.runId}
       AND request.input_sha256 = ${input.inputSha256}
       AND request.post_id = ${input.postId}
-    RETURNING community_prompt_any_flagged
+    RETURNING has_flagged_community_prompt
   `)
   return {
-    anyFlagged: rows[0]?.community_prompt_any_flagged ?? input.pageFlagged,
+    anyFlagged: rows[0]?.has_flagged_community_prompt ?? input.pageFlagged,
     hasMore: input.nextCursor !== null,
   }
 }
