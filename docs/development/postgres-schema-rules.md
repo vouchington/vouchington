@@ -176,9 +176,25 @@ state from the latest history row.
   viewer's blocks or mutes, the time window is the scan bound where the sort has one, and EXPLAIN at
   representative cardinality compares rows read with rows returned. No candidate pools: no capped or `MATERIALIZED` CTE of
   the listed entity that is filtered or limited afterwards, no window loops or probes, no cursor
-  proof state, and no config fields that only cap a read. A page is never short or empty while
-  `has_next_page` is true. Small viewer-scoped sets (follows, mutes, blocks, memberships) may be
-  subqueries or semi-joins. Compare plans against that single walk.
+  proof state, and no config field that sizes a candidate pool. A short or empty page is allowed
+  only when it carries a continuation cursor and a "load more" signal (see bounding below). Small
+  viewer-scoped sets (follows, mutes, blocks, memberships) may be subqueries or semi-joins. Compare
+  plans against that single walk.
+- **Default to straightforward SQL.** Use a plain walk with filters in WHERE, `EXISTS` / `NOT EXISTS`,
+  and joins only on keys that match one row. `GROUP BY` and `DISTINCT` are for real aggregates only:
+  never to dedupe rows our own `UNION` or join produced, to test existence, or over a unique key.
+  Any complex or non-obvious shape needs an
+  [explain-analyze scenario](postgresql/explain-analyze/README.md) and a benchmark in the PR showing
+  it beats the straightforward version. That covers `GROUP BY` dedupe, `UNION` candidate sets,
+  `HAVING COUNT(*) = n` all-of filters, `MATERIALIZED` CTEs, `LATERAL` tricks, and planner steering.
+  Why: PostgreSQL cannot stop early through a `GROUP BY` or `UNION` candidate pool, while a plain
+  `EXISTS` semi-join lets the planner choose its direction from its estimates. Unenforced.
+- **Bound at the inputs.** Cap the number of filter terms first (for example, a bounded count of
+  `#slug` terms per query, ANDed, with the same validation error in REST and MCP). Then use a plain
+  index walk with per-row `EXISTS` probes, a cap on inspected rows, and a continuation cursor. A
+  short or empty page is fine when it carries "load more" and the cursor. Do not cap product data
+  (such as aliases per topic) to make a query cheap. Each cap is a `DynamicConfig` field with a
+  default and a hard maximum. Unenforced.
 
 ## R7 — Every table, column and view has a comment
 
@@ -215,8 +231,9 @@ independently drifting source of the same fact, and an index sorting by it dupli
 `id` provides. Define `created_at` as `GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL`
 (`STORED` only when indexed), and order and paginate by `id`.
 
-## Stored counters stay exact
+## Prefer no counter columns; trending and rankings are materialized views
 
+<<<<<<< HEAD
 A denormalized count column is updated in the same transaction as the rows it counts, or by a row
 trigger when `ON DELETE CASCADE` or hard deletes can remove those rows, because a cascade bypasses
 application code. It carries `CHECK (count >= 0)` and has a test proving a purge keeps it exact. No
@@ -224,6 +241,25 @@ periodic recount repairs drift: a repair job hides the write path that lost the 
 readers wrong until it runs. The advisory `postgres-column-check-constraints` check reports integer
 `*_count` columns without a provable non-negative constraint. Counter maintenance, purge correctness,
 and the prohibition on periodic recount remain unenforced.
+=======
+A counter column needs maintenance: same-transaction updates, row triggers for cascades and hard
+deletes, a `CHECK (count >= 0)`, and a purge test proving it stays exact. No periodic recount
+repairs drift, because a repair job hides the write path that lost the update. Adding a counter
+needs evidence that it is necessary. Unenforced.
+
+- **Displayed counts are capped counts.** Count over a `LIMIT cap + 1` subquery and return the exact
+  number up to the cap plus a `capped` flag; clients render "1k+". The cap is a `DynamicConfig`
+  field with a default and a hard maximum.
+- **Trending and hot lists.** A non-personalized list that aggregates is a materialized view over a
+  bounded window (see below), with an explain-analyze scenario. Personalized variants query on top
+  of the view and join live eligibility (deleted, removed, hidden, disabled), so moderation takes
+  effect at once. A per-row score already stored and indexed, such as a post's hot score, stays an
+  index walk with no view.
+- **Rankings by an unbounded count.** A capped count cannot sort, so a ranking such as referral
+  programs by all-time active links is a materialized view of the counts, indexed by
+  `(count DESC, id DESC)`, refreshed on a schedule, with live eligibility joined at read time. It is
+  not a counter column.
+>>>>>>> b5148c798f (docs(postgres): record 2026-11-09 owner query, count and ranking rules)
 
 ## No per-row queries while holding locks
 
