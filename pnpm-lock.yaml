@@ -3704,6 +3704,9 @@ importers:
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../services/account-data-requests
+      '@services/activitypub-delivery':
+        specifier: workspace:^
+        version: link:../services/activitypub-delivery
       '@services/admin-imports':
         specifier: workspace:^
         version: link:../services/admin-imports
@@ -3719,6 +3722,9 @@ importers:
       '@services/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../services/bedrock-embeddings-batch
+      '@services/bluesky-accounts':
+        specifier: workspace:^
+        version: link:../services/bluesky-accounts
       '@services/bluesky-follows':
         specifier: workspace:^
         version: link:../services/bluesky-follows
@@ -3854,6 +3860,15 @@ importers:
       '@services/oauth-authorization-server':
         specifier: workspace:^
         version: link:../services/oauth-authorization-server
+      '@services/oauth-facebook':
+        specifier: workspace:^
+        version: link:../services/oauth-facebook
+      '@services/oauth-github':
+        specifier: workspace:^
+        version: link:../services/oauth-github
+      '@services/oauth-x':
+        specifier: workspace:^
+        version: link:../services/oauth-x
       '@services/openai-moderation':
         specifier: workspace:^
         version: link:../services/openai-moderation
@@ -4353,9 +4368,6 @@ importers:
       '@services/route-rate-limits':
         specifier: workspace:^
         version: link:../route-rate-limits
-      '@services/user-deletions':
-        specifier: workspace:^
-        version: link:../user-deletions
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -4843,9 +4855,6 @@ importers:
       '@services/mfa':
         specifier: workspace:^
         version: link:../mfa
-      '@services/oauth-accounts':
-        specifier: workspace:^
-        version: link:../oauth-accounts
       '@valkey/valkey-glide':
         specifier: ^2.5.3
         version: 2.5.3
@@ -4904,9 +4913,6 @@ importers:
       '@services/session-advisory-lock':
         specifier: workspace:^
         version: link:../session-advisory-lock
-      '@services/user-deletions':
-        specifier: workspace:^
-        version: link:../user-deletions
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -7623,9 +7629,6 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
