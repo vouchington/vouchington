@@ -31,6 +31,27 @@ export async function publishStripeCatalogMapping({
     )
       throw new Error(`Stripe catalog mapping ${skuId} conflicts with its canonical identity`)
   }
+  const displacedIds = existing.flatMap(mapping =>
+    mapping.sku_id === skuId &&
+    mapping.retired_at === null &&
+    mapping.provider_product_id !== providerProductId
+      ? [mapping.id]
+      : [],
+  )
+  if (displacedIds.length > 0) {
+    await write(
+      sql`/* publishStripeCatalogMapping: retire displaced sku */
+        UPDATE membership_provider_products SET retired_at = CURRENT_TIMESTAMP
+        WHERE id = ANY(${displacedIds}::uuid[])
+          AND retired_at IS NULL
+          AND sku_id = ${skuId}
+          AND membership_product_id = ${membershipProductId}
+          AND price_minor_units = ${amount}
+          AND currency_code = 'usd'
+          AND provider_product_id IS DISTINCT FROM ${providerProductId}`,
+      { query },
+    )
+  }
   if (
     !existing.some(
       mapping => mapping.provider_product_id === providerProductId && mapping.sku_id === skuId,
@@ -55,14 +76,24 @@ export async function publishStripeCatalogMapping({
     Number(mapping.price_minor_units) !== amount ||
     mapping.currency_code !== 'usd'
   )
-    /* v8 ignore next -- defensive: the locked pre-read and database uniqueness prevent this drift. */
+    /* v8 ignore next -- defensive: the pre-read and database uniqueness prevent this drift. */
     throw new Error(`Stripe catalog mapping ${skuId} conflicts with its canonical identity`)
   if (mapping.retired_at === null) return
-  await write(
+  const { rows: reactivated } = await write<{ id: string }>(
     sql`/* publishStripeCatalogMapping: reactivate */
-      UPDATE membership_provider_products SET retired_at = NULL WHERE id = ${mapping.id}`,
+      UPDATE membership_provider_products SET retired_at = NULL
+      WHERE id = ${mapping.id}
+        AND retired_at IS NOT NULL
+        AND provider_product_id = ${providerProductId}
+        AND sku_id = ${skuId}
+        AND membership_product_id = ${membershipProductId}
+        AND price_minor_units = ${amount}
+        AND currency_code = 'usd'
+      RETURNING id`,
     { query },
   )
+  if (reactivated.length !== 1)
+    throw new Error(`Stripe catalog mapping ${skuId} conflicts with its canonical identity`)
 }
 
 async function findStripeCatalogMappings(
@@ -81,8 +112,7 @@ async function findStripeCatalogMappings(
       WHERE provider_context.provider = 'stripe'
         AND provider_context.environment = ${context.environment}
         AND provider_context.application_id = ${context.applicationId}
-        AND (mapping.provider_product_id = ${providerProductId} OR mapping.sku_id = ${skuId})
-      FOR NO KEY UPDATE OF mapping`,
+        AND (mapping.provider_product_id = ${providerProductId} OR mapping.sku_id = ${skuId})`,
     { query },
   )
   return rows as StripeCatalogMapping[]

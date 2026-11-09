@@ -9,19 +9,19 @@ export type ActiveSubjectTopicRelation = {
 }
 
 /**
- * The captured topics a classifier may still tag: neither deleted nor merged away. The rows are
- * locked FOR SHARE (after the subject's publication lock, the same order a topic merge uses), so a
- * concurrent merge or delete waits for this transaction instead of invalidating the answer.
+ * The captured topics a classifier may still tag: neither deleted nor merged away. This lookup
+ * does not lock topic rows. A missing topic fails the relation foreign key, and readers reject a
+ * topic that is deleted or merged after the write. Writers still skip those topics here.
  */
-export async function lockActiveTopicIds(
+export async function readActiveClassifierTopicIds(
   query: QueryExecutor,
   topicIds: readonly string[],
 ): Promise<ReadonlySet<string>> {
-  const { rows } = await query<{ id: string }>(sql`/* lockActiveClassifierTopics */
+  if (topicIds.length === 0) return new Set()
+  const { rows } = await query<{ id: string }>(sql`/* readActiveClassifierTopicIds */
     SELECT id FROM topics
     WHERE id = ANY(${[...topicIds]}::uuid[]) AND deleted_at IS NULL AND merged_into_topic_id IS NULL
     ORDER BY id
-    FOR SHARE
   `)
   return new Set(rows.map(row => row.id))
 }

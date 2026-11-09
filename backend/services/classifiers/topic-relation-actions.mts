@@ -10,7 +10,7 @@ import {
   type ExpectedTopicClassifierBinding,
 } from './topic-decision-validation.mts'
 import {
-  lockActiveTopicIds,
+  readActiveClassifierTopicIds,
   readActiveSubjectTopicRelations,
   readRelatedSubjectTopicIds,
 } from './topic-relation-facts.mts'
@@ -75,7 +75,7 @@ export async function applyTopicClassifierDecisionRelations(
     predicate: 'category',
   })
   const orderedResults = results.toSorted((a, b) => a.topicId.localeCompare(b.topicId))
-  const activeTopicIds = await lockActiveTopicIds(
+  const activeTopicIds = await readActiveClassifierTopicIds(
     query,
     orderedResults.map(result => result.topicId),
   )

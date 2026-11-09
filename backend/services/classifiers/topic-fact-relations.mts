@@ -5,7 +5,7 @@ import type { ElectionVoteScore } from '@voucha/types/entities/election'
 import { assertSharedSystemActor } from './topic-decision-validation.mts'
 import { resolveSubject, voteOnLiveRelations } from './topic-relation-actions.mts'
 import {
-  lockActiveTopicIds,
+  readActiveClassifierTopicIds,
   readActiveSubjectTopicRelations,
   readRelatedSubjectTopicIds,
 } from './topic-relation-facts.mts'
@@ -46,7 +46,7 @@ export async function applyTopicFactRelations(
     objectType: 'topic',
     predicate: 'category',
   })
-  const active = await lockActiveTopicIds(query, reported.toSorted())
+  const active = await readActiveClassifierTopicIds(query, reported.toSorted())
   const related = await readRelatedSubjectTopicIds(query, relation.table_name, subjectId, [
     ...active,
   ])

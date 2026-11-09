@@ -2,7 +2,6 @@ import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { resolveRecurringCatalogPrice } from '@modules/stripe/catalog'
 import { DEFAULT_STRIPE_CATALOG_CONTEXT, type StripeCatalogContext } from './get-catalog.mts'
-import { withStripeCatalogReconciliationLock } from './stripe-catalog-lock.mts'
 import { publishStripeCatalogMapping } from './stripe-catalog-mappings.mts'
 import { getOrCreateProviderContextId } from './provider-context.mts'
 const CATALOG = [
@@ -46,17 +45,19 @@ export async function reconcileStripeMembershipCatalog({
   context?: StripeCatalogContext
   resolvePrice?: typeof resolveRecurringCatalogPrice
 } = {}): Promise<void> {
-  await withStripeCatalogReconciliationLock(context, async () => {
-    try {
-      await reconcileLockedStripeMembershipCatalog(context, resolvePrice)
-    } catch (err) {
-      await retireStripeCatalogMappings(context, err)
-      throw err
-    }
-  })
+  const { rows: startedRows } = await write<{ started_at: Date }>(
+    sql`/* reconcileStripeMembershipCatalog: attempt start */ SELECT clock_timestamp() AS started_at`,
+  )
+  const startedAt = startedRows[0]!.started_at
+  try {
+    await reconcileStripeMembershipCatalogBody(context, resolvePrice)
+  } catch (err) {
+    await retireStripeCatalogMappings(context, err, startedAt)
+    throw err
+  }
 }
 
-async function reconcileLockedStripeMembershipCatalog(
+async function reconcileStripeMembershipCatalogBody(
   context: StripeCatalogContext,
   resolvePrice: typeof resolveRecurringCatalogPrice,
 ): Promise<void> {
@@ -77,9 +78,9 @@ async function reconcileLockedStripeMembershipCatalog(
     transaction,
   )
   const { rows } = await write(
-    sql`/* reconcileStripeMembershipCatalog: lock canonical products */
+    sql`/* reconcileStripeMembershipCatalog: read canonical products */
       SELECT id, plan, billing_interval FROM membership_products
-      WHERE retired_at IS NULL ORDER BY plan, billing_interval FOR NO KEY UPDATE`,
+      WHERE retired_at IS NULL ORDER BY plan, billing_interval`,
     { query: transaction },
   )
   /* v8 ignore next -- defensive: the seeded canonical product set is structurally fixed. */
@@ -109,6 +110,7 @@ async function reconcileLockedStripeMembershipCatalog(
     sql`/* reconcileStripeMembershipCatalog: retire superseded mappings */
       UPDATE membership_provider_products SET retired_at = CURRENT_TIMESTAMP
       WHERE membership_provider_context_id = ${contextId}::UUID AND retired_at IS NULL
+        AND updated_at < CURRENT_TIMESTAMP
         AND provider_product_id NOT IN (${prices[0]!.id}, ${prices[1]!.id}, ${prices[2]!.id}, ${prices[3]!.id})`,
     { query: transaction },
   )
@@ -118,6 +120,7 @@ async function reconcileLockedStripeMembershipCatalog(
 async function retireStripeCatalogMappings(
   context: StripeCatalogContext,
   providerError: unknown,
+  startedAt: Date,
 ): Promise<void> {
   try {
     await using transaction = await beginTransaction()
@@ -128,7 +131,8 @@ async function retireStripeCatalogMappings(
     await write(
       sql`/* reconcileStripeMembershipCatalog: fail closed */
         UPDATE membership_provider_products SET retired_at = CURRENT_TIMESTAMP
-        WHERE membership_provider_context_id = ${contextId}::UUID AND retired_at IS NULL`,
+        WHERE membership_provider_context_id = ${contextId}::UUID AND retired_at IS NULL
+          AND updated_at < ${startedAt}`,
       { query: transaction },
     )
     await transaction.commit()

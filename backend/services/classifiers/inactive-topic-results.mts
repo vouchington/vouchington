@@ -14,7 +14,7 @@ export async function readInactiveClassifierTopicIds(
     sql`/* readInactiveClassifierTopicIds */ SELECT id,
       (${includeDeleted} AND deleted_at IS NOT NULL) OR merged_into_topic_id IS NOT NULL AS inactive
       -- no-mistakes-disable-next-line postgres-required-predicates: lifecycle classification must include inactive identities; missing IDs still fail foreign keys
-      FROM topics WHERE id = ANY(${[...topicIds]}::uuid[]) ORDER BY id FOR SHARE`,
+      FROM topics WHERE id = ANY(${[...topicIds]}::uuid[]) ORDER BY id`,
   )
   return new Set(rows.flatMap(row => (row.inactive ? [row.id] : [])))
 }
