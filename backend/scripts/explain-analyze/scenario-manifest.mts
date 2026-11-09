@@ -106,6 +106,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'profile-posts-page',
   'recommended-rss-feeds',
   'recommended-topics',
+  'recommended-topics-long-vote-history',
   'report-judgement-contexts-batch',
   'review-succession-candidates',
   'remote-follower-inbox-late-cursor',

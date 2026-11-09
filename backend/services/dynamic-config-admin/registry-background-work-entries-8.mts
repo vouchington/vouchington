@@ -46,6 +46,8 @@ export const backgroundWorkRegistryEntries8 = {
     maxValues: recommendedTopicsWorkMaxValues,
     descriptions: {
       candidate_page_size: 'Candidate page size for recommended topics processing.',
+      vote_history_window:
+        'Newest post votes a viewer contributes to recommended topics, before keeping the latest vote per post.',
     },
   }),
   'recommended-rss-feeds-work-config': defineBoundedWorkNamespace({

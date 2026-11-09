@@ -3,17 +3,20 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   candidate_page_size: 1000,
+  vote_history_window: 1000,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const recommendedTopicsWorkMaxValues = {
   candidate_page_size: 10000,
+  vote_history_window: 10000,
 }
 
 export const recommendedTopicsWorkConfig = new DynamicConfig({
   key: 'recommended-topics-work-config',
   fieldTypes: {
     candidate_page_size: 'number',
+    vote_history_window: 'number',
   },
   defaultFields,
 })
