@@ -7,6 +7,7 @@ import {
   getReportJudgementRunStatus,
   markReportJudgementRunExpired,
   markReportJudgementRunFailed,
+  markReportJudgementRunsFailed,
 } from '@services/moderation-reports/rerun-outcomes'
 import { runAppealScenarios } from './moderation-rerun-appeals.mts'
 import { runModerationRerunRetentionScenarios } from './moderation-rerun-retention.mts'
@@ -104,11 +105,32 @@ export async function runModerationRerunOutcomeScenarios(): Promise<void> {
         assert.equal(await getReportJudgementRunStatus(reportId, failedReportRunId), 'failed')
       },
       undefined,
-      'markReportJudgementRunFailed',
+      'markReportJudgementRunsFailed',
       {
         afterCapture: () => restoreReportOutcome(failedReportRunId, 'failed_at'),
       },
     )
+    for (const batchSize of [10, 30] as const) {
+      const batchRunIds = await Promise.all(
+        Array.from({ length: batchSize }, () => createReportJudgementRun(reportId)),
+      )
+      reportRunIds.push(...batchRunIds)
+      const scenarioId = `report-rerun-failed-batch-${batchSize}` as const
+      register(scenarioId, batchSize * 2)
+      // no-mistakes-disable-next-line query-reached-per-item: two fixed batch sizes require separate serialized custom/generic plan captures.
+      await runAndCapture(
+        scenarioId,
+        async () => {
+          assert.equal(
+            await markReportJudgementRunsFailed(batchRunIds.map(runId => ({ reportId, runId }))),
+            batchSize,
+          )
+        },
+        undefined,
+        'markReportJudgementRunsFailed',
+        { afterCapture: () => restoreReportOutcomes(batchRunIds, 'failed_at') },
+      )
+    }
     const expiredReportRunId = await createReportJudgementRun(reportId)
     reportRunIds.push(expiredReportRunId)
     register('report-rerun-expired')
@@ -143,4 +165,11 @@ async function restoreReportOutcome(runId: string, column: 'failed_at' | 'expire
       '/* restoreModerationRerunOutcome:expired */ UPDATE moderation_report_judgement_runs SET expired_at = NULL WHERE id = $1::uuid',
       [runId],
     )
+}
+
+async function restoreReportOutcomes(runIds: readonly string[], column: 'failed_at') {
+  await write(
+    `/* restoreModerationRerunOutcome:failedBatch */ UPDATE moderation_report_judgement_runs SET ${column} = NULL WHERE id = ANY($1::uuid[])`,
+    [runIds],
+  )
 }

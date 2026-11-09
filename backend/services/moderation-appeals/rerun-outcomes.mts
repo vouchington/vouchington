@@ -117,13 +117,27 @@ export async function markAppealResolutionRunFailed(
   appealId: string,
   requestToken: string,
 ): Promise<void> {
-  await write(sql`/* markAppealResolutionRunFailed */
-    UPDATE moderation_appeal_resolution_runs
-    SET failed_at = now()
-    WHERE moderation_appeal_id = ${appealId}::uuid AND id = ${requestToken}::uuid
-      AND completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL
-    RETURNING id
+  await markAppealResolutionRunsFailed([{ appealId, requestToken }])
+}
+
+export async function markAppealResolutionRunsFailed(
+  runs: readonly { appealId: string; requestToken: string }[],
+): Promise<number> {
+  if (runs.length === 0) return 0
+  const uniqueRuns = [
+    ...new Map(runs.map(run => [`${run.appealId}:${run.requestToken}`, run])).values(),
+  ]
+  const appealIds = uniqueRuns.map(run => run.appealId)
+  const requestTokens = uniqueRuns.map(run => run.requestToken)
+  const { rowCount } = await write(sql`/* markAppealResolutionRunsFailed */
+    UPDATE moderation_appeal_resolution_runs run SET failed_at = now()
+    FROM unnest(${appealIds}::uuid[], ${requestTokens}::uuid[]) AS requested(appeal_id, run_id)
+    WHERE run.id = requested.run_id AND run.moderation_appeal_id = requested.appeal_id
+      AND run.id = ANY(${requestTokens}::uuid[])
+      AND run.completed_at IS NULL AND run.failed_at IS NULL AND run.expired_at IS NULL
+    RETURNING run.id
   `)
+  return rowCount ?? 0
 }
 
 /** Marks a worker's confirmed no-result completion, such as a superseded or ineligible run. */

@@ -2,11 +2,23 @@ import { DynamicConfig } from '@data-stores/valkey-core/dynamic-config'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export const AI_AGENTS_QUEUE_NAME = 'ai_agents'
-export const aiAgentsQueueMaxValues = { background_response_recovery_concurrency: 8 }
-const aiAgentsQueueDefaults = { background_response_recovery_concurrency: 2 }
+export const aiAgentsQueueMaxValues = {
+  background_response_recovery_concurrency: 8,
+  failed_job_reconcile_batch_size: 1000,
+  failed_job_history_limit: 1000,
+}
+const aiAgentsQueueDefaults = {
+  background_response_recovery_concurrency: 2,
+  failed_job_reconcile_batch_size: 100,
+  failed_job_history_limit: 100,
+}
 export const aiAgentsQueueConfig = new DynamicConfig({
   key: 'ai-agents-queue-config',
-  fieldTypes: { background_response_recovery_concurrency: 'number' },
+  fieldTypes: {
+    background_response_recovery_concurrency: 'number',
+    failed_job_reconcile_batch_size: 'number',
+    failed_job_history_limit: 'number',
+  },
   defaultFields: aiAgentsQueueDefaults,
 })
 
@@ -21,11 +33,30 @@ export function getBackgroundResponseRecoveryConcurrency(): number {
   )
 }
 
+export function getFailedJobReconcileLimits(): { batchSize: number; historyLimit: number } {
+  return {
+    batchSize: getBoundedPositiveIntegerField(
+      aiAgentsQueueConfig,
+      'failed_job_reconcile_batch_size',
+      {
+        defaultValue: aiAgentsQueueDefaults.failed_job_reconcile_batch_size,
+        maxValue: aiAgentsQueueMaxValues.failed_job_reconcile_batch_size,
+      },
+    ),
+    historyLimit: getBoundedPositiveIntegerField(aiAgentsQueueConfig, 'failed_job_history_limit', {
+      defaultValue: aiAgentsQueueDefaults.failed_job_history_limit,
+      maxValue: aiAgentsQueueMaxValues.failed_job_history_limit,
+    }),
+  }
+}
+
 export const AI_AGENTS_DEFAULTS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
   removeOnComplete: 100,
-  removeOnFail: 100,
+  // A count-based prune on any job removes older manual rerun evidence from this shared queue.
+  // The bounded failed-job reconciler keeps the ordinary 100-job history explicitly.
+  removeOnFail: false,
 } as const
 
 /**
@@ -66,6 +97,7 @@ export type AIAgentJobName =
   | 'reconcile-auto-dispatch-judgements'
   | 'recover-background-response'
   | 'reconcile-copyright-agent-dispatches'
+  | 'reconcile-ai-agent-failures'
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'classifier-run-dispatcher': 8,
@@ -85,6 +117,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'reconcile-auto-dispatch-judgements': 100,
   'recover-background-response': 100,
   'reconcile-copyright-agent-dispatches': 100,
+  'reconcile-ai-agent-failures': 100,
 }
 
 // Which job types can incur billed provider generation spend, and are therefore subject to the
@@ -127,4 +160,5 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'reconcile-auto-dispatch-judgements': false,
   'recover-background-response': false,
   'reconcile-copyright-agent-dispatches': false,
+  'reconcile-ai-agent-failures': false,
 }

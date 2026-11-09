@@ -25,8 +25,11 @@ failure from discarding paid work. A lost enqueue acknowledgement remains inconc
 worker can establish its own generation without relying on the caller receiving that acknowledgement.
 Only authorized staff can read those internal outcomes; the member's redacted view does not change.
 The current draft still requires human approval and delivery, and a late older run cannot replace a
-newer draft. Bounded, configurable retention removes old run outcomes without turning an absent
-record into a failure.
+newer draft. Native worker stalls can exhaust outside the agent processor, so processor-side failure
+handling cannot record every terminal outcome. Failed-job evidence remains available until recovery
+durably records the outcome; queue cleanup follows that acknowledgement, including after a database
+outage. Bounded, configurable retention removes old run outcomes without turning an absent record
+into a failure.
 
 ## Policy
 

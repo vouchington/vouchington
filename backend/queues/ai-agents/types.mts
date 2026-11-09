@@ -116,6 +116,7 @@ type AIAgentJobPayloadsByName = {
   'reconcile-auto-dispatch-judgements': Record<string, never>
   'recover-background-response': BackgroundResponseJobData
   'reconcile-copyright-agent-dispatches': CopyrightAgentSweepData
+  'reconcile-ai-agent-failures': Record<string, never>
 }
 
 /** Shared recovery/spend metadata is added by the worker after queue admission. */

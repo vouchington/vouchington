@@ -34,6 +34,10 @@ export const backgroundWorkEntries4 = [
     descriptions: {
       background_response_recovery_concurrency:
         'Maximum concurrent inline background response recovery jobs across all workers.',
+      failed_job_reconcile_batch_size:
+        'Failed AI agent jobs inspected per durable outcome reconciliation run.',
+      failed_job_history_limit:
+        'Ordinary failed AI agent jobs retained for operator history after outcome reconciliation.',
     },
   }),
   defineBoundedWorkNamespace({

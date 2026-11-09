@@ -9,6 +9,7 @@ import {
   getAppealResolutionRunStatus,
   markAppealResolutionRunExpired,
   markAppealResolutionRunFailed,
+  markAppealResolutionRunsFailed,
 } from '@services/moderation-appeals/rerun-outcomes'
 import { registerModerationRerunScenario as register } from './moderation-rerun-contract.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -95,11 +96,36 @@ export async function runAppealScenarios(appealId: string, requestToken: string)
       assert.equal(await getAppealResolutionRunStatus(appealId, failedToken), 'failed')
     },
     undefined,
-    'markAppealResolutionRunFailed',
+    'markAppealResolutionRunsFailed',
     {
       afterCapture: () => restoreAppealOutcome(failedToken, 'failed_at'),
     },
   )
+  for (const batchSize of [10, 30] as const) {
+    const batchTokens = await Promise.all(
+      Array.from({ length: batchSize }, () => addAppealRun(appealId)),
+    )
+    const scenarioId = `appeal-rerun-failed-batch-${batchSize}` as const
+    register(scenarioId, batchSize * 2)
+    // no-mistakes-disable-next-line query-reached-per-item: two fixed batch sizes require separate serialized custom/generic plan captures.
+    await runAndCapture(
+      scenarioId,
+      async () => {
+        assert.equal(
+          await markAppealResolutionRunsFailed(
+            batchTokens.map(batchRequestToken => ({
+              appealId,
+              requestToken: batchRequestToken,
+            })),
+          ),
+          batchSize,
+        )
+      },
+      undefined,
+      'markAppealResolutionRunsFailed',
+      { afterCapture: () => restoreAppealOutcomes(batchTokens, 'failed_at') },
+    )
+  }
   const expiredToken = await addAppealRun(appealId)
   register('appeal-rerun-expired')
   await runAndCapture(
@@ -135,4 +161,11 @@ async function restoreAppealOutcome(runId: string, column: 'failed_at' | 'expire
       '/* restoreModerationRerunOutcome:appealExpired */ UPDATE moderation_appeal_resolution_runs SET expired_at = NULL WHERE id = $1::uuid',
       [runId],
     )
+}
+
+async function restoreAppealOutcomes(runIds: readonly string[], column: 'failed_at') {
+  await write(
+    `/* restoreModerationRerunOutcome:appealFailedBatch */ UPDATE moderation_appeal_resolution_runs SET ${column} = NULL WHERE id = ANY($1::uuid[])`,
+    [runIds],
+  )
 }

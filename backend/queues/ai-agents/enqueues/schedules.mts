@@ -8,6 +8,7 @@ import { ai_agents } from '../queues.mts'
 import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatch.mts'
 import { enqueueReconcileCopyrightAgentDispatches } from './reconcile-copyright-agent-dispatches.mts'
 import { enqueueReconcileClassifierRuns } from './reconcile-classifier-runs.mts'
+import { enqueueReconcileAIAgentFailures } from './reconcile-ai-agent-failures.mts'
 
 function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
   return {
@@ -20,6 +21,27 @@ function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
 }
 
 export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_NAME, [
+  {
+    schedulerId: 'reconcileAIAgentFailures',
+    repeat: { pattern: '*/5 * * * *' },
+    template: {
+      name: 'reconcile-ai-agent-failures',
+      data: {},
+      opts: () => ({
+        ...reconcilerOptions('reconcile-ai-agent-failures'),
+        deduplication: { id: 'reconcile_ai_agent_failures', mode: 'simple' },
+      }),
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'reconcileAIAgentFailures',
+        schedule: '*/5 * * * *',
+        description: 'Persist failed manual AI reruns and bound ordinary failed-job history',
+        trigger: enqueueReconcileAIAgentFailures,
+      },
+    ],
+  },
   {
     schedulerId: 'reconcileClassifierRuns',
     repeat: { pattern: '*/5 * * * *' },
@@ -77,4 +99,5 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
 
 export async function upsertSchedules(): Promise<void> {
   await upsertScheduledJobManifest(ai_agents, scheduledJobManifest)
+  await enqueueReconcileAIAgentFailures()
 }

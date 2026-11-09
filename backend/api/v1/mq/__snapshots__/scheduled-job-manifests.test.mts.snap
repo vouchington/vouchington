@@ -6,6 +6,43 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Persist failed manual AI reruns and bound ordinary failed-job history",
+        "id": "reconcileAIAgentFailures",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileAIAgentFailures",
+    "template": {
+      "data": {},
+      "name": "reconcile-ai-agent-failures",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "reconcile_ai_agent_failures",
+          "mode": "simple",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": false,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Re-enqueue incomplete classifier runs and dispatch unreserved requests",
         "id": "reconcileClassifierRuns",
         "kind": "scheduled-jobs",
@@ -31,7 +68,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         },
         "priority": 100,
         "removeOnComplete": 100,
-        "removeOnFail": 100,
+        "removeOnFail": false,
       },
     },
   },
@@ -64,7 +101,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         },
         "priority": 100,
         "removeOnComplete": 100,
-        "removeOnFail": 100,
+        "removeOnFail": false,
       },
     },
   },
@@ -96,7 +133,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         },
         "priority": 100,
         "removeOnComplete": 100,
-        "removeOnFail": 100,
+        "removeOnFail": false,
       },
     },
   },
@@ -3893,6 +3930,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "ai_agents",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileAutoDispatchJudgements",
+  },
+  {
+    "description": "Persist failed manual AI reruns and bound ordinary failed-job history",
+    "id": "reconcileAIAgentFailures",
+    "job_name": "reconcile-ai-agent-failures",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileAIAgentFailures",
   },
   {
     "description": "Re-enqueue unassessed copyright email and form agent work",

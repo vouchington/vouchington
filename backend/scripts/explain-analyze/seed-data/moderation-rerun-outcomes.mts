@@ -1,7 +1,10 @@
 import { write } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
-export const RERUN_OUTCOME_COHORT_SIZE = 1_000
+const RERUN_OUTCOME_COHORT_SIZE = 1_000
+const RERUN_OUTCOME_BACKGROUND_RUN_COUNT = 100_000
+export const RERUN_OUTCOME_SEEDED_RUN_COUNT =
+  RERUN_OUTCOME_COHORT_SIZE + RERUN_OUTCOME_BACKGROUND_RUN_COUNT
 
 export async function seedModerationRerunOutcomes(): Promise<{
   reportId: string
@@ -38,7 +41,8 @@ export async function seedModerationRerunOutcomes(): Promise<{
        RETURNING id`,
       [report.id, RERUN_OUTCOME_COHORT_SIZE],
     )
-    reportRunIds = reportRuns.map(row => row.id)
+    const reportCohortRunIds = reportRuns.map(row => row.id)
+    reportRunIds = [...reportCohortRunIds]
     await write(
       `/* seedModerationRerunOutcomes:judgements */
        INSERT INTO moderation_report_judgements
@@ -48,19 +52,33 @@ export async function seedModerationRerunOutcomes(): Promise<{
               'EXPLAIN fixture', 'EXPLAIN fixture', 'explain-fixture'
        FROM moderation_report_judgement_runs run
        WHERE run.id = ANY($4::uuid[])`,
-      [seedUuid(20, '05'), report.case_id, report.id, reportRunIds],
+      [seedUuid(20, '05'), report.case_id, report.id, reportCohortRunIds],
     )
     await write(
       `/* seedModerationRerunOutcomes:completedReportRuns */
        UPDATE moderation_report_judgement_runs SET completed_at = now()
        WHERE id = ANY($1::uuid[])`,
-      [reportRunIds],
+      [reportCohortRunIds],
     )
     await write(
       `/* seedModerationRerunOutcomes:appealRuns */
        INSERT INTO moderation_appeal_resolution_runs (moderation_appeal_id)
        SELECT $1::uuid FROM generate_series(1, $2::integer)`,
       [appeal.id, RERUN_OUTCOME_COHORT_SIZE],
+    )
+    const { rows: reportBackgroundRuns } = await write<{ id: string }>(
+      `/* seedModerationRerunOutcomes:reportBackgroundRuns */
+       INSERT INTO moderation_report_judgement_runs (moderation_report_id)
+       SELECT $1::uuid FROM generate_series(1, $2::integer)
+       RETURNING id`,
+      [report.id, RERUN_OUTCOME_BACKGROUND_RUN_COUNT],
+    )
+    reportRunIds = reportRunIds.concat(reportBackgroundRuns.map(row => row.id))
+    await write(
+      `/* seedModerationRerunOutcomes:appealBackgroundRuns */
+       INSERT INTO moderation_appeal_resolution_runs (moderation_appeal_id)
+       SELECT $1::uuid FROM generate_series(1, $2::integer)`,
+      [appeal.id, RERUN_OUTCOME_BACKGROUND_RUN_COUNT],
     )
     await write(
       '/* seedModerationRerunOutcomes:analyzeReportRuns */ ANALYZE moderation_report_judgement_runs',
