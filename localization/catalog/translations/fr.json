@@ -2266,6 +2266,8 @@
 {"id":"copy.extracted.moderation.page.moderationQueue_f04c9f4d","value":"File d'attente de modération"},
 {"id":"copy.extracted.moderation.page.raidMode_d21c8747","value":"Mode raid"},
 {"id":"copy.extracted.moderation.page.reviewPendingPostsAndCommunityScoped_e24e1836","value":"Examinez les posts en attente et les rapports d'utilisateurs ciblés par la communauté."},
+{"id":"copy.extracted.moderation.reportJudgementCounts.atJudgement","value":"Au moment du jugement : {countLabel}"},
+{"id":"copy.extracted.moderation.reportJudgementCounts.current","value":"Signalements actuels : {countLabel}"},
 {"id":"copy.extracted.moderation.sensitiveMedia.clickToReveal_dca25e98","value":"Cliquez pour révéler"},
 {"id":"copy.extracted.moderation.sensitiveMedia.sensitiveContent_5c5836f6","value":"Contenu sensible"},
 {"id":"copy.extracted.moderation.userModContextSummary.contentcountContentCommunitycountCommunity_93476367","value":"{contentCount} contenu / {communityCount} communauté"},

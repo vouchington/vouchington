@@ -38,7 +38,9 @@ export const report: AdminModerationReport = {
       'Clear spam pattern: duplicated referral links posted across multiple communities within a short time window.',
     is_stale: true,
     judged_report_count: 2,
+    judged_report_count_capped: false,
     current_report_count: 3,
+    current_report_count_capped: false,
   },
   post_moderation_context: null,
 }

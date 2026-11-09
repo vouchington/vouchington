@@ -113,7 +113,9 @@ describe('ReportsClient re-run judgement button', () => {
       internal_response: 'Saved rationale',
       is_stale: false,
       judged_report_count: 1,
+      judged_report_count_capped: false,
       current_report_count: 1,
+      current_report_count_capped: false,
     }
     mockRerunReportJudgement.mockResolvedValueOnce({
       queued: true,
@@ -211,7 +213,9 @@ describe('ReportsClient re-run judgement button', () => {
       internal_response: 'Saved rationale',
       is_stale: false,
       judged_report_count: 1,
+      judged_report_count_capped: false,
       current_report_count: 1,
+      current_report_count_capped: false,
     }
     const cluster = makeCluster()
     const data = makeClusteredReportsResponse()

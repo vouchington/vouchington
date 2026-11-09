@@ -141,7 +141,8 @@ Staff report clusters return `report_count_capped` with the bounded `report_coun
 `summary_capped` when `reporter_count` and `reason_breakdown` describe only the bounded sample.
 Web marks capped report counts with a compact `+` count (for example, `1K+`) and labels sampled
 reporter and reason summaries; native clients should apply the same meanings when adopting this
-response contract.
+response contract. Judgement summaries expose precision flags for the report count at judgement
+time and the current bounded count; web also marks those lower-bound counts with a compact `+`.
 
 ## Saved list and community applicant labels
 

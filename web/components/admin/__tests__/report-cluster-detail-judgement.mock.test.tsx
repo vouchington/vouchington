@@ -68,8 +68,10 @@ describe('ReportDetail judgement freshness', () => {
             public_response: 'Public warning.',
             internal_response: 'Needs review.',
             is_stale: true,
-            judged_report_count: 1,
-            current_report_count: 2,
+            judged_report_count: 1000,
+            judged_report_count_capped: true,
+            current_report_count: 2000,
+            current_report_count_capped: true,
           },
         })}
         disabled={false}
@@ -80,6 +82,8 @@ describe('ReportDetail judgement freshness', () => {
     )
 
     expect(screen.getByText('Outdated')).toBeVisible()
+    expect(screen.getByText('At judgement: 1K+ reports')).toBeVisible()
+    expect(screen.getByText('Current reports: 2K+ reports')).toBeVisible()
   })
 
   it('renders actionable ban-evasion controls only for pending system reports with context', () => {

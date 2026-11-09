@@ -7130,6 +7130,8 @@
 {"alias":"extracted.moderation.page.moderationQueue_f04c9f4d","consumer":"web","copyId":"copy.extracted.moderation.page.moderationQueue_f04c9f4d"},
 {"alias":"extracted.moderation.page.raidMode_d21c8747","consumer":"web","copyId":"copy.extracted.moderation.page.raidMode_d21c8747"},
 {"alias":"extracted.moderation.page.reviewPendingPostsAndCommunityScoped_e24e1836","consumer":"web","copyId":"copy.extracted.moderation.page.reviewPendingPostsAndCommunityScoped_e24e1836"},
+{"alias":"extracted.moderation.reportJudgementCounts.atJudgement","consumer":"web","copyId":"copy.extracted.moderation.reportJudgementCounts.atJudgement"},
+{"alias":"extracted.moderation.reportJudgementCounts.current","consumer":"web","copyId":"copy.extracted.moderation.reportJudgementCounts.current"},
 {"alias":"extracted.moderation.sensitiveMedia.clickToReveal_dca25e98","consumer":"web","copyId":"copy.extracted.moderation.sensitiveMedia.clickToReveal_dca25e98"},
 {"alias":"extracted.moderation.sensitiveMedia.sensitiveContent_5c5836f6","consumer":"web","copyId":"copy.extracted.moderation.sensitiveMedia.sensitiveContent_5c5836f6"},
 {"alias":"extracted.moderation.userModContextSummary.contentcountContentCommunitycountCommunity_93476367","consumer":"web","copyId":"copy.extracted.moderation.userModContextSummary.contentcountContentCommunitycountCommunity_93476367"},

@@ -2266,6 +2266,8 @@
 {"id":"copy.extracted.moderation.page.moderationQueue_f04c9f4d","value":"Fila de moderação"},
 {"id":"copy.extracted.moderation.page.raidMode_d21c8747","value":"Modo de incursão"},
 {"id":"copy.extracted.moderation.page.reviewPendingPostsAndCommunityScoped_e24e1836","value":"Revise posts pendentes e relatórios de usuários com escopo comunitário."},
+{"id":"copy.extracted.moderation.reportJudgementCounts.atJudgement","value":"No momento do parecer: {countLabel}"},
+{"id":"copy.extracted.moderation.reportJudgementCounts.current","value":"Relatos atuais: {countLabel}"},
 {"id":"copy.extracted.moderation.sensitiveMedia.clickToReveal_dca25e98","value":"Clique para revelar"},
 {"id":"copy.extracted.moderation.sensitiveMedia.sensitiveContent_5c5836f6","value":"Conteúdo sensível"},
 {"id":"copy.extracted.moderation.userModContextSummary.contentcountContentCommunitycountCommunity_93476367","value":"{contentCount} conteúdo / {communityCount} comunidade"},

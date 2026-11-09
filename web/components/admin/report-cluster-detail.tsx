@@ -7,6 +7,7 @@ import { TimeAgo } from '@/components/shared/time-ago'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { UserModNotesControl } from '@/components/moderation/user-mod-notes-cell'
+import { ReportJudgementCounts } from '@/components/moderation/report-judgement-counts'
 import { createUserPathname } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getUserLabel } from '@/lib/users/user-helpers'
@@ -100,6 +101,13 @@ export function ReportDetail({
                 {report.judgement.internal_response}
               </span>
             </div>
+            <ReportJudgementCounts
+              judgedReportCount={report.judgement.judged_report_count}
+              judgedReportCountCapped={report.judgement.judged_report_count_capped}
+              currentReportCount={report.judgement.current_report_count}
+              currentReportCountCapped={report.judgement.current_report_count_capped}
+              uiLocale={uiLocale}
+            />
             <p
               data-pw='report-judgement-public-response'
               className='text-xs text-muted-foreground'

@@ -87,7 +87,9 @@ const report: AdminModerationReport = {
     internal_response: 'Internal.',
     is_stale: true,
     judged_report_count: 1,
+    judged_report_count_capped: false,
     current_report_count: 2,
+    current_report_count_capped: false,
   },
   post_moderation_context: null,
 }

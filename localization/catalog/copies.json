@@ -2266,6 +2266,8 @@
 {"descriptor":null,"id":"copy.extracted.moderation.page.moderationQueue_f04c9f4d"},
 {"descriptor":null,"id":"copy.extracted.moderation.page.raidMode_d21c8747"},
 {"descriptor":null,"id":"copy.extracted.moderation.page.reviewPendingPostsAndCommunityScoped_e24e1836"},
+{"descriptor":null,"id":"copy.extracted.moderation.reportJudgementCounts.atJudgement"},
+{"descriptor":null,"id":"copy.extracted.moderation.reportJudgementCounts.current"},
 {"descriptor":null,"id":"copy.extracted.moderation.sensitiveMedia.clickToReveal_dca25e98"},
 {"descriptor":null,"id":"copy.extracted.moderation.sensitiveMedia.sensitiveContent_5c5836f6"},
 {"descriptor":null,"id":"copy.extracted.moderation.userModContextSummary.contentcountContentCommunitycountCommunity_93476367"},

@@ -61,7 +61,9 @@ describe('ReportsClient judgement controls', () => {
     internal_response: 'Clear spam pattern detected across multiple communities.',
     is_stale: false,
     judged_report_count: 1,
+    judged_report_count_capped: false,
     current_report_count: 1,
+    current_report_count_capped: false,
   }
 
   it('renders a verdict chip when the report has a judgement', () => {
