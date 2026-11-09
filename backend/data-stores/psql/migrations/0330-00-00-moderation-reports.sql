@@ -249,6 +249,21 @@ COMMENT ON COLUMN moderation_report_clusters.resolution_action IS 'NULL for pend
 COMMENT ON COLUMN moderation_report_clusters.first_reported_at IS 'Earliest UUIDv7 report timestamp in this target and outcome cluster.';
 COMMENT ON COLUMN moderation_report_clusters.last_reported_at IS 'Latest UUIDv7 report timestamp in this target and outcome cluster.';
 
+-- Take the destination cluster lock before the report insert's case foreign key.
+-- Resolution locks that cluster and then the case; the reverse order deadlocks.
+CREATE OR REPLACE FUNCTION fn_lock_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM cluster.id FROM moderation_report_clusters cluster
+  WHERE cluster.resolution_action IS NOT DISTINCT FROM NEW.resolution_action
+    AND cluster.post_id IS NOT DISTINCT FROM NEW.post_id
+    AND cluster.reported_user_id IS NOT DISTINCT FROM NEW.reported_user_id
+    AND cluster.hostname_id IS NOT DISTINCT FROM NEW.hostname_id
+    AND cluster.rss_feed_item_id IS NOT DISTINCT FROM NEW.rss_feed_item_id
+  ORDER BY cluster.id
+  FOR UPDATE;
+  RETURN NEW;
+END $$;
+
 CREATE OR REPLACE FUNCTION fn_update_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   prior_cluster record;
@@ -367,6 +382,9 @@ BEGIN
   RETURN NEW;
 END $$;
 
+CREATE OR REPLACE TRIGGER trigger_moderation_report_clusters_lock
+  BEFORE INSERT ON moderation_reports
+  FOR EACH ROW EXECUTE FUNCTION fn_lock_moderation_report_cluster();
 CREATE OR REPLACE TRIGGER trigger_moderation_report_clusters_insert_delete
   AFTER INSERT OR DELETE ON moderation_reports
   FOR EACH ROW EXECUTE FUNCTION fn_update_moderation_report_cluster();
