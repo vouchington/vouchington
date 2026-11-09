@@ -1,0 +1,299 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTExLTA3VDEyOjAwOjAwLjAwMDAwMFoiLCJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwNTQ2MSIsInNjb3BlIjoiYjc2ODBjNjdhZTJlMzJiNTdhMGQ4NTRhMDljM2U2NjlmNGFjYjY1MDM2NzhhNzJlMGEyZmM3YmE3MjA2NGNiNyJ9"
+  },
+  "posts": {},
+  "posts_metrics": {},
+  "related_posts_by_url_id": {},
+  "results": [
+    {
+      "__entity_type": "rss_feed_item",
+      "delivery_type": "direct",
+      "entity_id": "70000000-0000-7000-8000-000000005461",
+      "id": "70000000-0000-7000-8000-000000005461",
+      "published_at": "2026-11-07T12:00:00.000Z",
+      "story_id": null
+    },
+    {
+      "__entity_type": "rss_feed_item",
+      "delivery_type": "direct",
+      "entity_id": "70000000-0000-7000-8000-000000005462",
+      "id": "70000000-0000-7000-8000-000000005462",
+      "published_at": "2026-11-05T12:00:00.000Z",
+      "story_id": null
+    },
+    {
+      "__entity_type": "rss_feed_item",
+      "delivery_type": "direct",
+      "entity_id": "70000000-0000-7000-8000-000000005463",
+      "id": "70000000-0000-7000-8000-000000005463",
+      "published_at": "2026-11-02T12:00:00.000Z",
+      "story_id": null
+    }
+  ],
+  "rss_feed_bookmarks": {},
+  "rss_feed_item_elections": {},
+  "rss_feed_item_embeds": {},
+  "rss_feed_item_hacker_news_references": {},
+  "rss_feed_item_thumbnail_url": {},
+  "rss_feed_items": {
+    "70000000-0000-7000-8000-000000005461": {
+      "__entity_type": "rss_feed_item",
+      "categories": [],
+      "data": {
+        "contentSnippet": "A short snippet",
+        "guid": "70000000-0000-7000-8000-000000005461",
+        "link": "https://example.com/article",
+        "title": "Source follow"
+      },
+      "guid": "70000000-0000-7000-8000-000000005461",
+      "id": "70000000-0000-7000-8000-000000005461",
+      "lingua_rs_detected_language": null,
+      "media_type": "video",
+      "published_at": "2026-11-07T12:00:00.000Z",
+      "rss_feed": {
+        "__entity_type": "rss_feed",
+        "feed_type": "article",
+        "id": "feed-followed-source",
+        "is_discoverable": true,
+        "is_enabled": true,
+        "last_fetched_at": "2026-01-01T00:00:00Z",
+        "podcast_show": null,
+        "publisher_type": {
+          "id": "publisher-type-blog",
+          "name": "Blog",
+          "slug": "blog",
+          "topic_type": "publisher_type"
+        },
+        "title": "Example Feed",
+        "topic": {
+          "__entity_type": "topic",
+          "aliases": [],
+          "created_at": "2026-01-01T00:00:00Z",
+          "created_by": {
+            "__entity_type": "user",
+            "account_type": null,
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          },
+          "hero_image_id": null,
+          "homepage_url_id": null,
+          "hostname": null,
+          "hostname_id": null,
+          "id": "topic-other",
+          "is_noindexed": false,
+          "lingua_rs_detected_language": null,
+          "logo_image_id": null,
+          "markdown": "",
+          "name": "Test Topic",
+          "referral_program_id": null,
+          "referral_program_slug": null,
+          "rewards_program_id": null,
+          "should_allow_reviews": true,
+          "slug": "other",
+          "topic_type": "topic",
+          "updated_by": {
+            "__entity_type": "user",
+            "account_type": null,
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          }
+        }
+      },
+      "rss_feed_sources": [],
+      "url": {
+        "canonical_url_id": null,
+        "id": "url-1",
+        "url": "https://example.com/article"
+      }
+    },
+    "70000000-0000-7000-8000-000000005462": {
+      "__entity_type": "rss_feed_item",
+      "categories": [
+        {
+          "category_text": "#Travel",
+          "hashtag": {
+            "display_token": "#Travel",
+            "id": "00000000-0000-7000-8000-000000000101",
+            "key": "travel",
+            "topic_id": "topic-1"
+          },
+          "id": "category-1",
+          "topic": {
+            "id": "topic-1",
+            "name": "Tech",
+            "slug": "tech",
+            "topic_type": "topic"
+          },
+          "votes_score_net": 3
+        }
+      ],
+      "data": {
+        "contentSnippet": "A short snippet",
+        "guid": "70000000-0000-7000-8000-000000005462",
+        "link": "https://example.com/article",
+        "title": "Topic follow"
+      },
+      "guid": "70000000-0000-7000-8000-000000005462",
+      "id": "70000000-0000-7000-8000-000000005462",
+      "lingua_rs_detected_language": null,
+      "media_type": "video",
+      "published_at": "2026-11-05T12:00:00.000Z",
+      "rss_feed": {
+        "__entity_type": "rss_feed",
+        "feed_type": "article",
+        "id": "feed-other-source",
+        "is_discoverable": true,
+        "is_enabled": true,
+        "last_fetched_at": "2026-01-01T00:00:00Z",
+        "podcast_show": null,
+        "publisher_type": {
+          "id": "publisher-type-blog",
+          "name": "Blog",
+          "slug": "blog",
+          "topic_type": "publisher_type"
+        },
+        "title": "Example Feed",
+        "topic": {
+          "__entity_type": "topic",
+          "aliases": [],
+          "created_at": "2026-01-01T00:00:00Z",
+          "created_by": {
+            "__entity_type": "user",
+            "account_type": null,
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          },
+          "hero_image_id": null,
+          "homepage_url_id": null,
+          "hostname": null,
+          "hostname_id": null,
+          "id": "topic-other",
+          "is_noindexed": false,
+          "lingua_rs_detected_language": null,
+          "logo_image_id": null,
+          "markdown": "",
+          "name": "Test Topic",
+          "referral_program_id": null,
+          "referral_program_slug": null,
+          "rewards_program_id": null,
+          "should_allow_reviews": true,
+          "slug": "other",
+          "topic_type": "topic",
+          "updated_by": {
+            "__entity_type": "user",
+            "account_type": null,
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          }
+        }
+      },
+      "rss_feed_sources": [],
+      "url": {
+        "canonical_url_id": null,
+        "id": "url-1",
+        "url": "https://example.com/article"
+      }
+    },
+    "70000000-0000-7000-8000-000000005463": {
+      "__entity_type": "rss_feed_item",
+      "categories": [
+        {
+          "category_text": "#Travel",
+          "hashtag": {
+            "display_token": "#Travel",
+            "id": "00000000-0000-7000-8000-000000000101",
+            "key": "travel",
+            "topic_id": "topic-1"
+          },
+          "id": "category-1",
+          "topic": {
+            "id": "topic-1",
+            "name": "Tech",
+            "slug": "tech",
+            "topic_type": "topic"
+          },
+          "votes_score_net": 3
+        }
+      ],
+      "data": {
+        "contentSnippet": "A short snippet",
+        "guid": "70000000-0000-7000-8000-000000005463",
+        "link": "https://example.com/article",
+        "title": "Both follows"
+      },
+      "guid": "70000000-0000-7000-8000-000000005463",
+      "id": "70000000-0000-7000-8000-000000005463",
+      "lingua_rs_detected_language": null,
+      "media_type": "video",
+      "published_at": "2026-11-02T12:00:00.000Z",
+      "rss_feed": {
+        "__entity_type": "rss_feed",
+        "feed_type": "article",
+        "id": "feed-followed-source",
+        "is_discoverable": true,
+        "is_enabled": true,
+        "last_fetched_at": "2026-01-01T00:00:00Z",
+        "podcast_show": null,
+        "publisher_type": {
+          "id": "publisher-type-blog",
+          "name": "Blog",
+          "slug": "blog",
+          "topic_type": "publisher_type"
+        },
+        "title": "Example Feed",
+        "topic": {
+          "__entity_type": "topic",
+          "aliases": [],
+          "created_at": "2026-01-01T00:00:00Z",
+          "created_by": {
+            "__entity_type": "user",
+            "account_type": null,
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          },
+          "hero_image_id": null,
+          "homepage_url_id": null,
+          "hostname": null,
+          "hostname_id": null,
+          "id": "topic-other",
+          "is_noindexed": false,
+          "lingua_rs_detected_language": null,
+          "logo_image_id": null,
+          "markdown": "",
+          "name": "Test Topic",
+          "referral_program_id": null,
+          "referral_program_slug": null,
+          "rewards_program_id": null,
+          "should_allow_reviews": true,
+          "slug": "other",
+          "topic_type": "topic",
+          "updated_by": {
+            "__entity_type": "user",
+            "account_type": null,
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          }
+        }
+      },
+      "rss_feed_sources": [],
+      "url": {
+        "canonical_url_id": null,
+        "id": "url-1",
+        "url": "https://example.com/article"
+      }
+    }
+  },
+  "stories": {},
+  "story_member_pages": {},
+  "story_post_ids": {},
+  "users": {}
+}

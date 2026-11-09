@@ -1,6 +1,9 @@
 import { nativeChatApiFixtureCases } from './native-chat-cases.mts'
 import { nativeContentContractApiFixtureCases as contentCases } from './native-content-contract-cases.mts'
 import { nativeCommentDescendantContinuationApiFixtureCases as descendantCases } from './native-comment-descendant-continuation-cases.mts'
+import { nativeAsyncContentContractApiFixtureCases as asyncCases } from './native-async-content-contract-cases.mts'
+import { nativeRssDeleteConflictApiFixtureCases as rssConflictCases } from './native-rss-delete-conflict-cases.mts'
+import { nativePersonalRssWindowApiFixtureCases as rssWindowCases } from './native-personal-rss-window-cases.mts'
 import { engineeringOpsApiFixtureCases } from './engineering-ops-cases.mts'
 import { dynamicConfigApiFixtureCases } from './dynamic-config-cases.mts'
 import { nativeDomainUrlApiFixtureCases } from './native-domain-url-cases.mts'
@@ -49,6 +52,9 @@ const caseRoot = 'backend/test-helpers/api-fixtures/'
 export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(`${caseRoot}native-content-contract-cases.mts`, contentCases),
   ...fromCaseFile(`${caseRoot}native-comment-descendant-continuation-cases.mts`, descendantCases),
+  ...fromCaseFile(`${caseRoot}native-async-content-contract-cases.mts`, asyncCases),
+  ...fromCaseFile(`${caseRoot}native-rss-delete-conflict-cases.mts`, rssConflictCases),
+  ...fromCaseFile(`${caseRoot}native-personal-rss-window-cases.mts`, rssWindowCases),
   ...fromCaseFile(`${caseRoot}topic-claim-pagination-cases.mts`, topicClaimCases),
   ...fromCaseFile(`${caseRoot}copyright-dsa-cases.mts`, copyrightDsaApiFixtureCases),
   ...fromCaseFile(
