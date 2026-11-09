@@ -138,12 +138,20 @@ describe('resolve-published-images', () => {
     expect(result.ok && result.stdout).toContain('::warning::')
   })
 
-  it('fails closed when a present image lacks trusted provenance', async () => {
-    const { output, result } = await run({ untrusted: ['api'] })
+  it('rebuilds a pushed image whose attestation failed or is absent, per target', async () => {
+    const { calls, output, result } = await run({
+      missing: ['worker-cpu'],
+      untrusted: ['api'],
+      workerIo: 'true',
+    })
 
-    expect(result.ok).toBe(false)
-    expect(result.stderr).toContain('without trusted provenance')
-    expect(output).toBe('')
+    expect(result.ok).toBe(true)
+    expect(output).toBe('missing_targets=["api","worker-cpu"]\n')
+    expect(calls).toContain('gh api')
+    expect(calls).toContain('gh worker-io')
+    expect(result.ok && result.stdout).toContain('no trusted provenance')
+    expect(result.ok && result.stdout).not.toContain('Reusing ghcr.io/vouchington/api')
+    expect(result.ok && result.stdout).toContain('Reusing ghcr.io/vouchington/worker-io')
   })
 
   it('fails closed on any registry error other than an absent manifest', async () => {

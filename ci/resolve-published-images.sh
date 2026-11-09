@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Decides which merge-queue images a main push can reuse. The merge group for this exact commit
-# built, tested, pushed and attested ghcr.io/<owner>/<target>:sha-<commit>. A present image must
-# carry that provenance or this fails; only an absent image is left for the main fallback build.
+# built and tested ghcr.io/<owner>/<target>:sha-<commit>; publishing and attesting it is advisory
+# there, so a pushed image may lack provenance. Only an image that verifies is reused; an absent
+# or unattested one is left for the main fallback build, which pushes and attests it again.
 # Needs `docker login ghcr.io` and GH_TOKEN. Writes missing_targets as a JSON array to GITHUB_OUTPUT.
 set -euo pipefail
 
@@ -46,8 +47,9 @@ for target in $targets; do
   if ! gh attestation verify "oci://$image" --bundle-from-oci --repo "$GITHUB_REPOSITORY" \
     --source-digest "$GITHUB_SHA" --signer-digest "$GITHUB_SHA" --deny-self-hosted-runners \
     --cert-identity-regex "$identity" >/dev/null; then
-    echo "::error::$image exists without trusted provenance for this commit." >&2
-    exit 1
+    echo "::warning::$image has no trusted provenance for this commit; rebuilding it on main."
+    missing="$missing $target"
+    continue
   fi
   echo "Reusing $image"
 done

@@ -14,10 +14,11 @@ on:
       SENTRY_AUTH_TOKEN:
         required: false
 
-# Pull requests only validate the image. A merge group publishes and attests it. A main push reuses
-# the merge group's image and builds only if it is missing. The build job has no permissions
-# declaration, so it inherits whatever the caller granted: read-only for a PR, write for a merge
-# group or main. The resolver asks for read access only.
+# Pull requests only validate the image. A merge group publishes and attests it as advisory work: a
+# registry or attestation failure there must not eject unrelated queued PRs. A main push reuses the
+# merge group's image and builds only if it is missing or unattested. The build job has no
+# permissions declaration, so it inherits whatever the caller granted: read-only for a PR, write for
+# a merge group or main. The resolver asks for read access only.
 #
 # There is no concurrency block because each run publishes only its own immutable sha-<commit> tag.
 
@@ -108,6 +109,7 @@ jobs:
       # would upload it before any of those checks had run.
       - name: Publish validated web image to GHCR
         id: publish
+        continue-on-error: ${{ github.event_name == 'merge_group' }}
         # success() is explicit rather than implicit: this is a publication gate, and a reader
         # should not have to know that GitHub ANDs it in for conditions without a status function.
         if: ${{ success() && (github.event_name == 'merge_group' || github.event_name == 'push') }}
@@ -120,6 +122,8 @@ jobs:
         run: bash --noprofile --norc -e -o pipefail .github/actions/build-web-images/publish-image.sh
 
       - name: Attest web image provenance
+        id: attest-web
+        continue-on-error: ${{ github.event_name == 'merge_group' }}
         timeout-minutes: 2
         if: ${{ success() && steps.publish.outputs.web_digest != '' }}
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
@@ -128,6 +132,12 @@ jobs:
           subject-digest: ${{ steps.publish.outputs.web_digest }}
           create-storage-record: false
           push-to-registry: true
+
+      # continue-on-error hides the failure from the job result, so surface it as an annotation.
+      - name: Report advisory merge-group publication failure
+        timeout-minutes: 1
+        if: ${{ always() && github.event_name == 'merge_group' && (steps.publish.outcome == 'failure' || steps.attest-web.outcome == 'failure') }}
+        run: echo "::warning::Merge-group GHCR publication or attestation failed; main rebuilds any image that is missing or unattested before deploy."
 
       - name: Log out of GHCR
         timeout-minutes: 1

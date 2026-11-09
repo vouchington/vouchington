@@ -56,6 +56,29 @@ describe.each(['backend', 'web'] as const)('%s image publisher', group => {
   })
 })
 
+describe.each(['backend', 'web'] as const)('%s merge-group advisory publication', group => {
+  const steps = publisher(group).jobs?.build?.steps ?? []
+  const advisory = steps.filter(
+    candidate => candidate.id === 'publish' || candidate.uses?.startsWith('actions/attest@'),
+  )
+
+  it('lets only merge groups continue past a push or attestation failure', () => {
+    expect(advisory.length).toBeGreaterThan(1)
+    for (const candidate of advisory)
+      expect(candidate['continue-on-error']).toBe("${{ github.event_name == 'merge_group' }}")
+    const others = steps.filter(candidate => !advisory.includes(candidate))
+    for (const candidate of others) expect(candidate['continue-on-error']).toBeUndefined()
+  })
+
+  it('annotates an advisory failure instead of hiding it', () => {
+    const report = steps.find(candidate => candidate.name?.startsWith('Report advisory'))
+    expect(report?.if).toContain("github.event_name == 'merge_group'")
+    for (const candidate of advisory)
+      expect(report?.if).toContain(`steps.${candidate.id}.outcome == 'failure'`)
+    expect(report?.run).toContain('::warning::')
+  })
+})
+
 describe('backend main fallback', () => {
   it('publishes only the images the merge group did not', () => {
     const publish = step(publisher('backend').jobs?.build, 'publish')
