@@ -1,7 +1,7 @@
 import '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import type { ModelCallResult } from '@vouchington/ai/providers'
+import { ModelProviderError, type ModelCallResult } from '@vouchington/ai/providers'
 import { disableSpendCapForTest } from '@voucha/test-helpers/ai-agents-spend-cap'
 import { startAIAgentWorkerForTest } from '@voucha/test-helpers/ai-agent-worker-lifecycle'
 import { installAIAgentProviderFixtures } from '@voucha/test-helpers/ai-agent-worker-fixtures'
@@ -17,6 +17,38 @@ vi.hoisted(() => {
 
 describe('durable moderation rerun terminal outcomes', () => {
   beforeEach(disableSpendCapForTest)
+
+  it.each(['report', 'appeal'] as const)(
+    'records an unrecoverable %s failure before the attempt budget is exhausted',
+    async kind => {
+      const provider = installAIAgentProviderFixtures()
+      const admitted = await admitModerationRerunForTest(kind)
+      const entered = Promise.withResolvers<void>()
+      const response = Promise.withResolvers<ModelCallResult<never>>()
+      provider.json.set(admitted.providerKey, [
+        () => {
+          entered.resolve()
+          return response.promise
+        },
+      ])
+      const runtime = await startAIAgentWorkerForTest()
+      const failed = Promise.withResolvers<Job>()
+      runtime.worker.on('failed', (job: Job | undefined) => {
+        if (job?.id === admitted.jobId) failed.resolve(job)
+      })
+      await waitForRealGlideEvent(entered.promise, `${kind} permanent failure entry`)
+      response.reject(
+        new ModelProviderError('client-unavailable', 'Owned credential failure', {
+          retryClass: 'permanent',
+        }),
+      )
+      await waitForRealGlideEvent(failed.promise, `${kind} unrecoverable failure`)
+      expect(provider.generateJson).toHaveBeenCalledOnce()
+      expect((await admitted.request.get(admitted.resultPath).expect(200)).body.status).toBe(
+        'failed',
+      )
+    },
+  )
 
   it.each(['report', 'appeal'] as const)(
     'keeps %s retries active and retains exhaustion after native job removal',
