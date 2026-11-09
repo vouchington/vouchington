@@ -34,7 +34,6 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
   const query = sql`/* searchParentPathsNeedingBoilerplateRemoval */
     WITH recent_html_urls AS (
       SELECT
-        DISTINCT ON (u.id)
         u.id,
         u.hostname_id,
         CASE
@@ -44,16 +43,20 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
         END AS parent_path
       FROM urls u
       JOIN url_hostnames h ON h.id = u.hostname_id
-      JOIN crawls c ON c.url_id = u.id
-        AND c.id >= ${crawlIdFloor}::uuid
+      JOIN LATERAL (
+        SELECT 1
+        FROM crawls c
+        WHERE c.url_id = u.id
+          AND c.id >= ${crawlIdFloor}::uuid
+          AND c.response_status_code = 200
+          AND c.completed_at >= ${recentCutoffDate}
+          AND c.html_sha256 IS NOT NULL
+          AND COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >= ${recentCutoffDate}
+        LIMIT 1
+      ) recent_crawl ON TRUE
       WHERE u.hostname_id = ANY(${hostnameIds}::uuid[])
         AND NOT h.is_blocked
         AND h.is_crawlable
-        AND c.response_status_code = 200
-        AND c.completed_at >= ${recentCutoffDate}
-        AND c.html_sha256 IS NOT NULL
-        AND COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >= ${recentCutoffDate}
-      ORDER BY u.id, c.completed_at DESC, c.id DESC
     )
     SELECT hostname_id, parent_path
     FROM recent_html_urls
