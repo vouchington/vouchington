@@ -53,8 +53,9 @@ describe('assertShardsPartitionManifest', () => {
 describe('assertShardDeclarations', () => {
   it('passes for the real manifest and its declared partition scenarios', () => {
     expect(() => assertShardDeclarations(EXPLAIN_SCENARIO_MANIFEST)).not.toThrow()
-    expect(getShardScenarioIds('partition', EXPLAIN_SCENARIO_MANIFEST)).toEqual(
-      PARTITION_SHARD_SCENARIO_IDS,
+    // The shard keeps manifest order; only membership is declared.
+    expect(new Set(getShardScenarioIds('partition', EXPLAIN_SCENARIO_MANIFEST))).toEqual(
+      new Set(PARTITION_SHARD_SCENARIO_IDS),
     )
   })
 
