@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 mkdir -p backend/scripts/explain-analyze/output
+# Monitor mode puts the loop in its own process group: killing only the
+# subshell leaves sleep behind, and the runner's orphan cleanup can sit on
+# "Terminate orphan process: (sleep)" after the seed step has finished.
+set -m
 (
   while :; do
     {
@@ -16,5 +20,7 @@ mkdir -p backend/scripts/explain-analyze/output
   done
 ) &
 sampler_pid=$!
-trap 'kill "$sampler_pid" 2>/dev/null || true; wait "$sampler_pid" 2>/dev/null || true' EXIT
+# status is assigned when the EXIT trap runs.
+# shellcheck disable=SC2154
+trap 'status=$?; kill -KILL -- -"$sampler_pid" 2>/dev/null || kill -KILL "$sampler_pid" 2>/dev/null || true; exit "$status"' EXIT
 node backend/scripts/explain-analyze/seed.mts
