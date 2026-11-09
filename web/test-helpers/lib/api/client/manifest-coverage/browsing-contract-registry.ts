@@ -1,6 +1,6 @@
 import type { ManifestEndpoint } from './endpoint-registry'
 
-export const contentContractEndpointRegistry = {
+export const browsingContractEndpointRegistry = {
   'native.posts.hacker-news.filtered': {
     method: 'GET',
     path: '/api/v1/posts',
