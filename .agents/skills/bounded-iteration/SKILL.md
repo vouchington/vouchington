@@ -59,6 +59,8 @@ repository. Keep its rules authoritative; do not copy them here.
 - **Repair sweeper.** Extend candidate types in [entity-listener reconciliation](../../../backend/services/entity-listener-reconciliation/) for missed post-commit side effects; its configurable replica-safe lookback window re-enqueues missed listener jobs instead of adding another sweeper (see the [replay-safe job checklist](../../../docs/checklists/reference-backend-queues-define-a-replay-safe-job.md)).
 - **External listings.** SES inbound reconciliation carries S3's continuation token in a bounded continuation job; see [the queue contract](../../../docs/overview/architecture/queues/README.md).
 - **Bloom-filter failure path.** Follow [API-key Bloom-filter handling](../../../backend/services/api-keys/bloom-filter.mts): a failed `ValkeyBloomFilter` add clears the ready marker so reads fall back to PostgreSQL, then calls `enqueueRebuildBloomFilter` when the marker was removed.
+- **List inputs.** Cap filter terms first, then walk an index with an inspected-row cap and a
+  continuation cursor; see [bound at the inputs](../../../docs/development/postgres-schema-rules.md#r6--query-shape).
 - **UUIDv7 bounds.** Use `getMinUUIDv7ForDate` and `getMinUUIDv7ForParentHistory` from [ids.mts](../../../backend/modules/utils/ids.mts); an age milestone M uses the primary-key range `[min(now - lookback - M), min(now - M))`.
 
 - **Bloom repairs.** No scheduled full rebuilds; repair missed adds through the existing [entity-listener window](../../../docs/overview/architecture/services/README.md).

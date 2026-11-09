@@ -20,6 +20,9 @@ alone.
   the [prelaunch relational-storage rules](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage),
   including retained identities. Keep the canonical document authoritative; do not copy its rules
   here.
+- Counters, trending lists, and count rankings follow the
+  [counts and rankings rules](../../../docs/development/postgres-schema-rules.md#prefer-no-counter-columns-trending-and-rankings-are-materialized-views);
+  a counter column needs evidence.
 - Follow [PostgreSQL instructions](../../../backend/data-stores/psql/AGENTS.md) for creator,
   migration, query, and fresh-bootstrap requirements.
 - Follow the [one-current-contract rule](../../../AGENTS.md): change canonical creators and current
