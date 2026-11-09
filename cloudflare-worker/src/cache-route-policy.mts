@@ -16,7 +16,8 @@ const PRIVATE_BACKEND_CACHE_BYPASS_PREFIXES = [
   '/api/v1/copyright-media-delivery',
   '/api/v1/recommended-topics',
 ]
-const POST_ANCESTORS_ROUTE_RE = /^\/api\/v1\/posts\/[^/]+\/ancestors\/?$/
+// Ancestors and descendants embed posts other than the path id, so one Cache-Tag cannot purge them.
+const POST_EMBEDDED_THREAD_ROUTE_RE = /^\/api\/v1\/posts\/[^/]+\/(?:ancestors|descendants)\/?$/
 
 export const canUseCache = (request: Request, cacheMode: 'cache' | 'bypass'): boolean =>
   cacheMode === 'cache' && request.method === 'GET'
@@ -28,7 +29,7 @@ export const isPrivateBackendCacheBypassRoute = (pathname: string): boolean => {
     PRIVATE_BACKEND_CACHE_BYPASS_PREFIXES.some(
       prefix => normalizedPathname === prefix || normalizedPathname.startsWith(`${prefix}/`),
     ) ||
-    POST_ANCESTORS_ROUTE_RE.test(normalizedPathname)
+    POST_EMBEDDED_THREAD_ROUTE_RE.test(normalizedPathname)
   )
 }
 
