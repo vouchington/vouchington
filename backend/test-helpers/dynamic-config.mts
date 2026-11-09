@@ -89,7 +89,7 @@ export function overrideDynamicConfigFieldsForTest(
   }))
   let restored = false
 
-  for (const [name, value] of validatedOverrides) config.fields.set(name, value)
+  pinDynamicConfigFields(config, overrides)
 
   return function restoreDynamicConfigFields(): void {
     if (restored) return
@@ -99,6 +99,13 @@ export function overrideDynamicConfigFieldsForTest(
       else config.fields.delete(name)
     }
   }
+}
+
+export function pinDynamicConfigFields(
+  config: TestDynamicConfig,
+  overrides: Record<string, DynamicConfigField>,
+): void {
+  for (const [name, value] of validateOverrides(config, overrides)) config.fields.set(name, value)
 }
 
 export function snapshotDynamicConfigFieldsForTest(
@@ -181,7 +188,6 @@ function validateOverrides(
     }
     validated.push([name, value])
   }
-
   return validated
 }
 
