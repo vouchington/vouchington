@@ -1524,7 +1524,7 @@
       "returnsSet": false
     },
     "fn_ensure_active_topic_references()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  reference_column TEXT;\n  referenced_topic_id UUID;\n  previous_topic_id UUID;\n  reserved_topic_id UUID;\n  is_count_projection_update BOOLEAN := FALSE;\nBEGIN\n  -- The link-count trigger updates an existing program even after its topic is deleted.\n  -- This guard runs before the program's updated_at trigger, so every other column must match.\n  IF TG_OP = 'UPDATE' AND TG_TABLE_NAME = 'referral_program_topics' AND pg_trigger_depth() > 1 THEN\n    is_count_projection_update :=\n      (to_jsonb(NEW) - 'active_link_count') IS NOT DISTINCT FROM\n      (to_jsonb(OLD) - 'active_link_count');\n  END IF;\n  FOREACH reference_column IN ARRAY TG_ARGV LOOP\n    -- Inspect both sides: a deletion or non-key edit can change a merge preflight or capture.\n    referenced_topic_id := NULL;\n    previous_topic_id := NULL;\n    IF TG_OP <> 'DELETE' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;\n    END IF;\n    IF TG_OP <> 'INSERT' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;\n    END IF;\n    FOR reserved_topic_id IN\n      SELECT DISTINCT id FROM unnest(ARRAY[previous_topic_id, referenced_topic_id]) AS ids(id)\n      WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      -- Never wait while holding a child row or publication scope: admission takes this fence first.\n      IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(\n        'topic-merge-lifecycle:' || reserved_topic_id::TEXT, 0\n      )) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic references are changing; retry the request',\n          DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (\n        SELECT 1 FROM topic_merge_parent_ancestors ancestor\n        JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id\n        WHERE ancestor.topic_id = reserved_topic_id\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations merge_operation\n        WHERE (merge_operation.source_topic_id = reserved_topic_id\n            OR merge_operation.destination_topic_id = reserved_topic_id)\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n    END LOOP;\n    -- Missing identities remain the foreign key constraint's responsibility.\n    -- Retaining an inactive reference is allowed only for the nested counter projection.\n    -- Re-enabling a deleted or merged program must not reuse its unchanged topic id.\n    IF referenced_topic_id IS NOT NULL\n      AND NOT is_count_projection_update\n      AND EXISTS (\n        SELECT 1 FROM topics WHERE id = referenced_topic_id\n          AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)\n      ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic reference must identify an active topic',\n        DETAIL = json_build_object('code', 'topic_reference_inactive', 'topic_id', referenced_topic_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  reference_column TEXT;\n  referenced_topic_id UUID;\n  previous_topic_id UUID;\n  reserved_topic_id UUID;\nBEGIN\n  FOREACH reference_column IN ARRAY TG_ARGV LOOP\n    -- Inspect both sides: a deletion or non-key edit can change a merge preflight or capture.\n    referenced_topic_id := NULL;\n    previous_topic_id := NULL;\n    IF TG_OP <> 'DELETE' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;\n    END IF;\n    IF TG_OP <> 'INSERT' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;\n    END IF;\n    FOR reserved_topic_id IN\n      SELECT DISTINCT id FROM unnest(ARRAY[previous_topic_id, referenced_topic_id]) AS ids(id)\n      WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      -- Never wait while holding a child row or publication scope: admission takes this fence first.\n      IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(\n        'topic-merge-lifecycle:' || reserved_topic_id::TEXT, 0\n      )) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic references are changing; retry the request',\n          DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (\n        SELECT 1 FROM topic_merge_parent_ancestors ancestor\n        JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id\n        WHERE ancestor.topic_id = reserved_topic_id\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations merge_operation\n        WHERE (merge_operation.source_topic_id = reserved_topic_id\n            OR merge_operation.destination_topic_id = reserved_topic_id)\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n    END LOOP;\n    -- Missing identities remain the foreign key constraint's responsibility.\n    -- Re-enabling a deleted or merged program must not reuse its unchanged topic id.\n    IF referenced_topic_id IS NOT NULL\n      AND EXISTS (\n        SELECT 1 FROM topics WHERE id = referenced_topic_id\n          AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)\n      ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic reference must identify an active topic',\n        DETAIL = json_build_object('code', 'topic_reference_inactive', 'topic_id', referenced_topic_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_ensure_copyright_email_ancestor_live_endpoints()": {
@@ -1717,14 +1717,6 @@
     },
     "fn_project_record_user_data_request_attempt()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_record_user_data_request_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.processing_started_at IS NOT NULL THEN\n    INSERT INTO user_data_request_attempts (\n      request_id,\n      processing_attempt_id,\n      started_at,\n      upload_lease_expires_at\n    ) VALUES (\n      NEW.id,\n      NEW.processing_attempt_id,\n      NEW.processing_started_at,\n      NULL\n    )\n    ON CONFLICT (request_id, processing_attempt_id) DO NOTHING;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
-      "returnsSet": false
-    },
-    "fn_project_referral_program_active_link_count()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_referral_program_active_link_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  old_active BOOLEAN := FALSE;\n  new_active BOOLEAN := FALSE;\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    old_active := OLD.activated_at IS NOT NULL AND OLD.deleted_at IS NULL;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    new_active := NEW.activated_at IS NOT NULL AND NEW.deleted_at IS NULL;\n  END IF;\n\n  IF TG_OP = 'UPDATE'\n     AND OLD.referral_program_topic_id IS NOT DISTINCT FROM NEW.referral_program_topic_id THEN\n    IF old_active AND NOT new_active THEN\n      UPDATE referral_program_topics\n      SET active_link_count = active_link_count - 1\n      WHERE topic_id = OLD.referral_program_topic_id;\n    ELSIF NOT old_active AND new_active THEN\n      UPDATE referral_program_topics\n      SET active_link_count = active_link_count + 1\n      WHERE topic_id = NEW.referral_program_topic_id;\n    END IF;\n  ELSE\n    IF old_active THEN\n      UPDATE referral_program_topics\n      SET active_link_count = active_link_count - 1\n      WHERE topic_id = OLD.referral_program_topic_id;\n    END IF;\n    IF new_active THEN\n      UPDATE referral_program_topics\n      SET active_link_count = active_link_count + 1\n      WHERE topic_id = NEW.referral_program_topic_id;\n    END IF;\n  END IF;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
-      "returnsSet": false
-    },
-    "fn_project_referral_program_link_counts()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_referral_program_link_counts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.enabled_at IS NOT NULL AND NEW.disabled_at IS NULL\n    AND NEW.active_link_count > 0\n    AND EXISTS (\n      SELECT 1 FROM topics topic\n      WHERE topic.id = NEW.topic_id\n        AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL\n    ) THEN\n    INSERT INTO referral_program_link_counts (topic_id, active_link_count)\n    VALUES (NEW.topic_id, NEW.active_link_count)\n    ON CONFLICT (topic_id) DO UPDATE\n      SET active_link_count = EXCLUDED.active_link_count\n      WHERE referral_program_link_counts.active_link_count IS DISTINCT FROM EXCLUDED.active_link_count;\n  ELSE\n    DELETE FROM referral_program_link_counts WHERE topic_id = NEW.topic_id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_project_refresh_rss_feed_item_unmapped_category_count()": {
@@ -2365,10 +2357,6 @@
     },
     "fn_update_posts_search_vector()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.title, '')), 'A') ||\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.markdown, '')), 'D');\n  RETURN NEW;\nEND;\n$function$\n",
-      "returnsSet": false
-    },
-    "fn_update_referral_program_link_counts_on_topic_lifecycle()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_referral_program_link_counts_on_topic_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE referral_program_topics\n  SET active_link_count = active_link_count\n  WHERE topic_id = NEW.id;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_update_retained_copyright_notice_identity_residual()": {
@@ -99399,111 +99387,6 @@
         }
       }
     },
-    "referral_program_link_counts": {
-      "checkConstraints": {
-        "referral_program_link_counts_active_link_count_check": {
-          "definition": "CHECK ((active_link_count >= 0))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "active_link_count": {
-          "comment": "Exact active link count copied from the program row for ranking.",
-          "dataType": "integer",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "topic_id": {
-          "comment": "Live enabled referral program represented by this search key.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        }
-      },
-      "comment": "Current enabled and live referral programs keyed by their exact active link count.",
-      "foreignKeys": {
-        "fk_referral_program_link_counts__topic": {
-          "columns": ["topic_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["topic_id"],
-          "referencedTable": "referral_program_topics",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "idx_referral_program_link_counts__active_link_count__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_referral_program_link_counts__active_link_count__topic_id ON public.referral_program_link_counts USING btree (active_link_count DESC, topic_id DESC) WHERE (active_link_count > 0)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "active_link_count",
-              "descending": true,
-              "expression": "active_link_count",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.int4_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": true,
-              "expression": "topic_id",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(active_link_count > 0)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "referral_program_link_counts_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX referral_program_link_counts_pkey ON public.referral_program_link_counts USING btree (topic_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["topic_id"]
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
     "referral_program_link_validation_rule_sets": {
       "checkConstraints": {
         "referral_program_link_validation_rule_sets_slug_check": {
@@ -100016,26 +99899,12 @@
     },
     "referral_program_topics": {
       "checkConstraints": {
-        "referral_program_topics_active_link_count_check": {
-          "definition": "CHECK ((active_link_count >= 0))",
-          "validated": true
-        },
         "referral_program_topics_check": {
           "definition": "CHECK ((NOT ((enabled_at IS NOT NULL) AND (disabled_at IS NOT NULL))))",
           "validated": true
         }
       },
       "columns": {
-        "active_link_count": {
-          "comment": "All-time count of active links: activated_at set and deleted_at null, including child links. Maintained by the link row trigger.",
-          "dataType": "integer",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5
-        },
         "company_topic_id": {
           "comment": "The company topic that operates this referral program.",
           "dataType": "uuid",
@@ -100054,7 +99923,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 5
         },
         "disabled_at": {
           "comment": "When the program was disabled. NULL if currently enabled.",
@@ -100094,7 +99963,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 6
         }
       },
       "comment": "Extension table for topics of type referral_program. Links program to company.",
@@ -100181,9 +100050,6 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')"
-        },
-        "trigger_project_referral_program_link_counts": {
-          "definition": "CREATE TRIGGER trigger_project_referral_program_link_counts AFTER INSERT OR UPDATE OF active_link_count, enabled_at, disabled_at ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_project_referral_program_link_counts()"
         },
         "trigger_referral_program_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_referral_program_topics_updated_at BEFORE UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
@@ -149888,9 +149754,6 @@
         },
         "trigger_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        },
-        "trigger_update_referral_program_link_counts_on_topic_lifecycle": {
-          "definition": "CREATE TRIGGER trigger_update_referral_program_link_counts_on_topic_lifecycle AFTER UPDATE OF deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW WHEN (((old.deleted_at IS DISTINCT FROM new.deleted_at) OR (old.merged_into_topic_id IS DISTINCT FROM new.merged_into_topic_id))) EXECUTE FUNCTION fn_update_referral_program_link_counts_on_topic_lifecycle()"
         }
       },
       "uniqueConstraints": {}
@@ -161588,9 +161451,6 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
         },
-        "trigger_project_referral_program_active_link_count": {
-          "definition": "CREATE TRIGGER trigger_project_referral_program_active_link_count AFTER INSERT OR DELETE OR UPDATE OF activated_at, deleted_at, referral_program_topic_id ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_project_referral_program_active_link_count()"
-        },
         "trigger_user_referra_program_links_content_provenance_immutable": {
           "definition": "CREATE TRIGGER trigger_user_referra_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()"
         },
@@ -170791,6 +170651,68 @@
               "expression": "singleton_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "materialized": true
+    },
+    "mv_referral_program_link_counts": {
+      "comment": "All-time active referral-link counts for enabled programs, refreshed on the PostgreSQL materialized-view schedule; topic deletion and merge are checked by readers.",
+      "definition": " SELECT program.topic_id,\n    count(link.id) AS active_link_count\n   FROM referral_program_topics program\n     LEFT JOIN user_referral_program_links link ON link.referral_program_topic_id = program.topic_id AND link.activated_at IS NOT NULL AND link.deleted_at IS NULL\n  WHERE program.enabled_at IS NOT NULL AND program.disabled_at IS NULL\n  GROUP BY program.topic_id;",
+      "indexes": {
+        "idx_mv_referral_program_link_counts__count__topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mv_referral_program_link_counts__count__topic_id ON public.mv_referral_program_link_counts USING btree (active_link_count DESC, topic_id DESC) WHERE (active_link_count > 0)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "active_link_count",
+              "descending": true,
+              "expression": "active_link_count",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "topic_id",
+              "descending": true,
+              "expression": "topic_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(active_link_count > 0)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_mv_referral_program_link_counts__topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_mv_referral_program_link_counts__topic_id ON public.mv_referral_program_link_counts USING btree (topic_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],

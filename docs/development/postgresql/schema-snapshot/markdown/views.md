@@ -29,6 +29,19 @@ Cached public platform counts, refreshed on the PostgreSQL materialized-view sch
    FROM post_counts;
 ```
 
+## `mv_referral_program_link_counts` (materialized)
+
+All-time active referral-link counts for enabled programs, refreshed on the PostgreSQL materialized-view schedule; topic deletion and merge are checked by readers.
+
+```sql
+ SELECT program.topic_id,
+    count(link.id) AS active_link_count
+   FROM (referral_program_topics program
+     LEFT JOIN user_referral_program_links link ON (((link.referral_program_topic_id = program.topic_id) AND (link.activated_at IS NOT NULL) AND (link.deleted_at IS NULL))))
+  WHERE ((program.enabled_at IS NOT NULL) AND (program.disabled_at IS NULL))
+  GROUP BY program.topic_id;
+```
+
 ## `mv_revenue_changes` (materialized)
 
 Upgrade, downgrade and cancellation counts by fixed dashboard window and user, refreshed on schedule.

@@ -620,22 +620,6 @@ CREATE OR REPLACE FUNCTION public.fn_project_record_user_data_request_attempt()
  LANGUAGE plpgsql
 ```
 
-## `fn_project_referral_program_active_link_count`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_referral_program_active_link_count()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_referral_program_link_counts`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_referral_program_link_counts()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_project_refresh_rss_feed_item_unmapped_category_count`
 
 ```sql
@@ -1914,14 +1898,6 @@ CREATE OR REPLACE FUNCTION public.fn_update_post_moderation_version_retention()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_update_referral_program_link_counts_on_topic_lifecycle`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_update_referral_program_link_counts_on_topic_lifecycle()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

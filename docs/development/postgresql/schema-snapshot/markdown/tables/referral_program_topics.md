@@ -6,15 +6,14 @@ Extension table for topics of type referral_program. Links program to company.
 
 Not partitioned — growth: unbounded.
 
-| Column              | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                          |
-| ------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `topic_id`          | `uuid`                     | no       |                     |          |           |           | The topic that is a referral program (PK, 1:1 with topics).                                                                      |
-| `company_topic_id`  | `uuid`                     | yes      |                     |          |           |           | The company topic that operates this referral program.                                                                           |
-| `enabled_at`        | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           | When the program was enabled. NULL if currently disabled.                                                                        |
-| `disabled_at`       | `timestamp with time zone` | yes      |                     |          |           |           | When the program was disabled. NULL if currently enabled.                                                                        |
-| `active_link_count` | `integer`                  | no       | `0`                 |          |           |           | All-time count of active links: activated_at set and deleted_at null, including child links. Maintained by the link row trigger. |
-| `created_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                  |
-| `updated_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                  |
+| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                     |
+| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
+| `topic_id`         | `uuid`                     | no       |                     |          |           |           | The topic that is a referral program (PK, 1:1 with topics). |
+| `company_topic_id` | `uuid`                     | yes      |                     |          |           |           | The company topic that operates this referral program.      |
+| `enabled_at`       | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           | When the program was enabled. NULL if currently disabled.   |
+| `disabled_at`      | `timestamp with time zone` | yes      |                     |          |           |           | When the program was disabled. NULL if currently enabled.   |
+| `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                             |
+| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                             |
 
 **Primary key:** `PRIMARY KEY (topic_id)`
 
@@ -23,7 +22,6 @@ _none_
 
 **Check constraints:**
 
-- `referral_program_topics_active_link_count_check`: `CHECK ((active_link_count >= 0))`
 - `referral_program_topics_check`: `CHECK ((NOT ((enabled_at IS NOT NULL) AND (disabled_at IS NOT NULL))))`
 
 **Foreign keys:**
@@ -39,5 +37,4 @@ _none_
 **Triggers:**
 
 - `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')`
-- `trigger_project_referral_program_link_counts`: `CREATE TRIGGER trigger_project_referral_program_link_counts AFTER INSERT OR UPDATE OF active_link_count, enabled_at, disabled_at ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_project_referral_program_link_counts()`
 - `trigger_referral_program_topics_updated_at`: `CREATE TRIGGER trigger_referral_program_topics_updated_at BEFORE UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
