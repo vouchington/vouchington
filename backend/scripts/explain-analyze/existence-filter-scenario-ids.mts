@@ -26,4 +26,6 @@ export const EXISTENCE_FILTER_SCENARIO_IDS = [
   'moderation-cluster-writer-targets',
   'moderation-cluster-writer-hot-edges',
   'moderation-cluster-writer-ordered-update',
+  'moderation-clusters-pending-url_hostname-head',
+  'moderation-clusters-pending-rss_feed_item-head',
 ] as const

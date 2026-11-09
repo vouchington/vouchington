@@ -132,4 +132,9 @@ export async function seedModerationClusterPages(): Promise<void> {
       ORDER BY input.id`,
     [distinctReportIds, distinctPostIds, seedUuid(0, '01')],
   )
+  // Settle counter-upsert index versions before steady-state access-path measurements.
+  await write('/* seedModerationClusterPages:vacuum */ VACUUM (ANALYZE) moderation_report_clusters')
+  await write(
+    '/* seedModerationClusterPages:analyze */ ANALYZE moderation_reports, moderation_cases, users',
+  )
 }
