@@ -119,6 +119,11 @@ surface:
 - **Topics list** (`parse-topics.mts`) → direct linked topic match; standalone aliases produce an empty result because they do not identify a topic.
 - **RSS feeds list** (`parse-rss-feeds.mts`) → `topic_ids` — feeds where `rss_feeds.topic_id` matches the resolved ID.
 
+RSS descendant searches resolve the topic set before matching feeds so generic prepared plans can
+use the feed's topic index. All-of searches test each root independently; a shared descendant can
+satisfy several roots without counting duplicate relation rows. The indexed form is retained for
+its measured plan stability ([comparison](https://github.com/vouchington/vouchington/pull/5372)).
+
 Linked hashtags expand to the direct topic relation and every alias linked to that topic. Standalone
 hashtags match only their exact alias relation. The `topic_ids` and `category_topic_ids` filter
 dimensions for `rss-feed-items` are AND-ed when both are present. One filter is generated per

@@ -62,13 +62,10 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
         )`)
       }
     } else {
-      filters.push(sql`EXISTS (
-        SELECT 1 FROM topic_descendants
-        WHERE topic_descendants.topic_id = rss_feeds.topic_id
-          AND topic_descendants.root_post_id IN (
-            SELECT root_post_id FROM topic_descendant_roots
-          )
-      )`)
+      // The descendant key set lets the unique topic_id index drive this ANY search.
+      filters.push(sql`rss_feeds.topic_id = ANY(ARRAY(
+        SELECT topic_descendants.topic_id FROM topic_descendants
+      ))`)
     }
   }
 
