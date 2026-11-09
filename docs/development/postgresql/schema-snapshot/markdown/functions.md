@@ -1998,14 +1998,6 @@ CREATE OR REPLACE FUNCTION public.fn_update_url_latest_published_at()
  LANGUAGE plpgsql
 ```
 
-## `fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)
- RETURNS void
- LANGUAGE sql
-```
-
 ## `fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)`
 
 ```sql

@@ -27,6 +27,8 @@ export interface UserPrivateMetricsCount {
   communities_proxy_muted: number
 }
 
+export type UserPrivateMetricsCapped = { [Key in keyof UserPrivateMetricsCount]: boolean }
+
 export interface UserMetrics {
   __entity_type: 'user_metrics'
   id: string
@@ -57,15 +59,6 @@ export interface UserMetrics {
     communities_member: boolean
   }
   private_count?: UserPrivateMetricsCount
-  bookmarks: {
-    follow: {
-      topics: number
-      posts: number
-      users: number
-    }
-  }
-  bookmarkers: {
-    follow: number
-  }
-  bookmarks__updated_at: string
+  /** Same keys as `private_count`; `true` means the real total is larger than the cap. */
+  private_count_capped?: UserPrivateMetricsCapped
 }

@@ -20,11 +20,6 @@ type GetUserMetricsOptions = QueryOptions & {
 
 type UserMetricsRow = {
   id: string
-  bookmarks__follow__topics_count: number | string | null
-  bookmarks__follow__posts_count: number | string | null
-  bookmarks__follow__users_count: number | string | null
-  bookmarkers__follow_count: number | string | null
-  bookmarks__updated_at: Date
 }
 
 function getUserMetricsByAny(
@@ -92,32 +87,16 @@ async function buildUserMetrics(
   const counts = mapCappedCounts(cappedCounts, capped => capped.count)
   const countsCapped = mapCappedCounts(cappedCounts, capped => capped.capped)
 
-  let privateCount: UserMetrics['private_count']
-  const allowPrivateCounts = currentUserCanAccessUser(currentUser ?? null, row.id)
-
-  if (allowPrivateCounts) {
-    privateCount = await getPrivateCounts(row.id, queryOptions)
-  }
+  const privateCounts = currentUserCanAccessUser(currentUser ?? null, row.id)
+    ? await getPrivateCounts(row.id, queryOptions)
+    : undefined
 
   return {
     __entity_type: 'user_metrics',
     id: row.id,
     count: counts,
     count_capped: countsCapped,
-    ...(privateCount ? { private_count: privateCount } : {}),
-    bookmarks: {
-      follow: {
-        topics: collectionVisibility.topicFollows
-          ? Number(row.bookmarks__follow__topics_count) || 0
-          : 0,
-        posts: allowPrivateCounts ? Number(row.bookmarks__follow__posts_count) || 0 : 0,
-        users: collectionVisibility.follows ? Number(row.bookmarks__follow__users_count) || 0 : 0,
-      },
-    },
-    bookmarkers: {
-      follow: collectionVisibility.followers ? Number(row.bookmarkers__follow_count) || 0 : 0,
-    },
-    bookmarks__updated_at: row.bookmarks__updated_at,
+    ...privateCounts,
   }
 }
 
