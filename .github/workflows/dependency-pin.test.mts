@@ -127,7 +127,7 @@ describe('reviewed dependency image pins', () => {
     }
   })
 
-  it('updates only the secondary web Node stage missed by the first-FROM updater', () => {
+  it('updates only the secondary web Bun stage missed by the first-FROM updater', () => {
     const renovate = JSON.parse(readFileSync('renovate.json', 'utf8')) as {
       customManagers?: Array<{
         description?: string
@@ -136,18 +136,18 @@ describe('reviewed dependency image pins', () => {
       }>
     }
     const manager = renovate.customManagers?.find(
-      candidate => candidate.description === 'Secondary Alpine Node stage in the web Dockerfile',
+      candidate => candidate.description === 'Secondary Bun runtime stage in the web Dockerfile',
     )
-    assertWorkflowInvariant(manager, 'Expected the secondary web Node Renovate manager')
+    assertWorkflowInvariant(manager, 'Expected the secondary web Bun Renovate manager')
     expect(manager.managerFilePatterns).toEqual(['web/Dockerfile'])
     const pattern = manager.matchStrings?.[0]
-    assertWorkflowInvariant(pattern, 'Expected the secondary web Node matcher')
+    assertWorkflowInvariant(pattern, 'Expected the secondary web Bun matcher')
     const matches = [...readFileSync('web/Dockerfile', 'utf8').matchAll(new RegExp(pattern, 'gu'))]
     expect(matches).toHaveLength(1)
     expect(matches[0]?.groups).toMatchObject({
-      depName: 'ghcr.io/vouchington/dependency-node',
+      depName: 'ghcr.io/vouchington/dependency-bun',
     })
-    expect(matches[0]?.groups?.currentValue).toMatch(/^[0-9]+-alpine$/u)
+    expect(matches[0]?.groups?.currentValue).toMatch(/^[0-9]+\.[0-9]+\.[0-9]+-alpine$/u)
     expect(matches[0]?.groups?.currentDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
   })
 
