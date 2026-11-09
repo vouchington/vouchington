@@ -6,6 +6,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_28_CLIENTS_INTEGRATION = [
   { key: 'engineering.classifierRange.confirmRetire', consumers: ['dotnet', 'swift'] },
   { key: 'engineering.classifierRange.create', consumers: ['dotnet', 'swift'] },
   { key: 'engineering.classifierRange.fromInclusiveUtc', consumers: ['dotnet', 'swift'] },
+  { key: 'engineering.classifierRange.invalidRange', consumers: ['dotnet', 'swift'] },
   { key: 'engineering.classifierRange.maxDefaultRows', consumers: ['dotnet', 'swift'] },
   { key: 'engineering.classifierRange.retire', consumers: ['dotnet', 'swift'] },
   { key: 'engineering.classifierRange.toExclusiveUtc', consumers: ['dotnet', 'swift'] },
