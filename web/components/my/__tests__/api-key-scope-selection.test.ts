@@ -140,13 +140,19 @@ describe('audience policy', () => {
       'brand',
     ])
   })
-  it('offers all five OAuth audiences only to an administrator', () => {
+  it('offers admin OAuth scopes to moderation staff and legal scopes only to administrators', () => {
     expect(availableScopeAudiences(policies, 'oauth', false)).toEqual([
       'user',
       'community_moderation',
       'brand',
     ])
-    expect(availableScopeAudiences(policies, 'oauth', true)).toEqual([
+    expect(availableScopeAudiences(policies, 'oauth', false, true)).toEqual([
+      'user',
+      'community_moderation',
+      'brand',
+      'admin',
+    ])
+    expect(availableScopeAudiences(policies, 'oauth', true, true)).toEqual([
       'user',
       'community_moderation',
       'brand',

@@ -20,6 +20,7 @@ export function OAuthAppsManager({ initialData, scopeCatalog }: OAuthAppsManager
   const t = useTranslations()
   const auth = useOptionalAuth()
   const isAdmin = auth?.currentUser?.roles?.includes('administrator') ?? false
+  const isModerationStaff = isAdmin || (auth?.currentUser?.roles?.includes('moderator') ?? false)
   const manager = useOAuthAppsManager(initialData)
   const { pagination } = manager
 
@@ -77,6 +78,7 @@ export function OAuthAppsManager({ initialData, scopeCatalog }: OAuthAppsManager
       </InfiniteScroll>
       <RegisterOAuthAppForm
         isAdmin={isAdmin}
+        isModerationStaff={isModerationStaff}
         scopeCatalog={scopeCatalog}
         onRegister={manager.handleRegister}
       />

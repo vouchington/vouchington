@@ -14,8 +14,18 @@ export const OAUTH_AUDIENCE_REQUIRES_ADMINISTRATOR: Readonly<
   user: false,
   community_moderation: false,
   brand: false,
-  admin: true,
+  admin: false,
   legal: true,
+}
+
+export const OAUTH_AUDIENCE_REQUIRES_MODERATION_STAFF: Readonly<
+  Record<OAuthResourceAudience, boolean>
+> = {
+  user: false,
+  community_moderation: false,
+  brand: false,
+  admin: true,
+  legal: false,
 }
 
 export type OAuthProtectedResource = {

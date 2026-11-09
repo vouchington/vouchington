@@ -50019,6 +50019,224 @@
       "source": "backend/api/v1/reports/reports.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/reports/:id": {
+      "bodyKind": "content",
+      "hash": "eeb0ad0ee2a26d86a3af7a432970db800d2b37eecb4f8da56cca9fefa370f41c",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/reports/:id",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "judgement": {
+              "required": true,
+              "schema": {
+                "type": "union",
+                "variants": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "internal_response": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "public_response": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "recommended_action": {
+                        "required": true,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "type": "literal",
+                              "value": "no_action"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "warn"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "remove"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "escalate"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "report": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "case_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "created_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "entity_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "entity_type": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "literal",
+                          "value": "post"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "comment"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "user"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "url_hostname"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "rss_feed_item"
+                        }
+                      ]
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "reason": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "reporter_user_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "resolved_by_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "reviewed_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "status": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "literal",
+                          "value": "pending"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "reviewed"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "actioned"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "dismissed"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/reports/reports.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
     "GET:/api/v1/reports/:id/judgements/:runId": {
       "bodyKind": "content",
       "hash": "f0d33f06f7d1158701223df088fabef18ee1cc24e85728524cabc57b290621d5",
@@ -52121,7 +52339,7 @@
     },
     "GET:/api/v1/scopes": {
       "bodyKind": "content",
-      "hash": "e0b5c681dd4de39e06d55f3826114b71bc56601e113497a34cd9487d2fbfd128",
+      "hash": "cc10aa8116e3a8c06c5e4a6964b74ef6bb9a32a9b7f425e3c1f9cecd23aa5d81",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -52208,6 +52426,12 @@
                 }
               },
               "requires_administrator": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "requires_moderation_staff": {
                 "required": true,
                 "schema": {
                   "type": "boolean"
@@ -100040,7 +100264,7 @@
       "migratedFrom": ["backend/api/v1/scopes/scopes.test.mts"],
       "path": "/api/v1/scopes",
       "responseSchema": {
-        "hash": "7afb4112d07808e708325f8e32ad1b6fc85a1a55603b68acaac41a5e0a7691ee",
+        "hash": "7fdfb9df3c4deeda33c3c60f4fa3f232a48b3433ebc59df76f0ece5c6144524b",
         "key": "shared.scopes.catalog"
       },
       "route": {
@@ -107383,6 +107607,54 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-import-export-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/reports/:id",
+      "bodyFile": "responses/native.moderation.report-detail.saved.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.report-detail.saved",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/reports/reports.mts"],
+      "path": "/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e",
+      "responseSchema": {
+        "hash": "8bbd7b37a91ae92451e9e8043f72e9504eaf68dfdeaffa14abdc00dd7abaff39",
+        "key": "native.moderation.report-detail.saved"
+      },
+      "route": {
+        "pathParams": {
+          "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e"
+        },
+        "routeTemplate": "/api/v1/reports/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/reports/:id",
+      "bodyFile": "responses/native.moderation.report-detail.pending.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.report-detail.pending",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/reports/reports.mts"],
+      "path": "/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e",
+      "responseSchema": {
+        "hash": "ccf5e945c5ddcb24b19916fe5a550b098af416c95270fa7e360445d26ea9e554",
+        "key": "native.moderation.report-detail.pending"
+      },
+      "route": {
+        "pathParams": {
+          "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e"
+        },
+        "routeTemplate": "/api/v1/reports/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
       },
       "status": 200
     },

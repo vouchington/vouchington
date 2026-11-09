@@ -39,10 +39,35 @@ export const storybookScopeCatalog: readonly ScopeCatalogEntry[] = [
 export const storybookScopeCatalogResponse: ScopeCatalogResponse = {
   scopes: [...storybookScopeCatalog],
   audiences: [
-    { audience: 'user', accepts_api_keys: true, requires_administrator: false },
-    { audience: 'community_moderation', accepts_api_keys: true, requires_administrator: false },
-    { audience: 'brand', accepts_api_keys: true, requires_administrator: false },
-    { audience: 'admin', accepts_api_keys: false, requires_administrator: true },
-    { audience: 'legal', accepts_api_keys: false, requires_administrator: true },
+    {
+      audience: 'user',
+      accepts_api_keys: true,
+      requires_administrator: false,
+      requires_moderation_staff: false,
+    },
+    {
+      audience: 'community_moderation',
+      accepts_api_keys: true,
+      requires_administrator: false,
+      requires_moderation_staff: false,
+    },
+    {
+      audience: 'brand',
+      accepts_api_keys: true,
+      requires_administrator: false,
+      requires_moderation_staff: false,
+    },
+    {
+      audience: 'admin',
+      accepts_api_keys: false,
+      requires_administrator: false,
+      requires_moderation_staff: true,
+    },
+    {
+      audience: 'legal',
+      accepts_api_keys: false,
+      requires_administrator: true,
+      requires_moderation_staff: false,
+    },
   ],
 }

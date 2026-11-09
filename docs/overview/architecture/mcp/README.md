@@ -32,7 +32,9 @@ and credential rules live in [`config.mts`](../../../../backend/services/mcp-too
 Authentication rejects a suspended account on every audience except `user`, where a paying owner or
 a `messages:read` holder may continue. The check runs on every request because access-token
 validation and refresh do not look at suspension, and a new authorization still rejects a suspended
-user. Moderation, brand, staff, and legal servers stay closed to a suspended account. After
+user. Community moderation, brand, and legal servers stay closed to a suspended account. The staff
+server admits suspended moderation staff only to report reads that REST also allows; tool policy
+blocks mutations and other staff tools. After
 authentication, each tool still declares whether a suspended caller may run it.
 
 ## Per-call audit

@@ -120,6 +120,31 @@ describe('OAuth consent', () => {
     },
   )
 
+  it('allows moderation staff to authorize the admin resource while keeping legal admin-only', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const pending = await createTestPendingOAuthAuthorization(moderator, {
+      audience: 'admin',
+      scope: 'moderation:read',
+    })
+    const assuredSession = await createVerifiedMfaTestSession(moderator.id)
+
+    await expect(
+      decideOAuthAuthorizationRequest(
+        moderator.id,
+        pending.requestId,
+        'approve',
+        pending.bindingHash,
+        assuredSession.sessionToken.payload.mfa_at,
+      ),
+    ).resolves.toMatchObject({ redirect_uri: expect.stringContaining('code=') })
+    await expect(
+      createTestPendingOAuthAuthorization(moderator, {
+        audience: 'legal',
+        scope: 'copyright-notices:read',
+      }),
+    ).rejects.toMatchObject({ code: 'access_denied' })
+  })
+
   it('identifies the native client without an unverified label', async () => {
     const document = getNativeOAuthClientDocument('ios')
     const deviceId = uuidv7()

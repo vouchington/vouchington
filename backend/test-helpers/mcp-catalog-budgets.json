@@ -203,16 +203,16 @@
     "admin": {
       "all": {
         "on": {
-          "count": 56,
+          "count": 57,
           "list": 196000,
           "core": 36000,
-          "output": 184000
+          "output": 185000
         },
         "off": {
-          "count": 56,
+          "count": 57,
           "list": 196000,
           "core": 36000,
-          "output": 184000
+          "output": 185000
         }
       },
       "Reader": {
@@ -233,10 +233,10 @@
       },
       "Reviewer": {
         "on": {
-          "count": 8,
+          "count": 9,
           "list": 58000,
-          "core": 6000,
-          "output": 56000
+          "core": 7000,
+          "output": 57000
         }
       },
       "CommunityFree": {

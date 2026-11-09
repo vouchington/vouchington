@@ -22,6 +22,7 @@ import {
 
 interface RegisterOAuthAppFormProps {
   isAdmin: boolean
+  isModerationStaff: boolean
   scopeCatalog: ScopeCatalogResponse
   /** Resolves `true` once the app is registered, which clears the form. */
   onRegister: (input: CreateOAuthAppInput) => Promise<boolean>
@@ -43,6 +44,7 @@ const EMPTY_DRAFT: RegisterOAuthAppDraft = {
 
 export function RegisterOAuthAppForm({
   isAdmin,
+  isModerationStaff,
   scopeCatalog,
   onRegister,
 }: RegisterOAuthAppFormProps) {
@@ -127,7 +129,7 @@ export function RegisterOAuthAppForm({
         groups={scopeResourceGroups(
           scopeCatalog.scopes,
           'oauth',
-          availableScopeAudiences(scopeCatalog.audiences, 'oauth', isAdmin),
+          availableScopeAudiences(scopeCatalog.audiences, 'oauth', isAdmin, isModerationStaff),
         )}
         selected={draft.scopes}
         onToggle={(scope, checked) =>

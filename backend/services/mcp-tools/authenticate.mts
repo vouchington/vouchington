@@ -3,7 +3,7 @@ import {
   isOAuthAccessToken,
   validateOAuthAccessToken,
 } from '@services/oauth-authorization-server/access-tokens'
-import { getPrivateUserByAny, type PrivateUser } from '@services/users'
+import { getPrivateUserByAny, isModerationStaff, type PrivateUser } from '@services/users'
 import { getLoadedMembershipPlan } from '@services/users/loaded-membership-plan'
 import { hasEveryScope, type ApiScope } from '@modules/scopes'
 import type { McpServerConfig } from './config.mts'
@@ -32,7 +32,7 @@ type McpBearerAuthentication =
       status: 'authenticated'
       owner: PrivateUser
       scopes: ApiScope[]
-      // True for an admitted suspended member on the user server.
+      // True when suspension permits this credential to reach per-tool authorization.
       suspended: boolean
     })
 
@@ -63,7 +63,11 @@ export async function authenticateMcpBearer(
   const plan = getLoadedMembershipPlan(owner)
   const paying = plan === 'plus' || plan === 'pro'
   const canReadMessages = hasEveryScope(verified.scopes, ['messages:read'])
-  if (suspended && !(config.audience === 'user' && (paying || canReadMessages)))
+  const suspendedAdminStaff = config.audience === 'admin' && isModerationStaff(owner)
+  if (
+    suspended &&
+    !(suspendedAdminStaff || (config.audience === 'user' && (paying || canReadMessages)))
+  )
     return { status: 'invalid' }
   return {
     status: 'authenticated',

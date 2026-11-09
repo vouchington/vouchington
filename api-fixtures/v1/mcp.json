@@ -31291,11 +31291,149 @@
               "voucha/requiredScopes": ["moderation:read"]
             }
           },
-          "roles": ["administrator"],
+          "roles": ["administrator", "moderator"],
           "api": [
             {
               "method": "GET",
               "path": "/api/v1/reports"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "read_moderation_report",
+            "title": "Read moderation report",
+            "description": "Read a moderation report and its latest saved AI judgement.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "report": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "case_id": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "reviewed_at": {
+                      "type": ["string", "null"]
+                    },
+                    "reporter_user_id": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "note": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pending", "reviewed", "actioned", "dismissed"]
+                    },
+                    "resolved_by_id": {
+                      "type": ["string", "null"]
+                    },
+                    "entity_type": {
+                      "type": "string",
+                      "enum": ["post", "comment", "user", "url_hostname", "rss_feed_item"]
+                    },
+                    "entity_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "case_id",
+                    "created_at",
+                    "reviewed_at",
+                    "reporter_user_id",
+                    "reason",
+                    "note",
+                    "status",
+                    "resolved_by_id",
+                    "entity_type",
+                    "entity_id"
+                  ],
+                  "type": "object"
+                },
+                "judgement": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "recommended_action": {
+                          "type": "string",
+                          "enum": ["no_action", "warn", "remove", "escalate"]
+                        },
+                        "public_response": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "internal_response": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "recommended_action",
+                        "public_response",
+                        "internal_response"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["report", "judgement"],
+              "type": "object",
+              "$defs": {
+                "S1": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["moderation:read"]
+            }
+          },
+          "roles": ["administrator", "moderator"],
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/reports/:id"
             }
           ]
         },
@@ -31431,7 +31569,7 @@
               "voucha/requiredScopes": ["moderation:read", "moderation:write"]
             }
           },
-          "roles": ["administrator"],
+          "roles": ["administrator", "moderator"],
           "api": [
             {
               "method": "PATCH",
@@ -31481,7 +31619,7 @@
               "voucha/requiredScopes": ["moderation:read", "moderation:ai-rerun"]
             }
           },
-          "roles": ["administrator"],
+          "roles": ["administrator", "moderator"],
           "api": [
             {
               "method": "POST",

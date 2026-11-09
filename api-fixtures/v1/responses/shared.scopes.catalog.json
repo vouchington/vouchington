@@ -3,27 +3,32 @@
     {
       "accepts_api_keys": true,
       "audience": "user",
-      "requires_administrator": false
+      "requires_administrator": false,
+      "requires_moderation_staff": false
     },
     {
       "accepts_api_keys": true,
       "audience": "community_moderation",
-      "requires_administrator": false
+      "requires_administrator": false,
+      "requires_moderation_staff": false
     },
     {
       "accepts_api_keys": true,
       "audience": "brand",
-      "requires_administrator": false
+      "requires_administrator": false,
+      "requires_moderation_staff": false
     },
     {
       "accepts_api_keys": false,
       "audience": "admin",
-      "requires_administrator": true
+      "requires_administrator": false,
+      "requires_moderation_staff": true
     },
     {
       "accepts_api_keys": false,
       "audience": "legal",
-      "requires_administrator": true
+      "requires_administrator": true,
+      "requires_moderation_staff": false
     }
   ],
   "scopes": [

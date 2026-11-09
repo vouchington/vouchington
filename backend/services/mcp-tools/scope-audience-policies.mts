@@ -1,4 +1,7 @@
-import { OAUTH_AUDIENCE_REQUIRES_ADMINISTRATOR } from '@services/oauth-authorization-server/resources'
+import {
+  OAUTH_AUDIENCE_REQUIRES_ADMINISTRATOR,
+  OAUTH_AUDIENCE_REQUIRES_MODERATION_STAFF,
+} from '@services/oauth-authorization-server/resources'
 import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 
 /** Public capability facts for the scope picker; display copy belongs to the client locale. */
@@ -7,5 +10,6 @@ export function listScopeAudiencePolicies() {
     audience,
     accepts_api_keys: acceptsApiKeys,
     requires_administrator: OAUTH_AUDIENCE_REQUIRES_ADMINISTRATOR[audience],
+    requires_moderation_staff: OAUTH_AUDIENCE_REQUIRES_MODERATION_STAFF[audience],
   }))
 }

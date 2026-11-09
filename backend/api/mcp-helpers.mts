@@ -16,7 +16,7 @@ import {
   type McpHttpResponse,
 } from '@services/mcp-tools'
 import { checkRouteRateLimit } from '@services/route-rate-limits'
-import { isAdminUser } from '@services/users'
+import { isAdminUser, isModerationStaff } from '@services/users'
 import { isCopyrightMcpDecisionToolsEnabled } from '@services/copyright-notices/config'
 import { startMcpRequestAudit, unreadMcpCall } from './mcp-audit-helpers.mts'
 import { chargeMcpToolCalls } from './mcp-route-rate-limit-helpers.mts'
@@ -65,9 +65,12 @@ export async function dispatchMcpRequest(
       // Registered before any rejection below so every outcome of a verified credential is metered.
       const usage = startMcpUsageMeter(ctx, config, authentication)
       const staffAudience = config.audience === 'admin' || config.audience === 'legal'
-      if (staffAudience && !isAdminUser(owner)) {
+      if (
+        staffAudience &&
+        !(config.audience === 'admin' ? isModerationStaff(owner) : isAdminUser(owner))
+      ) {
         await recordRejectedCall(usage.toolCalls, audit, 'role_denied')
-        ctx.throw(403, 'Administrator role required')
+        ctx.throw(403, 'Forbidden')
       }
       if (staffAudience && !hasScopeAudience(scopes, config.audience)) {
         await recordRejectedCall(usage.toolCalls, audit, 'insufficient_scope')
