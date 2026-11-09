@@ -1,6 +1,7 @@
 import { read, beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import type { QueryInput, QueryValues } from '@data-stores/psql/types'
 import { upsertRecentlyViewed } from '../services/recently-viewed/index.mts'
+import { refreshMaterializedViewForTest } from './refresh-materialized-view-for-test.mts'
 import { seedPlaywrightCoreData } from './playwright-seed-core.mts'
 import { seedPlaywrightPostData } from './playwright-seed-posts.mts'
 import { seedPlaywrightFeedData } from './playwright-seed-feeds.mts'
@@ -48,6 +49,8 @@ export async function seedPlaywrightTestData() {
 
       await transaction.commit()
     }
+    // Seeded topic tags feed the trending-topics aside, which reads this view.
+    await refreshMaterializedViewForTest('mv_trending_topics')
     /* v8 ignore next */
     const testUserId = '019f0000-0000-7000-8000-000000000000'
     /* v8 ignore next */

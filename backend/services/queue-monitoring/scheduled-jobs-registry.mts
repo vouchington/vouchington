@@ -21,6 +21,7 @@ const SCHEDULED_JOB_API_ORDER = [
   'refresh-platform-stats',
   'refresh-trending-rss-feeds',
   'refresh-trending-communities',
+  'refresh-trending-topics',
   'refresh-revenue-memberships',
   'refresh-revenue-changes',
   'refresh-referral-program-link-counts',

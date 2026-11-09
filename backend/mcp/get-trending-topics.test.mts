@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import getTrendingTopicsTool from './get-trending-topics.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import { createTrendingTopicData } from '@voucha/test-helpers/entities/trending-topics'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view-for-test'
 import type { PrivateUser } from '@services/users/types'
 
 describe('discover_topics.trending tool — real DB', () => {
@@ -22,6 +23,7 @@ describe('discover_topics.trending tool — real DB', () => {
       netVote: 1,
     })
     trendingTopicId = data.topicId
+    await refreshMaterializedViewForTest('mv_trending_topics')
   })
 
   it('returns trending topics', async () => {

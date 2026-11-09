@@ -1,6 +1,7 @@
 // Side-effect registration: see backend/entrypoints/api/index.mts for why this import exists —
 // vote-backed relation writes below (topic tagging) depend on it.
 import '@backend/service-registrations'
+import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
 import { seedTopicsFromCsvs } from '@services/admin-imports/seed-csvs'
 import { seedArticles } from './articles.mts'
 import { seedCopyright } from './copyright.mts'
@@ -12,4 +13,6 @@ export default async function main() {
   await seedTopicsFromCsvs()
   await seedArticles()
   await seedCopyright()
+  // Trending topics are served from a view that the scheduled refresh normally fills.
+  await refreshMaterializedView('mv_trending_topics')
 }

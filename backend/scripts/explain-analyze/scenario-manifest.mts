@@ -26,6 +26,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   ...(['mv-platform-stats-refresh', 'mv-trending-rss-feeds-refresh'] as const),
   ...(['mv-trending-communities-refresh', 'mv-revenue-changes-refresh'] as const),
   'mv-revenue-memberships-refresh',
+  'mv-trending-topics-refresh',
   ...INGESTION_PAGE_SCENARIO_IDS,
   'post-search-similar-post-new',
   'post-search-similar-post-relevance',

@@ -37,6 +37,12 @@ export async function runFeedAndMetricScenarios() {
     crossPartition: { posts: 'The feed ranks eligible posts across the requested week.' },
   })
   await runAndCapture('post-feed', () => getPostFeedIds(seedUser, { limit: 25, time_range: '1w' }))
+  registerScenarioContract('trending-topics', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_mv_trending_topics__ranking'] },
+      { kind: 'maxProcessedRows', relation: 'mv_trending_topics', max: 26 },
+    ],
+  })
   await runAndCapture('trending-topics', () => getTrendingTopics({ timeRange: 'week', limit: 25 }))
   await runRssFeedSearchScenarios()
   await runAndCapture('friend-recommendations', () =>

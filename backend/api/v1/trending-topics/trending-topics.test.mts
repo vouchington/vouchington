@@ -7,6 +7,7 @@ import {
   createTrendingTopicCursorBefore,
 } from '@voucha/test-helpers/entities/trending-topics'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view-for-test'
 
 describe('trending-topics', () => {
   const testIds: string[] = []
@@ -26,6 +27,7 @@ describe('trending-topics', () => {
         })
         testIds.push(feedId, topicId, userId)
 
+        await refreshMaterializedViewForTest('mv_trending_topics')
         const request = createRequest()
         const response = await request.get('/api/v1/trending-topics').expect(200)
 
@@ -51,6 +53,7 @@ describe('trending-topics', () => {
         // Use an authenticated request to bypass the Valkey search cache (which caches
         // anon results for 60s) so the newly created topic appears in the response.
         // The public cursor starts immediately before the owned score/UUID tuple.
+        await refreshMaterializedViewForTest('mv_trending_topics')
         const request = createRequest()
         await request.authenticateAs(admin)
         const response = await request
@@ -87,6 +90,7 @@ describe('trending-topics', () => {
           testIds.push(feedId, topicId, userId)
         }
 
+        await refreshMaterializedViewForTest('mv_trending_topics')
         const request = createRequest()
         const ownedIds = datasets
           .map(row => row.topicId)
@@ -115,6 +119,7 @@ describe('trending-topics', () => {
         })
         testIds.push(feedId, topicId, userId)
 
+        await refreshMaterializedViewForTest('mv_trending_topics')
         const request = createRequest()
         const response = await request.get('/api/v1/trending-topics?time_range=week').expect(200)
 
@@ -155,6 +160,7 @@ describe('trending-topics', () => {
         // prior/concurrent request with the same min_score=10 query that predates topicId1,
         // failing the assertion below for up to the cache TTL even though the live filter is
         // correct.
+        await refreshMaterializedViewForTest('mv_trending_topics')
         const request = createRequest()
         await request.authenticateAs(admin)
         const response = await request
@@ -195,6 +201,7 @@ describe('trending-topics', () => {
           testIds.push(feedId, topicId, userId)
         }
 
+        await refreshMaterializedViewForTest('mv_trending_topics')
         const request = createRequest()
 
         // Get first page
@@ -238,6 +245,7 @@ describe('trending-topics', () => {
       })
 
       it('should reject invalid cursor with 400', async () => {
+        await refreshMaterializedViewForTest('mv_trending_topics')
         const request = createRequest()
 
         // Invalid base64
@@ -253,6 +261,7 @@ describe('trending-topics', () => {
       })
 
       it('should reject invalid time_range with 400', async () => {
+        await refreshMaterializedViewForTest('mv_trending_topics')
         const request = createRequest()
 
         await request.get('/api/v1/trending-topics?time_range=invalid').expect(400)
@@ -261,6 +270,7 @@ describe('trending-topics', () => {
       })
 
       it('should reject negative min_score with 400', async () => {
+        await refreshMaterializedViewForTest('mv_trending_topics')
         const request = createRequest()
 
         await request.get('/api/v1/trending-topics?min_score=-1').expect(400)
