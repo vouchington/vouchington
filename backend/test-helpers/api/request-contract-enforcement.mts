@@ -11,7 +11,14 @@ export const REQUEST_CONTRACT_VALIDATION_MISSING = 'REQUEST_CONTRACT_VALIDATION_
 export const REQUEST_CONTRACT_OPERATION_MISMATCH = 'REQUEST_CONTRACT_OPERATION_MISMATCH'
 
 type RouteMethod = 'delete' | 'get' | 'patch' | 'post' | 'put'
-type ContractViolation = Error & { code: string }
+class ContractViolation extends Error {
+  readonly code: string
+
+  constructor(code: string, message: string) {
+    super(message)
+    this.code = code
+  }
+}
 type RoutePatch = Application['route'] & { requestContractEnforced?: true }
 
 const VIOLATIONS_KEY = '__vouchaRequestContractViolations'
@@ -98,7 +105,7 @@ function mismatch(operation: string, validated: string): ContractViolation {
 }
 
 function violation(code: string, message: string): ContractViolation {
-  return Object.assign(new Error(message), { code })
+  return new ContractViolation(code, message)
 }
 
 function record(error: ContractViolation): void {
