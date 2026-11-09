@@ -15,6 +15,7 @@ const CAP = 32
 
 /** A 10,000-report target must not increase the shared summary sample or report detail work. */
 export async function runModerationClusterCappedScenarios(): Promise<void> {
+  await moderationReportsWorkConfig.waitForInitialization()
   const restore = overrideDynamicConfigFieldsForTest(moderationReportsWorkConfig, {
     cluster_report_count_cap: CAP,
   })
@@ -68,6 +69,7 @@ export async function runModerationClusterCappedScenarios(): Promise<void> {
     assert(hot)
     await captureDetails('moderation-cluster-hot-reports-asc', hot, true)
     await captureDetails('moderation-cluster-hot-reports-desc', hot, false)
+    moderationReportsWorkConfig.fields.set('cluster_report_count_cap', CAP)
     await captureContext()
   } finally {
     restore()
