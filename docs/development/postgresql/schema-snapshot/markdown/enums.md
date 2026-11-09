@@ -1030,6 +1030,13 @@
 - `missing_account_token`
 - `stale_evidence`
 
+## `moderation_ai_rerun_statuses`
+
+- `active`
+- `succeeded`
+- `failed`
+- `expired`
+
 ## `moderation_appeal_actions`
 
 - `accept`

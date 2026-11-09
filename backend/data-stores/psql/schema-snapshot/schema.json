@@ -731,6 +731,9 @@
         "stale_evidence"
       ]
     },
+    "moderation_ai_rerun_statuses": {
+      "values": ["active", "succeeded", "failed", "expired"]
+    },
     "moderation_appeal_actions": {
       "values": ["accept", "deny", "reduce"]
     },
@@ -72332,6 +72335,230 @@
       },
       "uniqueConstraints": {}
     },
+    "moderation_appeal_resolution_runs": {
+      "checkConstraints": {
+        "moderation_appeal_resolution_runs_check": "CHECK (((completed_at IS NULL) = (ai_drafted_at IS NULL)))"
+      },
+      "columns": {
+        "ai_drafted_at": {
+          "collation": null,
+          "comment": "Draft timestamp saved by the completing worker; set exactly when completed_at is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": "Committed with the actual draft and lifecycle marker; success wins over delayed failure observations.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "expired_at": {
+          "collation": null,
+          "comment": "Worker completed without saving because this generation no longer applies.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "failed_at": {
+          "collation": null,
+          "comment": "Definitive terminal worker failure, excluding retries and provider deferrals.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "latest_lifecycle_change_id": {
+          "collation": null,
+          "comment": "Lifecycle change committed with the saved draft; cleared if that change is deleted and never supplies current appeal state.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "moderation_appeal_id": {
+          "collation": null,
+          "comment": "Appeal owning this exact admitted request token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "status": {
+          "collation": null,
+          "comment": "Outcome derived from durable lifecycle facts; missing generations remain inconclusive.",
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "\nCASE\n    WHEN (completed_at IS NOT NULL) THEN 'succeeded'::moderation_ai_rerun_statuses\n    WHEN (failed_at IS NOT NULL) THEN 'failed'::moderation_ai_rerun_statuses\n    WHEN (expired_at IS NOT NULL) THEN 'expired'::moderation_ai_rerun_statuses\n    ELSE 'active'::moderation_ai_rerun_statuses\nEND",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "moderation_ai_rerun_statuses"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last mutation timestamp maintained by the shared trigger.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable manual appeal AI admissions and outcomes; bounded AI rerun retention preserves recovery beyond queue cleanup.",
+      "foreignKeys": {
+        "fk_moderation_appeal_resolution_runs_latest_lifecycle_change_id": {
+          "columns": ["latest_lifecycle_change_id"],
+          "definition": "FOREIGN KEY (latest_lifecycle_change_id) REFERENCES moderation_appeal_lifecycle_changes(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "moderation_appeal_lifecycle_changes",
+          "validated": true
+        },
+        "moderation_appeal_resolution_runs_moderation_appeal_id_fkey": {
+          "columns": ["moderation_appeal_id"],
+          "definition": "FOREIGN KEY (moderation_appeal_id) REFERENCES moderation_appeals(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "moderation_appeals",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_moderation_appeal_resolution_runs__lifecycle_change_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_appeal_resolution_runs__lifecycle_change_id ON public.moderation_appeal_resolution_runs USING btree (latest_lifecycle_change_id) WHERE (latest_lifecycle_change_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "latest_lifecycle_change_id",
+              "descending": false,
+              "expression": "latest_lifecycle_change_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(latest_lifecycle_change_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "moderation_appeal_resolution_runs_moderation_appeal_id_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_appeal_resolution_runs_moderation_appeal_id_id_key ON public.moderation_appeal_resolution_runs USING btree (moderation_appeal_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "moderation_appeal_id",
+              "descending": false,
+              "expression": "moderation_appeal_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "moderation_appeal_resolution_runs_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_appeal_resolution_runs_pkey ON public.moderation_appeal_resolution_runs USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_moderation_appeal_resolution_runs_updated_at": "CREATE TRIGGER trigger_moderation_appeal_resolution_runs_updated_at BEFORE UPDATE ON public.moderation_appeal_resolution_runs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "moderation_appeal_resolution_runs_moderation_appeal_id_id_key": {
+          "columns": ["moderation_appeal_id", "id"],
+          "definition": "UNIQUE (moderation_appeal_id, id)"
+        }
+      }
+    },
     "moderation_appeals": {
       "checkConstraints": {
         "chk_moderation_appeals__post_removal_kind_scope": "CHECK ((((post_id IS NOT NULL) AND (post_removal_kind IS NOT NULL)) OR ((post_id IS NULL) AND (post_removal_kind IS NULL))))",
@@ -74919,6 +75146,177 @@
             "rss_feed_item_id"
           ],
           "definition": "UNIQUE NULLS NOT DISTINCT (resolution_action, post_id, reported_user_id, hostname_id, rss_feed_item_id)"
+        }
+      }
+    },
+    "moderation_report_judgement_runs": {
+      "checkConstraints": {},
+      "columns": {
+        "completed_at": {
+          "collation": null,
+          "comment": "Committed with the saved judgement; success takes precedence over a delayed failure observation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "expired_at": {
+          "collation": null,
+          "comment": "Worker completed without a result because the request no longer applies.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "failed_at": {
+          "collation": null,
+          "comment": "Definitive terminal worker failure, never a retry or provider deferral.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "moderation_report_id": {
+          "collation": null,
+          "comment": "Report whose exact admitted generation this run records.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "status": {
+          "collation": null,
+          "comment": "Outcome derived from durable lifecycle facts; a missing record is inconclusive.",
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "\nCASE\n    WHEN (completed_at IS NOT NULL) THEN 'succeeded'::moderation_ai_rerun_statuses\n    WHEN (failed_at IS NOT NULL) THEN 'failed'::moderation_ai_rerun_statuses\n    WHEN (expired_at IS NOT NULL) THEN 'expired'::moderation_ai_rerun_statuses\n    ELSE 'active'::moderation_ai_rerun_statuses\nEND",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "moderation_ai_rerun_statuses"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last mutation timestamp maintained by the shared trigger.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable manual report judgement admissions and outcomes, independent of queue retention; retired by bounded AI rerun retention.",
+      "foreignKeys": {
+        "moderation_report_judgement_runs_moderation_report_id_fkey": {
+          "columns": ["moderation_report_id"],
+          "definition": "FOREIGN KEY (moderation_report_id) REFERENCES moderation_reports(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "moderation_reports",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "moderation_report_judgement_runs_moderation_report_id_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_report_judgement_runs_moderation_report_id_id_key ON public.moderation_report_judgement_runs USING btree (moderation_report_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "moderation_report_id",
+              "descending": false,
+              "expression": "moderation_report_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "moderation_report_judgement_runs_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_report_judgement_runs_pkey ON public.moderation_report_judgement_runs USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_moderation_report_judgement_runs_updated_at": "CREATE TRIGGER trigger_moderation_report_judgement_runs_updated_at BEFORE UPDATE ON public.moderation_report_judgement_runs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "moderation_report_judgement_runs_moderation_report_id_id_key": {
+          "columns": ["moderation_report_id", "id"],
+          "definition": "UNIQUE (moderation_report_id, id)"
         }
       }
     },
