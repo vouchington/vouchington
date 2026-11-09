@@ -38,6 +38,8 @@
     "@services/activitypub-delivery": "workspace:^",
     "@services/admin-imports": "workspace:^",
     "@services/ai-usage": "workspace:^",
+    "@services/ap-inbox-activities": "workspace:^",
+    "@services/api-keys": "workspace:^",
     "@services/articles": "workspace:^",
     "@services/autotagger": "workspace:^",
     "@services/bedrock-embeddings-batch": "workspace:^",
