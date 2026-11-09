@@ -71951,6 +71951,38 @@
         }
       },
       "indexes": {
+        "idx_membership_provider_products__active_sku": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_membership_provider_products__active_sku ON public.membership_provider_products USING btree (membership_provider_context_id, sku_id) WHERE ((retired_at IS NULL) AND (sku_id IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "membership_provider_context_id",
+              "descending": false,
+              "expression": "membership_provider_context_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "sku_id",
+              "descending": false,
+              "expression": "sku_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((retired_at IS NULL) AND (sku_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "idx_membership_provider_products__currency_code": {
           "accessMethod": "btree",
           "constraintBacked": false,

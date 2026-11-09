@@ -43,6 +43,7 @@ _none_
 
 **Indexes:**
 
+- `idx_membership_provider_products__active_sku`: `CREATE UNIQUE INDEX idx_membership_provider_products__active_sku ON public.membership_provider_products USING btree (membership_provider_context_id, sku_id) WHERE ((retired_at IS NULL) AND (sku_id IS NOT NULL))`
 - `idx_membership_provider_products__currency_code`: `CREATE INDEX idx_membership_provider_products__currency_code ON public.membership_provider_products USING btree (currency_code)`
 - `idx_membership_provider_products__id_context`: `CREATE UNIQUE INDEX idx_membership_provider_products__id_context ON public.membership_provider_products USING btree (id, membership_product_id, membership_provider_context_id)`
 - `idx_membership_provider_products__membership_product_id`: `CREATE INDEX idx_membership_provider_products__membership_product_id ON public.membership_provider_products USING btree (membership_product_id)`
