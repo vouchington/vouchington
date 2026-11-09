@@ -1,6 +1,6 @@
 import { beforeAll, onTestFinished, describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import { deleteTestIndividual } from '@voucha/test-helpers/entities/individuals'
+import { commitHouseholdAdmissionForTest } from '@voucha/test-helpers/household-admission'
 import {
   createTestUserDirect,
   createTestUsersDirect,
@@ -109,15 +109,14 @@ describe('household admission limits', () => {
     const joiners = await createTestUsersDirect(5)
     const household = await createHousehold(owner)
     const results = await Promise.allSettled(
-      joiners.map(async joiner => {
-        await using transaction = await beginTransaction()
-        const inserted = await insertHouseholdMember(
-          { householdId: household.id, individualId: joiner.individual_id!, relationship: null },
-          { query: transaction },
-        )
-        await transaction.commit()
-        return inserted
-      }),
+      joiners.map(joiner =>
+        commitHouseholdAdmissionForTest(query =>
+          insertHouseholdMember(
+            { householdId: household.id, individualId: joiner.individual_id!, relationship: null },
+            { query },
+          ),
+        ),
+      ),
     )
     const admitted = results.filter(result => result.status === 'fulfilled')
     const refused = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
@@ -145,15 +144,14 @@ describe('household admission limits', () => {
       insertTestHousehold(owners[4]!.id),
     ])
     const results = await Promise.allSettled(
-      targets.map(async target => {
-        await using transaction = await beginTransaction()
-        const inserted = await insertHouseholdMember(
-          { householdId: target.id, individualId: joiner.individual_id!, relationship: null },
-          { query: transaction },
-        )
-        await transaction.commit()
-        return inserted
-      }),
+      targets.map(target =>
+        commitHouseholdAdmissionForTest(query =>
+          insertHouseholdMember(
+            { householdId: target.id, individualId: joiner.individual_id!, relationship: null },
+            { query },
+          ),
+        ),
+      ),
     )
     expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
     const refused = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))

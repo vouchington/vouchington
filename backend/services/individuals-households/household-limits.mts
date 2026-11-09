@@ -128,6 +128,7 @@ export async function insertHouseholdMember(
               WHERE individual_id = ${individualId} LIMIT ${householdsPerIndividual}
             ) joined
           ) < ${householdsPerIndividual}
+        LIMIT 1
         ON CONFLICT DO NOTHING`,
       options,
     )
