@@ -1,7 +1,5 @@
-import {
-  VOTE_HISTORY_POST_COUNT,
-  VOTE_HISTORY_REVOTE_COUNT,
-} from './seed-data/recommended-topics-vote-history.mts'
+export const VOTE_HISTORY_POST_COUNT = 5_000
+export const VOTE_HISTORY_REVOTE_COUNT = 500
 
 export const POST_VOTE_STATE_TRANSITION_SCENARIO_IDS = [
   'post-vote-state-initial',
