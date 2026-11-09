@@ -56,6 +56,7 @@
               "target_user_id": "00000000-0000-7000-8400-000000000101"
             }
           ],
+          "summary_capped": false,
           "target_available": true,
           "target_content": null,
           "target_is_restricted": false,
@@ -116,6 +117,7 @@
               "target_user_id": "00000000-0000-7000-8400-000000000101"
             }
           ],
+          "summary_capped": false,
           "target_available": true,
           "target_content": null,
           "target_is_restricted": false,
@@ -176,6 +178,7 @@
               "target_user_id": "00000000-0000-7000-8400-000000000101"
             }
           ],
+          "summary_capped": false,
           "target_available": true,
           "target_content": null,
           "target_is_restricted": false,
@@ -196,7 +199,8 @@
       ],
       "report_count": 3,
       "report_count_capped": false,
-      "signal": "content_hash_duplicate"
+      "signal": "content_hash_duplicate",
+      "summary_capped": false
     }
   ],
   "page_info": {
@@ -259,6 +263,7 @@
           "target_user_id": "00000000-0000-7000-8400-000000000101"
         }
       ],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,
@@ -319,6 +324,7 @@
           "target_user_id": "00000000-0000-7000-8400-000000000101"
         }
       ],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,
@@ -422,6 +428,7 @@
           "target_user_id": "00000000-0000-7000-8000-000000000201"
         }
       ],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,
@@ -482,6 +489,7 @@
           "target_user_id": "00000000-0000-7000-8400-000000000101"
         }
       ],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,

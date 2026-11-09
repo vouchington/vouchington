@@ -8,16 +8,16 @@ const TARGET_COLUMNS = ['post_id', 'reported_user_id', 'hostname_id', 'rss_feed_
 /** Each page target has one FK; separate branches keep every lookup on that FK's index. */
 export function appendPageReportBranches(
   query: SQLStatement,
-  clusterAlias: 'p' | 'g',
   status: ModerationReportStatus,
+  sampleLimit: number,
 ): void {
   for (const [index, targetColumn] of TARGET_COLUMNS.entries()) {
     if (index > 0) query.append(sql` UNION ALL `)
-    query.append(sql`SELECT r.reporter_user_id, r.created_at, r.reason
-      FROM moderation_reports r WHERE `)
-    query.append(`r.${targetColumn} = ${clusterAlias}.${targetColumn} AND `)
+    query.append(sql`(SELECT r.id, r.reporter_user_id, r.reason FROM moderation_reports r WHERE `)
+    query.append(`g.${targetColumn} IS NOT NULL AND r.${targetColumn} = g.${targetColumn} AND `)
     appendModerationReportStatusPredicate(query, 'r', status)
     appendIndexedReportOutcome(query, 'r', status)
+    query.append(sql` ORDER BY r.id DESC LIMIT ${sampleLimit})`)
   }
 }
 

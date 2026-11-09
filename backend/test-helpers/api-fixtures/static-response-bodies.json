@@ -1327,7 +1327,8 @@
         "target_content": null,
         "target_path": "/review/post-1",
         "target_user_id": "00000000-0000-7000-8400-000000000101",
-        "report_count_capped": false
+        "report_count_capped": false,
+        "summary_capped": false
       },
       {
         "admin_action_path": "/review/post-2",
@@ -1384,7 +1385,8 @@
         "target_content": null,
         "target_path": "/review/post-2",
         "target_user_id": "00000000-0000-7000-8400-000000000101",
-        "report_count_capped": false
+        "report_count_capped": false,
+        "summary_capped": false
       },
       {
         "admin_action_path": "/review/user-suspect",
@@ -1481,7 +1483,8 @@
         "target_content": null,
         "target_path": "/review/user-suspect",
         "target_user_id": "00000000-0000-7000-8000-000000000201",
-        "report_count_capped": false
+        "report_count_capped": false,
+        "summary_capped": false
       },
       {
         "admin_action_path": "/review/post-3",
@@ -1538,7 +1541,8 @@
         "target_content": null,
         "target_path": "/review/post-3",
         "target_user_id": "00000000-0000-7000-8400-000000000101",
-        "report_count_capped": false
+        "report_count_capped": false,
+        "summary_capped": false
       }
     ],
     "duplicate_clusters": [
@@ -1599,7 +1603,8 @@
             "target_content": null,
             "target_path": "/review/post-1",
             "target_user_id": "00000000-0000-7000-8400-000000000101",
-            "report_count_capped": false
+            "report_count_capped": false,
+            "summary_capped": false
           },
           {
             "admin_action_path": "/review/post-2",
@@ -1656,7 +1661,8 @@
             "target_content": null,
             "target_path": "/review/post-2",
             "target_user_id": "00000000-0000-7000-8400-000000000101",
-            "report_count_capped": false
+            "report_count_capped": false,
+            "summary_capped": false
           },
           {
             "admin_action_path": "/review/post-3",
@@ -1713,7 +1719,8 @@
             "target_content": null,
             "target_path": "/review/post-3",
             "target_user_id": "00000000-0000-7000-8400-000000000101",
-            "report_count_capped": false
+            "report_count_capped": false,
+            "summary_capped": false
           }
         ],
         "first_reported_at": "2026-06-01T12:05:00.000Z",
@@ -1728,7 +1735,8 @@
         ],
         "report_count": 3,
         "signal": "content_hash_duplicate",
-        "report_count_capped": false
+        "report_count_capped": false,
+        "summary_capped": false
       }
     ],
     "page_info": {
@@ -1768,7 +1776,8 @@
         "target_content": null,
         "target_path": "/review/native-fourth-post",
         "target_user_id": "00000000-0000-7000-8400-000000000104",
-        "report_count_capped": false
+        "report_count_capped": false,
+        "summary_capped": false
       },
       {
         "admin_action_path": "/review/native-fifth-post",
@@ -1797,7 +1806,8 @@
         "target_content": null,
         "target_path": "/review/native-fifth-post",
         "target_user_id": "00000000-0000-7000-8400-000000000105",
-        "report_count_capped": false
+        "report_count_capped": false,
+        "summary_capped": false
       },
       {
         "admin_action_path": "/review/native-sixth-post",
@@ -1826,7 +1836,8 @@
         "target_content": null,
         "target_path": "/review/native-sixth-post",
         "target_user_id": "00000000-0000-7000-8400-000000000106",
-        "report_count_capped": false
+        "report_count_capped": false,
+        "summary_capped": false
       }
     ],
     "duplicate_clusters": [
@@ -1859,7 +1870,8 @@
             "target_content": null,
             "target_path": "/review/native-sixth-post",
             "target_user_id": "00000000-0000-7000-8400-000000000106",
-            "report_count_capped": false
+            "report_count_capped": false,
+            "summary_capped": false
           },
           {
             "admin_action_path": "/review/native-fourth-post",
@@ -1888,7 +1900,8 @@
             "target_content": null,
             "target_path": "/review/native-fourth-post",
             "target_user_id": "00000000-0000-7000-8400-000000000104",
-            "report_count_capped": false
+            "report_count_capped": false,
+            "summary_capped": false
           },
           {
             "admin_action_path": "/review/native-fifth-post",
@@ -1917,7 +1930,8 @@
             "target_content": null,
             "target_path": "/review/native-fifth-post",
             "target_user_id": "00000000-0000-7000-8400-000000000105",
-            "report_count_capped": false
+            "report_count_capped": false,
+            "summary_capped": false
           }
         ],
         "first_reported_at": "2026-06-01T12:00:00.000Z",
@@ -1932,7 +1946,8 @@
         ],
         "report_count": 7,
         "signal": "content_hash_duplicate",
-        "report_count_capped": false
+        "report_count_capped": false,
+        "summary_capped": false
       }
     ],
     "page_info": {

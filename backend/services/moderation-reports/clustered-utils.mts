@@ -90,6 +90,7 @@ export function makeDuplicateCluster(
     post_count: clusters.length,
     report_count: clusters.reduce((sum, cluster) => sum + cluster.report_count, 0),
     report_count_capped: clusters.some(cluster => cluster.report_count_capped),
+    summary_capped: clusters.some(cluster => cluster.summary_capped),
     reason_breakdown: mergeReasonBreakdowns(clusters),
     first_reported_at: new Date(
       Math.min(...clusters.map(cluster => cluster.first_reported_at.getTime())),

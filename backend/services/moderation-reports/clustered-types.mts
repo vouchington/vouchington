@@ -28,6 +28,7 @@ export type ModerationReportEntityCluster = {
   entity_id: string
   report_count: number
   report_count_capped: boolean
+  summary_capped: boolean
   reporter_count: number
   reason_breakdown: ModerationReportReasonBreakdown
   first_reported_at: Date
@@ -49,6 +50,7 @@ export type ModerationReportDuplicateCluster = {
   post_count: number
   report_count: number
   report_count_capped: boolean
+  summary_capped: boolean
   reason_breakdown: ModerationReportReasonBreakdown
   first_reported_at: Date
   last_reported_at: Date

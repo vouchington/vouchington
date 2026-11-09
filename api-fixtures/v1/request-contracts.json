@@ -5787,6 +5787,9 @@
                           },
                           "type": "array"
                         },
+                        "summary_capped": {
+                          "type": "boolean"
+                        },
                         "target_available": {
                           "anyOf": [
                             {
@@ -5857,6 +5860,7 @@
                         "report_count_capped",
                         "reporter_count",
                         "reports",
+                        "summary_capped",
                         "target_available",
                         "target_content",
                         "target_is_restricted",
@@ -5913,6 +5917,9 @@
                   "signal": {
                     "enum": ["content_hash_duplicate", "embeddings_similarity"],
                     "type": "string"
+                  },
+                  "summary_capped": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -5924,7 +5931,8 @@
                   "reason_breakdown",
                   "report_count",
                   "report_count_capped",
-                  "signal"
+                  "signal",
+                  "summary_capped"
                 ],
                 "type": "object"
               },
@@ -6035,6 +6043,9 @@
                     },
                     "type": "array"
                   },
+                  "summary_capped": {
+                    "type": "boolean"
+                  },
                   "target_available": {
                     "anyOf": [
                       {
@@ -6105,6 +6116,7 @@
                   "report_count_capped",
                   "reporter_count",
                   "reports",
+                  "summary_capped",
                   "target_available",
                   "target_content",
                   "target_is_restricted",

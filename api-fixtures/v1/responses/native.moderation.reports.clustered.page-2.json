@@ -25,6 +25,7 @@
           "report_count_capped": false,
           "reporter_count": 1,
           "reports": [],
+          "summary_capped": false,
           "target_available": true,
           "target_content": null,
           "target_is_restricted": false,
@@ -54,6 +55,7 @@
           "report_count_capped": false,
           "reporter_count": 3,
           "reports": [],
+          "summary_capped": false,
           "target_available": true,
           "target_content": null,
           "target_is_restricted": false,
@@ -83,6 +85,7 @@
           "report_count_capped": false,
           "reporter_count": 2,
           "reports": [],
+          "summary_capped": false,
           "target_available": true,
           "target_content": null,
           "target_is_restricted": false,
@@ -103,7 +106,8 @@
       ],
       "report_count": 7,
       "report_count_capped": false,
-      "signal": "content_hash_duplicate"
+      "signal": "content_hash_duplicate",
+      "summary_capped": false
     }
   ],
   "page_info": {
@@ -135,6 +139,7 @@
       "report_count_capped": false,
       "reporter_count": 3,
       "reports": [],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,
@@ -164,6 +169,7 @@
       "report_count_capped": false,
       "reporter_count": 2,
       "reports": [],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,
@@ -193,6 +199,7 @@
       "report_count_capped": false,
       "reporter_count": 1,
       "reports": [],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,

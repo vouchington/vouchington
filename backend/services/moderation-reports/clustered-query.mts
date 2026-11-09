@@ -18,7 +18,6 @@ import type {
   SelectClusterRowsOptions,
 } from './clustered-types.mts'
 import { appendCandidateCursorClause, groupReportsByCluster } from './clustered-utils.mts'
-import { appendModerationReportStatusPredicate } from './sort-sql.mts'
 import { moderationReportClusterCandidatesSql } from './clustered-candidates.mts'
 import {
   appendPageReportBranches,
@@ -32,7 +31,8 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
   const query = sql`/* listClusteredModerationReports:clusters */
     WITH paged_entities AS (
       SELECT c.entity_type, c.entity_id,
-        c.post_id, c.reported_user_id, c.hostname_id, c.rss_feed_item_id
+        c.post_id, c.reported_user_id, c.hostname_id, c.rss_feed_item_id,
+        c.first_reported_at, c.last_reported_at
       FROM `
   query.append(moderationReportClusterCandidatesSql(sortAsc))
   query.append(sql` c WHERE `)
@@ -48,38 +48,12 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
       : sql` ORDER BY c.sort_reported_at DESC, c.entity_id DESC, c.entity_type DESC LIMIT ${limit + 1}`,
   )
   query.append(sql`
-    ),
-    entity_groups AS (
-      SELECT
-        p.entity_type,
-        p.entity_id,
-        p.post_id, p.reported_user_id, p.hostname_id, p.rss_feed_item_id,
-        COUNT(DISTINCT r.reporter_user_id)::int AS reporter_count,
-        MIN(r.created_at) AS first_reported_at,
-        MAX(r.created_at) AS last_reported_at
-      FROM paged_entities p
-      JOIN LATERAL (`)
-  appendPageReportBranches(query, 'p', status)
-  query.append(sql`) r ON true
-      GROUP BY p.entity_type, p.entity_id, p.post_id, p.reported_user_id,
-        p.hostname_id, p.rss_feed_item_id
     )
     SELECT
       g.entity_type,
       g.entity_id,
-      LEAST(report_counts.report_count, ${reportCountCap})::integer AS report_count,
-      report_counts.report_count > ${reportCountCap} AS report_count_capped,
-      g.reporter_count,
-      (
-        SELECT jsonb_object_agg(reason_rows.reason, reason_rows.report_count)
-        FROM (
-          SELECT rr.reason, COUNT(*)::int AS report_count
-          FROM LATERAL (`)
-  appendPageReportBranches(query, 'g', status)
-  query.append(sql`) rr
-          GROUP BY rr.reason
-        ) reason_rows
-      ) AS reason_counts,
+      report_sample.reports,
+      report_sample.report_count,
       g.first_reported_at,
       g.last_reported_at,
       to_char(`)
@@ -90,13 +64,16 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
   query.append(sql`,
       `)
   query.append(reportTargetIsRestrictedSql())
-  query.append(sql` AS target_is_restricted FROM entity_groups g
+  query.append(sql` AS target_is_restricted FROM paged_entities g
     JOIN LATERAL (
-      SELECT COUNT(*)::integer AS report_count FROM (
+      SELECT COUNT(*)::integer AS report_count,
+        jsonb_agg(jsonb_build_object('reporter_user_id', sample.reporter_user_id, 'reason', sample.reason)
+          ORDER BY sample.id DESC) AS reports
+      FROM (
   `)
-  appendPageReportBranches(query, 'g', status)
-  query.append(sql` LIMIT ${reportCountCap + 1}) bounded_reports
-    ) report_counts ON true
+  appendPageReportBranches(query, status, reportCountCap + 1)
+  query.append(sql` LIMIT ${reportCountCap + 1}) sample
+    ) report_sample ON true
     JOIN LATERAL (`)
   appendPageReportHeadBranches(query, status)
   query.append(sql`) head ON true
@@ -114,7 +91,26 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
       : sql`g.entity_id DESC, g.entity_type DESC`,
   )
   query.append(sql` LIMIT ${limit + 1}`)
-  return read<ClusterRow>(query).then(result => result.rows)
+  return read<
+    ClusterRow & {
+      reports: Array<{ reporter_user_id: string | null; reason: string }> | null
+    }
+  >(query).then(result =>
+    result.rows.map(({ reports, report_count, ...row }) => {
+      const sample = (reports ?? []).slice(0, reportCountCap)
+      const reasons: Record<string, number> = {}
+      for (const report of sample) reasons[report.reason] = (reasons[report.reason] ?? 0) + 1
+      return {
+        ...row,
+        report_count: Math.min(report_count, reportCountCap),
+        report_count_capped: report_count > reportCountCap,
+        reporter_count: new Set(
+          sample.flatMap(report => (report.reporter_user_id ? [report.reporter_user_id] : [])),
+        ).size,
+        reason_counts: reasons,
+      }
+    }),
+  )
 }
 
 export async function selectReportsByCluster(
