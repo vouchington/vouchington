@@ -65,8 +65,12 @@ export async function deleteAgentModerationRetentionPage(
   // Every surviving page member has a durable blocker. A matching lifecycle event wakes it;
   // an unchanged daily run never selects it again. Source deletes release eligible transparency
   // cohorts before decrementing, and privately drain sealed cohorts below the disclosure floor.
+  // A post edit committing before this transaction's blocker is visible cannot register hash
+  // work, so each new hash blocker publishes its post's work item in this same transaction; the
+  // next run rechecks it against the committed hash once, then stays quiet.
   await query(
     `/* blockAgentModerationRetentionCandidates */
+     WITH blocked AS (
      UPDATE agent_moderations moderation
      SET retention_due_at = NULL,
          retention_blocked_reason = CASE
@@ -127,7 +131,14 @@ export async function deleteAgentModerationRetentionPage(
              LIMIT 1
            ) IS NULL
          )
-       )`,
+       )
+     RETURNING moderation.post_id, moderation.retention_blocked_reason
+     )
+     INSERT INTO agent_moderation_retention_post_work_items (post_id)
+     SELECT DISTINCT post_id FROM blocked WHERE retention_blocked_reason = 'hash'
+     ON CONFLICT (post_id) DO UPDATE
+       SET cursor_moderation_record_id = '00000000-0000-0000-0000-000000000000',
+           changed_at = CURRENT_TIMESTAMP`,
     [page.map(row => row.id), page.map(row => row.post_id)],
   )
   return deletedRows.length
