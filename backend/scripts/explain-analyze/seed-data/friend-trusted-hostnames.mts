@@ -2,7 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { HOSTNAME_COUNT, seedUuid } from './common.mts'
 
 export const FRIEND_TRUST_VIEWER_INDEX = 19_998
-export const FRIEND_TRUST_FOLLOW_COUNT = 10_000
+export const FRIEND_TRUST_FOLLOW_COUNT = 2_000
 // Longer than the default votes_per_friend_limit (20), so the per-friend bound is exercised.
 export const FRIEND_TRUST_VOTES_PER_FRIEND = 25
 // Only the newest follows are ever read (default friend_follow_limit is 1000), so only they carry ballots.
@@ -13,9 +13,10 @@ const DISTINCT_HOSTNAMES_PER_FRIEND = 18
 const FIRST_FRIEND_INDEX = 100
 
 /**
- * A viewer following 10k users whose ballot ledgers are long and re-vote the same hostnames. The
- * older ballot on a re-voted hostname is an upvote and the newer one a downvote, so latest-per-
- * hostname must pick the newest ballot.
+ * A viewer following twice the 1,000-follow default, whose friends' ballot ledgers are long and
+ * re-vote the same hostnames. The older ballot on a re-voted hostname is an upvote and the newer
+ * one a downvote, so latest-per-hostname must pick the newest ballot. Kept to 2k follows because a
+ * larger one-subject follow skew flips the generic plan of the follow-context vote lookup.
  */
 export async function seedFriendTrustedHostnames(): Promise<void> {
   console.log(
