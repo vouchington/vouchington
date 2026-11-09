@@ -21,6 +21,7 @@ import {
 import { retireMonthlyPartitionCandidate } from '@data-stores/psql/migration-runner/monthly-partitions'
 import { getDateFromUUIDv7, mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { recordAiUsage } from '../record.mts'
+import { refreshMaterializedViewForTest } from '../../../test-helpers/refresh-materialized-view-for-test.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
 import { prepareAiUsageMonth } from '@data-stores/psql/ai-usage-monthly-partition'
 
@@ -200,6 +201,7 @@ describe('backdated AI usage on retired monthly history', () => {
       reason: 'in-flight',
     })
     expect(await hasTestAiUsageResponseKey(responseId)).toBe(true)
+    await refreshMaterializedViewForTest('mv_ai_usage_community_totals')
     let after: string | undefined
     let ownedTotal:
       | Awaited<ReturnType<typeof getCommunityAiCostTotals>>['results'][number]

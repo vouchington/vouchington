@@ -17,6 +17,7 @@ import {
   testAiUsageCandidate,
 } from '@voucha/test-helpers/entities/ai-usage-monthly-partitions'
 import { retireMonthlyPartitionCandidate } from '@data-stores/psql/migration-runner/monthly-partitions'
+import { refreshMaterializedViewForTest } from '../../test-helpers/refresh-materialized-view-for-test.mts'
 import { getCommunityAiCostTotals } from '../ai-usage/totals.mts'
 import { readClassifierRunUsage } from '../classifier-runs/usage-report-runs.mts'
 import { cleanupAiUsageRecords } from './cleanup-ai-usage.mts'
@@ -35,6 +36,7 @@ async function readCommunityCost(communityId: string): Promise<{
   inputTokens: number
   outputTokens: number
 }> {
+  await refreshMaterializedViewForTest('mv_ai_usage_community_totals')
   let after: string | undefined
   for (;;) {
     // Each page is bounded; this is an administrative all-community ranking, not a retention sweep.

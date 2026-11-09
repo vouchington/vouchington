@@ -11,6 +11,7 @@ const REFRESHABLE_MATERIALIZED_VIEWS = new Set([
   'mv_trending_rss_feeds',
   'mv_trending_communities',
   'mv_trending_topics',
+  'mv_ai_usage_community_totals',
   'mv_revenue_memberships',
   'mv_revenue_changes',
 ])

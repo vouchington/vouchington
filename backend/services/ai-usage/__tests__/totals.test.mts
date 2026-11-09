@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import {
   acquireTestAiUsageDateReservation,
   createTestUser,
+  deleteTestCommunity,
   insertTestAiUsageRecord,
   insertTestCommunity,
 } from '@voucha/test-helpers'
@@ -9,6 +10,7 @@ import { encodeCursor } from '@modules/pagination'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { MAX_MONEY_AMOUNT } from '@ts-shared/money'
 import type { PrivateUser } from '@services/users/types'
+import { refreshMaterializedViewForTest } from '../../../test-helpers/refresh-materialized-view-for-test.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
 
 describe('getCommunityAiCostTotals', () => {
@@ -48,14 +50,17 @@ describe('getCommunityAiCostTotals', () => {
       }),
     ])
 
+    // The ranking walks ties by community id descending.
     const tiedIds = communities
       .slice(0, 2)
       .map(community => community.id)
       .toSorted()
+      .toReversed()
     const afterFirstTied = encodeCursor({
       total_cost_microunits: tiedCost,
       id: tiedIds[0],
     })
+    await refreshMaterializedViewForTest('mv_ai_usage_community_totals')
     const secondPage = await getCommunityAiCostTotals({ limit: 100, after: afterFirstTied })
     expect(secondPage.results[0]).toMatchObject({
       community_id: tiedIds[1],
@@ -92,6 +97,7 @@ describe('getCommunityAiCostTotals', () => {
       }),
     ])
 
+    await refreshMaterializedViewForTest('mv_ai_usage_community_totals')
     const page = await getCommunityAiCostTotals({ limit: 100 })
     expect(page.results.find(result => result.community_id === community.id)).toMatchObject({
       community_id: community.id,
@@ -117,6 +123,26 @@ describe('getCommunityAiCostTotals', () => {
       after = nextPage.page_info.end_cursor ?? undefined
     }
     expect(found).toBe(true)
+  })
+
+  it('hides a community deleted after the last refresh and lags new usage until the next one', async () => {
+    const community = await insertTestCommunity({ createdById: user.id })
+    const cost = String(MAX_MONEY_AMOUNT - 201)
+    await insertTestAiUsageRecord({ communityId: community.id, costMicrounits: cost })
+    await refreshMaterializedViewForTest('mv_ai_usage_community_totals')
+    const readTotal = async () =>
+      (await getCommunityAiCostTotals({ limit: 100 })).results.find(
+        result => result.community_id === community.id,
+      )
+    expect(await readTotal()).toMatchObject({ request_count: 1, total_cost: { amount: cost } })
+
+    await insertTestAiUsageRecord({ communityId: community.id, costMicrounits: '1' })
+    expect(await readTotal()).toMatchObject({ request_count: 1 })
+    await refreshMaterializedViewForTest('mv_ai_usage_community_totals')
+    expect(await readTotal()).toMatchObject({ request_count: 2 })
+
+    await deleteTestCommunity({ communityId: community.id, deletedById: user.id })
+    expect(await readTotal()).toBeUndefined()
   })
 
   it.each([
