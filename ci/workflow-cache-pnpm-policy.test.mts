@@ -56,6 +56,15 @@ describe('workflow cache and pnpm policies', () => {
     ).toBe(false)
   })
 
+  it('allows only the lingua-rs binary path in setup-backend', () => {
+    const path =
+      'node_modules/.pnpm/lingua-rs@${{ steps.lingua-rs.outputs.version }}/node_modules/lingua-rs/lingua_rs.*.node'
+    const setupBackend = `${action}setup-backend/action.yml`
+    expect(cachePathsAreAllowed(path, setupBackend)).toBe(true)
+    expect(cachePathsAreAllowed([path, 'node_modules'], setupBackend)).toBe(false)
+    expect(cachePathsAreAllowed(path, `${action}other/action.yml`)).toBe(false)
+  })
+
   it('rejects an unapproved flow-style cache step', () => {
     const source =
       'jobs: { test: { steps: [{ uses: actions/cache@sha, with: { path: node_modules } }] } }'

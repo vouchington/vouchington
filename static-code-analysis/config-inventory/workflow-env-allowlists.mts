@@ -42,6 +42,9 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'DOCKER_BUILD_SUMMARY',
   'DOCKER_CLI_EXPERIMENTAL',
   'HARNESS_AGENT_DISPATCH_ENABLED',
+  // Read by the lingua-rs package install script to skip its native binary download, not by repo
+  // TypeScript.
+  'LINGUA_RS_SKIP_DOWNLOAD',
   // Node.js consumes this before application code to disable its compile cache for precise V8
   // coverage in the native EXPLAIN preflight; it is not a repository TypeScript environment read.
   'NODE_DISABLE_COMPILE_CACHE',

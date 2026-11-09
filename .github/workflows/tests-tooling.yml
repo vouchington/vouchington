@@ -28,6 +28,8 @@ jobs:
     if: inputs.run_tooling
     runs-on: ubuntu-latest
     timeout-minutes: 26
+    env:
+      LINGUA_RS_SKIP_DOWNLOAD: '1'
     permissions:
       actions: read
       contents: read
@@ -110,6 +112,8 @@ jobs:
   i18n-route-bounds:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      LINGUA_RS_SKIP_DOWNLOAD: '1'
     permissions:
       actions: read
       contents: read

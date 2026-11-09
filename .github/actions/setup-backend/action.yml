@@ -2,10 +2,32 @@ name: Setup Backend
 description: >
   Sets up Node.js and pnpm, installs the full workspace, and builds email
   templates. The caller must run actions/checkout before invoking this action.
+  The lingua-rs native binary is restored from, and saved to, a cache keyed on
+  the locked lingua-rs version unless the job sets LINGUA_RS_SKIP_DOWNLOAD.
 
 runs:
   using: composite
   steps:
+    - name: Resolve locked lingua-rs version
+      id: lingua-rs
+      if: ${{ env.LINGUA_RS_SKIP_DOWNLOAD != '1' }}
+      shell: bash
+      run: |
+        version="$(grep -m1 -oE '^  lingua-rs@[0-9][^:]*' pnpm-lock.yaml | cut -d@ -f2)"
+        test -n "$version"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+    # Only the one native binary is cached, never node_modules: pnpm keeps files that already sit
+    # in a package directory, and the postinstall then finds a checksum-matching binary and makes
+    # no network call. The cache saves in this action's post step when the job succeeds.
+    - name: Cache lingua-rs native binary
+      if: ${{ env.LINGUA_RS_SKIP_DOWNLOAD != '1' }}
+      continue-on-error: true
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: '1'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: node_modules/.pnpm/lingua-rs@${{ steps.lingua-rs.outputs.version }}/node_modules/lingua-rs/lingua_rs.*.node
+        key: lingua-rs-${{ runner.os }}-${{ runner.arch }}-${{ steps.lingua-rs.outputs.version }}
     - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@90e878e740edd47d19dae5d0dd28866afd719a01 # v0.85.3
     - name: Build email-templates
       # Build explicitly so the backend can resolve @email-templates/core even
