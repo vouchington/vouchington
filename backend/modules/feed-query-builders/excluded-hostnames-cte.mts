@@ -25,7 +25,7 @@ export function buildExcludedHostnameIdsCTE(userId: string): SQLStatement {
       WHERE rel.subject_id = ${userId} AND rel.deleted_at IS NULL
     ),
     excluded_hostname_ids AS (
-      SELECT DISTINCT uh.id AS hostname_id
+      SELECT uh.id AS hostname_id
       FROM excluded_hostnames eh
       JOIN url_hostnames uh ON uh.reversed_hostname = eh.reversed_hostname
         OR uh.reversed_hostname LIKE eh.reversed_hostname || '.%'
