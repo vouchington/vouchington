@@ -13,6 +13,7 @@ import {
   createDynamicConfigTestBaseline,
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
+  pinDynamicConfigFields,
   resetDynamicConfigToTestBaseline,
   snapshotDynamicConfigFieldsForTest,
   type TestDynamicConfig,
@@ -110,6 +111,18 @@ describe('DynamicConfig test isolation helpers', () => {
 
     expect(() => overrideDynamicConfigFieldsForTest(config, { label: 1 })).toThrow('must be string')
     expect(config.fields).toEqual(new Map(original))
+  })
+
+  it('puts an override back after a refresh clears the field map', () => {
+    const config = makeConfig('example', { enabled: false, limit: 5, label: 'original' })
+    const restore = overrideDynamicConfigFieldsForTest(config, { limit: 8 })
+    config.fields.clear()
+    expect(config.fields.has('limit')).toBe(false)
+
+    pinDynamicConfigFields(config, { limit: 8 })
+    expect(config.fields.get('limit')).toBe(8)
+    restore()
+    expect(config.fields.get('limit')).toBe(5)
   })
 
   it('restores the exact overridden-field snapshot idempotently', () => {
