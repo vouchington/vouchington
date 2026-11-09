@@ -21324,6 +21324,9 @@
         "current_report_count": {
           "type": "number"
         },
+        "current_report_count_capped": {
+          "type": "boolean"
+        },
         "id": {
           "type": "string"
         },
@@ -21343,6 +21346,9 @@
             }
           ]
         },
+        "judged_report_count_capped": {
+          "type": "boolean"
+        },
         "public_response": {
           "type": "string"
         },
@@ -21353,10 +21359,12 @@
       },
       "required": [
         "current_report_count",
+        "current_report_count_capped",
         "id",
         "internal_response",
         "is_stale",
         "judged_report_count",
+        "judged_report_count_capped",
         "public_response",
         "recommended_action"
       ],

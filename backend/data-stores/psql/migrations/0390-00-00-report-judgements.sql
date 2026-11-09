@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgements (
   model text NOT NULL,
   context_hash text,
   context_report_count integer,
+  is_context_report_count_capped boolean NOT NULL DEFAULT false,
   context_note_hash text,
   context_max_reason_rank integer,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -76,7 +77,8 @@ COMMENT ON COLUMN moderation_report_judgements.internal_response IS 'Internal re
 COMMENT ON COLUMN moderation_report_judgements.model IS 'OpenAI model used for this judgement.';
 COMMENT ON COLUMN moderation_report_judgements.case_id IS 'The moderation case this judgement belongs to, if any.';
 COMMENT ON COLUMN moderation_report_judgements.context_hash IS 'Hash of the bounded report context used to generate this judgement.';
-COMMENT ON COLUMN moderation_report_judgements.context_report_count IS 'Total number of reports on the judged entity when this judgement was generated.';
+COMMENT ON COLUMN moderation_report_judgements.context_report_count IS 'Number of reports sampled on the judged entity when this judgement was generated, up to the configured cap.';
+COMMENT ON COLUMN moderation_report_judgements.is_context_report_count_capped IS 'Whether the judgement context report count was capped.';
 COMMENT ON COLUMN moderation_report_judgements.context_note_hash IS 'Hash of report notes in the bounded context, used for refresh decisions.';
 COMMENT ON COLUMN moderation_report_judgements.context_max_reason_rank IS 'Highest report reason severity rank in the bounded context when this judgement was generated.';
 COMMENT ON COLUMN moderation_report_judgements.dispatched_at IS 'Timestamp when auto-dispatch successfully processed this judgement. NULL means not yet dispatched or auto-dispatch is disabled.';

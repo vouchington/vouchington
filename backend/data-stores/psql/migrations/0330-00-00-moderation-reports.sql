@@ -110,21 +110,34 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__resolution_id
 -- Per-entity lookup indexes
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__post_id
-  ON moderation_reports (post_id, resolution_action, id DESC) WHERE post_id IS NOT NULL;
+  ON moderation_reports (post_id, id DESC) WHERE post_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__reported_user_id
-  ON moderation_reports (reported_user_id, resolution_action, id DESC)
+  ON moderation_reports (reported_user_id, id DESC)
   WHERE reported_user_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__hostname_id
-  ON moderation_reports (hostname_id, resolution_action, id DESC) WHERE hostname_id IS NOT NULL;
+  ON moderation_reports (hostname_id, id DESC) WHERE hostname_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__rss_feed_item_id
-  ON moderation_reports (rss_feed_item_id, resolution_action, id DESC)
+  ON moderation_reports (rss_feed_item_id, id DESC)
   WHERE rss_feed_item_id IS NOT NULL;
+
+-- Outcome-specific lookups retain their ordered per-target access.
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__post_id_resolution_action_id
+  ON moderation_reports (post_id, resolution_action, id DESC) WHERE post_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__reported_user_id_resolution_action_id
+  ON moderation_reports (reported_user_id, resolution_action, id DESC) WHERE reported_user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__hostname_id_resolution_action_id
+  ON moderation_reports (hostname_id, resolution_action, id DESC) WHERE hostname_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__rss_feed_item_id_resolution_action_id
+  ON moderation_reports (rss_feed_item_id, resolution_action, id DESC) WHERE rss_feed_item_id IS NOT NULL;
 
 -- A dense pending post cluster needs its latest report without sorting every sibling.
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_post_id_id

@@ -8,5 +8,7 @@ export interface FullJudgementSummary {
   internal_response: string
   is_stale: boolean
   judged_report_count: number | null
+  judged_report_count_capped: boolean
   current_report_count: number
+  current_report_count_capped: boolean
 }

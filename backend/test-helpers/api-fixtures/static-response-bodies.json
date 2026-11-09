@@ -1249,7 +1249,9 @@
           "is_stale": false,
           "judged_report_count": 3,
           "public_response": "Thanks for the report.",
-          "recommended_action": "remove"
+          "recommended_action": "remove",
+          "judged_report_count_capped": false,
+          "current_report_count_capped": false
         },
         "note": "Looks automated.",
         "post_moderation_context": null,

@@ -17,6 +17,8 @@ export async function shouldRefreshReportJudgementForEntity(
   if (!latest) return { refresh: true, context }
   if (!latest.context_hash) return { refresh: true, context }
   if (latest.context_report_count !== context.reportCount) return { refresh: true, context }
+  if (latest.is_context_report_count_capped !== context.reportCountCapped)
+    return { refresh: true, context }
   if ((latest.context_max_reason_rank ?? 0) < context.maxReasonRank) {
     return { refresh: true, context }
   }

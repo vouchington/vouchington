@@ -6,7 +6,6 @@ import {
   getLatestJudgementForEntity,
   getLatestJudgementsForEntitiesBatch,
 } from '../judgements.mts'
-import { getAllReportsForEntity } from '../judgement-reports.mts'
 import crypto from 'node:crypto'
 
 describe('moderation-reports/judgements', () => {
@@ -213,54 +212,6 @@ describe('moderation-reports/judgements', () => {
       ])
 
       expect(result.get(`post:${postId}`)?.id).toBe(latest.id)
-    })
-  })
-
-  describe('getAllReportsForEntity', () => {
-    it('returns empty array when no reports exist', async () => {
-      const result = await getAllReportsForEntity('post', crypto.randomUUID())
-      expect(result).toEqual([])
-    })
-
-    it('returns all reports for an entity in descending created_at order', async () => {
-      const postId = await insertTestPost({
-        createdById: author.id,
-        slug: `get-all-reports-${crypto.randomUUID().slice(0, 8)}`,
-        title: `Get All Reports Post ${crypto.randomUUID().slice(0, 8)}`,
-        markdown: 'body',
-      })
-
-      const reporter2 = await createTestUser()
-      const r1 = await insertTestModerationReport({
-        reporterUserId: reporter.id,
-        entityType: 'post',
-        entityId: postId,
-        reason: 'spam',
-        note: 'First note',
-      })
-      const r2 = await insertTestModerationReport({
-        reporterUserId: reporter2.id,
-        entityType: 'post',
-        entityId: postId,
-        reason: 'harassment',
-      })
-
-      const result = await getAllReportsForEntity('post', postId)
-      expect(result.length).toBeGreaterThanOrEqual(2)
-      const ids = result.map(r => r.id)
-      expect(ids).toContain(r1)
-      expect(ids).toContain(r2)
-      expect(result.find(row => row.id === r1)).toMatchObject({
-        reason: 'spam',
-        note: 'First note',
-      })
-      expect(result.find(row => row.id === r2)).toMatchObject({ reason: 'harassment' })
-      // Verify order: DESC by created_at
-      for (let i = 1; i < result.length; i++) {
-        expect(result[i - 1]!.created_at.getTime()).toBeGreaterThanOrEqual(
-          result[i]!.created_at.getTime(),
-        )
-      }
     })
   })
 })

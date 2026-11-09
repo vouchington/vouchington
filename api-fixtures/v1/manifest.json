@@ -10865,6 +10865,12 @@
                   "type": "number"
                 }
               },
+              "current_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "id": {
                 "required": true,
                 "schema": {
@@ -10895,6 +10901,12 @@
                       "type": "number"
                     }
                   ]
+                }
+              },
+              "judged_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "public_response": {
@@ -14418,6 +14430,12 @@
                   "type": "number"
                 }
               },
+              "current_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "id": {
                 "required": true,
                 "schema": {
@@ -14448,6 +14466,12 @@
                       "type": "number"
                     }
                   ]
+                }
+              },
+              "judged_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "public_response": {
@@ -47475,6 +47499,12 @@
                   "type": "number"
                 }
               },
+              "current_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "id": {
                 "required": true,
                 "schema": {
@@ -47505,6 +47535,12 @@
                       "type": "number"
                     }
                   ]
+                }
+              },
+              "judged_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "public_response": {
@@ -49399,6 +49435,12 @@
                   "type": "number"
                 }
               },
+              "current_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "id": {
                 "required": true,
                 "schema": {
@@ -49429,6 +49471,12 @@
                       "type": "number"
                     }
                   ]
+                }
+              },
+              "judged_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "public_response": {
@@ -107238,7 +107286,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "80ae1971fa7da8ebb28449af1e4f6b89c7e7f28fb96394e305e6fd4414e2bf53",
+        "hash": "473b0c9b401a9571df245de22f5ac8ad5209483591f7b4807e2ca8bbffd58a18",
         "key": "native.moderation.reports.default"
       },
       "route": {

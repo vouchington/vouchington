@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestModerationReport, insertTestPost } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { moderationReportsWorkConfig } from '../work-limits.mts'
+import { insertReportJudgement } from '../judgements.mts'
+import { shouldRefreshReportJudgementForEntity } from '../judgement-refresh.mts'
+import { attachJudgements } from '../judgement-attach.mts'
 import {
   getReportJudgementContextForEntity,
   getReportJudgementContextsForEntitiesBatch,
@@ -25,6 +30,7 @@ describe('moderation-reports/judgement-context', () => {
     })
 
     const first = await getReportJudgementContextForEntity('post', postId)
+    expect(first.reportCountCapped).toBe(false)
     const otherReporter = await createTestUser()
     await insertTestModerationReport({
       reporterUserId: otherReporter.id,
@@ -39,6 +45,69 @@ describe('moderation-reports/judgement-context', () => {
     expect(second.maxReasonRank).toBeGreaterThan(first.maxReasonRank)
     expect(second.contextHash).not.toBe(first.contextHash)
     expect(second.noteHash).not.toBe(first.noteHash)
+  })
+
+  it('keeps capped context fresh until a newer sampled report arrives', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(moderationReportsWorkConfig, {
+      cluster_report_count_cap: 2,
+    })
+    try {
+      const [author, ...reporters] = await Promise.all([
+        createTestUser(),
+        createTestUser(),
+        createTestUser(),
+        createTestUser(),
+        createTestUser(),
+      ])
+      const postId = await insertTestPost({
+        createdById: author!.id,
+        slug: `capped-judgement-${randomUUID()}`,
+        title: 'Capped judgement',
+        markdown: 'body',
+      })
+      for (const reporter of reporters.slice(0, 3)) {
+        await insertTestModerationReport({
+          reporterUserId: reporter.id,
+          entityType: 'post',
+          entityId: postId,
+          reason: 'spam',
+        })
+      }
+      const context = await getReportJudgementContextForEntity('post', postId)
+      expect(context).toMatchObject({ reportCount: 2, reportCountCapped: true })
+      expect(context.reports).toHaveLength(2)
+      const judgement = await insertReportJudgement({
+        entityType: 'post',
+        entityId: postId,
+        recommendedAction: 'no_action',
+        publicResponse: 'No action',
+        internalResponse: 'No action',
+        model: 'test',
+        context,
+      })
+      expect(judgement.is_context_report_count_capped).toBe(true)
+      expect((await shouldRefreshReportJudgementForEntity('post', postId)).refresh).toBe(false)
+      const attached = await attachJudgements([{ entity_type: 'post' as const, entity_id: postId }])
+      expect(attached[0]?.judgement).toMatchObject({
+        is_stale: false,
+        judged_report_count_capped: true,
+        current_report_count_capped: true,
+      })
+      await insertTestModerationReport({
+        reporterUserId: reporters[3]!.id,
+        entityType: 'post',
+        entityId: postId,
+        reason: 'spam',
+      })
+      const next = await shouldRefreshReportJudgementForEntity('post', postId)
+      expect(next.refresh).toBe(true)
+      expect(next.context.reportCount).toBe(2)
+      expect(next.context.contextHash).not.toBe(context.contextHash)
+      const stale = await attachJudgements([{ entity_type: 'post' as const, entity_id: postId }])
+      expect(stale[0]?.judgement?.is_stale).toBe(true)
+    } finally {
+      restore()
+    }
   })
 
   it('returns report context for mixed post and comment batches sharing post_id', async () => {
