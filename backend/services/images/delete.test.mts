@@ -1,5 +1,8 @@
+import { withTestImageWriterLockWait } from '@voucha/test-helpers/image-writer-lock-race'
+import { flagTestDeliveryImageInTransaction } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  beginTransaction,
   approveTestPost,
   countPostImageRevisions,
   getImageModerationState,
@@ -48,6 +51,21 @@ describe('paged image deletion', () => {
       images: [],
     })
     await expect(countPostImageRevisions(postId)).resolves.toBe(1)
+  })
+
+  it('settles concrete deletion after a concurrent actual image policy write commits', async () => {
+    const fixture = await createImageDeletionFixture(1)
+    const image = await getImageByIdFromPrimary(fixture.imageId)
+    installOwnedUploadCleanupStorage([image!.id, image!.s3_key, image!.sha_256!.toString('hex')])
+    await using policy = await beginTransaction()
+    await flagTestDeliveryImageInTransaction(policy, fixture.imageId)
+    await withTestImageWriterLockWait(policy, 'deleteImageById:fence', () =>
+      deleteImageById(fixture.imageId),
+    )
+    await expect(getImageModerationState(fixture.imageId)).resolves.toMatchObject({
+      deleted_at: expect.any(Date),
+    })
+    await expect(countPostImageRevisions(fixture.postIds[0]!)).resolves.toBe(1)
   })
 
   it('preserves quarantine reconciliation when a stale lookup races quarantine admission', async () => {

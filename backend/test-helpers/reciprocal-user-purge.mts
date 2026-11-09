@@ -1,4 +1,5 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { writeTestImageOwnerRetirement } from './image-owner-retirement.mts'
+import { beginTransaction } from '@data-stores/psql'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
 export async function holdTestFinalPurgeUserLifecycle(userId: string) {
@@ -25,11 +26,19 @@ export async function setReciprocalTestUserDeletionActors(
   secondUserId: string,
   deletedAt: Date,
 ): Promise<void> {
-  await write(
-    `/* setReciprocalTestUserDeletionActors */
+  await using query = await beginTransaction()
+  await writeTestImageOwnerRetirement(
+    query,
+    [{ userId: firstUserId }, { userId: secondUserId }],
+    async scopeQuery => {
+      await scopeQuery(
+        `/* setReciprocalTestUserDeletionActors */
     UPDATE users SET deleted_at = $3,
       deleted_by_id = CASE WHEN id = $1::uuid THEN $2::uuid ELSE $1::uuid END
     WHERE id IN ($1::uuid, $2::uuid)`,
-    [firstUserId, secondUserId, deletedAt],
+        [firstUserId, secondUserId, deletedAt],
+      )
+    },
   )
+  await query.commit()
 }

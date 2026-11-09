@@ -1,5 +1,9 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import {
+  reserveImagePlacementChanges,
+  releaseImagePlacementReservations,
+} from '../../services/media-delivery-safety/placement-capacity-reservations.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { imageDeliveryIsAuthorized } from '../../services/media-delivery-safety/delivery-authority.mts'
 import { lockImageDeliveryMutation } from '../../services/media-delivery-safety/delivery-lock.mts'
@@ -24,6 +28,7 @@ export async function retireTestImageSurfaceOwner(
 ): Promise<void> {
   await query(sql`/* retireTestImageSurfaceOwner */ UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP,
     retirement_reason = 'owner_removed', revision = revision + 1 WHERE id = ${placementId}`)
+  await releaseImagePlacementReservations(query, [placementId])
 }
 
 export async function clearTestImageSurfaceOwnerInTransaction(
@@ -41,6 +46,25 @@ export async function reactivateTestImageSurfaceInTransaction(
 ): Promise<void> {
   await query(sql`/* reactivateTestImageSurfaceInTransaction */ UPDATE media_placements SET retired_at = NULL,
     retirement_reason = NULL, revision = revision + 1 WHERE id = ${placementId}`)
+  const { rows } = await query<{
+    image_id: string
+    activation_revision: number
+  }>(sql`/* reactivateTestImageSurfaceCapacity */
+    SELECT surface.image_id, placement.activation_revision FROM image_surface_placements surface
+    JOIN media_placements placement ON placement.id = surface.placement_id WHERE surface.placement_id = ${placementId}`)
+  if (!rows[0]) throw new Error('Missing surface fixture')
+  await reserveImagePlacementChanges(
+    query,
+    [],
+    [
+      {
+        placementId,
+        imageId: rows[0].image_id,
+        activationRevision: rows[0].activation_revision,
+        bindingFamily: 'surface',
+      },
+    ],
+  )
 }
 
 export async function changeTestOwnerlessImageSurfaceRetirementReason(

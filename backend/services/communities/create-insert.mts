@@ -10,9 +10,8 @@ import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enq
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
 import {
-  lockImageAssetAdmission,
   assertImagesReadyForSurface,
-  syncImageSurfacePlacement,
+  writeImageSurfaceMutation,
 } from '@services/media-delivery-safety'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { invalidateCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
@@ -40,7 +39,6 @@ export async function insertCommunity(
   const imageIds = [input.profile_image_id, input.banner_image_id].flatMap(imageId =>
     imageId ? [imageId] : [],
   )
-  await lockImageAssetAdmission(imageIds, query)
   await assertImagesReadyForSurface(imageIds, query)
   const options = { query }
   await assertCommunityMembershipCapacity(currentUserId, id, options)
@@ -99,28 +97,29 @@ export async function insertCommunity(
 
   const newCommunity = rows[0] as Community
 
-  if (input.profile_image_id) {
-    await syncImageSurfacePlacement(
-      { surfaceKind: 'community-profile-image', communityId: newCommunity.id },
-      input.profile_image_id,
-      currentUserId,
-      query,
-    )
-  }
-  if (input.banner_image_id) {
-    await syncImageSurfacePlacement(
-      { surfaceKind: 'community-banner-image', communityId: newCommunity.id },
-      input.banner_image_id,
-      currentUserId,
-      query,
-    )
-  }
   if (imageIds.length) {
-    await query(sql`/* createCommunity:setSurfaceImages */
+    await writeImageSurfaceMutation(
+      query,
+      [
+        {
+          surfaceKind: 'community-profile-image',
+          communityId: newCommunity.id,
+          nextImageId: input.profile_image_id ?? null,
+        },
+        {
+          surfaceKind: 'community-banner-image',
+          communityId: newCommunity.id,
+          nextImageId: input.banner_image_id ?? null,
+        },
+      ],
+      currentUserId,
+      (_before, scopeQuery) =>
+        scopeQuery(sql`/* createCommunity:setSurfaceImages */
         UPDATE communities SET profile_image_id = ${input.profile_image_id ?? null},
           banner_image_id = ${input.banner_image_id ?? null}
         WHERE id = ${newCommunity.id}
-      `)
+      `),
+    )
   }
 
   const community = await getCommunity(newCommunity.id, options)

@@ -20,6 +20,10 @@ export const backgroundWorkRegistryEntries7 = {
     maxValues: mediaDeliverySafetyWorkMaxValues,
     descriptions: {
       max_placements_per_image: 'Maximum active post and public-surface placements per image.',
+      placement_reservation_attempts:
+        'Maximum complete slot-claim attempts before any media edge transition.',
+      policy_mutation_attempts:
+        'Maximum image-policy attempts when concurrent concrete bindings invalidate the captured write set.',
       recovery_page_size: 'Recovery page size for media delivery safety processing.',
       edge_publish_batch_size:
         'Records claimed, published at the edge and acknowledged together within one claim lease.',

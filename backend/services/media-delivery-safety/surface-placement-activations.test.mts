@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   beginTransaction,
   createTestUserDirect,
@@ -16,9 +17,16 @@ import {
 } from '@voucha/test-helpers'
 import { removeTestUserRole } from '@voucha/test-helpers/entities/user-role-removal'
 import { updateCommunity } from '../communities/update.mts'
-import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
+import { writeTestImageSurfaceMutation } from '@voucha/test-helpers/image-surface-mutation'
 
 describe('image surface placement activation provenance', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
   it('captures different uploader and administrator setter identities as immutable facts', async () => {
     const [uploader, owner, administrator] = await Promise.all([
       createTestUserDirect(),
@@ -134,7 +142,7 @@ describe('image surface placement activation provenance', () => {
 
     await using transaction = await beginTransaction()
     await expect(
-      syncImageSurfacePlacement(
+      writeTestImageSurfaceMutation(
         { surfaceKind: 'topic-logo-image', topicId },
         imageId,
         null,

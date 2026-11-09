@@ -1,13 +1,11 @@
 import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
-import { runSequentially } from '@modules/utils/run-sequentially'
 import {
-  lockImageAssetMutation,
-  prepublishImageDeliveryDenials,
   repairFailedImageDeliveryMutation,
+  writeImageDeliveryPolicyMutation,
+  prepublishImagePlacementDenialBatch,
 } from '@services/media-delivery-safety'
 import { retireImagePlacementsForDeletedImage } from './placements.mts'
-import { retireImageSurfacePlacementsForDeletedImage } from './surface-placements.mts'
 import { processImageDeletionPageWhileLocked, type ImageDeletionOptions } from './delete-page.mts'
 
 export async function deleteImageByIdWhileStorageLocked(
@@ -16,14 +14,13 @@ export async function deleteImageByIdWhileStorageLocked(
 ) {
   async function fence() {
     await using transaction = await (options.beginTransaction ?? beginTransaction)()
-    await lockImageAssetMutation(transaction, { imageIds: [imageId], imageOnly: true })
     const { rows } = await transaction<{
       deleted_at: Date | null
       quarantine_pending_at: Date | null
       quarantined_at: Date | null
     }>(
       `/* deleteImageById:fence */ SELECT deleted_at, quarantine_pending_at, quarantined_at
-      FROM images WHERE id = $1 FOR UPDATE`,
+      FROM images WHERE id = $1`,
       [imageId],
     )
     if (rows[0]?.quarantine_pending_at && !rows[0].quarantined_at) {
@@ -32,16 +29,15 @@ export async function deleteImageByIdWhileStorageLocked(
       return false
     }
     if (rows[0] && !rows[0].deleted_at) {
-      await runSequentially([
-        () => prepublishImageDeliveryDenials(imageId, { query: transaction, imageOnly: true }),
-        () =>
-          transaction(
-            '/* deleteImageById:fence */ UPDATE images SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
-            [imageId],
-          ),
-        () => retireImagePlacementsForDeletedImage(imageId, transaction),
-        () => retireImageSurfacePlacementsForDeletedImage(imageId, transaction),
-      ])
+      const retired = await writeImageDeliveryPolicyMutation(transaction, imageId, async scope => {
+        const result = await scope(
+          '/* deleteImageById:fence */ UPDATE images SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL AND (quarantine_pending_at IS NULL OR quarantined_at IS NOT NULL)',
+          [imageId],
+        )
+        if (result.rowCount !== 1) throw new Error('Image deletion eligibility changed')
+        return retireImagePlacementsForDeletedImage(imageId, scope)
+      })
+      await prepublishImagePlacementDenialBatch(retired, { query: transaction })
     }
     await transaction.commit()
     return true

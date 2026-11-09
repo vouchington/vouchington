@@ -1,3 +1,5 @@
+import assert from 'http-assert'
+import { writeImageSurfaceMutation } from '@services/media-delivery-safety'
 import {
   beginTransaction,
   withTransactionOptions,
@@ -30,8 +32,13 @@ export async function disableAndHideSource(
 
 async function hideSource(rssFeedId: string, query: TransactionQuery): Promise<void> {
   const systemUserId = await getRssFeedAutoUpdaterUserId()
-  const { rows: sourceRows } = await query<{ topic_id: string }>(
-    `/* disableAndHideSource:topicId */ SELECT topic_id FROM rss_feeds WHERE id = $1::uuid`,
+  const { rows: sourceRows } = await query<{
+    topic_id: string
+    topic_type: string
+    deleted_at: Date | null
+  }>(
+    `/* disableAndHideSource:topicId */ SELECT feed.topic_id, topic.topic_type, topic.deleted_at
+      FROM rss_feeds feed JOIN topics topic ON topic.id = feed.topic_id AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL WHERE feed.id = $1::uuid`,
     [rssFeedId],
   )
   const topicIds = sourceRows.map(row => row.topic_id)
@@ -54,15 +61,36 @@ async function hideSource(rssFeedId: string, query: TransactionQuery): Promise<v
       `,
     [rssFeedId, systemUserId],
   )
-  await query(
-    `/* disableAndHideSource:topic */
-       UPDATE topics
-       SET deleted_at = CURRENT_TIMESTAMP
-       WHERE topics.id = ANY($1::uuid[])
-         AND topics.topic_type = 'rss_feed'
-         AND topics.deleted_at IS NULL
-      `,
-    [topicIds],
+  const retiringTopicIds = sourceRows.flatMap(row =>
+    row.topic_type === 'rss_feed' && row.deleted_at === null ? [row.topic_id] : [],
+  )
+  await writeImageSurfaceMutation(
+    query,
+    retiringTopicIds.flatMap(topicId => [
+      { surfaceKind: 'topic-logo-image' as const, topicId, nextImageId: null },
+      { surfaceKind: 'topic-hero-image' as const, topicId, nextImageId: null },
+    ]),
+    null,
+    async (before, scopeQuery) => {
+      const result = await scopeQuery(
+        `/* disableAndHideSource:topic */
+      UPDATE topics SET deleted_at = CURRENT_TIMESTAMP
+      FROM unnest($1::uuid[], $2::uuid[], $3::uuid[]) expected(id, logo_image_id, hero_image_id)
+      WHERE topics.id = expected.id AND topics.topic_type = 'rss_feed' AND topics.deleted_at IS NULL
+        AND topics.logo_image_id IS NOT DISTINCT FROM expected.logo_image_id
+        AND topics.hero_image_id IS NOT DISTINCT FROM expected.hero_image_id`,
+        [
+          retiringTopicIds,
+          retiringTopicIds.map((_, index) => before[2 * index]!.current_image_id),
+          retiringTopicIds.map((_, index) => before[2 * index + 1]!.current_image_id),
+        ],
+      )
+      assert(
+        result.rowCount === retiringTopicIds.length,
+        409,
+        'RSS source images changed during retirement',
+      )
+    },
   )
   registerPostCommitAction(query, () => invalidate.rss_feeds(rssFeedId))
 }

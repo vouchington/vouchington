@@ -55,8 +55,8 @@ export async function seedViewPostsHydration(): Promise<void> {
     [values],
   )
   await transaction(
-    `/* seedViewPostsHydration */ INSERT INTO media_placements (id)
-     SELECT placement_id FROM jsonb_to_recordset($1::jsonb) AS seed(placement_id uuid)
+    `/* seedViewPostsHydration */ INSERT INTO media_placements (id, is_current_image_delivery_eligible)
+     SELECT placement_id, true FROM jsonb_to_recordset($1::jsonb) AS seed(placement_id uuid)
      ON CONFLICT DO NOTHING`,
     [values],
   )
@@ -64,6 +64,16 @@ export async function seedViewPostsHydration(): Promise<void> {
     `/* seedViewPostsHydration */ INSERT INTO image_placements (placement_id, post_id, image_id)
      SELECT placement_id, post_id, id FROM jsonb_to_recordset($1::jsonb)
        AS seed(placement_id uuid, post_id uuid, id uuid) ON CONFLICT DO NOTHING`,
+    [values],
+  )
+  await transaction(
+    `/* seedViewPostsHydration:capacity */
+    INSERT INTO image_placement_capacity_reservations
+      (placement_id, image_id, binding_family, activation_revision, slot_number,
+       post_placement_id, post_id, is_current_image_delivery_eligible)
+    SELECT placement_id, id, 'post', 0, 1, placement_id, post_id, true
+    FROM jsonb_to_recordset($1::jsonb) AS seed(placement_id uuid, id uuid, post_id uuid)
+    ON CONFLICT DO NOTHING`,
     [values],
   )
   await transaction(

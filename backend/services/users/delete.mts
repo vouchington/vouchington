@@ -14,15 +14,8 @@ import {
 } from '@services/user-deletions'
 import { currentUserCanDeleteUser } from './authorization.mts'
 import { enqueueDeleteUserBookmarkBloomFilterBestEffort } from './enqueue-delete-user-bookmark-bloom-filter.mts'
-import {
-  revokeVerifiedIdentitiesForDeletedUser,
-  softDeleteAndScrubUserProfile,
-} from './delete-profile-pii.mts'
+import { scrubUserDeletionIdentities } from './delete-media-surfaces.mts'
 import type { PrivateUser } from './types.mts'
-import {
-  prepublishImageSurfaceDenials,
-  lockUserProfileImageOwners,
-} from '@services/media-delivery-safety'
 import { assertCopyrightEvidenceAllowsDeletion } from './delete-copyright-evidence.mts'
 import { lockUserDeletionRows, type UserDeletionTarget } from './delete-row-locks.mts'
 
@@ -58,31 +51,7 @@ async function lockAndGetUserDeletionTarget(
   requestedById: string,
 ): Promise<UserDeletionTarget> {
   await lockUserDeletionLifecycle(query, userId)
-  await lockUserProfileImageOwners([userId], query)
   return lockUserDeletionRows(query, userId, requestedById)
-}
-
-async function scrubUserDeletionIdentities(
-  query: TransactionQuery,
-  userId: string,
-  requestedById: string,
-): Promise<void> {
-  const { rows: links } = await query<{ id: string }>(sql`/* scrubUserDeletionIdentities:links */
-    SELECT id FROM user_profile_links WHERE user_id = ${userId} ORDER BY id
-  `)
-  await prepublishImageSurfaceDenials(
-    [
-      { surfaceKind: 'user-profile-image', userId },
-      ...links.map(link => ({
-        surfaceKind: 'user-profile-link-image' as const,
-        userProfileLinkId: link.id,
-      })),
-    ],
-    query,
-  )
-  const softDeleteRowCount = await softDeleteAndScrubUserProfile(userId, requestedById, query)
-  assert(softDeleteRowCount > 0, 409, 'User is already deleted')
-  await revokeVerifiedIdentitiesForDeletedUser(userId, query)
 }
 
 async function addUserDeletionCacheEvictionWork(

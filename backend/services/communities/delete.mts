@@ -8,7 +8,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueCommunityMemberMetricInvalidationBestEffort } from './members/invalidate-user-metrics.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordPostPublicationChange } from '@services/post-publication'
-import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
+import { writeImageSurfaceMutation } from '@services/media-delivery-safety'
 
 export async function deleteCommunity(
   currentUser: PrivateUser,
@@ -20,22 +20,26 @@ export async function deleteCommunity(
   assert(currentUserCanDeleteCommunity(currentUser, community, membership), 403, 'Forbidden')
 
   await using query = await beginTransaction()
-  await prepublishImageSurfaceDenials(
-    [
-      { surfaceKind: 'community-profile-image', communityId },
-      { surfaceKind: 'community-banner-image', communityId },
-    ],
+  const { rows } = await writeImageSurfaceMutation(
     query,
-  )
-  const { rows } = await query<{ id: string }>(
-    `/* deleteCommunity */
+    [
+      { surfaceKind: 'community-profile-image', communityId, nextImageId: null },
+      { surfaceKind: 'community-banner-image', communityId, nextImageId: null },
+    ],
+    null,
+    (before, scopeQuery) =>
+      scopeQuery<{ id: string }>(
+        `/* deleteCommunity */
     UPDATE communities
     SET deleted_at = CURRENT_TIMESTAMP,
         deleted_by_id = $1
     WHERE id = $2
       AND deleted_at IS NULL
+      AND profile_image_id IS NOT DISTINCT FROM $3::uuid
+      AND banner_image_id IS NOT DISTINCT FROM $4::uuid
     RETURNING id`,
-    [currentUser.id, communityId],
+        [currentUser.id, communityId, before[0]!.current_image_id, before[1]!.current_image_id],
+      ),
   )
   const changed = rows.length > 0
   if (changed) {

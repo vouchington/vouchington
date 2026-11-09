@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUserDirect,
   getTestImageSurfacePlacementActivations,
@@ -10,6 +11,14 @@ import {
 import { updateCommunity } from '../communities/update.mts'
 
 describe('surface activation identity across ownership changes', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('records a new setter when another actor reactivates the same image placement', async () => {
     const [creator, administrator, uploader] = await Promise.all([
       createTestUserDirect(),

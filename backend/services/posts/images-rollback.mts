@@ -8,13 +8,8 @@ import {
   restorePostClearanceStatus,
   type ClearanceStatus,
 } from '@services/post-clearance'
-import { assertPostImagePlacementCapacity, syncPostImagePlacements } from './image-placements.mts'
-import {
-  repairFailedImageDeliveryMutation,
-  lockImageDeliveryMutation,
-  lockImageAssetAdmission,
-} from '@services/media-delivery-safety'
-import { preparePostImageDeliveryMutation } from './media-delivery.mts'
+import { syncPostImagePlacements } from './image-placements.mts'
+import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import type { PostImageRollback } from './images-rollback-types.mts'
 import { postImagesEqual } from './images-rollback-state.mts'
 import { runSequentially } from '@modules/utils/run-sequentially'
@@ -32,7 +27,6 @@ export async function rollbackPostImages(
     ...new Set([...rollback.currentImages, ...rollback.images].map(image => image.image_id)),
   ].toSorted()
   await using query = await beginTransaction()
-  await lockImageAssetAdmission(deliveryImageIds, query)
   let ensuredCurrentVersion = false
   async function keepCurrentModerationVersion(): Promise<false> {
     await ensureCurrentPostModerationVersion(postId, { query })
@@ -41,7 +35,6 @@ export async function rollbackPostImages(
   }
   async function rollbackImagesInTransaction() {
     const imageIds = deliveryImageIds
-    await lockImageDeliveryMutation(query, { postIds: [postId], imageIds })
     let rollbackImagesAvailable = true
     if (imageIds.length > 0) {
       const imageLock = query<{
@@ -54,7 +47,6 @@ export async function rollbackPostImages(
           AND deleted_at IS NULL
           AND quarantine_pending_at IS NULL
         ORDER BY id
-        FOR SHARE
       `)
       options?.onImageLockQuery?.()
       const { rows: availableImages } = await imageLock
@@ -68,7 +60,6 @@ export async function rollbackPostImages(
         clearance_version
       FROM posts
       WHERE id = ${postId}
-      FOR UPDATE
     `)
     const post = postRows[0]
     if (
@@ -94,23 +85,19 @@ export async function rollbackPostImages(
     if (!postImagesEqual(currentImages, rollback.currentImages)) {
       return keepCurrentModerationVersion()
     }
-    try {
-      await assertPostImagePlacementCapacity(
-        postId,
-        rollback.images.map(image => image.image_id),
-        query,
-        { admissionHeld: true },
-      )
-    } catch (err) {
-      if (!isHttpError(err) || err.status !== 409 || err['code'] !== IMAGE_PLACEMENT_LIMIT_REACHED)
-        throw err
+    await query('/* rollbackPostImages:savepoint */ SAVEPOINT post_image_rollback')
+    const { rows: restored } = await query(sql`/* rollbackPostImages:restoreOwner */
+      UPDATE posts
+      SET llm_moderation_content_sha256 = ${rollback.llmModerationContentSha256}
+      WHERE id = ${postId}
+        AND llm_moderation_content_sha256 = ${rollback.currentLlmModerationContentSha256}
+        AND clearance_version IS NOT DISTINCT FROM ${rollback.currentClearanceVersion}
+      RETURNING id`)
+    if (restored.length !== 1) {
+      await query('/* rollbackPostImages:rollback */ ROLLBACK TO SAVEPOINT post_image_rollback')
+      await query('/* rollbackPostImages:release */ RELEASE SAVEPOINT post_image_rollback')
       return keepCurrentModerationVersion()
     }
-    await preparePostImageDeliveryMutation(query, {
-      postId,
-      imageIds: rollback.images.map(image => image.image_id),
-      retainImageIds: rollback.images.map(image => image.image_id),
-    })
     await query(sql`/* rollbackPostImages */ DELETE FROM post_images WHERE post_id = ${postId}`)
     if (rollback.images.length > 0) {
       await query(sql`/* rollbackPostImages */
@@ -123,22 +110,24 @@ export async function rollbackPostImages(
         ) AS t(image_id, order_index, caption)
       `)
     }
-    await runSequentially([
-      () =>
-        syncPostImagePlacements(
-          postId,
-          rollback.images.map(image => image.image_id),
-          query,
-          { capacityChecked: true },
-        ),
-      () =>
-        query(sql`/* rollbackPostImages */
-      UPDATE posts
-      SET llm_moderation_content_sha256 = ${rollback.llmModerationContentSha256}
-      WHERE id = ${postId}
-      `),
-      () => compensatePostRevision(postId, rollback.revisionId, { query }),
-    ])
+    try {
+      await runSequentially([
+        () =>
+          syncPostImagePlacements(
+            postId,
+            rollback.images.map(image => image.image_id),
+            query,
+          ),
+        () => compensatePostRevision(postId, rollback.revisionId, { query }),
+      ])
+    } catch (err) {
+      if (!isHttpError(err) || err.status !== 409 || err['code'] !== IMAGE_PLACEMENT_LIMIT_REACHED)
+        throw err
+      await query('/* rollbackPostImages:rollback */ ROLLBACK TO SAVEPOINT post_image_rollback')
+      await query('/* rollbackPostImages:release */ RELEASE SAVEPOINT post_image_rollback')
+      return keepCurrentModerationVersion()
+    }
+    await query('/* rollbackPostImages:release */ RELEASE SAVEPOINT post_image_rollback')
     if (rollback.currentClearanceVersion !== rollback.clearanceVersion) {
       if (rollback.currentClearanceVersion === null) {
         throw new Error(`Post image rollback is missing the compensated change for post ${postId}`)

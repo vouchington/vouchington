@@ -7,10 +7,18 @@ import {
 } from '@voucha/test-helpers'
 import { getTestPostImagePlacement } from '@voucha/test-helpers/entities/post-images'
 import { hasTestRetainedMediaBinding } from '@voucha/test-helpers/entities/retained-media'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { syncPostImagePlacements } from './image-placements.mts'
 
 describe('syncPostImagePlacements', () => {
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
   it('creates exact retained pairs in a batch and reuses placements after retirement', async () => {
     const user = await createTestUser()
     const suffix = randomUUID()
@@ -68,10 +76,29 @@ describe('syncPostImagePlacements', () => {
 
     {
       await using query = await beginTransaction()
-      await expect(syncPostImagePlacements(postId, [imageId, randomUUID()], query)).rejects.toThrow(
-        'Missing retained image identity for placement',
-      )
+      await expect(
+        syncPostImagePlacements(postId, [imageId, randomUUID()], query),
+      ).rejects.toMatchObject({ code: '23503' })
     }
     await expect(getTestPostImagePlacement(postId, imageId)).resolves.toBeNull()
+  })
+
+  it('rolls back a SQL-failed placement scope and leaves the parent executor usable', async () => {
+    const user = await createTestUser()
+    const suffix = randomUUID()
+    const postId = await insertTestPost({
+      title: `Recoverable placement SQL ${suffix}`,
+      slug: `recoverable-placement-sql-${suffix}`,
+      createdById: user.id,
+      markdown: 'Recoverable image placement',
+    })
+    const imageId = await insertTestImage(user.id)
+    await using query = await beginTransaction()
+    await expect(syncPostImagePlacements(randomUUID(), [imageId], query)).rejects.toMatchObject({
+      code: '23503',
+    })
+    await syncPostImagePlacements(postId, [imageId], query)
+    await query.commit()
+    expect(await getTestPostImagePlacement(postId, imageId)).not.toBeNull()
   })
 })

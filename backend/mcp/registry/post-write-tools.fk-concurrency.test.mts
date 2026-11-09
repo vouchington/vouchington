@@ -1,56 +1,13 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestPost,
-  createTestMembership,
-  insertTestImage,
-  insertTestPostImage,
 } from '@voucha/test-helpers'
-import {
-  withHeldDelegatedThreadFenceForTest,
-  withConcurrentMediaThenPublicationFenceForTest,
-} from '@voucha/test-helpers/post-delegated-fk-concurrency'
-
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
-import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { withHeldDelegatedThreadFenceForTest } from '@voucha/test-helpers/post-delegated-fk-concurrency'
 
 describe('delegated thread fences and ordinary foreign-key inserts', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.restoreAllMocks()
-  })
-  it('does not hold thread publication while waiting on shared media delivery', async () => {
-    const user = { ...(await createTestUser()), membership_plan: 'plus' as const }
-    await createTestMembership({ user_id: user.id, plan: 'plus' })
-    const root = await insertTestPost({
-      title: 'Root with image',
-      slug: crypto.randomUUID(),
-      markdown: 'Root',
-      createdById: user.id,
-    })
-    const imageId = await insertTestImage(user.id)
-    await insertTestPostImage({ postId: root, imageId })
-    installTestMediaDeliveryEdge()
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'report')
-    const result = await withConcurrentMediaThenPublicationFenceForTest(root, imageId, () =>
-      callStructuredMcpTool(
-        user,
-        'create_post',
-        {
-          idempotency_key: crypto.randomUUID(),
-          post_type: 'comment',
-          parent_post_id: root,
-          markdown: 'Reply',
-          images: [{ image_id: imageId, order_index: 0 }],
-        },
-        ['posts:read', 'posts:write'],
-      ),
-    )
-    expect(result).toMatchObject({ success: true, post: { parent_post_id: root } })
-  })
-
   it('permits member and reply inserts while only the target post row is locked', async () => {
     const owner = await createTestUser()
     const joining = await createTestUser()

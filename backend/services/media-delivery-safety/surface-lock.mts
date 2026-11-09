@@ -1,6 +1,5 @@
 import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { lockImageDeliveryMutation } from './delivery-lock.mts'
 import { assertImageDeliveryTransaction } from './transaction-contract.mts'
 import { imageDeliveryAuthorityStartedSql } from './asset-admission-lock.mts'
 
@@ -17,13 +16,6 @@ export async function lockUserProfileImageOwners(
 ): Promise<void> {
   await lockSurfaceOwnerDomains({ userIds }, query)
 }
-export async function lockUserProfileLinkImageOwners(
-  linkIds: string[],
-  query: QueryExecutor,
-): Promise<void> {
-  await lockSurfaceOwnerDomains({ linkIds }, query)
-}
-
 type SurfaceOwnerDomains = {
   userIds?: string[]
   linkIds?: string[]
@@ -77,45 +69,4 @@ export function imageSurfaceReferences(
       surface_kind, user_id, topic_id, community_id, user_profile_link_id,
       next_image_id, ordinality
     )`
-}
-
-/**
- * Includes historical reusable bindings: later owner writes cannot expand a held domain.
- * `ownerDomainsHeld` is for callers that already took exactly these owner domains in this transaction.
- */
-export async function lockImageSurfacePlacements(
-  references: ImageSurfaceReference[],
-  query: QueryExecutor,
-  options: { ownerDomainsHeld?: boolean } = {},
-): Promise<void> {
-  if (options.ownerDomainsHeld) {
-    assertImageDeliveryTransaction(query)
-  } else {
-    await lockSurfaceOwnerDomains(
-      {
-        userIds: references.flatMap(ref => ('userId' in ref ? [ref.userId] : [])),
-        linkIds: references.flatMap(ref =>
-          'userProfileLinkId' in ref ? [ref.userProfileLinkId] : [],
-        ),
-        topicIds: references.flatMap(ref => ('topicId' in ref ? [ref.topicId] : [])),
-        communityIds: references.flatMap(ref => ('communityId' in ref ? [ref.communityId] : [])),
-      },
-      query,
-    )
-  }
-  const statement = sql`/* lockImageSurfacePlacements */
-    WITH refs AS (`
-  statement.append(imageSurfaceReferences(references))
-  statement.append(sql`)
-    SELECT surface.placement_id
-    FROM refs
-    JOIN image_surface_placements surface ON surface.surface_kind = refs.surface_kind
-      AND (surface.user_id = refs.user_id OR surface.topic_id = refs.topic_id
-        OR surface.community_id = refs.community_id
-        OR surface.user_profile_link_id = refs.user_profile_link_id)
-    ORDER BY refs.ordinality`)
-  const placementIds = references.length
-    ? (await query<{ placement_id: string }>(statement)).rows.map(row => row.placement_id)
-    : []
-  await lockImageDeliveryMutation(query, { placementIds, placementOnly: true })
 }

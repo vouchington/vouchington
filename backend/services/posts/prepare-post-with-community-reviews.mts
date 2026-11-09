@@ -20,7 +20,6 @@ import { recordCreatedPostPublicationChange } from './create/publication-change.
 import sql from 'sql-template-strings'
 import { persistPostSourceUrlRelation } from './create/source-url-relation.mts'
 import { lockActivePostAuthorImageAdmission } from './create/active-author.mts'
-import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { assertDelegatedPostActorActive } from './authorization.mts'
 import { finalizePreparedPost } from './create/finalize.mts'
@@ -58,14 +57,7 @@ export const preparePostWithCommunityReviews = async (
         query,
       )
     }
-    await lockActivePostAuthorImageAdmission(
-      query,
-      creator.id,
-      input.images?.map(image => image.image_id) ?? [],
-    )
-    await preparePostImageDeliveryMutation(query, {
-      imageIds: input.images?.map(image => image.image_id) ?? [],
-    })
+    await lockActivePostAuthorImageAdmission(query, creator.id)
     const queryOptions = { query }
     if (delegated) await assertDelegatedPostActorActive(creator.id, queryOptions)
     const delegatedParent = delegated

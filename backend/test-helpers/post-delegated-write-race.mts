@@ -1,9 +1,11 @@
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { writeTestImageOwnerRetirement } from './image-owner-retirement.mts'
+import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createMembershipLockDiagnosticReporter } from './membership-lock-diagnostics.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 import type { TestOwnedPostgresWaitOptions } from './postgres-client-lock-identity.mts'
+
 
 /** Archive a community only after a delegated reply waits on its live row. */
 export function withConcurrentCommunityArchiveForTest<T>(
@@ -42,8 +44,10 @@ export function withConcurrentActorDeletionForTest<T>(
   operation: () => Promise<T>,
 ): Promise<T> {
   return commitDelegatedWriteChangeThenRun(async query => {
-    await query(sql`/* withConcurrentActorDeletionForTest */
-        UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${userId}`)
+    await writeTestImageOwnerRetirement(query, { userId }, scopeQuery =>
+      scopeQuery(sql`/* withConcurrentActorDeletionForTest */
+      UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${userId}`),
+    )
   }, operation)
 }
 /** Revoke membership only after the write waits on its active membership row. */
@@ -72,7 +76,7 @@ export function withConcurrentCommunityMembershipRemovalForTest<T>(
 
 /** Commits the staged row, then runs the writer. Used when that writer no longer locks the row. */
 async function commitDelegatedWriteChangeThenRun<T>(
-  stageChange: (query: QueryExecutor) => Promise<void>,
+  stageChange: (query: TransactionQuery) => Promise<void>,
   operation: () => Promise<T>,
 ): Promise<T> {
   await using query = await beginTransaction()
@@ -85,7 +89,7 @@ async function withConcurrentDelegatedWriteChangeForTest<T>(
   operation: () => Promise<T>,
   queryMarker: string,
   lock: TestOwnedPostgresWaitOptions['lock'],
-  stageChange: (query: QueryExecutor) => Promise<void>,
+  stageChange: (query: TransactionQuery) => Promise<void>,
   membershipDiagnostics = false,
 ): Promise<T> {
   const diagnostics = createMembershipLockDiagnosticReporter(membershipDiagnostics)

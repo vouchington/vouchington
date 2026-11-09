@@ -16,7 +16,6 @@ import { dismissPendingDisputesForDeletedReview } from '@services/review-dispute
 import { recordModeratorAction } from '@services/moderator-actions'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { retirePostImagePlacements } from './image-placements.mts'
-import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import { lockDelegatedPostThread } from './delegated-write-locks.mts'
@@ -41,7 +40,6 @@ export const deletePost = async (
             () => assertDelegatedPostActorActive(deleter.id, { query }),
           ])
       },
-      () => preparePostImageDeliveryMutation(query, { postId: post.id, imageIds: [] }),
       async () => {
         if (options?.delegated) {
           await lockDelegatedPostThread(query, post.id)

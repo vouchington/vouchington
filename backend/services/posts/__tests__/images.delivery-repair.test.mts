@@ -29,8 +29,9 @@ describe('post image update delivery recovery', () => {
     const fixture = await createTestPostDeliveryFixture()
     const before = await getPostImages(fixture.postId)
     const replacementImageId = await insertTestImage(fixture.user.id)
+    // Owner changes precede denial; fail after placement synchronization has denied the old tuple.
     const { result, error } = await withPostgresQueryFailureForTest(
-      '/* setPostImages:deleteImages */',
+      '/* setPostImages:moderationContentSha */',
       () =>
         setPostImages(fixture.user, fixture.post, [
           { image_id: replacementImageId, order_index: 0 },

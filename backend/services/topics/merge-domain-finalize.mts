@@ -1,7 +1,7 @@
 import { assertWhitelistedSqlIdentifier, type TransactionQuery } from '@data-stores/psql'
 import type { TopicMergeOperationRow } from './merge-operation-types.mts'
 import { emptyTopicMergeMetricStats } from './merge-metrics-stats.mts'
-import { processTopicMergeFinalizeImages } from './merge-effects.mts'
+import { writeImageSurfaceMutation } from '@services/media-delivery-safety'
 import { buildElectionStatsUpdateQuery } from '@services/elections-votes/shared/vote-stats-update-query'
 import { TOPIC_ELECTION_CONFIG } from '@services/elections-votes/topic/config'
 import { recordTopicMergePublicationChange } from '@services/post-publication/capture-topic-merge'
@@ -21,7 +21,6 @@ export async function finalizeTopicMergeDomain(
     [operation.destination_topic_id],
   )
   if ((rows[0]?.revision ?? '0') !== operation.metric_rating_revision) return false
-  await processTopicMergeFinalizeImages(query, operation.source_topic_id)
   await finalizeTopicMergeProjection(query, operation)
   // Every moved reference now belongs to the destination; the committed redirect starts direct
   // publication effects after this page commits.
@@ -96,12 +95,28 @@ async function finalizeTopicMergeSource(
   query: TransactionQuery,
   operation: TopicMergeOperationRow,
 ) {
-  await query(
-    `/* finalizeTopicMergeDomain source */ UPDATE topics SET merged_into_topic_id=$2::uuid,
+  await writeImageSurfaceMutation(
+    query,
+    [
+      { surfaceKind: 'topic-logo-image', topicId: operation.source_topic_id, nextImageId: null },
+      { surfaceKind: 'topic-hero-image', topicId: operation.source_topic_id, nextImageId: null },
+    ],
+    null,
+    (before, scopeQuery) =>
+      scopeQuery(
+        `/* finalizeTopicMergeDomain source */ UPDATE topics SET merged_into_topic_id=$2::uuid,
     merged_at=CURRENT_TIMESTAMP,merged_by_id=$3::uuid,
     updated_by_id=(SELECT id FROM users WHERE id=$3::uuid AND deleted_at IS NULL),
-    aliases='{}'::text[] WHERE id=$1::uuid`,
-    [operation.source_topic_id, operation.destination_topic_id, operation.requested_by_id],
+    aliases='{}'::text[] WHERE id=$1::uuid
+      AND logo_image_id IS NOT DISTINCT FROM $4::uuid AND hero_image_id IS NOT DISTINCT FROM $5::uuid`,
+        [
+          operation.source_topic_id,
+          operation.destination_topic_id,
+          operation.requested_by_id,
+          before[0]!.current_image_id,
+          before[1]!.current_image_id,
+        ],
+      ),
   )
   await query(
     `/* finalizeTopicMergeDomain source metrics */ DELETE FROM topic_metrics WHERE topic_id=$1::uuid`,

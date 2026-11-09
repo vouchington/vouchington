@@ -1,27 +1,21 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import { stageImagePlacementDeliveryRecord } from '../../services/media-delivery-safety/delivery-registry-staging.mts'
 import { completeTestMediaDeliveryRecord } from './image-surface-placements.mts'
 import sql from 'sql-template-strings'
+import { syncPostImagePlacements } from '../../services/posts/image-placements.mts'
 
 export async function removeTestPostImage(postId: string, imageId: string): Promise<void> {
-  await write(
-    allowUnannotatedQuery(sql`
-    WITH removed AS (
-      DELETE FROM post_images
-      WHERE post_id = ${postId} AND image_id = ${imageId}
-      RETURNING post_id, image_id
-    )
-    UPDATE media_placements placement
-    SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),
-        retirement_reason = 'owner_removed',
-        revision = placement.revision + 1
-    FROM image_placements image_placement
-    JOIN removed ON removed.post_id = image_placement.post_id AND removed.image_id = image_placement.image_id
-    WHERE placement.id = image_placement.placement_id
-      AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'
-  `),
+  await using query = await beginTransaction()
+  await query(sql`/* removeTestPostImage */ DELETE FROM post_images
+    WHERE post_id = ${postId} AND image_id = ${imageId}`)
+  const { rows } = await query<{ image_id: string }>(sql`/* removeTestPostImage:remaining */
+    SELECT image_id FROM post_images WHERE post_id = ${postId} ORDER BY image_id`)
+  await syncPostImagePlacements(
+    postId,
+    rows.map(row => row.image_id),
+    query,
   )
+  await query.commit()
 }
 
 export async function getTestPostImagePlacement(

@@ -1,8 +1,12 @@
+import { withTransactionSavepoint } from '@data-stores/psql/transaction-savepoint'
+import { IMAGE_PLACEMENT_LIMIT_REACHED } from '@modules/on-error/error-codes'
+import { createCodedError } from '@vouchington/sentry'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { runSequentially } from '@modules/utils/run-sequentially'
-import { lockImageAssetAdmission } from '@services/media-delivery-safety'
-import { assertImagePlacementCapacity } from '@services/media-delivery-safety/placement-capacity'
+import assert from 'http-assert'
+import { reserveImagePlacementChanges } from '@services/media-delivery-safety/placement-capacity-reservations'
+import { prepublishImagePlacementDenialBatch } from '@services/media-delivery-safety/delivery-registry-publish'
+import { stageImagePlacementDeliveryRecords } from '@services/media-delivery-safety/delivery-registry-staging'
 
 export type PostImagePlacement = {
   placement_id: string
@@ -11,181 +15,130 @@ export type PostImagePlacement = {
   order_index: number
   caption: string
 }
-
-/** Retires every hosted image use for a deleted post in the deletion transaction. */
-export async function retirePostImagePlacements(
-  postId: string,
-  query: TransactionQuery,
-): Promise<void> {
-  await query(sql`/* retirePostImagePlacements */
-    UPDATE media_placements placement
-    SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),
-        retirement_reason = 'owner_removed',
-        revision = placement.revision + 1
-    FROM image_placements image_placement
-    WHERE image_placement.placement_id = placement.id
-      AND image_placement.post_id = ${postId}
-      AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'
-  `)
+type ActivePlacement = {
+  placement_id: string
+  revision: number
+  activation_revision: number
+  image_id: string
+  can_publish: boolean
 }
 
-/** Keeps post attachment identity stable while making removed attachment routes fail closed. */
+/** The actual post deletion precedes this uncommitted lifecycle/capacity/edge settlement. */
+export function retirePostImagePlacements(postId: string, query: TransactionQuery): Promise<void> {
+  return syncPostImagePlacements(postId, [], query)
+}
+
+/** Mutate DB lifecycle first, claim every concrete slot, then deny old delivery tuples. */
 export async function syncPostImagePlacements(
   postId: string,
   imageIds: string[],
-  query: TransactionQuery,
-  options: { capacityChecked?: true } = {},
+  parentQuery: TransactionQuery,
 ): Promise<void> {
-  const distinctImageIds = [...new Set(imageIds)]
-  // Only same-transaction callers that checked these exact requested images may skip admission.
-  if (!options.capacityChecked)
-    await assertPostImagePlacementCapacity(postId, distinctImageIds, query)
-  await query(sql`/* syncPostImagePlacements:lockExisting */
-    SELECT placement.id
-    FROM image_placements image_placement
-    JOIN media_placements placement ON placement.id = image_placement.placement_id
-    WHERE image_placement.post_id = ${postId}
-    ORDER BY placement.id
-    FOR UPDATE OF placement
-  `)
-  await query(sql`/* syncPostImagePlacements:retireAbsent */
-    UPDATE media_placements placement
-    SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),
-        retirement_reason = 'owner_removed',
-        revision = placement.revision + 1
-    FROM image_placements image_placement
-    WHERE image_placement.placement_id = placement.id
-      AND image_placement.post_id = ${postId}
-      AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'
-      AND NOT (image_placement.image_id = ANY(${distinctImageIds}::uuid[]))
-  `)
-  if (distinctImageIds.length === 0) return
-  await runSequentially([
-    () =>
-      query(sql`/* syncPostImagePlacements:reactivateExisting */
-    UPDATE media_placements placement
-    SET retired_at = NULL,
-        retirement_reason = NULL,
-        revision = placement.revision + 1
-    FROM image_placements image_placement
-    WHERE image_placement.placement_id = placement.id
-      AND image_placement.post_id = ${postId}
-      AND image_placement.image_id = ANY(${distinctImageIds}::uuid[])
-      AND placement.retired_at IS NOT NULL
-    `),
-    async () => {
-      const { rows: missing } = await query<{ image_id: string }>(sql`
-        /* syncPostImagePlacements:missing */
-        SELECT requested.image_id
-        FROM UNNEST(${distinctImageIds}::uuid[]) AS requested(image_id)
-        WHERE NOT EXISTS (
-          SELECT 1 FROM image_placements existing
-          WHERE existing.post_id = ${postId} AND existing.image_id = requested.image_id
-        )
-        ORDER BY requested.image_id
-      `)
-      if (missing.length === 0) return
-      const missingImageIds = missing.map(binding => binding.image_id)
-      const { rows: allocated } = await query<{ image_id: string; placement_id: string }>(sql`
-        /* syncPostImagePlacements:allocate */
-        SELECT requested.image_id, uuidv7() AS placement_id
-        FROM UNNEST(${missingImageIds}::uuid[]) AS requested(image_id)
-        ORDER BY requested.image_id
-      `)
-      const placementIds = allocated.map(binding => binding.placement_id)
-      const { rowCount: imageCount } = await query(sql`/* syncPostImagePlacements:pinImages */
-        SELECT id FROM retained_image_identities
-        WHERE id = ANY(${missingImageIds}::uuid[])
-        ORDER BY id FOR KEY SHARE
-      `)
-      if (imageCount !== missing.length) {
-        throw new Error('Missing retained image identity for placement')
-      }
-      await query(sql`/* syncPostImagePlacements:retainBindings */
-        INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)
-        SELECT requested.placement_id, requested.image_id, 'post'
-        FROM UNNEST(${placementIds}::uuid[], ${missingImageIds}::uuid[])
-          WITH ORDINALITY AS requested(placement_id, image_id, position)
-        ORDER BY requested.placement_id
-        ON CONFLICT (placement_id) DO NOTHING
-      `)
-      const { rowCount: bindingCount } = await query(sql`/* syncPostImagePlacements:pinBindings */
-        SELECT binding.placement_id
-        FROM UNNEST(${placementIds}::uuid[], ${missingImageIds}::uuid[])
-          WITH ORDINALITY AS requested(placement_id, image_id, position)
-        JOIN retained_image_placement_bindings binding
-          ON binding.placement_id = requested.placement_id
-          AND binding.image_id = requested.image_id
-          AND binding.binding_family = 'post'
-        ORDER BY requested.position FOR KEY SHARE OF binding
-      `)
-      /* v8 ignore next -- defensive: fresh database UUIDv7 placement IDs cannot be controlled by post input. */
-      if (bindingCount !== missing.length) {
-        throw new Error('Image placement identity is already bound to another image or family')
-      }
-      await query(sql`/* syncPostImagePlacements:createParent */
-        INSERT INTO media_placements (id)
-        SELECT requested.placement_id
-        FROM UNNEST(${placementIds}::uuid[]) WITH ORDINALITY AS requested(placement_id, position)
-        ORDER BY requested.position
-      `)
-      await query(sql`/* syncPostImagePlacements:createChild */
-        INSERT INTO image_placements (placement_id, post_id, image_id)
-        SELECT requested.placement_id, ${postId}, requested.image_id
-        FROM UNNEST(${placementIds}::uuid[], ${missingImageIds}::uuid[])
-          WITH ORDINALITY AS requested(placement_id, image_id, position)
-        ORDER BY requested.position
-      `)
-    },
-    () =>
-      query(sql`/* syncPostImagePlacements:stageDelivery */
-    INSERT INTO media_delivery_registry_records (
-      placement_id, placement_revision, image_id, desired_state
-    )
-    SELECT placement.id, placement.revision, binding.image_id, 'allow'::media_delivery_desired_states
-    FROM image_placements binding
-    JOIN media_placements placement ON placement.id = binding.placement_id
-    JOIN images image ON image.id = binding.image_id
-    WHERE binding.post_id = ${postId}
-      AND placement.retired_at IS NULL AND placement.copyright_withheld_at IS NULL
-      AND image.deleted_at IS NULL AND image.upload_completed_at IS NOT NULL
-      AND image.quarantine_pending_at IS NULL AND image.is_flagged_by_openai_omni_moderation = FALSE
-      AND image.openai_omni_moderation_results IS NOT NULL
-      AND image.openai_omni_moderation_created_at IS NOT NULL
-    ORDER BY placement.id, placement.revision, binding.image_id
-    ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING
-    `),
-  ])
-}
+  try {
+    await withTransactionSavepoint(parentQuery, async query => {
+      const desired = [...new Set(imageIds.map(id => id.toLowerCase()))].toSorted()
+      const { rows: before } =
+        await query<ActivePlacement>(sql`/* syncPostImagePlacements:current */
+    SELECT reservation.placement_id, placement.revision, placement.activation_revision, reservation.image_id,
+      false AS can_publish
+    FROM image_placement_capacity_reservations reservation
+    JOIN media_placements placement ON placement.id = reservation.placement_id
+    WHERE reservation.post_id = ${postId}
+    ORDER BY reservation.image_id, reservation.placement_id`)
+      const wanted = new Set(desired)
+      const removed = before.filter(row => !wanted.has(row.image_id))
+      const { rows: retired } =
+        removed.length > 0
+          ? await query<{
+              placement_id: string
+              revision: number
+            }>(sql`/* syncPostImagePlacements:retireAbsent */
+    UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP, retirement_reason = 'owner_removed', revision = revision + 1
+    WHERE id = ANY(${removed.map(row => row.placement_id)}::uuid[]) AND retired_at IS NULL
+    RETURNING WITH (OLD AS prior) id AS placement_id, prior.revision`)
+          : { rows: [] }
 
-/** Reserve capacity before a caller publishes any old-placement edge denial. */
-export async function assertPostImagePlacementCapacity(
-  postId: string,
-  imageIds: readonly string[],
-  query: TransactionQuery,
-  options: { admissionHeld?: true } = {},
-): Promise<void> {
-  const distinctImageIds = [...new Set(imageIds)]
-  // Direct callers reserve the image domain before any placement row lock.
-  // A caller may omit this statement only after declaring these assets on this same transaction.
-  if (!options.admissionHeld) await lockImageAssetAdmission(distinctImageIds, query)
-  if (distinctImageIds.length > 0) {
-    const { rows: activating } = await query<{ image_id: string }>(sql`
-      /* syncPostImagePlacements:activating */
-      SELECT requested.image_id
-      FROM unnest(${distinctImageIds}::uuid[]) AS requested(image_id)
-      WHERE NOT EXISTS (
-        SELECT 1 FROM image_placements binding
-        JOIN media_placements placement ON placement.id = binding.placement_id
-        WHERE binding.post_id = ${postId} AND binding.image_id = requested.image_id
-          AND placement.retired_at IS NULL
-        LIMIT 1
+      if (desired.length > 0) {
+        await query(sql`/* syncPostImagePlacements:reactivateExisting */
+      UPDATE media_placements placement SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1
+      FROM image_placements binding
+      WHERE binding.placement_id = placement.id AND binding.post_id = ${postId}
+        AND binding.image_id = ANY(${desired}::uuid[]) AND placement.retired_at IS NOT NULL`)
+        await query(sql`/* syncPostImagePlacements:createMissing */
+      WITH allocated AS MATERIALIZED (
+        SELECT uuidv7() AS placement_id, requested.image_id
+        FROM unnest(${desired}::uuid[]) requested(image_id)
+        WHERE NOT EXISTS (SELECT 1 FROM image_placements binding
+          WHERE binding.post_id = ${postId} AND binding.image_id = requested.image_id)
+        ORDER BY requested.image_id
+      ), retained AS (
+        INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)
+        SELECT placement_id, image_id, 'post' FROM allocated ORDER BY placement_id
+        RETURNING placement_id, image_id
+      ), parents AS (
+        INSERT INTO media_placements (id) SELECT placement_id FROM retained ORDER BY placement_id RETURNING id
+      ) INSERT INTO image_placements (placement_id, post_id, image_id)
+        SELECT parents.id, ${postId}, retained.image_id FROM parents
+        JOIN retained ON retained.placement_id = parents.id ORDER BY parents.id`)
+      }
+
+      const { rows: after } = desired.length
+        ? await query<ActivePlacement>(sql`/* syncPostImagePlacements:desired */
+    SELECT binding.placement_id, placement.revision, placement.activation_revision, binding.image_id,
+      placement.copyright_withheld_at IS NULL AND image.deleted_at IS NULL
+        AND image.upload_completed_at IS NOT NULL AND image.quarantine_pending_at IS NULL
+        AND image.is_flagged_by_openai_omni_moderation = FALSE AND image.openai_omni_moderation_results IS NOT NULL
+        AND image.openai_omni_moderation_created_at IS NOT NULL AS can_publish
+    FROM unnest(${desired}::uuid[]) requested(image_id)
+    JOIN image_placements binding ON binding.post_id = ${postId} AND binding.image_id = requested.image_id
+    JOIN media_placements placement ON placement.id = binding.placement_id AND placement.retired_at IS NULL
+    JOIN images image ON image.id = binding.image_id
+    ORDER BY binding.image_id, binding.placement_id`)
+        : { rows: [] }
+      assert(after.length === desired.length, 400, 'Image not found or not complete')
+      await reserveImagePlacementChanges(
+        query,
+        removed.map(row => row.placement_id),
+        after.map(row => ({
+          placementId: row.placement_id,
+          imageId: row.image_id,
+          bindingFamily: 'post' as const,
+          activationRevision: row.activation_revision,
+          postId,
+        })),
       )
-      ORDER BY requested.image_id
-    `)
-    await assertImagePlacementCapacity(
-      activating.map(row => row.image_id),
-      query,
-    )
+      const removedById = new Map(removed.map(row => [row.placement_id, row.image_id]))
+      await prepublishImagePlacementDenialBatch(
+        retired.map(row => ({
+          placementId: row.placement_id,
+          revision: row.revision,
+          imageId: removedById.get(row.placement_id)!,
+        })),
+        { query },
+      )
+      await stageImagePlacementDeliveryRecords(
+        after.flatMap(row =>
+          row.can_publish
+            ? [
+                {
+                  placementId: row.placement_id,
+                  revision: row.revision,
+                  imageId: row.image_id,
+                  state: 'allow' as const,
+                },
+              ]
+            : [],
+        ),
+        { query },
+      )
+    })
+  } catch (err) {
+    if (err instanceof Error && 'code' in err && err.code === '40P01')
+      throw createCodedError(
+        409,
+        'Concurrent image placement change',
+        IMAGE_PLACEMENT_LIMIT_REACHED,
+      )
+    throw err
   }
 }

@@ -23,8 +23,7 @@ import { lockExistingTopicAliasPublicationScopes } from './alias-publication-loc
 import { prepareTopicAliasInput } from './alias-preflight.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import {
-  prepublishImageSurfaceDenials,
-  syncImageSurfacePlacement,
+  writeImageSurfaceMutation,
   assertImageDeliveryTransaction,
   type ImageSurfaceReference,
 } from '@services/media-delivery-safety'
@@ -65,7 +64,7 @@ export const updateTopic = async (
                 prepareTopicAliasInput([topic.slug, changes.slug]),
               ),
             }
-      const references: (ImageSurfaceReference & { nextImageId?: string | null })[] = []
+      const references: (ImageSurfaceReference & { nextImageId: string | null })[] = []
       if (changes.logo_image_id !== undefined)
         references.push({
           surfaceKind: 'topic-logo-image',
@@ -78,29 +77,6 @@ export const updateTopic = async (
           topicId: topic.id,
           nextImageId: changes.hero_image_id ?? null,
         })
-      if (references.length) {
-        const imageQuery = options.query ?? write
-        assertImageDeliveryTransaction(imageQuery)
-        // Match topic merges: take the image owner domain before the topic row.
-        await prepublishImageSurfaceDenials(references, imageQuery)
-        const { rows: activeTopics } = await imageQuery<{ id: string }>(sql`
-          /* updateTopic:lockActiveImageOwner */
-          SELECT id FROM topics
-          WHERE id = ${topic.id} AND deleted_at IS NULL AND merged_into_topic_id IS NULL
-          FOR UPDATE
-        `)
-        assert(activeTopics.length === 1, 409, 'Topic was merged or deleted')
-        for (const reference of references) {
-          // oxlint-disable-next-line no-await-in-loop -- one predeclared admission batch, then each exact owner binding.
-          await syncImageSurfacePlacement(
-            reference,
-            reference.nextImageId ?? null,
-            reference.nextImageId ? updater.id : null,
-            imageQuery,
-            { prepublished: true },
-          )
-        }
-      }
 
       const updateQuery = sql`/* updateTopicInStore */ UPDATE topics SET updated_by_id = ${updater.id}`
       appendTopicUpdateFields(updateQuery, changes)
@@ -108,8 +84,32 @@ export const updateTopic = async (
         await setTopicHostnameLink(topic.id, resolvedHostnameId ?? null, options)
       }
 
-      updateQuery.append(sql` WHERE id = ${topic.id}`)
-      await write(updateQuery, options)
+      updateQuery.append(
+        sql` WHERE id = ${topic.id} AND deleted_at IS NULL AND merged_into_topic_id IS NULL`,
+      )
+      if (references.length) {
+        const imageQuery = options.query ?? write
+        assertImageDeliveryTransaction(imageQuery)
+        await writeImageSurfaceMutation(
+          imageQuery,
+          references,
+          updater.id,
+          async (before, scopeQuery) => {
+            for (const [position, reference] of references.entries()) {
+              if (reference.surfaceKind === 'topic-logo-image')
+                updateQuery.append(
+                  sql` AND logo_image_id IS NOT DISTINCT FROM ${before[position]!.current_image_id}::uuid`,
+                )
+              else
+                updateQuery.append(
+                  sql` AND hero_image_id IS NOT DISTINCT FROM ${before[position]!.current_image_id}::uuid`,
+                )
+            }
+            const result = await scopeQuery(updateQuery)
+            assert(result.rowCount === 1, 409, 'Topic or image surface changed')
+          },
+        )
+      } else await write(updateQuery, options)
 
       if (changes.slug !== undefined) {
         claimedAliases = await createTopicAliases(topic.id, [topic.slug, changes.slug], {

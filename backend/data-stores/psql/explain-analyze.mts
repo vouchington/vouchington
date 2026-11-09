@@ -68,6 +68,7 @@ export async function explainAnalyze(
     jit?: 'on' | 'off'
     planCacheMode?: ExplainPlanCacheMode
     localSettings?: Readonly<Record<string, string>>
+    deferredConstraints?: readonly string[]
     planOnly?: boolean // EXPLAIN without executing; callers read only plan costs
     /** Recreate captured session-local objects before preparing the measured statement. */
     setupSql?: string
@@ -110,6 +111,10 @@ export async function explainAnalyze(
         work_mem: EXPLAIN_WORK_MEM,
       })}::jsonb)`)
     if (options.setupSql) await client.query(`/* explainAnalyze:setup */ ${options.setupSql}`)
+    if (options.deferredConstraints?.length)
+      await client.query(
+        `/* explainAnalyze */ SET CONSTRAINTS ${options.deferredConstraints.map(constraintName => client.escapeIdentifier(constraintName)).join(', ')} DEFERRED`,
+      )
     await client.query(`/* explainAnalyze */ ${prepareText}`)
     prepared = true
     const argumentSql = await buildPreparedArgumentSql(client, preparedStatementName, values ?? [])

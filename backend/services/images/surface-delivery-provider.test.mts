@@ -6,7 +6,7 @@ import {
   insertTestImage,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
-import { prepublishImagePlacementDenials } from '@services/media-delivery-safety'
+import { markImageQuarantinePending } from '@voucha/test-helpers/entities/image-safety'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 
 describe('surface delivery provider boundary', () => {
@@ -15,7 +15,7 @@ describe('surface delivery provider boundary', () => {
     vi.unstubAllEnvs()
   })
 
-  it('pre-denies an active surface tuple before a safety or delete transition', async () => {
+  it('denies an active surface tuple during a safety transition', async () => {
     const user = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
     await setTestUserProfileImage(user.id, imageId)
@@ -32,7 +32,7 @@ describe('surface delivery provider boundary', () => {
       .spyOn(mediaDeliveryRegistryProvider, 'invalidateMediaDeliveryPath')
       .mockResolvedValue({ $metadata: {} })
 
-    await prepublishImagePlacementDenials({ imageId })
+    await markImageQuarantinePending(imageId)
 
     expect(put).toHaveBeenCalledWith(
       expect.objectContaining({

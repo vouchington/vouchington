@@ -111,6 +111,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'google_accounts',
   'households',
   'image_placements',
+  'image_placement_capacity_reservations',
   'image_surface_placement_activations',
   'image_surface_placements',
   'individual_cards',

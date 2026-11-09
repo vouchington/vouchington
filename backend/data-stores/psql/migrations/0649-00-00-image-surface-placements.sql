@@ -21,8 +21,12 @@ CREATE TABLE image_surface_placements (
   topic_id uuid REFERENCES topics(id) ON DELETE RESTRICT,
   community_id uuid REFERENCES communities(id) ON DELETE RESTRICT,
   user_profile_link_id uuid REFERENCES user_profile_links(id) ON DELETE RESTRICT,
+  has_live_owner boolean GENERATED ALWAYS AS (
+    user_id IS NOT NULL OR topic_id IS NOT NULL OR community_id IS NOT NULL OR user_profile_link_id IS NOT NULL
+  ) STORED,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (placement_id, surface_kind),
+  UNIQUE (placement_id, has_live_owner),
   CHECK (
     (surface_kind = 'user-profile-image'
       AND topic_id IS NULL AND community_id IS NULL AND user_profile_link_id IS NULL)
@@ -134,7 +138,7 @@ BEGIN
     AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id
     AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id
     AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id
-      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)
+      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed')
   THEN
     RETURN NEW;
   END IF;
@@ -149,7 +153,7 @@ BEGIN
     AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id
     AND NEW.user_profile_link_id IS NOT DISTINCT FROM OLD.user_profile_link_id
     AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id
-      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)
+      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed')
   THEN
     RETURN NEW;
   END IF;
@@ -187,7 +191,7 @@ DECLARE
 BEGIN
   SELECT num_nonnulls(surface.user_id, surface.topic_id, surface.community_id, surface.user_profile_link_id) = 0
   INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id
-  FOR UPDATE;
+  ;
   IF v_ownerless AND (NEW.retired_at IS NULL OR NEW.retirement_reason IS DISTINCT FROM 'owner_removed') THEN
     RAISE EXCEPTION 'ownerless image surface must remain retired for owner removal' USING ERRCODE = 'check_violation';
   END IF;
@@ -214,33 +218,13 @@ CREATE OR REPLACE FUNCTION fn_sync_image_surface_placement(
   p_user_profile_link_id uuid
 )
 RETURNS void LANGUAGE plpgsql AS $$
-DECLARE
-  v_placement_id uuid;
-  v_revision integer;
+DECLARE v_placement_id uuid;
 BEGIN
-  INSERT INTO media_delivery_registry_records (
-    placement_id, placement_revision, image_id, desired_state
-  )
-  SELECT placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states
-  FROM media_placements placement
-  JOIN image_surface_placements surface ON surface.placement_id = placement.id
-  WHERE placement.retired_at IS NULL
-    AND surface.surface_kind = p_surface_kind
-    AND surface.user_id IS NOT DISTINCT FROM p_user_id
-    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id
-    AND surface.community_id IS NOT DISTINCT FROM p_community_id
-    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id
-    AND surface.image_id IS DISTINCT FROM p_image_id
-  ORDER BY placement.id, placement.revision, surface.image_id
-  ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE
-  SET desired_state = 'withheld',
-    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
-      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;
-
+  -- The actual owner row has already changed. Its transaction retains these uncommitted
+  -- lifecycle changes and must claim concrete capacity before publishing any edge transition.
   UPDATE media_placements placement
   SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),
-      retirement_reason = 'owner_removed',
-      revision = placement.revision + 1
+      retirement_reason = 'owner_removed', revision = placement.revision + 1
   FROM image_surface_placements surface
   WHERE surface.placement_id = placement.id
     AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'
@@ -250,45 +234,29 @@ BEGIN
     AND surface.community_id IS NOT DISTINCT FROM p_community_id
     AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id
     AND surface.image_id IS DISTINCT FROM p_image_id;
-
   IF p_image_id IS NULL THEN RETURN; END IF;
 
-  SELECT placement.id, placement.revision INTO v_placement_id, v_revision
+  SELECT surface.placement_id INTO v_placement_id
   FROM image_surface_placements surface
-  JOIN media_placements placement ON placement.id = surface.placement_id
-  WHERE surface.surface_kind = p_surface_kind
-    AND surface.image_id = p_image_id
+  WHERE surface.surface_kind = p_surface_kind AND surface.image_id = p_image_id
     AND surface.user_id IS NOT DISTINCT FROM p_user_id
     AND surface.topic_id IS NOT DISTINCT FROM p_topic_id
     AND surface.community_id IS NOT DISTINCT FROM p_community_id
     AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id
-  ORDER BY placement.id DESC LIMIT 1
-  FOR UPDATE OF placement;
-
+  ORDER BY surface.placement_id DESC LIMIT 1;
   IF v_placement_id IS NULL THEN
-    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'
-      USING ERRCODE = 'check_violation';
+    v_placement_id := uuidv7();
+    INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)
+    VALUES (v_placement_id, p_image_id, 'surface');
+    INSERT INTO media_placements (id) VALUES (v_placement_id);
+    INSERT INTO image_surface_placements (
+      placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id
+    ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id,
+      p_community_id, p_user_profile_link_id);
   ELSE
-    UPDATE media_placements
-    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1
-    WHERE id = v_placement_id AND retired_at IS NOT NULL
-    RETURNING revision INTO v_revision;
-    IF v_revision IS NULL THEN
-      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;
-    END IF;
+    UPDATE media_placements SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1
+    WHERE id = v_placement_id AND retired_at IS NOT NULL;
   END IF;
-
-  INSERT INTO media_delivery_registry_records (
-    placement_id, placement_revision, image_id, desired_state
-  )
-  SELECT v_placement_id, v_revision, p_image_id,
-    CASE WHEN image.deleted_at IS NULL
-        AND image.quarantine_pending_at IS NULL
-        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE
-      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END
-  FROM images image WHERE image.id = p_image_id
-  ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING;
-
 END;
 $$;
 
@@ -327,6 +295,11 @@ CREATE OR REPLACE FUNCTION fn_project_handoff_deleted_user_image_surfaces()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);
+  DELETE FROM image_placement_capacity_reservations reservation
+  USING image_surface_placements surface
+  WHERE surface.placement_id = reservation.surface_placement_id
+    AND surface.surface_kind = 'user-profile-image' AND surface.user_id = OLD.id
+    AND surface.image_id = OLD.profile_image_id;
   UPDATE image_surface_placements
   SET user_id = NULL
   WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;
@@ -407,6 +380,11 @@ CREATE OR REPLACE FUNCTION fn_project_retire_deleted_profile_link_image_surfaces
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM fn_sync_image_surface_placement('user-profile-link-image', NULL, NULL, NULL, NULL, OLD.id);
+  DELETE FROM image_placement_capacity_reservations reservation
+  USING image_surface_placements surface
+  WHERE surface.placement_id = reservation.surface_placement_id
+    AND surface.surface_kind = 'user-profile-link-image' AND surface.user_profile_link_id = OLD.id
+    AND surface.image_id = OLD.image_id;
   UPDATE image_surface_placements SET user_profile_link_id = NULL
   WHERE surface_kind = 'user-profile-link-image' AND user_profile_link_id = OLD.id;
   RETURN OLD;
@@ -427,3 +405,5 @@ COMMENT ON COLUMN image_surface_placements.topic_id IS 'Topic owner for a logo o
 COMMENT ON COLUMN image_surface_placements.community_id IS 'Community owner for a profile or banner image surface.';
 COMMENT ON COLUMN image_surface_placements.user_profile_link_id IS 'Concrete live profile-link owner; cleared only after terminal owner-removal retirement on deletion.';
 COMMENT ON COLUMN images.id IS 'Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.';
+
+COMMENT ON COLUMN image_surface_placements.has_live_owner IS 'Generated availability of its concrete owner relationship; an active capacity reservation requires this exact surface to retain an owner at commit.';

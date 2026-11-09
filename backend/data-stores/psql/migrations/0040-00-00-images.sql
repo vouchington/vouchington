@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS images (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at TIMESTAMPTZ,
+  capacity_admissible_image_id uuid GENERATED ALWAYS AS
+    (CASE WHEN deleted_at IS NULL THEN id ELSE NULL END) STORED UNIQUE,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
   deletion_post_cursor UUID,
   deletion_posts_completed_at TIMESTAMPTZ,
@@ -47,11 +49,20 @@ CREATE TABLE IF NOT EXISTS images (
   quarantine_s3_key TEXT,
 
   bedrock_nova_multimodal_v1_embedding VECTOR(1024),
-  bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ
+  bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ,
+  is_delivery_eligible boolean GENERATED ALWAYS AS (
+    deleted_at IS NULL AND upload_completed_at IS NOT NULL AND quarantine_pending_at IS NULL
+      AND is_flagged_by_openai_omni_moderation IS FALSE
+      AND openai_omni_moderation_results IS NOT NULL AND openai_omni_moderation_created_at IS NOT NULL
+  ) STORED,
+  UNIQUE (id, is_delivery_eligible)
 );
 
 CREATE INDEX IF NOT EXISTS idx_images__deleted_by_id
   ON images (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
+
+COMMENT ON COLUMN images.capacity_admissible_image_id IS 'Live image identity accepted by concrete placement reservations; deletion removes admission through the foreign key.';
+COMMENT ON COLUMN images.is_delivery_eligible IS 'Current upload, moderation and quarantine eligibility copied by concrete active reservations and publication authority.';
 
 ALTER TABLE images
 ADD CONSTRAINT fk_images__retained_image_identity

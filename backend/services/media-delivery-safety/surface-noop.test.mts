@@ -100,6 +100,8 @@ describe('unchanged surface image updates', () => {
         )
       expect(edge.put).not.toHaveBeenCalled()
       await markImageModerationFlagged(imageId)
+      expect(edge.put).toHaveBeenCalledTimes(keys.length)
+      edge.put.mockClear()
       if (kind === 'community')
         await updateCommunity(user, id, { profile_image_id: imageId, banner_image_id: imageId })
       else
@@ -119,7 +121,7 @@ describe('unchanged surface image updates', () => {
         )
       }
       expect(edge.put).not.toHaveBeenCalled()
-      for (const key of keys) expect(edge.records.get(key)?.state).toBe('allow')
+      for (const key of keys) expect(edge.records.get(key)?.state).toBe('withheld')
       expect(
         await getTestImageSurfacePlacements(
           kind === 'community' ? { communityId: id } : { topicId: id },

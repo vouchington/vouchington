@@ -18,9 +18,9 @@ import {
 import { getTestMediaDeliveryRecordSnapshot } from '@voucha/test-helpers/entities/media-delivery-retry'
 import {
   stageImagePlacementDeliveryRecordPage,
-  stageImagePlacementDeliveryRecord,
   listRecoverableMediaDeliveryRegistryIds,
 } from '@services/media-delivery-safety'
+import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety/delivery-registry-staging'
 import type { ReconcileMediaDeliveryRegistryData } from '@queues/notifications/enqueues'
 import { processReconcileMediaDeliveryRegistry } from './media-delivery-registry.mts'
 

@@ -1,6 +1,8 @@
 import { read, write } from '@data-stores/psql'
 import type { QueryExecutor, QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { releaseImagePlacementReservations } from '@services/media-delivery-safety/placement-capacity-reservations'
+import { mediaDeliverySafetyWorkMaxValues } from '@services/media-delivery-safety/work-limits'
 import { copyrightPlacementHostIsLiveSql } from './placement-copyright-host-sql.mts'
 import { buildCopyrightPlacementsMutationSql } from './placement-copyright-mutation-sql.mts'
 import {
@@ -25,19 +27,30 @@ export function getImagePlacementKey(placementId: string): string {
 export async function retireImagePlacementsForDeletedImage(
   imageId: string,
   query: TransactionQuery,
-): Promise<void> {
-  await query(
+): Promise<{ placementId: string; revision: number; imageId: string }[]> {
+  const { rows: current } = await query<{ placement_id: string; revision: number }>(sql`
+    /* retireImagePlacementsForDeletedImage:current */
+    SELECT reservation.placement_id, placement.revision
+    FROM image_placement_capacity_reservations reservation
+    JOIN media_placements placement ON placement.id = reservation.placement_id
+    WHERE reservation.image_id = ${imageId}
+    ORDER BY reservation.slot_number LIMIT ${mediaDeliverySafetyWorkMaxValues.max_placements_per_image}`)
+  const { rows: retired } = await query<{ placement_id: string; revision: number }>(
     sql`/* retireImagePlacementsForDeletedImage */
       UPDATE media_placements placement
       SET retired_at = CURRENT_TIMESTAMP,
           retirement_reason = 'asset_deleted',
           revision = placement.revision + 1
-      FROM image_placements image_placement
-      WHERE image_placement.placement_id = placement.id
-        AND image_placement.image_id = ${imageId}
+      WHERE placement.id = ANY(${current.map(row => row.placement_id)}::uuid[])
         AND placement.retired_at IS NULL
+      RETURNING WITH (OLD AS prior) placement.id AS placement_id, prior.revision
     `,
   )
+  await releaseImagePlacementReservations(
+    query,
+    current.map(row => row.placement_id),
+  )
+  return retired.map(row => ({ placementId: row.placement_id, revision: row.revision, imageId }))
 }
 
 export async function getImagePlacementForCopyright(
@@ -95,9 +108,8 @@ export type CopyrightImagePlacementMutationInput = {
   expectedRevision: number
 }
 
-/** Changes many placements in one statement; result order matches input order.
- * Caller must hold `lockImageDeliveryMutation({ placementIds, placementOnly: true })` for every
- * input placement in this transaction. */
+/** Conditionally writes exact placement revisions; result order matches input order.
+ * Callers retain the actual mutation transaction through delivery publication. */
 export async function changeImagePlacementsCopyrightWithholding(
   inputs: readonly CopyrightImagePlacementMutationInput[],
   withhold: boolean,

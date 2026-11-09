@@ -1,3 +1,5 @@
+import { releaseImagePlacementReservations } from '../../../services/media-delivery-safety/placement-capacity-reservations.mts'
+import { writeImageDeliveryPolicyMutation } from '../../../services/media-delivery-safety/image-policy-mutation.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { withTestOwnedPostgresWait } from '../../postgres-client-lock-observer.mts'
@@ -73,22 +75,32 @@ export async function cancelTestCopyrightRestorationDeadline(deadlineId: string)
 }
 
 export async function quarantineTestCopyrightRestorationImage(imageId: string): Promise<void> {
-  await write(
-    sql`/* quarantineTestCopyrightRestorationImage */ UPDATE images SET quarantine_pending_at = CURRENT_TIMESTAMP WHERE id = ${imageId}`,
+  await using query = await beginTransaction()
+  await writeImageDeliveryPolicyMutation(query, imageId, scope =>
+    scope(
+      sql`/* quarantineTestCopyrightRestorationImage */ UPDATE images SET quarantine_pending_at = CURRENT_TIMESTAMP WHERE id = ${imageId}`,
+    ),
   )
+  await query.commit()
 }
 
 export async function makeTestCopyrightRestorationImageUnready(imageId: string): Promise<void> {
-  await write(
-    sql`/* makeTestCopyrightRestorationImageUnready */ UPDATE images SET openai_omni_moderation_created_at = NULL WHERE id = ${imageId}`,
+  await using query = await beginTransaction()
+  await writeImageDeliveryPolicyMutation(query, imageId, scope =>
+    scope(
+      sql`/* makeTestCopyrightRestorationImageUnready */ UPDATE images SET openai_omni_moderation_created_at = NULL WHERE id = ${imageId}`,
+    ),
   )
+  await query.commit()
 }
 
 export async function retireTestCopyrightRestorationPlacement(placementId: string): Promise<void> {
-  await write(
-    sql`/* retireTestCopyrightRestorationPlacement */ UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP, retirement_reason = 'owner_removed', revision = revision + 1
-    WHERE id = ${placementId}`,
-  )
+  await using query = await beginTransaction()
+  await query(sql`/* retireTestCopyrightRestorationPlacement */
+    UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP,
+      retirement_reason = 'owner_removed', revision = revision + 1 WHERE id = ${placementId}`)
+  await releaseImagePlacementReservations(query, [placementId])
+  await query.commit()
 }
 
 export async function supersedeTestCopyrightRestorationPlacementRevision(

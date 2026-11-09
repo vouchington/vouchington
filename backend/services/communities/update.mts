@@ -19,6 +19,7 @@ import { buildCommunityUpdateStatement, validateCommunityUpdateInput } from './u
 import { communityUpdateReturning } from './community-update-returning.mts'
 import { updateCommunityInTransaction } from './update-transaction.mts'
 import type { UpdateCommunityInput } from './update-types.mts'
+import type { ImageSurfaceMutationBinding } from '@services/media-delivery-safety'
 export type { UpdateCommunityInput } from './update-types.mts'
 
 export async function updateCommunity(
@@ -35,10 +36,19 @@ export async function updateCommunity(
   assert(currentUserCanUpdateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
   validateCommunityUpdateInput(input)
-  const updateStatement = communityUpdateReturning(
-    sql`/* updateCommunity */`,
-    buildCommunityUpdateStatement(communityId, input),
-  )
+  const updateStatement = (before: readonly ImageSurfaceMutationBinding[]) => {
+    const statement = buildCommunityUpdateStatement(communityId, input)
+    let position = 0
+    if ('profile_image_id' in input)
+      statement.append(
+        sql` AND profile_image_id IS NOT DISTINCT FROM ${before[position++]!.current_image_id}::uuid`,
+      )
+    if ('banner_image_id' in input)
+      statement.append(
+        sql` AND banner_image_id IS NOT DISTINCT FROM ${before[position++]!.current_image_id}::uuid`,
+      )
+    return communityUpdateReturning(sql`/* updateCommunity */`, statement)
+  }
   const run = (query: TransactionQuery) =>
     updateCommunityInTransaction({
       community,

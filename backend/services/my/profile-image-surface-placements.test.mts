@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { stageTestImagePlacementDeliveryRecordsForImageIds } from '@voucha/test-helpers/media-delivery-recovery'
 import { createProfileLink, deleteProfileLink } from './profile-links.mts'
 import { updateProfileImageId } from './identity.mts'
-import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety/delivery-registry-staging'
 import { deleteImageById } from '@services/images/delete'
 import {
   createTestUserDirect,

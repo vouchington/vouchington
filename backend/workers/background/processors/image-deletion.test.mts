@@ -1,5 +1,6 @@
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { randomUUID } from 'node:crypto'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import {
   IMAGE_DELETION_RECOVER_JOB,
@@ -21,7 +22,14 @@ import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upl
 import { processImageDeletionRecovery } from './image-deletion.mts'
 
 describe('image deletion recovery dispatcher', () => {
-  afterEach(() => vi.restoreAllMocks())
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
 
   it('continues beyond an unfinished front image and converges after the admitted deletions finish', async context => {
     const fixtures = [await createImageDeletionFixture(1), await createImageDeletionFixture(1)]

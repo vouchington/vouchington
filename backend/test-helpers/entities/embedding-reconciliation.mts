@@ -1,10 +1,15 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { writeTestImageOwnerRetirement } from '../image-owner-retirement.mts'
+import { beginTransaction } from '@data-stores/psql'
 
 export async function setTopicDeletedForEmbeddingTest(topicId: string): Promise<void> {
-  await write(
-    `/* setTopicDeletedForEmbeddingTest */ UPDATE topics SET deleted_at = NOW() WHERE id = $1`,
-    [topicId],
-  )
+  await using query = await beginTransaction()
+  await writeTestImageOwnerRetirement(query, { topicId }, async scopeQuery => {
+    await scopeQuery(
+      `/* setTopicDeletedForEmbeddingTest */ UPDATE topics SET deleted_at = NOW() WHERE id = $1`,
+      [topicId],
+    )
+  })
+  await query.commit()
 }
 
 export async function lockTopicEmbeddingRowForTest(

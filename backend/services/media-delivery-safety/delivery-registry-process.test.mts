@@ -14,14 +14,14 @@ import {
   scheduleTestMediaDeliveryRetry,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
-import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
+import { writeTestImageSurfaceMutation } from '@voucha/test-helpers/image-surface-mutation'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   repairFailedImageDeliveryMutation,
   processMediaDeliveryRegistryRecord,
   prepublishImagePlacementDenial,
-  stageImagePlacementDeliveryRecord,
 } from './index.mts'
+import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 
 describe('media delivery registry processor', () => {
   afterEach(() => {
@@ -220,7 +220,7 @@ describe('media delivery registry processor', () => {
       state: 'allow',
     })
     await using transaction = await beginTransaction()
-    await syncImageSurfacePlacement(
+    await writeTestImageSurfaceMutation(
       { surfaceKind: 'user-profile-image', userId: user.id },
       null,
       null,

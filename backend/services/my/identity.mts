@@ -8,7 +8,7 @@ import { getPrivateUserByAny } from '@services/users'
 import { commitUserUpdateOperation } from '@services/users/update-username-publication'
 import { ensureDefaultLandingPage } from './landing-pages/index.mts'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
-import { syncImageSurfacePlacement } from '@services/media-delivery-safety'
+import { writeImageSurfaceMutation } from '@services/media-delivery-safety'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 
 export async function updateUsername(userId: string, username: string): Promise<void> {
@@ -35,16 +35,18 @@ export async function updateProfileImageId(
     assert(rows.length > 0, 400, 'Image not found or does not belong to you')
   }
   await using transaction = await beginTransaction()
-  await syncImageSurfacePlacement(
-    { surfaceKind: 'user-profile-image', userId },
-    profileImageId,
-    profileImageId ? userId : null,
+  await writeImageSurfaceMutation(
     transaction,
+    [{ surfaceKind: 'user-profile-image', userId, nextImageId: profileImageId }],
+    userId,
+    async (before, scopeQuery) => {
+      const { rowCount } = await scopeQuery(sql`/* updateProfileImageId */
+        UPDATE users SET profile_image_id = ${profileImageId}
+        WHERE id = ${userId} AND deleted_at IS NULL
+          AND profile_image_id IS NOT DISTINCT FROM ${before[0]!.current_image_id}::uuid`)
+      assert(rowCount === 1, 409, 'User or profile image changed')
+    },
   )
-  const { rowCount } = await transaction(
-    sql`/* updateProfileImageId */ UPDATE users SET profile_image_id = ${profileImageId} WHERE id = ${userId} AND deleted_at IS NULL`,
-  )
-  assert(rowCount === 1, 404, 'User not found')
   await transaction.commit()
   clearRequestCurrentUser(userId)
   void enqueueReconcileMediaDeliveryRegistry()

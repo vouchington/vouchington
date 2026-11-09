@@ -8,7 +8,7 @@ describe('post author storage admission', () => {
     const user = await createTestUser()
     await expect(
       withAbortedPostgresTransactionForTest(({ query }) =>
-        lockActivePostAuthorImageAdmission(query, user.id, []),
+        lockActivePostAuthorImageAdmission(query, user.id),
       ),
     ).rejects.toMatchObject({ code: '25P02' })
   })

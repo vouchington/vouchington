@@ -68,7 +68,8 @@ export async function seedMediaDeliveryReplay(): Promise<void> {
     )
     await transaction(
       `/* seedMediaDeliveryReplay:placements */
-      INSERT INTO media_placements (id) SELECT id FROM unnest($1::uuid[]) id
+      INSERT INTO media_placements (id, retired_at, retirement_reason)
+      SELECT id, CURRENT_TIMESTAMP, 'owner_removed' FROM unnest($1::uuid[]) id
       ORDER BY id ON CONFLICT (id) DO NOTHING`,
       [placementIds],
     )

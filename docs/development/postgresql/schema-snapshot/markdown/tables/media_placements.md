@@ -6,21 +6,24 @@ Durable image-use placements; exact binding and revision authority governs publi
 
 Not partitioned — growth: unbounded.
 
-| Column                  | Type                                 | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                               |
-| ----------------------- | ------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                    | `uuid`                               | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                       |
-| `revision`              | `integer`                            | no       | `0`                          |          |           |           | Monotonic delivery revision; every availability change advances it exactly once.                                                                      |
-| `activation_revision`   | `integer`                            | no       | `0`                          |          |           |           | Most recent retirement-to-active generation revision, including trigger-only reactivation; copyright parties use an immutable snapshot of this value. |
-| `retired_at`            | `timestamp with time zone`           | yes      |                              |          |           |           | Placement is no longer attached to its host surface; retained so stale routes fail closed.                                                            |
-| `retirement_reason`     | `media_placement_retirement_reasons` | yes      |                              |          |           |           | Why the placement retired. Owner removal supersedes an asset retirement, fencing image-delete rollback from restoring a detached use.                 |
-| `copyright_withheld_at` | `timestamp with time zone`           | yes      |                              |          |           |           | Placement-specific copyright withholding state; shared source assets remain recoverable.                                                              |
-| `created_at`            | `timestamp with time zone`           | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                       |
-| `updated_at`            | `timestamp with time zone`           | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                       |
+| Column                                     | Type                                 | Nullable | Default                                                               | Identity | Generated | Collation | Comment                                                                                                                                               |
+| ------------------------------------------ | ------------------------------------ | -------- | --------------------------------------------------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                       | `uuid`                               | no       | `uuidv7()`                                                            |          |           |           |                                                                                                                                                       |
+| `revision`                                 | `integer`                            | no       | `0`                                                                   |          |           |           | Monotonic delivery revision; every availability change advances it exactly once.                                                                      |
+| `activation_revision`                      | `integer`                            | no       | `0`                                                                   |          |           |           | Most recent retirement-to-active generation revision, including trigger-only reactivation; copyright parties use an immutable snapshot of this value. |
+| `active_capacity_reservation_placement_id` | `uuid`                               | yes      | ` CASE     WHEN (retired_at IS NULL) THEN id     ELSE NULL::uuid END` |          | stored    |           | Active placement identity requiring its exact activation reservation; retirement clears this generated foreign key.                                   |
+| `is_current_image_delivery_eligible`       | `boolean`                            | no       | `false`                                                               |          |           |           | Current image policy projected onto actual placement publication authority; policy changes do not advance availability revision.                      |
+| `retired_at`                               | `timestamp with time zone`           | yes      |                                                                       |          |           |           | Placement is no longer attached to its host surface; retained so stale routes fail closed.                                                            |
+| `retirement_reason`                        | `media_placement_retirement_reasons` | yes      |                                                                       |          |           |           | Why the placement retired. Owner removal supersedes an asset retirement, fencing image-delete rollback from restoring a detached use.                 |
+| `copyright_withheld_at`                    | `timestamp with time zone`           | yes      |                                                                       |          |           |           | Placement-specific copyright withholding state; shared source assets remain recoverable.                                                              |
+| `created_at`                               | `timestamp with time zone`           | yes      | `uuid_extract_timestamp(id)`                                          |          | virtual   |           |                                                                                                                                                       |
+| `updated_at`                               | `timestamp with time zone`           | no       | `CURRENT_TIMESTAMP`                                                   |          |           |           |                                                                                                                                                       |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `media_placements_active_capacity_reservation_placement_id_a_key`: `UNIQUE (active_capacity_reservation_placement_id, activation_revision)`
 
 **Check constraints:**
 
@@ -31,10 +34,13 @@ _none_
 
 **Foreign keys:**
 
+- `fk_media_placements__active_capacity_reservation`: `FOREIGN KEY (active_capacity_reservation_placement_id, activation_revision) REFERENCES image_placement_capacity_reservations(placement_id, activation_revision) DEFERRABLE INITIALLY DEFERRED`
+- `fk_media_placements__current_image_policy`: `FOREIGN KEY (active_capacity_reservation_placement_id, is_current_image_delivery_eligible) REFERENCES image_placement_capacity_reservations(placement_id, is_current_image_delivery_eligible) DEFERRABLE INITIALLY DEFERRED`
 - `fk_media_placements__retained_image_binding`: `FOREIGN KEY (id) REFERENCES retained_image_placement_bindings(placement_id) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `media_placements_active_capacity_reservation_placement_id_a_key`: `CREATE UNIQUE INDEX media_placements_active_capacity_reservation_placement_id_a_key ON public.media_placements USING btree (active_capacity_reservation_placement_id, activation_revision)`
 - `media_placements_pkey`: `CREATE UNIQUE INDEX media_placements_pkey ON public.media_placements USING btree (id)`
 
 **Triggers:**

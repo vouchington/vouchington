@@ -9,10 +9,8 @@ import {
 } from './index.mts'
 import { getPostByAny } from '../services/posts/get.mts'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
-import {
-  publishStagedMediaDeliveryRecord,
-  stageImagePlacementDeliveryRecord,
-} from '../services/media-delivery-safety/index.mts'
+import { publishStagedMediaDeliveryRecord } from '../services/media-delivery-safety/index.mts'
+import { stageImagePlacementDeliveryRecord } from '../services/media-delivery-safety/delivery-registry-staging.mts'
 import { getTestDeliveryRepairMarker } from './entities/media-delivery-repair.mts'
 import { installTestMediaDeliveryEdge } from './media-delivery-edge.mts'
 
