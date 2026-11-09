@@ -3278,10 +3278,14 @@
       # Healthy max was 381 seconds (the test step 337) across 1,552 GitHub-hosted successes in #2260.
       - job: '.github/workflows/tests-web.yml#web-tests'
         maxMinutes: 30
-      # The main shard needs about 8m of setup and seeds plus up to 20m of scenarios on a slow
-      # runner; the partition shard (comment fixture, about 5m measured) fits the same cap.
+      # The main shard needs about 6m of setup, restore and VACUUM plus up to 20m of scenarios on a
+      # slow runner; the partition shard (comment fixture, about 5m measured) fits the same cap.
       - job: '.github/workflows/explain-analyze.yml#explain-analyze'
         maxMinutes: 30
+      # Setup, restore, the crawl-tier check, both seeds (up to 7m), the dump and its uploads; steps
+      # sum to 34m, cap 20m is below it.
+      - job: '.github/workflows/explain-analyze.yml#seed-explain'
+        maxMinutes: 20
       # Dispatch-only evals; steps sum to 27m, cap 20m is below it. The two eval steps are
       # allowed 4m each after the shared backend setup.
       - job: '.github/workflows/evals-backend.yml#backend-evals'
@@ -3400,7 +3404,7 @@
       .github/workflows/docs-publish.yml: [publish]
       .github/workflows/evals-backend.yml: [backend-evals, prepare-postgres]
       .github/workflows/explain-analyze.yml:
-        [explain-analyze, explain-analyze-gates, prepare-postgres]
+        [explain-analyze, explain-analyze-gates, prepare-postgres, seed-explain]
       .github/workflows/ghcr-cleanup.yml: [cleanup]
       .github/workflows/gitleaks.yml: [gitleaks, gitleaks-scan]
       .github/workflows/initialize-smoke-test.yml: [initialize-smoke-test]
@@ -3490,6 +3494,8 @@
       - '.github/workflows/gitleaks.yml#gitleaks'
     requiredDirectEdges:
       - - '.github/workflows/explain-analyze.yml#prepare-postgres'
+        - '.github/workflows/explain-analyze.yml#seed-explain'
+      - - '.github/workflows/explain-analyze.yml#seed-explain'
         - '.github/workflows/explain-analyze.yml#explain-analyze'
       - - '.github/workflows/evals-backend.yml#prepare-postgres'
         - '.github/workflows/evals-backend.yml#backend-evals'
