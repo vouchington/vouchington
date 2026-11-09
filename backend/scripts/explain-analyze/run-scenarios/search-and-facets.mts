@@ -19,6 +19,7 @@ import {
   searchUrls,
 } from '../run-services.mts'
 import { runRecommendedTopicsVoteHistoryScenario } from './recommended-topics-vote-history.mts'
+import { runWebSearchScenarios } from './web-search.mts'
 import { runRssItemSearchScenarios } from './rss-item-search.mts'
 import { runRssFeedSearchScopeScenarios } from './rss-feed-search.mts'
 import {
@@ -185,4 +186,5 @@ export async function runSearchAndFacetScenarios() {
     () => searchUrls({ hostnameId: seedHostnameIds[0], limit: 25 }),
     'hostname',
   )
+  await runWebSearchScenarios()
 }

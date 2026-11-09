@@ -18,6 +18,7 @@ export const REGISTRY_ORDER = [
   'community-agent-prompts-config',
   'post-related-url-display-config',
   'story-related-items-config',
+  'web-search-config',
   'rate-limit-thresholds',
   'route-rate-limit-config',
   'contribution-rate-limits',

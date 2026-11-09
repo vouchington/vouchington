@@ -122,11 +122,22 @@ describe('search_web — real DB', () => {
     expect(page_info).toEqual(rest.body.page_info)
   })
 
-  it('returns no more than the limit, and one page without a cursor', async () => {
-    const { results, page_info } = await search({ query: token, limit: 1 })
+  it('pages by cursor like REST and refuses a malformed one', async () => {
+    const first = await search({ query: token, limit: 1 })
+    const cursor = String(first.page_info['end_cursor'])
+    const second = await search({ query: token, limit: 1, after: cursor })
+    const rest = await createRequest()
+      .get(`/api/v1/web-search?query=${token}&limit=1&after=${encodeURIComponent(cursor)}`)
+      .expect(200)
 
-    expect(results).toHaveLength(1)
-    expect(page_info).toMatchObject({ has_next_page: false })
+    expect(first.results).toHaveLength(1)
+    expect(first.page_info).toMatchObject({ has_next_page: true })
+    expect(second.results.map(result => result.url.id)).toEqual(
+      rest.body.results.map((result: { url: { id: string } }) => result.url.id),
+    )
+    expect(second.page_info).toEqual(rest.body.page_info)
+    expect(second.results[0]!.url.id).not.toBe(first.results[0]!.url.id)
+    expect(await search({ query: token, after: 'not-a-cursor' })).toEqual(INVALID_CURSOR)
   })
 
   it('gives a query under three characters no results, like REST', async () => {

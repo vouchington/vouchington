@@ -215,7 +215,7 @@ describe('searchWeb', () => {
     expect(result.results).toHaveLength(0)
   })
 
-  it('page_info.has_next_page is always false', async () => {
+  it('page_info.has_next_page is false when the matches fit one page', async () => {
     const token = randomUUID().replace(/-/g, '')
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-pageinfo-${randomUUID()}.com`,

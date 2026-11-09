@@ -69,6 +69,11 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   guard that provably skips the query (web-search's short-query early return). It must never stand
   in for a real, possibly-truncated list; new call sites are allowlisted individually in
   `ast-grep-rules/pagination-empty-page-info-allowlist.yml`.
+- Web search ranks only the top `web-search-config.chunk_cap` chunks (DynamicConfig, hard max in
+  code), keeps the best chunk per URL, then pages that set. Its cursor is scoped to the query and
+  tiered: content rows by `(rank, url id)` descending, then URL-string-only matches by URL id. A URL
+  whose only content match falls below the cap surfaces as a URL match, and a page ends short only
+  at the end of a tier.
 - Public request parsing must remain bounded. Internal facet/count work may use a purpose-specific
   query, but clients cannot request `omitLimit` or another unbounded mode.
 - Comment permalink ancestors are a reverse path traversal rather than a sortable collection:

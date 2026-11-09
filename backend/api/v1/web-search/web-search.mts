@@ -15,6 +15,7 @@ import { DEFAULT_LIMIT } from '@modules/search-utils'
 
 const webSearchQuery = defineQueryContract({
   query: queryString(),
+  after: queryString({ description: 'Opaque cursor from page_info.end_cursor.' }),
   limit: queryInteger({ minimum: 1, maximum: 100, default: DEFAULT_LIMIT }),
 })
 
@@ -40,7 +41,8 @@ app.route('/api/v1/web-search').get(async ctx => {
     return
   }
 
-  const { results, page_info } = await searchWeb({ query, limit })
+  const after = typeof ctx.query.after === 'string' ? ctx.query.after : undefined
+  const { results, page_info } = await searchWeb({ query, limit, after })
 
   const publicResults = results.map((r: WebSearchResult) => ({
     ...r,

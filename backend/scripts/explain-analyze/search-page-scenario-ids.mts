@@ -13,4 +13,5 @@ export const SEARCH_PAGE_SCENARIO_IDS = [
   'story-search-best',
   'story-search-hot',
   'story-search-new',
+  'web-search-common-term',
 ] as const

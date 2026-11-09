@@ -578,6 +578,16 @@ uses that same post page, with `post_types=data_point` and the data-point filter
 `page_info`. Clients page with the returned post cursor. Swift and .NET follow the producer and
 do not gate this repository.
 
+## Web search pages
+
+`GET /api/v1/web-search` and MCP `search_web` accept `after`, the opaque `page_info.end_cursor` of
+the previous page. Content matches rank within a capped chunk set (`web-search-config.chunk_cap`)
+and URL-string matches follow them, so a page can be short; `has_next_page` and `end_cursor` are
+the only signal that more exists. A cursor is bound to its query and a foreign or malformed one is
+HTTP 400 on REST and `Invalid cursor` on MCP, as the other cursor routes do. Web already pages
+through `usePaginatedList` and keys rows by `url.id`. Swift and .NET adopt `after` as dependent
+clients-repo work and do not gate this repository.
+
 ## Relation admission
 
 REST and MCP share the same refusal when an account cannot add another follow or subscription of

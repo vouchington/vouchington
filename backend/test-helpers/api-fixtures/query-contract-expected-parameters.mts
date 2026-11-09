@@ -118,5 +118,5 @@ export const newExpectedParameters = {
     'status',
     'user_id',
   ],
-  'GET:/api/v1/web-search': ['limit', 'query'],
+  'GET:/api/v1/web-search': ['after', 'limit', 'query'],
 } as const
