@@ -27,8 +27,7 @@ export async function getActiveCommunityAgentPromptPage(
   const statement = sql`
     /* getActiveCommunityAgentPromptPage */
     WITH candidates AS MATERIALIZED (
-      SELECT id, community_id, created_by_id, is_slot_allocated, activated_at,
-        deactivated_at, deleted_at, deleted_by_id
+      SELECT id, created_by_id, activated_at, deleted_by_id
       FROM community_agent_prompts
       WHERE community_id = ${communityId}
         AND is_slot_allocated = true
@@ -45,8 +44,9 @@ export async function getActiveCommunityAgentPromptPage(
       ORDER BY activated_at, id
       LIMIT ${limit + 1}
     )
-    SELECT cap.id, cap.community_id, cap.created_by_id, cap.is_slot_allocated,
-      cap.activated_at, cap.deactivated_at, cap.deleted_at, cap.deleted_by_id,
+    SELECT cap.id, ${communityId}::uuid AS community_id, cap.created_by_id,
+      true AS is_slot_allocated, cap.activated_at, NULL::timestamptz AS deactivated_at,
+      NULL::timestamptz AS deleted_at, cap.deleted_by_id,
       ap.agent_id, ap.prompt, ap.model_name, ap.model_provider, ap.created_at, ap.updated_at,
       to_char(cap.activated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
         AS activation_cursor,
@@ -55,7 +55,10 @@ export async function getActiveCommunityAgentPromptPage(
         AND creator_rank.position <= CASE vm.plan WHEN 'plus' THEN 3 WHEN 'pro' THEN 10 END
       ) AS eligible
     FROM candidates cap
-    JOIN agent_prompts ap ON ap.id = cap.id
+    JOIN LATERAL (
+      SELECT agent_id, prompt, model_name, model_provider, created_at, updated_at, deleted_at
+      FROM agent_prompts WHERE id = cap.id LIMIT 1
+    ) ap ON true
     LEFT JOIN LATERAL (
       SELECT membership.id FROM memberships membership
       WHERE membership.user_id = cap.created_by_id AND membership.projection_ended_at IS NULL

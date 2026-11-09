@@ -673,6 +673,7 @@ CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__created_by_id__slot
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__active
   ON community_agent_prompts(community_id, activated_at, id)
+  INCLUDE (created_by_id, deleted_by_id)
   WHERE is_slot_allocated = true
     AND activated_at IS NOT NULL
     AND deactivated_at IS NULL
