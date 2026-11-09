@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { extractIndexShapes } from 'vouchington-tooling/sql-ast'
+import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import idempotent from '../0000-00-01b-entity-relation-indexes.mts'
 
 // Groups by shapeKey (canonical body, name-independent) and reports every table whose
@@ -67,6 +68,16 @@ describe('0000-00-01b-entity-relation-indexes', () => {
         `ON "relation__user__${predicate}__post" (subject_id, created_at DESC, object_id DESC)`,
       )
       expect(generatedSql).not.toContain(`idx_relation__user__${predicate}__post__subject__page`)
+    }
+  })
+
+  it('indexes both actor FK columns of every relation table for user-purge SET NULL cascades', () => {
+    const sql = idempotent()
+
+    for (const { table_name } of entityRelationMetadatum) {
+      for (const column of ['created_by_id', 'deleted_by_id']) {
+        expect(sql).toContain(`ON "${table_name}" (${column})\nWHERE ${column} IS NOT NULL;`)
+      }
     }
   })
 
