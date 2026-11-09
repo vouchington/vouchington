@@ -14,12 +14,15 @@ import {
 import type { ClusterRow, SelectClusterRowsOptions } from './clustered-types.mts'
 import {
   appendCandidateCursorClause,
-  appendClusterEntityMatch,
   appendClusterWhereClause,
   groupReportsByCluster,
 } from './clustered-utils.mts'
 import { appendModerationReportStatusPredicate } from './sort-sql.mts'
 import { moderationReportClusterCandidatesSql } from './clustered-candidates.mts'
+import {
+  appendPageReportBranches,
+  appendPageReportHeadBranches,
+} from './clustered-page-report-sql.mts'
 const MAX_REPORTS_PER_CLUSTER = 25
 export function selectEntityClusterRows(options: SelectClusterRowsOptions): Promise<ClusterRow[]> {
   const { limit, status, sortAsc, beforeCursor, cursorDirection = 'after' } = options
@@ -54,11 +57,9 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
         MIN(r.created_at) AS first_reported_at,
         MAX(r.created_at) AS last_reported_at
       FROM paged_entities p
-      JOIN moderation_reports r ON `)
-  appendClusterEntityMatch(query, 'r', 'p')
-  query.append(sql` AND `)
-  appendModerationReportStatusPredicate(query, 'r', status)
-  query.append(sql`
+      JOIN LATERAL (`)
+  appendPageReportBranches(query, 'p', status)
+  query.append(sql`) r ON true
       GROUP BY p.entity_type, p.entity_id, p.post_id, p.reported_user_id,
         p.hostname_id, p.rss_feed_item_id
     )
@@ -71,12 +72,9 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
         SELECT jsonb_object_agg(reason_rows.reason, reason_rows.report_count)
         FROM (
           SELECT rr.reason, COUNT(*)::int AS report_count
-          FROM moderation_reports rr
-          WHERE `)
-  appendClusterEntityMatch(query, 'rr', 'g')
-  query.append(sql` AND `)
-  appendModerationReportStatusPredicate(query, 'rr', status)
-  query.append(sql`
+          FROM LATERAL (`)
+  appendPageReportBranches(query, 'g', status)
+  query.append(sql`) rr
           GROUP BY rr.reason
         ) reason_rows
       ) AS reason_counts,
@@ -91,17 +89,12 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
       `)
   query.append(reportTargetIsRestrictedSql())
   query.append(sql` AS target_is_restricted FROM entity_groups g
-    JOIN LATERAL (SELECT * FROM `)
+    JOIN LATERAL (`)
+  appendPageReportHeadBranches(query, status)
+  query.append(sql`) head ON true
+    JOIN `)
   query.append(moderationReportsWithEntitySql())
-  query.append(sql` r
-      WHERE `)
-  appendClusterEntityMatch(query, 'r', 'g')
-  query.append(sql` AND `)
-  appendModerationReportStatusPredicate(query, 'r', status)
-  query.append(sql`
-      ORDER BY r.id DESC
-      LIMIT 1
-    ) r ON true
+  query.append(sql` r ON r.id = head.id
   `)
   query.append(reportTargetJoinsSql())
   query.append(sql` WHERE true ORDER BY `)
@@ -115,6 +108,7 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
   query.append(sql` LIMIT ${limit + 1}`)
   return read<ClusterRow>(query).then(result => result.rows)
 }
+
 export async function selectReportsByCluster(
   status: ModerationReportStatus,
   clusters: ClusterRow[],

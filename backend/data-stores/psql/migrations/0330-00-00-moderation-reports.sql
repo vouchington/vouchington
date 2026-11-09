@@ -110,19 +110,26 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__resolution_id
 -- Per-entity lookup indexes
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__post_id
-  ON moderation_reports (post_id) WHERE post_id IS NOT NULL;
+  ON moderation_reports (post_id, resolution_action, id DESC) WHERE post_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__reported_user_id
-  ON moderation_reports (reported_user_id) WHERE reported_user_id IS NOT NULL;
+  ON moderation_reports (reported_user_id, resolution_action, id DESC)
+  WHERE reported_user_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__hostname_id
-  ON moderation_reports (hostname_id) WHERE hostname_id IS NOT NULL;
+  ON moderation_reports (hostname_id, resolution_action, id DESC) WHERE hostname_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__rss_feed_item_id
-  ON moderation_reports (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
+  ON moderation_reports (rss_feed_item_id, resolution_action, id DESC)
+  WHERE rss_feed_item_id IS NOT NULL;
+
+-- A dense pending post cluster needs its latest report without sorting every sibling.
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_post_id_id
+  ON moderation_reports (post_id, id DESC)
+  WHERE reviewed_at IS NULL AND post_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__case_id
@@ -204,6 +211,21 @@ CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__last_reported_at
     (COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))
   );
 
+-- Pending dominates the queue. These covering walks reach the page before probing post type;
+-- the general indexes above serve the three smaller resolved-outcome walks.
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__pending_first_reported_at
+  ON moderation_report_clusters (
+    first_reported_at,
+    (COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))
+  ) INCLUDE (post_id, reported_user_id, hostname_id, rss_feed_item_id)
+  WHERE resolution_action IS NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__pending_last_reported_at
+  ON moderation_report_clusters (
+    last_reported_at,
+    (COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))
+  ) INCLUDE (post_id, reported_user_id, hostname_id, rss_feed_item_id)
+  WHERE resolution_action IS NULL;
+
 COMMENT ON TABLE moderation_report_clusters IS 'Current per-entity and per-outcome report cluster keys, kept exact by report row triggers and removed when no reports remain.';
 COMMENT ON COLUMN moderation_report_clusters.post_id IS 'Reported post or comment, including the live target for this cluster.';
 COMMENT ON COLUMN moderation_report_clusters.reported_user_id IS 'Reported user, including the live target for this cluster.';
@@ -237,10 +259,10 @@ BEGIN
       cluster.last_reported_at INTO prior_cluster
     FROM moderation_report_clusters cluster
     WHERE cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
-      AND cluster.post_id IS NOT DISTINCT FROM OLD.post_id
-      AND cluster.reported_user_id IS NOT DISTINCT FROM OLD.reported_user_id
-      AND cluster.hostname_id IS NOT DISTINCT FROM OLD.hostname_id
-      AND cluster.rss_feed_item_id IS NOT DISTINCT FROM OLD.rss_feed_item_id
+      AND (cluster.post_id = OLD.post_id
+        OR cluster.reported_user_id = OLD.reported_user_id
+        OR cluster.hostname_id = OLD.hostname_id
+        OR cluster.rss_feed_item_id = OLD.rss_feed_item_id)
     FOR UPDATE;
 
     IF FOUND THEN

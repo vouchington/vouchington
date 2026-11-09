@@ -5,17 +5,30 @@ const POST_START = 80_000
 const ENTITIES_PER_ERA = 12
 const REPORTERS_PER_ENTITY = 16
 const HOT_REPORT_COUNT = 10_000
+const DISTINCT_CLUSTER_COUNT = 20_000
+const DISTINCT_CLUSTER_START = 60_000
+const DISTINCT_CLUSTER_BATCH = 500
 const REPORT_TIMES = [Date.parse('1970-01-02T00:00:00Z'), Date.parse('2200-01-02T00:00:00Z')]
 const STATUSES = ['pending', 'reviewed', 'actioned', 'dismissed'] as const
 export const MODERATION_CLUSTER_REPORT_COUNT =
-  2 * ENTITIES_PER_ERA * REPORTERS_PER_ENTITY * STATUSES.length + HOT_REPORT_COUNT
+  2 * ENTITIES_PER_ERA * REPORTERS_PER_ENTITY * STATUSES.length +
+  HOT_REPORT_COUNT +
+  DISTINCT_CLUSTER_COUNT +
+  1
 export const MODERATION_CLUSTER_HOT_POST_ID = seedUuid(POST_START + 2 * ENTITIES_PER_ERA, '05')
+export const MODERATION_CLUSTER_TIED_USER_ID = clusterFixturePostIds(0)[10]!
 
 export type ClusterFixtureStatus = (typeof STATUSES)[number]
 
 export function clusterFixturePostIds(era: 0 | 1): string[] {
   return Array.from({ length: ENTITIES_PER_ERA }, (_, offset) =>
     seedUuid(POST_START + era * ENTITIES_PER_ERA + offset, '05'),
+  ).toSorted()
+}
+
+export function clusterScalePostIds(): string[] {
+  return Array.from({ length: DISTINCT_CLUSTER_COUNT }, (_, offset) =>
+    seedUuid(DISTINCT_CLUSTER_START + offset, '05'),
   ).toSorted()
 }
 
@@ -73,4 +86,57 @@ export async function seedModerationClusterPages(): Promise<void> {
     ORDER BY input.id`,
     [reportIds, targetIds, reporterIds, actions],
   )
+
+  await write(
+    `/* seedModerationClusterPages:tiedUser */
+    INSERT INTO users (id, username) VALUES ($1::uuid, 'seed-cluster-same-uuid-user')`,
+    [MODERATION_CLUSTER_TIED_USER_ID],
+  )
+  await write(
+    `/* seedModerationClusterPages:tiedUserCase */
+    INSERT INTO moderation_cases (reported_user_id) VALUES ($1::uuid)`,
+    [MODERATION_CLUSTER_TIED_USER_ID],
+  )
+  await write(
+    `/* seedModerationClusterPages:tiedUserReport */
+    INSERT INTO moderation_reports
+      (id, created_via, reporter_user_id, reported_user_id, case_id, reason, original_reason)
+    SELECT $1::uuid, 'system', $2::uuid, c.reported_user_id, c.id, 'spam', 'spam'
+    FROM moderation_cases c
+    WHERE c.reported_user_id = $3::uuid AND c.resolved_at IS NULL`,
+    [
+      seedUuidAtTimestamp(REPORT_TIMES[0]!, 99_999),
+      seedUuid(0, '01'),
+      MODERATION_CLUSTER_TIED_USER_ID,
+    ],
+  )
+
+  for (
+    let start = DISTINCT_CLUSTER_START;
+    start < DISTINCT_CLUSTER_START + DISTINCT_CLUSTER_COUNT;
+    start += DISTINCT_CLUSTER_BATCH
+  ) {
+    const distinctPostIds = Array.from({ length: DISTINCT_CLUSTER_BATCH }, (_, offset) =>
+      seedUuid(start + offset, '05'),
+    )
+    const distinctReportIds = Array.from({ length: DISTINCT_CLUSTER_BATCH }, (_, offset) =>
+      seedUuidAtTimestamp(Date.parse('2050-01-02T00:00:00Z'), start + offset),
+    )
+    await write(
+      `/* seedModerationClusterPages:distinctCases */
+      INSERT INTO moderation_cases (post_id)
+      SELECT id FROM unnest($1::uuid[]) AS target(id) ORDER BY id`,
+      [distinctPostIds],
+    )
+    await write(
+      `/* seedModerationClusterPages:distinctReports */
+      INSERT INTO moderation_reports
+        (id, created_via, reporter_user_id, post_id, case_id, reason, original_reason)
+      SELECT input.id, 'system', $3::uuid, input.post_id, c.id, 'spam', 'spam'
+      FROM unnest($1::uuid[], $2::uuid[]) AS input(id, post_id)
+      JOIN moderation_cases c ON c.post_id = input.post_id AND c.resolved_at IS NULL
+      ORDER BY input.id`,
+      [distinctReportIds, distinctPostIds, seedUuid(0, '01')],
+    )
+  }
 }

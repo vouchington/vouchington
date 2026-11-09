@@ -6,6 +6,7 @@ import {
   resolveTestModerationReports,
 } from '@voucha/test-helpers/entities/moderation-report-clusters'
 import { hardDeleteTestPost } from '@voucha/test-helpers/entities/posts-deletion'
+import { hardDeleteTestUser } from '@voucha/test-helpers/entities/users-lifecycle'
 
 describe('moderation report cluster projection', () => {
   it('keeps status counts and head timestamps exact across concurrent inserts and removals', async () => {
@@ -98,6 +99,24 @@ describe('moderation report cluster projection', () => {
     })
     expect(await getTestModerationReportClusters('post', postId)).toHaveLength(1)
     await hardDeleteTestPost(postId)
+    expect(await getTestModerationReportClusters('post', postId)).toEqual([])
+  })
+
+  it('removes the last report cluster when the reporter is hard deleted', async () => {
+    const [author, reporter] = await Promise.all([createTestUser(), createTestUser()])
+    const postId = await insertTestPost({
+      createdById: author.id,
+      slug: `cluster-reporter-cascade-${crypto.randomUUID()}`,
+      title: 'Reporter cascade target',
+      markdown: 'body',
+    })
+    await insertTestModerationReport({
+      reporterUserId: reporter.id,
+      entityType: 'post',
+      entityId: postId,
+    })
+    expect(await getTestModerationReportClusters('post', postId)).toHaveLength(1)
+    await hardDeleteTestUser(reporter.id)
     expect(await getTestModerationReportClusters('post', postId)).toEqual([])
   })
 })

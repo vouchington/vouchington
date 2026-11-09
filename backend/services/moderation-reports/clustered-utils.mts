@@ -44,6 +44,11 @@ export function appendCandidateCursorClause(
   if (beforeCursor.entityType) {
     query.append(
       sortAsc === forward
+        ? sql` AND (c.sort_reported_at, c.entity_id) >= (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid)`
+        : sql` AND (c.sort_reported_at, c.entity_id) <= (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid)`,
+    )
+    query.append(
+      sortAsc === forward
         ? sql` AND (c.sort_reported_at, c.entity_id, c.entity_type) > (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid, ${beforeCursor.entityType})`
         : sql` AND (c.sort_reported_at, c.entity_id, c.entity_type) < (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid, ${beforeCursor.entityType})`,
     )
