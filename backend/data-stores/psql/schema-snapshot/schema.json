@@ -94443,6 +94443,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__community__mute__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__community__mute__topic__created_by_id ON public.relation__community__mute__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__community__mute__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__community__mute__topic__deleted_by_id ON public.relation__community__mute__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__community__mute__topic__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -94655,6 +94695,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__community__mute__url_hostname__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__community__mute__url_hostname__created_by_id ON public.relation__community__mute__url_hostname USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__community__mute__url_hostname__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__community__mute__url_hostname__deleted_by_id ON public.relation__community__mute__url_hostname USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__community__mute__url_hostname__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -94973,6 +95053,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__post__category__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic__created_by_id ON ONLY public.relation__post__category__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__category__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic__deleted_by_id ON ONLY public.relation__post__category__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__category__topic__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -95887,6 +96007,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__post__category__topic_alias__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic_alias__created_by_id ON ONLY public.relation__post__category__topic_alias USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__category__topic_alias__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic_alias__deleted_by_id ON ONLY public.relation__post__category__topic_alias USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__category__topic_alias__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -96690,6 +96850,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__post__mentioned__post__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__mentioned__post__created_by_id ON ONLY public.relation__post__mentioned__post USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__mentioned__post__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__mentioned__post__deleted_by_id ON ONLY public.relation__post__mentioned__post USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__mentioned__post__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -96909,6 +97109,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__post__mentioned__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__mentioned__topic__created_by_id ON ONLY public.relation__post__mentioned__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__mentioned__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__mentioned__topic__deleted_by_id ON ONLY public.relation__post__mentioned__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__mentioned__topic__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -97130,6 +97370,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__post__mentioned__user__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__mentioned__user__created_by_id ON ONLY public.relation__post__mentioned__user USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__mentioned__user__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__mentioned__user__deleted_by_id ON ONLY public.relation__post__mentioned__user USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__mentioned__user__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -97457,6 +97737,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__post__related__post__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__post__created_by_id ON ONLY public.relation__post__related__post USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__related__post__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__post__deleted_by_id ON ONLY public.relation__post__related__post USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__related__post__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -98363,6 +98683,46 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__related__url__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__created_by_id ON ONLY public.relation__post__related__url USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__related__url__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__deleted_by_id ON ONLY public.relation__post__related__url USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -99295,6 +99655,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__remote_actor__follow__user__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__remote_actor__follow__user__created_by_id ON public.relation__remote_actor__follow__user USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__remote_actor__follow__user__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__remote_actor__follow__user__deleted_by_id ON public.relation__remote_actor__follow__user USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__remote_actor__follow__user__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -99662,6 +100062,46 @@
             }
           ],
           "predicate": "(votes_score_net > (0)::double precision)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__rss_feed_item__category__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__rss_feed_item__category__topic__created_by_id ON public.relation__rss_feed_item__category__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__rss_feed_item__category__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__rss_feed_item__category__topic__deleted_by_id ON public.relation__rss_feed_item__category__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -100606,6 +101046,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_relatio__rss_feed_item__categor__topic_alias__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relatio__rss_feed_item__categor__topic_alias__created_by_id ON public.relation__rss_feed_item__category__topic_alias USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relatio__rss_feed_item__categor__topic_alias__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relatio__rss_feed_item__categor__topic_alias__deleted_by_id ON public.relation__rss_feed_item__category__topic_alias USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relatio__rss_feed_item__categor__topic_alias__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -101366,6 +101846,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__topic__category__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__category__topic__created_by_id ON public.relation__topic__category__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__category__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__category__topic__deleted_by_id ON public.relation__topic__category__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__category__topic__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -102244,6 +102764,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__topic__faq__post__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__post__created_by_id ON public.relation__topic__faq__post USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__faq__post__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__post__deleted_by_id ON public.relation__topic__faq__post USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__faq__post__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -103144,6 +103704,46 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__faq__url__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__url__created_by_id ON public.relation__topic__faq__url USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__faq__url__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__url__deleted_by_id ON public.relation__topic__faq__url USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -104054,6 +104654,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__guide__url__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__guide__url__created_by_id ON public.relation__topic__guide__url USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__guide__url__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__guide__url__deleted_by_id ON public.relation__topic__guide__url USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__guide__url__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -104959,6 +105599,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__landing_page__url__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__landing_page__url__created_by_id ON public.relation__topic__landing_page__url USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__landing_page__url__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__landing_page__url__deleted_by_id ON public.relation__topic__landing_page__url USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__landing_page__url__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -105729,6 +106409,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__topic__mentioned__post__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__mentioned__post__created_by_id ON public.relation__topic__mentioned__post USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__mentioned__post__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__mentioned__post__deleted_by_id ON public.relation__topic__mentioned__post USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__mentioned__post__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -105941,6 +106661,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__topic__parent__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__parent__topic__created_by_id ON public.relation__topic__parent__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__parent__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__parent__topic__deleted_by_id ON public.relation__topic__parent__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__parent__topic__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -106283,6 +107043,46 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__publisher_type__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__publisher_type__topic__created_by_id ON public.relation__topic__publisher_type__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__publisher_type__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__publisher_type__topic__deleted_by_id ON public.relation__topic__publisher_type__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -107139,6 +107939,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__topic__related__post__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__post__created_by_id ON public.relation__topic__related__post USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__related__post__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__post__deleted_by_id ON public.relation__topic__related__post USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__related__post__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -108017,6 +108857,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__topic__related__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__topic__created_by_id ON public.relation__topic__related__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__related__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__topic__deleted_by_id ON public.relation__topic__related__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__related__topic__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -108917,6 +109797,46 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__related__url__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__url__created_by_id ON public.relation__topic__related__url USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__related__url__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__url__deleted_by_id ON public.relation__topic__related__url USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -109854,6 +110774,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__terms_of_service__url__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__terms_of_service__url__created_by_id ON public.relation__topic__terms_of_service__url USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__terms_of_service__url__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__terms_of_service__url__deleted_by_id ON public.relation__topic__terms_of_service__url USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__terms_of_service__url__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -110597,6 +111557,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__block__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__block__topic__created_by_id ON public.relation__user__block__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__block__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__block__topic__deleted_by_id ON public.relation__user__block__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__block__topic__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -110809,6 +111809,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__block__url_hostname__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__block__url_hostname__created_by_id ON public.relation__user__block__url_hostname USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__block__url_hostname__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__block__url_hostname__deleted_by_id ON public.relation__user__block__url_hostname USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__block__url_hostname__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -111019,6 +112059,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__block__user__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__block__user__created_by_id ON public.relation__user__block__user USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__block__user__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__block__user__deleted_by_id ON public.relation__user__block__user USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__block__user__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -111337,6 +112417,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__category__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__category__topic__created_by_id ON public.relation__user__category__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__category__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__category__topic__deleted_by_id ON public.relation__user__category__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__category__topic__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -112141,6 +113261,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__user__dismiss_recommendatio__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__dismiss_recommendatio__topic__created_by_id ON public.relation__user__dismiss_recommendation__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__dismiss_recommendatio__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__dismiss_recommendatio__topic__deleted_by_id ON public.relation__user__dismiss_recommendation__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__dismiss_recommendatio__topic__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -112353,6 +113513,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__user__dismiss_recommendation__user__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__dismiss_recommendation__user__created_by_id ON public.relation__user__dismiss_recommendation__user USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__dismiss_recommendation__user__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__dismiss_recommendation__user__deleted_by_id ON public.relation__user__dismiss_recommendation__user USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__dismiss_recommendation__user__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -112529,6 +113729,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__follow__post__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__follow__post__created_by_id ON public.relation__user__follow__post USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__follow__post__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__follow__post__deleted_by_id ON public.relation__user__follow__post USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__follow__post__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -112766,6 +114006,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__user__follow__rss_feed__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__follow__rss_feed__created_by_id ON public.relation__user__follow__rss_feed USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__follow__rss_feed__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__follow__rss_feed__deleted_by_id ON public.relation__user__follow__rss_feed USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__follow__rss_feed__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -112976,6 +114256,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__follow__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__follow__topic__created_by_id ON public.relation__user__follow__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__follow__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__follow__topic__deleted_by_id ON public.relation__user__follow__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__follow__topic__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -113237,6 +114557,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__user__follow__user__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__follow__user__created_by_id ON public.relation__user__follow__user USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__follow__user__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__follow__user__deleted_by_id ON public.relation__user__follow__user USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__follow__user__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -113447,6 +114807,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__hide__post__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__hide__post__created_by_id ON public.relation__user__hide__post USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__hide__post__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__hide__post__deleted_by_id ON public.relation__user__hide__post USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__hide__post__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -113657,6 +115057,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__hide__rss_feed_item__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__hide__rss_feed_item__created_by_id ON public.relation__user__hide__rss_feed_item USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__hide__rss_feed_item__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__hide__rss_feed_item__deleted_by_id ON public.relation__user__hide__rss_feed_item USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__hide__rss_feed_item__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -113867,6 +115307,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__mentioned__post__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__mentioned__post__created_by_id ON public.relation__user__mentioned__post USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__mentioned__post__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__mentioned__post__deleted_by_id ON public.relation__user__mentioned__post USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__mentioned__post__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -114077,6 +115557,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__mute__rss_feed__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__mute__rss_feed__created_by_id ON public.relation__user__mute__rss_feed USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__mute__rss_feed__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__mute__rss_feed__deleted_by_id ON public.relation__user__mute__rss_feed USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__mute__rss_feed__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -114287,6 +115807,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__mute__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__mute__topic__created_by_id ON public.relation__user__mute__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__mute__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__mute__topic__deleted_by_id ON public.relation__user__mute__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__mute__topic__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -114499,6 +116059,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__mute__url_hostname__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__mute__url_hostname__created_by_id ON public.relation__user__mute__url_hostname USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__mute__url_hostname__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__mute__url_hostname__deleted_by_id ON public.relation__user__mute__url_hostname USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__mute__url_hostname__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -114709,6 +116309,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__mute__user__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__mute__user__created_by_id ON public.relation__user__mute__user USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__mute__user__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__mute__user__deleted_by_id ON public.relation__user__mute__user USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__mute__user__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -114919,6 +116559,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__proxy_follow__community__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__proxy_follow__community__created_by_id ON public.relation__user__proxy_follow__community USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__proxy_follow__community__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__proxy_follow__community__deleted_by_id ON public.relation__user__proxy_follow__community USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__proxy_follow__community__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -115131,6 +116811,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__proxy_mute__community__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__proxy_mute__community__created_by_id ON public.relation__user__proxy_mute__community USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__proxy_mute__community__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__proxy_mute__community__deleted_by_id ON public.relation__user__proxy_mute__community USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__proxy_mute__community__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -115343,6 +117063,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__save__community__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__save__community__created_by_id ON public.relation__user__save__community USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__save__community__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__save__community__deleted_by_id ON public.relation__user__save__community USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__save__community__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -115553,6 +117313,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__save__post__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__save__post__created_by_id ON public.relation__user__save__post USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__save__post__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__save__post__deleted_by_id ON public.relation__user__save__post USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__save__post__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -115763,6 +117563,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__save__rss_feed_item__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__save__rss_feed_item__created_by_id ON public.relation__user__save__rss_feed_item USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__save__rss_feed_item__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__save__rss_feed_item__deleted_by_id ON public.relation__user__save__rss_feed_item USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__save__rss_feed_item__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -116000,6 +117840,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__user__save__url__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__save__url__created_by_id ON public.relation__user__save__url USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__save__url__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__save__url__deleted_by_id ON public.relation__user__save__url USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__save__url__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -116210,6 +118090,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__subscribe__post__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__subscribe__post__created_by_id ON public.relation__user__subscribe__post USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__subscribe__post__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__subscribe__post__deleted_by_id ON public.relation__user__subscribe__post USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__subscribe__post__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -116420,6 +118340,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__subscribe__rss_feed__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__subscribe__rss_feed__created_by_id ON public.relation__user__subscribe__rss_feed USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__subscribe__rss_feed__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__subscribe__rss_feed__deleted_by_id ON public.relation__user__subscribe__rss_feed USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__subscribe__rss_feed__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -116630,6 +118590,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__subscribe__user__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__subscribe__user__created_by_id ON public.relation__user__subscribe__user USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__subscribe__user__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__subscribe__user__deleted_by_id ON public.relation__user__subscribe__user USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__subscribe__user__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -116840,6 +118840,46 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_relation__user__subscribe_posts__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__subscribe_posts__topic__created_by_id ON public.relation__user__subscribe_posts__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__subscribe_posts__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__subscribe_posts__topic__deleted_by_id ON public.relation__user__subscribe_posts__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__subscribe_posts__topic__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -117081,6 +119121,46 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relatio__user__subscri_rss_feed_items__topic__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relatio__user__subscri_rss_feed_items__topic__created_by_id ON public.relation__user__subscribe_rss_feed_items__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relatio__user__subscri_rss_feed_items__topic__deleted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relatio__user__subscri_rss_feed_items__topic__deleted_by_id ON public.relation__user__subscribe_rss_feed_items__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

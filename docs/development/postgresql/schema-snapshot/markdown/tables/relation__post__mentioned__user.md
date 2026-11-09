@@ -32,6 +32,8 @@ _none_
 
 **Indexes:**
 
+- `idx_relation__post__mentioned__user__created_by_id`: `CREATE INDEX idx_relation__post__mentioned__user__created_by_id ON ONLY public.relation__post__mentioned__user USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
+- `idx_relation__post__mentioned__user__deleted_by_id`: `CREATE INDEX idx_relation__post__mentioned__user__deleted_by_id ON ONLY public.relation__post__mentioned__user USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_relation__post__mentioned__user__reverse_index`: `CREATE INDEX idx_relation__post__mentioned__user__reverse_index ON ONLY public.relation__post__mentioned__user USING btree (object_id, subject_id)`
 - `idx_relation__post__mentioned__user__subject__newest`: `CREATE INDEX idx_relation__post__mentioned__user__subject__newest ON ONLY public.relation__post__mentioned__user USING btree (subject_id, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `relation__post__mentioned__user_pkey`: `CREATE UNIQUE INDEX relation__post__mentioned__user_pkey ON ONLY public.relation__post__mentioned__user USING btree (subject_id, object_id)`

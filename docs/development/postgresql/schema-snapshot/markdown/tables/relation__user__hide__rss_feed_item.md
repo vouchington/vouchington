@@ -32,6 +32,8 @@ _none_
 
 **Indexes:**
 
+- `idx_relation__user__hide__rss_feed_item__created_by_id`: `CREATE INDEX idx_relation__user__hide__rss_feed_item__created_by_id ON public.relation__user__hide__rss_feed_item USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
+- `idx_relation__user__hide__rss_feed_item__deleted_by_id`: `CREATE INDEX idx_relation__user__hide__rss_feed_item__deleted_by_id ON public.relation__user__hide__rss_feed_item USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_relation__user__hide__rss_feed_item__reverse_index`: `CREATE INDEX idx_relation__user__hide__rss_feed_item__reverse_index ON public.relation__user__hide__rss_feed_item USING btree (object_id, subject_id)`
 - `idx_relation__user__hide__rss_feed_item__subject__newest`: `CREATE INDEX idx_relation__user__hide__rss_feed_item__subject__newest ON public.relation__user__hide__rss_feed_item USING btree (subject_id, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `relation__user__hide__rss_feed_item_pkey`: `CREATE UNIQUE INDEX relation__user__hide__rss_feed_item_pkey ON public.relation__user__hide__rss_feed_item USING btree (subject_id, object_id)`

@@ -75,6 +75,16 @@ CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'reverse_
 ON "${metadata.table_name}" (${objectColumns}, ${subjectColumns});
 `
 
+  // Purging a user fires `ON DELETE SET NULL` on both actor columns; each cascade probes these
+  // sparse indexes instead of sequentially scanning the relation table.
+  for (const column of ['created_by_id', 'deleted_by_id']) {
+    query += `
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, column)}
+ON "${metadata.table_name}" (${column})
+WHERE ${column} IS NOT NULL;
+`
+  }
+
   if (metadata.object_type === 'url') {
     query += `
 CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'active_reverse')}
