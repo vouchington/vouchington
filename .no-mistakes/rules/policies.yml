@@ -267,14 +267,6 @@
           file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'processBatch',
         }
-      # Follower-side cleanup deletes one remote Bluesky record per receipt before revocation; the
-      # receipts are at most the user's follow_user limit (default 10000, ceiling 50000 in
-      # backend/services/entity-relations/relation-limits-config.mts), paged by backfill_batch_size
-      # in listBlueskyFollowReceiptsForFollower. Redesign tracked in #5312.
-      - {
-          file: backend/services/bluesky-follows/disconnect.mts,
-          callee: 'deleteBlueskyFollowReceipt',
-        }
       # Closed set: allRelations is the static user is_bookmark subset of entityRelationMetadatum (bloom-filter.mts:80); each relation has its own table, streamed in BOOKMARK_BLOOM_BATCH_SIZE batches. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/bookmarks/bloom-filter.mts, callee: 'bookmarkBloomBatchesFromDb' }
       - {

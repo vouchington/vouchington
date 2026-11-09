@@ -46,6 +46,7 @@ export const backgroundWorkEntries1 = [
     maxValues: blueskyFollowsWorkMaxValues,
     descriptions: {
       backfill_batch_size: 'Backfill batch size for bluesky follows processing.',
+      disconnect_batch_size: 'Maximum follower-owned remote records attempted per disconnect run.',
     },
   }),
   defineBoundedWorkNamespace({

@@ -3,6 +3,9 @@ import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/acti
 import sql from 'sql-template-strings'
 import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 
+// Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
+export const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
+
 // CRUD on bluesky_follow_records (see migrations/0571-00-00-bluesky-follow-records.sql). A row is
 // Voucha's durable receipt that a live app.bsky.graph.follow record currently exists on Bluesky for
 // this pair — not a cache of Bluesky state, the source of truth for "does it exist." Bluesky's PDS
@@ -35,6 +38,8 @@ export async function getBlueskyFollowReceipt(
       WHERE receipt.follower_user_id = ${followerUserId}
         AND receipt.followee_user_id = ${followeeUserId}
         AND account.bluesky_did = ${followerBlueskyDid}
+        AND account.user_id = ${followerUserId}
+        AND account.disconnect_requested_at IS NULL
         AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}`,
     options,
   )
@@ -60,6 +65,7 @@ export async function saveBlueskyFollowReceipt(
       WHERE account.link_authorization_id = ${followerAuthorizationId}
         AND account.bluesky_did = ${followerBlueskyDid}
         AND account.user_id = ${followerUserId}
+        AND account.disconnect_requested_at IS NULL
       ON CONFLICT (follower_user_id, followee_user_id)
         DO UPDATE SET
           follower_account_link_authorization_id = EXCLUDED.follower_account_link_authorization_id,
@@ -75,14 +81,40 @@ export async function deleteBlueskyFollowReceipt(
   followerAuthorizationId: string,
   options: QueryOptions = {},
 ): Promise<void> {
+  await deleteBlueskyFollowReceipts(
+    followerUserId,
+    [{ followeeUserId }],
+    followerBlueskyDid,
+    followerAuthorizationId,
+    options,
+  )
+}
+
+// Disconnect supplies the exact remotely deleted URI; ordinary single-pair reconciliation does
+// not need that additional condition. Both paths retain the same account-generation guards.
+export async function deleteBlueskyFollowReceipts(
+  followerUserId: string,
+  receipts: { followeeUserId: string; recordUri?: string }[],
+  followerBlueskyDid: string,
+  followerAuthorizationId: string,
+  options: QueryOptions = {},
+): Promise<void> {
+  if (receipts.length === 0) return
+  const followeeUserIds = receipts.map(receipt => receipt.followeeUserId)
+  const recordUris = receipts.map(receipt => receipt.recordUri ?? null)
   await write(
-    sql`/* deleteBlueskyFollowReceipt */
+    sql`/* deleteBlueskyFollowReceipts */
       DELETE FROM bluesky_follow_records receipt
-      USING bluesky_linked_accounts account
+      USING bluesky_linked_accounts account,
+        unnest(${followeeUserIds}::uuid[], ${recordUris}::text[])
+          AS expected(followee_user_id, record_uri)
       WHERE receipt.follower_user_id = ${followerUserId}
-        AND receipt.followee_user_id = ${followeeUserId}
+        AND receipt.followee_user_id = expected.followee_user_id
+        AND receipt.followee_user_id = ANY (${followeeUserIds}::uuid[])
         AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}
+        AND (expected.record_uri IS NULL OR receipt.record_uri = expected.record_uri)
         AND account.link_authorization_id = receipt.follower_account_link_authorization_id
+        AND account.user_id = ${followerUserId}
         AND account.bluesky_did = ${followerBlueskyDid}`,
     options,
   )
@@ -92,15 +124,17 @@ export async function deleteBlueskyFollowReceipt(
 // the AT Protocol API, since an app.bsky.graph.follow record always lives in its creator's
 // (follower's) own repo and deleteFollowOnBluesky authenticates as that repo. Read by
 // disconnect.mts before it revokes the session, so it can delete the real Bluesky records before
-// dropping their local receipts.
+// dropping their local receipts. This intentionally reads the exact pending generation from the
+// primary; ordinary active-account receipt readers exclude pending disconnects.
 export async function listBlueskyFollowReceiptsForFollower(
   followerUserId: string,
   followerBlueskyDid: string,
   followerAuthorizationId: string,
   cursor: string | null,
+  batchSize: number,
   options: QueryOptions = {},
 ): Promise<BlueskyFollowReceipt[]> {
-  const { rows } = await read<BlueskyFollowReceipt>(
+  const { rows } = await write<BlueskyFollowReceipt>(
     sql`/* listBlueskyFollowReceiptsForFollower */
       SELECT receipt.follower_user_id, receipt.followee_user_id,
              account.bluesky_did AS follower_bluesky_did,
@@ -110,17 +144,15 @@ export async function listBlueskyFollowReceiptsForFollower(
         ON account.link_authorization_id = receipt.follower_account_link_authorization_id
       WHERE receipt.follower_user_id = ${followerUserId}
         AND account.bluesky_did = ${followerBlueskyDid}
+        AND account.user_id = ${followerUserId}
         AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}
-        AND (${cursor}::uuid IS NULL OR receipt.followee_user_id > ${cursor}::uuid)
+        AND receipt.followee_user_id > ${cursor ?? START_OF_IDS}::uuid
       ORDER BY receipt.followee_user_id
-      LIMIT ${getBlueskyFollowsWorkLimit('backfill_batch_size')}`,
+      LIMIT ${batchSize}`,
     options,
   )
   return rows
 }
-
-// Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
-export const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
 
 // Clears one keyset page of receipts where followeeUserId is followed by a different user. Those
 // records live in the other follower's repo, so followeeUserId cannot delete them remotely. A
@@ -136,15 +168,17 @@ export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPa
   options: QueryOptions = {},
 ): Promise<{ lastFollowerUserId: string | null; hasMore: boolean }> {
   const batchSize = getBlueskyFollowsWorkLimit('backfill_batch_size')
+  // The closed range selects one followee while preserving the reverse index's ordering key.
   const { rows } = await write(
     sql`/* deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage */
       WITH page AS MATERIALIZED (
         SELECT ctid AS row_id
         FROM bluesky_follow_records
-        WHERE followee_user_id = ${followeeUserId}
+        WHERE followee_user_id >= ${followeeUserId}::uuid
+          AND followee_user_id <= ${followeeUserId}::uuid
           AND follower_user_id <> ${followeeUserId}
           AND follower_user_id > ${afterFollowerUserId}::uuid
-        ORDER BY follower_user_id
+        ORDER BY followee_user_id, follower_user_id
         LIMIT ${batchSize}
         FOR UPDATE
       )

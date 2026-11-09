@@ -63,6 +63,9 @@ flowchart LR
   retries exhaust or Valkey loses the job, remaining unread PostgreSQL rows persist. This is an
   explicit accepted loss of queued progress; another mark-all request resumes bounded work from
   those rows. There is no durable request intent or automatic recovery for this user mutation.
+- [Bluesky disconnect](../bluesky-disconnect.md) keeps its credential attached while bounded
+  cleanup pages continue on the same domain lane. PostgreSQL's pending generation survives lost
+  queue progress; phase-tagged cursors keep continuation identities distinct until final revocation.
 - The shared `background-cpu` queue applies the same domain model to crawling, embedding, spend-cap
   coordination, and content analysis. URL and referral crawls use the same hostname ordering key,
   so they respect one external host limit. Provider limits use group rate windows; database-only

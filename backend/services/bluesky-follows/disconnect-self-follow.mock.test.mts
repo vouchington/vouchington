@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createRandomString,
   createTestUserDirect,
+  getTestBlueskyFollowReceiptRecord,
   getTestBlueskyLinkedAccountRow,
   insertTestBlueskyLinkedAccount,
 } from '@voucha/test-helpers'
@@ -40,7 +41,7 @@ import {
   disconnectAcceptedBlueskyAccountAndCleanupFollows,
   disconnectBlueskyAccountAndCleanupFollows as disconnectBlueskyAccountAndEnqueue,
 } from './disconnect.mts'
-import { getBlueskyFollowReceipt, saveBlueskyFollowReceipt } from './receipts.mts'
+import { saveBlueskyFollowReceipt } from './receipts.mts'
 
 async function disconnectBlueskyAccountAndCleanupFollows(userId: string): Promise<void> {
   const restore = rejectNextBackgroundJobAddForTest(
@@ -149,10 +150,5 @@ async function createSelfFollowFixture(): Promise<SelfFollowFixture> {
 }
 
 function getFixtureReceipt(fixture: SelfFollowFixture) {
-  return getBlueskyFollowReceipt(
-    fixture.userId,
-    fixture.userId,
-    fixture.did,
-    fixture.authorizationId,
-  )
+  return getTestBlueskyFollowReceiptRecord(fixture.userId, fixture.userId)
 }

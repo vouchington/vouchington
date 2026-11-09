@@ -10054,6 +10054,40 @@
           "unique": true,
           "valid": true
         },
+        "idx_bluesky_follow_records__authorization_follower_followee": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_bluesky_follow_records__authorization_follower_followee ON public.bluesky_follow_records USING btree (follower_account_link_authorization_id, follower_user_id, followee_user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "follower_account_link_authorization_id",
+              "descending": false,
+              "expression": "follower_account_link_authorization_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "follower_user_id",
+              "descending": false,
+              "expression": "follower_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "followee_user_id",
+              "descending": false,
+              "expression": "followee_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_bluesky_follow_records__followee_follower": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -10071,26 +10105,6 @@
               "column": "follower_user_id",
               "descending": false,
               "expression": "follower_user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_bluesky_follow_records__follower_account_auth": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bluesky_follow_records__follower_account_auth ON public.bluesky_follow_records USING btree (follower_account_link_authorization_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "follower_account_link_authorization_id",
-              "descending": false,
-              "expression": "follower_account_link_authorization_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }

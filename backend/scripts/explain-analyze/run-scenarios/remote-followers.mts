@@ -11,6 +11,7 @@ import { runAndCapture, seedUser } from '../run-support.mts'
 import { listRemoteFollowerInboxPage } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runBlueskyFolloweeReceiptScenarios } from './bluesky-followee-receipts.mts'
+import { runBlueskyFollowerReceiptScenarios } from './bluesky-follower-receipts.mts'
 
 const REMOTE_FOLLOWER_PAGE_LIMIT = getRemoteActorsWorkLimit('follower_inbox_batch_size') + 1
 const LATE_CURSOR_INDEX = REMOTE_FOLLOWER_SEED_COUNT - REMOTE_FOLLOWER_PAGE_LIMIT - 1
@@ -35,6 +36,7 @@ export async function runRemoteFollowerScenarios(): Promise<void> {
   })
   // Follow-graph runner; run.mts is at its 200-line cap, so the receipt scenarios run from here.
   await runBlueskyFolloweeReceiptScenarios()
+  await runBlueskyFollowerReceiptScenarios()
 }
 
 async function assertRemoteFollowerSeed(): Promise<void> {

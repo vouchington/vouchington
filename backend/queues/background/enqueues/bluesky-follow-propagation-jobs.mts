@@ -12,12 +12,18 @@ export type DisconnectRequestedData = {
   userId: string
   blueskyDid: string
   linkAuthorizationId: string
-  /**
-   * Last follower id already cleaned. Only a continuation carries it; the first run and a sweep
-   * re-drive start from the head.
-   */
-  after?: string
-}
+} & (
+  | {
+      /** Last follower id cleaned from the followee-role receipts; omitted on a sweep re-drive. */
+      after?: string
+      followerAfter?: never
+    }
+  | {
+      /** Follower-role phase: last followee id whose remote record was attempted. */
+      followerAfter: string
+      after?: never
+    }
+)
 /** One page of follow pairs after the cursor pair; the first page has no cursor. */
 export type BackfillBlueskyFollowPropagationData = { after?: ReconcileFollowData }
 /** One page of pending disconnects after `afterId`; the first page has no cursor. */

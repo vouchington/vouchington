@@ -14,6 +14,7 @@ import { COMMUNITY_AGENT_PROMPT_SCENARIO_IDS } from './community-agent-prompt-pa
 import { CRITICAL_ALERT_SCENARIO_IDS } from './critical-alert-scenario-ids.mts'
 import { CATEGORY_PROJECTION_SCENARIO_IDS } from './category-projection-scenario-ids.mts'
 import { EXISTENCE_FILTER_SCENARIO_IDS } from './existence-filter-scenario-ids.mts'
+import { BLUESKY_FOLLOWER_SCENARIO_IDS } from './bluesky-follower-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
   ...EXISTENCE_FILTER_SCENARIO_IDS,
@@ -167,4 +168,5 @@ export const BOUNDED_WORK_SCENARIOS = [
   'user-removed-community-posts-page',
   ...DISPATCH_AND_CRAWL_SCENARIO_IDS,
   ...CRITICAL_ALERT_SCENARIO_IDS,
+  ...BLUESKY_FOLLOWER_SCENARIO_IDS,
 ] as const

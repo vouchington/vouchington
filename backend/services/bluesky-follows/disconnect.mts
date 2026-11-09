@@ -14,7 +14,7 @@ import {
 import { restoreBlueskySession, type OAuthSession } from '@modules/bluesky-oauth'
 import onError from '@modules/on-error'
 import {
-  deleteBlueskyFollowReceipt,
+  deleteBlueskyFollowReceipts,
   deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage,
   listBlueskyFollowReceiptsForFollower,
   START_OF_IDS,
@@ -23,32 +23,41 @@ import {
 import { deleteFollowOnBluesky } from './agent.mts'
 import { requestBlueskyDisconnect } from './disconnect-request.mts'
 import { withBlueskyDisconnectLock } from './disconnect-lock.mts'
+import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 
-type ExactGeneration = { blueskyDid: string; linkAuthorizationId: string; after?: string }
+type ExactGeneration = {
+  blueskyDid: string
+  linkAuthorizationId: string
+} & ({ after?: string; followerAfter?: never } | { followerAfter: string; after?: never })
 
 // Best-effort, like sanitizeStripeCustomers in @services/users/delete.mts: one Bluesky failure
 // must not block the others or the disconnect itself. Successful deletes remove receipts eagerly;
 // failures leave them until the exact linked-account generation is revoked, whose foreign-key
 // cascade prevents any later credential from adopting an old repo URI.
 async function deleteBlueskyFollowRecordsForFollower(
+  userId: string,
+  linked: BlueskyLinkedAccount,
   session: OAuthSession,
   receipts: BlueskyFollowReceipt[],
 ): Promise<void> {
-  for (const receipt of receipts) {
-    try {
-      // oxlint-disable-next-line no-await-in-loop -- serial so one Bluesky outage can't fan out into unbounded concurrent calls
-      await deleteFollowOnBluesky(session, receipt.record_uri)
-      // oxlint-disable-next-line no-await-in-loop -- see above
-      await deleteBlueskyFollowReceipt(
-        receipt.follower_user_id,
-        receipt.followee_user_id,
-        receipt.follower_bluesky_did,
-        receipt.follower_account_link_authorization_id,
-      )
-    } catch (err) {
-      onError(err instanceof Error ? err : new Error(String(err)))
-    }
-  }
+  // The page bounds both provider concurrency and total calls in this job.
+  const attempted = await Promise.all(
+    receipts.map(async receipt => {
+      try {
+        await deleteFollowOnBluesky(session, receipt.record_uri)
+        return { followeeUserId: receipt.followee_user_id, recordUri: receipt.record_uri }
+      } catch (err) {
+        onError(err instanceof Error ? err : new Error(String(err)))
+        return null
+      }
+    }),
+  )
+  await deleteBlueskyFollowReceipts(
+    userId,
+    attempted.filter(receipt => receipt !== null),
+    linked.bluesky_did,
+    linked.link_authorization_id,
+  )
 }
 
 // Follower-role receipts (this user is follower_user_id) get one more step first: deleting the
@@ -67,76 +76,81 @@ export async function disconnectAcceptedBlueskyAccountAndCleanupFollows(
   )
 }
 
-// Other followers' receipts are cleaned one page per run while the generation stays pending
-// (disconnect_requested_at set, link authorization attached). A full page enqueues a continuation
-// that carries its cursor and returns without revoking; only a short page runs the follower-role
-// cleanup and revokes. Nothing here loops, so the lock is never held across pages. A lost
-// continuation is re-driven by the pending-disconnect sweep, which enqueues with no cursor and so
-// restarts from the head. The one-account-per-user unique index on bluesky_linked_accounts keeps
-// the user from relinking until the generation is revoked, so a stale run cannot delete receipts
-// of a newer link.
+// Each run removes at most one local followee-role page and attempts at most one remote
+// follower-role page. Explicit followerAfter continuations skip the already completed followee
+// phase; after remains exclusively its follower-id cursor. No lock spans multiple jobs. A lost
+// continuation is re-driven from the head by the pending-disconnect sweep. The one-account-per-
+// user unique index prevents relinking until the exact generation is revoked.
 async function disconnectAcceptedBlueskyAccountWithoutLock(
   userId: string,
   generation: ExactGeneration,
 ): Promise<void> {
   const linked = await getExactBlueskyAccountForDisconnect(userId, generation)
   if (!linked) return
-  const page = await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
+  if (generation.followerAfter === undefined) {
+    const page = await deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
+      userId,
+      generation.after ?? START_OF_IDS,
+    )
+    if (page.hasMore) {
+      // Failed admission leaves the generation pending and retryable, before any revocation.
+      await enqueueDisconnectRequested({
+        userId,
+        blueskyDid: linked.bluesky_did,
+        linkAuthorizationId: linked.link_authorization_id,
+        after: page.lastFollowerUserId!,
+      })
+      return
+    }
+  }
+  const page = await cleanupFollowerRoleBeforeDisconnect(
     userId,
-    generation.after ?? START_OF_IDS,
+    linked,
+    generation.followerAfter ?? START_OF_IDS,
   )
   if (page.hasMore) {
-    // An enqueue failure throws before revocation, leaving the generation pending and retryable.
     await enqueueDisconnectRequested({
       userId,
       blueskyDid: linked.bluesky_did,
       linkAuthorizationId: linked.link_authorization_id,
-      after: page.lastFollowerUserId!,
+      followerAfter: page.lastFolloweeUserId!,
     })
     return
   }
-  await cleanupFollowerRoleBeforeDisconnect(userId, linked)
   await disconnectAcceptedBlueskyGeneration(userId, generation)
 }
 
 async function cleanupFollowerRoleBeforeDisconnect(
   userId: string,
   linked: BlueskyLinkedAccount,
-): Promise<void> {
-  let receipts = await listBlueskyFollowReceiptsForFollower(
+  afterFolloweeUserId: string,
+): Promise<{ lastFolloweeUserId: string | null; hasMore: boolean }> {
+  const batchSize = getBlueskyFollowsWorkLimit('disconnect_batch_size')
+  const receipts = await listBlueskyFollowReceiptsForFollower(
     userId,
     linked.bluesky_did,
     linked.link_authorization_id,
-    null,
+    afterFolloweeUserId,
+    batchSize,
   )
-  if (receipts.length === 0) return
-  await runWithAttachedBlueskySession(userId, linked.link_authorization_id, async () => {
+  if (receipts.length === 0) return { lastFolloweeUserId: null, hasMore: false }
+  return runWithAttachedBlueskySession(userId, linked.link_authorization_id, async () => {
     let session: OAuthSession
     try {
       session = await restoreBlueskySession(await getBlueskyOAuthClient(), linked.bluesky_did)
     } catch (err) {
-      // Authentication is best-effort; local page-read failures must leave the generation retryable.
+      // Preserve best-effort authentication: an unavailable credential does not block revocation.
+      // Page reads and local batch writes are outside this catch, so datastore failures retry.
       onError(err instanceof Error ? err : new Error(String(err)))
-      return
+      return { lastFolloweeUserId: null, hasMore: false }
     }
-    // Every receipt must be attempted before revocation; failed deletes stay behind the cursor.
-    /* oxlint-disable no-await-in-loop -- ordered page operations depend on the preceding page */
-    for (;;) {
-      const cursor = receipts.at(-1)!.followee_user_id
-
-      // no-mistakes-disable-next-line query-reached-per-item: each bounded receipt page is attempted before revocation; failed remote deletes must remain behind the physical cursor
-      await deleteBlueskyFollowRecordsForFollower(session, receipts)
-
-      // no-mistakes-disable-next-line query-reached-per-item: one exact-generation keyset page follows the preceding remote-cleanup page
-      receipts = await listBlueskyFollowReceiptsForFollower(
-        userId,
-        linked.bluesky_did,
-        linked.link_authorization_id,
-        cursor,
-      )
-      if (receipts.length === 0) break
+    await deleteBlueskyFollowRecordsForFollower(userId, linked, session, receipts)
+    // Advance over every attempted URI, including provider failures, so a failed front item does
+    // not starve the rest. Failed receipts remain until the exact-generation revoke cascades them.
+    return {
+      lastFolloweeUserId: receipts.at(-1)!.followee_user_id,
+      hasMore: receipts.length === batchSize,
     }
-    /* oxlint-enable no-await-in-loop */
   })
 }
 

@@ -3,17 +3,20 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   backfill_batch_size: 500,
+  disconnect_batch_size: 20,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const blueskyFollowsWorkMaxValues = {
   backfill_batch_size: 5000,
+  disconnect_batch_size: 100,
 }
 
 export const blueskyFollowsWorkConfig = new DynamicConfig({
   key: 'bluesky-follows-work-config',
   fieldTypes: {
     backfill_batch_size: 'number',
+    disconnect_batch_size: 'number',
   },
   defaultFields,
 })
