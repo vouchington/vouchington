@@ -8,7 +8,6 @@ import {
   getAppealResolutionRunStatus,
   markAppealResolutionRunExpired,
 } from '@services/moderation-appeals'
-import { withPrimaryReads } from '@data-stores/psql'
 import { getUserWarningById } from '@services/user-warnings'
 import { getCommunityBanById } from '@services/communities/bans/get'
 import { getUserSuspensionById } from '@services/users/suspension'
@@ -39,9 +38,7 @@ export async function runAppealResolutionAgent(
   const { appealId, requestToken, rerunById, runId } = input
 
   if (rerunById) {
-    const runStatus = await withPrimaryReads(() =>
-      getAppealResolutionRunStatus(appealId, requestToken),
-    )
+    const runStatus = await getAppealResolutionRunStatus(appealId, requestToken)
     // A missing outcome is inconclusive, and terminal work must never make another paid call.
     if (runStatus !== 'active') return
   }
@@ -58,9 +55,7 @@ export async function runAppealResolutionAgent(
     return
   }
 
-  const currentRequest = await withPrimaryReads(() =>
-    isCurrentModerationAppealDraftRequest(appealId, requestToken),
-  )
+  const currentRequest = await isCurrentModerationAppealDraftRequest(appealId, requestToken)
   if (!currentRequest) {
     if (rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
     return

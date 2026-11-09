@@ -6140,19 +6140,6 @@
         }
       ]
     },
-    "GET:/api/v1/reports/:id/judgements/:runId": {
-      "additionalProperties": false,
-      "properties": {
-        "completed": {
-          "type": "boolean"
-        },
-        "judgement_id": {
-          "type": ["string", "null"]
-        }
-      },
-      "required": ["completed", "judgement_id"],
-      "type": "object"
-    },
     "GET:/api/v1/rss-feed-categories": {
       "additionalProperties": false,
       "properties": {

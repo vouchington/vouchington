@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, withPrimaryReads, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { ModerationAppeal, ModerationAppealAction } from './config.mts'
@@ -116,22 +116,24 @@ export async function isCurrentModerationAppealDraftRequest(
   appealId: string,
   requestToken: string,
 ): Promise<boolean> {
-  const { rows } = await read<{
-    ai_draft_request_token: string
-    approved_at: Date | null
-    sent_at: Date | null
-    resolved_at: Date | null
-  }>(sql`
-    /* isCurrentModerationAppealDraftRequest */
-    SELECT ai_draft_request_token, approved_at, sent_at, resolved_at
-    FROM moderation_appeals
-    WHERE id = ${appealId}
-  `)
-  const appeal = rows[0]
-  return (
-    appeal?.ai_draft_request_token === requestToken &&
-    appeal.approved_at === null &&
-    appeal.sent_at === null &&
-    appeal.resolved_at === null
-  )
+  return withPrimaryReads(async () => {
+    const { rows } = await read<{
+      ai_draft_request_token: string
+      approved_at: Date | null
+      sent_at: Date | null
+      resolved_at: Date | null
+    }>(sql`
+      /* isCurrentModerationAppealDraftRequest */
+      SELECT ai_draft_request_token, approved_at, sent_at, resolved_at
+      FROM moderation_appeals
+      WHERE id = ${appealId}
+    `)
+    const appeal = rows[0]
+    return (
+      appeal?.ai_draft_request_token === requestToken &&
+      appeal.approved_at === null &&
+      appeal.sent_at === null &&
+      appeal.resolved_at === null
+    )
+  })
 }

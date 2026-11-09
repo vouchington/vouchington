@@ -1,6 +1,6 @@
 import '@voucha/test-helpers/vitest.setup.sentry-mock'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Job } from 'glide-mq'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { Job, Queue, QueueEvents, UnrecoverableError, Worker } from 'glide-mq'
 import { ModelProviderError, type ModelCallResult } from '@vouchington/ai/providers'
 import { disableSpendCapForTest } from '@voucha/test-helpers/ai-agents-spend-cap'
 import { startAIAgentWorkerForTest } from '@voucha/test-helpers/ai-agent-worker-lifecycle'
@@ -8,6 +8,13 @@ import { installAIAgentProviderFixtures } from '@voucha/test-helpers/ai-agent-wo
 import { makeModelCallResult } from '@voucha/test-helpers/agents/model-call-result'
 import { admitModerationRerunForTest } from '@voucha/test-helpers/moderation-rerun-worker'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import type { NamedQueueJob } from '@data-stores/valkey-glide-mq'
+import { AI_AGENTS_QUEUE_NAME } from '@queues/ai-agents/config'
+import type { AIAgentJobData, AIAgentJobPayloads } from '@queues/ai-agents/types'
+import { markReportJudgementRunFailed } from '@services/moderation-reports/rerun-outcomes'
+import { markAppealResolutionRunFailed } from '@services/moderation-appeals/rerun-outcomes'
+import { withDurableRerunOutcome } from './durable-rerun-outcomes.mts'
 
 vi.hoisted(() => {
   const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
@@ -17,6 +24,81 @@ vi.hoisted(() => {
 
 describe('durable moderation rerun terminal outcomes', () => {
   beforeEach(disableSpendCapForTest)
+
+  it.each(['report', 'appeal'] as const)(
+    'retries a failed %s terminal marker without replaying the processor',
+    async kind => {
+      const admitted = await admitModerationRerunForTest(kind)
+      const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
+      const queue = new Queue<AIAgentJobData>(AI_AGENTS_QUEUE_NAME, connection)
+      const events = new QueueEvents(AI_AGENTS_QUEUE_NAME, { ...connection, lastEventId: '0' })
+      const delayed = Promise.withResolvers<void>()
+      const completed = Promise.withResolvers<void>()
+      const active = Promise.withResolvers<void>()
+      let processCalls = 0
+      let markerCalls = 0
+      events.on('delay-changed', ({ jobId }: { jobId: string }) => {
+        if (jobId === admitted.jobId) delayed.resolve()
+      })
+      await events.waitUntilReady()
+      const worker = new Worker<AIAgentJobData>(
+        AI_AGENTS_QUEUE_NAME,
+        (job: Job<AIAgentJobData>) =>
+          job.id === admitted.jobId
+            ? withDurableRerunOutcome(
+                job as NamedQueueJob<AIAgentJobPayloads>,
+                async () => {
+                  processCalls++
+                  throw new UnrecoverableError('Owned permanent processor failure')
+                },
+                async run => {
+                  markerCalls++
+                  if (markerCalls === 1) throw new Error('Owned transient marker failure')
+                  if (run.name === 'report-judgement')
+                    await markReportJudgementRunFailed(
+                      run.data.triggering_report_id,
+                      run.data.run_id!,
+                    )
+                  else if (run.name === 'appeal-resolution')
+                    await markAppealResolutionRunFailed(
+                      run.data.appeal_id,
+                      run.data.ai_draft_request_token,
+                    )
+                },
+              )
+            : Promise.resolve(),
+        { ...connection, blockTimeout: 100, promotionInterval: 100 },
+      )
+      worker.on('completed', job => {
+        if (job.id === admitted.jobId) completed.resolve()
+      })
+      worker.on('active', job => {
+        if (job.id === admitted.jobId) active.resolve()
+      })
+      onTestFinished(async () => {
+        await worker.close(true)
+        await events.close()
+        await queue.obliterate({ force: true })
+        await queue.close()
+      })
+      await worker.waitUntilReady()
+      await waitForRealGlideEvent(active.promise, `${kind} terminal marker worker activation`)
+      await waitForRealGlideEvent(delayed.promise, `${kind} marker persistence deferral`)
+      expect(processCalls).toBe(1)
+      expect((await admitted.request.get(admitted.resultPath).expect(200)).body.status).toBe(
+        'active',
+      )
+      const parked = await queue.getJob(admitted.jobId)
+      expect(parked?.data).toHaveProperty('step', 'persist-moderation-rerun-terminal-failure')
+      await parked!.promote()
+      await waitForRealGlideEvent(completed.promise, `${kind} persisted terminal marker`)
+      expect(processCalls).toBe(1)
+      expect(markerCalls).toBe(2)
+      expect((await admitted.request.get(admitted.resultPath).expect(200)).body.status).toBe(
+        'failed',
+      )
+    },
+  )
 
   it.each(['report', 'appeal'] as const)(
     'records an unrecoverable %s failure before the attempt budget is exhausted',

@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, withPrimaryReads, write } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import sql from 'sql-template-strings'
@@ -40,13 +40,15 @@ export async function getAppealResolutionRunStatus(
   appealId: string,
   requestToken: string,
 ): Promise<AppealResolutionRunStatus | null> {
-  const { rows } = await read<{ status: AppealResolutionRunStatus }>(sql`
-    /* getAppealResolutionRunStatus */
-    SELECT status
-    FROM moderation_appeal_resolution_runs
-    WHERE moderation_appeal_id = ${appealId}::uuid AND id = ${requestToken}::uuid
-  `)
-  return rows[0]?.status ?? null
+  return withPrimaryReads(async () => {
+    const { rows } = await read<{ status: AppealResolutionRunStatus }>(sql`
+      /* getAppealResolutionRunStatus */
+      SELECT status
+      FROM moderation_appeal_resolution_runs
+      WHERE moderation_appeal_id = ${appealId}::uuid AND id = ${requestToken}::uuid
+    `)
+    return rows[0]?.status ?? null
+  })
 }
 
 export async function getAppealResolutionRunOutcome(
