@@ -21,6 +21,10 @@ import {
   findYourFriendsWorkConfig,
   findYourFriendsWorkMaxValues,
 } from '@queues/find-your-friends/config'
+import {
+  friendTrustedHostnamesWorkConfig,
+  friendTrustedHostnamesWorkMaxValues,
+} from '@services/urls-hostnames/social-limits'
 import { articlesWorkConfig, articlesWorkMaxValues } from '@services/articles/work-limits'
 import {
   prioritizedReferralLinksWorkConfig,
@@ -147,6 +151,18 @@ export const backgroundWorkRegistryEntries9 = {
     maxValues: findYourFriendsWorkMaxValues,
     descriptions: {
       enqueue_batch_size: 'Enqueue batch size for find your friends processing.',
+    },
+  }),
+  'friend-trusted-hostnames-work-config': defineBoundedWorkNamespace({
+    namespace: 'friend-trusted-hostnames-work-config',
+    config: friendTrustedHostnamesWorkConfig,
+    label: 'Friend-trusted hostnames',
+    maxValues: friendTrustedHostnamesWorkMaxValues,
+    descriptions: {
+      friend_follow_limit:
+        'Newest follows of the viewer whose hostname votes feed the friend-trusted hostnames list; older follows are ignored.',
+      votes_per_friend_limit:
+        'Newest hostname votes read per followed user for the friend-trusted hostnames list; older votes are ignored.',
     },
   }),
 }

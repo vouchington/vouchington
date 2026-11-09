@@ -6549,6 +6549,9 @@ importers:
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../urls-domains-blacklist
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../urls-hostnames
       '@services/user-deletions':
         specifier: workspace:^
         version: link:../user-deletions
@@ -11972,6 +11975,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -12011,6 +12017,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@data-stores/analytics':
         specifier: workspace:^

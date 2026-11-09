@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/search-utils": "workspace:^",
@@ -36,7 +37,8 @@
     "@vouchington/postgres": "^0.4.0",
     "@vouchington/sentry": "^0.6.0",
     "http-errors": "^2.0.1",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@data-stores/analytics": "workspace:^",

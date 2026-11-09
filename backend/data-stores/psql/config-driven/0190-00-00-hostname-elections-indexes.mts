@@ -26,5 +26,10 @@ WHERE topic_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__listed_votes_score_sort__id
 ON url_hostnames (votes_score_sort DESC, id DESC)
 WHERE publicly_introduced_at IS NOT NULL AND NOT is_blocked;
+
+-- Serves getFriendTrustedHostnames: the newest K ballots of each followed user, newest first,
+-- without walking that user's whole ballot history.
+CREATE INDEX IF NOT EXISTS idx_hostname_votes__user_id__id
+ON hostname_votes (user_id, id DESC);
 `.trim()
 }

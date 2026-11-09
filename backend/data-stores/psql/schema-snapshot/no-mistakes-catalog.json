@@ -57658,6 +57658,38 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "idx_hostname_votes__user_id__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_hostname_votes__user_id__id ON ONLY public.hostname_votes USING btree (user_id, id DESC)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "physicalPartition": {

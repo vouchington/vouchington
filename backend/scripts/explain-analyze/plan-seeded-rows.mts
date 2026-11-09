@@ -7,8 +7,8 @@ import { REPORT_CONTEXT_SEED_ROW_COUNT } from './seed-data/moderation-report-con
 import * as ingestion from './seed-data/ingestion-raw-pages.mts'
 import * as retention from './seed-data/agent-moderation-retention.mts'
 import { PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS } from './seed-data/copyright-case-purge-volume.mts'
+import * as friendTrust from './seed-data/friend-trusted-hostnames.mts'
 import * as claimantMisuse from './seed-data/claimant-misuse-windows.mts'
-
 // Seed counts include conservative bounds for ancillary fixtures.
 const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
@@ -39,7 +39,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   rss_feed_item_sources: 75_001,
   rss_feed_item_categories: 15_001,
   rss_category_identities: 201, // 200 category values plus seedTopHashtags' seedhashtag.
-  relation__user__follow__user: 11_000,
+  relation__user__follow__user: 11_000 + friendTrust.FRIEND_TRUST_FOLLOW_COUNT,
   relation__user__mute__user: 2_500,
   relation__user__block__user: 2_500,
   remote_actors: 100_000,
@@ -73,7 +73,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   github_accounts: ingestion.INGESTION_ACCOUNT_ROW_COUNT,
   bedrock_embedding_batches: ingestion.INGESTION_BEDROCK_ROW_COUNT,
   facebook_friends: 1,
-  hostname_votes: 1,
+  hostname_votes: 1 + friendTrust.FRIEND_TRUST_VOTE_ROWS,
   households: 100,
   api_keys: 256,
   blocklisted_domains: 20_512,

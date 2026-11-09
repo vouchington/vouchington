@@ -54478,6 +54478,33 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "idx_hostname_votes__user_id__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_hostname_votes__user_id__id ON ONLY public.hostname_votes USING btree (user_id, id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "partition": {

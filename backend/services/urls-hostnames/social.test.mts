@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestUser,
   insertTestUrlHostname,
@@ -7,6 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { getFriendTrustedHostnames } from './social.mts'
+import { friendTrustedHostnamesWorkConfig } from './social-limits.mts'
 
 describe('getFriendTrustedHostnames', () => {
   let currentUser: PrivateUser
@@ -97,5 +99,68 @@ describe('getFriendTrustedHostnames', () => {
     await expect(
       getFriendTrustedHostnames(currentUser.id, { after: 'notvalid!!' }),
     ).rejects.toThrow(Error)
+  })
+
+  it('counts only the newest ballot of a friend on a hostname', async () => {
+    const viewer = await createTestUser()
+    const friend = await createTestUser()
+    await insertTestLocalFollow(viewer.id, friend.id)
+    const hostnameId = await insertTestUrlHostname({
+      hostname: `social-flip-${random}.example.com`,
+    })
+    await upsertHostnameVote(hostnameId, friend.id, 1)
+    await upsertHostnameVote(hostnameId, friend.id, -1)
+
+    const { results } = await getFriendTrustedHostnames(viewer.id, { limit: 100 })
+
+    expect(results).toHaveLength(0)
+  })
+
+  it('reads only the newest follows up to friend_follow_limit', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(friendTrustedHostnamesWorkConfig, {
+        friend_follow_limit: 1,
+      }),
+    )
+    const viewer = await createTestUser()
+    const olderFriend = await createTestUser()
+    const newerFriend = await createTestUser()
+    await insertTestLocalFollow(viewer.id, olderFriend.id)
+    await insertTestLocalFollow(viewer.id, newerFriend.id)
+    const olderHostnameId = await insertTestUrlHostname({
+      hostname: `social-older-${random}.example.com`,
+    })
+    const newerHostnameId = await insertTestUrlHostname({
+      hostname: `social-newer-${random}.example.com`,
+    })
+    await upsertHostnameVote(olderHostnameId, olderFriend.id, 1)
+    await upsertHostnameVote(newerHostnameId, newerFriend.id, 1)
+
+    const { results } = await getFriendTrustedHostnames(viewer.id, { limit: 100 })
+
+    expect(results.map(r => r.id)).toEqual([newerHostnameId])
+  })
+
+  it('reads only each friend newest ballots up to votes_per_friend_limit', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(friendTrustedHostnamesWorkConfig, {
+        votes_per_friend_limit: 1,
+      }),
+    )
+    const viewer = await createTestUser()
+    const friend = await createTestUser()
+    await insertTestLocalFollow(viewer.id, friend.id)
+    const olderHostnameId = await insertTestUrlHostname({
+      hostname: `social-old-vote-${random}.example.com`,
+    })
+    const newerHostnameId = await insertTestUrlHostname({
+      hostname: `social-new-vote-${random}.example.com`,
+    })
+    await upsertHostnameVote(olderHostnameId, friend.id, 1)
+    await upsertHostnameVote(newerHostnameId, friend.id, 1)
+
+    const { results } = await getFriendTrustedHostnames(viewer.id, { limit: 100 })
+
+    expect(results.map(r => r.id)).toEqual([newerHostnameId])
   })
 })
