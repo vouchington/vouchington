@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestModerationReport, insertTestPost } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { resolveTestModerationReports } from '@voucha/test-helpers/entities/moderation-report-clusters'
 import { moderationReportsWorkConfig } from '../work-limits.mts'
 import { insertReportJudgement } from '../judgements.mts'
 import { shouldRefreshReportJudgementForEntity } from '../judgement-refresh.mts'
@@ -105,6 +106,47 @@ describe('moderation-reports/judgement-context', () => {
       expect(next.context.contextHash).not.toBe(context.contextHash)
       const stale = await attachJudgements([{ entity_type: 'post' as const, entity_id: postId }])
       expect(stale[0]?.judgement?.is_stale).toBe(true)
+    } finally {
+      restore()
+    }
+  })
+
+  it('merges the newest reports across all four outcomes before applying the cap', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(moderationReportsWorkConfig, {
+      cluster_report_count_cap: 2,
+    })
+    try {
+      const [author, ...reporters] = await Promise.all([
+        createTestUser(),
+        createTestUser(),
+        createTestUser(),
+        createTestUser(),
+        createTestUser(),
+      ])
+      const postId = await insertTestPost({
+        createdById: author!.id,
+        slug: `judgement-outcomes-${randomUUID()}`,
+        title: 'Judgement outcomes',
+        markdown: 'body',
+      })
+      const ids: string[] = []
+      for (const [index, reporter] of reporters.entries()) {
+        ids.push(
+          await insertTestModerationReport({
+            reporterUserId: reporter.id,
+            entityType: 'post',
+            entityId: postId,
+            reason: 'spam',
+            createdAt: new Date(Date.UTC(2020, 0, 1, 0, 0, index)),
+          }),
+        )
+      }
+      await resolveTestModerationReports([ids[0]!], 'actioned')
+      await resolveTestModerationReports([ids[1]!], 'dismissed')
+      await resolveTestModerationReports([ids[2]!], 'reviewed')
+      const context = await getReportJudgementContextForEntity('post', postId)
+      expect(context).toMatchObject({ reportCount: 2, reportCountCapped: true })
+      expect(context.reports.map(report => report.id)).toEqual([ids[3], ids[2]])
     } finally {
       restore()
     }
