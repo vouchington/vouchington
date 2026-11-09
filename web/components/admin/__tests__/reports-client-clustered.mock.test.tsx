@@ -58,14 +58,18 @@ describe('ReportsClient clustered staff reports', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('marks capped report counts and sampled summaries', () => {
+  it.each([
+    { count: 1000, label: '1K+' },
+    { count: 1500, label: '1.5K+' },
+    { count: 1999, label: '1.9K+' },
+  ])('marks capped count $count and sampled summaries', ({ count, label }) => {
     window.history.pushState({}, '', '/reports')
     const cluster = makeCluster({
-      report_count: 1000,
+      report_count: count,
       report_count_capped: true,
       summary_capped: true,
-      reporter_count: 1000,
-      reason_breakdown: [{ reason: 'spam', count: 1000 }],
+      reporter_count: count,
+      reason_breakdown: [{ reason: 'spam', count }],
     })
     expect(cluster.summary_capped).toBe(true)
     const response = makeClusteredReportsResponse({
@@ -76,10 +80,10 @@ describe('ReportsClient clustered staff reports', () => {
       results: [cluster],
       duplicate_clusters: response.duplicate_clusters.map(duplicate => ({
         ...duplicate,
-        report_count: 1000,
+        report_count: count,
         report_count_capped: true,
         summary_capped: true,
-        reason_breakdown: [{ reason: 'spam', count: 1000 }],
+        reason_breakdown: [{ reason: 'spam', count }],
         clusters: duplicate.clusters.map((duplicateCluster, index) => ({
           ...duplicateCluster,
           report_count_capped: index === 0,
@@ -88,7 +92,7 @@ describe('ReportsClient clustered staff reports', () => {
       })),
     })
 
-    expect(screen.getByText('1K+ reports')).toBeVisible()
+    expect(screen.getByText(`${label} reports`)).toBeVisible()
     expect(screen.getByText(/Reporter and reason summaries reflect a sample of/)).toBeVisible()
     expect(screen.getByText(/Reason summaries reflect a sample of/)).toBeVisible()
   })

@@ -44,7 +44,6 @@ export const report: AdminModerationReport = {
   },
   post_moderation_context: null,
 }
-
 export const banEvasionReport: AdminModerationReport = {
   id: 'report-3',
   case_id: 'case-3',

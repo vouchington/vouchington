@@ -1,9 +1,10 @@
 import { read } from '@data-stores/psql'
 import crypto from 'node:crypto'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import { getModerationReportsWorkLimit } from './work-limits.mts'
 import {
   type ModerationReportEntityType,
+  type ModerationReportStatus,
   MODERATION_REPORT_FK_COLUMNS,
   MODERATION_REPORT_REASON_SEVERITY_RANK,
   type ModerationReportReason,
@@ -12,6 +13,15 @@ import {
 
 /** Cap on reports fed to the judgement agent — bounds prompt size / cost for popular entities. */
 export const MAX_REPORTS_FOR_JUDGEMENT = 50
+
+// Literal outcomes retain index selectivity under generic planning; both pending markers
+// make the pending ordered indexes usable without relying on CHECK-constraint inference.
+const REPORT_OUTCOME_FILTERS = {
+  pending: sql`r.reviewed_at IS NULL AND r.resolution_action IS NULL`,
+  reviewed: sql`r.reviewed_at IS NOT NULL AND r.resolution_action = 'reviewed'::moderation_report_resolution_actions`,
+  actioned: sql`r.reviewed_at IS NOT NULL AND r.resolution_action = 'actioned'::moderation_report_resolution_actions`,
+  dismissed: sql`r.reviewed_at IS NOT NULL AND r.resolution_action = 'dismissed'::moderation_report_resolution_actions`,
+} satisfies Record<ModerationReportStatus, SQLStatement>
 
 const REPORT_REASON_SEVERITY_RANK: Record<ModerationReportReason, number> =
   MODERATION_REPORT_REASON_SEVERITY_RANK
@@ -106,14 +116,12 @@ async function selectReportContextRows(
       FROM unnest(${ids}::uuid[]) entity(id)
       LEFT JOIN LATERAL (SELECT bounded.*, row_number() OVER (ORDER BY bounded.id DESC) AS report_rank FROM (
         SELECT * FROM (`)
-    for (const [index, outcome] of [null, 'reviewed', 'actioned', 'dismissed'].entries()) {
+    for (const [index, predicate] of Object.values(REPORT_OUTCOME_FILTERS).entries()) {
       if (index > 0) query.append(sql` UNION ALL `)
       query.append(sql`(SELECT r.id, r.reason, r.note FROM moderation_reports r WHERE r.`)
       query.append(fkColumn)
-      query.append(sql` = entity.id AND r.resolution_action `)
-      query.append(
-        outcome === null ? sql`IS NULL` : sql`= ${outcome}::moderation_report_resolution_actions`,
-      )
+      query.append(sql` = entity.id AND `)
+      query.append(predicate)
       query.append(sql` ORDER BY r.id DESC LIMIT ${cap + 1})`)
     }
     query.append(sql`) outcomes ORDER BY id DESC LIMIT ${cap + 1}) bounded) sample ON true

@@ -38,7 +38,12 @@ export function ReportDetail({
 }) {
   const t = useTranslations()
   const compactNumberFormat = useMemo(
-    () => new Intl.NumberFormat(uiLocale, { notation: 'compact', maximumFractionDigits: 0 }),
+    () =>
+      new Intl.NumberFormat(uiLocale, {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+        roundingMode: 'floor',
+      }),
     [uiLocale],
   )
   const exactNumberFormat = useMemo(() => new Intl.NumberFormat(uiLocale), [uiLocale])

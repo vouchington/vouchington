@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { selectEntityClusterRows } from '@services/moderation-reports/clustered-query'
+import { getModerationReportsWorkLimit } from '@services/moderation-reports/work-limits'
 import type { ClusterRow } from '@services/moderation-reports/clustered-types'
 import type { ModerationReportStatus } from '@services/moderation-reports/config'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -32,7 +33,7 @@ export async function runModerationClusterPageScenarios(): Promise<void> {
     },
     'after',
     [MODERATION_CLUSTER_HOT_POST_ID, ...clusterScalePostIds().toReversed().slice(0, PAGE_LIMIT)],
-    [10_000, 1, 1, 1, 1],
+    [getModerationReportsWorkLimit('cluster_report_count_cap'), 1, 1, 1, 1],
   )
   const ascendingFirstEra = clusterFixturePostIds(0)
   await capturePage(
@@ -171,6 +172,12 @@ async function capturePage(
       assert.deepEqual(
         rows.map(row => row.report_count),
         expectedCounts,
+      )
+      assert.deepEqual(
+        rows.map(row => row.report_count_capped),
+        expectedCounts.map(
+          (_, index) => scenarioId === 'moderation-clusters-pending-hot' && index === 0,
+        ),
       )
       if (expectedTypes)
         assert.deepEqual(

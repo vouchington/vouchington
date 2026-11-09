@@ -178,7 +178,7 @@ async function captureHotEdge(
   const query = `/* ${name} */
     SELECT uuid_extract_timestamp(s.id) AS reported_at
     FROM moderation_reports s
-    WHERE s.post_id = $1::uuid AND s.reviewed_at IS NULL AND s.resolution_action IS NULL
+    WHERE s.post_id = (SELECT $1::uuid) AND s.reviewed_at IS NULL AND s.resolution_action IS NULL
     ORDER BY s.id ${order} LIMIT 1`
   const { rows } = await read<{ reported_at: Date }>(query, [MODERATION_CLUSTER_HOT_POST_ID])
   assert.equal(rows.length, 1)

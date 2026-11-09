@@ -5,6 +5,7 @@ import { createTestUser, insertTestModerationReport, insertTestPost } from '@vou
 import { deleteTestModerationReports } from '@voucha/test-helpers/entities/moderation-report-clusters'
 import { hardDeleteTestPosts } from '@voucha/test-helpers/entities/posts-deletion'
 import { acquireReportPaginationTestLock } from '@voucha/test-helpers/report-pagination-lock'
+import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { moderationReportsWorkConfig } from '@services/moderation-reports/work-limits'
 
 describe('clustered report summaries', () => {
@@ -49,7 +50,32 @@ describe('clustered report summaries', () => {
       }
       const request = createRequest()
       await request.authenticateAs(admin!)
-      const response = await request.get('/api/v1/reports?cluster=entity&limit=1000').expect(200)
+      const response = await request.get('/api/v1/reports?cluster=entity&limit=100').expect(200)
+      const tool = getRegisteredToolByName('list_moderation_reports')!
+      const mcp = JSON.parse(
+        JSON.stringify(await tool.function(admin!)({ cluster: 'entity', limit: 100 })),
+      ) as { results: typeof response.body.results }
+      const summaries = (
+        results: Array<{
+          entity_id: string
+          report_count: number
+          report_count_capped: boolean
+          summary_capped: boolean
+          reporter_count: number
+          reason_breakdown: Array<{ count: number }>
+        }>,
+      ) =>
+        results
+          .filter(item => postIds.includes(item.entity_id))
+          .map(item => ({
+            entity_id: item.entity_id,
+            report_count: item.report_count,
+            report_count_capped: item.report_count_capped,
+            summary_capped: item.summary_capped,
+            reporter_count: item.reporter_count,
+            reason_counts: item.reason_breakdown.map(reason => reason.count),
+          }))
+      expect(summaries(mcp.results)).toEqual(summaries(response.body.results))
       const capped = response.body.results.find(
         (item: { entity_id: string }) => item.entity_id === postIds[0],
       )
