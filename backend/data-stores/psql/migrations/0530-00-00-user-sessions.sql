@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   device_id UUID NOT NULL,
   authentication_origin user_session_authentication_origins NOT NULL,
+  authenticated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
   device_name TEXT NOT NULL DEFAULT 'Unknown device',
   user_agent_string_id UUID NOT NULL REFERENCES user_agent_strings ON DELETE RESTRICT,
   ip_address INET,
@@ -46,6 +47,34 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   CHECK (char_length(device_name) <= 255)
 ) PARTITION BY RANGE (id);
 
+-- The authentication epoch is server-assigned once and survives refresh and credential rotation.
+CREATE OR REPLACE TRIGGER trigger_user_sessions_authenticated_at_immutable
+BEFORE UPDATE OF authenticated_at ON user_sessions
+FOR EACH ROW WHEN (NEW.authenticated_at IS DISTINCT FROM OLD.authenticated_at)
+EXECUTE FUNCTION fn_reject_always('Session authentication time is immutable');
+
+-- Current security state is independent of bounded cleanup and retained session history.
+CREATE TABLE IF NOT EXISTS user_session_revocation_cutoffs (
+  user_id UUID PRIMARY KEY,
+  cutoff_at TIMESTAMPTZ NOT NULL,
+  preserved_session_id UUID REFERENCES user_sessions(id) ON DELETE SET NULL
+);
+
+ALTER TABLE user_session_revocation_cutoffs
+  ADD CONSTRAINT user_session_revocation_cutoffs_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE user_session_revocation_cutoffs
+  VALIDATE CONSTRAINT user_session_revocation_cutoffs_user_id_fkey;
+
+-- Session deletion must find its preserved-actor references without scanning every user's cutoff.
+CREATE INDEX IF NOT EXISTS idx_user_session_revocation_cutoffs__preserved_session_id
+ON user_session_revocation_cutoffs (preserved_session_id) WHERE preserved_session_id IS NOT NULL;
+
+COMMENT ON TABLE user_session_revocation_cutoffs IS 'Latest durable per-user security revocation boundary. Readers reject older authenticated sessions independently of bounded row cleanup; only the preserved actor may survive that boundary.';
+COMMENT ON COLUMN user_session_revocation_cutoffs.user_id IS 'User whose authenticated sessions are governed by this cutoff; removed with the user.';
+COMMENT ON COLUMN user_session_revocation_cutoffs.cutoff_at IS 'Monotonically advancing security-change time. Sessions authenticated at or before this time are revoked unless they are the preserved actor.';
+COMMENT ON COLUMN user_session_revocation_cutoffs.preserved_session_id IS 'Exact actor session preserved by the latest security change. NULL preserves no session, including after the actor session is deleted.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_sessions_updated_at
   BEFORE UPDATE ON user_sessions
@@ -53,10 +82,16 @@ CREATE OR REPLACE TRIGGER trigger_user_sessions_updated_at
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id_active_expires_at
-  ON user_sessions (user_id, expires_at, id)
+  ON user_sessions (user_id, expires_at, id) INCLUDE (authenticated_at)
   WHERE revoked_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Bound last-seen keyset pages before checking expiry and durable revocation cutoff.
+CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id_last_seen_active
+  ON user_sessions (user_id, last_seen_at DESC, id DESC)
+  INCLUDE (device_id, device_name, user_agent_string_id, ip_address, expires_at, authenticated_at)
+  WHERE revoked_at IS NULL;
+
 CREATE INDEX IF NOT EXISTS idx_user_sessions__expires_at_id
   ON user_sessions (expires_at, id);
 
@@ -78,6 +113,7 @@ COMMENT ON TABLE user_sessions IS 'User session registry keyed by UUIDv7 JWT sid
 COMMENT ON COLUMN user_sessions.user_id IS 'Owning user for this session row.';
 COMMENT ON COLUMN user_sessions.device_id IS 'JWT device ID (dt.did) associated with this session.';
 COMMENT ON COLUMN user_sessions.authentication_origin IS 'Server-controlled sign-in provenance; native is set only by native OTP or verified native OAuth broker completion.';
+COMMENT ON COLUMN user_sessions.authenticated_at IS 'Immutable server time when this authenticated session row was first admitted, independent of the pre-sign-in SID UUID timestamp and preserved across refresh and credential rotation.';
 COMMENT ON COLUMN user_sessions.device_name IS 'Human-readable device label derived from the request user-agent when available.';
 COMMENT ON COLUMN user_sessions.user_agent_string_id IS 'Normalized user-agent row for the raw browser user-agent captured for this session.';
 COMMENT ON COLUMN user_sessions.ip_address IS 'Client IP address captured when the session was registered or refreshed.';

@@ -1,3 +1,4 @@
+import { PROJECTION_STATE_GROWTH_POLICIES } from './schema-growth-projection-state.mts'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { buildUnboundedUnpartitionedTables as buildPlatformUnboundedTables } from '@vouchington/utils/schema-growth'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
@@ -90,6 +91,7 @@ export function buildUnboundedUnpartitionedTables(
       },
     ],
     entries: [
+      ...PROJECTION_STATE_GROWTH_POLICIES,
       [
         'moderation_reports',
         'Unresolved reports remain available for staff action, with one pending report per reporter and target; resolved reports expire after 24 months. The open backlog has no time cap.',
@@ -174,10 +176,6 @@ export function buildUnboundedUnpartitionedTables(
         'Active Follow cycles track live domain edges; replaced and undone cycles expire in bounded indexed pages from their terminal timestamp beyond the supported replay age.',
       ],
       ...AI_USAGE_GROWTH_POLICIES,
-      [
-        'community_search_counts',
-        'One projected row per community grows with community adoption; indexed count order and keyed hydration bound search reads.',
-      ],
       [
         'community_agent_prompt_slot_counts',
         'At most one current-state count row per creator; rows grow with creators who have allocated prompts, remain after deallocation, and are deleted by the deferred trigger when the live user is hard-deleted. Primary-key reads stay creator-scoped.',

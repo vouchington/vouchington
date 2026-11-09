@@ -20,7 +20,7 @@ export async function deleteBlueskySessionForRejectedAuthorization(
 ): Promise<void> {
   await using query = await beginTransaction()
 
-  await lockBlueskyAuthorizationOwner(userId, did, authorizationId, query)
+  await lockAuthorization(authorizationId, userId, query)
   await retireRejectedBlueskyGeneration(userId, did, authorizationId, query)
 
   await query.commit()
@@ -45,17 +45,6 @@ async function retireRejectedBlueskyGeneration(
       AND status IN ('pending', 'callback_claimed', 'handoff_ready')`)
 }
 
-export async function lockBlueskySessionOwner(
-  userId: string,
-  did: string,
-  query: TransactionQuery,
-): Promise<void> {
-  await query(sql`/* lockBlueskySessionOwner:user */
-    SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))`)
-  await query(sql`/* lockBlueskySessionOwner:did */
-    SELECT pg_advisory_xact_lock(hashtextextended(${did}, 1))`)
-}
-
 export async function lockAuthorization(
   authorizationId: string,
   userId: string,
@@ -66,16 +55,6 @@ export async function lockAuthorization(
     FROM bluesky_link_authorizations
     WHERE id = ${authorizationId} AND user_id = ${userId}
     FOR UPDATE`)
-}
-
-export async function lockBlueskyAuthorizationOwner(
-  userId: string,
-  did: string,
-  authorizationId: string,
-  query: TransactionQuery,
-): Promise<void> {
-  await lockBlueskySessionOwner(userId, did, query)
-  await lockAuthorization(authorizationId, userId, query)
 }
 
 export async function revokeExactBlueskySession(

@@ -21,10 +21,17 @@ export interface LandingPagesPage {
 export async function listLandingPagesForUser(userId: string): Promise<LandingPage[]> {
   validateUUID(userId)
   const { rows } = await read(sql`/* listLandingPagesForUser */
-    SELECT id, user_id, title, subtitle, slug, is_default, created_at, updated_at
-    FROM user_landing_pages
-    WHERE user_id = ${userId}
-    ORDER BY is_default DESC, id ASC
+    WITH selected_default AS (
+      SELECT COALESCE(
+        (SELECT id FROM user_landing_pages WHERE user_id = ${userId} AND is_default LIMIT 1),
+        (SELECT id FROM user_landing_pages WHERE user_id = ${userId} ORDER BY id ASC LIMIT 1)
+      ) AS id
+    )
+    SELECT page.id, page.user_id, page.title, page.subtitle, page.slug,
+      page.id = selected_default.id AS is_default, page.created_at, page.updated_at
+    FROM user_landing_pages page CROSS JOIN selected_default
+    WHERE page.user_id = ${userId}
+    ORDER BY (page.id = selected_default.id) DESC, page.id ASC
   `)
   return rows as LandingPage[]
 }
@@ -42,21 +49,28 @@ export async function listLandingPagesForUserPage(
     : null
 
   const query = sql`/* listLandingPagesForUserPage */
-    SELECT id, user_id, title, subtitle, slug, is_default, created_at, updated_at
-    FROM user_landing_pages
-    WHERE user_id = ${userId}
+    WITH selected_default AS (
+      SELECT COALESCE(
+        (SELECT id FROM user_landing_pages WHERE user_id = ${userId} AND is_default LIMIT 1),
+        (SELECT id FROM user_landing_pages WHERE user_id = ${userId} ORDER BY id ASC LIMIT 1)
+      ) AS id
+    )
+    SELECT page.id, page.user_id, page.title, page.subtitle, page.slug,
+      page.id = selected_default.id AS is_default, page.created_at, page.updated_at
+    FROM user_landing_pages page CROSS JOIN selected_default
+    WHERE page.user_id = ${userId}
   `
 
   if (cursor) {
     query.append(sql`
       AND (
-        CASE WHEN is_default THEN 1 ELSE 0 END < ${cursor.tier}
-        OR (CASE WHEN is_default THEN 1 ELSE 0 END = ${cursor.tier} AND id > ${cursor.id}::uuid)
+        CASE WHEN page.id = selected_default.id THEN 1 ELSE 0 END < ${cursor.tier}
+        OR (CASE WHEN page.id = selected_default.id THEN 1 ELSE 0 END = ${cursor.tier} AND page.id > ${cursor.id}::uuid)
       )
     `)
   }
 
-  query.append(sql` ORDER BY is_default DESC, id ASC LIMIT ${limit + 1}`)
+  query.append(sql` ORDER BY (page.id = selected_default.id) DESC, page.id ASC LIMIT ${limit + 1}`)
 
   const { rows } = await read(query)
   const items = rows as LandingPage[]

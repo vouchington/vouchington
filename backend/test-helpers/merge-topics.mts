@@ -39,6 +39,20 @@ export async function mergeTopicsForTest(
   }
 }
 
+/** Resolve owned fixture IDs through the real topic reader before settling their merge. */
+export async function mergeTopicIdsForTest(
+  currentUser: PrivateUser,
+  sourceId: string,
+  destinationId: string,
+) {
+  const [source, destination] = await Promise.all([
+    getTopicByAny(sourceId),
+    getTopicByAny(destinationId),
+  ])
+  if (!source || !destination) throw new Error('Topic merge fixture is missing a topic')
+  return mergeTopicsForTest(currentUser, source, destination)
+}
+
 /** Completes an already admitted merge through its durable generations. */
 export async function settleTopicMergeOperationForTest(
   currentUser: PrivateUser,

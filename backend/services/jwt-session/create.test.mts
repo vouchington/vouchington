@@ -11,8 +11,8 @@ import { flush } from '@data-stores/analytics/backend-local'
 import { createTestUser } from '@voucha/test-helpers'
 import { countTestUserAgentStrings } from '../../test-helpers/entities/user-sessions.mts'
 import { createDeviceAndSessionTokens, createSessionToken } from './create.mts'
-import { revokeUserSessionsBefore } from './session-revocation-keys.mts'
 import { registerAuthenticatedSession } from './user-sessions.mts'
+import { revokeAllAuthenticatedSessions } from './user-session-revocation.mts'
 import { verifyDeviceAndSessionTokens } from './verify.mts'
 
 describe('create', () => {
@@ -132,27 +132,16 @@ describe('create', () => {
       expect(lifetimeSeconds).toBeLessThanOrEqual(2 * 24 * 60 * 60 + 1)
     })
 
-    it('mints authenticated replacement tokens after the user revocation cutoff', async () => {
-      const did = v7()
-      const sid = v7()
+    it('accepts authentication on an anonymous SID preminted before revoke-all', async () => {
       const user = await createTestUser()
-      const uid = user.id
-      const cutoffSeconds = Math.floor(Date.now() / 1000) + 60
-      await revokeUserSessionsBefore(uid, cutoffSeconds)
+      const anonymous = await createDeviceAndSessionTokens({ did: v7() })
+      await revokeAllAuthenticatedSessions(user.id)
 
-      const { token } = await createSessionToken({ did, sid, uid })
-
-      expect(jose.decodeJwt(token).iat).toBe(cutoffSeconds + 1)
-    })
-
-    it('verifies authenticated replacement tokens minted after the user revocation cutoff', async () => {
-      const did = v7()
-      const user = await createTestUser()
-      const uid = user.id
-      const cutoffSeconds = Math.floor(Date.now() / 1000) + 60
-      await revokeUserSessionsBefore(uid, cutoffSeconds)
-
-      const result = await createDeviceAndSessionTokens({ did, uid })
+      const result = await createDeviceAndSessionTokens({
+        did: anonymous.deviceToken.payload.did,
+        sid: anonymous.sessionToken.payload.sid,
+        uid: user.id,
+      })
 
       await expect(
         verifyDeviceAndSessionTokens({
@@ -160,7 +149,11 @@ describe('create', () => {
           sessionToken: result.sessionToken.token,
         }),
       ).resolves.not.toBe(false)
-      expect(jose.decodeJwt(result.sessionToken.token).iat).toBe(cutoffSeconds + 1)
+      await expect(
+        readSessionDeviceAuthority(result.sessionToken.payload.sid),
+      ).resolves.toMatchObject({
+        user_id: user.id,
+      })
     })
 
     it('reuses generic web user-agent rows across sessions', async () => {

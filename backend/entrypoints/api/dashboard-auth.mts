@@ -43,7 +43,6 @@ export async function isAdminDashboardRequest(req: http.IncomingMessage): Promis
     await isSessionRevoked(sessionData.sid, {
       userId: sessionData.uid,
       deviceId: sessionData.did,
-      issuedAt: sessionData.device_iat,
       mfaVerifiedAt: sessionData.mfa_at ?? null,
     })
   ) {

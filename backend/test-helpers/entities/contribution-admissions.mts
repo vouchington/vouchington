@@ -18,8 +18,8 @@ export async function createExpiredContributionAdmissionClaimForTest(input: {
   if (!reservationId) throw new Error('Test contribution admission reservation was not created')
   await write(sql`/* createExpiredContributionAdmissionClaimForTest.claim */
     WITH claimed AS (
-      INSERT INTO post_admission_claims (reservation_id, lease_token, leased_at, lease_expires_at)
-      VALUES (${reservationId}, ${randomUUID()}, NOW() - INTERVAL '2 seconds', NOW() - INTERVAL '1 second')
+      INSERT INTO post_admission_claims (reservation_id, actor_user_id, lease_token, leased_at, lease_expires_at)
+      VALUES (${reservationId}, ${input.actorId}, ${randomUUID()}, NOW() - INTERVAL '2 seconds', NOW() - INTERVAL '1 second')
       RETURNING reservation_id, lease_token, leased_at
     ) INSERT INTO post_admission_attempts (reservation_id, attempt_number, lease_token, started_at)
       SELECT reservation_id, 1, lease_token, leased_at FROM claimed`)

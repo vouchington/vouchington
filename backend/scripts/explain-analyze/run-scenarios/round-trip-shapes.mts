@@ -15,6 +15,7 @@ import { seedUuid } from '../seed-data/common.mts'
 import { PURGE_EVIDENCE_SEEDED_ROWS } from '../seed-data/copyright-case-purge-volume.mts'
 import { runNotificationBlockSet } from './notification-block-set.mts'
 import { runTopicCacheKeysScenario } from './topic-cache-keys.mts'
+import { runUserAgentFirstUseScenario } from './user-agent-first-use.mts'
 
 // The community and viewer membership come back in one statement, by slug and by id.
 async function runCommunityWithViewer(): Promise<void> {
@@ -147,9 +148,7 @@ async function runCopyrightStaffCases(): Promise<void> {
   )
 }
 
-// Read first: a seeded user agent costs one lookup in the unique index. The miss path (read,
-// insert, read) returns no rows in a rolled-back replay, which the harness rejects, so only the
-// hit is captured.
+// A seeded user agent needs one lookup in the unique index; first use is captured separately.
 async function runUserAgentReadFirst(): Promise<void> {
   registerScenarioContract('user-agent-read-first', {
     expectations: [
@@ -176,4 +175,5 @@ export async function runRoundTripShapeScenarios(): Promise<void> {
   await runMessagingEligibility()
   await runCopyrightStaffCases()
   await runUserAgentReadFirst()
+  await runUserAgentFirstUseScenario()
 }

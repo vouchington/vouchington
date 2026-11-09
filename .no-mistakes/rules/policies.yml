@@ -592,7 +592,7 @@
           line: 111,
         }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: loops the fixed literal statements array of processUserDeletionCredentialsBatch; each statement deletes at most batchSize rows and the first non-empty one ends the page.
-      - { file: backend/services/users/delete-phase-credentials.mts, callee: 'query', line: 63 }
+      - { file: backend/services/users/delete-phase-credentials.mts, callee: 'query', line: 65 }
       # Real exception: one UPDATE per stale batch after that batch provider stop and lock cleanup, serial by design so one Bedrock quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in bedrock-embeddings-batch/orchestrator/find-stale.mts:13.
       - {
           file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
@@ -2372,6 +2372,7 @@
       - { table: agent_moderation_votes, column: created_at }
       - { table: hostname_votes, column: created_at }
       - { table: post_votes, column: created_at }
+      - { table: post_vote_states, column: created_at }
       - { table: relation__post__category__topic__votes, column: created_at }
       - { table: relation__post__category__topic_alias__votes, column: created_at }
       - { table: relation__post__related__post__votes, column: created_at }
@@ -2746,6 +2747,7 @@
       - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
       - { table: hostname_votes, column: created_at, sourceColumn: id }
       - { table: post_votes, column: created_at, sourceColumn: id }
+      - { table: post_vote_states, column: created_at, sourceColumn: id }
       - { table: relation__post__category__topic__votes, column: created_at, sourceColumn: id }
       - {
           table: relation__post__category__topic_alias__votes,
@@ -2814,6 +2816,7 @@
       - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
       - { table: hostname_votes, column: created_at, sourceColumn: id }
       - { table: post_votes, column: created_at, sourceColumn: id }
+      - { table: post_vote_states, column: created_at, sourceColumn: id }
       - { table: relation__post__category__topic__votes, column: created_at, sourceColumn: id }
       - {
           table: relation__post__category__topic_alias__votes,
@@ -4006,6 +4009,10 @@
         reason: 'Decision 14 external request correlation id.'
       - object: 'column:post_votes.outbound_activitypub_like_activity_id'
         reason: 'Decision 14 pre-allocated external ActivityPub id.'
+      - object: 'column:story_post_category_projection_jobs.active_item_id'
+        reason: 'Deletion-stable bounded category projection keyset position, not a joined entity.'
+      - object: 'column:post_vote_states.outbound_activitypub_like_activity_id'
+        reason: 'Current-state copy of the opaque outbound ActivityPub Like protocol identity.'
       - object: 'column:post_votes.outbound_activitypub_original_like_activity_id'
         reason: 'Original external ActivityPub Like protocol id retained for UndoLike replay.'
       - object: 'column:follower_distribution_deliveries.delivery_id'

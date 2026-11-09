@@ -1,6 +1,6 @@
-import { revokeUserSessionsBefore } from './session-revocation-keys.mts'
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
+import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import {
   verifyDeviceJwt,
   signDeviceJwt,
@@ -10,6 +10,8 @@ import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
 import { createTestUserDirect, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
+import { getJwtRevokedKey } from './constants.mts'
+import { revokeAllAuthenticatedSessions } from './user-session-revocation.mts'
 import {
   createDeviceAndSessionTokens,
   refreshSessionState,
@@ -128,7 +130,7 @@ describe('web session authority', () => {
     expect(await verifyDeviceJwt(refreshed.dt)).not.toHaveProperty('refresh_uid')
   })
 
-  it('keeps the original device epoch authoritative after access token rotation', async () => {
+  it('keeps the durable session cutoff authoritative after access token rotation', async () => {
     const user = await createTestUserDirect()
     const tokens = await createDeviceAndSessionTokens({
       did: v7(),
@@ -136,18 +138,20 @@ describe('web session authority', () => {
       deviceContext: { user_agent: userAgent },
     })
     const device = (await verifyDeviceJwt(tokens.deviceToken.token))!
-    await revokeUserSessionsBefore(user.id, device.iat!)
+    await revokeAllAuthenticatedSessions(user.id)
+    await sessionValkeyClient.del([getJwtRevokedKey(tokens.sessionToken.payload.sid)])
     const newerAccess = await signSessionJwt(tokens.sessionToken.payload, {
       expiresIn: '10 minutes',
       issuedAt: device.iat! + 1,
     })
-    const refreshed = await refreshSessionState({
-      deviceToken: tokens.deviceToken.token,
-      sessionToken: newerAccess,
-      userAgent,
-      fetchUser: getTestPrivateUserById,
-    })
-    expect(refreshed.uid).toBeNull()
+    await expect(
+      refreshSessionState({
+        deviceToken: tokens.deviceToken.token,
+        sessionToken: newerAccess,
+        userAgent,
+        fetchUser: getTestPrivateUserById,
+      }),
+    ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
   })
 
   it('revokes refresh authority when logging out after the access cookie expires', async () => {

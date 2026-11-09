@@ -171,7 +171,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     },
     // Runs everywhere (no `environment` restriction), including staging and developer laptops:
     // counter drift is caused by code paths that write the denormalized counter without writing
-    // post_votes, and those land on staging first. Stopping it there would delete the
+    // post_vote_states, and those land on staging first. Stopping it there would delete the
     // early-warning signal for exactly the bug class it exists to catch.
     operatorSurfaces: [
       {
@@ -179,7 +179,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         id: RECONCILE_VOTE_DRIFT_SCHEDULER_ID,
         schedule: RECONCILE_VOTE_DRIFT_CRON,
         description:
-          'Reconcile denormalized post vote counters against the post_votes source of truth',
+          'Reconcile denormalized post vote counters against the post_vote_states source of truth',
         trigger: enqueueReconcileVoteDrift,
       },
     ],

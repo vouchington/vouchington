@@ -3,7 +3,7 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { createOAuthBrowserBindingHash } from './browser-binding.mts'
 import { AUTHORIZATION_REQUEST_TTL_MS } from './constants.mts'
 import { getOAuthClient, getOAuthClientForAuthorization } from './clients.mts'
-import { lockOAuthParticipantUsers } from './active-users.mts'
+import { readActiveOAuthParticipantUsers } from './active-users.mts'
 import {
   OAuthProtocolError,
   assertClientMayRequestScopes,
@@ -34,31 +34,27 @@ export async function beginValidatedOAuthAuthorizationRequest(
 ): Promise<{ request_id: string }> {
   const { client, codeChallenge, resource, scopes, state } = validated
   await using query = await beginTransaction()
-  const activeParticipantIds = await lockOAuthParticipantUsers(
+  const activeParticipantIds = await readActiveOAuthParticipantUsers(
     [input.userId, client.owner_user_id],
     query,
   )
-  const lockedClient = await getOAuthClient(client.client_id, query)
+  const currentClient = await getOAuthClient(client.client_id, query)
   if (
-    !lockedClient ||
+    !currentClient ||
     !activeParticipantIds.has(input.userId) ||
-    (lockedClient.owner_user_id && !activeParticipantIds.has(lockedClient.owner_user_id))
+    (currentClient.owner_user_id && !activeParticipantIds.has(currentClient.owner_user_id))
   ) {
     throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
   }
-  if (!matchesRegisteredRedirectUri(validated.redirectUri, lockedClient.redirect_uris)) {
+  if (!matchesRegisteredRedirectUri(validated.redirectUri, currentClient.redirect_uris)) {
     throw invalidRequest('redirect_uri is not registered for this client')
   }
-  assertClientMayRequestScopes(OAUTH_SCOPE_POLICY, lockedClient.scopes, scopes)
-  assertOAuthClientMayAuthorizeResource(lockedClient, resource)
+  assertClientMayRequestScopes(OAUTH_SCOPE_POLICY, currentClient.scopes, scopes)
+  assertOAuthClientMayAuthorizeResource(currentClient, resource)
   if (!(await mayUserAuthorizeOAuthResource(input.userId, resource, query))) {
     throw new OAuthProtocolError('access_denied', 'administrator role required', 403)
   }
   const browserBindingHash = createOAuthBrowserBindingHash(input.deviceId, input.sessionId)
-  await query(
-    `/* beginOAuthAuthorizationRequest lock */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-    [`oauth-authorization-request:${browserBindingHash}:${lockedClient.id}`],
-  )
   await query(
     `/* beginOAuthAuthorizationRequest supersede */ UPDATE oauth_authorization_requests
      SET denied_at = CURRENT_TIMESTAMP
@@ -66,16 +62,22 @@ export async function beginValidatedOAuthAuthorizationRequest(
        AND client_id = $2
        AND approved_at IS NULL
        AND denied_at IS NULL`,
-    [browserBindingHash, lockedClient.id],
+    [browserBindingHash, currentClient.id],
   )
   const result = await query<{ id: string }>(
     `/* beginOAuthAuthorizationRequest insert */ INSERT INTO oauth_authorization_requests (
        client_id, user_id, browser_binding_hash, redirect_uri, client_state, resource, scopes,
        code_challenge, expires_at
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7::api_scopes[], $8, $9)
+     ) SELECT $1, $2, $3, $4, $5, $6, $7::api_scopes[], $8, $9
+     WHERE EXISTS (SELECT 1 FROM users WHERE id = $2 AND deleted_at IS NULL)
+       AND NOT EXISTS (SELECT 1 FROM user_suspensions WHERE user_id = $2 AND lifted_at IS NULL)
+       AND EXISTS (SELECT 1 FROM oauth_clients AS client WHERE id = $1 AND revoked_at IS NULL
+         AND (owner_user_id IS NULL OR EXISTS (
+           SELECT 1 FROM users WHERE id = client.owner_user_id AND deleted_at IS NULL
+         )))
      RETURNING id`,
     [
-      lockedClient.id,
+      currentClient.id,
       input.userId,
       browserBindingHash,
       validated.redirectUri,
@@ -89,7 +91,7 @@ export async function beginValidatedOAuthAuthorizationRequest(
   await query.commit()
   const row = result.rows[0]
   if (!row)
-    throw new OAuthProtocolError('server_error', 'authorization request was not created', 503)
+    throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
   return { request_id: row.id }
 }
 
@@ -152,6 +154,11 @@ export async function getOAuthAuthorizationRequestForUser(
        AND request.browser_binding_hash = $3
        AND request.approved_at IS NULL
        AND request.denied_at IS NULL
+       AND NOT EXISTS (
+         SELECT 1 FROM oauth_authorization_requests AS newer
+         WHERE newer.browser_binding_hash = request.browser_binding_hash
+           AND newer.client_id = request.client_id AND newer.id > request.id LIMIT 1
+       )
        AND request.expires_at > CURRENT_TIMESTAMP
        AND client.revoked_at IS NULL
        AND EXISTS (

@@ -19,10 +19,10 @@ const voteHistoryUser = {
 export async function runRecommendedTopicsVoteHistoryScenario(): Promise<void> {
   registerScenarioContract('recommended-topics-long-vote-history', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['post_votes__default_user_id_id_post_id_score_idx'] },
+      { kind: 'usesIndexes', indexes: ['idx_post_vote_states__user_id_id_post_id_score'] },
       {
         kind: 'maxProcessedRows',
-        relation: 'post_votes',
+        relation: 'post_vote_states',
         max: getRecommendedTopicsWorkLimit('vote_history_window'),
       },
     ],

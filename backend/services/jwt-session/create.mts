@@ -20,7 +20,6 @@ import {
 import { validate as isUUID } from 'uuid'
 import {
   getSessionEnrichment,
-  getSessionIssuedAt,
   recordSessionMintEvent,
   registerSessionMintMetadata,
 } from './session-state-helpers.mts'
@@ -49,7 +48,7 @@ export async function createDeviceAndSessionTokens({
   validateUUIDv7(did)
   validateUUIDv7(sid)
   if (uid !== null) validateExistingUserId(uid)
-  const now = await getSessionIssuedAt(uid, clock)
+  const now = Math.floor((clock ?? Date.now)() / 1000)
   let binding = uid
     ? createSessionAssuranceBinding(
         clientBinding ?? createSessionClientBinding(deviceClass, deviceContext),
@@ -152,7 +151,7 @@ export async function createSessionToken({
   const binding = uid
     ? (clientBinding ?? createSessionClientBinding(deviceClass, deviceContext))
     : undefined
-  const now = await getSessionIssuedAt(uid, clock)
+  const now = Math.floor((clock ?? Date.now)() / 1000)
   assertOriginalMfaVerifiedAt(binding?.mfa_at, now)
 
   const sessionPayloadExtra = getSessionEnrichment({

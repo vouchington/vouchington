@@ -10,8 +10,13 @@ export async function createTestLandingPage(
   const slug = `test-lp-${v7()}`
   const { rows } = await write(
     sql`/* createTestLandingPage */
-    INSERT INTO user_landing_pages (user_id, title, slug, is_default)
-    VALUES (${userId}, ${label}, ${slug}, FALSE)
+    INSERT INTO user_landing_pages (user_id, slot, title, slug, is_default)
+    SELECT ${userId}, candidate.slot, ${label}, ${slug}, FALSE
+    FROM generate_series(1, 20) candidate(slot)
+    WHERE NOT EXISTS (
+      SELECT 1 FROM user_landing_pages page WHERE page.user_id = ${userId} AND page.slot = candidate.slot
+    )
+    ORDER BY candidate.slot LIMIT 1
     RETURNING id
   `,
   )
@@ -27,8 +32,9 @@ export async function createTestLandingPageLinkItem(
   if (!urlRecord) throw new Error(`Failed to create test landing page URL: ${url}`)
   const { rows } = await write(
     sql`/* createTestLandingPageLinkItem */
-    INSERT INTO user_landing_page_items (landing_page_id, item_type, link_label, url_id)
-    VALUES (${landingPageId}, 'link', ${label}, ${urlRecord.id})
+    INSERT INTO user_landing_page_items (landing_page_id, item_type, link_label, url_id, sort_order)
+    SELECT ${landingPageId}, 'link', ${label}, ${urlRecord.id}, COALESCE(MAX(sort_order), -1) + 1
+    FROM user_landing_page_items WHERE landing_page_id = ${landingPageId}
     RETURNING id
   `,
   )
@@ -41,8 +47,9 @@ export async function createTestLandingPageReviewItem(
 ): Promise<void> {
   await write(
     sql`/* createTestLandingPageReviewItem */
-    INSERT INTO user_landing_page_items (landing_page_id, item_type, review_post_id)
-    VALUES (${landingPageId}, 'review', ${reviewId})
+    INSERT INTO user_landing_page_items (landing_page_id, item_type, review_post_id, sort_order)
+    SELECT ${landingPageId}, 'review', ${reviewId}, COALESCE(MAX(sort_order), -1) + 1
+    FROM user_landing_page_items WHERE landing_page_id = ${landingPageId}
   `,
   )
 }
@@ -54,8 +61,9 @@ export async function createTestLandingPageGroupedReviewItem(
 ): Promise<void> {
   const { rows } = await write<{ id: string }>(
     sql`/* createTestLandingPageGroupedReviewItem:item */
-    INSERT INTO user_landing_page_items (landing_page_id, item_type, topic_id)
-    VALUES (${landingPageId}, 'topic_group', ${topicId})
+    INSERT INTO user_landing_page_items (landing_page_id, item_type, topic_id, sort_order)
+    SELECT ${landingPageId}, 'topic_group', ${topicId}, COALESCE(MAX(sort_order), -1) + 1
+    FROM user_landing_page_items WHERE landing_page_id = ${landingPageId}
     RETURNING id
   `,
   )
@@ -83,8 +91,9 @@ export async function createTestLandingPageProfileLinkItem(
 
   const { rows: itemRows } = await write(
     sql`/* createTestLandingPageProfileLinkItem:item */
-    INSERT INTO user_landing_page_items (landing_page_id, item_type, profile_link_id)
-    VALUES (${landingPageId}, 'profile_link', ${profileLinkId})
+    INSERT INTO user_landing_page_items (landing_page_id, item_type, profile_link_id, sort_order)
+    SELECT ${landingPageId}, 'profile_link', ${profileLinkId}, COALESCE(MAX(sort_order), -1) + 1
+    FROM user_landing_page_items WHERE landing_page_id = ${landingPageId}
     RETURNING id
   `,
   )

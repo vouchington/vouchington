@@ -134,19 +134,21 @@ export async function authenticateOAuthClient(
   assertOAuthClientAuthentication(client, clientSecret)
 }
 
-/** Authenticates against a share-locked client row until `query` commits. */
-export async function authenticateLockedOAuthClient(
+/** Authenticate the current client without locking a lifecycle row read by token issuance. */
+export async function authenticateOAuthTokenClient(
   clientId: string,
   clientSecret: string | undefined,
   query: TransactionQuery,
   activeParticipantIds: ReadonlySet<string>,
 ): Promise<OAuthClient> {
   const result = await query<OAuthClient>(
-    `/* authenticateLockedOAuthClient */ SELECT ${OAUTH_CLIENT_COLUMNS}
+    `/* authenticateOAuthTokenClient */ SELECT ${OAUTH_CLIENT_COLUMNS}
      FROM oauth_clients
      WHERE client_id = $1
        AND revoked_at IS NULL
-     FOR SHARE`,
+       AND (owner_user_id IS NULL OR EXISTS (
+         SELECT 1 FROM users WHERE users.id = oauth_clients.owner_user_id AND users.deleted_at IS NULL
+       ))`,
     [clientId],
   )
   const client = result.rows[0]

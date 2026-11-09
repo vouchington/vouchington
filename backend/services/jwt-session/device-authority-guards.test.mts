@@ -12,7 +12,8 @@ import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
 import { createDeviceAndSessionTokens } from './create.mts'
 import { readSessionDeviceAuthority } from './device-authority.mts'
 import { rotateAuthenticatedDeviceToken } from './device-authority-rotation.mts'
-import { getJwtRevokedKey, getJwtUserRevokedBeforeKey } from './constants.mts'
+import { getJwtRevokedKey } from './constants.mts'
+import { revokeAllAuthenticatedSessions } from './user-session-revocation.mts'
 
 const userAgent = 'Mozilla/5.0 (Windows NT 10.0) Chrome/130.0 Safari/537.36'
 
@@ -108,7 +109,7 @@ describe('durable device credential authority guards', () => {
     expect(await readSessionDeviceAuthority(sid)).toEqual(before)
   })
 
-  it('rejects credential replay after a user-wide cutoff without a SID marker', async () => {
+  it('rejects credential replay from a durably revoked session after cache loss', async () => {
     const user = await createTestUserDirect()
     const tokens = await createDeviceAndSessionTokens({
       uid: user.id,
@@ -117,24 +118,20 @@ describe('durable device credential authority guards', () => {
     })
     const sid = tokens.sessionToken.payload.sid
     const binding = (await readSessionDeviceAuthority(sid))!.device_token_binding!
-    const cutoffKey = getJwtUserRevokedBeforeKey(user.id)
-    await sessionValkeyClient.set(cutoffKey, String(Math.floor(Date.now() / 1000) + 60))
-    try {
-      await expect(
-        mintAuthenticatedDeviceAuthority({
-          uid: user.id,
-          did: tokens.deviceToken.payload.did,
-          sid,
-          binding,
-          issuedAt: tokens.deviceToken.payload.iat!,
-          credentialReplay: true,
-          deviceContext: { user_agent: userAgent },
-        }),
-      ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
-      await expect(sessionValkeyClient.get(getJwtRevokedKey(sid))).resolves.toBeNull()
-    } finally {
-      await sessionValkeyClient.del([cutoffKey])
-    }
+    await revokeAllAuthenticatedSessions(user.id)
+    await sessionValkeyClient.del([getJwtRevokedKey(sid)])
+    await expect(
+      mintAuthenticatedDeviceAuthority({
+        uid: user.id,
+        did: tokens.deviceToken.payload.did,
+        sid,
+        binding,
+        issuedAt: tokens.deviceToken.payload.iat!,
+        credentialReplay: true,
+        deviceContext: { user_agent: userAgent },
+      }),
+    ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
+    await expect(sessionValkeyClient.get(getJwtRevokedKey(sid))).resolves.toBeNull()
   })
 
   it.each([

@@ -2,7 +2,7 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
-import { authenticateRefreshClientAfterParticipantFence } from './refresh-client-authority.mts'
+import { authenticateOAuthRefreshClient } from './refresh-client-authority.mts'
 import {
   assertTokenRequestResource,
   OAuthProtocolError,
@@ -40,10 +40,7 @@ export async function exchangeOAuthRefreshToken(input: {
   scope?: string
 }): Promise<TokenResponse> {
   await using query = await beginTransaction()
-  const { activeParticipantIds, client } = await authenticateRefreshClientAfterParticipantFence(
-    input,
-    query,
-  )
+  const { activeParticipantIds, client } = await authenticateOAuthRefreshClient(input, query)
   const token = await lockRefreshToken(input.refreshToken, query)
   if (!token) throw new OAuthProtocolError('invalid_grant', 'refresh token is invalid')
   if (
@@ -63,13 +60,23 @@ export async function exchangeOAuthRefreshToken(input: {
   assertTokenRequestResource(input.resource, token.resource)
   const scopes = input.scope === undefined ? token.scopes : parseOAuthScopes(input.scope)
   assertScopeSubset(scopes, token.scopes)
-  const tokens = await rotateRefreshToken(token, scopes, query)
-  await query(
-    `/* exchangeOAuthRefreshToken grant */ UPDATE oauth_grants
+  const grant = await query(
+    `/* exchangeOAuthRefreshToken grant */ UPDATE oauth_grants AS oauth_grant
      SET last_used_at = CURRENT_TIMESTAMP
-     WHERE id = $1`,
+     WHERE oauth_grant.id = $1 AND oauth_grant.revoked_at IS NULL
+       AND EXISTS (SELECT 1 FROM users WHERE id = oauth_grant.user_id AND deleted_at IS NULL)
+       AND EXISTS (
+         SELECT 1 FROM oauth_clients AS client
+         WHERE client.id = oauth_grant.client_id AND client.revoked_at IS NULL
+           AND (client.owner_user_id IS NULL OR EXISTS (
+             SELECT 1 FROM users WHERE id = client.owner_user_id AND deleted_at IS NULL
+           ))
+       )
+     RETURNING oauth_grant.id`,
     [token.grant_id],
   )
+  if (!grant.rows[0]) throw new OAuthProtocolError('invalid_grant', 'refresh token is invalid')
+  const tokens = await rotateRefreshToken(token, scopes, query)
   await query.commit()
   return tokens
 }
@@ -100,7 +107,12 @@ async function lockRefreshToken(
      JOIN oauth_grants AS oauth_grant ON oauth_grant.id = family.grant_id
      JOIN oauth_clients AS client ON client.id = oauth_grant.client_id
      WHERE refresh.token_hash = $1
-     FOR UPDATE OF refresh, family, oauth_grant`,
+       AND client.revoked_at IS NULL
+       AND EXISTS (SELECT 1 FROM users WHERE id = oauth_grant.user_id AND deleted_at IS NULL)
+       AND (client.owner_user_id IS NULL OR EXISTS (
+         SELECT 1 FROM users WHERE id = client.owner_user_id AND deleted_at IS NULL
+       ))
+     FOR UPDATE OF refresh`,
     [hashToken(OAUTH_SECRET_PURPOSES.refreshToken, rawToken)],
   )
   return result.rows[0] ?? null

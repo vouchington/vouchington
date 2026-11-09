@@ -1,37 +1,5 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- Keep every writer, including an old application process during a rolling deploy, serialized with
--- both users' deletion fences. The service takes the same locks before reaching this trigger so a
--- provider response fails before attempting the write on current deployments.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_lock_bluesky_follow_receipt_active_users()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  IF NEW.follower_user_id <= NEW.followee_user_id THEN
-    PERFORM fn_lock_active_user_for_mutation(NEW.follower_user_id);
-    IF NEW.followee_user_id <> NEW.follower_user_id THEN
-      PERFORM fn_lock_active_user_for_mutation(NEW.followee_user_id);
-    END IF;
-  ELSE
-    PERFORM fn_lock_active_user_for_mutation(NEW.followee_user_id);
-    PERFORM fn_lock_active_user_for_mutation(NEW.follower_user_id);
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_bluesky_follow_records_active_users
-BEFORE INSERT OR UPDATE OF follower_user_id, followee_user_id ON bluesky_follow_records
-FOR EACH ROW
-EXECUTE FUNCTION fn_lock_bluesky_follow_receipt_active_users();
-
-COMMENT ON FUNCTION fn_lock_bluesky_follow_receipt_active_users() IS
-  'Prevents any Bluesky follow receipt writer from restoring user-owned data after deletion.';
-
--- Follow receipts created before the fence migration can remain after the bounded credential
--- cleanup batch. Finalization must retain the request until that residual receipt is removed.
+-- Receipt writes check active participants in their statement snapshot. Finalization also checks
+-- for residual receipts accepted during a concurrent deletion before completing bounded cleanup.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_user_deletion_has_remaining_owned_data(target_user_id UUID)
 RETURNS BOOLEAN

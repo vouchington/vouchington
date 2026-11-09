@@ -51,7 +51,7 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
   ['migrations', 'The migration ledger has exactly one row per checked-in migration.'],
   [
     'post_admission_claims',
-    'One short-lived lease per in-flight admission reservation; release deletes the lease and reservation deletion cascades to it, bounding cardinality to concurrent admission work.',
+    'At most one short-lived lease per contributing user (unique actor); release deletes the lease and reservation or user deletion cascades to it, bounding cardinality to concurrent admission work.',
   ],
   [
     'post_admission_reservations',

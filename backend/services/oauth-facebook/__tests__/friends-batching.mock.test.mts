@@ -1,7 +1,7 @@
 import { afterEach, describe, it, vi } from 'vitest'
 import {
   assertBoundedStaleFriendCleanup,
-  assertFriendsPageCommitsBeforeDeletionFence,
+  assertFriendsPageCommitsBeforeOwnerDeletion,
 } from '@voucha/test-helpers/services/oauth/friends-batch-sync'
 import { oauthFacebookWorkConfig } from '../work-limits.mts'
 import { syncFacebookFriends } from '../friends.mts'
@@ -18,8 +18,8 @@ describe('syncFacebookFriends batching', () => {
     fetchSpy.mockReset()
   })
 
-  it('commits a completed provider page before the next page reacquires the deletion fence', async () => {
-    await assertFriendsPageCommitsBeforeDeletionFence({
+  it('keeps a committed page and discards the next page after owner deletion', async () => {
+    await assertFriendsPageCommitsBeforeOwnerDeletion({
       provider: 'facebook',
       providerUserIdPrefix: 'fb-batch-',
       firstFriendIdPrefix: 'fb-first-',

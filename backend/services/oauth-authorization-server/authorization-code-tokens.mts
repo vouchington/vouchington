@@ -3,10 +3,10 @@ import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { OAUTH_SECRET_PURPOSES, REFRESH_TOKEN_TTL_MS } from './constants.mts'
 import {
-  lockOAuthParticipantUsers,
+  readActiveOAuthParticipantUsers,
   readOAuthAuthorizationCodeParticipantUserIds,
 } from './active-users.mts'
-import { authenticateLockedOAuthClient } from './clients.mts'
+import { authenticateOAuthTokenClient } from './clients.mts'
 import {
   assertTokenRequestResource,
   matchesRegisteredRedirectUri,
@@ -44,11 +44,11 @@ export async function exchangeOAuthAuthorizationCode(input: {
   resource?: string
 }): Promise<TokenResponse> {
   await using query = await beginTransaction()
-  const activeParticipantIds = await lockOAuthParticipantUsers(
+  const activeParticipantIds = await readActiveOAuthParticipantUsers(
     await readOAuthAuthorizationCodeParticipantUserIds(input.code, input.clientId, query),
     query,
   )
-  const client = await authenticateLockedOAuthClient(
+  const client = await authenticateOAuthTokenClient(
     input.clientId,
     input.clientSecret,
     query,
@@ -128,7 +128,11 @@ async function lockAuthorizationCode(
          WHERE suspension.user_id = oauth_grant.user_id
            AND suspension.lifted_at IS NULL
        )
-     FOR UPDATE OF code, oauth_grant FOR SHARE OF client`,
+     AND EXISTS (SELECT 1 FROM users WHERE users.id = oauth_grant.user_id AND users.deleted_at IS NULL)
+       AND (client.owner_user_id IS NULL OR EXISTS (
+         SELECT 1 FROM users WHERE users.id = client.owner_user_id AND users.deleted_at IS NULL
+       ))
+     FOR UPDATE OF code, oauth_grant`,
     [hashToken(OAUTH_SECRET_PURPOSES.authorizationCode, rawCode)],
   )
   const code = result.rows[0]

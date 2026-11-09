@@ -89,26 +89,30 @@ export async function getFollowedUsersByElectionVoteIdsBatch(
           ))
         )`
 
-  // Vote tables are append-only — DISTINCT ON resolves each voter's latest vote
-  // before bucketing by sign. Choice strength is deliberately not exposed here.
+  // Post vote state is already unique per voter/post; other configured vote tables remain
+  // append-only and need DISTINCT ON. Choice strength is deliberately not exposed here.
+  const currentVoteTable = voteTable === 'post_votes' ? 'post_vote_states' : voteTable
+  const currentVoteOrder = currentVoteTable === 'post_vote_states' ? '' : ', id DESC'
   const currentVotesCte = `current_votes AS (
-      SELECT DISTINCT ON (user_id) id, user_id, score, created_at
-      FROM ${voteTable}
+      SELECT ${currentVoteTable === 'post_vote_states' ? '' : 'DISTINCT ON (user_id) '}id, user_id, score, created_at
+      FROM ${currentVoteTable}
       WHERE ${entityIdColumn} = $2
-      ORDER BY user_id, id DESC
+      ORDER BY user_id${currentVoteOrder}
     )`
 
   const query = `/* getFollowedUsersByElectionVote */
-    WITH ${currentVotesCte}, matched AS MATERIALIZED (
-      SELECT cv.id, cv.user_id, SIGN(cv.score)::INT AS sign
-      FROM current_votes AS cv
+    WITH ${currentVotesCte}, followed_votes AS MATERIALIZED (
+      SELECT cv.id, cv.user_id, cv.score FROM current_votes AS cv
       JOIN relation__user__follow__user AS follows
         ON follows.subject_id = $1
        AND follows.object_id = cv.user_id
        AND follows.deleted_at IS NULL
-      JOIN users AS vote_user ON vote_user.id = cv.user_id
       WHERE cv.score <> 0
-        AND vote_user.deleted_at IS NULL
+    ), matched AS MATERIALIZED (
+      SELECT cv.id, cv.user_id, SIGN(cv.score)::INT AS sign
+      FROM followed_votes cv
+      JOIN users AS vote_user ON vote_user.id = cv.user_id
+      WHERE vote_user.deleted_at IS NULL
         ${likesVisibilityFilter}
     )
     SELECT requested.sign,

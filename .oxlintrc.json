@@ -688,7 +688,7 @@
           "assertReason",
           "assertScoresAllowed",
           "assertBoundedStaleFriendCleanup",
-          "assertFriendsPageCommitsBeforeDeletionFence",
+          "assertFriendsPageCommitsBeforeOwnerDeletion",
           "postLogoutExpectingRejection",
           "expectCachePolicyBypassesBeforeAnonymousOrBotCaching"
         ]
@@ -782,7 +782,7 @@
           "assertReason",
           "assertScoresAllowed",
           "assertBoundedStaleFriendCleanup",
-          "assertFriendsPageCommitsBeforeDeletionFence",
+          "assertFriendsPageCommitsBeforeOwnerDeletion",
           "postLogoutExpectingRejection",
           "expectCachePolicyBypassesBeforeAnonymousOrBotCaching"
         ]

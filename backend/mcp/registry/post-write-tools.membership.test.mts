@@ -201,23 +201,23 @@ describe('delegated discussion source lock ordering', () => {
       })
       roots.push(id)
     }
-    const { result, queries } = await withCapturedTestQueries(() =>
-      Promise.all(
-        communities.map((community, index) =>
-          callRejectedMcpTool(
-            user,
-            'create_post',
-            {
-              idempotency_key: crypto.randomUUID(),
-              title: 'Invalid discussion',
-              community_id: community.id,
-              parent_post_id: roots[1 - index],
-            },
-            SCOPES,
-          ),
-        ),
-      ),
-    )
+    // Contribution admissions are serialized per user, so opposing requests run in sequence.
+    const reject = (index: 0 | 1) =>
+      callRejectedMcpTool(
+        user,
+        'create_post',
+        {
+          idempotency_key: crypto.randomUUID(),
+          title: 'Invalid discussion',
+          community_id: communities[index]!.id,
+          parent_post_id: roots[1 - index],
+        },
+        SCOPES,
+      )
+    const { result, queries } = await withCapturedTestQueries(async () => [
+      await reject(0),
+      await reject(1),
+    ])
     expect(
       result.every(message =>
         message.includes('Only global posts can be discussed in a community'),

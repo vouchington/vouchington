@@ -219,13 +219,7 @@ describe('POST /api/v1/auth/logout', () => {
         statement => statement.includes('/* updateSessionRevocationRegistry */'),
         'registry write unavailable',
         query =>
-          runLogoutPushCleanupAndRevoke(
-            sid,
-            { userId: user.id, issuedAt: Math.floor(Date.now() / 1000) },
-            async () => {},
-            undefined,
-            query,
-          ),
+          runLogoutPushCleanupAndRevoke(sid, { userId: user.id }, async () => {}, undefined, query),
       ),
     ).rejects.toThrow('registry write unavailable')
     await expect(isSessionRevoked(sid)).resolves.toBe(true)

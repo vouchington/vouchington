@@ -1,5 +1,4 @@
 import {
-  createMyLandingPage,
   createIndividualCard,
   createDataRequest,
   getOrCreateIndividual,
@@ -11,10 +10,7 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { runLandingPageCandidateScenarios } from './landing-page-candidates.mts'
-import {
-  deleteLandingPageCreateIndexFixture,
-  seedLandingPageCreateIndexFixture,
-} from '../seed-data/round-trip-shapes.mts'
+import { runLandingPageAuthoritySnapshotScenarios } from './landing-page-authority-snapshot.mts'
 
 export async function runUserProfileRoundTripScenarios(): Promise<void> {
   await runLandingPageCandidateScenarios()
@@ -67,40 +63,7 @@ export async function runUserProfileRoundTripScenarios(): Promise<void> {
     'getIndividual',
   )
 
-  registerScenarioContract('landing-page-create', {
-    expectations: [
-      {
-        kind: 'usesIndexes',
-        indexes: ['idx_user_landing_pages__user_id_id'],
-        queryContains: 'FROM user_landing_pages',
-      },
-      // Both modes process one landing-page row; budget adds 20%.
-      { kind: 'maxProcessedRows', relation: 'user_landing_pages', max: 2 },
-    ],
-  })
-  const landingPageSlug = `explain-${crypto.randomUUID()}`
-  const landingPageFixtureIds = await seedLandingPageCreateIndexFixture()
-  try {
-    await runAndCapture(
-      'landing-page-create',
-      () =>
-        createMyLandingPage(seedUser.id, {
-          title: 'Explain landing page',
-          slug: landingPageSlug,
-        }),
-      undefined,
-      'createMyLandingPage',
-      {
-        afterCapture: async () => {
-          await write(sql`/* explain-cleanup-landing-page */
-            DELETE FROM user_landing_pages WHERE user_id = ${seedUser.id} AND slug = ${landingPageSlug}
-          `)
-        },
-      },
-    )
-  } finally {
-    await deleteLandingPageCreateIndexFixture(landingPageFixtureIds)
-  }
+  await runLandingPageAuthoritySnapshotScenarios()
 
   registerScenarioContract('data-request-create', {
     // Both modes insert one data-request row; budget adds 20%.

@@ -1,4 +1,6 @@
-import { write, type QueryOptions } from '@data-stores/psql'
+import createHttpError from 'http-errors'
+import { beginTransaction, withTransactionOptions, type QueryOptions } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
 // Replay-dedup ledger for inbound ActivityPub activities (Phase C2). `activity_id` carries a
@@ -11,14 +13,40 @@ export async function recordInboxActivity(
   activityId: string,
   activityType: string,
   actorUri: string,
-  options: QueryOptions = {},
+  options: QueryOptions & { signedAt?: Date } = {},
 ): Promise<boolean> {
-  const run = options.query ?? write
-  const { rows } = await run(sql`/* recordInboxActivity */
-    INSERT INTO activitypub_inbox_activities (activity_id, activity_type, actor_uri)
-    VALUES (${activityId}, ${activityType}, ${actorUri})
-    ON CONFLICT (activity_id) DO NOTHING
-    RETURNING id
+  const run = async (query: TransactionQuery): Promise<boolean> => {
+    const { rows } = await query<{
+      first_seen: boolean
+      retired: boolean
+    }>(sql`/* recordInboxActivity */
+    WITH replay_floor AS MATERIALIZED (
+      SELECT rejection_floor_at FROM activitypub_replay_rejection_floors LIMIT 1
+    ), decision AS MATERIALIZED (
+      SELECT COALESCE(${options.signedAt ?? null}::timestamptz <= (SELECT rejection_floor_at FROM replay_floor), FALSE) AS retired
+    ), inserted AS (
+      INSERT INTO activitypub_inbox_activities (activity_id, activity_type, actor_uri)
+      SELECT ${activityId}, ${activityType}, ${actorUri} FROM decision WHERE NOT retired
+      ON CONFLICT (activity_id) DO NOTHING
+      RETURNING id
+    )
+    SELECT EXISTS (SELECT 1 FROM inserted) AS first_seen, retired FROM decision
   `)
-  return rows.length > 0
+    if (rows[0]?.retired) throw createHttpError(401, 'Activity signature date is retired')
+    if (options.signedAt) {
+      // The unique insert may have waited for a purge that also advanced the replay floor.
+      // Read in a new statement so READ COMMITTED sees that transaction before dispatch.
+      const floor = await query<{ retired: boolean }>(sql`/* recheckInboxActivityReplayFloor */
+        SELECT COALESCE(${options.signedAt}::timestamptz <=
+          (SELECT rejection_floor_at FROM activitypub_replay_rejection_floors LIMIT 1), FALSE) AS retired
+      `)
+      if (floor.rows[0]?.retired) throw createHttpError(401, 'Activity signature date is retired')
+    }
+    return rows[0]?.first_seen ?? false
+  }
+  if (options.query || options.client) return withTransactionOptions(options, run)
+  await using query = await beginTransaction()
+  const result = await run(query)
+  await query.commit()
+  return result
 }

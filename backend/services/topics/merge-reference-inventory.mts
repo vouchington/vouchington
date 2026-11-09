@@ -62,6 +62,7 @@ export const TOPIC_MERGE_REFERENCE_GROUPS = {
   'rewards_program_topics.topic_id': 'subtype',
   'rss_feed_categories.topic_id': 'references',
   'rss_feed_item_categories.topic_id': 'references',
+  'story_post_category_projection_receipts.topic_id': 'derived',
   'rss_feeds.topic_id': 'references',
   'spending_category_topics.topic_id': 'subtype',
   'spending_entries.spending_category_topic_id': 'subtype',

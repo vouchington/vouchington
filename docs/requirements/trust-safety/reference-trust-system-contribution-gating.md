@@ -19,3 +19,8 @@ Trust starts before the first contribution. New accounts face gating to raise th
 - During the gating period, contributions are recorded but not included in aggregates.
 - After the gating period, contributions are retroactively included with appropriate trust weight.
 - Gating parameters are runtime configuration, tuned against abuse patterns.
+
+Contribution quotas use rolling windows and stay exact: each admission counts the committed
+consumption inside the policy windows. A per-user admission claim lets one contribution admission
+per user run at a time, so concurrent posts by the same user cannot both pass the capacity check;
+a second request receives the in-progress response with a short retry delay.

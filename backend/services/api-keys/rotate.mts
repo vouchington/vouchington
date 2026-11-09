@@ -8,7 +8,7 @@ import sql from 'sql-template-strings'
 import createError from 'http-errors'
 import { generateApiKey } from './generate.mts'
 import { addKeyHashToBloomFilter } from './bloom-filter.mts'
-import { lockApiKeyOwner } from './lifetime.mts'
+import { getActiveApiKeyOwnerRole } from './lifetime.mts'
 import type { ApiKey } from './types.mts'
 
 type RotatedApiKey = { apiKey: ApiKey; rawKey: string; keyHash: Buffer }
@@ -41,7 +41,7 @@ async function rotateApiKeyInTransaction(
   userId: string,
   id: string,
 ): Promise<RotatedApiKey> {
-  const isAdministrator = await lockApiKeyOwner(query, userId)
+  const isAdministrator = await getActiveApiKeyOwnerRole(query, userId)
   const { rows } = await query(sql`/* rotateApiKey */
     SELECT id, type, revoked_at, replaced_by_api_key_id, expires_at <= NOW() AS is_expired
     FROM api_keys WHERE id = ${id}::uuid AND user_id = ${userId}::uuid FOR UPDATE
@@ -65,10 +65,12 @@ async function rotateApiKeyInTransaction(
         ELSE uuid_extract_timestamp(new_key.id) + EXTRACT(EPOCH FROM (expires_at - created_at)) * INTERVAL '1 second'
       END
     FROM api_keys CROSS JOIN new_key WHERE api_keys.id = ${id}::uuid
+      AND EXISTS (SELECT 1 FROM users WHERE id = ${userId}::uuid AND deleted_at IS NULL)
     RETURNING id, user_id, prefix, type, label, scopes::text[] AS permissions, created_at, last_used_at,
       revoked_at, expires_at, replaced_by_api_key_id, expiry_reminder_sent_at, updated_at
   `)
   const apiKey = replacement.rows[0]
+  if (!apiKey) throw createError(404, 'User not found')
   await query(sql`/* linkRotatedApiKey */
     UPDATE api_keys SET replaced_by_api_key_id = ${apiKey.id}::uuid,
       expires_at = LEAST(expires_at, NOW() + INTERVAL '24 hours')

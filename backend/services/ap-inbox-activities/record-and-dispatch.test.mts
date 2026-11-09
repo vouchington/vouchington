@@ -63,6 +63,21 @@ describe('recordAndDispatchInboundActivity', () => {
       ).rejects.toMatchObject({ status: 401, message: 'Activity signature date is retired' })
     })
   })
+  it('rejects a retired signature in the receipt statement even when the activity already exists', async () => {
+    const id = `https://remote.example/activities/${randomSuffix()}`
+    const signedAt = new Date(Date.now() - 40 * 86_400_000)
+    await withPostgresTransactionForTest(async query => {
+      await recordInboxActivity(id, 'Announce', 'https://remote.example/users/actor', { query })
+      await advanceFederationReplayFloorForTest(query, signedAt)
+      await expect(
+        recordInboxActivity(id, 'Announce', 'https://remote.example/users/actor', {
+          query,
+          signedAt,
+        }),
+      ).rejects.toMatchObject({ status: 401, message: 'Activity signature date is retired' })
+    })
+  })
+
   it('rejects a signed request beyond the configured age before reserving its identity', async () => {
     const remoteActor = makeUnpersistedRemoteActor()
     const id = `https://remote.example/activities/${randomSuffix()}`

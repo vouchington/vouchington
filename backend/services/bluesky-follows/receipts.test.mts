@@ -6,7 +6,6 @@ import {
   createTestUserDirect,
   deleteTestBlueskyLinkedAccount,
   getTestBlueskyFollowReceiptRecord,
-  insertTestBlueskyFollowReceipt,
   insertTestBlueskyLinkedAccount,
   requestTestBlueskyDisconnect,
   softDeleteUser,
@@ -43,6 +42,39 @@ function fakeRecordUri(): string {
 }
 
 describe('bluesky follow receipt ownership', () => {
+  it.each(['follower', 'followee'] as const)(
+    'hides a receipt immediately after the %s is deleted',
+    async deleted => {
+      const follower = await createTestUserDirect()
+      const followee = await createTestUserDirect()
+      const account = await insertTestBlueskyLinkedAccount({ userId: follower.id })
+      await saveScopedBlueskyFollowReceipt(
+        follower.id,
+        followee.id,
+        account.bluesky_did,
+        account.link_authorization_id,
+        fakeRecordUri(),
+      )
+      await softDeleteUser(deleted === 'follower' ? follower.id : followee.id)
+      expect(
+        await getBlueskyFollowReceipt(
+          follower.id,
+          followee.id,
+          account.bluesky_did,
+          account.link_authorization_id,
+        ),
+      ).toBeNull()
+      expect(
+        await listBlueskyFollowReceiptsForFollower(
+          follower.id,
+          account.bluesky_did,
+          account.link_authorization_id,
+          null,
+        ),
+      ).toEqual([])
+    },
+  )
+
   it('pages follower receipts and deletes only other followers of the target', async () => {
     const restoreInitialConfig = overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, {
       backfill_batch_size: 1,
@@ -190,7 +222,7 @@ describe('bluesky follow receipt ownership', () => {
         followerAccount.link_authorization_id,
         fakeRecordUri(),
       ),
-    ).rejects.toThrow('cannot own new data after deletion')
+    ).rejects.toThrow('Exact Bluesky account generation is missing or user is inactive')
   })
 
   it('rejects a late receipt for a deleted followee', async () => {
@@ -201,7 +233,7 @@ describe('bluesky follow receipt ownership', () => {
 
     await expect(
       saveBlueskyFollowReceipt(follower.id, followee.id, fakeRecordUri()),
-    ).rejects.toThrow('cannot own new data after deletion')
+    ).rejects.toThrow('Exact Bluesky account generation is missing or user is inactive')
   })
 
   it('hides and rejects receipts while the follower account is disconnecting', async () => {
@@ -283,16 +315,5 @@ describe('bluesky follow receipt ownership', () => {
       record_uri: replacementRecordUri,
       follower_account_link_authorization_id: account.link_authorization_id,
     })
-  })
-
-  it('rejects a late receipt from a writer that bypasses the service fence', async () => {
-    const follower = await createTestUserDirect()
-    const followee = await createTestUserDirect()
-    await insertTestBlueskyLinkedAccount({ userId: follower.id })
-    await softDeleteUser(followee.id)
-
-    await expect(insertTestBlueskyFollowReceipt(follower.id, followee.id)).rejects.toThrow(
-      'cannot own new data after deletion',
-    )
   })
 })

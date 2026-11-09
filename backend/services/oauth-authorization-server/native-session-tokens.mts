@@ -8,7 +8,7 @@ import {
   OAUTH_ACCESS_TOKEN_PREFIX,
   OAUTH_SECRET_PURPOSES,
 } from './constants.mts'
-import { lockOAuthParticipantUsers } from './active-users.mts'
+import { readActiveOAuthParticipantUsers } from './active-users.mts'
 import { getNativeOAuthClientDocument, type NativeOAuthClientApp } from './native-clients.mts'
 import { getOAuthResourceUrl } from './resources.mts'
 
@@ -39,7 +39,7 @@ export async function mintNativeSessionMcpToken(
   if (!client) throw denied('Native OAuth client unavailable')
 
   await using query = await beginTransaction()
-  const activeUsers = await lockOAuthParticipantUsers([currentUserId], query)
+  const activeUsers = await readActiveOAuthParticipantUsers([currentUserId], query)
   if (!activeUsers.has(currentUserId)) throw denied('Session is unavailable')
   const sessionResult = await query<{ expires_at: Date }>(
     `/* mintNativeSessionMcpToken session */ SELECT session.expires_at
@@ -50,14 +50,18 @@ export async function mintNativeSessionMcpToken(
        AND session.authentication_origin = 'native'
        AND session.revoked_at IS NULL
        AND session.expires_at > CURRENT_TIMESTAMP
-       AND ($4 = 'attested' OR NOT EXISTS (
+       AND NOT EXISTS (
+         SELECT 1 FROM user_session_revocation_cutoffs cutoff
+         WHERE cutoff.user_id = session.user_id AND session.authenticated_at <= cutoff.cutoff_at
+           AND session.id IS DISTINCT FROM cutoff.preserved_session_id
+       )
+       AND ($4::text = 'attested' OR NOT EXISTS (
          SELECT 1 FROM app_attestation_keys AS attest WHERE attest.did = session.device_id
        ))
        AND NOT EXISTS (
          SELECT 1 FROM user_suspensions AS suspension
          WHERE suspension.user_id = session.user_id AND suspension.lifted_at IS NULL
-       )
-     FOR SHARE OF session`,
+       )`,
     [input.sid, currentUserId, input.did, input.attestationStatus],
   )
   const session = sessionResult.rows[0]
@@ -65,7 +69,7 @@ export async function mintNativeSessionMcpToken(
 
   const clientResult = await query<{ id: string }>(
     `/* mintNativeSessionMcpToken client */ SELECT id FROM oauth_clients
-     WHERE id = $1 AND client_id = $2 AND revoked_at IS NULL FOR SHARE`,
+     WHERE id = $1 AND client_id = $2 AND revoked_at IS NULL`,
     [client.id, clientId],
   )
   if (!clientResult.rows[0]) throw denied('Native OAuth client unavailable')
@@ -74,7 +78,31 @@ export async function mintNativeSessionMcpToken(
   const grantResult = await query<{ id: string }>(
     `/* mintNativeSessionMcpToken grant */ INSERT INTO oauth_grants (
        user_id, client_id, session_id, attestation_status, resource, scopes, last_used_at
-     ) VALUES ($1, $2, $3, $4, $5, $6::api_scopes[], CURRENT_TIMESTAMP)
+     ) SELECT $1, $2, $3, $4::oauth_native_attestation_statuses, $5, $6::api_scopes[], CURRENT_TIMESTAMP
+     FROM user_sessions AS session
+     JOIN users ON users.id = session.user_id AND users.deleted_at IS NULL
+     JOIN oauth_clients AS client ON client.id = $2 AND client.revoked_at IS NULL
+     WHERE session.id = $3
+       AND session.user_id = $1
+       AND session.device_id = $7
+       AND session.authentication_origin = 'native'
+       AND session.revoked_at IS NULL
+       AND session.expires_at > CURRENT_TIMESTAMP
+       AND NOT EXISTS (
+         SELECT 1 FROM user_session_revocation_cutoffs cutoff
+         WHERE cutoff.user_id = session.user_id AND session.authenticated_at <= cutoff.cutoff_at
+           AND session.id IS DISTINCT FROM cutoff.preserved_session_id
+       )
+       AND ($4::text = 'attested' OR NOT EXISTS (
+         SELECT 1 FROM app_attestation_keys AS attest WHERE attest.did = session.device_id
+       ))
+       AND NOT EXISTS (
+         SELECT 1 FROM user_suspensions AS suspension
+         WHERE suspension.user_id = session.user_id AND suspension.lifted_at IS NULL
+       )
+       AND (client.owner_user_id IS NULL OR EXISTS (
+         SELECT 1 FROM users AS owner WHERE owner.id = client.owner_user_id AND owner.deleted_at IS NULL
+       ))
      ON CONFLICT (session_id) WHERE session_id IS NOT NULL
      DO UPDATE SET last_used_at = CURRENT_TIMESTAMP,
                    attestation_status = EXCLUDED.attestation_status
@@ -83,7 +111,15 @@ export async function mintNativeSessionMcpToken(
          AND oauth_grants.client_id = EXCLUDED.client_id
          AND oauth_grants.resource = EXCLUDED.resource
      RETURNING id`,
-    [currentUserId, client.id, input.sid, input.attestationStatus, resource, NATIVE_MCP_SCOPES],
+    [
+      currentUserId,
+      client.id,
+      input.sid,
+      input.attestationStatus,
+      resource,
+      NATIVE_MCP_SCOPES,
+      input.did,
+    ],
   )
   const grantId = grantResult.rows[0]?.id
   if (!grantId) throw denied('MCP connection was revoked for this session')

@@ -64,7 +64,7 @@ export interface LandingPageResponseBody {
 }
 
 /**
- * GET /api/v1/my/landing-pages — bounded by a create-time MAX_LANDING_PAGES cap, so no
+ * GET /api/v1/my/landing-pages — bounded by the configured cap and schema slots, so no
  * page_info (unlike the cursor-paginated admin listing).
  */
 export interface MyLandingPageListResponseBody {

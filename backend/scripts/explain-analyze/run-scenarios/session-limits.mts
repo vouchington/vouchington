@@ -1,3 +1,8 @@
+import { withSessionCutoffCorpus } from './session-cutoff-corpus.mts'
+import { runSessionCutoffOverflowScenarios } from './session-cutoff-overflow.mts'
+import { runBlueskyCutoffAuthorityScenarios } from './bluesky-cutoff-authority.mts'
+import { runSessionCutoffAuthorityScenarios } from './session-cutoff-authority.mts'
+import { runSessionAdmissionSnapshotScenario } from './session-admission-snapshot.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { registerAuthenticatedSession } from '@services/jwt-session/user-sessions'
 import { listActiveUserSessions } from '@services/jwt-session/list-active-user-sessions'
@@ -11,6 +16,15 @@ import { seedUuid } from '../seed-data/common.mts'
 import { SESSION_LIMIT_ACTIVE_COUNT, SESSION_LIMIT_USER_ID } from '../seed-data/session-limits.mts'
 
 export async function runSessionLimitScenarios(): Promise<void> {
+  await withSessionCutoffCorpus(runSessionLimitScenariosWithCorpus)
+}
+
+async function runSessionLimitScenariosWithCorpus(): Promise<void> {
+  await runSessionAdmissionSnapshotScenario()
+  await runSessionCutoffAuthorityScenarios()
+  await runSessionCutoffOverflowScenarios()
+  await runBlueskyCutoffAuthorityScenarios()
+
   const scenarios = [
     { name: 'hasAuthenticatedSession', max: 1, existing: true },
     { name: 'hasAuthenticatedSession', max: 1, existing: false },
@@ -25,8 +39,13 @@ export async function runSessionLimitScenarios(): Promise<void> {
     const missingProbe = 'existing' in scenario && !scenario.existing
     const label = `session-limit-${name}${missingProbe ? '-missing' : ''}`
     registerScenarioContract(label, {
+      seededRows: { user_session_revocation_cutoffs: 4_000 },
+      forbidSequentialScans: ['user_session_revocation_cutoffs'],
       allowEmptyResult: missingProbe,
-      expectations: [{ kind: 'maxProcessedRows', relation: 'user_sessions', max }],
+      expectations: [
+        { kind: 'maxProcessedRows', relation: 'user_sessions', max },
+        { kind: 'maxProcessedRows', relation: 'user_session_revocation_cutoffs', max },
+      ],
     })
     // no-mistakes-disable-next-line query-reached-per-item: the fixed scenario list captures independent query plans against the same bounded fixture
     await runAndCapture(
@@ -50,6 +69,8 @@ export async function runSessionLimitScenarios(): Promise<void> {
   }
 
   registerScenarioContract('session-limit-revoke-all', {
+    seededRows: { user_session_revocation_cutoffs: 4_000 },
+    forbidSequentialScans: ['user_session_revocation_cutoffs'],
     expectations: [
       {
         kind: 'maxProcessedRows',
@@ -70,6 +91,8 @@ export async function runSessionLimitScenarios(): Promise<void> {
   )
 
   registerScenarioContract('session-limit-revoke-other', {
+    seededRows: { user_session_revocation_cutoffs: 4_000 },
+    forbidSequentialScans: ['user_session_revocation_cutoffs'],
     // UPDATE without RETURNING reports zero rows at its root even when it changes rows.
     allowEmptyResult: true,
     expectations: [
@@ -94,11 +117,18 @@ export async function runSessionLimitScenarios(): Promise<void> {
   )
 
   registerScenarioContract('session-limit-list-active', {
+    seededRows: { user_session_revocation_cutoffs: 4_000 },
+    forbidSequentialScans: ['user_session_revocation_cutoffs'],
     expectations: [
       {
         kind: 'maxProcessedRows',
         relation: 'user_sessions',
-        max: SESSION_LIMIT_ACTIVE_COUNT,
+        max: SESSION_LIMIT_ACTIVE_COUNT + 1,
+      },
+      {
+        kind: 'maxProcessedRows',
+        relation: 'user_session_revocation_cutoffs',
+        max: SESSION_LIMIT_ACTIVE_COUNT + 1,
       },
     ],
   })
@@ -110,8 +140,15 @@ export async function runSessionLimitScenarios(): Promise<void> {
   )
 
   registerScenarioContract('session-limit-list-active-cursor', {
+    seededRows: { user_session_revocation_cutoffs: 4_000 },
+    forbidSequentialScans: ['user_session_revocation_cutoffs'],
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'user_sessions', max: SESSION_LIMIT_ACTIVE_COUNT },
+      { kind: 'maxProcessedRows', relation: 'user_sessions', max: SESSION_LIMIT_ACTIVE_COUNT + 1 },
+      {
+        kind: 'maxProcessedRows',
+        relation: 'user_session_revocation_cutoffs',
+        max: SESSION_LIMIT_ACTIVE_COUNT + 1,
+      },
     ],
   })
   await runAndCapture(

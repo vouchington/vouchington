@@ -1,12 +1,17 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import createError from 'http-errors'
 import onError from '@modules/on-error'
 import { generateApiKey } from './generate.mts'
 import { addKeyHashToBloomFilter } from './bloom-filter.mts'
 import type { ApiKey } from './types.mts'
 import type { ApiKeyType } from './format.mts'
 import { validateApiKeyCreationScopeSet } from './permissions.mts'
-import { lockApiKeyOwner, resolveApiKeyLifetimeDays, type ApiKeyLifetimeDays } from './lifetime.mts'
+import {
+  getActiveApiKeyOwnerRole,
+  resolveApiKeyLifetimeDays,
+  type ApiKeyLifetimeDays,
+} from './lifetime.mts'
 
 export async function createApiKey(
   userId: string,
@@ -19,7 +24,7 @@ export async function createApiKey(
 
   try {
     await using query = await beginTransaction()
-    const isAdministrator = await lockApiKeyOwner(query, userId)
+    const isAdministrator = await getActiveApiKeyOwnerRole(query, userId)
     const days = resolveApiKeyLifetimeDays(isAdministrator, lifetimeDays)
     const permissionResult = validateApiKeyCreationScopeSet(type, permissions)
     if (!permissionResult.valid) throw new Error(`createApiKey: ${permissionResult.error}`)
@@ -36,6 +41,7 @@ export async function createApiKey(
           CASE WHEN ${days}::integer IS NULL THEN NULL
             ELSE uuid_extract_timestamp(new_key.id) + ${days}::integer * INTERVAL '24 hours' END
         FROM new_key
+        WHERE EXISTS (SELECT 1 FROM users WHERE id = ${userId}::uuid AND deleted_at IS NULL)
         RETURNING id, user_id, prefix, type, label, scopes::text[] AS permissions, created_at, last_used_at,
           revoked_at, expires_at, replaced_by_api_key_id, expiry_reminder_sent_at, updated_at
       `)
@@ -43,7 +49,7 @@ export async function createApiKey(
     const rows = result.rows
 
     const apiKey = rows[0]
-    if (!apiKey) throw new Error('createApiKey: INSERT returned no rows')
+    if (!apiKey) throw createError(404, 'User not found')
 
     await addKeyHashToBloomFilter(keyHash)
 

@@ -65,6 +65,7 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'user_referral_program_links',
   'user_role_permissions',
   'user_roles',
+  'user_session_revocation_cutoffs',
   'user_totp_authenticators',
   'verified_identities',
   'user_agent_strings',

@@ -11,27 +11,33 @@ export async function revokeSessionsAboveLimit(
 ): Promise<void> {
   const limit = getActiveUserSessionLimit()
   const hardMaximum = sessionLimitsMaxValues.active_sessions_per_user
-  // A previous runtime value can be higher than today's limit. The hard maximum
-  // bounds the entire set before this insert, so one bounded read finds all excess.
-  const { rows } = await query<{ id: string }>(sql`/* findActiveSessionsForLimit */
+  // Snapshot admission can leave a small concurrent overshoot. Bound this eviction page;
+  // later new sessions continue draining any excess beyond the page instead of rejecting login.
+  const { rows } = await query<{
+    id: string
+    authorized: boolean
+  }>(sql`/* findActiveSessionsForLimit */
     WITH active AS MATERIALIZED (
-      SELECT id
-      -- no-mistakes-disable-next-line postgres-required-predicates: a SID can be minted before its owning user, so the exact per-user active cap must include every session-ID partition
+      SELECT id, user_id, authenticated_at
+      -- no-mistakes-disable-next-line postgres-required-predicates: a SID can be minted before its owning user, so the per-user admission snapshot must include every session-ID partition
       FROM user_sessions
       WHERE user_id = ${currentUserId} AND revoked_at IS NULL
         AND expires_at > CURRENT_TIMESTAMP
       ORDER BY expires_at, id LIMIT ${hardMaximum + 2}
     )
-    SELECT id FROM active ORDER BY id DESC`)
-  if (rows.length > hardMaximum + 1) {
-    throw new Error('Active user sessions exceed the configured hard maximum')
+    SELECT active.id, NOT EXISTS (
+      SELECT 1 FROM user_session_revocation_cutoffs cutoff
+      WHERE cutoff.user_id = active.user_id AND active.authenticated_at <= cutoff.cutoff_at
+        AND active.id IS DISTINCT FROM cutoff.preserved_session_id
+    ) AS authorized FROM active ORDER BY active.id DESC`)
+  // Keep the new session while draining invalid rows and any excess authorized sessions.
+  const oldestSessionIds: string[] = []
+  let retained = 0
+  for (const row of rows) {
+    if (row.id === newSessionId) continue
+    if (row.authorized && retained < limit - 1) retained++
+    else oldestSessionIds.push(row.id)
   }
-  // A SID can be minted during an anonymous handshake before newer sessions.
-  // Admission keeps the just-created session and the newest other sessions.
-  const oldestSessionIds = rows
-    .filter(row => row.id !== newSessionId)
-    .slice(limit - 1)
-    .map(row => row.id)
   if (oldestSessionIds.length === 0) return
 
   await query(sql`/* revokeOldestAuthenticatedSessions */

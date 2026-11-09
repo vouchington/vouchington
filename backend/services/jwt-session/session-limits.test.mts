@@ -133,25 +133,6 @@ describe('active user session limit', () => {
     expect((await getTestUserSessionById(existing))?.revoked_at).not.toBeNull()
   })
 
-  it('serializes concurrent new sessions under the per-user lock', async () => {
-    await setTestLimit(1)
-    const user = await createTestUser()
-    const first = v7()
-    const second = v7()
-    await Promise.all([registerTestSession(user.id, first), registerTestSession(user.id, second)])
-
-    const states = await Promise.all([
-      getTestUserSessionById(first),
-      getTestUserSessionById(second),
-    ])
-    expect(states.every(Boolean)).toBe(true)
-    const active = states.filter(row => row !== null && row.revoked_at === null)
-    const revoked = states.filter(row => row !== null && row.revoked_at !== null)
-    expect(active).toHaveLength(1)
-    expect(revoked).toHaveLength(1)
-    await expect(sessionValkeyClient.get(getJwtRevokedKey(revoked[0]!.id))).resolves.toBe('1')
-  })
-
   it('ignores already revoked and expired sessions', async () => {
     await setTestLimit(1)
     const user = await createTestUser()

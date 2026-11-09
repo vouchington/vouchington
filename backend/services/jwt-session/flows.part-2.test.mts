@@ -5,7 +5,7 @@ import os from 'node:os'
 import fs from 'node:fs'
 import { v7 } from 'uuid'
 import * as jose from 'jose'
-import { signSessionJwt, verifyDeviceJwt, type DeviceClass } from '@ts-shared/session-jwt'
+import { signSessionJwt, type DeviceClass } from '@ts-shared/session-jwt'
 import {
   createTestUser,
   getTestPrivateUserById,
@@ -13,11 +13,9 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { refreshSessionState } from './flows.mts'
-import { applyHotWarmCold } from './hot-warm-cold.mts'
 import { isSessionRevoked, revokeSession } from './revocation.mts'
 import { markJwtStale } from './invalidation.mts'
 import { revokeAllAuthenticatedSessions } from './user-session-revocation.mts'
-import { revokeUserSessionsBefore } from './session-revocation-keys.mts'
 import { createDeviceAndSessionTokens } from './create.mts'
 
 const TEST_USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126.0'
@@ -102,11 +100,12 @@ describe('flows warm and cold paths', () => {
       await expectAuthSessionEvent(testDir, result.did, result.sid, 'refreshed_anonymous')
     })
 
-    it('warm path: issues anon session when all user sessions were revoked', async () => {
+    it('warm path: permits a new login after all prior user sessions were revoked', async () => {
       const user = await createTestUser()
       const { deviceToken, sessionToken, userAgent } = await makeWarmPathTokens(user.id)
 
       await revokeAllAuthenticatedSessions(user.id)
+      const freshTokens = await makeWarmPathTokens(user.id, 3600, undefined, 'attested')
 
       const result = await refreshSessionState({
         fetchUser: getTestPrivateUserById,
@@ -114,68 +113,17 @@ describe('flows warm and cold paths', () => {
         sessionToken,
         userAgent,
       })
-      expect(result.uid).toBeNull()
-      expect(result.st).not.toBe(sessionToken)
-      await expectAuthSessionEvent(testDir, result.did, result.sid, 'refreshed_anonymous')
-    })
-
-    it('warm path: applies user-wide revocation cutoff in the combined Valkey check', async () => {
-      const user = await createTestUser()
-      const uid = user.id
-      const revokedTokens = await makeWarmPathTokens(uid, 3600, undefined, 'attested')
-      const device = await verifyDeviceJwt(revokedTokens.deviceToken)
-      const cutoffSeconds = device!.iat!
-      await revokeUserSessionsBefore(uid, cutoffSeconds)
-      const freshTokens = await makeWarmPathTokens(uid, 3600, undefined, 'attested')
-
-      const revokedResult = await refreshSessionState({
-        fetchUser: getTestPrivateUserById,
-        deviceToken: revokedTokens.deviceToken,
-        sessionToken: revokedTokens.sessionToken,
-      })
       const freshResult = await refreshSessionState({
         fetchUser: getTestPrivateUserById,
         deviceToken: freshTokens.deviceToken,
         sessionToken: freshTokens.sessionToken,
       })
-
-      expect(revokedResult.uid).toBeNull()
-      expect(revokedResult.st).not.toBe(revokedTokens.sessionToken)
-      expect(freshResult.uid).toBe(uid)
+      expect(result.uid).toBeNull()
+      expect(result.st).not.toBe(sessionToken)
+      await expectAuthSessionEvent(testDir, result.did, result.sid, 'refreshed_anonymous')
+      expect(freshResult.uid).toBe(user.id)
       expect(freshResult.sid).toBe(freshTokens.sid)
       expect(freshResult.st).not.toBe(freshTokens.sessionToken)
-    })
-
-    it('warm path: treats missing issued-at as before a user-wide revocation cutoff', async () => {
-      const user = await createTestUser()
-      const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
-        did: v7(),
-        uid: user.id,
-        deviceContext: { user_agent: TEST_USER_AGENT },
-      })
-      const did = deviceToken.payload.did
-      const sid = sessionToken.payload.sid
-      const now = Math.floor(Date.now() / 1000)
-
-      await revokeUserSessionsBefore(user.id, now)
-
-      const result = await applyHotWarmCold(
-        {
-          did,
-          sid,
-          uid: user.id,
-          client: 'web',
-          ua_hash: deviceToken.payload.ua_hash,
-          sca: now - 10,
-          rca: now + 3600,
-        },
-        did,
-        deviceToken.token,
-        getTestPrivateUserById,
-      )
-
-      expect(result.uid).toBeNull()
-      expect(result.st).not.toBe('session-token')
     })
 
     it('warm path: re-issues with existing enrichment when not stale and rca not reached', async () => {

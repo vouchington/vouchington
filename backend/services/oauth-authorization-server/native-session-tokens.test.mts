@@ -7,6 +7,8 @@ import {
   setTestOAuthGrantEnd,
 } from '@voucha/test-helpers/entities/oauth-retention-evidence'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
+import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
+import { revokeAuthenticatedSession } from '@services/jwt-session/user-session-revocation'
 import { mintNativeSessionMcpToken } from './native-session-tokens.mts'
 
 describe('native session MCP grants', () => {
@@ -54,6 +56,38 @@ describe('native session MCP grants', () => {
       anchor_count: 1,
       mint_count: 2,
       distinct_mint_grants: 1,
+    })
+  })
+
+  it('rejects a mint when session revocation commits after its preliminary authority reads', async () => {
+    const user = await createTestUser()
+    const did = uuidv7()
+    const tokens = await createDeviceAndSessionTokens({ did, uid: user.id, authOrigin: 'native' })
+    const sid = tokens.sessionToken.payload.sid
+    let revoked = false
+    await observeTestPostgresClientQueries(
+      () =>
+        expect(
+          mintNativeSessionMcpToken(user.id, {
+            did,
+            sid,
+            clientApp: 'ios',
+            attestationStatus: 'unattested',
+          }),
+        ).rejects.toThrow('MCP connection was revoked for this session'),
+      async query => {
+        if (!revoked && query.text.includes('/* mintNativeSessionMcpToken client */')) {
+          revoked = true
+          await revokeAuthenticatedSession(user.id, sid)
+        }
+      },
+    )
+    expect(revoked).toBe(true)
+    expect(await getTestNativeGrantRetentionCounts(user.id, sid)).toEqual({
+      grant_count: 0,
+      anchor_count: 0,
+      mint_count: 0,
+      distinct_mint_grants: 0,
     })
   })
 })

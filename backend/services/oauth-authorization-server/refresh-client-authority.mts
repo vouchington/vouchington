@@ -1,20 +1,20 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
-import { lockOAuthParticipantUsers } from './active-users.mts'
-import { authenticateLockedOAuthClient } from './clients.mts'
+import { readActiveOAuthParticipantUsers } from './active-users.mts'
+import { authenticateOAuthTokenClient } from './clients.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import type { OAuthClient } from './types.mts'
 
-/** Fences every participant before taking the client lock used by refresh exchange. */
-export async function authenticateRefreshClientAfterParticipantFence(
+/** Read current participant and client authority before locking written refresh artifacts. */
+export async function authenticateOAuthRefreshClient(
   input: { clientId: string; clientSecret?: string; refreshToken: string },
   query: TransactionQuery,
 ): Promise<{ activeParticipantIds: Set<string>; client: OAuthClient }> {
-  const activeParticipantIds = await lockOAuthParticipantUsers(
+  const activeParticipantIds = await readActiveOAuthParticipantUsers(
     await readRefreshTokenParticipants(input.refreshToken, input.clientId, query),
     query,
   )
-  const client = await authenticateLockedOAuthClient(
+  const client = await authenticateOAuthTokenClient(
     input.clientId,
     input.clientSecret,
     query,

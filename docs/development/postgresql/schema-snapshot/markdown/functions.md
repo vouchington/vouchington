@@ -332,14 +332,6 @@ CREATE OR REPLACE FUNCTION public.fn_lock_agent_moderation_transparency_prompt()
  LANGUAGE plpgsql
 ```
 
-## `fn_lock_bluesky_follow_receipt_active_users`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_lock_bluesky_follow_receipt_active_users()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)`
 
 ```sql

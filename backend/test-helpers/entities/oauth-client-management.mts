@@ -1,9 +1,9 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 import {
-  updateTestOAuthClientWhileWaiting,
-  type OperationWaitingOnClient,
-} from '../oauth-client-lock-race.mts'
+  duringTestOAuthClientUpdate,
+  type OperationDuringClientUpdate,
+} from '../oauth-client-snapshots.mts'
 
 /** Returns the internal row id that management routes address a client by. */
 export async function getTestOAuthClientRowId(clientId: string): Promise<string> {
@@ -75,13 +75,13 @@ export async function assignTestOAuthClientOwner(
   return row.id
 }
 
-/** Replaces a client's redirect URIs; `start`'s operation must decide against the new URIs. */
-export function replaceTestOAuthRedirectUrisWhileWaiting<T>(
-  input: OperationWaitingOnClient<T> & { redirectUris: string[] },
+/** Read committed redirect metadata while replacement remains uncommitted. */
+export function replaceTestOAuthRedirectUrisDuringRead<T>(
+  input: OperationDuringClientUpdate<T> & { redirectUris: string[] },
 ): Promise<T> {
-  return updateTestOAuthClientWhileWaiting(input, transaction =>
+  return duringTestOAuthClientUpdate(input, transaction =>
     transaction(
-      `/* replaceTestOAuthRedirectUrisWhileWaiting */ UPDATE oauth_clients
+      `/* replaceTestOAuthRedirectUrisDuringRead */ UPDATE oauth_clients
        SET redirect_uris = $2::text[]
        WHERE client_id = $1`,
       [input.clientId, input.redirectUris],
@@ -90,12 +90,12 @@ export function replaceTestOAuthRedirectUrisWhileWaiting<T>(
 }
 
 /** Replaces a client's secret hash; `start`'s operation must authenticate against the new hash. */
-export function rotateTestOAuthClientSecretWhileWaiting<T>(
-  input: OperationWaitingOnClient<T> & { clientSecretHash: string },
+export function rotateTestOAuthClientSecretDuringRead<T>(
+  input: OperationDuringClientUpdate<T> & { clientSecretHash: string },
 ): Promise<T> {
-  return updateTestOAuthClientWhileWaiting(input, transaction =>
+  return duringTestOAuthClientUpdate(input, transaction =>
     transaction(
-      `/* rotateTestOAuthClientSecretWhileWaiting */ UPDATE oauth_clients
+      `/* rotateTestOAuthClientSecretDuringRead */ UPDATE oauth_clients
        SET client_secret_hash = $2
        WHERE client_id = $1`,
       [input.clientId, input.clientSecretHash],
@@ -112,7 +112,7 @@ export async function revokeTestOAuthClient(id: string): Promise<void> {
   )
 }
 
-/** Holds an OAuth client row lock while an OAuth operation has already acquired participant locks. */
+/** Hold an owned client update open while authority readers use committed metadata. */
 export async function startPausedTestOAuthClientUpdate(
   clientId: string,
 ): Promise<{ completed: Promise<void>; holderProcessId: number; release(): void }> {

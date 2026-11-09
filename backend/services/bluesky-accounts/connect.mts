@@ -45,12 +45,7 @@ async function connectBlueskyAccountInTransaction(
   linkAuthorizationId: string,
   query: TransactionQuery,
 ): Promise<void> {
-  const actorSessionId = await lockBlueskyConnectionAdmission(
-    userId,
-    did,
-    linkAuthorizationId,
-    query,
-  )
+  const actorSessionId = await lockBlueskyConnectionAdmission(userId, linkAuthorizationId, query)
   return connectBlueskyAccountInLockedTransaction(
     userId,
     did,
@@ -63,34 +58,12 @@ async function connectBlueskyAccountInTransaction(
 
 async function lockBlueskyConnectionAdmission(
   userId: string,
-  did: string,
   linkAuthorizationId: string,
   query: TransactionQuery,
 ): Promise<string | null> {
   const actorSessionId = await lockBlueskyInitiatingSession(userId, linkAuthorizationId, query)
-  await lockBlueskyConnectionOwnerAndAuthorization(userId, did, linkAuthorizationId, query)
-  return actorSessionId
-}
-
-async function lockBlueskyConnectionOwnerAndAuthorization(
-  userId: string,
-  did: string,
-  linkAuthorizationId: string,
-  query: TransactionQuery,
-): Promise<void> {
-  await lockBlueskyLinkOwner(userId, did, query)
   await lockAuthorization(linkAuthorizationId, userId, query)
-}
-
-async function lockBlueskyLinkOwner(
-  userId: string,
-  did: string,
-  query: TransactionQuery,
-): Promise<void> {
-  await query(sql`/* connectBlueskyAccountToUser:lockUser */
-    SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))`)
-  await query(sql`/* connectBlueskyAccountToUser:lockDid */
-    SELECT pg_advisory_xact_lock(hashtextextended(${did}, 1))`)
+  return actorSessionId
 }
 
 export async function getBlueskyLinkedAccountForUser(

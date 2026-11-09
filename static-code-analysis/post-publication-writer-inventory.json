@@ -36,6 +36,8 @@
     "backend/services/stories/assign.mts",
     "backend/services/stories/clustering/membership.mts",
     "backend/services/stories/story-post-create.mts",
+    "backend/services/stories/story-post-category-projection-source.mts",
+    "backend/services/stories/story-post-category-projection-prune.mts",
     "backend/services/stories/story-post-related-url-projection-relations.mts",
     "backend/services/stories/story-post-related-url-projection-prune.mts",
     "backend/services/users/suspension.mts",
@@ -99,6 +101,10 @@
     {
       "path": "backend/services/communities/update-input.mts",
       "reason": "builds the bounded update statement executed by the captured transactional writer"
+    },
+    {
+      "path": "backend/services/entity-relations/remote-follow-cycle-query.mts",
+      "reason": "builds the remote actor Follow relation statement executed by the captured entity-relation upsert; it does not itself execute a publication write"
     },
     {
       "path": "backend/services/entity-relations/build-bidirectional-insert-query.mts",

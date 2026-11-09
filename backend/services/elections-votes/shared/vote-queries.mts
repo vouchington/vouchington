@@ -6,9 +6,10 @@ export type ElectionVoteUserPagination = { limit: number; afterEntityId?: string
 export type ElectionVoteEntityPagination = { limit: number; afterUserId?: string }
 
 /**
- * Fetches raw current-vote-per-entity rows for a user (DISTINCT ON keeps the most recent row
- * per entity in the append-only vote table). Returns unmapped rows — callers must run
- * mapCurrentVotes() to get ElectionVote[]. When `pagination` is omitted, no cursor filter or
+ * Fetches raw current-vote-per-entity rows for a user. Posts read their unique current-state
+ * rows; other elections use DISTINCT ON over their append-only vote table. Returns unmapped
+ * rows — callers must run mapCurrentVotes() to get ElectionVote[]. When `pagination` is omitted,
+ * no cursor filter or
  * LIMIT is appended, matching the historical unbounded behavior relied on by every non-route
  * caller (batch vote lookups) and by the write-path single-vote lookup.
  */
@@ -31,10 +32,13 @@ export function buildElectionVoteRowsByUserQuery(
   entityIds: string[] | undefined,
   pagination?: ElectionVoteUserPagination,
 ): SQLStatement {
-  const query = sql`/* fetchElectionVoteRowsByUser */
-    SELECT DISTINCT ON (election_vote.`
-  query.append(config.entityIdColumn)
-  query.append(sql`) `)
+  const currentVoteTable = config.voteTable === 'post_votes' ? 'post_vote_states' : config.voteTable
+  const query = sql`/* fetchElectionVoteRowsByUser */ SELECT `
+  if (currentVoteTable !== 'post_vote_states') {
+    query.append(sql`DISTINCT ON (election_vote.`)
+    query.append(config.entityIdColumn)
+    query.append(sql`) `)
+  }
   query.append(sql`election_vote.`)
   query.append(config.entityIdColumn)
   query.append(
@@ -44,7 +48,7 @@ export function buildElectionVoteRowsByUserQuery(
   appendVotePolicyEntityField(config, query)
   query.append(sql`
     FROM `)
-  query.append(config.voteTable)
+  query.append(currentVoteTable)
   query.append(sql` AS election_vote`)
   appendVotePolicyEntityJoin(config, query)
   query.append(sql`
@@ -64,16 +68,17 @@ export function buildElectionVoteRowsByUserQuery(
 
   query.append(sql` ORDER BY election_vote.`)
   query.append(config.entityIdColumn)
-  query.append(sql`, election_vote.id DESC`)
+  if (currentVoteTable !== 'post_vote_states') query.append(sql`, election_vote.id DESC`)
   if (pagination) query.append(sql` LIMIT ${pagination.limit}`)
 
   return query
 }
 
 /**
- * Fetches raw current-vote-per-user rows for a single entity (DISTINCT ON keeps the most
- * recent row per user). Returns unmapped rows — callers must run mapCurrentVotes(). Always
- * paginated: the only caller is the admin vote-history read path.
+ * Fetches raw current-vote-per-user rows for a single entity. Posts read their unique
+ * current-state rows; other elections use DISTINCT ON over append-only vote rows. Returns
+ * unmapped rows — callers must run mapCurrentVotes(). Always paginated: the only caller is the
+ * admin vote-history read path.
  */
 export async function fetchElectionVoteRowsByEntityId(
   config: EntityElectionConfig,
@@ -81,8 +86,10 @@ export async function fetchElectionVoteRowsByEntityId(
   pagination: ElectionVoteEntityPagination,
   run: QueryExecutor = read,
 ): Promise<Record<string, unknown>[]> {
-  const query = sql`/* fetchElectionVoteRowsByEntityId */
-    SELECT DISTINCT ON (election_vote.user_id) `
+  const currentVoteTable = config.voteTable === 'post_votes' ? 'post_vote_states' : config.voteTable
+  const query = sql`/* fetchElectionVoteRowsByEntityId */ SELECT `
+  if (currentVoteTable !== 'post_vote_states')
+    query.append(sql`DISTINCT ON (election_vote.user_id) `)
   query.append(sql`election_vote.`)
   query.append(config.entityIdColumn)
   query.append(
@@ -92,7 +99,7 @@ export async function fetchElectionVoteRowsByEntityId(
   appendVotePolicyEntityField(config, query)
   query.append(sql`
     FROM `)
-  query.append(config.voteTable)
+  query.append(currentVoteTable)
   query.append(sql` AS election_vote`)
   appendVotePolicyEntityJoin(config, query)
   query.append(sql`
@@ -102,10 +109,9 @@ export async function fetchElectionVoteRowsByEntityId(
   if (pagination.afterUserId) {
     query.append(sql` AND election_vote.user_id > ${pagination.afterUserId}`)
   }
-  query.append(sql`
-    ORDER BY election_vote.user_id, election_vote.id DESC
-    LIMIT ${pagination.limit}
-  `)
+  query.append(sql` ORDER BY election_vote.user_id`)
+  if (currentVoteTable !== 'post_vote_states') query.append(sql`, election_vote.id DESC`)
+  query.append(sql` LIMIT ${pagination.limit}`)
 
   const { rows } = await run(query)
   return rows
