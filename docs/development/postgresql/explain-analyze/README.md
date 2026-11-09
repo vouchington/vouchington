@@ -194,15 +194,16 @@ Add service calls through `runAndCapture()` and register the new stable scenario
 ## CI
 
 The `EXPLAIN ANALYZE` workflow is called by `test-explain-analyze` in `backend.yml`, gated by the
-`explain-analyze:` path filter. Two parallel shards each get their own PostgreSQL instance,
+`explain-analyze:` path filter. Three parallel shards each get their own PostgreSQL instance,
 restored from the same prepared dump and seeded identically: `main` runs every scenario except
-the partitioned comment fixture, and `partition` runs only that fixture plus the pruning proof
-(`explain-shards.mts` declares the split). The partition fixture is additive, so no other scenario
-reads it. A scenario listed in neither shard or both fails the manifest checks. The
+the partitioned comment fixture and the million-post Hacker News fixture, `partition` runs only the
+comment fixture plus the pruning proof, and `hn-scale` runs only the Hacker News fixture
+(`explain-shards.mts` declares the split). Both fixtures are additive, so no other scenario
+reads them. A scenario listed in no shard or in two fails the manifest checks. The
 `explain-analyze-gates` job merges both shard artifacts, requires every manifest scenario once,
 and enforces the plan gates, baselines and native coverage over the merged results. It uploads
 them as `explain-analyze-results`; a failed shard leaves only its `explain-analyze-results-main` or
-`-partition` artifact. Unsharded `explain:run` runs everything in the original order. The seed records
+`-partition` or `-hn-scale` artifact. Unsharded `explain:run` runs everything in the original order. The seed records
 per-batch timing and resource samples to the results artifact so a seed that hits the CI step limit
 shows which operation was interrupted. The capture step leaves bounded headroom for fixture setup
 and both plan modes; the enclosing job budget also reserves time for plan gates, pruning and
