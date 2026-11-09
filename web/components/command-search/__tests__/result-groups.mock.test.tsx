@@ -90,6 +90,25 @@ vi.mock(import('../command-link-item'), () => ({
 }))
 
 describe('ResultGroups', () => {
+  it.each(['all', 'posts'] as const)('offers continuation on an empty %s post page', activeTab => {
+    const loadMore = vi.fn<() => void>()
+    render(
+      <ResultGroups
+        activeTab={activeTab}
+        matchedShortcuts={[]}
+        results={EMPTY_RESULTS}
+        onOpenChange={vi.fn<(open: boolean) => void>()}
+        pushRoute={vi.fn<(href: string) => void>()}
+        canLoadMorePosts
+        loadingMorePosts={false}
+        postLoadError={false}
+        onLoadMorePosts={loadMore}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(loadMore).toHaveBeenCalledOnce()
+  })
+
   it('renders page shortcut data-pw values from search data', () => {
     const onOpenChange = vi.fn<VitestLooseMock>()
     const pushRoute = vi.fn<VitestLooseMock>()

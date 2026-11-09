@@ -4,6 +4,7 @@ import type { Hostname } from '@/types/hostnames'
 import type { RssFeedItem } from '@/types/rss-feed-items'
 import type { Community } from '@/types/api-responses'
 import type { FediverseSearchResult } from '@/types/fediverse-search'
+import type { PageInfo } from '@voucha/types/pagination'
 
 type FullPostSearchResult = Pick<
   Post,
@@ -24,6 +25,9 @@ export type CommandSearchPost = FullPostSearchResult | CombinedPostSearchResult
 export type SearchResults = {
   topics: Topic[]
   posts: CommandSearchPost[]
+  posts_page_info?: PageInfo
+  /** Identifies the query and tab that produced this result for safe continuation. */
+  searchKey?: string
   news: RssFeedItem[]
   domains: Hostname[]
   communities: Community[]

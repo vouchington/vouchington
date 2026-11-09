@@ -21,6 +21,7 @@ import { ResultGroups } from './command-search/result-groups'
 import { hasVisibleSearchResults } from './command-search/visible-results'
 import { SearchTabs } from './command-search/search-tabs'
 import { useSearchEffect } from './command-search/use-search-effect'
+import { usePostContinuation } from './command-search/use-post-continuation'
 import { useSearchInputFocus } from './command-search/use-search-input-focus'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
@@ -50,6 +51,7 @@ export function CommandSearch({
   const searchTabs = getSearchTabs(featureFlags)
 
   useSearchEffect(query, activeTab, featureFlags.fediverse === true, setResults, setLoading)
+  const postContinuation = usePostContinuation(query, activeTab, results, setResults)
 
   // Reset query and tab when dialog closes. Focus the input when it opens.
   useEffect(() => {
@@ -64,7 +66,8 @@ export function CommandSearch({
   }, [inputRef, open])
 
   const matchedShortcuts = getMatchingShortcuts(t, query, isAdmin, isAuthenticated, featureFlags)
-  const showResults = hasVisibleSearchResults(activeTab, results, matchedShortcuts.length)
+  const visibleResults = results.searchKey === `${activeTab}\0${query}` ? results : EMPTY_RESULTS
+  const showResults = hasVisibleSearchResults(activeTab, visibleResults, matchedShortcuts.length)
 
   useEffect(() => {
     if (!searchTabs.some(tab => tab.value === activeTab)) {
@@ -159,9 +162,13 @@ export function CommandSearch({
             <ResultGroups
               activeTab={activeTab}
               matchedShortcuts={matchedShortcuts}
-              results={results}
+              results={visibleResults}
               onOpenChange={onOpenChange}
               pushRoute={href => push(href)}
+              onLoadMorePosts={postContinuation.handleLoadMore}
+              canLoadMorePosts={postContinuation.canLoadMore}
+              loadingMorePosts={postContinuation.loadingMore}
+              postLoadError={postContinuation.loadError}
             />
           </CommandList>
         ) : (

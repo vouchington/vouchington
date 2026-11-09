@@ -14,6 +14,7 @@ import type { Hostname } from '@/types/hostnames'
 import type { RssFeedItem } from '@/types/rss-feed-items'
 import type { Community } from '@/types/api-responses'
 import type { CommandSearchPost, SearchResults } from '@/components/command-search-data'
+import type { PageInfo } from '@voucha/types/pagination'
 
 // Lightweight per-entity shapes returned by /api/v1/search.
 // Only the fields the command-search dialog actually renders are included.
@@ -46,6 +47,7 @@ type CombinedSearchCommunity = Pick<Community, 'id' | 'name' | 'slug'> & {
 type CombinedSearchResponse = {
   topics: CombinedSearchTopic[]
   posts: CombinedSearchPost[]
+  posts_page_info: PageInfo
   news: CombinedSearchNewsItem[]
   domains: CombinedSearchDomain[]
   communities: CombinedSearchCommunity[]
@@ -57,9 +59,13 @@ type CombinedSearchResponse = {
  *
  * Bookmarked communities are sorted to the top.
  */
-export async function fetchCombinedSearch(q: string, signal: AbortSignal): Promise<SearchResults> {
+export async function fetchCombinedSearch(
+  q: string,
+  signal: AbortSignal,
+  after?: string,
+): Promise<SearchResults> {
   const data = await clientApi.get<CombinedSearchResponse>('/api/v1/search', {
-    searchParams: { q },
+    searchParams: { q, ...(after ? { after } : {}) },
     signal,
   })
 
@@ -71,6 +77,7 @@ export async function fetchCombinedSearch(q: string, signal: AbortSignal): Promi
   return {
     topics: data.topics as unknown as Topic[],
     posts: data.posts satisfies CommandSearchPost[],
+    posts_page_info: data.posts_page_info,
     news: data.news.map(item => ({
       id: item.id,
       url: { url: item.url },

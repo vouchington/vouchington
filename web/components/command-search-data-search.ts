@@ -29,9 +29,17 @@ export async function searchTopicsOnly(q: string, signal: AbortSignal): Promise<
   return { ...EMPTY, topics: sortByBookmarked(extractTopics(data), data.bookmarks) }
 }
 
-export async function searchPostsOnly(q: string, signal: AbortSignal): Promise<SearchResults> {
-  const data = await fetchPosts({ q, limit: 5, signal })
-  return { ...EMPTY, posts: sortByBookmarked(extractPosts(data), data.bookmarks) }
+export async function searchPostsOnly(
+  q: string,
+  signal: AbortSignal,
+  after?: string,
+): Promise<SearchResults> {
+  const data = await fetchPosts({ q, limit: 5, after, signal })
+  return {
+    ...EMPTY,
+    posts: sortByBookmarked(extractPosts(data), data.bookmarks),
+    posts_page_info: data.page_info,
+  }
 }
 
 export async function searchNewsOnly(q: string, signal: AbortSignal): Promise<SearchResults> {

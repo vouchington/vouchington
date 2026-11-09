@@ -1,8 +1,4 @@
 import {
-  cleanupPostDiscoverySearchFixture,
-  seedPostDiscoverySearchFixture,
-} from '../seed-data/post-discovery-search.mts'
-import {
   registerPostDiscoveryGate,
   type PostDiscoveryScope,
   type PostDiscoverySort,
@@ -164,15 +160,5 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
     })
     // no-mistakes-disable-next-line query-reached-per-item: each fixed global/type case needs its own production query plan.
     await runCaptured(id, options)
-  }
-}
-
-export async function runPostDiscoveryFixtureScenarios(): Promise<void> {
-  await cleanupPostDiscoverySearchFixture()
-  try {
-    await seedPostDiscoverySearchFixture()
-    await runPostDiscoverySearchScenarios()
-  } finally {
-    await cleanupPostDiscoverySearchFixture()
   }
 }

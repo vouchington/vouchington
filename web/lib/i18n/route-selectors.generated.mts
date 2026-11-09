@@ -362,7 +362,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/story/[id]/tags/[objectType]", selectorId: "web.route.4277e45a8866aea7.e6c044756acf93d9", hasMembership: true },
   { pattern: "/test-markdown-html", selectorId: "web.route.507881036aef9e7a.2cfc89d9ea3d755a", hasMembership: true },
   { pattern: "/topic-claims/[slug]", selectorId: "web.route.ca96f730913879cb.6b02245dc4db9c9a", hasMembership: true },
-  { pattern: "/topic-recommendations", selectorId: "web.route.73cd2ffaf6556a3c.4deb47af18b75be4", hasMembership: true },
+  { pattern: "/topic-recommendations", selectorId: "web.route.73cd2ffaf6556a3c.235398fe8cb274f3", hasMembership: true },
   { pattern: "/topic-recommendations/[slug]/edit", selectorId: "web.route.ca7321a109cbc92d.0adaa64b7c7e9ef0", hasMembership: true },
   { pattern: "/topic-recommendations/create", selectorId: "web.route.ea2fcc5dfbd61cd9.14b65c2de5a13929", hasMembership: true },
   { pattern: "/topic/[id]", selectorId: "web.route.8f085f3e289736d1.5fb68bba6ed919ab", hasMembership: true },

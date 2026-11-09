@@ -10969,6 +10969,9 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
+      '@services/search-params':
+        specifier: workspace:^
+        version: link:../search-params
       '@services/topics':
         specifier: workspace:^
         version: link:../topics

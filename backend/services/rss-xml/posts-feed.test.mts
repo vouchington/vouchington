@@ -1,9 +1,16 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it, beforeAll } from 'vitest'
-import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
+import {
+  createTestTopic,
+  createTestUserDirect,
+  insertScoredPostTopicCategoryRelation,
+  insertTestPost,
+} from '@voucha/test-helpers'
 import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
 import { buildPostsRssFeed } from './posts-feed.mts'
 import type { PrivateUser } from '@services/users/types'
+import { postsWorkConfig } from '@services/posts/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 const randomHex = () => randomBytes(4).toString('hex')
 
@@ -33,6 +40,60 @@ describe('buildPostsRssFeed', () => {
       administrator: true,
     })
     adminSlugPrefix = `rss-admin-test-${randomHex()}`
+  })
+
+  it('continues an empty filtered page and preserves its request filters', async () => {
+    await postsWorkConfig.waitForInitialization()
+    const username = `rsspage${randomHex()}`
+    const user = await createTestUserDirect({ username })
+    const ids: string[] = []
+    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+      post_search_filter_candidate_limit: 2,
+    })
+    try {
+      for (const [index, clearanceStatus] of ['approved', 'pending', 'pending'].entries()) {
+        ids.push(
+          await insertTestPost({
+            title: `RSS continuation ${index}`,
+            slug: `rss-continuation-${index}-${randomHex()}`,
+            createdById: user.id,
+            markdown: 'Continuation fixture',
+            clearanceStatus: clearanceStatus as 'approved' | 'pending',
+            createdAt: new Date(Date.now() - (3 - index) * 60_000),
+          }),
+        )
+      }
+      const topic = await createTestTopic()
+      await insertScoredPostTopicCategoryRelation(ids[0]!, topic.id, user.id)
+      const first = await buildPostsRssFeed({
+        username,
+        postType: 'discussion',
+        topicSlugs: [topic.slug],
+        apiKey: 'test-key',
+      })
+      expect(first).not.toContain('<item>')
+      const href = first.match(/<atom:link\b[^>]*\bhref="([^"]+)"/)?.[1]
+      expect(href).toBeDefined()
+      const next = new URL(href!.replaceAll('&amp;', '&'))
+      expect(next.pathname).toBe('/rss/posts')
+      expect(next.searchParams.get('user')).toBe(username)
+      expect(next.searchParams.get('post_type')).toBe('discussion')
+      expect(next.searchParams.get('topics')).toBe(topic.slug)
+      expect(next.searchParams.get('apikey')).toBe('test-key')
+      const after = next.searchParams.get('after')
+      expect(after).toBeTruthy()
+      const second = await buildPostsRssFeed({
+        username,
+        postType: 'discussion',
+        topicSlugs: [topic.slug],
+        after: after!,
+      })
+      expect(second).toContain('RSS continuation 0')
+      expect(second).not.toContain('<atom:link')
+    } finally {
+      restore()
+      await Promise.all(ids.map(id => deleteTestPost(id)))
+    }
   })
 
   it('renders markdown to HTML in descriptions', async () => {

@@ -23,6 +23,8 @@ app.route('/rss/posts').get(async (ctx: Context) => {
   const topics = ctx.query.topics as string | undefined
   const postType = ctx.query.post_type as string | undefined
   const user = ctx.query.user as string | undefined
+  const after = ctx.query.after
+  if (after !== undefined && typeof after !== 'string') ctx.throw(400, 'Invalid after cursor')
 
   const xml = await buildPostsRssFeed({
     topicSlugs: topics
@@ -31,6 +33,8 @@ app.route('/rss/posts').get(async (ctx: Context) => {
       .toSorted(),
     postType,
     username: user,
+    after,
+    apiKey: apikey,
   })
 
   if (apikey) {

@@ -617,7 +617,12 @@ use the same inspected-key continuation; hashtag terms are ANDed together after 
 collapse to their topic. Excess hashtag terms are rejected equally by REST and MCP.
 Native catalog and result-fixture adoption remains tracked in
 [vouchington-clients#398](https://github.com/vouchington/vouchington-clients/issues/398); this
-producer contract makes no new native UI parity claim.
+producer contract makes no new native UI parity claim. REST post-list cursor and time-range adoption
+remains tracked in [vouchington-clients#537](https://github.com/vouchington/vouchington-clients/issues/537).
+
+The public posts RSS document can expose an Atom `rel="next"` link, including on a short or empty
+document, so RSS readers can continue with the same filters and opaque cursor. This is an external
+feed-reader contract and makes no native RSS client parity claim.
 
 ## Comment descendant head pagination
 

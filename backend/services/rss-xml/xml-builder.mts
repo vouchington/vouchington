@@ -7,6 +7,7 @@ export interface RssChannel {
   description: string
   language?: string
   lastBuildDate?: Date
+  nextLink?: string
 }
 
 export interface RssItem {
@@ -50,6 +51,11 @@ function buildRssXmlImpl(channel: RssChannel, items: RssItem[]): string {
     description: channel.description,
     language: channel.language ?? 'en',
     lastBuildDate: channel.lastBuildDate ? new Date(channel.lastBuildDate) : undefined,
+    atom: channel.nextLink
+      ? {
+          links: [{ href: channel.nextLink, rel: 'next', type: 'application/rss+xml' }],
+        }
+      : undefined,
     items: items.map(item => ({
       title: item.title,
       link: item.link,

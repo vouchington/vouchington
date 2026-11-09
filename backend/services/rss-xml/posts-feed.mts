@@ -11,12 +11,16 @@ import createHttpError from 'http-errors'
 import onError from '@modules/on-error'
 import { VALID_RSS_POST_TYPES, isCatalogValue } from '@ts-shared/feed-capabilities'
 import { getPublicPostIds } from '@services/posts'
+import { decodePostSearchCursor } from '@services/posts/search/get-ids-page-info'
+import { validateTopicSearchTerms } from '@services/search-params'
 
 export interface PostsFeedOptions {
   topicSlugs?: string[]
   postType?: string
   username?: string
   limit?: number
+  after?: string
+  apiKey?: string
 }
 
 function buildPostLink(post: Post, baseUrl: string): string {
@@ -55,8 +59,12 @@ export async function buildPostsRssFeed(options: PostsFeedOptions): Promise<stri
 }
 
 async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string> {
-  const { topicSlugs, postType, username, limit = 25 } = options
+  const { topicSlugs, postType, username, limit = 25, after } = options
   const baseUrl = SITEMAP_CONFIG.BASE_URL
+
+  // Invalid cursors remain errors even when a username or topic resolves to no posts.
+  decodePostSearchCursor({ after }, 'new', false, true)
+  validateTopicSearchTerms({ topicSlugs }, ['topicSlugs'])
 
   if (postType !== undefined && !isCatalogValue(VALID_RSS_POST_TYPES, postType)) {
     throw createHttpError(400, 'invalid post_type')
@@ -107,14 +115,19 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
       : ([...VALID_RSS_POST_TYPES] as Post['post_type'][])
 
   // Search for post IDs
-  const { results } = await getPostIds(undefined, {
+  const { results, page_info } = await getPostIds(undefined, {
     related_topic_ids: topicIds.length > 0 ? topicIds : undefined,
     post_types: postTypes,
     user_id: userId,
     time_range: 'all',
     sort: 'new',
     limit,
+    after,
   })
+  const nextLink =
+    page_info.has_next_page && page_info.end_cursor
+      ? buildPostsNextLink(options, page_info.end_cursor, baseUrl)
+      : undefined
 
   if (results.length === 0) {
     const channel: RssChannel = {
@@ -122,6 +135,7 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
       link: baseUrl,
       description: buildChannelDescription(options, topicNames),
       lastBuildDate: new Date(),
+      nextLink,
     }
     return buildRssXml(channel, [])
   }
@@ -154,7 +168,18 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
     link: baseUrl,
     description: buildChannelDescription(options, topicNames),
     lastBuildDate: new Date(),
+    nextLink,
   }
 
   return buildRssXml(channel, rssItems)
+}
+
+function buildPostsNextLink(options: PostsFeedOptions, cursor: string, baseUrl: string): string {
+  const url = new URL('/rss/posts', baseUrl)
+  if (options.topicSlugs?.length) url.searchParams.set('topics', options.topicSlugs.join(','))
+  if (options.postType) url.searchParams.set('post_type', options.postType)
+  if (options.username) url.searchParams.set('user', options.username)
+  if (options.apiKey) url.searchParams.set('apikey', options.apiKey)
+  url.searchParams.set('after', cursor)
+  return url.toString()
 }

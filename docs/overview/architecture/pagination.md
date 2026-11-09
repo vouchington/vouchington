@@ -200,6 +200,11 @@ response page; cursor predicates compare that text directly as `timestamptz`. Pu
 remain dates and cursors remain opaque strings. Numeric timestamp and `share:`-prefixed historical
 payloads are rejected under the current prelaunch contract.
 
+The public posts RSS document uses the same inspected-key continuation as post search. A short or
+empty document can still have more candidates; its Atom `rel="next"` link carries the opaque
+`after` cursor and preserves the feed filters. RSS generation does not scan additional pages to fill
+the current document.
+
 Feed cursors include the direct/share tier and bind the viewer, administrator context, community,
 feed type, time range, score thresholds and effective filters. Recency cursors separately bind their
 resource/order, viewer/access and filters. Both normalize unordered arrays and effective defaults,
