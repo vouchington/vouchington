@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createTestUser, insertTestModerationReport, insertTestPost } from '@voucha/test-helpers'
+import { deleteTestModerationReports } from '@voucha/test-helpers/entities/moderation-report-clusters'
+import { hardDeleteTestPosts } from '@voucha/test-helpers/entities/posts-deletion'
 import { acquireReportPaginationTestLock } from '@voucha/test-helpers/report-pagination-lock'
 import { moderationReportsWorkConfig } from '@services/moderation-reports/work-limits'
 
@@ -11,6 +13,8 @@ describe('clustered report summaries', () => {
     const restore = overrideDynamicConfigFieldsForTest(moderationReportsWorkConfig, {
       cluster_report_count_cap: 2,
     })
+    const postIds: string[] = []
+    const reportIds: string[] = []
     try {
       const [admin, owner, ...reporters] = await Promise.all([
         createTestUser({ administrator: true }),
@@ -19,30 +23,30 @@ describe('clustered report summaries', () => {
         createTestUser(),
         createTestUser(),
       ])
-      const postIds = await Promise.all(
-        [0, 1].map(index =>
-          insertTestPost({
+      for (const index of [0, 1]) {
+        postIds.push(
+          await insertTestPost({
             createdById: owner!.id,
             slug: `capped-cluster-${index}-${crypto.randomUUID()}`,
             title: 'Capped cluster',
             markdown: 'body',
           }),
-        ),
-      )
+        )
+      }
       const createdAt = new Date(Date.UTC(9999, 11, 31, 23, 59, 59, 996))
-      await Promise.all(
-        postIds.flatMap((postId, index) =>
-          reporters.slice(0, index === 0 ? 3 : 2).map((reporter, reporterIndex) =>
-            insertTestModerationReport({
+      for (const [index, postId] of postIds.entries()) {
+        for (const [reporterIndex, reporter] of reporters.slice(0, index === 0 ? 3 : 2).entries()) {
+          reportIds.push(
+            await insertTestModerationReport({
               reporterUserId: reporter.id,
               entityType: 'post',
               entityId: postId,
               reason: reporterIndex === 0 ? 'harassment' : 'spam',
               createdAt,
             }),
-          ),
-        ),
-      )
+          )
+        }
+      }
       const request = createRequest()
       await request.authenticateAs(admin!)
       const response = await request.get('/api/v1/reports?cluster=entity&limit=1000').expect(200)
@@ -92,7 +96,15 @@ describe('clustered report summaries', () => {
       ).toBe(true)
     } finally {
       restore()
-      await lock.release()
+      try {
+        try {
+          await deleteTestModerationReports(reportIds)
+        } finally {
+          await hardDeleteTestPosts(postIds)
+        }
+      } finally {
+        await lock.release()
+      }
     }
   })
 })
