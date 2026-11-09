@@ -204,15 +204,15 @@
       "all": {
         "on": {
           "count": 57,
-          "list": 196000,
+          "list": 197000,
           "core": 36000,
-          "output": 185000
+          "output": 186000
         },
         "off": {
           "count": 57,
-          "list": 196000,
+          "list": 197000,
           "core": 36000,
-          "output": 185000
+          "output": 186000
         }
       },
       "Reader": {
