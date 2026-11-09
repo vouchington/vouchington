@@ -18710,7 +18710,7 @@
         "idx_community_agent_prompts__active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_agent_prompts__active ON public.community_agent_prompts USING btree (community_id, activated_at, id) WHERE ((is_slot_allocated = true) AND (activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "definition": "CREATE INDEX idx_community_agent_prompts__active ON public.community_agent_prompts USING btree (community_id, activated_at, id) INCLUDE (created_by_id, deleted_by_id) WHERE ((is_slot_allocated = true) AND (activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
           "immediate": true,
           "keys": [
             {
