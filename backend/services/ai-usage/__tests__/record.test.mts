@@ -39,6 +39,21 @@ describe('recordAiUsage', () => {
     user = await createTestUser()
   })
 
+  it('preserves a ledger CHECK failure instead of treating it as a missing partition', async () => {
+    const agentSlug = `test-invalid-token-count-${randomUUID()}`
+    await expect(
+      recordAiUsage({
+        agentSlug,
+        provider: 'openai',
+        transport: 'direct',
+        model: 'gpt-6-luna',
+        serviceTier: 'flex',
+        usage: usage(-1, 0),
+      }),
+    ).rejects.toMatchObject({ code: '23514' })
+    expect(await countAiUsageRecordsForAgent(agentSlug)).toBe(0)
+  })
+
   it('inserts an ai_usage_records row and is reflected in getCommunityAiCostTotals', async () => {
     const community = await insertTestCommunity({
       createdById: user.id,

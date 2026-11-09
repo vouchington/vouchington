@@ -1,6 +1,7 @@
 import { advisoryLockPool, writePool, type PoolClient } from '@data-stores/psql'
 import {
   observeTestAdvisoryLockNotice,
+  observeTestPostgresLockNotice,
   observeTestTransactionLockNotice,
 } from './postgres-advisory-lock-notice.mts'
 
@@ -16,7 +17,9 @@ export function createTestPostgresClientLoan(client: PoolClient, lock: TestHeldP
   const observation =
     lock.kind === 'advisory'
       ? observeTestAdvisoryLockNotice(client, lock.tag, undefined, lock.waiterMode)
-      : observeTestTransactionLockNotice(client, lock.transactionId)
+      : lock.kind === 'relation'
+        ? observeTestPostgresLockNotice(client, lock.tag, lock.waiterMode)
+        : observeTestTransactionLockNotice(client, lock.transactionId)
   const ended = trackTestPostgresClientEnd(client)
   let requested = false
   let finishing: Promise<void> | undefined

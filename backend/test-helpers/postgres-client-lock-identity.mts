@@ -16,10 +16,16 @@ export type TestPostgresLockIdentity = {
         holderMode?: 'exclusive' | 'shared'
         waiterMode?: 'exclusive' | 'shared'
       }
+    | {
+        kind: 'relation'
+        name: string
+        waiterMode: 'AccessShareLock' | 'RowExclusiveLock'
+      }
     | { kind: 'transaction' }
 }
 export type TestHeldPostgresLock =
   | { kind: 'advisory'; tag: string; waiterMode: 'exclusive' | 'shared' }
+  | { kind: 'relation'; tag: string; waiterMode: 'AccessShareLock' | 'RowExclusiveLock' }
   | { kind: 'transaction'; transactionId: string }
 export type TestOwnedPostgresWaitOptions = TestPostgresLockIdentity & {
   pool: 'advisory' | 'write' | 'job-serialization'
@@ -32,6 +38,22 @@ export async function getTestOwnedPostgresLock(
   observer: PoolClient,
   identity: TestPostgresLockIdentity,
 ): Promise<TestHeldPostgresLock> {
+  if (identity.lock.kind === 'relation') {
+    const { rows } = await observer.query<{ lock_tag: string }>(
+      `/* getTestOwnedRelationLockTag */
+      SELECT 'relation ' || relation::text || ' of database ' || database::text AS lock_tag
+      FROM pg_locks
+      WHERE pid = $1 AND locktype = 'relation' AND granted
+        AND mode = 'AccessExclusiveLock'
+        AND relation = to_regclass($2)
+        AND database = (SELECT oid FROM pg_database WHERE datname = current_database())
+      LIMIT 2`,
+      [identity.holderProcessId, identity.lock.name],
+    )
+    if (rows.length !== 1 || !rows[0])
+      throw new Error('Owned holder did not report exactly the expected relation lock')
+    return { kind: 'relation', tag: rows[0].lock_tag, waiterMode: identity.lock.waiterMode }
+  }
   if (identity.lock.kind !== 'transaction')
     return {
       kind: 'advisory',

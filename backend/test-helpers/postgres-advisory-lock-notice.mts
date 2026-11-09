@@ -39,7 +39,7 @@ export function observeTestTransactionLockNotice(
   )
 }
 
-function observeTestPostgresLockNotice(
+export function observeTestPostgresLockNotice(
   client: LockNoticeClient,
   lockTag: string,
   mode: string,

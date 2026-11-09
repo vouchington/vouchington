@@ -9,6 +9,7 @@ import {
 } from '@voucha/test-helpers/entities/urls'
 import { getUrlById } from './get.mts'
 import { CircularCanonicalReferenceError, setCanonicalUrl } from './set-canonical.mts'
+import { canonicalWorkConfig } from './canonical-work-limits.mts'
 
 describe('concurrent canonical URL rewrites', () => {
   let restore: () => void
@@ -17,6 +18,23 @@ describe('concurrent canonical URL rewrites', () => {
     restore = overrideDynamicConfigFieldsForTest(hackerNewsQueueConfig, { lookups_enabled: false })
   })
   afterEach(() => restore())
+
+  it('commits a canonical rewrite when configured for one attempt', async () => {
+    await canonicalWorkConfig.waitForInitialization()
+    const restoreAttempts = overrideDynamicConfigFieldsForTest(canonicalWorkConfig, {
+      rewrite_attempts: 1,
+    })
+    try {
+      const [source, terminal] = await Promise.all([
+        createTestUrlWithHostname(),
+        createTestUrlWithHostname(),
+      ])
+      expect(await setCanonicalUrl(source, terminal)).toBe(terminal)
+      expect(await getTestUrlCanonicalId(source)).toBe(terminal)
+    } finally {
+      restoreAttempts()
+    }
+  })
 
   it('keeps references on terminal roots under overlapping rewrites', async () => {
     const [a, b, c, d] = await Promise.all(

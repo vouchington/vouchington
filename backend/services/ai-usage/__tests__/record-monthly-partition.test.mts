@@ -10,6 +10,9 @@ import {
 import {
   probeBlockedAiUsageRetirement,
   retireTestAiUsagePartition,
+  retireTestAiUsagePartitionDuringWrite,
+  withDetachedTestAiUsagePartition,
+  withRenamedTestAiUsagePartition,
 } from '@voucha/test-helpers/entities/ai-usage-partition-retirement'
 import {
   hasTestAiUsageResponseKey,
@@ -20,8 +23,74 @@ import { retireMonthlyPartitionCandidate } from '@data-stores/psql/migration-run
 import { getDateFromUUIDv7, mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { recordAiUsage } from '../record.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
+import { prepareAiUsageMonth } from '@data-stores/psql/ai-usage-monthly-partition'
 
 describe('backdated AI usage on retired monthly history', () => {
+  it('rejects an overlapping owned month attached under a different name', async () => {
+    const releaseSweep = await reserveTestAiUsageRetentionSweep()
+    onTestFinished(releaseSweep)
+    const createdAt = new Date(Date.UTC(2000 + randomInt(20), randomInt(12), 12, 12))
+    const releaseMonth = await reserveTestAiUsageMonths([createdAt])
+    onTestFinished(() => releaseMonth([]))
+    const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
+    await withRenamedTestAiUsagePartition(testAiUsageCandidate(partition), async () => {
+      await expect(prepareAiUsageMonth(createdAt)).rejects.toMatchObject({ code: '42P17' })
+    })
+    expect(await isTestAiUsagePartitionAttached(partition)).toBe(true)
+  })
+
+  it('rejects a canonical month table that is detached from the ledger', async () => {
+    const releaseSweep = await reserveTestAiUsageRetentionSweep()
+    onTestFinished(releaseSweep)
+    const createdAt = new Date(Date.UTC(2000 + randomInt(20), randomInt(12), 12, 12))
+    const releaseMonth = await reserveTestAiUsageMonths([createdAt])
+    onTestFinished(() => releaseMonth([]))
+    const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
+    await withDetachedTestAiUsagePartition(testAiUsageCandidate(partition), async () => {
+      await expect(prepareAiUsageMonth(createdAt)).rejects.toThrow(
+        `AI usage month ${partition} was not attached after preparation`,
+      )
+    })
+    expect(await isTestAiUsagePartitionAttached(partition)).toBe(true)
+  })
+
+  it('retries when retirement commits after the attached-month probe', async () => {
+    const releaseSweep = await reserveTestAiUsageRetentionSweep()
+    onTestFinished(releaseSweep)
+    const createdAt = new Date(Date.UTC(2000 + randomInt(20), randomInt(12), 12, 12))
+    const releaseMonth = await reserveTestAiUsageMonths([createdAt])
+    const agentSlug = `test-retirement-race-${randomUUID()}`
+    onTestFinished(async () => {
+      const ids = await readTestAiUsageIdsForMonth(createdAt, agentSlug)
+      await releaseMonth(ids)
+    })
+    const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
+    await retireTestAiUsagePartitionDuringWrite(testAiUsageCandidate(partition), () =>
+      recordAiUsage({
+        createdAt,
+        agentSlug,
+        provider: 'openai',
+        transport: 'direct',
+        model: 'gpt-6-luna',
+        serviceTier: 'flex',
+        usage: {
+          inputTokens: 10,
+          cacheReadTokens: 0,
+          cacheWrite5mTokens: 0,
+          cacheWrite1hTokens: 0,
+          outputTokens: 2,
+          reasoningOutputTokens: 0,
+        },
+      }),
+    )
+    const ids = await readTestAiUsageIdsForMonth(createdAt, agentSlug)
+    expect(ids).toHaveLength(1)
+    expect(getDateFromUUIDv7(ids[0]!)?.toISOString().slice(0, 10)).toBe(
+      createdAt.toISOString().slice(0, 10),
+    )
+    expect(await isTestAiUsagePartitionAttached(partition)).toBe(true)
+  })
+
   it('records concurrent backdated and ordinary usage after retiring the historical month', async () => {
     const releaseSweep = await reserveTestAiUsageRetentionSweep()
     onTestFinished(releaseSweep)
