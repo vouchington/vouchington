@@ -40,7 +40,7 @@ export async function getTopicViewerCounts(
   query.append(eligibility).append(sql`
         ) AS count__discussions,
         (
-          SELECT COUNT(*)::bigint
+          SELECT COUNT(DISTINCT candidate_post.id)::bigint
           FROM posts candidate_post
           JOIN posts root_post
             ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
@@ -52,7 +52,7 @@ export async function getTopicViewerCounts(
   query.append(eligibility).append(sql`
         ) AS count__reviews,
         (
-          SELECT COUNT(*)::bigint
+          SELECT COUNT(DISTINCT candidate_post.id)::bigint
           FROM posts candidate_post
           JOIN posts root_post
             ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)

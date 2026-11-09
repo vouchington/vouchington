@@ -2,9 +2,6 @@ import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
 import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers/refresh'
 import { assertCommunityPostTopicsNotMuted } from '@services/communities/publications/muted-topics'
-import { updatePostRating } from '@services/posts/post-ratings'
-import { getPostByAny } from '@services/posts/get'
-import type { Post } from '@services/posts/types'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
@@ -21,7 +18,6 @@ const crawlerNoiseHostnameIds = Array.from({ length: crawlerNoiseCount }, (_, in
   seedUuid(index, '02'),
 )
 const topicId = seedUuid(0, '04')
-const secondTopicId = seedUuid(1, '04')
 
 async function seedExistenceFixtures(): Promise<void> {
   await write(
@@ -54,11 +50,6 @@ async function seedExistenceFixtures(): Promise<void> {
     [postId, seedUser.id],
   )
   await write(
-    `/* seedExistenceRatings */ INSERT INTO post_review_topic_ratings (post_id, topic_id, rating, order_index)
-    VALUES ($1::uuid, $2::uuid, 3, 0), ($1::uuid, $3::uuid, 4, 1) ON CONFLICT DO NOTHING`,
-    [postId, topicId, secondTopicId],
-  )
-  await write(
     `/* seedExistenceCategory */ INSERT INTO relation__post__category__topic (subject_id, object_id, votes_score_up, votes_count_up)
     VALUES ($1::uuid, $2::uuid, 1, 1) ON CONFLICT DO NOTHING`,
     [postId, topicId],
@@ -69,7 +60,7 @@ async function seedExistenceFixtures(): Promise<void> {
     [communityId, topicId],
   )
   await write(`/* analyzeExistenceFixtures */ ANALYZE url_hostnames, hostname_crawler_configurations,
-    post_review_topic_ratings, relation__post__category__topic, relation__post__category__topic_alias,
+    relation__post__category__topic, relation__post__category__topic_alias,
     relation__community__mute__topic, topic_aliases, post_explicit_topic_categories, post_topic_alias_sources`)
 }
 
@@ -84,11 +75,6 @@ async function cleanupExistenceFixtures(): Promise<void> {
     WHERE subject_id = $1::uuid AND object_id = $2::uuid`,
     [postId, topicId],
   )
-  await write(
-    `/* cleanupExistenceRatings */ DELETE FROM post_review_topic_ratings
-    WHERE post_id = $1::uuid`,
-    [postId],
-  )
   await write(`/* cleanupExistencePost */ DELETE FROM posts WHERE id = $1::uuid`, [postId])
   await write(`/* cleanupExistenceCommunity */ DELETE FROM communities WHERE id = $1::uuid`, [
     communityId,
@@ -102,7 +88,7 @@ async function cleanupExistenceFixtures(): Promise<void> {
     hostnameId,
   ])
   await write(`/* analyzeAfterExistenceCleanup */ ANALYZE url_hostnames, hostname_crawler_configurations,
-    post_review_topic_ratings, relation__post__category__topic, relation__community__mute__topic`)
+    relation__post__category__topic, relation__community__mute__topic`)
 }
 
 export async function runAggregateExistenceScenarios(): Promise<void> {
@@ -154,21 +140,5 @@ async function captureExistenceScenarios(): Promise<void> {
     },
     undefined,
     'assertCommunityPostTopicsNotMuted',
-  )
-
-  const post = (await getPostByAny(postId, { readOnly: false })) as Post | null
-  assert.ok(post)
-  registerScenarioContract('post-rating-variety-exists', {
-    expectations: [{ kind: 'maxProcessedRows', relation: 'post_review_topic_ratings', max: 6 }],
-  })
-  await runAndCapture(
-    'post-rating-variety-exists',
-    async () => {
-      await assert.rejects(() => updatePostRating(seedUser, post, secondTopicId, { rating: 3 }), {
-        status: 422,
-      })
-    },
-    undefined,
-    'assertRatingsNotAllSame',
   )
 }

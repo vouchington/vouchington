@@ -15,7 +15,6 @@ export const RETENTION_WORK_SCENARIOS = [
   'ai-usage-tier-existing',
   'crawler-refresh-existing-stale',
   'community-muted-topic-exists',
-  'post-rating-variety-exists',
   'topic-slug-batch-unique',
   'primary-rss-feeds-by-topic-unique',
   'pending-application-community-unique',
