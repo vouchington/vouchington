@@ -19,6 +19,7 @@ export async function runModerationClusterEmptyProbeScenarios(): Promise<void> {
     forbidSequentialScans: ['moderation_reports'],
     expectations: [
       { kind: 'maxProcessedRows', relation: 'moderation_reports', max: 1 },
+      { kind: 'queryBinds', token: 'LIMIT' },
       ...TARGETS.map(target => ({
         kind: 'usesIndexes' as const,
         indexes: [`idx_moderation_reports__pending_${target}_id`],
@@ -46,6 +47,7 @@ async function captureProbe(target: (typeof TARGETS)[number], id: string): Promi
       SELECT uuid_extract_timestamp(s.id) FROM moderation_reports s
       WHERE s.${target} = $1::uuid
         AND s.reviewed_at IS NULL AND s.resolution_action IS NULL
+      LIMIT 1
     ) AS is_empty`,
     [id],
   )

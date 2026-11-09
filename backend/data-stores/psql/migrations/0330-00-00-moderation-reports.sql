@@ -326,8 +326,9 @@ BEGIN
           ELSE 's.reviewed_at IS NOT NULL AND s.resolution_action = $2::moderation_report_resolution_actions'
         END
       );
+      -- Bound only this probe. The shared edge query stays unlimited so each edge read can append its own order.
       EXECUTE 'DELETE FROM moderation_report_clusters WHERE id = $3::uuid AND NOT EXISTS ('
-        || edge_query || ')' USING report_target_id, OLD.resolution_action, prior_cluster.id;
+        || edge_query || ' LIMIT 1)' USING report_target_id, OLD.resolution_action, prior_cluster.id;
       GET DIAGNOSTICS removed_clusters = ROW_COUNT;
       IF removed_clusters = 0 THEN
         prior_reported_at := uuid_extract_timestamp(OLD.id);
