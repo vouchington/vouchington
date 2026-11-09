@@ -241,6 +241,9 @@ jobs:
         # The full partition fixture exceeds the former 4GiB tmpfs. Use the image's
         # disk-backed ephemeral /var/lib/postgresql volume for data and WAL; resource
         # samples still capture usage on the same ubuntu-latest runner.
+        # Parallel pg_restore builds indexes together. One HNSW build asked for a 61MB
+        # shared-memory segment and the default 64MB /dev/shm could not hold it
+        # (run 42681706863). 1g covers four of those builds at once.
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -248,6 +251,7 @@ jobs:
           --health-retries 5
           --health-start-period 30s
           --health-start-interval 1s
+          --shm-size=1g
 
     steps:
       - name: Set service ports
