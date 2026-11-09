@@ -38167,6 +38167,46 @@
           ],
           "type": "object"
         },
+        "count_capped": {
+          "additionalProperties": false,
+          "properties": {
+            "comments": {
+              "type": "boolean"
+            },
+            "communities_member": {
+              "type": "boolean"
+            },
+            "discussions": {
+              "type": "boolean"
+            },
+            "reviews": {
+              "type": "boolean"
+            },
+            "rss_feeds_following": {
+              "type": "boolean"
+            },
+            "topics_following": {
+              "type": "boolean"
+            },
+            "users_followers": {
+              "type": "boolean"
+            },
+            "users_following": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "comments",
+            "communities_member",
+            "discussions",
+            "reviews",
+            "rss_feeds_following",
+            "topics_following",
+            "users_followers",
+            "users_following"
+          ],
+          "type": "object"
+        },
         "id": {
           "type": "string"
         },

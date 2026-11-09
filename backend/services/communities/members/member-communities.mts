@@ -4,6 +4,12 @@ import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/paginat
 import type { PageInfo } from '@voucha/types/pagination'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
+import {
+  getProfileCountCap,
+  profileCountProbeLimit,
+  toCappedCount,
+  type CappedCount,
+} from '@services/users/profile-count-cap'
 import type { CommunityMember } from '../types.mts'
 import { appendUserMembershipPrivacyFilter } from './member-privacy-filter.mts'
 
@@ -58,18 +64,23 @@ export async function countUserMemberCommunities(
   targetUserId: string,
   currentUser: PrivateUser | null,
   options?: QueryOptions,
-): Promise<number> {
+): Promise<CappedCount> {
+  const cap = getProfileCountCap()
   const query = sql`/* countUserMemberCommunities */
-    SELECT COUNT(*) AS count
-    FROM community_members cm
-    INNER JOIN users member_user ON member_user.id = cm.user_id AND member_user.deleted_at IS NULL
-    INNER JOIN communities c ON c.id = cm.community_id AND c.deleted_at IS NULL
-    WHERE cm.user_id = ${targetUserId}
-      AND cm.removed_at IS NULL
-      AND `
+    SELECT COUNT(*) AS count FROM (
+      SELECT 1
+      FROM community_members cm
+      INNER JOIN users member_user ON member_user.id = cm.user_id AND member_user.deleted_at IS NULL
+      INNER JOIN communities c ON c.id = cm.community_id AND c.deleted_at IS NULL
+      WHERE cm.user_id = ${targetUserId}
+        AND cm.removed_at IS NULL
+        AND `
   appendMemberCommunityVisibilityFilters(query, targetUserId, currentUser)
+  query.append(sql`
+      LIMIT ${profileCountProbeLimit(cap)}
+    ) probe`)
   const { rows } = await read(query, options)
-  return Number((rows[0] as { count: string }).count)
+  return toCappedCount((rows[0] as { count: string }).count, cap)
 }
 
 function appendMemberCommunityVisibilityFilters(

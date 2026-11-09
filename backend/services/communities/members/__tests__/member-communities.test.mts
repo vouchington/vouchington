@@ -165,7 +165,7 @@ describe('listUserMemberCommunities / countUserMemberCommunities', () => {
         role: 'member',
       })
 
-      const count = await countUserMemberCommunities(user.id, user)
+      const count = (await countUserMemberCommunities(user.id, user)).count
       expect(count).toBe(1)
     })
 
@@ -179,7 +179,7 @@ describe('listUserMemberCommunities / countUserMemberCommunities', () => {
         insertTestCommunityMember({ communityId: c2.id, userId: user.id, role: 'member' }),
       ])
 
-      const count = await countUserMemberCommunities(user.id, null)
+      const count = (await countUserMemberCommunities(user.id, null)).count
       expect(typeof count).toBe('number')
       expect(count).toBeGreaterThanOrEqual(2)
     })
@@ -194,7 +194,7 @@ describe('listUserMemberCommunities / countUserMemberCommunities', () => {
         role: 'member',
       })
 
-      const count = await countUserMemberCommunities(user.id, null)
+      const count = (await countUserMemberCommunities(user.id, null)).count
       expect(count).toBe(0)
     })
 
@@ -209,7 +209,7 @@ describe('listUserMemberCommunities / countUserMemberCommunities', () => {
       })
       await removeTestCommunityMember(community.id, user.id)
 
-      const count = await countUserMemberCommunities(user.id, null)
+      const count = (await countUserMemberCommunities(user.id, null)).count
       expect(count).toBe(0)
     })
 
@@ -223,7 +223,7 @@ describe('listUserMemberCommunities / countUserMemberCommunities', () => {
         insertTestCommunityMember({ communityId: priv.id, userId: user.id, role: 'member' }),
       ])
 
-      const count = await countUserMemberCommunities(user.id, null)
+      const count = (await countUserMemberCommunities(user.id, null)).count
       expect(count).toBe(1)
     })
 
@@ -243,10 +243,10 @@ describe('listUserMemberCommunities / countUserMemberCommunities', () => {
         }),
       ])
 
-      const countForNonMember = await countUserMemberCommunities(user.id, viewer)
+      const countForNonMember = (await countUserMemberCommunities(user.id, viewer)).count
       expect(countForNonMember).toBe(1)
 
-      const countForMember = await countUserMemberCommunities(user.id, memberViewer)
+      const countForMember = (await countUserMemberCommunities(user.id, memberViewer)).count
       expect(countForMember).toBe(2)
     })
 
@@ -261,7 +261,7 @@ describe('listUserMemberCommunities / countUserMemberCommunities', () => {
         insertTestCommunityMember({ communityId: priv.id, userId: user.id, role: 'member' }),
       ])
 
-      const count = await countUserMemberCommunities(user.id, admin)
+      const count = (await countUserMemberCommunities(user.id, admin)).count
       expect(count).toBe(2)
     })
 
@@ -279,7 +279,7 @@ describe('listUserMemberCommunities / countUserMemberCommunities', () => {
         insertTestCommunityMember({ communityId: modRoster.id, userId: user.id, role: 'member' }),
       ])
 
-      const count = await countUserMemberCommunities(user.id, null)
+      const count = (await countUserMemberCommunities(user.id, null)).count
       expect(count).toBe(1)
     })
 
@@ -293,7 +293,7 @@ describe('listUserMemberCommunities / countUserMemberCommunities', () => {
       })
       await insertTestCommunityMember({ communityId: modRoster.id, userId: user.id, role: 'owner' })
 
-      const count = await countUserMemberCommunities(user.id, null)
+      const count = (await countUserMemberCommunities(user.id, null)).count
       expect(count).toBe(1)
     })
   })

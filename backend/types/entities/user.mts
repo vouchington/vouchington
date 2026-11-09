@@ -143,6 +143,20 @@ export type UserMetrics = {
     rss_feeds_following: number
     communities_member: number
   }
+  /**
+   * Each `count` is exact up to the profile count cap (1,000 by default). `true` means the real
+   * total is larger and `count` holds the cap; clients show it as "1k+".
+   */
+  count_capped: {
+    reviews: boolean
+    discussions: boolean
+    comments: boolean
+    users_following: boolean
+    users_followers: boolean
+    topics_following: boolean
+    rss_feeds_following: boolean
+    communities_member: boolean
+  }
   private_count?: {
     posts_saved: number
     posts_hidden: number

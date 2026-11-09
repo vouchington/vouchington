@@ -18,13 +18,15 @@ import type { UserMetrics } from '@/types/user-metrics'
 import { createUserPathname, userHref, userPathSegment } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
-import { formatNumber } from '@ts-shared/utils/format'
+import { formatCappedCount } from '@/lib/users/format-capped-count'
 import { isPlatformAccount } from '@/lib/auth/account-type'
 import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
 
 const FollowButton = dynamic<Parameters<typeof FollowButtonComponent>[0]>(() =>
   import('@/components/shared/follow-button').then(mod => mod.FollowButton),
 )
+
+type ProfileCountUnit = 'review' | 'discussion' | 'comment'
 
 interface UserProfileHeaderProps {
   user: Pick<
@@ -40,7 +42,7 @@ interface UserProfileHeaderProps {
     | 'verified_display_name'
     | 'lingua_rs_detected_language'
   > & { roles?: readonly string[] }
-  metrics?: Pick<UserMetrics, 'count'>
+  metrics?: Pick<UserMetrics, 'count' | 'count_capped'>
   profileLinks?: Array<Pick<ProfileLink, 'id' | 'link_type' | 'url' | 'handle' | 'name'>>
   aboutHtml?: string | null
   isAdmin?: boolean
@@ -60,14 +62,19 @@ export function UserProfileHeader({
   const currentUserId = currentUser?.id
   const displayName = getUserLabel(user, t('shared.user.deletedUser'))
   const canFollow = currentUserId !== user.id
-  const profileCountLabel = (count: number, unit: 'review' | 'discussion' | 'comment') => {
-    const formattedCount = formatNumber(count, uiLocale)
+  const profileCountLabel = (
+    key: 'reviews' | 'discussions' | 'comments',
+    unit: ProfileCountUnit,
+  ) => {
+    const count = metrics?.count[key] ?? 0
+    if (!count) return null
+    const formattedCount = formatCappedCount(count, metrics?.count_capped[key] ?? false, uiLocale)
     return t('shared.countLabel.formatted', { count, formattedCount, unit })
   }
   const summaryItems = [
-    metrics?.count.reviews ? profileCountLabel(metrics.count.reviews, 'review') : null,
-    metrics?.count.discussions ? profileCountLabel(metrics.count.discussions, 'discussion') : null,
-    metrics?.count.comments ? profileCountLabel(metrics.count.comments, 'comment') : null,
+    profileCountLabel('reviews', 'review'),
+    profileCountLabel('discussions', 'discussion'),
+    profileCountLabel('comments', 'comment'),
   ].filter(Boolean)
 
   return (

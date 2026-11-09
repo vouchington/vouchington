@@ -9,8 +9,9 @@ const t: Translator = (key, params) => {
   return (typeof count === 'number' || typeof count === 'string') && count ? `${key}:${count}` : key
 }
 
-interface UserMetricsOverrides extends Omit<Partial<UserMetrics>, 'count'> {
+interface UserMetricsOverrides extends Omit<Partial<UserMetrics>, 'count' | 'count_capped'> {
   count?: Partial<UserMetrics['count']>
+  count_capped?: Partial<UserMetrics['count_capped']>
 }
 
 function makeUserMetrics(overrides: UserMetricsOverrides = {}): UserMetrics {
@@ -27,6 +28,17 @@ function makeUserMetrics(overrides: UserMetricsOverrides = {}): UserMetrics {
       rss_feeds_following: 0,
       communities_member: 0,
       ...overrides.count,
+    },
+    count_capped: {
+      reviews: false,
+      discussions: false,
+      comments: false,
+      users_following: false,
+      users_followers: false,
+      topics_following: false,
+      rss_feeds_following: false,
+      communities_member: false,
+      ...overrides.count_capped,
     },
     private_count: overrides.private_count,
     bookmarks: overrides.bookmarks ?? {
@@ -110,6 +122,35 @@ describe('buildUserProfileDropdownItems', () => {
         value: 'reviews',
         label: 'extracted.users.userDetailTabBuilders.reviewsCount_7dc3b459:1,000',
         href: '/user/alice/reviews',
+      }),
+    ])
+  })
+
+  it('shows a capped count as a compact count with a plus sign', () => {
+    const tabs = buildUserProfileDropdownItems(
+      t,
+      'posts',
+      'alice',
+      makeUserMetrics({
+        count: { reviews: 1000, comments: 3 },
+        count_capped: { reviews: true },
+      }),
+      '/posts',
+      'en',
+    )
+
+    expect(tabs).toEqual([
+      expect.objectContaining({
+        value: 'posts-all',
+        label: 'extracted.users.userDetailTabDefinitions.allCount_a58a7734:1K+',
+      }),
+      expect.objectContaining({
+        value: 'reviews',
+        label: 'extracted.users.userDetailTabBuilders.reviewsCount_7dc3b459:1K+',
+      }),
+      expect.objectContaining({
+        value: 'comments',
+        label: 'extracted.users.userDetailTabBuilders.commentsCount_147198f2:3',
       }),
     ])
   })

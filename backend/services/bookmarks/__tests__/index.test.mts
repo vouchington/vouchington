@@ -1,10 +1,14 @@
-import { it, expect, beforeAll, describe } from 'vitest'
+import { it, expect, beforeAll, describe, onTestFinished } from 'vitest'
 
 import { bookmarkEntity, unbookmarkEntity } from '../upsert.mts'
 
 import { getBookmarksForEntity, getBookmarksForEntities } from '../get.mts'
 
 import { getUserBookmarkCounts } from '../counts.mts'
+
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+
+import { profileCountConfig } from '@services/users/profile-count-cap'
 
 import type { EntityRelationPredicateType } from '@services/entity-relations/config'
 
@@ -131,6 +135,27 @@ describe('index', () => {
     })
 
     describe('getUserBookmarkCounts', () => {
+      it('reports the cap and a capped flag when follows exceed the cap', async () => {
+        await profileCountConfig.waitForInitialization()
+        onTestFinished(overrideDynamicConfigFieldsForTest(profileCountConfig, { count_cap: 1 }))
+        const follower = await createTestUser()
+        const random = Math.random().toString(36).slice(2, 15)
+        const topicIds = await Promise.all(
+          [1, 2].map(index =>
+            insertTestTopic({
+              name: `Capped Topic ${index} ${random}`,
+              slug: `capped-topic-${index}-${random}`,
+              createdById: follower.id,
+            }),
+          ),
+        )
+        for (const id of topicIds) await bookmarkEntity(follower, 'topic', { id }, 'follow')
+
+        const counts = await getUserBookmarkCounts(follower.id)
+
+        expect(counts.bookmarks.topics.follow).toEqual({ count: 1, capped: true })
+      })
+
       it('returns bookmark counts for a user', async () => {
         const random = Math.random().toString(36).slice(2, 15)
         const topicId = await insertTestTopic({
@@ -150,8 +175,8 @@ describe('index', () => {
 
         const counts = await getUserBookmarkCounts(user!.id)
 
-        expect(counts.bookmarks.topics.follow).toBeGreaterThanOrEqual(1)
-        expect(counts.bookmarks.posts.save).toBeGreaterThanOrEqual(1)
+        expect(counts.bookmarks.topics.follow?.count).toBeGreaterThanOrEqual(1)
+        expect(counts.bookmarks.posts.save?.count).toBeGreaterThanOrEqual(1)
       })
     })
   })
