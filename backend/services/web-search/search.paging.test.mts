@@ -12,7 +12,7 @@ import { searchWeb } from './search.mts'
 
 describe('searchWeb paging', () => {
   it('single page: has_next_page false and no end_cursor', async () => {
-    const token = randomUUID().replace(/-/g, '')
+    const token = searchToken()
     await seedMatch(token, 1)
 
     const result = await searchWeb({ query: token, limit: 10 })
@@ -26,7 +26,7 @@ describe('searchWeb paging', () => {
     afterEach(() => restore?.())
 
     it('ranks only the capped chunk set; the dropped URL falls back to a url match', async () => {
-      const token = randomUUID().replace(/-/g, '')
+      const token = searchToken()
       const strong = await seedMatch(token, 6)
       const medium = await seedMatch(token, 3)
       const weak = await seedMatch(token, 1)
@@ -45,7 +45,7 @@ describe('searchWeb paging', () => {
 
   describe('cursor', () => {
     it('pages content matches, then url matches, without repeats', async () => {
-      const token = randomUUID().replace(/-/g, '')
+      const token = searchToken()
       const first = await seedMatch(token, 4)
       const second = await seedMatch(token, 1)
       const urlOnly = await seedUrlOnly(token)
@@ -65,7 +65,7 @@ describe('searchWeb paging', () => {
     })
 
     it('continues inside the url tier from a url cursor, newest url first', async () => {
-      const token = randomUUID().replace(/-/g, '')
+      const token = searchToken()
       const older = await seedUrlOnly(token)
       const newer = await seedUrlOnly(token)
 
@@ -79,10 +79,10 @@ describe('searchWeb paging', () => {
     })
 
     it('rejects malformed, empty, and foreign-query cursors with 400', async () => {
-      const token = randomUUID().replace(/-/g, '')
+      const token = searchToken()
       await seedMatch(token, 2)
       await seedMatch(token, 1)
-      const other = randomUUID().replace(/-/g, '')
+      const other = searchToken()
       await seedMatch(other, 2)
       await seedMatch(other, 1)
       const foreign = await searchWeb({ query: other, limit: 1 })
@@ -115,4 +115,12 @@ async function seedUrlOnly(token: string): Promise<string> {
     url: `https://web-search-page-${randomUUID()}.com/${token}/page`,
     hostnameId,
   })
+}
+
+// Letters only: a hex token containing digits can parse into several lexemes (for example an
+// exponent-like run), which makes ts_rank order repeat counts unpredictably.
+function searchToken(): string {
+  return randomUUID()
+    .replace(/-/g, '')
+    .replace(/\d/g, d => 'ghijklmnop'[Number(d)]!)
 }
