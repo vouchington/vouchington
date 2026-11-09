@@ -275,20 +275,11 @@ jobs:
           repository: ${{ github.repository }}
           run-id: ${{ github.run_id }}
       - name: Restore seeded PostgreSQL database
-        # Materialized view data is held back until the statistics step: refreshing a view before
-        # any ANALYZE plans it blind, and mv_trending_communities then ran past the step deadline.
+        # Materialized view data waits for the refresh step below; the script records why.
         timeout-minutes: 4
         env:
           PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
-        run: |
-          dump_dir="$RUNNER_TEMP/explain-seeded"
-          docker run --rm -v "$dump_dir:/dump:ro" "$PG_IMAGE" \
-            pg_restore --list /dump/explain-seeded.dump > "$dump_dir/all.list"
-          grep -v ' MATERIALIZED VIEW DATA ' "$dump_dir/all.list" > "$dump_dir/schema-and-data.list"
-          grep ' MATERIALIZED VIEW DATA ' "$dump_dir/all.list" > "$dump_dir/materialized-views.list" || true
-          docker run --rm --network host -v "$dump_dir:/dump:ro" "$PG_IMAGE" \
-            pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
-            --jobs=4 --use-list=/dump/schema-and-data.list /dump/explain-seeded.dump
+        run: .github/workflows/explain-analyze-restore-seeded.sh data
       - name: Settle restored statistics and visibility
         # A restore carries neither the visibility map nor the planner statistics the seed's
         # VACUUM (ANALYZE) left, and index-only scan costs depend on both. Rebuild them before
@@ -303,12 +294,7 @@ jobs:
         timeout-minutes: 2
         env:
           PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
-        run: |
-          docker run --rm --network host -v "$RUNNER_TEMP/explain-seeded:/dump:ro" "$PG_IMAGE" \
-            pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
-            --use-list=/dump/materialized-views.list /dump/explain-seeded.dump
-          docker run --rm --network host "$PG_IMAGE" \
-            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'ANALYZE'
+        run: .github/workflows/explain-analyze-restore-seeded.sh materialized-views
       - name: Add crawl tier check coverage
         # The seed job ran the check against the unseeded database; one shard carries its coverage.
         if: ${{ matrix.shard == 'main' }}
