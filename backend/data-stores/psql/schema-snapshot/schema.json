@@ -128222,7 +128222,7 @@
         },
         "rss_feed_items_url_id_fkey": {
           "columns": ["url_id"],
-          "definition": "FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE",
+          "definition": "FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
           "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -129223,7 +129223,7 @@
         },
         "rss_feeds_rss_feed_url_id_fkey": {
           "columns": ["rss_feed_url_id"],
-          "definition": "FOREIGN KEY (rss_feed_url_id) REFERENCES urls(id) ON DELETE CASCADE",
+          "definition": "FOREIGN KEY (rss_feed_url_id) REFERENCES urls(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
           "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["id"],

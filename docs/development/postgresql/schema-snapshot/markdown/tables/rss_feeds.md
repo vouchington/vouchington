@@ -50,7 +50,7 @@ _none_
 - `rss_feeds_canonical_rss_feed_id_fkey`: `FOREIGN KEY (canonical_rss_feed_id) REFERENCES rss_feeds(id) ON DELETE SET NULL`
 - `rss_feeds_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `rss_feeds_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
-- `rss_feeds_rss_feed_url_id_fkey`: `FOREIGN KEY (rss_feed_url_id) REFERENCES urls(id) ON DELETE CASCADE`
+- `rss_feeds_rss_feed_url_id_fkey`: `FOREIGN KEY (rss_feed_url_id) REFERENCES urls(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED`
 - `rss_feeds_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE RESTRICT`
 
 **Indexes:**
