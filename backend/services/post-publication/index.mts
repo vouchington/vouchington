@@ -1,6 +1,6 @@
 export * from './public.mts'
 export * from './capture-posts.mts'
-export * from './capture-hard-delete.mts'
+export * from './assert-author-drain-complete.mts'
 export * from './capture-story-topics.mts'
 export { processAuthorDeletionPublicationBatch } from './capture-author-deletion-batch.mts'
 export * from './capture-rss-feeds.mts'

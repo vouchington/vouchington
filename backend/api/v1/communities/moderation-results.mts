@@ -1,4 +1,8 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../api-query-contract.mts'
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
+import { createPaginationParser } from '@modules/pagination'
+import type { PageInfo } from '@voucha/types/pagination'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { loadCommunityWithViewer } from '@services/communities'
@@ -9,22 +13,29 @@ import {
 } from '@services/community-agent-prompts'
 import {
   searchCommunityAgentModerations,
-  type CommunityAgentModerationResult,
+  type CommunityAgentModerationSummary,
 } from '@services/community-agent-prompts/moderations'
 import { getPostByAny } from '@services/posts/get'
 import { getCommunityPostReview } from '@services/communities/publications/get'
 
 type ModerationResultsResponse = {
-  community_agent_moderations: CommunityAgentModerationResult[]
+  results: CommunityAgentModerationSummary[]
+  page_info: PageInfo
   platform_moderation: {
     status: 'pending' | 'approved' | 'in_review' | 'rejected'
   }
 }
 
+const paginationParser = createPaginationParser({
+  cursor: { type: 'simple' },
+  limit: { default: 25, max: 100 },
+})
+
 // GET /api/v1/communities/:idOrSlug/posts/:postId/moderation-results
 app
   .route('/api/v1/communities/:idOrSlug/posts/:postId/moderation-results')
   .get(async (ctx: Context) => {
+    apiQuery('GET:/api/v1/communities/:idOrSlug/posts/:postId/moderation-results', paginationParser)
     const currentUser = await requireAuth(
       ctx,
       'GET:/api/v1/communities/:idOrSlug/posts/:postId/moderation-results',
@@ -47,10 +58,11 @@ app
       'Forbidden',
     )
 
+    const { after, limit } = parseRuntimePagination(paginationParser, ctx.query)
     validateRequestContract(
       ctx,
       'GET:/api/v1/communities/:idOrSlug/posts/:postId/moderation-results',
-      { path: ctx.params },
+      { path: ctx.params, query: { ...(after ? { after } : {}), limit } },
     )
 
     const post = await getPostByAny(postId)
@@ -59,7 +71,7 @@ app
     const isModerator = currentUserIsCommunityModerator(currentUser, community, membership)
 
     const [moderations, review] = await Promise.all([
-      searchCommunityAgentModerations(post.id, community.id),
+      searchCommunityAgentModerations(post.id, community.id, { after, limit }),
       getCommunityPostReview(community.id, post.id),
     ])
 
@@ -69,7 +81,8 @@ app
     ctx.assert(isVisible, 404, 'Post not found in this community')
 
     const responseBody: ModerationResultsResponse = {
-      community_agent_moderations: moderations,
+      results: moderations.results,
+      page_info: moderations.page_info,
       platform_moderation: { status: post.clearance_status },
     }
     ctx.json(responseBody)

@@ -4,7 +4,7 @@ import { getDataRetentionLimits } from './config.mts'
 import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import {
   processAuthorDeletionPublicationBatch,
-  retainUserCascadeHardDeletedPosts,
+  assertAuthorDeletionDrainedPosts,
 } from '@services/post-publication'
 import sql from 'sql-template-strings'
 import { cleanupUserPreservedRows } from './cleanup-user-preserved-rows.mts'
@@ -68,7 +68,7 @@ export async function cleanupSoftDeletedUser(
 }
 
 async function deletePurgedUser(query: TransactionQuery, targetId: string): Promise<number> {
-  await retainUserCascadeHardDeletedPosts(query, targetId)
+  await assertAuthorDeletionDrainedPosts(query, targetId)
   const { rows } = await query<{ deleted: number }>(sql`/* cleanupSoftDeletedUserBatch:delete */
     WITH removed AS (
       DELETE FROM users WHERE id = ${targetId}

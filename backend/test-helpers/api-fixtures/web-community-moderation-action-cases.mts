@@ -13,7 +13,8 @@ export const webCommunityModerationActionApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: {
-      community_agent_moderations: [],
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
       platform_moderation: { status: 'in_review' },
     },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],

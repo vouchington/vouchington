@@ -169,7 +169,6 @@ export {
   insertLanguageDetectionTopicForTest,
   insertLanguageDetectionCrawlForTest,
 } from './sql-language-detection-fixtures.mts'
-export { insertBulkPostsForUserForTest } from './bulk-user-posts.mts'
 export * from './community-activity-digest-dispatch.mts'
 export { createTestUnprojectedProviderObservation } from './entities/memberships/provider-observation-projection.mts'
 export * from './entities/membership-pause-collection.mts'

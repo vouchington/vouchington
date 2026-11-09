@@ -13510,7 +13510,7 @@
       ],
       "type": "object"
     },
-    "CommunityAgentModerationResult": {
+    "CommunityAgentModerationSummary": {
       "additionalProperties": false,
       "properties": {
         "community_prompt_id": {
@@ -13527,12 +13527,9 @@
         },
         "post_id": {
           "type": "string"
-        },
-        "results": {
-          "$ref": "#/components/schemas/AgentModerationResults"
         }
       },
-      "required": ["community_prompt_id", "created_at", "id", "is_flagged", "post_id", "results"],
+      "required": ["community_prompt_id", "created_at", "id", "is_flagged", "post_id"],
       "type": "object"
     },
     "CommunityAgentPrompt": {
@@ -25275,11 +25272,8 @@
     "ModerationResultsResponse": {
       "additionalProperties": false,
       "properties": {
-        "community_agent_moderations": {
-          "items": {
-            "$ref": "#/components/schemas/CommunityAgentModerationResult"
-          },
-          "type": "array"
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
         },
         "platform_moderation": {
           "additionalProperties": false,
@@ -25291,9 +25285,15 @@
           },
           "required": ["status"],
           "type": "object"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/components/schemas/CommunityAgentModerationSummary"
+          },
+          "type": "array"
         }
       },
-      "required": ["community_agent_moderations", "platform_moderation"],
+      "required": ["page_info", "platform_moderation", "results"],
       "type": "object"
     },
     "ModerationTrainingFeedback": {
@@ -43930,6 +43930,19 @@
           }
         },
         "required": ["idOrSlug", "postId"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
         "type": "object"
       }
     },

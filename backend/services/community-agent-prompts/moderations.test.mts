@@ -46,19 +46,18 @@ describe('moderations', () => {
 
   describe('searchCommunityAgentModerations', () => {
     it('returns moderation results for a post in the community', async () => {
-      const results = await searchCommunityAgentModerations(postId, community.id)
+      const { results, page_info } = await searchCommunityAgentModerations(postId, community.id, {
+        limit: 25,
+      })
       expect(results.length).toBeGreaterThanOrEqual(1)
+      expect(page_info.has_next_page).toBe(false)
 
       const r = results.find(m => m.community_prompt_id === prompt.id)!
       expect(r).toBeDefined()
       expect(r.post_id).toBe(postId)
       expect(r.community_prompt_id).toBe(prompt.id)
       expect(r.is_flagged).toBe(true)
-      expect(r.results).toEqual({
-        flagged: true,
-        confidence_score: 0.93,
-        confidence_threshold: 0.8,
-      })
+      expect(r).not.toHaveProperty('results')
       expect(r.created_at).toBeInstanceOf(Date)
     })
 
@@ -72,14 +71,68 @@ describe('moderations', () => {
         createdById: otherUser.id,
       })
 
-      const results = await searchCommunityAgentModerations(otherPostId, community.id)
+      const { results } = await searchCommunityAgentModerations(otherPostId, community.id, {
+        limit: 25,
+      })
       expect(results).toEqual([])
     })
 
     it('does not return results from other communities', async () => {
       const otherCommunity = await insertTestCommunity({ createdById: user.id })
-      const results = await searchCommunityAgentModerations(postId, otherCommunity.id)
+      const { results } = await searchCommunityAgentModerations(postId, otherCommunity.id, {
+        limit: 25,
+      })
       expect(results.map(r => r.community_prompt_id)).not.toContain(prompt.id)
+    })
+
+    it('pages by scoped moderation id without duplicates', async () => {
+      await Promise.all([
+        insertTestAgentModeration({
+          postId,
+          promptId: prompt.id,
+          agentId: prompt.agent_id,
+          results: { flagged: false },
+          flagged: false,
+        }),
+        insertTestAgentModeration({
+          postId,
+          promptId: prompt.id,
+          agentId: prompt.agent_id,
+          results: { flagged: false },
+          flagged: false,
+        }),
+      ])
+      const first = await searchCommunityAgentModerations(postId, community.id, { limit: 1 })
+      expect(first.results).toHaveLength(1)
+      expect(first.page_info.has_next_page).toBe(true)
+      const second = await searchCommunityAgentModerations(postId, community.id, {
+        limit: 1,
+        after: first.page_info.end_cursor!,
+      })
+      expect(second.results).toHaveLength(1)
+      expect(second.results[0]?.id).not.toBe(first.results[0]?.id)
+      const third = await searchCommunityAgentModerations(postId, community.id, {
+        limit: 1,
+        after: second.page_info.end_cursor!,
+      })
+      expect(third.results).toHaveLength(1)
+      expect(third.page_info.has_next_page).toBe(false)
+      expect(
+        new Set([...first.results, ...second.results, ...third.results].map(r => r.id)).size,
+      ).toBe(3)
+      await expect(
+        searchCommunityAgentModerations(postId, community.id, {
+          limit: 1,
+          after: 'invalid',
+        }),
+      ).rejects.toThrow('Invalid moderation cursor')
+      const otherCommunity = await insertTestCommunity({ createdById: user.id })
+      await expect(
+        searchCommunityAgentModerations(postId, otherCommunity.id, {
+          limit: 1,
+          after: first.page_info.end_cursor!,
+        }),
+      ).rejects.toThrow('Invalid moderation cursor')
     })
   })
 })

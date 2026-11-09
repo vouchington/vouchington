@@ -34,6 +34,21 @@ adoption is tracked in
 [vouchington-clients#567](https://github.com/vouchington/vouchington-clients/issues/567), a dependent
 follow-up that does not gate the producer change.
 
+## Shared API contract adoption
+
+The moderation-results read returns keyset-paged summaries and platform status. Native views that
+show the moderation result count must follow every page before computing that count. This changes
+the shared response contract without adding a native UI parity claim; the producer may land before
+native adoption.
+
+| Behavior                                                                        | Web                                           | Swift                                                                         | .NET                                                                          |
+| ------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Read every page of community moderation summaries before showing a result count | No runtime consumer; shared contracts updated | Pending [#571](https://github.com/vouchington/vouchington-clients/issues/571) | Pending [#571](https://github.com/vouchington/vouchington-clients/issues/571) |
+| Render Turnstile fallback with its operation action and configured web origin   | Full                                          | Pending client adoption                                                       | Pending client adoption                                                       |
+| Complete a server-directed bot challenge and retry the pending mutation once    | Full                                          | Pending client adoption                                                       | Pending client adoption                                                       |
+
+The moderation-results read has no matching MCP tool. Browser challenge context is described below.
+
 ## Shared image placement capacity
 
 An image may be attached to posts and profile, topic, or community surfaces. If the API rejects a
@@ -498,11 +513,6 @@ The web owns rendering this browser flow; native clients continue to open the au
 Dynamic registration cannot reserve first-party names or authorize staff resources.
 
 ## Browser challenge context
-
-| Behavior                                                                      | Web  | Swift                   | .NET                    |
-| ----------------------------------------------------------------------------- | ---- | ----------------------- | ----------------------- |
-| Render Turnstile fallback with its operation action and configured web origin | Full | Pending client adoption | Pending client adoption |
-| Complete a server-directed bot challenge and retry the pending mutation once  | Full | Pending client adoption | Pending client adoption |
 
 Browser challenge producers identify the operation when rendering a Turnstile widget. Server
 verification binds that result to the configured site and the operation being requested. Native

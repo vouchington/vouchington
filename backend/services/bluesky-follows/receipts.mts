@@ -187,6 +187,7 @@ export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPa
         LIMIT ${batchSize}
         FOR UPDATE
       )
+      -- no-mistakes-disable-next-line postgres-bounded-statements -- locked page selects at most the runtime backfill_batch_size (hard ceiling blueskyFollowsWorkMaxValues.backfill_batch_size); ctid membership deletes only those rows and the disconnect job persists the follower cursor
       DELETE FROM bluesky_follow_records
       WHERE ctid = ANY (ARRAY(SELECT row_id FROM page))
       RETURNING follower_user_id`,
