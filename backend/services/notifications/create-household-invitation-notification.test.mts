@@ -12,7 +12,8 @@ describe('household invitation notification scope', () => {
     const invitee = await createTestUserDirect()
     const otherInvitee = await createTestUserDirect()
     const household = await insertTestHousehold(owner.id)
-    const otherHousehold = await insertTestHousehold(owner.id)
+    const otherOwner = await createTestUserDirect()
+    const otherHousehold = await insertTestHousehold(otherOwner.id)
     const invitationId = await insertTestHouseholdInvitation({
       householdId: household.id,
       invitedUserId: invitee.id,

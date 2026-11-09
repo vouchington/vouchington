@@ -2,7 +2,6 @@ import { createTestUserDirect } from '../../../backend/test-helpers/entities/use
 import {
   insertTestHousehold,
   insertTestHouseholdInvitation,
-  insertTestHouseholdsForOwner,
 } from '../../../backend/test-helpers/entities/households.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { loginAsUser } from '../../helpers/auth.mts'
@@ -107,14 +106,21 @@ test('owner invites an existing user and revokes the pending invitation', async 
 })
 
 test('invitee with many received invitations sees a load-more control', async ({ page }) => {
-  const { ownerId, inviteeId } = fixture
-  const households = await insertTestHouseholdsForOwner(ownerId, 26)
+  const { inviteeId } = fixture
+  // An owner holds at most two households, so each invitation comes from its own owner.
+  const suffix = randomSuffix()
+  const owners = await Promise.all(
+    Array.from({ length: 26 }, (_, index) =>
+      createTestUserDirect({ username: `hh-many-owner-${index}-${suffix}` }),
+    ),
+  )
+  const households = await Promise.all(owners.map(owner => insertTestHousehold(owner!.id)))
   await Promise.all(
     households.map(household =>
       insertTestHouseholdInvitation({
         householdId: household.id,
         invitedUserId: inviteeId,
-        invitedById: ownerId,
+        invitedById: household.owner_user_id,
       }),
     ),
   )

@@ -11,73 +11,17 @@ import {
   membershipIndividualSql,
   membershipUpdatedAtSql,
 } from '../households/household-membership-page-row.mts'
-import {
-  assertCanAddHouseholdMember,
-  lockHouseholdOwnerAdmission,
-  householdIndividualAdmissionLockPrefix,
-  householdMemberAdmissionLockPrefix,
-} from '../household-limits.mts'
+import { insertHouseholdMember } from '../household-limits.mts'
 import { getOrCreateIndividual } from '../individuals/individuals.mts'
 
-async function lockHouseholdForDecision(
-  currentUserId: string,
-  invitationId: string,
-  decision: 'accept' | 'decline',
-  options: QueryOptions,
-) {
-  if (decision === 'accept') {
-    await write(
-      sql`/* decideHouseholdInvitation:lock-member-admission */
-        SELECT pg_advisory_xact_lock(
-          hashtextextended(${householdMemberAdmissionLockPrefix} || household_id::text, 0)
-        )
-        FROM household_invitations
-        WHERE id = ${invitationId} AND invited_user_id = ${currentUserId}`,
-      options,
-    )
-  }
-  return write<{
-    id: string
-    owner_user_id: string
-    invited_by_id: string
-  }>(
-    sql`/* decideHouseholdInvitation:lock-household */
-      SELECT h.id, h.owner_user_id, hi.invited_by_id
-      FROM households h
-      JOIN household_invitations hi ON hi.household_id = h.id
-      WHERE hi.id = ${invitationId} AND hi.invited_user_id = ${currentUserId}
-      FOR UPDATE OF h`,
-    options,
-  )
-}
-
 async function getOrCreateLockedInviteeIndividual(currentUser: PrivateUser, options: QueryOptions) {
+  // Locks the invitee's own users row, which getOrCreateIndividual may write.
   await write(
-    sql`/* decideHouseholdInvitation:lock-individual */
-      SELECT pg_advisory_xact_lock(
-        hashtextextended(${householdIndividualAdmissionLockPrefix} || individual_id::text, 0)
-      )
-      FROM users
-      WHERE id = ${currentUser.id} AND individual_id IS NOT NULL`,
+    sql`/* decideHouseholdInvitation:lock-invitee */
+      SELECT id FROM users WHERE id = ${currentUser.id} FOR UPDATE`,
     options,
   )
   return getOrCreateIndividual(currentUser, options)
-}
-
-async function insertAcceptedHouseholdMember(
-  householdId: string,
-  individualId: string,
-  relationship: string | null,
-  options: QueryOptions,
-): Promise<void> {
-  await assertCanAddHouseholdMember(householdId, individualId, options)
-  await write(
-    sql`/* decideHouseholdInvitation:insert-membership */
-      INSERT INTO household_members (household_id, individual_id, relationship)
-      VALUES (${householdId}, ${individualId}, ${relationship})
-      ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING`,
-    options,
-  )
 }
 
 export async function decideHouseholdInvitation(
@@ -89,11 +33,17 @@ export async function decideHouseholdInvitation(
   validateUUID(invitationId)
   await using transaction = await beginTransaction()
   const options = { query: transaction }
-  if (decision === 'accept') await lockHouseholdOwnerAdmission(currentUser.id, options)
-  const { rows: households } = await lockHouseholdForDecision(
-    currentUser.id,
-    invitationId,
-    decision,
+  const { rows: households } = await write<{
+    id: string
+    owner_user_id: string
+    invited_by_id: string
+  }>(
+    sql`/* decideHouseholdInvitation:lock-household */
+      SELECT h.id, h.owner_user_id, hi.invited_by_id
+      FROM households h
+      JOIN household_invitations hi ON hi.household_id = h.id
+      WHERE hi.id = ${invitationId} AND hi.invited_user_id = ${currentUser.id}
+      FOR UPDATE OF h`,
     options,
   )
   const household = households[0]
@@ -128,10 +78,12 @@ export async function decideHouseholdInvitation(
     return
   }
   const individual = await getOrCreateLockedInviteeIndividual(currentUser, options)
-  await insertAcceptedHouseholdMember(
-    changed[0].household_id,
-    individual.id,
-    changed[0].relationship,
+  await insertHouseholdMember(
+    {
+      householdId: changed[0].household_id,
+      individualId: individual.id,
+      relationship: changed[0].relationship,
+    },
     options,
   )
   const membershipQuery = sql`/* decideHouseholdInvitation:membership */

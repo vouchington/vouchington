@@ -68,6 +68,7 @@ describe('manage_my_households REST twins — real DB', () => {
 
   it('returns the owned-household limit code on REST and MCP', async () => {
     const owner = await createTestUser()
+    await householdLimitsConfig.waitForInitialization()
     onTestFinished(
       overrideDynamicConfigFieldsForTest(householdLimitsConfig, { max_households_per_user: 1 }),
     )

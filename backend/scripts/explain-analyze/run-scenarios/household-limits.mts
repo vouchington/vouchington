@@ -2,15 +2,17 @@ import { getOrCreateIndividual } from '@services/individuals-households/individu
 import assert from 'node:assert/strict'
 import { beginTransaction } from '@data-stores/psql'
 import {
-  assertCanAddHouseholdMember,
-  assertCanCreateHousehold,
+  assertIndividualHouseholdRoom,
+  insertHouseholdMember,
+  insertOwnedHousehold,
 } from '@services/individuals-households/household-limits'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 
-const countQuery = '/* assertCanCreateHousehold */'
-const memberQuery = '/* assertCanAddHouseholdMember */'
+const ownerInsertQuery = '/* insertOwnedHousehold */'
+const individualRoomQuery = '/* assertIndividualHouseholdRoom */'
+const memberInsertQuery = '/* insertHouseholdMember */'
 
 export async function runHouseholdLimitScenarios(): Promise<void> {
   registerScenarioContract('household-individual-bind', {
@@ -38,57 +40,54 @@ export async function runHouseholdLimitScenarios(): Promise<void> {
       await transaction.rollback()
     },
     undefined,
-    ['getIndividual', 'lockHouseholdOwnerAdmission', 'createRepresentativeIndividual'],
+    ['getIndividual', 'getOrCreateIndividual:lock-user', 'createRepresentativeIndividual'],
   )
 
   registerScenarioContract('household-owner-capacity', {
     expectations: [
       {
         kind: 'usesIndexes',
+        indexes: ['uniq_households__owner_user_id_owner_slot'],
+        queryContains: ownerInsertQuery,
+      },
+      {
+        kind: 'usesIndexes',
         indexes: [
-          'idx_households__owner_updated_id',
+          'uniq_households__owner_user_id_owner_slot',
           'idx_household_members__individual_household',
         ],
-        queryContains: countQuery,
+        queryContains: individualRoomQuery,
       },
-      { kind: 'maxProcessedRows', relation: 'households', max: 8 },
+      { kind: 'maxProcessedRows', relation: 'households', max: 16 },
       { kind: 'maxProcessedRows', relation: 'household_members', max: 8 },
-      { kind: 'maxProcessedRows', relation: 'users', max: 2 },
+      { kind: 'maxProcessedRows', relation: 'users', max: 4 },
     ],
   })
   await runAndCapture(
     'household-owner-capacity',
     async () => {
       await using transaction = await beginTransaction()
-      // The explain seed already owns the signup household and one spending household.
-      await assert.rejects(() => assertCanCreateHousehold(seedUser.id, { query: transaction }), {
+      // The explain seed already owns the signup household and one spending household, so every
+      // slot is taken and the insert refuses.
+      await assert.rejects(() => insertOwnedHousehold(seedUser.id, { query: transaction }), {
         code: 'HOUSEHOLD_LIMIT_REACHED',
       })
+      await assertIndividualHouseholdRoom(seedUser.id, { query: transaction })
       await transaction.rollback()
     },
     undefined,
-    [
-      'lockHouseholdOwnerAdmission',
-      'assertCanCreateHousehold:individual',
-      'assertCanCreateHousehold:lock-individual',
-      'assertCanCreateHousehold',
-    ],
+    ['insertOwnedHousehold', 'insertOwnedHousehold:count', 'assertIndividualHouseholdRoom'],
   )
 
   registerScenarioContract('household-member-capacity', {
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: [
-          'idx_household_members__household_updated_id',
-          'idx_household_members__individual_household',
-          'idx_users__individual_id',
-          'idx_households__owner_updated_id',
-        ],
-        queryContains: memberQuery,
+        indexes: ['uniq_household_members__household_id_member_slot'],
+        queryContains: memberInsertQuery,
       },
       { kind: 'maxProcessedRows', relation: 'households', max: 8 },
-      { kind: 'maxProcessedRows', relation: 'household_members', max: 32 },
+      { kind: 'maxProcessedRows', relation: 'household_members', max: 64 },
       { kind: 'maxProcessedRows', relation: 'users', max: 4 },
     ],
   })
@@ -96,17 +95,19 @@ export async function runHouseholdLimitScenarios(): Promise<void> {
     'household-member-capacity',
     async () => {
       await using transaction = await beginTransaction()
-      // Household tag 20 and individual tag 1b are the seeded owner row and its member.
-      await assertCanAddHouseholdMember(seedUuid(0, '20'), seedUuid(0, '1b'), {
-        query: transaction,
-      })
+      // Household tag 20 of owner 0 holds one member; individual 1b of owner 1 joins it.
+      const inserted = await insertHouseholdMember(
+        {
+          householdId: seedUuid(0, '20'),
+          individualId: seedUuid(1, '1b'),
+          relationship: null,
+        },
+        { query: transaction },
+      )
+      assert.equal(inserted, true)
       await transaction.rollback()
     },
     undefined,
-    [
-      'assertCanAddHouseholdMember:lock-household',
-      'assertCanAddHouseholdMember:lock-individual',
-      'assertCanAddHouseholdMember',
-    ],
+    ['insertHouseholdMember:existing', 'insertHouseholdMember', 'insertHouseholdMember:count'],
   )
 }

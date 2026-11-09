@@ -9,7 +9,6 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import { lockHouseholdOwnerAdmission } from '../household-limits.mts'
 
 type Individual = { id: string; updated_at: Date }
 
@@ -52,8 +51,12 @@ export async function getOrCreateIndividual(
 
   const bind = async (query: TransactionQuery) => {
     const transactionOptions = { query }
-    await lockHouseholdOwnerAdmission(currentUser.id, transactionOptions)
-    // The initial read can use a replica; recheck on the primary after acquiring the fence.
+    // Lock the users row this binder writes; the initial read can use a replica, so recheck on the primary.
+    await write(
+      sql`/* getOrCreateIndividual:lock-user */
+        SELECT id FROM users WHERE id = ${currentUser.id} FOR UPDATE`,
+      transactionOptions,
+    )
     return (
       (await getIndividual(currentUser, transactionOptions, true)) ??
       (await createRepresentativeIndividual(currentUser.id, transactionOptions))

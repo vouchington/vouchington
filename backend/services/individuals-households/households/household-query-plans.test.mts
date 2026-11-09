@@ -26,28 +26,25 @@ describe('household pagination query plans', () => {
     fixtureOwnerIds.push(user.id)
     const otherOwner = await createTestUserDirect()
     fixtureOwnerIds.push(otherOwner.id)
-    const owned = await insertTestHouseholdsForOwner(user.id, 30)
-    const shared = await insertTestHouseholdsForOwner(otherOwner.id, 30)
+    // Contract caps keep one owner at 2 households, one household at 25 members and one
+    // individual at 5 households, so table-scale noise comes from many owners instead.
+    await insertTestHouseholdsForOwner(user.id, 1)
+    const sharedOwners = await createTestUsersDirect(4)
+    fixtureOwnerIds.push(...sharedOwners.map(owner => owner.id))
+    const shared = await Promise.all(sharedOwners.map(owner => insertTestHousehold(owner.id)))
     await insertTestHouseholdMemberships({
       householdIds: shared.map(household => household.id),
       individualId: user.individual_id!,
     })
     const membershipHousehold = await insertTestHousehold(otherOwner.id)
-    const members = await createTestUsersDirect(30)
+    const members = await createTestUsersDirect(24)
     fixtureOwnerIds.push(...members.map(member => member.id))
     await insertTestHouseholdMembers({
       householdId: membershipHousehold.id,
       individualIds: members.map(member => member.individual_id!),
     })
-    const noiseOwner = await createTestUserDirect()
-    fixtureOwnerIds.push(noiseOwner.id)
-    const noiseMember = await createTestUserDirect()
-    fixtureOwnerIds.push(noiseMember.id)
-    const noiseHouseholds = await insertTestHouseholdsForOwner(noiseOwner.id, 1_000)
-    await insertTestHouseholdMemberships({
-      householdIds: noiseHouseholds.map(household => household.id),
-      individualId: noiseMember.individual_id!,
-    })
+    const noiseOwners = await createTestUsersDirect(500)
+    fixtureOwnerIds.push(...noiseOwners.map(noise => noise.id))
     await analyzeHouseholdTablesForTest()
     capturedQueries = {
       owned: await captureQuery(() => getHouseholdsByUser(user, { access: 'owned', limit: 25 })),
@@ -57,7 +54,6 @@ describe('household pagination query plans', () => {
         getHouseholdMemberships(otherOwner, membershipHousehold.id, { limit: 25 }),
       ),
     }
-    assert.equal(owned.length, 30)
   })
 
   // Re-ANALYZE immediately before each EXPLAIN: concurrent inserts from parallel Vitest forks
@@ -89,11 +85,11 @@ describe('household pagination query plans', () => {
       )
       const byName = Object.fromEntries(plans)
 
-      expect(planIndexNames(byName.owned)).toContain('idx_households__owner_updated_id')
+      expect(planIndexNames(byName.owned)).toContain('uniq_households__owner_user_id_owner_slot')
       expect(planIndexNames(byName.member)).toContain('idx_household_members__individual_household')
       expect(planIndexNames(byName.all)).toEqual(
         expect.arrayContaining([
-          'idx_households__owner_updated_id',
+          'uniq_households__owner_user_id_owner_slot',
           'idx_household_members__individual_household',
         ]),
       )

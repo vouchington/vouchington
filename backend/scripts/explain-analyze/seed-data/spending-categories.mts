@@ -30,10 +30,11 @@ export async function seedSpendingCategories(
     for (let owner = 0; owner < ownerCount; owner++) {
       householdValues.push(seedUuid(owner, '20'), seedUuid(owner, '01'))
       const base = householdValues.length - 1
-      householdRows.push(`($${base}, $${base + 1})`)
+      // Slot 1 is the signup household; this spending household takes slot 2.
+      householdRows.push(`($${base}, $${base + 1}, 2)`)
     }
     await query(
-      `/* seedExplainData */ INSERT INTO households (id, owner_user_id)
+      `/* seedExplainData */ INSERT INTO households (id, owner_user_id, owner_slot)
        VALUES ${householdRows.join(', ')}
        ON CONFLICT (id) DO UPDATE SET owner_user_id = EXCLUDED.owner_user_id`,
       householdValues,
@@ -43,14 +44,14 @@ export async function seedSpendingCategories(
     for (let owner = 0; owner < ownerCount; owner++) {
       membershipValues.push(seedUuid(owner, '20'), seedUuid(owner, '1b'))
       const base = membershipValues.length - 1
-      membershipRows.push(`($${base}, $${base + 1})`)
+      membershipRows.push(`($${base}, $${base + 1}, 1)`)
     }
     membershipValues.push(seedUuid(1, '20'), seedUuid(0, '1b'))
-    membershipRows.push(`($${membershipValues.length - 1}, $${membershipValues.length})`)
+    membershipRows.push(`($${membershipValues.length - 1}, $${membershipValues.length}, 2)`)
     await query(
-      `/* seedExplainData */ INSERT INTO household_members (household_id, individual_id)
+      `/* seedExplainData */ INSERT INTO household_members (household_id, individual_id, member_slot)
        VALUES ${membershipRows.join(', ')}
-       ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING`,
+       ON CONFLICT DO NOTHING`,
       membershipValues,
     )
 

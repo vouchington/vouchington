@@ -3,7 +3,11 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { validateUUID } from '@modules/utils/ids'
 import type { PrivateUser } from '@services/users/types'
-import { assertCanAddHouseholdMember, assertCanCreateHousehold } from '../household-limits.mts'
+import {
+  assertIndividualHouseholdRoom,
+  insertHouseholdMember,
+  insertOwnedHousehold,
+} from '../household-limits.mts'
 import type { HouseholdMembershipRow, HouseholdRow } from '../types.mts'
 import { readHouseholdMemberManageAccess } from '../authorization.mts'
 import {
@@ -15,16 +19,8 @@ export async function createHousehold(currentUser: PrivateUser | null) {
   assert(currentUser, 401, 'User not logged in')
   await using transaction = await beginTransaction()
   const options = { query: transaction }
-  await assertCanCreateHousehold(currentUser.id, options)
-  const { rows } = await write<HouseholdRow>(
-    sql`/* createHousehold */
-      INSERT INTO households (owner_user_id)
-      VALUES (${currentUser.id})
-      RETURNING id, owner_user_id, updated_at`,
-    options,
-  )
-  const household = rows[0]
-  assert(household, 500, 'Household was not created')
+  const household = await insertOwnedHousehold(currentUser.id, options)
+  await assertIndividualHouseholdRoom(currentUser.id, options)
   await transaction.commit()
   return household
 }
@@ -91,26 +87,32 @@ export async function addHouseholdMembership(
 
   await using transaction = await beginTransaction()
   const options = { query: transaction }
-  await assertCanAddHouseholdMember(householdId, individualId, options)
-  const query = sql`/* addHouseholdMembership */
-    WITH inserted AS (
-      INSERT INTO household_members (household_id, individual_id, relationship)
-      VALUES (${householdId}, ${individualId}, ${relationship || null})
-      ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO UPDATE
-      SET relationship = COALESCE(EXCLUDED.relationship, household_members.relationship)
-      RETURNING id, household_id, individual_id, relationship, updated_at
+  const inserted = await insertHouseholdMember(
+    { householdId, individualId, relationship: relationship || null },
+    options,
+  )
+  if (!inserted) {
+    await write(
+      sql`/* addHouseholdMembership:update */
+        UPDATE household_members
+        SET relationship = COALESCE(${relationship || null}, relationship)
+        WHERE household_id = ${householdId} AND individual_id = ${individualId}`,
+      options,
     )
+  }
+  const query = sql`/* addHouseholdMembership */
     SELECT
-      inserted.id,
-      inserted.household_id,
-      inserted.relationship, `
-  query.append(membershipUpdatedAtSql('inserted'))
+      hm.id,
+      hm.household_id,
+      hm.relationship, `
+  query.append(membershipUpdatedAtSql('hm'))
   query.append(sql` AS updated_at, `)
   query.append(membershipIndividualSql('i', 'u'))
   query.append(sql` AS individual
-    FROM inserted
-    LEFT JOIN individuals i ON i.id = inserted.individual_id
-    LEFT JOIN users u ON u.individual_id = i.id`)
+    FROM household_members hm
+    LEFT JOIN individuals i ON i.id = hm.individual_id
+    LEFT JOIN users u ON u.individual_id = i.id
+    WHERE hm.household_id = ${householdId} AND hm.individual_id = ${individualId}`)
   const { rows } = await write<HouseholdMembershipRow>(query, options)
   const membership = rows[0]
   assert(membership, 500, 'Household membership was not saved')

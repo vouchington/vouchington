@@ -91,8 +91,12 @@ export async function insertTestHousehold(
   updatedAt = new Date(),
 ): Promise<TestHousehold> {
   const { rows } = await write<TestHousehold>(sql`/* insertTestHousehold */
-    INSERT INTO households (owner_user_id, updated_at)
-    VALUES (${ownerId}, ${updatedAt})
+    INSERT INTO households (owner_user_id, owner_slot, updated_at)
+    VALUES (${ownerId}, (
+      SELECT slot FROM generate_series(1, 2) slot
+      WHERE NOT EXISTS (SELECT 1 FROM households WHERE owner_user_id = ${ownerId} AND owner_slot = slot)
+      ORDER BY slot LIMIT 1
+    ), ${updatedAt})
     RETURNING id, owner_user_id
   `)
   return rows[0]!
@@ -106,8 +110,14 @@ export async function insertTestHouseholdMembership(options: {
 }): Promise<TestHouseholdMembership> {
   const { householdId, individualId, relationship = null, updatedAt = new Date() } = options
   const { rows } = await write<TestHouseholdMembership>(sql`/* insertTestHouseholdMembership */
-    INSERT INTO household_members (household_id, individual_id, relationship, updated_at)
-    VALUES (${householdId}, ${individualId}, ${relationship}, ${updatedAt})
+    INSERT INTO household_members (household_id, individual_id, member_slot, relationship, updated_at)
+    VALUES (${householdId}, ${individualId}, (
+      SELECT slot FROM generate_series(1, 25) slot
+      WHERE NOT EXISTS (
+        SELECT 1 FROM household_members WHERE household_id = ${householdId} AND member_slot = slot
+      )
+      ORDER BY slot LIMIT 1
+    ), ${relationship}, ${updatedAt})
     RETURNING id, household_id
   `)
   return rows[0]!
@@ -117,44 +127,6 @@ export async function deleteTestHouseholdMembership(membershipId: string): Promi
   await write(sql`/* deleteTestHouseholdMembership */
     DELETE FROM household_members
     WHERE id = ${membershipId}
-  `)
-}
-
-export async function insertTestHouseholdsForOwner(
-  ownerId: string,
-  count: number,
-): Promise<TestHousehold[]> {
-  const { rows } = await write<TestHousehold>(sql`/* insertTestHouseholdsForOwner */
-    INSERT INTO households (owner_user_id, updated_at)
-    SELECT ${ownerId}, CURRENT_TIMESTAMP - ordinal * INTERVAL '1 microsecond'
-    FROM generate_series(1, ${count}) ordinal
-    RETURNING id, owner_user_id
-  `)
-  return rows
-}
-
-export async function insertTestHouseholdMemberships(options: {
-  householdIds: string[]
-  individualId: string
-}): Promise<void> {
-  await write(sql`/* insertTestHouseholdMemberships */
-    INSERT INTO household_members (household_id, individual_id)
-    SELECT household_id, ${options.individualId}
-    FROM unnest(${options.householdIds}::uuid[]) household_id
-    ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING
-  `)
-}
-
-export async function insertTestHouseholdMembers(options: {
-  householdId: string
-  individualIds: string[]
-}): Promise<void> {
-  await write(sql`/* insertTestHouseholdMembers */
-    INSERT INTO household_members (household_id, individual_id, updated_at)
-    SELECT ${options.householdId}, individual_id,
-      CURRENT_TIMESTAMP - ordinal * INTERVAL '1 microsecond'
-    FROM unnest(${options.individualIds}::uuid[]) WITH ORDINALITY members(individual_id, ordinal)
-    ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING
   `)
 }
 
@@ -169,17 +141,3 @@ export const analyzeHouseholdTablesForTest: PlanStatisticsRefresh = definePlanSt
     )
   },
 )
-
-export async function insertTestHouseholdsAtPreciseTimestamps(
-  ownerId: string,
-  timestamps: string[],
-): Promise<TestHousehold[]> {
-  const { rows } = await write<TestHousehold>(sql`/* insertTestHouseholdsAtPreciseTimestamps */
-    INSERT INTO households (owner_user_id, updated_at)
-    SELECT ${ownerId}, timestamp::timestamptz
-    FROM unnest(${timestamps}::text[]) timestamp
-    RETURNING id, owner_user_id,
-      to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS updated_at
-  `)
-  return rows
-}

@@ -92,14 +92,12 @@ describe('Households API Routes', () => {
       await request.authenticateAs(owner)
       const createResponse = await request.post('/api/v1/households').send({}).expect(201)
       const householdId = createResponse.body.household.id as string
-      await Promise.all(
-        members.map(member =>
-          insertTestHouseholdMembership({
-            householdId,
-            individualId: member!.individual_id!,
-          }),
-        ),
-      )
+      for (const member of members) {
+        await insertTestHouseholdMembership({
+          householdId,
+          individualId: member!.individual_id!,
+        })
+      }
 
       const first = await request
         .get(`/api/v1/households/${householdId}/memberships`)

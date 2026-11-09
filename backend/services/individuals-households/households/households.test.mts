@@ -62,27 +62,24 @@ describe('households', () => {
 
     const user = await createTestUserDirect()
     await deleteOwnedHouseholdsForTestUser(user.id)
-    const rows = await Promise.all([
-      insertTestHousehold(user.id, new Date('2026-02-01T00:00:00.000Z')),
-      insertTestHousehold(user.id, new Date('2026-02-02T00:00:00.000Z')),
-      insertTestHousehold(user.id, new Date('2026-02-03T00:00:00.000Z')),
-    ])
-    const first = await getHouseholdsByUser(user, { access: 'owned', limit: 2 })
-    expect(first.results.map(household => household.id)).toEqual([rows[2]!.id, rows[1]!.id])
+    const rows = [
+      await insertTestHousehold(user.id, new Date('2026-02-01T00:00:00.000Z')),
+      await insertTestHousehold(user.id, new Date('2026-02-02T00:00:00.000Z')),
+    ]
+    const first = await getHouseholdsByUser(user, { access: 'owned', limit: 1 })
+    expect(first.results.map(household => household.id)).toEqual([rows[1]!.id])
     expect(first.page_info.has_next_page).toBe(true)
     const second = await getHouseholdsByUser(user, {
       access: 'owned',
       after: first.page_info.end_cursor!,
-      limit: 2,
+      limit: 1,
     })
     expect(second.results.map(household => household.id)).toEqual([rows[0]!.id])
     expect(second.page_info.has_next_page).toBe(false)
 
     await deleteOwnedHouseholdsForTestUser(user.id)
-    await Promise.all([
-      insertTestHousehold(user.id, new Date('2026-03-01T00:00:00.000Z')),
-      insertTestHousehold(user.id, new Date('2026-03-02T00:00:00.000Z')),
-    ])
+    await insertTestHousehold(user.id, new Date('2026-03-01T00:00:00.000Z'))
+    await insertTestHousehold(user.id, new Date('2026-03-02T00:00:00.000Z'))
     const exact = await getHouseholdsByUser(user, { access: 'owned', limit: 2 })
     expect(exact.results).toHaveLength(2)
     expect(exact.page_info.has_next_page).toBe(false)
@@ -92,11 +89,10 @@ describe('households', () => {
     const user = await createTestUserDirect()
     await deleteOwnedHouseholdsForTestUser(user.id)
     const timestamp = new Date('2026-04-01T00:00:00.123Z')
-    const rows = await Promise.all([
-      insertTestHousehold(user.id, timestamp),
-      insertTestHousehold(user.id, timestamp),
-      insertTestHousehold(user.id, timestamp),
-    ])
+    const rows = [
+      await insertTestHousehold(user.id, timestamp),
+      await insertTestHousehold(user.id, timestamp),
+    ]
     const expected = rows
       .map(row => row.id)
       .toSorted()
@@ -106,7 +102,7 @@ describe('households', () => {
     const second = await getHouseholdsByUser(user, {
       access: 'owned',
       after: first.page_info.end_cursor!,
-      limit: 2,
+      limit: 1,
     })
 
     expect([...first.results, ...second.results].map(household => household.id)).toEqual(expected)
@@ -118,7 +114,6 @@ describe('households', () => {
     const rows = await insertTestHouseholdsAtPreciseTimestamps(user.id, [
       '2026-04-02T00:00:00.123001Z',
       '2026-04-02T00:00:00.123999Z',
-      '2026-04-02T00:00:00.123500Z',
     ])
     const expected = rows
       .toSorted((a, b) => b.updated_at!.localeCompare(a.updated_at!) || b.id.localeCompare(a.id))
@@ -168,15 +163,16 @@ describe('households', () => {
       createTestUserDirect(),
       createTestUserDirect(),
     ])
-    const rows = await Promise.all(
-      members.map((member, index) =>
-        insertTestHouseholdMembership({
+    const rows = []
+    for (const [index, member] of members.entries()) {
+      rows.push(
+        await insertTestHouseholdMembership({
           householdId: household.id,
           individualId: member!.individual_id!,
           updatedAt: new Date(`2026-05-0${index + 1}T00:00:00.000Z`),
         }),
-      ),
-    )
+      )
+    }
 
     const first = await getHouseholdMemberships(owner, household.id, { limit: 2 })
     const second = await getHouseholdMemberships(owner, household.id, {
@@ -189,6 +185,7 @@ describe('households', () => {
 
   it('rejects membership cursor replay on a different household', async () => {
     const owner = await createTestUserDirect()
+    await deleteOwnedHouseholdsForTestUser(owner.id)
     const firstHousehold = await insertTestHousehold(owner.id)
     const secondHousehold = await insertTestHousehold(owner.id)
     const members = await Promise.all([createTestUserDirect(), createTestUserDirect()])
