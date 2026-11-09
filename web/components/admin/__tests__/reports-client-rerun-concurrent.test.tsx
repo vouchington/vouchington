@@ -19,7 +19,9 @@ function makeJudgement() {
     internal_response: 'Same rationale',
     is_stale: false,
     judged_report_count: 1,
+    judged_report_count_capped: false,
     current_report_count: 1,
+    current_report_count_capped: false,
   }
 }
 

@@ -79,6 +79,7 @@ function makeClusterRow(overrides: Partial<ClusterRow> = {}): ClusterRow {
     entity_type: 'post',
     entity_id: '11111111-1111-4111-8111-111111111111',
     report_count: 1,
+    report_count_capped: false,
     reporter_count: 1,
     reason_counts: { spam: 1 },
     first_reported_at: new Date('2600-07-05T00:00:00.000Z'),

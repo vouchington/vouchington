@@ -17,10 +17,12 @@
       "is_system_generated": false,
       "judgement": {
         "current_report_count": 3,
+        "current_report_count_capped": false,
         "id": "00000000-0000-7000-8000-000000000301",
         "internal_response": "Likely spam.",
         "is_stale": false,
         "judged_report_count": 3,
+        "judged_report_count_capped": false,
         "public_response": "Thanks for the report.",
         "recommended_action": "remove"
       },

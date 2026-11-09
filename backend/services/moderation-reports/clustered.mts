@@ -61,6 +61,8 @@ export async function listClusteredModerationReports(
       entity_type: row.entity_type,
       entity_id: row.entity_id,
       report_count: row.report_count,
+      report_count_capped: row.report_count_capped,
+      summary_capped: row.report_count_capped,
       reporter_count: row.reporter_count,
       reason_breakdown: parseReasonBreakdown(row.reason_counts),
       first_reported_at: row.first_reported_at,

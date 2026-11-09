@@ -22,6 +22,8 @@ export function makeClusteredReportsResponse(
             signal: 'content_hash_duplicate' as const,
             post_count: postIds.length,
             report_count: clusters.reduce((sum, cluster) => sum + cluster.report_count, 0),
+            report_count_capped: clusters.some(cluster => cluster.report_count_capped),
+            summary_capped: clusters.some(cluster => cluster.summary_capped),
             reason_breakdown: [{ reason: 'spam' as const, count: clusters.length * 2 }],
             first_reported_at: '2026-05-31T00:00:00.000Z',
             last_reported_at: '2026-05-31T00:00:00.000Z',
@@ -56,6 +58,8 @@ export function makeCluster(
     entity_type: 'post',
     entity_id: 'post-1',
     report_count: 2,
+    report_count_capped: false,
+    summary_capped: false,
     reporter_count: 2,
     reason_breakdown: [{ reason: 'spam', count: 2 }],
     first_reported_at: '2026-05-31T00:00:00.000Z',
@@ -72,7 +76,13 @@ export function makeCluster(
       embeddings_similarity: false,
       velocity_spike: true,
     },
-    reports: [report, makeReport({ id: `${report.id}-2`, note: null })],
+    reports: [
+      { ...report, report_count_capped: overrides.report_count_capped ?? false },
+      {
+        ...makeReport({ id: `${report.id}-2`, note: null }),
+        report_count_capped: overrides.report_count_capped ?? false,
+      },
+    ],
     ...overrides,
   }
 }

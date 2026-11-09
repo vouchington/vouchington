@@ -1846,6 +1846,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_membership_renewal_notice_end()
  LANGUAGE plpgsql
 ```
 
+## `fn_update_moderation_report_cluster`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_cluster()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_moderation_report_transparency_scope`
 
 ```sql

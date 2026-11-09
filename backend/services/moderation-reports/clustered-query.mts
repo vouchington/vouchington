@@ -1,5 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getModerationReportsWorkLimit } from './work-limits.mts'
 import { BAN_EVASION_SYSTEM_USERNAME } from '@services/users/constants'
 import type { ModerationReportStatus } from './config.mts'
 import type { PendingModerationReport } from './pending-moderation-report.mts'
@@ -11,37 +12,35 @@ import {
   reportTargetIsRestrictedSql,
   reportTargetJoinsSql,
 } from './target-metadata.mts'
-import type { ClusterRow, SelectClusterRowsOptions } from './clustered-types.mts'
+import type {
+  ClusteredPendingModerationReport,
+  ClusterRow,
+  SelectClusterRowsOptions,
+} from './clustered-types.mts'
+import { appendCandidateCursorClause, groupReportsByCluster } from './clustered-utils.mts'
+import { moderationReportClusterCandidatesSql } from './clustered-candidates.mts'
 import {
-  appendCandidateCursorClause,
-  appendClusterWhereClause,
-  groupReportsByCluster,
-} from './clustered-utils.mts'
-import { appendModerationReportStatusPredicate } from './sort-sql.mts'
-const MAX_REPORTS_PER_CLUSTER = 25
+  appendPageReportBranches,
+  appendPageReportHeadBranches,
+  appendSelectedReportBranches,
+} from './clustered-page-report-sql.mts'
 export function selectEntityClusterRows(options: SelectClusterRowsOptions): Promise<ClusterRow[]> {
   const { limit, status, sortAsc, beforeCursor, cursorDirection = 'after' } = options
+  const reportCountCap = getModerationReportsWorkLimit('cluster_report_count_cap')
   const querySortAsc = cursorDirection === 'after' ? sortAsc : !sortAsc
   const query = sql`/* listClusteredModerationReports:clusters */
-    WITH candidate_entities AS (
-      SELECT DISTINCT ON (r.entity_type, r.entity_id)
-        r.entity_type,
-        r.entity_id,
-        r.created_at AS sort_reported_at
+    WITH paged_entities AS (
+      SELECT c.entity_type, c.entity_id,
+        c.post_id, c.reported_user_id, c.hostname_id, c.rss_feed_item_id,
+        c.first_reported_at, c.last_reported_at
       FROM `
-  query.append(moderationReportsWithEntitySql())
-  query.append(sql` r
-      WHERE `)
-  appendModerationReportStatusPredicate(query, 'r', status)
-  query.append(sql`
-      ORDER BY r.entity_type, r.entity_id, `)
-  query.append(sortAsc ? sql`r.id ASC` : sql`r.id DESC`)
-  query.append(sql`
-    ),
-    paged_entities AS (
-      SELECT c.entity_type, c.entity_id
-      FROM candidate_entities c
-      WHERE true`)
+  query.append(moderationReportClusterCandidatesSql(sortAsc))
+  query.append(sql` c WHERE `)
+  query.append(
+    status === 'pending'
+      ? sql`c.resolution_action IS NULL`
+      : sql`c.resolution_action = ${status}::moderation_report_resolution_actions`,
+  )
   if (beforeCursor) appendCandidateCursorClause(query, beforeCursor, sortAsc, cursorDirection)
   query.append(
     querySortAsc
@@ -49,46 +48,12 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
       : sql` ORDER BY c.sort_reported_at DESC, c.entity_id DESC, c.entity_type DESC LIMIT ${limit + 1}`,
   )
   query.append(sql`
-    ),
-    entity_groups AS (
-      SELECT
-        p.entity_type,
-        p.entity_id,
-        COUNT(*)::int AS report_count,
-        COUNT(DISTINCT r.reporter_user_id)::int AS reporter_count,
-        MIN(r.created_at) AS first_reported_at,
-        MAX(r.created_at) AS last_reported_at
-      FROM paged_entities p
-      JOIN `)
-  query.append(moderationReportsWithEntitySql())
-  query.append(sql` r
-        ON r.entity_type = p.entity_type
-        AND r.entity_id = p.entity_id
-        AND `)
-  appendModerationReportStatusPredicate(query, 'r', status)
-  query.append(sql`
-      GROUP BY p.entity_type, p.entity_id
     )
     SELECT
       g.entity_type,
       g.entity_id,
-      g.report_count,
-      g.reporter_count,
-      (
-        SELECT jsonb_object_agg(reason_rows.reason, reason_rows.report_count)
-        FROM (
-          SELECT rr.reason, COUNT(*)::int AS report_count
-          FROM `)
-  query.append(moderationReportsWithEntitySql())
-  query.append(sql` rr
-          WHERE rr.entity_type = g.entity_type
-            AND rr.entity_id = g.entity_id
-            AND `)
-  appendModerationReportStatusPredicate(query, 'rr', status)
-  query.append(sql`
-          GROUP BY rr.reason
-        ) reason_rows
-      ) AS reason_counts,
+      report_sample.reports,
+      report_sample.report_count,
       g.first_reported_at,
       g.last_reported_at,
       to_char(`)
@@ -99,18 +64,22 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
   query.append(sql`,
       `)
   query.append(reportTargetIsRestrictedSql())
-  query.append(sql` AS target_is_restricted FROM entity_groups g
-    JOIN LATERAL (SELECT * FROM `)
+  query.append(sql` AS target_is_restricted FROM paged_entities g
+    JOIN LATERAL (
+      SELECT COUNT(*)::integer AS report_count,
+        jsonb_agg(jsonb_build_object('reporter_user_id', sample.reporter_user_id, 'reason', sample.reason)
+          ORDER BY sample.id DESC) AS reports
+      FROM (
+  `)
+  appendPageReportBranches(query, status, reportCountCap + 1)
+  query.append(sql` LIMIT ${reportCountCap + 1}) sample
+    ) report_sample ON true
+    JOIN LATERAL (`)
+  appendPageReportHeadBranches(query, status)
+  query.append(sql`) head ON true
+    JOIN `)
   query.append(moderationReportsWithEntitySql())
-  query.append(sql` r
-      WHERE r.entity_type = g.entity_type
-        AND r.entity_id = g.entity_id
-        AND `)
-  appendModerationReportStatusPredicate(query, 'r', status)
-  query.append(sql`
-      ORDER BY r.id DESC
-      LIMIT 1
-    ) r ON true
+  query.append(sql` r ON r.id = head.id
   `)
   query.append(reportTargetJoinsSql())
   query.append(sql` WHERE true ORDER BY `)
@@ -122,32 +91,38 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
       : sql`g.entity_id DESC, g.entity_type DESC`,
   )
   query.append(sql` LIMIT ${limit + 1}`)
-  return read<ClusterRow>(query).then(result => result.rows)
+  return read<
+    ClusterRow & {
+      reports: Array<{ reporter_user_id: string | null; reason: string }> | null
+    }
+  >(query).then(result =>
+    result.rows.map(({ reports, report_count, ...row }) => {
+      const sample = (reports ?? []).slice(0, reportCountCap)
+      const reasons: Record<string, number> = {}
+      for (const report of sample) reasons[report.reason] = (reasons[report.reason] ?? 0) + 1
+      return {
+        ...row,
+        report_count: Math.min(report_count, reportCountCap),
+        report_count_capped: report_count > reportCountCap,
+        reporter_count: new Set(
+          sample.flatMap(report => (report.reporter_user_id ? [report.reporter_user_id] : [])),
+        ).size,
+        reason_counts: reasons,
+      }
+    }),
+  )
 }
+
 export async function selectReportsByCluster(
   status: ModerationReportStatus,
   clusters: ClusterRow[],
   sortAsc: boolean,
-): Promise<Map<string, PendingModerationReport[]>> {
+): Promise<Map<string, ClusteredPendingModerationReport[]>> {
   if (clusters.length === 0) return new Map()
   const query = sql`/* listClusteredModerationReports:reports */
-    WITH ranked_reports AS (
-      SELECT
-        r.*,
-        ROW_NUMBER() OVER (
-          PARTITION BY r.entity_type, r.entity_id
-          ORDER BY r.id `
-  query.append(sortAsc ? sql`ASC` : sql`DESC`)
-  query.append(sql`
-        ) AS report_rank
-      FROM `)
-  query.append(moderationReportsWithEntitySql())
-  query.append(sql` r
-      WHERE `)
-  appendModerationReportStatusPredicate(query, 'r', status)
-  query.append(sql` AND (`)
-  appendClusterWhereClause(query, clusters)
-  query.append(sql`)) SELECT
+    WITH selected_reports AS (`
+  appendSelectedReportBranches(query, clusters, status, sortAsc)
+  query.append(sql`) SELECT
       r.id,
       r.case_id,
       r.created_at,
@@ -167,34 +142,39 @@ export async function selectReportsByCluster(
       r.resolved_by_id,
       resolver_profile.username AS resolver_username,
       resolver_profile.verified_display_name AS resolver_display_name,
-      report_counts.report_count,
-      report_counts.report_count AS cursor_report_count,
+      0::integer AS report_count,
+      0::integer AS cursor_report_count,
       COALESCE(u.username = ${BAN_EVASION_SYSTEM_USERNAME}, false) AS is_system_generated,
       `)
   query.append(reportAutomaticJudgementEnabledSql()).append(sql` AS automatic_judgement_enabled, `)
   query.append(reportTargetIsRestrictedSql())
   query.append(sql` AS target_is_restricted
-    FROM ranked_reports r
+    FROM selected_reports selected
+    JOIN `)
+  query.append(moderationReportsWithEntitySql())
+  query.append(sql` r ON r.id = selected.id
     LEFT JOIN users u ON u.id = r.reporter_user_id
     LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = r.reporter_user_id
     LEFT JOIN view_users_public resolver_profile ON resolver_profile.id = r.resolved_by_id
   `)
   query.append(reportTargetJoinsSql())
   query.append(sql`
-    LEFT JOIN LATERAL (
-      SELECT COUNT(*)::integer AS report_count
-      FROM moderation_reports rc
-      WHERE COALESCE(rc.post_id, rc.reported_user_id, rc.hostname_id, rc.rss_feed_item_id)
-              = COALESCE(r.post_id, r.reported_user_id, r.hostname_id, r.rss_feed_item_id)
-        AND `)
-  appendModerationReportStatusPredicate(query, 'rc', status)
-  query.append(sql`
-    ) report_counts ON true
-  `)
-  query.append(sql`
-    WHERE r.report_rank <= ${MAX_REPORTS_PER_CLUSTER}
     ORDER BY r.entity_type, r.entity_id, r.id `)
   query.append(sortAsc ? sql`ASC` : sql`DESC`)
   const { rows } = await read<PendingModerationReport>(query)
-  return groupReportsByCluster(await enrichClusteredReports(rows))
+  const clusterById = new Map(
+    clusters.map(cluster => [`${cluster.entity_type}:${cluster.entity_id}`, cluster]),
+  )
+  const enriched = await enrichClusteredReports(rows)
+  return groupReportsByCluster(
+    enriched.map(report => {
+      const cluster = clusterById.get(`${report.entity_type}:${report.entity_id}`)!
+      return {
+        ...report,
+        report_count: cluster.report_count,
+        cursor_report_count: cluster.report_count,
+        report_count_capped: cluster.report_count_capped,
+      }
+    }),
+  )
 }

@@ -22255,6 +22255,9 @@
                                   "current_report_count": {
                                     "type": "number"
                                   },
+                                  "current_report_count_capped": {
+                                    "type": "boolean"
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -22267,6 +22270,9 @@
                                   "judged_report_count": {
                                     "$ref": "#/$defs/S10"
                                   },
+                                  "judged_report_count_capped": {
+                                    "type": "boolean"
+                                  },
                                   "public_response": {
                                     "$ref": "#/$defs/S3"
                                   },
@@ -22277,10 +22283,12 @@
                                 },
                                 "required": [
                                   "current_report_count",
+                                  "current_report_count_capped",
                                   "id",
                                   "internal_response",
                                   "is_stale",
                                   "judged_report_count",
+                                  "judged_report_count_capped",
                                   "public_response",
                                   "recommended_action"
                                 ],
@@ -29083,6 +29091,9 @@
                                     "report_count": {
                                       "type": "number"
                                     },
+                                    "report_count_capped": {
+                                      "type": "boolean"
+                                    },
                                     "reporter_count": {
                                       "type": "number"
                                     },
@@ -29193,6 +29204,9 @@
                                                   "current_report_count": {
                                                     "type": "number"
                                                   },
+                                                  "current_report_count_capped": {
+                                                    "type": "boolean"
+                                                  },
                                                   "id": {
                                                     "type": "string"
                                                   },
@@ -29211,6 +29225,9 @@
                                                         "type": "number"
                                                       }
                                                     ]
+                                                  },
+                                                  "judged_report_count_capped": {
+                                                    "type": "boolean"
                                                   },
                                                   "public_response": {
                                                     "anyOf": [
@@ -29234,10 +29251,12 @@
                                                 },
                                                 "required": [
                                                   "current_report_count",
+                                                  "current_report_count_capped",
                                                   "id",
                                                   "internal_response",
                                                   "is_stale",
                                                   "judged_report_count",
+                                                  "judged_report_count_capped",
                                                   "public_response",
                                                   "recommended_action"
                                                 ],
@@ -29346,6 +29365,9 @@
                                           },
                                           "report_count": {
                                             "type": "number"
+                                          },
+                                          "report_count_capped": {
+                                            "type": "boolean"
                                           },
                                           "reporter_display_name": {
                                             "anyOf": [
@@ -29532,6 +29554,7 @@
                                           "post_moderation_context",
                                           "reason",
                                           "report_count",
+                                          "report_count_capped",
                                           "reporter_display_name",
                                           "reporter_user_id",
                                           "resolved_by_id",
@@ -29549,6 +29572,9 @@
                                         "type": "object"
                                       },
                                       "type": "array"
+                                    },
+                                    "summary_capped": {
+                                      "type": "boolean"
                                     },
                                     "target_available": {
                                       "anyOf": [
@@ -29660,8 +29686,10 @@
                                     "last_reported_at",
                                     "reason_breakdown",
                                     "report_count",
+                                    "report_count_capped",
                                     "reporter_count",
                                     "reports",
+                                    "summary_capped",
                                     "target_available",
                                     "target_content",
                                     "target_is_restricted",
@@ -29711,9 +29739,15 @@
                               "report_count": {
                                 "type": "number"
                               },
+                              "report_count_capped": {
+                                "type": "boolean"
+                              },
                               "signal": {
                                 "enum": ["content_hash_duplicate", "embeddings_similarity"],
                                 "type": "string"
+                              },
+                              "summary_capped": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -29724,7 +29758,9 @@
                               "post_count",
                               "reason_breakdown",
                               "report_count",
-                              "signal"
+                              "report_count_capped",
+                              "signal",
+                              "summary_capped"
                             ],
                             "type": "object"
                           },
@@ -29850,6 +29886,9 @@
                               "report_count": {
                                 "type": "number"
                               },
+                              "report_count_capped": {
+                                "type": "boolean"
+                              },
                               "reporter_count": {
                                 "type": "number"
                               },
@@ -29960,6 +29999,9 @@
                                             "current_report_count": {
                                               "type": "number"
                                             },
+                                            "current_report_count_capped": {
+                                              "type": "boolean"
+                                            },
                                             "id": {
                                               "type": "string"
                                             },
@@ -29979,6 +30021,9 @@
                                                 }
                                               ]
                                             },
+                                            "judged_report_count_capped": {
+                                              "type": "boolean"
+                                            },
                                             "public_response": {
                                               "anyOf": [
                                                 {
@@ -29996,10 +30041,12 @@
                                           },
                                           "required": [
                                             "current_report_count",
+                                            "current_report_count_capped",
                                             "id",
                                             "internal_response",
                                             "is_stale",
                                             "judged_report_count",
+                                            "judged_report_count_capped",
                                             "public_response",
                                             "recommended_action"
                                           ],
@@ -30108,6 +30155,9 @@
                                     },
                                     "report_count": {
                                       "type": "number"
+                                    },
+                                    "report_count_capped": {
+                                      "type": "boolean"
                                     },
                                     "reporter_display_name": {
                                       "anyOf": [
@@ -30289,6 +30339,7 @@
                                     "post_moderation_context",
                                     "reason",
                                     "report_count",
+                                    "report_count_capped",
                                     "reporter_display_name",
                                     "reporter_user_id",
                                     "resolved_by_id",
@@ -30306,6 +30357,9 @@
                                   "type": "object"
                                 },
                                 "type": "array"
+                              },
+                              "summary_capped": {
+                                "type": "boolean"
                               },
                               "target_available": {
                                 "anyOf": [
@@ -30417,8 +30471,10 @@
                               "last_reported_at",
                               "reason_breakdown",
                               "report_count",
+                              "report_count_capped",
                               "reporter_count",
                               "reports",
+                              "summary_capped",
                               "target_available",
                               "target_content",
                               "target_is_restricted",
@@ -30862,6 +30918,9 @@
                                       "current_report_count": {
                                         "type": "number"
                                       },
+                                      "current_report_count_capped": {
+                                        "type": "boolean"
+                                      },
                                       "id": {
                                         "type": "string"
                                       },
@@ -30881,6 +30940,9 @@
                                           }
                                         ]
                                       },
+                                      "judged_report_count_capped": {
+                                        "type": "boolean"
+                                      },
                                       "public_response": {
                                         "anyOf": [
                                           {
@@ -30898,10 +30960,12 @@
                                     },
                                     "required": [
                                       "current_report_count",
+                                      "current_report_count_capped",
                                       "id",
                                       "internal_response",
                                       "is_stale",
                                       "judged_report_count",
+                                      "judged_report_count_capped",
                                       "public_response",
                                       "recommended_action"
                                     ],

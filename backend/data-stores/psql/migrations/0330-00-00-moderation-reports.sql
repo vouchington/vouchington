@@ -110,23 +110,48 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__resolution_id
 -- Per-entity lookup indexes
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__post_id
-  ON moderation_reports (post_id) WHERE post_id IS NOT NULL;
+  ON moderation_reports (post_id, resolution_action, id DESC) WHERE post_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__reported_user_id
-  ON moderation_reports (reported_user_id) WHERE reported_user_id IS NOT NULL;
+  ON moderation_reports (reported_user_id, resolution_action, id DESC)
+  WHERE reported_user_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__hostname_id
-  ON moderation_reports (hostname_id) WHERE hostname_id IS NOT NULL;
+  ON moderation_reports (hostname_id, resolution_action, id DESC) WHERE hostname_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__rss_feed_item_id
-  ON moderation_reports (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
+  ON moderation_reports (rss_feed_item_id, resolution_action, id DESC)
+  WHERE rss_feed_item_id IS NOT NULL;
+
+-- A dense pending post cluster needs its latest report without sorting every sibling.
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_post_id_id
+  ON moderation_reports (post_id, id DESC)
+  WHERE reviewed_at IS NULL AND resolution_action IS NULL AND post_id IS NOT NULL;
+
+-- The pending user head probe needs the same bounded ordered access when a cursor
+-- lands on a user sharing an entity id and timestamp with a post.
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_reported_user_id_id
+  ON moderation_reports (reported_user_id, id DESC)
+  WHERE reviewed_at IS NULL AND resolution_action IS NULL AND reported_user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_hostname_id_id
+  ON moderation_reports (hostname_id, id DESC)
+  WHERE reviewed_at IS NULL AND resolution_action IS NULL AND hostname_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_rss_feed_item_id_id
+  ON moderation_reports (rss_feed_item_id, id DESC)
+  WHERE reviewed_at IS NULL AND resolution_action IS NULL AND rss_feed_item_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__case_id
   ON moderation_reports (case_id);
+
+-- Pending case probes must skip resolved history, including cases with no pending report.
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_case_id
+  ON moderation_reports (case_id) WHERE reviewed_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__resolved_by_id
@@ -161,3 +186,198 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__created_via_oauth_client_id
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__reporter_user_id
   ON moderation_reports (reporter_user_id)
   WHERE reporter_user_id IS NOT NULL;
+
+-- Current, transactionally maintained cluster sort keys. A NULL resolution_action denotes pending.
+-- No report-id pointer survives a report's retention deletion.
+CREATE TABLE IF NOT EXISTS moderation_report_clusters (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  post_id uuid REFERENCES posts (id) ON DELETE CASCADE,
+  reported_user_id uuid REFERENCES users (id) ON DELETE CASCADE,
+  hostname_id uuid REFERENCES url_hostnames (id) ON DELETE CASCADE,
+  rss_feed_item_id uuid REFERENCES rss_feed_items (id) ON DELETE CASCADE,
+  resolution_action moderation_report_resolution_actions,
+  first_reported_at timestamptz NOT NULL,
+  last_reported_at timestamptz NOT NULL,
+  CONSTRAINT moderation_report_clusters_one_target
+    CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1),
+  CONSTRAINT moderation_report_clusters_one_status_target
+    UNIQUE NULLS NOT DISTINCT (
+      resolution_action, post_id, reported_user_id, hostname_id, rss_feed_item_id
+    ),
+  CONSTRAINT moderation_report_clusters_reported_order
+    CHECK (first_reported_at <= last_reported_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__post_id
+  ON moderation_report_clusters (post_id) WHERE post_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__reported_user_id
+  ON moderation_report_clusters (reported_user_id) WHERE reported_user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__hostname_id
+  ON moderation_report_clusters (hostname_id) WHERE hostname_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__rss_feed_item_id
+  ON moderation_report_clusters (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__first_reported_at
+  ON moderation_report_clusters (
+    resolution_action, first_reported_at,
+    (COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))
+  );
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__last_reported_at
+  ON moderation_report_clusters (
+    resolution_action, last_reported_at,
+    (COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))
+  );
+
+-- Pending dominates the queue. These covering walks reach the page before probing post type;
+-- the general indexes above serve the three smaller resolved-outcome walks.
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__pending_first_reported_at
+  ON moderation_report_clusters (
+    first_reported_at,
+    (COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))
+  ) INCLUDE (post_id, reported_user_id, hostname_id, rss_feed_item_id)
+  WHERE resolution_action IS NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__pending_last_reported_at
+  ON moderation_report_clusters (
+    last_reported_at,
+    (COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))
+  ) INCLUDE (post_id, reported_user_id, hostname_id, rss_feed_item_id)
+  WHERE resolution_action IS NULL;
+
+COMMENT ON TABLE moderation_report_clusters IS 'Current per-entity and per-outcome report cluster keys, kept exact by report row triggers and removed when no reports remain.';
+COMMENT ON COLUMN moderation_report_clusters.post_id IS 'Reported post or comment, including the live target for this cluster.';
+COMMENT ON COLUMN moderation_report_clusters.reported_user_id IS 'Reported user, including the live target for this cluster.';
+COMMENT ON COLUMN moderation_report_clusters.hostname_id IS 'Reported hostname, including the live target for this cluster.';
+COMMENT ON COLUMN moderation_report_clusters.rss_feed_item_id IS 'Reported RSS feed item, including the live target for this cluster.';
+COMMENT ON COLUMN moderation_report_clusters.resolution_action IS 'NULL for pending reports, otherwise the reviewed report outcome.';
+COMMENT ON COLUMN moderation_report_clusters.first_reported_at IS 'Earliest UUIDv7 report timestamp in this target and outcome cluster.';
+COMMENT ON COLUMN moderation_report_clusters.last_reported_at IS 'Latest UUIDv7 report timestamp in this target and outcome cluster.';
+
+CREATE OR REPLACE FUNCTION fn_update_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  prior_cluster record;
+  next_first timestamptz;
+  next_last timestamptz;
+  prior_reported_at timestamptz;
+  report_target_column text;
+  report_target_id uuid;
+  edge_query text;
+  removed_clusters integer;
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF OLD.id = NEW.id
+      AND OLD.resolution_action IS NOT DISTINCT FROM NEW.resolution_action
+      AND OLD.post_id IS NOT DISTINCT FROM NEW.post_id
+      AND OLD.reported_user_id IS NOT DISTINCT FROM NEW.reported_user_id
+      AND OLD.hostname_id IS NOT DISTINCT FROM NEW.hostname_id
+      AND OLD.rss_feed_item_id IS NOT DISTINCT FROM NEW.rss_feed_item_id THEN
+      RETURN NEW;
+    END IF;
+
+    IF OLD.resolution_action IS DISTINCT FROM NEW.resolution_action
+      OR OLD.post_id IS DISTINCT FROM NEW.post_id
+      OR OLD.reported_user_id IS DISTINCT FROM NEW.reported_user_id
+      OR OLD.hostname_id IS DISTINCT FROM NEW.hostname_id
+      OR OLD.rss_feed_item_id IS DISTINCT FROM NEW.rss_feed_item_id THEN
+      -- Both existing clusters will be written. Lock them in one order before the OLD
+      -- removal and NEW upsert, so opposite status/target moves cannot form ABBA.
+      PERFORM cluster.id FROM moderation_report_clusters cluster
+      WHERE (cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
+          AND (cluster.post_id = OLD.post_id
+            OR cluster.reported_user_id = OLD.reported_user_id
+            OR cluster.hostname_id = OLD.hostname_id
+            OR cluster.rss_feed_item_id = OLD.rss_feed_item_id))
+        OR (cluster.resolution_action IS NOT DISTINCT FROM NEW.resolution_action
+          AND (cluster.post_id = NEW.post_id
+            OR cluster.reported_user_id = NEW.reported_user_id
+            OR cluster.hostname_id = NEW.hostname_id
+            OR cluster.rss_feed_item_id = NEW.rss_feed_item_id))
+      ORDER BY cluster.id FOR UPDATE;
+    END IF;
+  END IF;
+
+  IF TG_OP IN ('DELETE', 'UPDATE') THEN
+    SELECT cluster.id, cluster.first_reported_at,
+      cluster.last_reported_at INTO prior_cluster
+    FROM moderation_report_clusters cluster
+    WHERE cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
+      AND (cluster.post_id = OLD.post_id
+        OR cluster.reported_user_id = OLD.reported_user_id
+        OR cluster.hostname_id = OLD.hostname_id
+        OR cluster.rss_feed_item_id = OLD.rss_feed_item_id)
+    FOR UPDATE;
+
+    IF FOUND THEN
+      -- Exactly one FK is present; this identifier is selected only from these literals.
+      IF OLD.post_id IS NOT NULL THEN
+        report_target_column := 'post_id';
+        report_target_id := OLD.post_id;
+      ELSIF OLD.reported_user_id IS NOT NULL THEN
+        report_target_column := 'reported_user_id';
+        report_target_id := OLD.reported_user_id;
+      ELSIF OLD.hostname_id IS NOT NULL THEN
+        report_target_column := 'hostname_id';
+        report_target_id := OLD.hostname_id;
+      ELSE
+        report_target_column := 'rss_feed_item_id';
+        report_target_id := OLD.rss_feed_item_id;
+      END IF;
+      -- An ordered singleton keeps existence probes on the target index. The scalar
+      -- target binding also prevents custom-plan skew estimates from choosing a global
+      -- outcome scan when a hot target has no remaining reports in that outcome.
+      edge_query := format(
+        'SELECT uuid_extract_timestamp(s.id) FROM moderation_reports s WHERE s.%I = (SELECT $1::uuid) AND %s',
+        report_target_column,
+        CASE WHEN OLD.resolution_action IS NULL
+          THEN 's.reviewed_at IS NULL AND s.resolution_action IS NULL'
+          ELSE 's.reviewed_at IS NOT NULL AND s.resolution_action = $2::moderation_report_resolution_actions'
+        END
+      );
+      -- Bound only this existence probe; boundary reads append their own order.
+      EXECUTE 'DELETE FROM moderation_report_clusters WHERE id = $3::uuid AND NOT EXISTS (SELECT 1 FROM ('
+        || edge_query || ' ORDER BY s.id DESC LIMIT 1) remaining)' USING report_target_id, OLD.resolution_action, prior_cluster.id;
+      GET DIAGNOSTICS removed_clusters = ROW_COUNT;
+      IF removed_clusters = 0 THEN
+        prior_reported_at := uuid_extract_timestamp(OLD.id);
+        IF prior_cluster.first_reported_at = prior_reported_at THEN
+          EXECUTE edge_query || ' ORDER BY s.id ASC LIMIT 1'
+            INTO next_first USING report_target_id, OLD.resolution_action;
+        END IF;
+        IF prior_cluster.last_reported_at = prior_reported_at THEN
+          EXECUTE edge_query || ' ORDER BY s.id DESC LIMIT 1'
+            INTO next_last USING report_target_id, OLD.resolution_action;
+        END IF;
+        -- Every removal writes the retained projection row. Serializing those writes
+        -- prevents concurrent last-report removals from each seeing a surviving sibling.
+        UPDATE moderation_report_clusters
+        SET first_reported_at = COALESCE(next_first, first_reported_at),
+          last_reported_at = COALESCE(next_last, last_reported_at)
+        WHERE id = prior_cluster.id;
+      END IF;
+    END IF;
+  END IF;
+
+  IF TG_OP IN ('INSERT', 'UPDATE') THEN
+    INSERT INTO moderation_report_clusters (
+      post_id, reported_user_id, hostname_id, rss_feed_item_id,
+      resolution_action, first_reported_at, last_reported_at
+    ) VALUES (
+      NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id,
+      NEW.resolution_action, uuid_extract_timestamp(NEW.id), uuid_extract_timestamp(NEW.id)
+    )
+    ON CONFLICT ON CONSTRAINT moderation_report_clusters_one_status_target
+    DO UPDATE SET
+      first_reported_at = LEAST(moderation_report_clusters.first_reported_at, EXCLUDED.first_reported_at),
+      last_reported_at = GREATEST(moderation_report_clusters.last_reported_at, EXCLUDED.last_reported_at);
+  END IF;
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE TRIGGER trigger_moderation_report_clusters_insert_delete
+  AFTER INSERT OR DELETE ON moderation_reports
+  FOR EACH ROW EXECUTE FUNCTION fn_update_moderation_report_cluster();
+CREATE OR REPLACE TRIGGER trigger_moderation_report_clusters_update
+  AFTER UPDATE OF id, reviewed_at, resolution_action, post_id, reported_user_id,
+    hostname_id, rss_feed_item_id ON moderation_reports
+  FOR EACH ROW EXECUTE FUNCTION fn_update_moderation_report_cluster();

@@ -7,7 +7,7 @@ import { childVisibilitySql } from '@services/user-referral-program-links'
 import {
   buildCommunityListProxyMutedTopicsCTE,
   buildExcludedCTE,
-  buildExcludedHostnameIdsCTE,
+  buildHostnameExclusionExists,
   buildFollowedCTE,
 } from '../sql-builders/index.mts'
 import type {
@@ -49,8 +49,6 @@ export async function getReferralLinksFeed(
     ['relation__user__block__user'],
   )
 
-  const excludedHostnamesCte = buildExcludedHostnameIdsCTE(currentUser.id)
-
   const excludedTopicsCte = sql`excluded_topics AS (
       SELECT object_id AS topic_id
       FROM relation__user__mute__topic
@@ -66,9 +64,6 @@ export async function getReferralLinksFeed(
     .append(sql`,
     `)
     .append(excludedUsersCte)
-    .append(sql`,
-    `)
-    .append(excludedHostnamesCte)
     .append(sql`,
     `)
     .append(excludedTopicsCte)
@@ -88,6 +83,7 @@ export async function getReferralLinksFeed(
       vup.profile_image_id
     FROM user_referral_program_links urpl
     JOIN urls u ON u.id = urpl.url_id
+    JOIN url_hostnames candidate_hostname ON candidate_hostname.id = u.hostname_id
     JOIN topics t ON t.id = urpl.referral_program_topic_id
     JOIN referral_program_topics trp ON trp.topic_id = urpl.referral_program_topic_id
       AND trp.enabled_at IS NOT NULL
@@ -100,16 +96,19 @@ export async function getReferralLinksFeed(
       AND urpl.user_id <> ${currentUser.id}
       AND t.deleted_at IS NULL
       AND t.merged_into_topic_id IS NULL
-      AND NOT EXISTS (SELECT 1 FROM excluded_hostname_ids WHERE excluded_hostname_ids.hostname_id = u.hostname_id)
-      AND NOT EXISTS (
-        SELECT 1 FROM url_hostnames blocked_hostname
-        WHERE blocked_hostname.id = u.hostname_id
-          AND blocked_hostname.is_blocked
-      )
+      AND NOT `,
+    )
+    .append(
+      buildHostnameExclusionExists(
+        currentUser.id,
+        sql`candidate_hostname.id`,
+        sql`candidate_hostname.reversed_hostname`,
+      ),
+    )
+    .append(sql` AND NOT candidate_hostname.is_blocked
       AND NOT EXISTS (SELECT 1 FROM excluded_users WHERE excluded_users.user_id = urpl.user_id)
       AND NOT EXISTS (SELECT 1 FROM excluded_topics WHERE excluded_topics.topic_id = urpl.referral_program_topic_id)
-      AND `,
-    )
+      AND `)
     .append(childVisibilitySql('urpl.parent_link_id', 'urpl.user_id'))
     .append(
       sql`

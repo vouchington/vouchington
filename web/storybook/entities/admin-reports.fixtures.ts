@@ -3,6 +3,7 @@ import type {
   AdminClusteredModerationReportsResponse,
   AdminModerationReport,
 } from '@/components/admin/reports-client'
+import { duplicateClusters } from './admin-reports-duplicate-clusters.fixtures'
 export const report: AdminModerationReport = {
   id: 'report-1',
   case_id: 'case-1',
@@ -37,11 +38,12 @@ export const report: AdminModerationReport = {
       'Clear spam pattern: duplicated referral links posted across multiple communities within a short time window.',
     is_stale: true,
     judged_report_count: 2,
+    judged_report_count_capped: false,
     current_report_count: 3,
+    current_report_count_capped: false,
   },
   post_moderation_context: null,
 }
-
 export const banEvasionReport: AdminModerationReport = {
   id: 'report-3',
   case_id: 'case-3',
@@ -120,6 +122,8 @@ export const clusteredData: AdminClusteredModerationReportsResponse = {
       entity_type: 'post',
       entity_id: 'post-1',
       report_count: 3,
+      report_count_capped: false,
+      summary_capped: true,
       reporter_count: 3,
       reason_breakdown: [
         { reason: 'spam', count: 2 },
@@ -139,13 +143,23 @@ export const clusteredData: AdminClusteredModerationReportsResponse = {
         embeddings_similarity: false,
         velocity_spike: true,
       },
-      reports: [report, { ...report, id: 'report-3', reporter_username: 'second-reader' }],
+      reports: [
+        { ...report, report_count_capped: false },
+        {
+          ...report,
+          id: 'report-3',
+          reporter_username: 'second-reader',
+          report_count_capped: false,
+        },
+      ],
     },
     {
       id: 'post:post-2',
       entity_type: 'post',
       entity_id: 'post-2',
       report_count: 1,
+      report_count_capped: false,
+      summary_capped: false,
       reporter_count: 1,
       reason_breakdown: [{ reason: 'spam', count: 1 }],
       first_reported_at: '2026-05-31T06:10:00.000Z',
@@ -165,6 +179,7 @@ export const clusteredData: AdminClusteredModerationReportsResponse = {
       reports: [
         {
           ...report,
+          report_count_capped: false,
           id: 'report-4',
           entity_id: 'post-2',
           target_label: 'Repeated referral offer',
@@ -175,21 +190,7 @@ export const clusteredData: AdminClusteredModerationReportsResponse = {
       ],
     },
   ],
-  duplicate_clusters: [
-    {
-      id: 'content-hash:story',
-      signal: 'content_hash_duplicate',
-      post_count: 2,
-      report_count: 4,
-      reason_breakdown: [
-        { reason: 'spam', count: 3 },
-        { reason: 'harassment', count: 1 },
-      ],
-      first_reported_at: '2026-05-31T06:00:00.000Z',
-      last_reported_at: '2026-05-31T06:20:00.000Z',
-      clusters: [],
-    },
-  ],
+  duplicate_clusters: duplicateClusters,
   page_info: {
     has_next_page: false,
     has_previous_page: false,

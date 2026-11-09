@@ -13,8 +13,10 @@ import { POST_URL_CAPACITY_SCENARIOS } from './post-related-url-capacity-scenari
 import { COMMUNITY_AGENT_PROMPT_SCENARIO_IDS } from './community-agent-prompt-page-ids.mts'
 import { CRITICAL_ALERT_SCENARIO_IDS } from './critical-alert-scenario-ids.mts'
 import { CATEGORY_PROJECTION_SCENARIO_IDS } from './category-projection-scenario-ids.mts'
+import { EXISTENCE_FILTER_SCENARIO_IDS } from './existence-filter-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
+  ...EXISTENCE_FILTER_SCENARIO_IDS,
   ...CATEGORY_PROJECTION_SCENARIO_IDS,
   ...MEDIA_DELIVERY_LOCK_SCENARIOS,
   ...COMMUNITY_BAN_SCENARIO_IDS,

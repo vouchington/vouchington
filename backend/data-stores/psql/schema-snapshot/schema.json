@@ -2121,6 +2121,9 @@
     "fn_update_membership_renewal_notice_end": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_membership_renewal_notice_end()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE membership_renewal_price_increase_notification_work_items\n  SET projection_ended_at = NEW.projection_ended_at\n  WHERE membership_id = NEW.id;\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_update_moderation_report_cluster": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_cluster()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  prior_cluster record;\n  next_first timestamptz;\n  next_last timestamptz;\n  prior_reported_at timestamptz;\n  report_target_column text;\n  report_target_id uuid;\n  edge_query text;\n  removed_clusters integer;\nBEGIN\n  IF TG_OP = 'UPDATE' THEN\n    IF OLD.id = NEW.id\n      AND OLD.resolution_action IS NOT DISTINCT FROM NEW.resolution_action\n      AND OLD.post_id IS NOT DISTINCT FROM NEW.post_id\n      AND OLD.reported_user_id IS NOT DISTINCT FROM NEW.reported_user_id\n      AND OLD.hostname_id IS NOT DISTINCT FROM NEW.hostname_id\n      AND OLD.rss_feed_item_id IS NOT DISTINCT FROM NEW.rss_feed_item_id THEN\n      RETURN NEW;\n    END IF;\n\n    IF OLD.resolution_action IS DISTINCT FROM NEW.resolution_action\n      OR OLD.post_id IS DISTINCT FROM NEW.post_id\n      OR OLD.reported_user_id IS DISTINCT FROM NEW.reported_user_id\n      OR OLD.hostname_id IS DISTINCT FROM NEW.hostname_id\n      OR OLD.rss_feed_item_id IS DISTINCT FROM NEW.rss_feed_item_id THEN\n      -- Both existing clusters will be written. Lock them in one order before the OLD\n      -- removal and NEW upsert, so opposite status/target moves cannot form ABBA.\n      PERFORM cluster.id FROM moderation_report_clusters cluster\n      WHERE (cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action\n          AND (cluster.post_id = OLD.post_id\n            OR cluster.reported_user_id = OLD.reported_user_id\n            OR cluster.hostname_id = OLD.hostname_id\n            OR cluster.rss_feed_item_id = OLD.rss_feed_item_id))\n        OR (cluster.resolution_action IS NOT DISTINCT FROM NEW.resolution_action\n          AND (cluster.post_id = NEW.post_id\n            OR cluster.reported_user_id = NEW.reported_user_id\n            OR cluster.hostname_id = NEW.hostname_id\n            OR cluster.rss_feed_item_id = NEW.rss_feed_item_id))\n      ORDER BY cluster.id FOR UPDATE;\n    END IF;\n  END IF;\n\n  IF TG_OP IN ('DELETE', 'UPDATE') THEN\n    SELECT cluster.id, cluster.first_reported_at,\n      cluster.last_reported_at INTO prior_cluster\n    FROM moderation_report_clusters cluster\n    WHERE cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action\n      AND (cluster.post_id = OLD.post_id\n        OR cluster.reported_user_id = OLD.reported_user_id\n        OR cluster.hostname_id = OLD.hostname_id\n        OR cluster.rss_feed_item_id = OLD.rss_feed_item_id)\n    FOR UPDATE;\n\n    IF FOUND THEN\n      -- Exactly one FK is present; this identifier is selected only from these literals.\n      IF OLD.post_id IS NOT NULL THEN\n        report_target_column := 'post_id';\n        report_target_id := OLD.post_id;\n      ELSIF OLD.reported_user_id IS NOT NULL THEN\n        report_target_column := 'reported_user_id';\n        report_target_id := OLD.reported_user_id;\n      ELSIF OLD.hostname_id IS NOT NULL THEN\n        report_target_column := 'hostname_id';\n        report_target_id := OLD.hostname_id;\n      ELSE\n        report_target_column := 'rss_feed_item_id';\n        report_target_id := OLD.rss_feed_item_id;\n      END IF;\n      -- An ordered singleton keeps existence probes on the target index. The scalar\n      -- target binding also prevents custom-plan skew estimates from choosing a global\n      -- outcome scan when a hot target has no remaining reports in that outcome.\n      edge_query := format(\n        'SELECT uuid_extract_timestamp(s.id) FROM moderation_reports s WHERE s.%I = (SELECT $1::uuid) AND %s',\n        report_target_column,\n        CASE WHEN OLD.resolution_action IS NULL\n          THEN 's.reviewed_at IS NULL AND s.resolution_action IS NULL'\n          ELSE 's.reviewed_at IS NOT NULL AND s.resolution_action = $2::moderation_report_resolution_actions'\n        END\n      );\n      -- Bound only this existence probe; boundary reads append their own order.\n      EXECUTE 'DELETE FROM moderation_report_clusters WHERE id = $3::uuid AND NOT EXISTS (SELECT 1 FROM ('\n        || edge_query || ' ORDER BY s.id DESC LIMIT 1) remaining)' USING report_target_id, OLD.resolution_action, prior_cluster.id;\n      GET DIAGNOSTICS removed_clusters = ROW_COUNT;\n      IF removed_clusters = 0 THEN\n        prior_reported_at := uuid_extract_timestamp(OLD.id);\n        IF prior_cluster.first_reported_at = prior_reported_at THEN\n          EXECUTE edge_query || ' ORDER BY s.id ASC LIMIT 1'\n            INTO next_first USING report_target_id, OLD.resolution_action;\n        END IF;\n        IF prior_cluster.last_reported_at = prior_reported_at THEN\n          EXECUTE edge_query || ' ORDER BY s.id DESC LIMIT 1'\n            INTO next_last USING report_target_id, OLD.resolution_action;\n        END IF;\n        -- Every removal writes the retained projection row. Serializing those writes\n        -- prevents concurrent last-report removals from each seeing a surviving sibling.\n        UPDATE moderation_report_clusters\n        SET first_reported_at = COALESCE(next_first, first_reported_at),\n          last_reported_at = COALESCE(next_last, last_reported_at)\n        WHERE id = prior_cluster.id;\n      END IF;\n    END IF;\n  END IF;\n\n  IF TG_OP IN ('INSERT', 'UPDATE') THEN\n    INSERT INTO moderation_report_clusters (\n      post_id, reported_user_id, hostname_id, rss_feed_item_id,\n      resolution_action, first_reported_at, last_reported_at\n    ) VALUES (\n      NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id,\n      NEW.resolution_action, uuid_extract_timestamp(NEW.id), uuid_extract_timestamp(NEW.id)\n    )\n    ON CONFLICT ON CONSTRAINT moderation_report_clusters_one_status_target\n    DO UPDATE SET\n      first_reported_at = LEAST(moderation_report_clusters.first_reported_at, EXCLUDED.first_reported_at),\n      last_reported_at = GREATEST(moderation_report_clusters.last_reported_at, EXCLUDED.last_reported_at);\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_update_moderation_report_transparency_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.moderation_transparency_community_id IS NULL THEN\n    IF NEW.community_id IS NOT NULL THEN\n      NEW.moderation_transparency_community_id := NEW.community_id;\n    ELSIF NEW.post_id IS NOT NULL THEN\n      SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;\n    END IF;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
@@ -74390,6 +74393,445 @@
       },
       "uniqueConstraints": {}
     },
+    "moderation_report_clusters": {
+      "checkConstraints": {
+        "moderation_report_clusters_one_target": "CHECK ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1))",
+        "moderation_report_clusters_reported_order": "CHECK ((first_reported_at <= last_reported_at))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "first_reported_at": {
+          "collation": null,
+          "comment": "Earliest UUIDv7 report timestamp in this target and outcome cluster.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "hostname_id": {
+          "collation": null,
+          "comment": "Reported hostname, including the live target for this cluster.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "last_reported_at": {
+          "collation": null,
+          "comment": "Latest UUIDv7 report timestamp in this target and outcome cluster.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Reported post or comment, including the live target for this cluster.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "reported_user_id": {
+          "collation": null,
+          "comment": "Reported user, including the live target for this cluster.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "resolution_action": {
+          "collation": null,
+          "comment": "NULL for pending reports, otherwise the reviewed report outcome.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "moderation_report_resolution_actions"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "Reported RSS feed item, including the live target for this cluster.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        }
+      },
+      "comment": "Current per-entity and per-outcome report cluster keys, kept exact by report row triggers and removed when no reports remain.",
+      "foreignKeys": {
+        "moderation_report_clusters_hostname_id_fkey": {
+          "columns": ["hostname_id"],
+          "definition": "FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
+          "validated": true
+        },
+        "moderation_report_clusters_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "moderation_report_clusters_reported_user_id_fkey": {
+          "columns": ["reported_user_id"],
+          "definition": "FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "moderation_report_clusters_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_moderation_report_clusters__first_reported_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_report_clusters__first_reported_at ON public.moderation_report_clusters USING btree (resolution_action, first_reported_at, COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "resolution_action",
+              "descending": false,
+              "expression": "resolution_action",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "first_reported_at",
+              "descending": false,
+              "expression": "first_reported_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id)",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_report_clusters__hostname_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_report_clusters__hostname_id ON public.moderation_report_clusters USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "hostname_id",
+              "descending": false,
+              "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(hostname_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_report_clusters__last_reported_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_report_clusters__last_reported_at ON public.moderation_report_clusters USING btree (resolution_action, last_reported_at, COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "resolution_action",
+              "descending": false,
+              "expression": "resolution_action",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "last_reported_at",
+              "descending": false,
+              "expression": "last_reported_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id)",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_report_clusters__pending_first_reported_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_report_clusters__pending_first_reported_at ON public.moderation_report_clusters USING btree (first_reported_at, COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id)) INCLUDE (post_id, reported_user_id, hostname_id, rss_feed_item_id) WHERE (resolution_action IS NULL)",
+          "includedColumns": ["post_id", "reported_user_id", "hostname_id", "rss_feed_item_id"],
+          "keys": [
+            {
+              "column": "first_reported_at",
+              "descending": false,
+              "expression": "first_reported_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id)",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(resolution_action IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_report_clusters__pending_last_reported_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_report_clusters__pending_last_reported_at ON public.moderation_report_clusters USING btree (last_reported_at, COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id)) INCLUDE (post_id, reported_user_id, hostname_id, rss_feed_item_id) WHERE (resolution_action IS NULL)",
+          "includedColumns": ["post_id", "reported_user_id", "hostname_id", "rss_feed_item_id"],
+          "keys": [
+            {
+              "column": "last_reported_at",
+              "descending": false,
+              "expression": "last_reported_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id)",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(resolution_action IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_report_clusters__post_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_report_clusters__post_id ON public.moderation_report_clusters USING btree (post_id) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_report_clusters__reported_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_report_clusters__reported_user_id ON public.moderation_report_clusters USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reported_user_id",
+              "descending": false,
+              "expression": "reported_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reported_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_report_clusters__rss_feed_item_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_report_clusters__rss_feed_item_id ON public.moderation_report_clusters USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "moderation_report_clusters_one_status_target": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_report_clusters_one_status_target ON public.moderation_report_clusters USING btree (resolution_action, post_id, reported_user_id, hostname_id, rss_feed_item_id) NULLS NOT DISTINCT",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "resolution_action",
+              "descending": false,
+              "expression": "resolution_action",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "reported_user_id",
+              "descending": false,
+              "expression": "reported_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "hostname_id",
+              "descending": false,
+              "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "moderation_report_clusters_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_report_clusters_pkey ON public.moderation_report_clusters USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "moderation_report_clusters_one_status_target": {
+          "columns": [
+            "resolution_action",
+            "post_id",
+            "reported_user_id",
+            "hostname_id",
+            "rss_feed_item_id"
+          ],
+          "definition": "UNIQUE NULLS NOT DISTINCT (resolution_action, post_id, reported_user_id, hostname_id, rss_feed_item_id)"
+        }
+      }
+    },
     "moderation_report_judgements": {
       "checkConstraints": {
         "moderation_report_judgements_check": "CHECK ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1))"
@@ -74425,7 +74867,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "integer"
         },
         "context_note_hash": {
@@ -74436,12 +74878,12 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "context_report_count": {
           "collation": null,
-          "comment": "Total number of reports on the judged entity when this judgement was generated.",
+          "comment": "Number of reports sampled on the judged entity when this judgement was generated, up to the configured cap.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -74458,7 +74900,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "dispatched_at": {
@@ -74469,7 +74911,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "hostname_id": {
@@ -74504,6 +74946,17 @@
           "nullable": false,
           "ordinalPosition": 12,
           "type": "text"
+        },
+        "is_context_report_count_capped": {
+          "collation": null,
+          "comment": "Whether the judgement context report count was capped.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 16,
+          "type": "boolean"
         },
         "model": {
           "collation": null,
@@ -75467,7 +75920,7 @@
         "idx_moderation_reports__hostname_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderation_reports__hostname_id ON public.moderation_reports USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_moderation_reports__hostname_id ON public.moderation_reports USING btree (hostname_id, resolution_action, id DESC) WHERE (hostname_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -75476,9 +75929,70 @@
               "expression": "hostname_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
+            },
+            {
+              "column": "resolution_action",
+              "descending": false,
+              "expression": "resolution_action",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "(hostname_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_reports__pending_case_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__pending_case_id ON public.moderation_reports USING btree (case_id) WHERE (reviewed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "case_id",
+              "descending": false,
+              "expression": "case_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reviewed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_reports__pending_hostname_id_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__pending_hostname_id_id ON public.moderation_reports USING btree (hostname_id, id DESC) WHERE ((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (hostname_id IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "hostname_id",
+              "descending": false,
+              "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (hostname_id IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -75504,10 +76018,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_moderation_reports__post_id": {
+        "idx_moderation_reports__pending_post_id_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderation_reports__post_id ON public.moderation_reports USING btree (post_id) WHERE (post_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_moderation_reports__pending_post_id_id ON public.moderation_reports USING btree (post_id, id DESC) WHERE ((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (post_id IS NOT NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -75515,6 +76029,101 @@
               "descending": false,
               "expression": "post_id",
               "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (post_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_reports__pending_reported_user_id_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__pending_reported_user_id_id ON public.moderation_reports USING btree (reported_user_id, id DESC) WHERE ((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (reported_user_id IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reported_user_id",
+              "descending": false,
+              "expression": "reported_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (reported_user_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_reports__pending_rss_feed_item_id_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__pending_rss_feed_item_id_id ON public.moderation_reports USING btree (rss_feed_item_id, id DESC) WHERE ((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (rss_feed_item_id IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (rss_feed_item_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_reports__post_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__post_id ON public.moderation_reports USING btree (post_id, resolution_action, id DESC) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "resolution_action",
+              "descending": false,
+              "expression": "resolution_action",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "uuid_ops"
             }
           ],
@@ -75527,7 +76136,7 @@
         "idx_moderation_reports__reported_user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderation_reports__reported_user_id ON public.moderation_reports USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_moderation_reports__reported_user_id ON public.moderation_reports USING btree (reported_user_id, resolution_action, id DESC) WHERE (reported_user_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -75535,6 +76144,20 @@
               "descending": false,
               "expression": "reported_user_id",
               "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "resolution_action",
+              "descending": false,
+              "expression": "resolution_action",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "uuid_ops"
             }
           ],
@@ -75614,7 +76237,7 @@
         "idx_moderation_reports__rss_feed_item_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderation_reports__rss_feed_item_id ON public.moderation_reports USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_moderation_reports__rss_feed_item_id ON public.moderation_reports USING btree (rss_feed_item_id, resolution_action, id DESC) WHERE (rss_feed_item_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -75622,6 +76245,20 @@
               "descending": false,
               "expression": "rss_feed_item_id",
               "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "resolution_action",
+              "descending": false,
+              "expression": "resolution_action",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "uuid_ops"
             }
           ],
@@ -75660,6 +76297,8 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_moderation_report_clusters_insert_delete": "CREATE TRIGGER trigger_moderation_report_clusters_insert_delete AFTER INSERT OR DELETE ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_update_moderation_report_cluster()",
+        "trigger_moderation_report_clusters_update": "CREATE TRIGGER trigger_moderation_report_clusters_update AFTER UPDATE OF id, reviewed_at, resolution_action, post_id, reported_user_id, hostname_id, rss_feed_item_id ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_update_moderation_report_cluster()",
         "trigger_moderation_reports_content_provenance_immutable": "CREATE TRIGGER trigger_moderation_reports_content_provenance_immutable AFTER UPDATE ON public.moderation_reports FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()",
         "trigger_moderation_transparency_reports_delete_rollup": "CREATE TRIGGER trigger_moderation_transparency_reports_delete_rollup AFTER DELETE ON public.moderation_reports REFERENCING OLD TABLE AS deleted_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_reports', 'original_reason', 'reports')",
         "trigger_moderation_transparency_reports_original_reason_guard": "CREATE TRIGGER trigger_moderation_transparency_reports_original_reason_guard BEFORE UPDATE OF original_reason ON public.moderation_reports FOR EACH ROW WHEN ((old.original_reason IS DISTINCT FROM new.original_reason)) EXECUTE FUNCTION fn_reject_mutation()",

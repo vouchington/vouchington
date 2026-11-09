@@ -2,6 +2,7 @@ import type { BasicUser } from '@services/users/types'
 import { isAdminUser } from '@services/users/authorization'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
+  buildHostnameExclusionExists,
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
@@ -56,7 +57,7 @@ export function appendBaseFilters(
     WHERE root_post.id = posts.root_post_id AND `)
   discoveryEligibility.append(rootEligibility('root_post')).append(sql`) END`)
   filters.push(discoveryEligibility)
-  if (exclude_for_user_id) appendUserExclusionFilters(filters)
+  if (exclude_for_user_id) appendUserExclusionFilters(filters, exclude_for_user_id)
   if (user_id) {
     appendUserFilter(filters, {
       currentUser: viewer,
@@ -68,7 +69,7 @@ export function appendBaseFilters(
   return isAdmin
 }
 
-function appendUserExclusionFilters(filters: SQLStatement[]): void {
+function appendUserExclusionFilters(filters: SQLStatement[], userId: string): void {
   filters.push(sql`NOT EXISTS (
       SELECT 1 FROM excluded_users WHERE excluded_users.user_id = posts.created_by_id
     )`)
@@ -82,7 +83,7 @@ function appendUserExclusionFilters(filters: SQLStatement[]): void {
         AND ptc.votes_score_net > 0
     )`),
   )
-  filters.push(sql`NOT EXISTS (
+  const hostnameFilter = sql`NOT EXISTS (
       SELECT 1
       FROM relation__post__related__url pru
       JOIN urls ON urls.id = pru.object_id
@@ -90,9 +91,15 @@ function appendUserExclusionFilters(filters: SQLStatement[]): void {
       WHERE pru.subject_id = posts.id
         AND pru.deleted_at IS NULL
         AND pru.votes_score_net > 0
-        AND (urls.hostname_id IN (SELECT hostname_id FROM excluded_hostname_ids)
-             OR blocked_hostname.is_blocked)
+        AND (`.append(
+    buildHostnameExclusionExists(
+      userId,
+      sql`blocked_hostname.id`,
+      sql`blocked_hostname.reversed_hostname`,
+    ),
+  ).append(sql` OR blocked_hostname.is_blocked)
     )`)
+  filters.push(hostnameFilter)
 }
 
 function appendUserFilter(

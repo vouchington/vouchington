@@ -2,7 +2,6 @@ import { callAgentModel } from '@agents/_shared'
 import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
-  getAllReportsForEntity,
   getReportJudgementContextForEntity,
   insertReportJudgement,
   getJudgementByRunId,
@@ -66,7 +65,6 @@ export async function runReportJudgementAgent(
   const loadCurrentInput = async (): Promise<{
     entityContent: NonNullable<Awaited<ReturnType<typeof fetchEntityContent>>>
     context: ReportJudgementContext
-    reports: Awaited<ReturnType<typeof getAllReportsForEntity>>
   } | null> => {
     const entityContent = await fetchEntityContent(entityType, entityId)
     if (!entityContent) {
@@ -91,13 +89,13 @@ export async function runReportJudgementAgent(
           state.refresh ? state.context : null,
         )
     if (!context) return null
-    const reports = await getAllReportsForEntity(entityType, entityId)
-    return { entityContent, context, reports }
+    return { entityContent, context }
   }
   // Scope only the reads: paid model I/O and the conditional write run after the primary read scope.
   const current = rerunById ? await withPrimaryReads(loadCurrentInput) : await loadCurrentInput()
   if (!current) return null
-  const { entityContent, context, reports } = current
+  const { entityContent, context } = current
+  const reports = context.reports
 
   const sanitizedContent = await sanitizePromptInjection(entityContent.text)
   const wrappedContent = wrapExternalContent(sanitizedContent, {

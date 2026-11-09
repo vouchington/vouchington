@@ -10865,6 +10865,12 @@
                   "type": "number"
                 }
               },
+              "current_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "id": {
                 "required": true,
                 "schema": {
@@ -10895,6 +10901,12 @@
                       "type": "number"
                     }
                   ]
+                }
+              },
+              "judged_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "public_response": {
@@ -14418,6 +14430,12 @@
                   "type": "number"
                 }
               },
+              "current_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "id": {
                 "required": true,
                 "schema": {
@@ -14448,6 +14466,12 @@
                       "type": "number"
                     }
                   ]
+                }
+              },
+              "judged_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "public_response": {
@@ -47475,6 +47499,12 @@
                   "type": "number"
                 }
               },
+              "current_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "id": {
                 "required": true,
                 "schema": {
@@ -47505,6 +47535,12 @@
                       "type": "number"
                     }
                   ]
+                }
+              },
+              "judged_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "public_response": {
@@ -47765,6 +47801,12 @@
                   "type": "number"
                 }
               },
+              "report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "signal": {
                 "required": true,
                 "schema": {
@@ -47779,6 +47821,12 @@
                       "value": "embeddings_similarity"
                     }
                   ]
+                }
+              },
+              "summary_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               }
             },
@@ -47960,6 +48008,12 @@
                 "required": true,
                 "schema": {
                   "type": "number"
+                }
+              },
+              "report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "reporter_display_name": {
@@ -48377,6 +48431,12 @@
                                         "type": "number"
                                       }
                                     },
+                                    "report_count_capped": {
+                                      "required": true,
+                                      "schema": {
+                                        "type": "boolean"
+                                      }
+                                    },
                                     "reporter_count": {
                                       "required": true,
                                       "schema": {
@@ -48391,6 +48451,12 @@
                                           "type": "ref"
                                         },
                                         "type": "array"
+                                      }
+                                    },
+                                    "summary_capped": {
+                                      "required": true,
+                                      "schema": {
+                                        "type": "boolean"
                                       }
                                     },
                                     "target_available": {
@@ -48471,6 +48537,18 @@
                                   "type": "object"
                                 },
                                 "type": "array"
+                              }
+                            },
+                            "report_count_capped": {
+                              "required": true,
+                              "schema": {
+                                "type": "boolean"
+                              }
+                            },
+                            "summary_capped": {
+                              "required": true,
+                              "schema": {
+                                "type": "boolean"
                               }
                             }
                           },
@@ -48620,6 +48698,12 @@
                             "type": "number"
                           }
                         },
+                        "report_count_capped": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        },
                         "reporter_count": {
                           "required": true,
                           "schema": {
@@ -48634,6 +48718,12 @@
                               "type": "ref"
                             },
                             "type": "array"
+                          }
+                        },
+                        "summary_capped": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
                           }
                         },
                         "target_available": {
@@ -49345,6 +49435,12 @@
                   "type": "number"
                 }
               },
+              "current_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
               "id": {
                 "required": true,
                 "schema": {
@@ -49375,6 +49471,12 @@
                       "type": "number"
                     }
                   ]
+                }
+              },
+              "judged_report_count_capped": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "public_response": {
@@ -107184,7 +107286,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "80ae1971fa7da8ebb28449af1e4f6b89c7e7f28fb96394e305e6fd4414e2bf53",
+        "hash": "473b0c9b401a9571df245de22f5ac8ad5209483591f7b4807e2ca8bbffd58a18",
         "key": "native.moderation.reports.default"
       },
       "route": {
@@ -107235,7 +107337,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "33aa6c2f0ab3cd1140506c6f181d5df00e4f941494d21463af301766c9d20b1c",
+        "hash": "80e27af728911d84ee9084cd0a99246624ac24f7b15686b6aae5f274db8f375a",
         "key": "native.moderation.reports.clustered.default"
       },
       "route": {
@@ -107262,7 +107364,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "9efcdb770c1024a2fee967f92a7376f85495d34c24d7242b39ece5361f22b83a",
+        "hash": "7f751ade18cd2ec119a45ec7bac4620a42e7020a1bbac2db53b801d2f0d58cdf",
         "key": "native.moderation.reports.clustered.page-2"
       },
       "route": {

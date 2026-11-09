@@ -17,6 +17,7 @@ export async function getJudgementById(
       j.model,
       j.context_hash,
       j.context_report_count,
+      j.is_context_report_count_capped,
       j.context_note_hash,
       j.context_max_reason_rank,
       j.created_at,

@@ -9,6 +9,7 @@ import {
   insertTestUrlHostname,
   insertTestUrl,
   createEntityRelationWithElection,
+  createHostnameExclusionFixture,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
@@ -102,6 +103,30 @@ describe('getPostFeedIds hostname filtering', () => {
     const found = result.results.find(r => r.entity_id === post.id)
     expect(found).toBeUndefined()
   })
+
+  it.each(['_', '%'] as const)(
+    'preserves SQL LIKE wildcard semantics for %s while deduplicating overlapping block and mute',
+    async patternWildcard => {
+      const {
+        viewer: exclusionViewer,
+        publisher,
+        blockedUrlId,
+        visibleUrlId,
+      } = await createHostnameExclusionFixture({ patternWildcard })
+      const blockedPost = await createTestPost({ user: publisher })
+      const visiblePost = await createTestPost({ user: publisher })
+      await createEntityRelationWithElection(blockedPost.id, blockedUrlId, publisher.id, 1)
+      await createEntityRelationWithElection(visiblePost.id, visibleUrlId, publisher.id, 1)
+
+      const result = await getPostFeedIds(exclusionViewer, {
+        feed_type: 'follow_users',
+        limit: 100,
+      })
+      const resultIds = result.results.map(row => row.entity_id)
+
+      expect(resultIds).toEqual([visiblePost.id])
+    },
+  )
 
   it('does NOT exclude posts when hostname has 0-vote URL relation', async () => {
     const random = Math.random().toString(36).slice(2, 10)

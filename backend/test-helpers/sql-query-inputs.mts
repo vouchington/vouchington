@@ -22,7 +22,6 @@ export function createEligibleRssFeedItemsCteBaseQueryForTest(): SQLStatement {
 export function createEligiblePostsCteBaseQueryForTest(): SQLStatement {
   return sql`WITH excluded_users AS (SELECT NULL::uuid AS user_id WHERE FALSE),
     excluded_topics AS (SELECT NULL::uuid AS topic_id WHERE FALSE),
-    excluded_hostname_ids AS (SELECT NULL::uuid AS hostname_id WHERE FALSE),
     hidden_posts AS (SELECT NULL::uuid AS post_id WHERE FALSE)`
 }
 

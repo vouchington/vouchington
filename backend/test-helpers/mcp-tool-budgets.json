@@ -787,11 +787,11 @@
     "community_moderation": {
       "read_community_moderation": {
         "measured": {
-          "list": 43262,
+          "list": 43418,
           "core": 7833
         },
         "max": {
-          "list": 44000,
+          "list": 45000,
           "core": 8000
         }
       },
@@ -981,11 +981,11 @@
       },
       "list_moderation_reports": {
         "measured": {
-          "list": 21726,
+          "list": 22668,
           "core": 529
         },
         "max": {
-          "list": 23000,
+          "list": 24000,
           "core": 1000
         }
       },

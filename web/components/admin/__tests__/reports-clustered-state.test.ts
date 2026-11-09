@@ -22,6 +22,23 @@ describe('reports clustered state', () => {
       REPORT_REASONS.map((option, index) => ({ reason: option.value, count: index + 1 })),
     )
   })
+
+  it('preserves capped summary markers from visible duplicate members', () => {
+    const duplicate = makeDuplicateCluster([
+      ...REPORT_REASONS.map((_, index) =>
+        makeCluster({
+          id: `post:post-${index}`,
+          entity_id: `post-${index}`,
+          report_count_capped: index === 0,
+          summary_capped: index === 0,
+        }),
+      ),
+    ])
+
+    const [visibleDuplicate] = filterVisibleDuplicateClusters([duplicate], new Set())
+
+    expect(visibleDuplicate).toMatchObject({ report_count_capped: true, summary_capped: true })
+  })
 })
 
 function makeDuplicateCluster(
@@ -32,6 +49,8 @@ function makeDuplicateCluster(
     signal: 'content_hash_duplicate',
     post_count: clusters.length,
     report_count: clusters.length,
+    report_count_capped: false,
+    summary_capped: false,
     reason_breakdown: [],
     first_reported_at: '2026-06-01T00:00:00.000Z',
     last_reported_at: '2026-06-01T00:00:00.000Z',
@@ -47,6 +66,8 @@ function makeCluster(
     entity_type: 'post',
     entity_id: 'post-1',
     report_count: 1,
+    report_count_capped: false,
+    summary_capped: false,
     reporter_count: 1,
     reason_breakdown: [{ reason: 'spam', count: 1 }],
     first_reported_at: '2026-06-01T00:00:00.000Z',

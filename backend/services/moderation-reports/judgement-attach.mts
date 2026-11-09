@@ -36,7 +36,9 @@ export async function attachJudgements<
           internal_response: raw.internal_response,
           is_stale: raw.context_hash !== context?.contextHash,
           judged_report_count: raw.context_report_count,
+          judged_report_count_capped: raw.is_context_report_count_capped,
           current_report_count: context?.reportCount ?? 0,
+          current_report_count_capped: context?.reportCountCapped ?? false,
         }
       : null
     return { ...item, judgement }

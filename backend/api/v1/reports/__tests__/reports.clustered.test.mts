@@ -72,6 +72,8 @@ describe('GET /api/v1/reports?cluster=entity', () => {
       entity_type: 'post',
       entity_id: postId,
       report_count: 3,
+      report_count_capped: false,
+      summary_capped: false,
       reporter_count: 3,
     })
     expect(cluster.reason_breakdown).toEqual(

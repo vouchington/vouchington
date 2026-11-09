@@ -22,6 +22,7 @@
             }
           ],
           "report_count": 1,
+          "report_count_capped": false,
           "reporter_count": 1,
           "reports": [
             {
@@ -38,6 +39,7 @@
               "post_moderation_context": null,
               "reason": "spam",
               "report_count": 1,
+              "report_count_capped": false,
               "reporter_display_name": null,
               "reporter_user_id": "00000000-0000-7000-8300-000000000101",
               "reporter_username": "reporter1",
@@ -54,6 +56,7 @@
               "target_user_id": "00000000-0000-7000-8400-000000000101"
             }
           ],
+          "summary_capped": false,
           "target_available": true,
           "target_content": null,
           "target_is_restricted": false,
@@ -80,6 +83,7 @@
             }
           ],
           "report_count": 1,
+          "report_count_capped": false,
           "reporter_count": 1,
           "reports": [
             {
@@ -96,6 +100,7 @@
               "post_moderation_context": null,
               "reason": "spam",
               "report_count": 1,
+              "report_count_capped": false,
               "reporter_display_name": null,
               "reporter_user_id": "00000000-0000-7000-8300-000000000102",
               "reporter_username": "reporter2",
@@ -112,6 +117,7 @@
               "target_user_id": "00000000-0000-7000-8400-000000000101"
             }
           ],
+          "summary_capped": false,
           "target_available": true,
           "target_content": null,
           "target_is_restricted": false,
@@ -138,6 +144,7 @@
             }
           ],
           "report_count": 1,
+          "report_count_capped": false,
           "reporter_count": 1,
           "reports": [
             {
@@ -154,6 +161,7 @@
               "post_moderation_context": null,
               "reason": "spam",
               "report_count": 1,
+              "report_count_capped": false,
               "reporter_display_name": null,
               "reporter_user_id": "00000000-0000-7000-8300-000000000103",
               "reporter_username": "reporter3",
@@ -170,6 +178,7 @@
               "target_user_id": "00000000-0000-7000-8400-000000000101"
             }
           ],
+          "summary_capped": false,
           "target_available": true,
           "target_content": null,
           "target_is_restricted": false,
@@ -189,7 +198,9 @@
         }
       ],
       "report_count": 3,
-      "signal": "content_hash_duplicate"
+      "report_count_capped": false,
+      "signal": "content_hash_duplicate",
+      "summary_capped": false
     }
   ],
   "page_info": {
@@ -218,6 +229,7 @@
         }
       ],
       "report_count": 1,
+      "report_count_capped": false,
       "reporter_count": 1,
       "reports": [
         {
@@ -234,6 +246,7 @@
           "post_moderation_context": null,
           "reason": "spam",
           "report_count": 1,
+          "report_count_capped": false,
           "reporter_display_name": null,
           "reporter_user_id": "00000000-0000-7000-8300-000000000101",
           "reporter_username": "reporter1",
@@ -250,6 +263,7 @@
           "target_user_id": "00000000-0000-7000-8400-000000000101"
         }
       ],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,
@@ -276,6 +290,7 @@
         }
       ],
       "report_count": 1,
+      "report_count_capped": false,
       "reporter_count": 1,
       "reports": [
         {
@@ -292,6 +307,7 @@
           "post_moderation_context": null,
           "reason": "spam",
           "report_count": 1,
+          "report_count_capped": false,
           "reporter_display_name": null,
           "reporter_user_id": "00000000-0000-7000-8300-000000000102",
           "reporter_username": "reporter2",
@@ -308,6 +324,7 @@
           "target_user_id": "00000000-0000-7000-8400-000000000101"
         }
       ],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,
@@ -338,6 +355,7 @@
         }
       ],
       "report_count": 2,
+      "report_count_capped": false,
       "reporter_count": 2,
       "reports": [
         {
@@ -354,6 +372,7 @@
           "post_moderation_context": null,
           "reason": "spam",
           "report_count": 2,
+          "report_count_capped": false,
           "reporter_display_name": null,
           "reporter_user_id": "00000000-0000-7000-8300-000000000201",
           "reporter_username": "alice",
@@ -392,6 +411,7 @@
           "post_moderation_context": null,
           "reason": "other",
           "report_count": 2,
+          "report_count_capped": false,
           "reporter_display_name": null,
           "reporter_user_id": "00000000-0000-7000-8300-000000000202",
           "reporter_username": "ban-evasion",
@@ -408,6 +428,7 @@
           "target_user_id": "00000000-0000-7000-8000-000000000201"
         }
       ],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,
@@ -434,6 +455,7 @@
         }
       ],
       "report_count": 1,
+      "report_count_capped": false,
       "reporter_count": 1,
       "reports": [
         {
@@ -450,6 +472,7 @@
           "post_moderation_context": null,
           "reason": "spam",
           "report_count": 1,
+          "report_count_capped": false,
           "reporter_display_name": null,
           "reporter_user_id": "00000000-0000-7000-8300-000000000103",
           "reporter_username": "reporter3",
@@ -466,6 +489,7 @@
           "target_user_id": "00000000-0000-7000-8400-000000000101"
         }
       ],
+      "summary_capped": false,
       "target_available": true,
       "target_content": null,
       "target_is_restricted": false,

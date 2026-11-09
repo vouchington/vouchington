@@ -17,6 +17,7 @@ const MAX_TEST_JUDGEMENT_REPORTS = 50
 export type TestReportJudgementContext = {
   contextHash: string
   reportCount: number
+  reportCountCapped: boolean
   noteHash: string
   maxReasonRank: number
 }
@@ -27,27 +28,23 @@ export async function getTestReportJudgementContext(
 ): Promise<TestReportJudgementContext> {
   const query = sql`/* getTestReportJudgementContext */ SELECT id, reason, note FROM moderation_reports WHERE `
   query.append(fkColumn)
-  query.append(
-    sql` = ${entityId}::uuid ORDER BY created_at DESC, id DESC LIMIT ${MAX_TEST_JUDGEMENT_REPORTS}`,
-  )
+  query.append(sql` = ${entityId}::uuid ORDER BY id DESC LIMIT 1001`)
   const { rows } = await read<{ id: string; reason: ModerationReportReason; note: string | null }>(
     query,
   )
+  const reportCount = Math.min(rows.length, 1000)
+  const reportCountCapped = rows.length > 1000
+  const sample = rows.slice(0, MAX_TEST_JUDGEMENT_REPORTS)
 
-  const countQuery = sql`/* getTestReportJudgementContext:count */ SELECT COUNT(*)::integer AS count FROM moderation_reports WHERE `
-  countQuery.append(fkColumn)
-  countQuery.append(sql` = ${entityId}::uuid`)
-  const { rows: countRows } = await read<{ count: number }>(countQuery)
-  const reportCount = countRows[0]?.count ?? 0
-
-  const normalizedReports = rows.map(report => ({
+  const normalizedReports = sample.map(report => ({
     id: report.id,
     reason: report.reason,
     note: report.note ?? null,
   }))
   return {
-    contextHash: sha256({ reportCount, reports: normalizedReports }),
+    contextHash: sha256({ reportCount, reportCountCapped, reports: normalizedReports }),
     reportCount,
+    reportCountCapped,
     noteHash: sha256(normalizedReports.map(report => ({ id: report.id, note: report.note }))),
     maxReasonRank: normalizedReports.reduce(
       (max, report) => Math.max(max, MODERATION_REPORT_REASON_SEVERITY_RANK[report.reason]),

@@ -94,6 +94,7 @@ export function buildUnboundedUnpartitionedTables(
         'moderation_reports',
         'Unresolved reports remain available for staff action, with one pending report per reporter and target; resolved reports expire after 24 months. The open backlog has no time cap.',
       ],
+      ['moderation_report_clusters', 'One row per target and outcome; pending has no time cap.'],
       [
         'moderation_report_judgements',
         'The latest judgement per entity and undispatched work remain; only older dispatched judgements with a newer dispatched successor expire after 90 days.',

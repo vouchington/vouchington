@@ -3,12 +3,15 @@
 import { Badge } from '@/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { accessibleNameWithVisibleText } from '@/lib/a11y/accessible-name-with-visible-text'
+import { ReportJudgementCounts } from '@/components/moderation/report-judgement-counts'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { judgementLabel, judgementVariant } from './report-judgement-format'
 import type { AdminModerationReport } from './reports-client-types'
 
 export function AdminReportJudgementCell({ report }: { report: AdminModerationReport }) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   const judgementAction = report.judgement
     ? judgementLabel(report.judgement.recommended_action)
     : null
@@ -68,6 +71,13 @@ export function AdminReportJudgementCell({ report }: { report: AdminModerationRe
                 {report.judgement.internal_response}
               </p>
             </div>
+            <ReportJudgementCounts
+              judgedReportCount={report.judgement.judged_report_count}
+              judgedReportCountCapped={report.judgement.judged_report_count_capped}
+              currentReportCount={report.judgement.current_report_count}
+              currentReportCountCapped={report.judgement.current_report_count_capped}
+              uiLocale={uiLocale}
+            />
           </PopoverContent>
         </Popover>
       ) : (

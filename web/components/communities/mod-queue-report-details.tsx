@@ -1,8 +1,10 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
+import { ReportJudgementCounts } from '@/components/moderation/report-judgement-counts'
 import { judgementLabel, judgementVariant } from '@/components/admin/report-judgement-format'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import type { CommunityModerationReport } from '@/types/api-responses'
 
 export function ModQueueReportDetails({
@@ -15,6 +17,7 @@ export function ModQueueReportDetails({
   report: CommunityModerationReport
 }) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   return (
     <>
       {!isBanEvasion && (
@@ -43,6 +46,13 @@ export function ModQueueReportDetails({
             </Badge>
           ) : null}
           <span className='text-xs text-muted-foreground'>{report.judgement.public_response}</span>
+          <ReportJudgementCounts
+            judgedReportCount={report.judgement.judged_report_count}
+            judgedReportCountCapped={report.judgement.judged_report_count_capped}
+            currentReportCount={report.judgement.current_report_count}
+            currentReportCountCapped={report.judgement.current_report_count_capped}
+            uiLocale={uiLocale}
+          />
         </div>
       ) : null}
     </>

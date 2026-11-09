@@ -55,7 +55,9 @@ export interface StaffModerationReport extends ModerationReportListItem {
     internal_response: string
     is_stale: boolean
     judged_report_count: number | null
+    judged_report_count_capped: boolean
     current_report_count: number
+    current_report_count_capped: boolean
   } | null
   post_moderation_context: unknown
 }
@@ -88,6 +90,8 @@ export interface StaffModerationReportCluster {
   entity_type: ReportableEntityType
   entity_id: string
   report_count: number
+  report_count_capped: boolean
+  summary_capped: boolean
   reporter_count: number
   reason_breakdown: Array<{ reason: ReportReason; count: number }>
   first_reported_at: string
@@ -100,7 +104,11 @@ export interface StaffModerationReportCluster {
   target_available: boolean | null
   target_is_restricted: boolean
   indicators: ModerationReportClusterIndicators
-  reports: StaffModerationReport[]
+  reports: StaffClusteredModerationReport[]
+}
+
+export type StaffClusteredModerationReport = StaffModerationReport & {
+  report_count_capped: boolean
 }
 
 export interface StaffModerationReportDuplicateCluster {
@@ -108,6 +116,8 @@ export interface StaffModerationReportDuplicateCluster {
   signal: 'content_hash_duplicate' | 'embeddings_similarity'
   post_count: number
   report_count: number
+  report_count_capped: boolean
+  summary_capped: boolean
   reason_breakdown: Array<{ reason: ReportReason; count: number }>
   first_reported_at: string
   last_reported_at: string

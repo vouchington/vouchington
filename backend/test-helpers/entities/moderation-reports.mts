@@ -178,7 +178,7 @@ export async function insertTestReportJudgement(options: {
   const query = sql`/* insertTestReportJudgement */ INSERT INTO moderation_report_judgements (id, `
   query.append(fkColumn)
   query.append(
-    sql`, case_id, triggering_report_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank)
+    sql`, case_id, triggering_report_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, is_context_report_count_capped, context_note_hash, context_max_reason_rank)
     VALUES (
       COALESCE(${judgementId || null}::uuid, uuidv7()),
       ${options.entityId}::uuid,
@@ -189,7 +189,7 @@ export async function insertTestReportJudgement(options: {
       ${options.internalResponse ?? 'Content appears to comply with community guidelines.'},
       'test',
       ${context.contextHash},
-      ${context.reportCount},
+      ${context.reportCount}, ${context.reportCountCapped},
       ${context.noteHash},
       ${context.maxReasonRank}
     )

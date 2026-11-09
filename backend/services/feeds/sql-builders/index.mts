@@ -1,5 +1,5 @@
 export * from './followed-cte.mts'
 export * from './excluded-cte.mts'
-export * from './excluded-hostnames-cte.mts'
+export * from './hostname-exclusion-filter.mts'
 export * from './hidden-cte.mts'
 export * from './community-list-cte.mts'

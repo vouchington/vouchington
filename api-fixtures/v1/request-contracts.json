@@ -5775,14 +5775,20 @@
                         "report_count": {
                           "type": "number"
                         },
+                        "report_count_capped": {
+                          "type": "boolean"
+                        },
                         "reporter_count": {
                           "type": "number"
                         },
                         "reports": {
                           "items": {
-                            "$ref": "#/components/schemas/Omit_PendingModerationReport__cursor_created_at_____cursor_report_count_____cursor_severity_rank_"
+                            "$ref": "#/components/schemas/ClusteredPendingModerationReport"
                           },
                           "type": "array"
+                        },
+                        "summary_capped": {
+                          "type": "boolean"
                         },
                         "target_available": {
                           "anyOf": [
@@ -5851,8 +5857,10 @@
                         "last_reported_at",
                         "reason_breakdown",
                         "report_count",
+                        "report_count_capped",
                         "reporter_count",
                         "reports",
+                        "summary_capped",
                         "target_available",
                         "target_content",
                         "target_is_restricted",
@@ -5903,9 +5911,15 @@
                   "report_count": {
                     "type": "number"
                   },
+                  "report_count_capped": {
+                    "type": "boolean"
+                  },
                   "signal": {
                     "enum": ["content_hash_duplicate", "embeddings_similarity"],
                     "type": "string"
+                  },
+                  "summary_capped": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -5916,7 +5930,9 @@
                   "post_count",
                   "reason_breakdown",
                   "report_count",
-                  "signal"
+                  "report_count_capped",
+                  "signal",
+                  "summary_capped"
                 ],
                 "type": "object"
               },
@@ -6015,14 +6031,20 @@
                   "report_count": {
                     "type": "number"
                   },
+                  "report_count_capped": {
+                    "type": "boolean"
+                  },
                   "reporter_count": {
                     "type": "number"
                   },
                   "reports": {
                     "items": {
-                      "$ref": "#/components/schemas/Omit_PendingModerationReport__cursor_created_at_____cursor_report_count_____cursor_severity_rank_"
+                      "$ref": "#/components/schemas/ClusteredPendingModerationReport"
                     },
                     "type": "array"
+                  },
+                  "summary_capped": {
+                    "type": "boolean"
                   },
                   "target_available": {
                     "anyOf": [
@@ -6091,8 +6113,10 @@
                   "last_reported_at",
                   "reason_breakdown",
                   "report_count",
+                  "report_count_capped",
                   "reporter_count",
                   "reports",
+                  "summary_capped",
                   "target_available",
                   "target_content",
                   "target_is_restricted",
@@ -21300,6 +21324,9 @@
         "current_report_count": {
           "type": "number"
         },
+        "current_report_count_capped": {
+          "type": "boolean"
+        },
         "id": {
           "type": "string"
         },
@@ -21319,6 +21346,9 @@
             }
           ]
         },
+        "judged_report_count_capped": {
+          "type": "boolean"
+        },
         "public_response": {
           "type": "string"
         },
@@ -21329,10 +21359,12 @@
       },
       "required": [
         "current_report_count",
+        "current_report_count_capped",
         "id",
         "internal_response",
         "is_stale",
         "judged_report_count",
+        "judged_report_count_capped",
         "public_response",
         "recommended_action"
       ],
@@ -40971,6 +41003,252 @@
         "updated_at",
         "lifted_at",
         "lifted_by_id"
+      ],
+      "type": "object"
+    },
+    "ClusteredPendingModerationReport": {
+      "additionalProperties": false,
+      "properties": {
+        "admin_action_path": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "automatic_judgement_enabled": {
+          "type": "boolean"
+        },
+        "case_id": {
+          "type": "string"
+        },
+        "community_ban_evasion": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/CommunityBanEvasionContext"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "entity_id": {
+          "type": "string"
+        },
+        "entity_type": {
+          "enum": ["comment", "post", "rss_feed_item", "url_hostname", "user"],
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "is_system_generated": {
+          "type": "boolean"
+        },
+        "judgement": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/FullJudgementSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "post_moderation_context": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/PostModerationContext"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "enum": [
+            "harassment",
+            "illegal_content",
+            "misinformation",
+            "other",
+            "spam",
+            "vote_manipulation"
+          ],
+          "type": "string"
+        },
+        "report_count": {
+          "type": "number"
+        },
+        "report_count_capped": {
+          "type": "boolean"
+        },
+        "reporter_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reporter_user_id": {
+          "type": "string"
+        },
+        "reporter_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolved_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolver_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolver_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "status": {
+          "enum": ["actioned", "dismissed", "pending", "reviewed"],
+          "type": "string"
+        },
+        "target_available": {
+          "anyOf": [
+            {
+              "const": false
+            },
+            {
+              "const": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_content": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/ModerationReportTargetContent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_is_anonymous": {
+          "type": "boolean"
+        },
+        "target_is_restricted": {
+          "type": "boolean"
+        },
+        "target_label": {
+          "type": "string"
+        },
+        "target_path": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "target_pending_community_review": {
+          "type": "boolean"
+        },
+        "target_user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "admin_action_path",
+        "automatic_judgement_enabled",
+        "case_id",
+        "created_at",
+        "entity_id",
+        "entity_type",
+        "id",
+        "is_system_generated",
+        "judgement",
+        "note",
+        "post_moderation_context",
+        "reason",
+        "report_count",
+        "report_count_capped",
+        "reporter_display_name",
+        "reporter_user_id",
+        "resolved_by_id",
+        "resolver_display_name",
+        "resolver_username",
+        "reviewed_at",
+        "status",
+        "target_available",
+        "target_content",
+        "target_is_restricted",
+        "target_label",
+        "target_path",
+        "target_user_id"
       ],
       "type": "object"
     }

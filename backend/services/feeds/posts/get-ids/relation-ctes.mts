@@ -4,7 +4,6 @@ import {
   buildCommunityListProxyMutedTopicsCTE,
   buildCommunityListTopicsCTE,
   buildExcludedCTE,
-  buildExcludedHostnameIdsCTE,
   buildFollowedCTE,
   buildHiddenCTE,
 } from '../../sql-builders/index.mts'
@@ -39,9 +38,6 @@ export function appendPostFeedRelationCTEs(
         cteAlias: 'hidden_posts',
       }),
     )
-    .append(sql`,
-    `)
-    .append(buildExcludedHostnameIdsCTE(currentUserId))
 }
 
 function buildFollowedTopicsCTE({

@@ -43,8 +43,10 @@ describe('ModQueueReports judgement', () => {
               public_response: 'Needs another look.',
               internal_response: 'Older report context.',
               is_stale: true,
-              judged_report_count: 1,
-              current_report_count: 2,
+              judged_report_count: 1000,
+              judged_report_count_capped: true,
+              current_report_count: 2000,
+              current_report_count_capped: true,
             },
           }),
         ]}
@@ -54,5 +56,7 @@ describe('ModQueueReports judgement', () => {
 
     expect(screen.getByText('warn')).toBeInTheDocument()
     expect(screen.getByText('Outdated')).toBeInTheDocument()
+    expect(screen.getByText('At judgement: 1K+ reports')).toBeInTheDocument()
+    expect(screen.getByText('Current reports: 2K+ reports')).toBeInTheDocument()
   })
 })

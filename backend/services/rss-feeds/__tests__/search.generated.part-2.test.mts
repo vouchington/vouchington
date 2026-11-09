@@ -36,7 +36,7 @@ describe('search.generated', () => {
     expect(found).toBeDefined()
   })
 
-  it('searchRssFeeds includes descendant topic feeds when requested', async () => {
+  it('searchRssFeeds returns a descendant feed once across overlapping roots', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser()
     if (!user) throw new Error('Failed to create test user')
@@ -66,11 +66,11 @@ describe('search.generated', () => {
     })
 
     const results = await searchRssFeeds({
-      topic_id: parent.id,
+      topic_ids: [parent.id, child.id],
       include_descendants: true,
     })
 
-    expect(results.some(r => r.id === childFeed.id)).toBe(true)
+    expect(results.filter(r => r.id === childFeed.id)).toHaveLength(1)
     expect(results.some(r => r.id === otherFeed.id)).toBe(false)
   })
 
