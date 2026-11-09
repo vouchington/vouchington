@@ -52,8 +52,10 @@ export function buildRawCandidates(
     !options.community_id &&
     (sort === 'new' || sort === 'relevance' || sort === 'following_new'),
   )
-  const postTypeFilter = authorAxis ? null : indexServedPostType(options, sort)
   const dataPointFilter = authorAxis ? null : indexServedDataPointFilter(options, sort)
+  // Each indexed data-point predicate requires structured data, which the posts CHECKs
+  // allow only on data_point posts. Avoid a redundant type index scan in generic plans.
+  const postTypeFilter = authorAxis || dataPointFilter ? null : indexServedPostType(options, sort)
   const globalIdAxis =
     (sort === 'new' || sort === 'relevance' || sort === 'following_new') &&
     !options.community_id &&

@@ -6,6 +6,7 @@ const START_INDEX = 100_000
 const COMMUNITY_POSTS_PER_COMMUNITY = 10_000
 const RECOMMENDATION_COUNT = 20_000
 const COMMUNITY_COUNT = 2
+const CLEANUP_BATCH_SIZE = 500
 
 // Tombstone one quarter of each cohort, but keep every 200th ordinal as a status witness.
 
@@ -138,19 +139,29 @@ export async function cleanupPostDiscoverySearchFixture(): Promise<void> {
     seedUuid(100 + index, '14'),
   )
 
+  // Each deleted post runs foreign-key checks, including the self-referential root check.
+  // Commit bounded batches so cleanup remains resumable and each statement has finite work.
+  for (let offset = 0; offset < allPostIds.length; offset += CLEANUP_BATCH_SIZE) {
+    const batch = allPostIds.slice(offset, offset + CLEANUP_BATCH_SIZE)
+    await using transaction = await beginTransaction()
+    // no-mistakes-disable-next-line query-reached-per-item: each owned 500-post transaction deletes review children before their posts.
+    await transaction(
+      '/* cleanupPostDiscoverySearchFixture:community-reviews */ DELETE FROM community_post_reviews WHERE post_id = ANY($1::uuid[])',
+      [batch],
+    )
+    // no-mistakes-disable-next-line query-reached-per-item: the same bounded transaction deletes recommendation children before their posts.
+    await transaction(
+      '/* cleanupPostDiscoverySearchFixture:recommendations */ DELETE FROM post_topic_recommendations WHERE post_id = ANY($1::uuid[])',
+      [batch],
+    )
+    // no-mistakes-disable-next-line query-reached-per-item: deleting at most 500 owned posts per commit bounds FK checks and lock lifetime.
+    await transaction(
+      '/* cleanupPostDiscoverySearchFixture:posts */ DELETE FROM posts WHERE id = ANY($1::uuid[])',
+      [batch],
+    )
+    await transaction.commit()
+  }
   await using transaction = await beginTransaction()
-  await transaction(
-    '/* cleanupPostDiscoverySearchFixture:community-reviews */ DELETE FROM community_post_reviews WHERE post_id = ANY($1::uuid[])',
-    [communityPostIds],
-  )
-  await transaction(
-    '/* cleanupPostDiscoverySearchFixture:recommendations */ DELETE FROM post_topic_recommendations WHERE post_id = ANY($1::uuid[])',
-    [recommendationPostIds],
-  )
-  await transaction(
-    '/* cleanupPostDiscoverySearchFixture:posts */ DELETE FROM posts WHERE id = ANY($1::uuid[])',
-    [allPostIds],
-  )
   await transaction(
     '/* cleanupPostDiscoverySearchFixture:communities */ DELETE FROM communities WHERE id = ANY($1::uuid[])',
     [communityIds],
