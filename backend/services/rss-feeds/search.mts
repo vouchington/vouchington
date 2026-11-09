@@ -60,15 +60,13 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
         WHERE topic_descendants.topic_id = rss_feeds.topic_id
       ) = ${effectiveTopicIds.length}`)
     } else {
-      const descendants = sql`EXISTS (
+      filters.push(sql`EXISTS (
         SELECT 1 FROM topic_descendants
         WHERE topic_descendants.topic_id = rss_feeds.topic_id
-          AND topic_descendants.root_post_id IN (`
-      effectiveTopicIds.forEach((id, index) => {
-        if (index > 0) descendants.append(sql`, `)
-        descendants.append(sql`${id}::uuid`)
-      })
-      filters.push(descendants.append(sql`))`))
+          AND topic_descendants.root_post_id IN (
+            SELECT root_post_id FROM topic_descendant_roots
+          )
+      )`)
     }
   }
 
@@ -105,8 +103,8 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     `
   query.append(hasTextSearch || shouldIncludeTopicDescendants ? sql`WITH RECURSIVE ` : sql`WITH `)
   if (shouldIncludeTopicDescendants) {
-    // Keep input arity and root-key scope visible in both custom and generic plans.
-    appendTopicDescendantsCte(query, effectiveTopicIds, { bindRootIdsIndividually: true })
+    // Reuse the bounded request inputs in recursion and membership under generic planning.
+    appendTopicDescendantsCte(query, effectiveTopicIds, { shareRootInputs: true })
   }
 
   if (hasTextSearch) {

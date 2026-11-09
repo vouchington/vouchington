@@ -8,24 +8,28 @@ import sql from 'sql-template-strings'
 export function appendTopicDescendantsCte(
   query: ReturnType<typeof sql>,
   topicIds: string[],
-  options: { trailingComma?: boolean; bindRootIdsIndividually?: boolean } = {},
+  options: { trailingComma?: boolean; shareRootInputs?: boolean } = {},
 ): void {
-  query.append(sql`topic_descendants AS (
-    SELECT topics.id AS root_post_id, topics.id AS topic_id
-    FROM topics
-    JOIN unnest(`)
-  if (options.bindRootIdsIndividually) {
-    query.append(sql`ARRAY[`)
+  if (options.shareRootInputs) {
+    query.append(sql`topic_descendant_roots AS NOT MATERIALIZED (
+      SELECT root_post_id FROM unnest(ARRAY[`)
     topicIds.forEach((id, index) => {
       if (index > 0) query.append(sql`, `)
       query.append(sql`${id}::uuid`)
     })
-    query.append(sql`]::uuid[]`)
-  } else {
-    query.append(sql`${topicIds}::uuid[]`)
+    query.append(sql`]::uuid[]) AS input(root_post_id)
+    ), `)
   }
-  query.append(sql`) AS roots(root_post_id)
-      ON roots.root_post_id = topics.id
+  query.append(sql`topic_descendants AS (
+    SELECT topics.id AS root_post_id, topics.id AS topic_id
+    FROM topics
+    JOIN `)
+  query.append(
+    options.shareRootInputs
+      ? sql`topic_descendant_roots roots`
+      : sql`unnest(${topicIds}::uuid[]) AS roots(root_post_id)`,
+  )
+  query.append(sql` ON roots.root_post_id = topics.id
     WHERE topics.deleted_at IS NULL
       AND topics.merged_into_topic_id IS NULL
     UNION
