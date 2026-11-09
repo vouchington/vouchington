@@ -78,9 +78,10 @@ only.
   lives under `docs/development/postgresql/schema-snapshot/markdown`; the writer accepts a separate
   Markdown root while preserving the JSON package asset. The source package also owns the
   `PARTITION_POLICIES` / `UNBOUNDED_UNPARTITIONED_TABLES` growth maps.
-- `catalog-query.mts` / `catalog-queries.mts` — wrap platform catalog SQL with `@data-stores/psql`
-  `read()`. `readSchemaCatalog()` is the live adapter; individual readers stay in
-  `@vouchington/postgres/pg-schema-snapshot`. Queries still exclude partition children and
+- `catalog-queries.mts` — wraps platform catalog SQL with a `@data-stores/psql` transaction pinned
+  with `SET LOCAL TimeZone = 'UTC'`, because `pg_get_indexdef` prints timestamptz constants in the
+  session TimeZone. `readSchemaCatalog()` is the one live adapter for generation and verification;
+  individual readers stay in `@vouchington/postgres/pg-schema-snapshot`. Queries still exclude partition children and
   extension-owned objects, and never select table data. Catalog output is covered by
   `db:snapshot:check`.
 - `types.mts` — re-exports `SchemaCatalog` and the versioned (`formatVersion: 2`)
