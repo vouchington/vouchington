@@ -7,11 +7,11 @@ import {
 } from '@services/account-data-requests'
 import * as exportS3 from '@services/account-data-requests/s3'
 import { createTestUser, expireUserDataRequestForTest, softDeleteUser } from '@voucha/test-helpers'
-import { processSendEmailAddressLoginToken } from './authentication.mts'
-import { processSendCommunityInviteEmail } from './community-invite.mts'
-import { processSendDataExportReadyEmail } from './data-export-ready.mts'
-import { processSendReauthenticationToken } from './reauthentication.mts'
-import { processSendEmailVerificationToken } from './email-verification.mts'
+import { processSendEmailAddressLoginToken } from '../authentication.mts'
+import { processSendCommunityInviteEmail } from '../community-invite.mts'
+import { processSendDataExportReadyEmail } from '../data-export-ready.mts'
+import { processSendReauthenticationToken } from '../reauthentication.mts'
+import { processSendEmailVerificationToken } from '../email-verification.mts'
 
 describe('processSendEmailAddressLoginToken', () => {
   beforeEach(() => {

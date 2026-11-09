@@ -4,7 +4,7 @@ import * as ses from '@modules/aws/ses'
 import { markCopyrightDeliveryIntentBouncedBySesMessageId } from '@services/copyright-notices'
 import { getPendingCopyrightStaffCases } from '@services/copyright-notices/read-models-staff-case'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { processSendCopyrightNoticeEmail } from './copyright-notice.mts'
+import { processSendCopyrightNoticeEmail } from '../copyright-notice.mts'
 import { captureTestLogOutput } from '@voucha/test-helpers/services/copyright-notices/capture-log-output'
 import { readTestInformationRequestIntents } from '@voucha/test-helpers/services/copyright-notices/claimant-delivery'
 import {
