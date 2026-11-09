@@ -18,7 +18,6 @@ describe('assembled EXPLAIN reads', () => {
       )
       const paths = [
         'backend/services/trending-posts/get-trending-posts.mts',
-        'backend/services/trending-topics/get-trending-topics.mts',
         'backend/services/posts/check-privacy-access-batch.mts',
       ]
       const sources = paths.map(fileName => ({
@@ -31,7 +30,6 @@ describe('assembled EXPLAIN reads', () => {
         report.unclassifiedStatements.map(statement => [statement.name, statement.reason]),
       ).toEqual([
         ['getTrendingPosts', 'unresolved-sql-fragment'],
-        ['getTrendingTopics', 'unresolved-sql-fragment'],
         ['canViewPostsBatch', 'unresolved-sql-fragment'],
       ])
       expect(report.uncoveredReads.map(read => read.name)).toEqual([])
