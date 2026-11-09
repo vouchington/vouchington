@@ -8,6 +8,7 @@ import { insertEntityRelation } from '@voucha/test-helpers/entities/entity-relat
 import { createTrendingPostData } from '@voucha/test-helpers/entities/trending-posts'
 import { createTrendingTopicData } from '@voucha/test-helpers/entities/trending-topics'
 import { updateEntityRelationElection } from '@voucha/test-helpers/entities/user-profile-fixture-mutations'
+import { refreshMaterializedViewForTest } from '../../test-helpers/refresh-materialized-view-for-test.mts'
 import type { PrivateUser } from '@services/users/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -45,6 +46,7 @@ describe('MCP output schema contract for trending reads — real DB', () => {
     for (const postTagCount of [1, 2, 3]) {
       await createTrendingTopicData({ postTagCount, rssItemTagCount: 0, netVote: 1 })
     }
+    await refreshMaterializedViewForTest('mv_trending_topics')
   })
 
   describe('read_posts.trending', () => {

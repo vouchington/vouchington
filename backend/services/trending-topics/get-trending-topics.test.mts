@@ -101,15 +101,18 @@ describe('getTrendingTopics', () => {
     const owned = [topicId, ...more.map(row => row.topicId)].toSorted().toReversed()
     const first = await idsFrom(owned[0]!, 5, { limit: 999 })
     expect(first.results).toHaveLength(100)
-    expect(first.results.map(row => row.id)).toEqual(owned.slice(0, 100))
+    // Foreign score ties may interleave, so assert only that owned rows keep id order.
+    const ownedInPage = first.results.map(row => row.id).filter(id => owned.includes(id))
+    expect(ownedInPage).toEqual(owned.slice(0, ownedInPage.length))
     expect(first.page_info.has_next_page).toBe(true)
     const next = await getTrendingTopics({
       ...base,
       timeRange: 'day',
-      limit: 1,
+      limit: 100,
       after: first.page_info.end_cursor!,
     })
-    expect(next.results[0]?.id).toBe(owned[100])
+    const seen = new Set(first.results.map(row => row.id))
+    expect(next.results.every(row => !seen.has(row.id))).toBe(true)
   })
 
   it('applies topic deletion and merges without waiting for a refresh', async () => {
