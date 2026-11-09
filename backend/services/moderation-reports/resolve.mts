@@ -40,6 +40,8 @@ export async function resolveModerationReport(
     assert(context, 404, 'Report not found')
     if (options.communityId) assert(context.is_in_community_scope, 403, 'Forbidden')
     assert(context.status === 'pending', 409, 'Report is already resolved')
+    // Keep case writers ahead of report/cluster writes, matching report FK checks.
+    await lockModerationCases([context.case_id], { query })
     const { rows } = await write<ModerationReport>(
       sql`/* resolveModerationReport */
           WITH updated AS (
@@ -87,9 +89,7 @@ export async function resolveModerationReport(
     assert(report, 409, 'Report is already resolved')
     const [notifications] = await Promise.all([
       createModerationReportReviewedNotification(report.id, { query }),
-      lockModerationCases([report.case_id], { query }).then(() =>
-        maybeResolveCase(report.case_id, options.resolvedById, { query }),
-      ),
+      maybeResolveCase(report.case_id, options.resolvedById, { query }),
       recordModerationTrainingFeedback(
         {
           trainingEvidence: options.trainingEvidence,
@@ -141,6 +141,17 @@ export async function dismissPendingReportsForDeletedEntity(
   ])
   const run = async (query: TransactionQuery) => {
     const fkColumn = reportEntityFkColumn(entityType)
+    const caseQuery = sql`/* dismissPendingReportsForDeletedEntity:cases */
+      SELECT moderation_case.id FROM moderation_cases moderation_case WHERE `
+    caseQuery.append(`moderation_case.${fkColumn}`)
+    caseQuery.append(sql` = ${entityId}::uuid AND EXISTS (
+      SELECT 1 FROM moderation_reports report
+      WHERE report.case_id = moderation_case.id AND report.reviewed_at IS NULL
+    ) ORDER BY moderation_case.id`)
+    const { rows: candidates } = await write<{ id: string }>(caseQuery, { query })
+    const caseIds = candidates.map(row => row.id)
+    if (caseIds.length === 0) return { count: 0, notifications: [] }
+    await lockModerationCases(caseIds, { query })
     const updateQuery = sql`/* dismissPendingReportsForDeletedEntity */
       WITH updated AS (
         UPDATE moderation_reports
@@ -150,6 +161,7 @@ export async function dismissPendingReportsForDeletedEntity(
         WHERE `
     updateQuery.append(fkColumn)
     updateQuery.append(sql` = ${entityId}::uuid AND reviewed_at IS NULL
+          AND case_id = ANY(${caseIds}::uuid[])
         RETURNING id, case_id, post_id
       )
       SELECT u.id, u.case_id, p.community_id AS post_or_comment_community_id
@@ -161,15 +173,12 @@ export async function dismissPendingReportsForDeletedEntity(
       case_id: string
       post_or_comment_community_id: string | null
     }>(updateQuery, { query })
-    const caseIds = [...new Set(rows.map(row => row.case_id))]
     const [notifications] = await Promise.all([
       createModerationReportReviewedNotifications(
         rows.map(row => row.id),
         { query },
       ),
-      lockModerationCases(caseIds, { query }).then(() =>
-        maybeResolveCases(caseIds, moderationSystemUserId, { query }),
-      ),
+      maybeResolveCases(caseIds, moderationSystemUserId, { query }),
       recordModeratorActions(
         moderationSystemUserId,
         rows.map(row => ({

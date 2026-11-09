@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { runModerationCaseWriterScenario } from './moderation-case-writer.mts'
 import { read } from '@data-stores/psql'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -36,6 +37,7 @@ type ClusterLookup = {
 
 /** Read-only copies of the writer's target predicates guard its indexed access paths. */
 export async function runModerationClusterWriteScenarios(): Promise<void> {
+  await runModerationCaseWriterScenario()
   const rssItem = (await loadReportContextEntities()).find(
     entity => entity.entityType === 'rss_feed_item',
   )

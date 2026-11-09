@@ -149,6 +149,10 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_rss_feed_item_id_id
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__case_id
   ON moderation_reports (case_id);
 
+-- Pending case probes must skip resolved history, including cases with no pending report.
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_case_id
+  ON moderation_reports (case_id) WHERE reviewed_at IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__resolved_by_id
   ON moderation_reports (resolved_by_id)
@@ -248,62 +252,6 @@ COMMENT ON COLUMN moderation_report_clusters.rss_feed_item_id IS 'Reported RSS f
 COMMENT ON COLUMN moderation_report_clusters.resolution_action IS 'NULL for pending reports, otherwise the reviewed report outcome.';
 COMMENT ON COLUMN moderation_report_clusters.first_reported_at IS 'Earliest UUIDv7 report timestamp in this target and outcome cluster.';
 COMMENT ON COLUMN moderation_report_clusters.last_reported_at IS 'Latest UUIDv7 report timestamp in this target and outcome cluster.';
-
--- A genuine insert locks the destination cluster before the case foreign key.
--- A pending duplicate locks that report first and skips the cluster: its update
--- does not change the cluster, and resolution already locks the report then the cluster.
-CREATE OR REPLACE FUNCTION fn_lock_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE
-  pending_report uuid;
-BEGIN
-  IF NEW.post_id IS NOT NULL THEN
-    SELECT report.id INTO pending_report FROM moderation_reports report
-    WHERE report.post_id = NEW.post_id
-      AND report.reporter_user_id = NEW.reporter_user_id
-      AND report.reviewed_at IS NULL
-    ORDER BY report.id FOR UPDATE;
-  ELSIF NEW.reported_user_id IS NOT NULL AND NEW.community_id IS NOT NULL THEN
-    SELECT report.id INTO pending_report FROM moderation_reports report
-    WHERE report.reporter_user_id = NEW.reporter_user_id
-      AND report.reported_user_id = NEW.reported_user_id
-      AND report.community_id = NEW.community_id
-      AND report.reviewed_at IS NULL
-    ORDER BY report.id FOR UPDATE;
-  ELSIF NEW.reported_user_id IS NOT NULL
-    AND NEW.community_id IS NULL
-    AND NEW.moderation_transparency_community_id IS NULL THEN
-    SELECT report.id INTO pending_report FROM moderation_reports report
-    WHERE report.reporter_user_id = NEW.reporter_user_id
-      AND report.reported_user_id = NEW.reported_user_id
-      AND report.community_id IS NULL
-      AND report.moderation_transparency_community_id IS NULL
-      AND report.reviewed_at IS NULL
-    ORDER BY report.id FOR UPDATE;
-  ELSIF NEW.hostname_id IS NOT NULL THEN
-    SELECT report.id INTO pending_report FROM moderation_reports report
-    WHERE report.reporter_user_id = NEW.reporter_user_id
-      AND report.hostname_id = NEW.hostname_id
-      AND report.reviewed_at IS NULL
-    ORDER BY report.id FOR UPDATE;
-  ELSIF NEW.rss_feed_item_id IS NOT NULL THEN
-    SELECT report.id INTO pending_report FROM moderation_reports report
-    WHERE report.reporter_user_id = NEW.reporter_user_id
-      AND report.rss_feed_item_id = NEW.rss_feed_item_id
-      AND report.reviewed_at IS NULL
-    ORDER BY report.id FOR UPDATE;
-  END IF;
-  IF pending_report IS NOT NULL THEN RETURN NEW; END IF;
-
-  PERFORM cluster.id FROM moderation_report_clusters cluster
-  WHERE cluster.resolution_action IS NOT DISTINCT FROM NEW.resolution_action
-    AND cluster.post_id IS NOT DISTINCT FROM NEW.post_id
-    AND cluster.reported_user_id IS NOT DISTINCT FROM NEW.reported_user_id
-    AND cluster.hostname_id IS NOT DISTINCT FROM NEW.hostname_id
-    AND cluster.rss_feed_item_id IS NOT DISTINCT FROM NEW.rss_feed_item_id
-  ORDER BY cluster.id
-  FOR UPDATE;
-  RETURN NEW;
-END $$;
 
 CREATE OR REPLACE FUNCTION fn_update_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
@@ -426,9 +374,6 @@ BEGIN
   RETURN NEW;
 END $$;
 
-CREATE OR REPLACE TRIGGER trigger_moderation_report_clusters_lock
-  BEFORE INSERT ON moderation_reports
-  FOR EACH ROW EXECUTE FUNCTION fn_lock_moderation_report_cluster();
 CREATE OR REPLACE TRIGGER trigger_moderation_report_clusters_insert_delete
   AFTER INSERT OR DELETE ON moderation_reports
   FOR EACH ROW EXECUTE FUNCTION fn_update_moderation_report_cluster();

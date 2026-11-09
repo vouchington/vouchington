@@ -2,6 +2,7 @@ import { read, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 type ReportResolutionContext = {
+  case_id: string
   status: string
   is_in_community_scope: boolean
   derived_community_id: string | null
@@ -16,6 +17,7 @@ export async function getReportResolutionContext(
   const { rows } = await read(
     sql`/* getReportResolutionContext */
       SELECT
+        r.case_id,
         CASE
           WHEN r.reviewed_at IS NULL THEN 'pending'
           ELSE r.resolution_action::text

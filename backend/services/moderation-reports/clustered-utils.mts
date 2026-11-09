@@ -50,15 +50,6 @@ export function appendCandidateCursorClause(
   )
 }
 
-export function appendClusterWhereClause(query: SQLStatement, clusters: ClusterRow[]) {
-  clusters.forEach((cluster, index) => {
-    if (index > 0) query.append(sql` OR `)
-    query.append(
-      sql`(r.entity_type = ${cluster.entity_type} AND r.entity_id = ${cluster.entity_id})`,
-    )
-  })
-}
-
 export function groupReportsByCluster<T extends PendingModerationReport>(reports: T[]) {
   const reportsByCluster = new Map<string, T[]>()
   for (const report of reports) {
