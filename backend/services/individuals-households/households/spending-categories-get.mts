@@ -85,8 +85,10 @@ export async function getHouseholdSpendingCategoriesByUserId(
   const { rows: accessibleHouseholds } = await query<{ id: string }>(
     sql`
     /* getAccessibleHouseholdsForSpendingCategories */
+    -- no-mistakes-disable-next-line postgres-bounded-statements -- spending entries must include every household the user owns or belongs to before the entry page is built
     SELECT id FROM households WHERE owner_user_id = ${user.id}
     UNION
+    -- no-mistakes-disable-next-line postgres-bounded-statements -- the complete membership set is needed to include every accessible household in the spending entry page
     SELECT household_id FROM household_members WHERE individual_id = ${individualId}
   `,
     queryOptions,
