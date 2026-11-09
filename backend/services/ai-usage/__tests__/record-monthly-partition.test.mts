@@ -11,7 +11,6 @@ import {
   probeBlockedAiUsageRetirement,
   retireTestAiUsagePartition,
 } from '@voucha/test-helpers/entities/ai-usage-partition-retirement'
-import { runAiUsageTierOrderRace } from '@voucha/test-helpers/entities/ai-usage-tier-lock-order'
 import {
   hasTestAiUsageResponseKey,
   insertTestAiUsageResponseKey,
@@ -23,7 +22,7 @@ import { recordAiUsage } from '../record.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
 
 describe('backdated AI usage on retired monthly history', () => {
-  it('registers a shared tier before either ordinary or backdated ledger table locks', async () => {
+  it('records concurrent backdated and ordinary usage after retiring the historical month', async () => {
     const releaseSweep = await reserveTestAiUsageRetentionSweep()
     onTestFinished(releaseSweep)
     const createdAt = new Date(Date.UTC(2000 + randomInt(20), randomInt(12), 12, 12))
@@ -32,8 +31,12 @@ describe('backdated AI usage on retired monthly history', () => {
     const agentSlug = `test-tier-order-${randomUUID()}`
     onTestFinished(async () => {
       const backdatedIds = await readTestAiUsageIdsForMonth(createdAt, `${agentSlug}-backdated`)
+      const secondBackdatedIds = await readTestAiUsageIdsForMonth(
+        createdAt,
+        `${agentSlug}-backdated-second`,
+      )
       const ordinaryIds = await readTestAiUsageIdsForMonth(normalAt, `${agentSlug}-ordinary`)
-      await releaseMonth([...backdatedIds, ...ordinaryIds])
+      await releaseMonth([...backdatedIds, ...secondBackdatedIds, ...ordinaryIds])
     })
     const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
     const candidate = testAiUsageCandidate(partition)
@@ -53,13 +56,19 @@ describe('backdated AI usage on retired monthly history', () => {
       serviceTier: 'flex',
       usage,
     }
-    await runAiUsageTierOrderRace(
-      query => recordAiUsage({ ...common, query, createdAt, agentSlug: `${agentSlug}-backdated` }),
-      query => recordAiUsage({ ...common, query, agentSlug: `${agentSlug}-ordinary` }),
-    )
+    await Promise.all([
+      recordAiUsage({ ...common, createdAt, agentSlug: `${agentSlug}-backdated` }),
+      recordAiUsage({ ...common, createdAt, agentSlug: `${agentSlug}-backdated-second` }),
+      recordAiUsage({ ...common, agentSlug: `${agentSlug}-ordinary` }),
+    ])
     const backdatedIds = await readTestAiUsageIdsForMonth(createdAt, `${agentSlug}-backdated`)
+    const secondBackdatedIds = await readTestAiUsageIdsForMonth(
+      createdAt,
+      `${agentSlug}-backdated-second`,
+    )
     const ordinaryIds = await readTestAiUsageIdsForMonth(normalAt, `${agentSlug}-ordinary`)
     expect(backdatedIds).toHaveLength(1)
+    expect(secondBackdatedIds).toHaveLength(1)
     expect(ordinaryIds).toHaveLength(1)
   })
 

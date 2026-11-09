@@ -1,10 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
-import {
-  createTestUrlWithHostname,
-  insertHackerNewsReferencesForTest,
-  linkTwoHopCanonicalUrlForTest,
-} from '@voucha/test-helpers'
+import { createTestUrlWithHostname, insertHackerNewsReferencesForTest } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { webRiskConfig } from '@services/web-risk/config'
 import { insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
@@ -20,6 +16,7 @@ import {
   blockPostLinkDestinationForTest,
   persistAssessedPostLinkEditForTest,
   persistPostLinkWhileCanonicalRewriteForTest,
+  persistPostLinkWithCanonicalConflictForTest,
 } from '@voucha/test-helpers/post-link-edits'
 
 describe('post link URL-ID policy', () => {
@@ -63,55 +60,75 @@ describe('post link URL-ID policy', () => {
     expect((await getPostByAny(post.id, { readOnly: false }))?.url_id).toBe(owner.id)
   })
 
-  it('fences a concurrent canonical rewrite before it can invert alias and terminal row locks', async () => {
-    const { user, post } = await createPostLinkEditFixtureForTest()
-    const suffix = randomUUID()
-    const alias = await insertTestUrlDirect(null, `https://a-alias-${suffix}.example.com/article`)
-    const terminal = await insertTestUrlDirect(
-      null,
-      `https://z-terminal-${suffix}.example.com/article`,
-    )
-    if (!alias || !terminal) throw new Error('Expected ordered alias and terminal URLs')
-    const nextDestination = await createTestUrlWithHostname()
-    await setCanonicalUrl(alias.id, terminal.id)
-    const assessment = await assessPostLinkEdit(post, { url: alias.url })
-    if (!assessment.urls) throw new Error('Expected an assessed alias and terminal')
-
-    expect(
-      await persistPostLinkWhileCanonicalRewriteForTest(
-        user.id,
-        assessment.changes,
-        assessment.urls,
-        terminal.id,
-        nextDestination,
-      ),
-    ).toEqual({ selectedId: terminal.id, rewrittenId: nextDestination })
-    expect((await getUrlById(alias.id, { readOnly: false }))?.canonical_url_id).toBe(
-      nextDestination,
-    )
-  })
-
   it.each([false, true])(
-    'rejects a raw alias to a blocked terminal with two hops: %s',
-    async twoHops => {
-      const { user, originalId, post } = await createPostLinkEditFixtureForTest()
-      const source = await createTestUrlWithHostname()
-      const destination = await createTestUrlWithHostname()
-      if (twoHops) {
-        await linkTwoHopCanonicalUrlForTest(source, await createTestUrlWithHostname(), destination)
-      } else {
-        await setCanonicalUrl(source, destination)
-      }
-      const alias = await getUrlById(source, { readOnly: false })
-      if (!alias) throw new Error('Expected an alias URL')
-      await blockPostLinkDestinationForTest(destination)
-      await expect(updatePost(user, post, { url: alias.url })).rejects.toMatchObject({
-        status: 400,
-        message: expect.stringMatching(/^Domain is blocked:/),
-      })
-      expect((await getPostByAny(post.id))?.url_id).toBe(originalId)
+    'lets a canonical rewrite wait for a post link edit (alias first: %s)',
+    async aliasFirst => {
+      const { user, post } = await createPostLinkEditFixtureForTest()
+      const suffix = randomUUID()
+      const alias = await insertTestUrlDirect(
+        null,
+        `https://${aliasFirst ? 'a' : 'z'}-alias-${suffix}.example.com/article`,
+      )
+      const terminal = await insertTestUrlDirect(
+        null,
+        `https://${aliasFirst ? 'z' : 'a'}-terminal-${suffix}.example.com/article`,
+      )
+      if (!alias || !terminal) throw new Error('Expected ordered alias and terminal URLs')
+      const nextDestination = await createTestUrlWithHostname()
+      await setCanonicalUrl(alias.id, terminal.id)
+      const assessment = await assessPostLinkEdit(post, { url: alias.url })
+      if (!assessment.urls) throw new Error('Expected an assessed alias and terminal')
+
+      expect(
+        await persistPostLinkWhileCanonicalRewriteForTest(
+          user.id,
+          assessment.changes,
+          assessment.urls,
+          terminal.id,
+          nextDestination,
+        ),
+      ).toEqual({ selectedId: terminal.id, rewrittenId: nextDestination })
+      expect((await getUrlById(alias.id, { readOnly: false }))?.canonical_url_id).toBe(
+        nextDestination,
+      )
     },
   )
+
+  it.each(['23503', '40P01'] as const)(
+    'reports a concurrent canonical conflict as a retryable destination change (%s)',
+    async code => {
+      const { user, post } = await createPostLinkEditFixtureForTest()
+      const host = `link-conflict-${randomUUID()}.example.com`
+      const owner = await addUrl(null, `https://${host}/article`)
+      if (!owner) throw new Error('Expected URL identity owner')
+      const assessment = await assessPostLinkEdit(post, { url: `https://www.${host}/article` })
+      if (!assessment.urls) throw new Error('Expected assessed variant URL')
+
+      await expect(
+        persistPostLinkWithCanonicalConflictForTest(
+          user.id,
+          assessment.changes,
+          assessment.urls,
+          code,
+        ),
+      ).rejects.toMatchObject({ status: 422, message: 'URL destination changed; retry the edit' })
+    },
+  )
+
+  it('rejects a raw alias to a blocked terminal', async () => {
+    const { user, originalId, post } = await createPostLinkEditFixtureForTest()
+    const source = await createTestUrlWithHostname()
+    const destination = await createTestUrlWithHostname()
+    await setCanonicalUrl(source, destination)
+    const alias = await getUrlById(source, { readOnly: false })
+    if (!alias) throw new Error('Expected an alias URL')
+    await blockPostLinkDestinationForTest(destination)
+    await expect(updatePost(user, post, { url: alias.url })).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringMatching(/^Domain is blocked:/),
+    })
+    expect((await getPostByAny(post.id))?.url_id).toBe(originalId)
+  })
 
   it('rechecks a raw alias terminal hostname blocked after assessment', async () => {
     const { user, post } = await createPostLinkEditFixtureForTest()
@@ -161,7 +178,7 @@ describe('post link URL-ID policy', () => {
     ).rejects.toMatchObject({ status: 422, message: 'URL destination changed; retry the edit' })
   })
 
-  it('accepts a healthy raw two-hop alias while preserving its HTTP terminal and reference flag', async () => {
+  it('accepts a healthy raw alias while preserving its HTTP terminal and reference flag', async () => {
     const { user, post } = await createPostLinkEditFixtureForTest()
     const source = await createTestUrlWithHostname()
     const destination = await insertTestUrlDirect(
@@ -170,7 +187,7 @@ describe('post link URL-ID policy', () => {
       { preserveHttp: true },
     )
     if (!destination) throw new Error('Expected an HTTP terminal URL')
-    await linkTwoHopCanonicalUrlForTest(source, await createTestUrlWithHostname(), destination.id)
+    await setCanonicalUrl(source, destination.id)
     const alias = await getUrlById(source, { readOnly: false })
     if (!alias) throw new Error('Expected an alias URL')
     await insertHackerNewsReferencesForTest({
@@ -198,12 +215,11 @@ describe('post link URL-ID policy', () => {
     expect((await getPostByAny(post.id))?.url_id).toBe(originalId)
   })
 
-  it('assesses the final destination of a two-hop alias before accepting its ID', async () => {
+  it('assesses the terminal destination of an alias before accepting its ID', async () => {
     const { user, originalId, post } = await createPostLinkEditFixtureForTest()
     const source = await createTestUrlWithHostname()
-    const middle = await createTestUrlWithHostname()
     const destination = await createTestUrlWithHostname()
-    await linkTwoHopCanonicalUrlForTest(source, middle, destination)
+    await setCanonicalUrl(source, destination)
     await blockPostLinkDestinationForTest(destination)
     await expect(updatePost(user, post, { url_id: source })).rejects.toMatchObject({
       status: 400,

@@ -1,4 +1,4 @@
-import { read, type QueryOptions } from '@data-stores/psql'
+import { read, withTransactionOptions, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { validateUUID } from '@modules/utils'
@@ -11,7 +11,6 @@ import {
 } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
 import { upsertTopicAttributes } from './upsert-attributes.mts'
-import { withReferralLinkEligibilityMutationLock } from '@services/entity-relations/referral-link-eligibility-lock'
 import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 
 type ReferralProgramAttributes = {
@@ -47,7 +46,7 @@ export async function enableReferralProgram(
     columns.push('company_topic_id')
     values.push(companyId ?? null)
   }
-  await withReferralLinkEligibilityMutationLock({}, query =>
+  await withTransactionOptions({}, query =>
     upsertTopicAttributes<object>('referral_program_topics', topicId, columns, values, {
       query,
     }),
@@ -63,7 +62,7 @@ export async function linkValidationToReferralProgram(
   assert(currentUser, 401, 'Unauthorized')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
   await assertReferralProgramAndLinkValidationExist(referralProgramId, validationId, options)
-  await withReferralLinkEligibilityMutationLock(options ?? {}, async query => {
+  await withTransactionOptions(options ?? {}, async query => {
     await lockTopicRssFeedAttachmentLifecycle(query, referralProgramId)
     await query(sql`/* linkValidationToReferralProgram */
         INSERT INTO referral_program_topic_link_validation_rule_sets (referral_program_topic_id, referral_program_link_validation_rule_set_id)
@@ -83,7 +82,7 @@ export async function unlinkValidationFromReferralProgram(
   validateUUID(referralProgramId)
   validateUUID(validationId)
 
-  await withReferralLinkEligibilityMutationLock({}, query =>
+  await withTransactionOptions({}, query =>
     query(sql`/* unlinkValidationFromReferralProgram */
         DELETE FROM referral_program_topic_link_validation_rule_sets
         WHERE referral_program_topic_id = ${referralProgramId}
@@ -130,7 +129,7 @@ export async function updateReferralProgramAttributes(
     values.push(attributes.disabled_at ?? null)
   }
 
-  return withReferralLinkEligibilityMutationLock({}, query =>
+  return withTransactionOptions({}, query =>
     upsertTopicAttributes<ReferralProgramAttributes>(
       'referral_program_topics',
       topic.id,

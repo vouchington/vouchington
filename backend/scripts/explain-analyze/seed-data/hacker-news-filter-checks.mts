@@ -17,9 +17,8 @@ export async function verifyHackerNewsFilterFixtureTruth(
       `SELECT count(*) FILTER(WHERE candidate.has_hacker_news_references
       IS DISTINCT FROM EXISTS(SELECT 1 FROM (${buildPostUrls('candidate.id')}) selected
         JOIN urls source ON source.id=selected.url_id
-        LEFT JOIN urls hop ON hop.id=source.canonical_url_id
         JOIN url_hacker_news_totals totals ON totals.url_id=
-          COALESCE(hop.canonical_url_id,source.canonical_url_id,source.id)
+          COALESCE(source.canonical_url_id,source.id)
         WHERE totals.story_count>0 OR totals.comment_count>0))::int AS mismatches,
       count(*) FILTER(WHERE candidate.has_hacker_news_references)::int AS qualifying
       FROM generate_series($3::int,$3::int+$8::int-1)i
@@ -41,9 +40,8 @@ export async function verifyHackerNewsFilterFixtureTruth(
   const { rows } = await q(
     `SELECT count(*) FILTER(WHERE item.has_hacker_news_references
     IS DISTINCT FROM EXISTS(SELECT 1 FROM urls source
-      LEFT JOIN urls hop ON hop.id=source.canonical_url_id
       JOIN url_hacker_news_totals totals ON totals.url_id=
-        COALESCE(hop.canonical_url_id,source.canonical_url_id,source.id)
+        COALESCE(source.canonical_url_id,source.id)
       WHERE source.id=item.url_id AND(totals.story_count>0 OR totals.comment_count>0)))::int AS mismatches,
     count(*) FILTER(WHERE item.has_hacker_news_references)::int AS qualifying
     FROM rss_feed_items item JOIN rss_feed_item_guids ids ON ids.id=item.id

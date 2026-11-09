@@ -3,6 +3,7 @@ import { runReferralValidationPages } from './run-scenarios/referral-program-val
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
+import { runAiUsageLookupScenarios } from './run-scenarios/ai-usage-lookups.mts'
 import { runHackerNewsFilterScenarios } from './run-scenarios/hacker-news-filter.mts'
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
 import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
@@ -164,6 +165,7 @@ export async function runScenariosBeforePartition(): Promise<void> {
 export async function runScenariosAfterPartition(): Promise<void> {
   await runStep(runCategoryProjectionScenarios.name, runCategoryProjectionScenarios)
   await runStep(runExistenceFilterScenarios.name, runExistenceFilterScenarios)
+  await runStep(runAiUsageLookupScenarios.name, runAiUsageLookupScenarios)
   await runStep(runMembershipScenarios.name, runMembershipScenarios)
   // Expiry fixtures come after the shared membership writer's corpus and all ordinary plans.
   await runStep(runMembershipExpiryPageScenarios.name, runMembershipExpiryPageScenarios)

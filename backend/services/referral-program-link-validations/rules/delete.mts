@@ -3,8 +3,8 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
 import { validateUUID } from '@modules/utils'
+import { withTransactionOptions } from '@data-stores/psql'
 import { getReferralLinkValidationRule } from './get.mts'
-import { withReferralLinkEligibilityMutationLock } from '@services/entity-relations/referral-link-eligibility-lock'
 
 export async function deleteReferralLinkValidationRule(
   currentUser: PrivateUser | null,
@@ -20,7 +20,7 @@ export async function deleteReferralLinkValidationRule(
   assert(existing, 404, 'Rule not found')
   assert(existing.referral_program_link_validation_id === validationId, 404, 'Rule not found')
 
-  await withReferralLinkEligibilityMutationLock({}, query =>
+  await withTransactionOptions({}, query =>
     query(sql`/* deleteReferralLinkValidationRule */
         DELETE FROM referral_program_link_validation_rules
         WHERE id = ${ruleId}

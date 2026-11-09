@@ -56,21 +56,6 @@ export async function insertHackerNewsReferencesForTest(
   )
 }
 
-/** Links `source` to `canonical` through `middle`, the two-hop chain a concurrent setCanonicalUrl can leave. */
-export async function linkTwoHopCanonicalUrlForTest(
-  source: string,
-  middle: string,
-  canonical: string,
-): Promise<void> {
-  await write(
-    `/* linkTwoHopCanonicalUrlForTest */
-    UPDATE urls SET canonical_url_id = CASE id WHEN $1::uuid THEN $2::uuid ELSE $3::uuid END
-    WHERE id IN ($1::uuid, $2::uuid)
-  `,
-    [source, middle, canonical],
-  )
-}
-
 /** Seeds a maintained filter flag independently from the reference sidecar facts. */
 export async function setHackerNewsReferenceFlagsForTest(
   postIds: readonly string[],

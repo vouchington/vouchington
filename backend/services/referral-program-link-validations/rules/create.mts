@@ -5,7 +5,7 @@ import { currentUserCanUpdateTopic } from '@services/topics/authorization'
 import { validateUUID } from '@modules/utils'
 import { assertReferralLinkValidationExists } from '@services/topics/validation'
 import type { ReferralLinkValidationRule } from './types.mts'
-import { withReferralLinkEligibilityMutationLock } from '@services/entity-relations/referral-link-eligibility-lock'
+import { withTransactionOptions } from '@data-stores/psql'
 
 export async function createReferralLinkValidationRule(
   currentUser: PrivateUser | null,
@@ -62,7 +62,7 @@ export async function createReferralLinkValidationRule(
     }
   }
 
-  return withReferralLinkEligibilityMutationLock({}, async query => {
+  return withTransactionOptions({}, async query => {
     const { rows } =
       await query<ReferralLinkValidationRule>(sql`/* createReferralLinkValidationRule */
       INSERT INTO referral_program_link_validation_rules (

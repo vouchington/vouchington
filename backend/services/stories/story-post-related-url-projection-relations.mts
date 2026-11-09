@@ -4,7 +4,6 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import { assertPostRelatedUrlsAllowed } from '@services/entity-relations/assert-post-related-urls-allowed'
 import { recordPostRelatedUrlPublicationChanges } from '@services/entity-relations/post-topic-publication'
 import { getRelationLimitState } from '@services/entity-relations/relation-limits'
-import { lockReferralLinkEligibility } from '@services/entity-relations/referral-link-eligibility-lock'
 import { handleElectionVotes, type EntityRelation } from '@services/entity-relations/upsert-helpers'
 import { insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction } from '@services/entity-relations/write-relations'
 import '@services/elections-votes/entity-relation/register-election-vote-handler'
@@ -70,14 +69,6 @@ type PreparedAdmission = {
   internalRelations: EntityRelation[]
 }
 
-async function lockPrefixHostnames(
-  transaction: TransactionQuery,
-  urlIds: readonly string[],
-): Promise<void> {
-  await lockReferralLinkEligibility(transaction, 'shared')
-  await lockStoryPostRelatedUrlProjectionHostnameBlocks(transaction, urlIds)
-}
-
 async function admitPreparedRows(
   transaction: TransactionQuery,
   work: ProjectionWork,
@@ -86,7 +77,7 @@ async function admitPreparedRows(
   webRiskBlockedUrls: ReadonlySet<string>,
 ): Promise<PreparedAdmission | { ok: false }> {
   const urlIds = uniqueUrlIds(rows)
-  await lockPrefixHostnames(transaction, urlIds)
+  await lockStoryPostRelatedUrlProjectionHostnameBlocks(transaction, urlIds)
   const decisions = await decideStoryPostRelatedUrlProjectionRows(
     work,
     rows,

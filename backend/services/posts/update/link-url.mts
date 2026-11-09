@@ -7,9 +7,9 @@ import type { TransactionQuery } from '@data-stores/psql'
 import { assessUrls } from '@services/urls/upsert'
 import { persistAssessedUrls } from '@services/urls/upsert-persist'
 import { getCanonicalUrlsByIdBatch } from '@services/urls/get-canonical'
+import { isCanonicalWriteConflict } from '@services/urls/canonical-write-retry'
 import { getUrlByAny } from '@services/urls/get'
 import { findUrlIdByIdentity } from '@services/urls/url-identities'
-import { lockCanonicalUrlRewrites } from '@services/urls/canonical-lock'
 import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import type { Post, UpdatePostChanges } from '../types.mts'
@@ -50,10 +50,12 @@ export async function persistPostLinkEdit(
   changes: UpdatePostChanges,
   urls: Awaited<ReturnType<typeof assessUrls>>,
 ): Promise<UpdatePostChanges> {
-  await lockCanonicalUrlRewrites(query, 'shared')
   await prepareAndLockPostLinkHostnames(query, userId, urls)
   // Persistence locks both assessed alias and terminal until the post transaction commits.
-  const persisted = await persistAssessedUrls(userId, urls, { query })
+  const persisted = await persistAssessedUrls(userId, urls, { query }).catch((err: unknown) => {
+    if (isCanonicalWriteConflict(err)) assert(false, 422, 'URL destination changed; retry the edit')
+    throw err
+  })
   const url = persisted.find(candidate => candidate.url === urls[0]?.toString())
   assert(url, 422, 'URL is blocked or not allowed')
   if (changes.url_id === undefined) {

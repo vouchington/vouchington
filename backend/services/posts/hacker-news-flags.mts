@@ -49,9 +49,8 @@ async function recomputeLockedPostHackerNewsFlags(
       SELECT candidate.id, EXISTS (
         SELECT 1 FROM LATERAL (${buildHackerNewsPostUrlsSql('candidate.id')}) links
         JOIN urls source ON source.id = links.url_id
-        LEFT JOIN urls hop ON hop.id = source.canonical_url_id
         JOIN url_hacker_news_totals totals
-          ON totals.url_id = COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id)
+          ON totals.url_id = COALESCE(source.canonical_url_id, source.id)
         WHERE totals.story_count > 0 OR totals.comment_count > 0
       ) AS has_references
       FROM posts candidate WHERE candidate.id = ANY($1::uuid[])

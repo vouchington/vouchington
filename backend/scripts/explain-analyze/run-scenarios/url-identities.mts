@@ -1,6 +1,9 @@
 import { write } from '@data-stores/psql'
 import { addUrls } from '@services/urls/upsert'
 import { findUrlIdByIdentity } from '@services/urls/url-identities'
+import { getCanonicalUrlsByIdBatch } from '@services/urls/get-canonical'
+import { getHackerNewsLookupTargets } from '@services/urls/hacker-news-lookup-state'
+import { setCanonicalUrl } from '@services/urls/set-canonical'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 
@@ -57,5 +60,46 @@ export async function runUrlIdentityScenarios(): Promise<void> {
     () => findUrlIdByIdentity(ownerHref),
     undefined,
     'findUrlIdByIdentity',
+  )
+
+  registerScenarioContract('url-canonical-root-read', {
+    expectations: [{ kind: 'maxProcessedRows', relation: 'urls', max: 10 }],
+  })
+  await runAndCapture(
+    'url-canonical-root-read',
+    () => getCanonicalUrlsByIdBatch(variantIds, { readOnly: false }),
+    undefined,
+    'getCanonicalUrlsByIdBatch',
+  )
+
+  registerScenarioContract('url-hacker-news-root-lookup', {
+    expectations: [{ kind: 'maxProcessedRows', relation: 'urls', max: 10 }],
+  })
+  await runAndCapture(
+    'url-hacker-news-root-lookup',
+    () => getHackerNewsLookupTargets(variantIds),
+    undefined,
+    'getHackerNewsLookupTargets',
+  )
+
+  const rewriteHref = `https://rewrite-${suffix}.example.test/page`
+  const rewritten = await addUrls(seedUser.id, [rewriteHref], { skipCreatedEvents: true })
+  const ownerId = await findUrlIdByIdentity(ownerHref)
+  if (!rewritten[0] || !ownerId) throw new Error('Canonical rewrite fixture is missing')
+  const incoming = await addUrls(seedUser.id, [`https://incoming-${suffix}.example.test/page`], {
+    skipCreatedEvents: true,
+  })
+  if (!incoming[0]) throw new Error('Canonical back-reference fixture is missing')
+  await setCanonicalUrl(incoming[0].id, rewritten[0].id)
+  registerScenarioContract('url-canonical-rewrite', {
+    // UPDATE statements return no rows; their real target scans remain bounded below.
+    allowEmptyResult: true,
+    expectations: [{ kind: 'maxProcessedRows', relation: 'urls', max: 10 }],
+  })
+  await runAndCapture(
+    'url-canonical-rewrite',
+    () => setCanonicalUrl(rewritten[0]!.id, ownerId),
+    undefined,
+    ['resolveCanonicalTargets', 'flattenCanonicalChain', 'setCanonicalUrl'],
   )
 }

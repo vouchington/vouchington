@@ -1,11 +1,10 @@
-import { read, write, type QueryOptions } from '@data-stores/psql'
+import { read, write, withTransactionOptions, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
 import { validateOptionalString } from '@services/topics/validation'
 import { isUUID, validateUUID } from '@modules/utils'
-import { withReferralLinkEligibilityMutationLock } from '@services/entity-relations/referral-link-eligibility-lock'
 export type ReferralLinkValidation = {
   id: string
   slug: string
@@ -155,7 +154,7 @@ export async function deleteReferralLinkValidation(
   assert(validation, 404, 'Validation not found')
   const validationId = validation.id
 
-  await withReferralLinkEligibilityMutationLock({}, query =>
+  await withTransactionOptions({}, query =>
     query(sql`/* deleteReferralLinkValidation */
         DELETE FROM referral_program_link_validation_rule_sets
         WHERE id = ${validationId}

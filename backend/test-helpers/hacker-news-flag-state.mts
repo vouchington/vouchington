@@ -7,9 +7,8 @@ export async function getPostHackerNewsFlagStateForTest(postId: string) {
     SELECT post.has_hacker_news_references AS stored,
       EXISTS (
         SELECT 1 FROM urls source
-        LEFT JOIN urls hop ON hop.id = source.canonical_url_id
         JOIN url_hacker_news_totals totals
-          ON totals.url_id = COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id)
+          ON totals.url_id = COALESCE(source.canonical_url_id, source.id)
         WHERE ((post.post_type = 'link' AND source.id = post.url_id) OR source.id IN (
           SELECT relation.object_id FROM relation__post__related__url relation
           WHERE relation.subject_id = post.id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0
@@ -29,9 +28,8 @@ export async function getRssHackerNewsFlagStateForTest(itemId: string) {
     SELECT item.has_hacker_news_references AS stored,
       EXISTS (
         SELECT 1 FROM urls source
-        LEFT JOIN urls hop ON hop.id = source.canonical_url_id
         JOIN url_hacker_news_totals totals
-          ON totals.url_id = COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id)
+          ON totals.url_id = COALESCE(source.canonical_url_id, source.id)
         WHERE source.id = item.url_id AND (totals.story_count > 0 OR totals.comment_count > 0)
       ) AS expected
     FROM rss_feed_items item WHERE item.id = $1::uuid`,

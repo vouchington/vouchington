@@ -47,8 +47,7 @@ export type HackerNewsCanonicalTotals = HackerNewsReferenceCounts & { canonical_
 /**
  * Totals for URLs whose canonical row Hacker News links at least once, keyed by the caller's
  * url id. References are stored on the canonical row, which `urls.canonical_url_id` reaches
- * after the fact, so each id resolves through `urls` first. Resolution tolerates two hops,
- * matching the card and filter reads. One read per chunk of url ids.
+ * after the fact, so each id resolves through `urls` first. One read per chunk of url ids.
  */
 export async function getHackerNewsTotalsByUrlIds(
   urlIds: readonly string[],
@@ -66,9 +65,8 @@ async function readTotals(ids: string[], options: QueryOptions) {
            totals.comment_count
     FROM (
       SELECT source.id AS url_id,
-             COALESCE(hop.canonical_url_id, source.canonical_url_id, source.id) AS canonical_id
+             COALESCE(source.canonical_url_id, source.id) AS canonical_id
       FROM urls source
-      LEFT JOIN urls hop ON hop.id = source.canonical_url_id
       WHERE source.id = ANY($1::uuid[])
     ) resolved
     JOIN url_hacker_news_totals totals ON totals.url_id = resolved.canonical_id

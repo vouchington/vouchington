@@ -12,7 +12,7 @@ import {
 import { replaceHackerNewsReferences } from './hacker-news-references-write.mts'
 import { getRssFeedItemHackerNewsSummaries } from './hacker-news-sidecars.mts'
 
-// Exercise canonical-chain admission through the real URL store and queue boundary.
+// Exercise canonical-root admission through the real URL store and queue boundary.
 describe('Hacker News lookup state', () => {
   it('keeps ordinary missing-detail admission on the replica', async () => {
     const row = await insertTestUrlDirect(
@@ -34,7 +34,7 @@ describe('Hacker News lookup state', () => {
     expect((await hackerNewsQueue.getJob(jobId))?.data).toEqual({ urlId: row.id })
   })
 
-  it('resolves two hops, admits only the missing canonical once, and skips a completed zero-hit lookup', async () => {
+  it('deduplicates aliases at their terminal, admits it once, and skips a completed zero-hit lookup', async () => {
     const suffix = randomUUID()
     const canonical = await insertTestUrlDirect(null, `https://example.com/${suffix}/canonical`)
     if (!canonical) throw new Error('Expected a canonical URL fixture')
@@ -46,7 +46,7 @@ describe('Hacker News lookup state', () => {
     const alias = await insertTestUrl({
       url: `https://example.com/${suffix}/alias`,
       hostnameId: canonical.hostname.id,
-      canonicalUrlId: middle,
+      canonicalUrlId: canonical.id,
     })
     const urls = [alias, middle, canonical.id, alias]
     expect((await getHackerNewsLookupTargets(urls)).map(target => target.id)).toEqual([

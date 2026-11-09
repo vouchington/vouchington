@@ -6,7 +6,7 @@ import { validateUUID } from '@modules/utils'
 import { validateOptionalString } from '@services/topics/validation'
 import { getReferralLinkValidationRule } from './get.mts'
 import type { ReferralLinkValidationRule } from './types.mts'
-import { withReferralLinkEligibilityMutationLock } from '@services/entity-relations/referral-link-eligibility-lock'
+import { withTransactionOptions } from '@data-stores/psql'
 
 export async function updateReferralLinkValidationRule(
   currentUser: PrivateUser | null,
@@ -118,7 +118,7 @@ export async function updateReferralLinkValidationRule(
     sql` WHERE id = ${ruleId} RETURNING id, referral_program_link_validation_rule_set_id AS referral_program_link_validation_id, hostname, pathname, is_referral_link_url, is_invalid_referral_link_url, user_error_text, example_urls, created_at, updated_at`,
   )
 
-  return withReferralLinkEligibilityMutationLock({}, async transactionQuery => {
+  return withTransactionOptions({}, async transactionQuery => {
     const { rows } = await transactionQuery<ReferralLinkValidationRule>(query)
     return rows[0] ?? null
   })

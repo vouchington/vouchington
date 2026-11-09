@@ -1,12 +1,13 @@
-import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import {
-  ensureAiUsageMonthForWrite,
   needsAiUsageMonthCreation,
+  prepareAiUsageMonth,
 } from '@data-stores/psql/ai-usage-monthly-partition'
 import sql from 'sql-template-strings'
 import { MODEL_PRICES } from '@modules/model-providers/pricing-table'
 import type { ModelUsage } from '@vouchington/ai/providers'
 import { getUsageCostMicrounits } from '@vouchington/ai/usage'
+import { getAiUsageWorkLimit } from './work-limits.mts'
 
 export interface RecordAiUsageOptions {
   /** The community this call is scoped to, if any. Most non-moderation agents have none. */
@@ -29,8 +30,6 @@ export interface RecordAiUsageOptions {
   /** The service tier the provider actually served, not the requested tier. */
   serviceTier: string
   usage: ModelUsage
-  /** A live caller transaction; call before taking ledger/tier locks so this routine owns their order. */
-  query?: TransactionQuery
   /**
    * The response's true creation time (the request's start time), for a background
    * response recorded after its request day. daily-total.mts buckets spend by id-range, and
@@ -44,73 +43,50 @@ export interface RecordAiUsageOptions {
 
 export async function recordAiUsage(options: RecordAiUsageOptions): Promise<void> {
   if (options.createdAt && needsAiUsageMonthCreation(options.createdAt, new Date())) {
-    if (options.query) {
-      const tierId = await lockAiUsageForeignKeyParents(options.query, options)
-      await ensureAiUsageMonthForWrite(options.query, options.createdAt)
-      return insertAiUsage(options, options.query, tierId)
+    await prepareAiUsageMonth(options.createdAt)
+  }
+  // Tier registration must commit before the ledger INSERT. Partition attachment takes the
+  // ledger parent before copying its tier FK, so holding a tier row across the INSERT would
+  // invert that DDL lock order.
+  const tierId = await registerAiUsageTier(options.serviceTier)
+  const attempts = getAiUsageWorkLimit('record_partition_attempts')
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      // no-mistakes-disable-next-line query-reached-per-item: retry the same single usage insert after concurrent partition retirement, never a per-row batch.
+      await insertAiUsage(options, tierId) // oxlint-disable-line no-await-in-loop -- only a missing partition permits the next bounded insert attempt.
+      return
+    } catch (err) {
+      if (attempt + 1 === attempts || !isMissingAiUsagePartition(err)) throw err
+      // A retired empty child can disappear after preparation; do not retry other CHECK failures.
+      await prepareAiUsageMonth(options.createdAt ?? new Date()) // oxlint-disable-line no-await-in-loop -- preparation must commit before retrying the insert.
     }
-    await using transaction = await beginTransaction()
-    // ast-grep-ignore: no-three-sequential-awaits -- FK-parent/table locks must precede monthly partition DDL; the usage INSERT consumes the created partition and registered tier id.
-    const tierId = await lockAiUsageForeignKeyParents(transaction, options)
-    await ensureAiUsageMonthForWrite(transaction, options.createdAt)
-    await insertAiUsage(options, transaction, tierId)
-    await transaction.commit()
-    return
   }
-  if (options.query) {
-    const tierId = await registerAiUsageTier(options.query, options.serviceTier)
-    await insertAiUsage(options, options.query, tierId)
-    return
-  }
-  await using transaction = await beginTransaction()
-  const tierId = await registerAiUsageTier(transaction, options.serviceTier)
-  await insertAiUsage(options, transaction, tierId)
-  await transaction.commit()
 }
 
-/** Lock referenced rows before the partition parent's DDL lock to match deletion FK lock order. */
-async function lockAiUsageForeignKeyParents(
-  transaction: QueryExecutor,
-  options: RecordAiUsageOptions,
-): Promise<string> {
-  // Creating a child may take an ACCESS EXCLUSIVE lock on this FK target. Acquire it before the
-  // tier upsert or any other row lock, so an ordinary writer cannot hold the tier relation while
-  // waiting for the row that this transaction owns.
-  await transaction(sql`/* lockAiUsageForeignKeyParents:tierTable */
-    LOCK TABLE ai_service_tiers IN ACCESS EXCLUSIVE MODE`)
-  if (options.communityId) {
-    await transaction(sql`/* lockAiUsageForeignKeyParents:community */
-      SELECT id FROM communities WHERE id = ${options.communityId} FOR KEY SHARE`)
-  }
-  if (options.postId) {
-    await transaction(sql`/* lockAiUsageForeignKeyParents:post */
-      SELECT id FROM posts WHERE id = ${options.postId} FOR KEY SHARE`)
-  }
-  if (options.classifierRunId) {
-    await transaction(sql`/* lockAiUsageForeignKeyParents:classifier */
-      SELECT id FROM classifier_run_identities WHERE id = ${options.classifierRunId} FOR KEY SHARE`)
-  }
-  const tierId = await registerAiUsageTier(transaction, options.serviceTier)
-  await transaction(sql`/* lockAiUsageForeignKeyParents:currency */
-    SELECT code FROM currencies WHERE code = 'usd' FOR KEY SHARE`)
-  return tierId
+function isMissingAiUsagePartition(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    error.code === '23514' &&
+    error.message.includes('no partition of relation "ai_usage_records" found for row')
+  )
 }
 
-async function registerAiUsageTier(run: QueryExecutor, serviceTier: string): Promise<string> {
-  const { rows } = await run<{ id: string }>(sql`/* registerAiUsageTier */
+async function registerAiUsageTier(serviceTier: string): Promise<string> {
+  const { rows } = await write<{ id: string }>(sql`/* registerAiUsageTier */
     INSERT INTO ai_service_tiers (service_tier) VALUES (${serviceTier})
-    ON CONFLICT (service_tier) DO UPDATE SET service_tier = EXCLUDED.service_tier
+    ON CONFLICT (service_tier) DO NOTHING
     RETURNING id`)
-  const id = rows[0]?.id
+  if (rows[0]?.id) return rows[0].id
+  const { rows: existing } = await write<{ id: string }>(sql`/* findAiUsageTier */
+    SELECT id FROM ai_service_tiers WHERE service_tier = ${serviceTier}
+  `)
+  const id = existing[0]?.id
   if (!id) throw new Error('AI service tier registration returned no row')
   return id
 }
 
-async function insertAiUsage(
-  options: RecordAiUsageOptions,
-  run: QueryExecutor,
-  tierId: string,
-): Promise<void> {
+async function insertAiUsage(options: RecordAiUsageOptions, tierId: string): Promise<void> {
   const {
     communityId,
     postId,
@@ -128,7 +104,7 @@ async function insertAiUsage(
     { provider, model, serviceTier, usage },
     MODEL_PRICES,
   )
-  await run(sql`/* recordAiUsage */
+  await write(sql`/* recordAiUsage */
     INSERT INTO ai_usage_records (
       id,
       community_id,

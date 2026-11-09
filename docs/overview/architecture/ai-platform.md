@@ -141,6 +141,12 @@ calls without a community. A provider response key younger than its replay windo
 row even if the call timestamp is older. Classifier reports reject windows outside their receipt
 retention period, since a monthly community total cannot reconstruct one run's cost or latency.
 
+Usage recording does not hold tier or subject locks while preparing a missing historical month.
+Lookup registration and partition maintenance commit independently before the usage insert, so
+DDL cannot invert the writer's lock order. Retirement still requires empty raw history and retains
+the response replay guard. A failed usage insert can leave an unused tier lookup value; that value
+does not claim a call occurred or affect provider execution.
+
 Measurement limits remain explicit:
 
 - Replays have no durable counter, so replay frequency cannot be inferred from job counts.
