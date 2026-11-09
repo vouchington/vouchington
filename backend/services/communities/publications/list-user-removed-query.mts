@@ -33,13 +33,15 @@ export function buildUserRemovedPostsQuery(
     NULLIF(BTRIM(p.title), '') AS post_title,
     p.declared_language AS post_declared_language,
     p.lingua_rs_detected_language AS post_lingua_rs_detected_language,
-    page.community_id, c.slug AS community_slug,
+    COALESCE(page.community_id, p.community_id) AS community_id, c.slug AS community_slug,
     to_char(page.removed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS unpublished_at,
     page.removal_tier, page.post_removal_kind
     FROM (SELECT * FROM (`
   if (options.includePlatform) {
+    // A constant community id keeps that column off the posts scan. The removal index can
+    // then answer the page, and the outer COALESCE restores posts.community_id.
     const platformPosts = sql`
-      SELECT p.id AS post_id, p.community_id, p.rejected_at AS removed_at,
+      SELECT p.id AS post_id, NULL::uuid AS community_id, p.rejected_at AS removed_at,
         1 AS removal_tier, 'platform'::text AS post_removal_kind
       -- no-mistakes-disable-next-line postgres-required-predicates: author deletion can reassign created_by_id, so author identity does not bound post ids; all partitions use the author/removal index
       FROM posts p
@@ -59,7 +61,7 @@ export function buildUserRemovedPostsQuery(
     ORDER BY removed_at DESC, removal_tier DESC, post_id DESC
     LIMIT ${options.limit + 1}) page
     INNER JOIN posts p ON p.id = page.post_id
-    LEFT JOIN communities c ON c.id = page.community_id
+    LEFT JOIN communities c ON c.id = COALESCE(page.community_id, p.community_id)
     ORDER BY page.removed_at DESC, page.removal_tier DESC, page.post_id DESC`)
   return query
 }
