@@ -24,6 +24,15 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## Session management continuation
+
+A bounded session page can be empty while still carrying a continuation cursor. Clients must keep
+pagination accessible until that continuation is exhausted; an empty page alone does not mean
+there are no active sessions. Swift presentation and its executable regression are tracked in
+[vouchington-clients#569](https://github.com/vouchington/vouchington-clients/issues/569), dependent
+on [the producer](https://github.com/vouchington/vouchington/pull/5379). Authentication parity
+remains partial for Swift until this presentation gap is resolved.
+
 ## Shared image placement capacity
 
 An image may be attached to posts and profile, topic, or community surfaces. If the API rejects a

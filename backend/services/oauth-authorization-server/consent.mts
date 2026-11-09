@@ -6,10 +6,6 @@ import { hasEveryScope } from '@modules/scopes'
 import { v7 as uuidv7 } from 'uuid'
 import { AUTHORIZATION_CODE_TTL_MS, OAUTH_SECRET_PURPOSES } from './constants.mts'
 import {
-  lockOAuthParticipantUsers,
-  readOAuthAuthorizationRequestParticipantUserIds,
-} from './active-users.mts'
-import {
   OAuthProtocolError,
   buildAuthorizationResponseUrl,
   generateOpaqueToken,
@@ -30,18 +26,8 @@ export async function decideOAuthAuthorizationRequest(
 ): Promise<{ redirect_uri: string }> {
   assertOAuthMfaTimestamp(mfaVerifiedAt)
   await using query = await beginTransaction()
-  const activeParticipantIds = await lockOAuthParticipantUsers(
-    await readOAuthAuthorizationRequestParticipantUserIds(requestId, userId, query),
-    query,
-  )
   const request = await lockAuthorizationRequest(userId, requestId, browserBindingHash, query)
   if (!request) {
-    throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
-  }
-  if (
-    !activeParticipantIds.has(request.user_id) ||
-    (request.owner_user_id && !activeParticipantIds.has(request.owner_user_id))
-  ) {
     throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
   }
   assertOAuthClientMayAuthorizeResource(request, request.resource)
@@ -178,9 +164,19 @@ async function lockAuthorizationRequest(
        AND request.browser_binding_hash = $3
        AND request.approved_at IS NULL
        AND request.denied_at IS NULL
+       AND NOT EXISTS (
+         SELECT 1 FROM oauth_authorization_requests AS newer
+         WHERE newer.browser_binding_hash = request.browser_binding_hash
+           AND newer.client_id = request.client_id AND newer.id > request.id LIMIT 1
+       )
        AND request.expires_at > CURRENT_TIMESTAMP
        AND client.revoked_at IS NULL
-     FOR UPDATE OF request FOR SHARE OF client`,
+     AND EXISTS (SELECT 1 FROM users WHERE users.id = request.user_id AND users.deleted_at IS NULL)
+       AND NOT EXISTS (SELECT 1 FROM user_suspensions WHERE user_id = request.user_id AND lifted_at IS NULL)
+       AND (client.owner_user_id IS NULL OR EXISTS (
+         SELECT 1 FROM users WHERE users.id = client.owner_user_id AND users.deleted_at IS NULL
+       ))
+     FOR UPDATE OF request`,
     [requestId, userId, browserBindingHash],
   )
   const request = result.rows[0]

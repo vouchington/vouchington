@@ -2,26 +2,16 @@ import type { TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 
-/**
- * Acquires the user-deletion fence for every OAuth participant before an OAuth artifact row is
- * locked. Callers re-read their artifact afterwards and choose the protocol-specific error.
- */
-export async function lockOAuthParticipantUsers(
+/** Read participant authority without fencing the user lifecycle. */
+export async function readActiveOAuthParticipantUsers(
   userIds: readonly (string | null)[],
   query: TransactionQuery,
 ): Promise<Set<string>> {
   const participantIds = [...new Set(userIds.filter((userId): userId is string => userId !== null))]
   participantIds.sort()
   if (participantIds.length === 0) return new Set()
-  // One statement takes the shared lifecycle locks in the sorted (UUID) order of the input array.
-  await query(
-    `/* lockOAuthParticipantUsers */ SELECT pg_advisory_xact_lock_shared(hashtextextended(lock_key.id, 0))
-     FROM unnest($1::text[]) WITH ORDINALITY AS lock_key(id, position)
-     ORDER BY lock_key.position`,
-    [participantIds],
-  )
   const result = await query<{ id: string }>(
-    `/* lockOAuthParticipantUsers active */ SELECT id
+    `/* readActiveOAuthParticipantUsers */ SELECT id
      FROM users
      WHERE id = ANY($1::uuid[])
        AND deleted_at IS NULL`,
@@ -53,23 +43,6 @@ export async function readOAuthAuthorizationCodeParticipantUserIds(
   const row = result.rows[0]
   if (row) return [row.grant_user_id, row.artifact_owner_user_id, row.input_owner_user_id]
   return readOAuthClientOwnerParticipant(inputClientId, query)
-}
-
-export async function readOAuthAuthorizationRequestParticipantUserIds(
-  requestId: string,
-  userId: string,
-  query: TransactionQuery,
-): Promise<(string | null)[]> {
-  const result = await query<{ request_user_id: string; owner_user_id: string | null }>(
-    `/* decideOAuthAuthorizationRequest participants */ SELECT request.user_id AS request_user_id,
-       client.owner_user_id
-     FROM oauth_authorization_requests AS request
-     JOIN oauth_clients AS client ON client.id = request.client_id
-     WHERE request.id = $1 AND request.user_id = $2`,
-    [requestId, userId],
-  )
-  const row = result.rows[0]
-  return row ? [row.request_user_id, row.owner_user_id] : [userId]
 }
 
 async function readOAuthClientOwnerParticipant(

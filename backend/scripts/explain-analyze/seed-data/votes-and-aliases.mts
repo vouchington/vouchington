@@ -1,6 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { SEED_PREFIX, seedUuid } from './common.mts'
 import { seedRecommendedTopicsVoteHistory } from './recommended-topics-vote-history.mts'
+import { buildPostVoteStateSeedSql } from './post-vote-state.mts'
 
 export async function seedVotes(postVoteCount = 2000, topicVoteCount = 500): Promise<void> {
   console.log(`Seeding ${postVoteCount} post votes and ${topicVoteCount} topic votes...`)
@@ -25,10 +26,7 @@ export async function seedVotes(postVoteCount = 2000, topicVoteCount = 500): Pro
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2})`)
       }
-      await query(
-        `/* seedExplainData */ INSERT INTO post_votes (post_id, user_id, score) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
-        values,
-      )
+      await query(buildPostVoteStateSeedSql(rows.join(', ')), values)
     }
 
     await transaction.commit()
@@ -41,7 +39,9 @@ export async function seedVotes(postVoteCount = 2000, topicVoteCount = 500): Pro
     await using transaction = await beginTransaction()
     const query = transaction
     await query(
-      `/* seedExplainData */ INSERT INTO post_votes (post_id, user_id, score) VALUES ($1, $2, 1), ($1, $3, 1) ON CONFLICT DO NOTHING`,
+      buildPostVoteStateSeedSql(
+        '($1::uuid, $2::uuid, 1::smallint), ($1::uuid, $3::uuid, 1::smallint)',
+      ),
       [seedUuid(0, '05'), seedUuid(1, '01'), seedUuid(2, '01')],
     )
 

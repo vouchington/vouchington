@@ -1,4 +1,5 @@
 import { read, write } from '@data-stores/psql'
+import { seedTestCurrentPostVote } from '../post-vote-state.mts'
 import sql from 'sql-template-strings'
 
 export async function insertTestUserDeletionPostVotes(
@@ -13,6 +14,7 @@ export async function insertTestUserDeletionPostVotes(
     FROM generate_series(1, ${count})
   `,
   )
+  await seedTestCurrentPostVote(userId, postId)
 }
 
 export async function countTestUserDeletionPostVotes(userId: string): Promise<number> {
@@ -24,6 +26,14 @@ export async function countTestUserDeletionPostVotes(userId: string): Promise<nu
   `,
   )
   return rows[0]?.count ?? 0
+}
+
+export async function countTestUserDeletionCurrentPostVotes(userId: string): Promise<number> {
+  const { rows } = await write<{ count: number }>(
+    sql`/* countTestUserDeletionCurrentPostVotes */
+      SELECT count(*)::int AS count FROM post_vote_states WHERE user_id = ${userId}`,
+  )
+  return rows[0]!.count
 }
 
 export async function insertTestUserDeletionLists(userId: string, count: number): Promise<void> {

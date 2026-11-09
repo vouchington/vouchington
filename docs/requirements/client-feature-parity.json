@@ -103,10 +103,11 @@
           "behaviorTests": ["web/lib/auth/oauth-broker.mock.test.ts"]
         },
         "swift": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": [
             "swift-clients/ui/Sources/VouchaFeatures/Auth/SignInView.swift",
-            "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+OAuth.swift"
+            "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+OAuth.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+Sessions.swift"
           ],
           "behaviorTests": [
             "swift-clients/core/Tests/VouchaCoreTests/NativeOAuthAuthorizationTests.swift",
@@ -124,6 +125,10 @@
             "dotnet-clients/tests/Voucha.Client.Core.Tests/Auth/NativeOAuthAuthorizationCoordinatorTests.cs"
           ]
         }
+      },
+      "gap": {
+        "summary": "Swift session management must retain continuation through an empty page and distinguish it from a terminal empty list; the pager and revoke-all action currently depend on loaded rows.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/569"
       }
     },
     {

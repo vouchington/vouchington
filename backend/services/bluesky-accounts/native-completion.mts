@@ -6,7 +6,7 @@ import type { AccountChangeSession } from '@services/mfa/active-account-session'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { connectBlueskyAccountInLockedTransaction } from './connect-locked.mts'
-import { lockBlueskyAuthorizationOwner } from './session-generation.mts'
+import { lockAuthorization } from './session-generation.mts'
 import {
   nativeCompletionProofMatches,
   nativeCompletionTokenMatches,
@@ -41,7 +41,6 @@ export async function finalizeNativeBlueskyAccountLink(
     currentUserId,
     currentSession,
     flowId,
-    discovered.bluesky_did,
     query,
     completionNow,
   )
@@ -73,7 +72,6 @@ async function lockNativeBlueskyCompletionAdmission(
   currentUserId: string,
   currentSession: AccountChangeSession,
   flowId: string,
-  did: string,
   query: TransactionQuery,
   completionNow: () => Date,
 ): Promise<{ actorSessionId: string; completion: CompletionRow }> {
@@ -85,7 +83,6 @@ async function lockNativeBlueskyCompletionAdmission(
   )
   const completion = await lockBlueskyCompletionOwnerAndRead(
     currentUserId,
-    did,
     flowId,
     query,
     completionNow,
@@ -95,12 +92,11 @@ async function lockNativeBlueskyCompletionAdmission(
 
 async function lockBlueskyCompletionOwnerAndRead(
   currentUserId: string,
-  did: string,
   flowId: string,
   query: TransactionQuery,
   completionNow: () => Date,
 ): Promise<CompletionRow> {
-  await lockBlueskyAuthorizationOwner(currentUserId, did, flowId, query)
+  await lockAuthorization(flowId, currentUserId, query)
   return getLockedCompletion(flowId, query, completionNow)
 }
 

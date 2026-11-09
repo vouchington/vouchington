@@ -1,6 +1,5 @@
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import createHttpError from 'http-errors'
-import { lockActiveUserLifecycleForMutation } from '@services/users/active-user-lifecycle-lock'
 import { deriveUploadStatus } from './get-upload-state.mts'
 import { getImageById } from './get.mts'
 import { imagesWorkMaxValues } from './work-limits.mts'
@@ -22,29 +21,18 @@ type ImageCompletionRecord = Pick<
   ImageRow,
   'id' | 's3_key' | 'sha_256' | 'upload_started_at' | 'upload_completed_at' | 'upload_failed_at'
 >
-type PromotableImageRecord = Pick<
-  ImageRow,
-  | 'created_by_id'
-  | 'deleted_at'
-  | 'upload_started_at'
-  | 'upload_completed_at'
-  | 'upload_failed_at'
-  | 'sha_256'
->
-
 export async function claimImageUpload(
   userId: string,
   imageId: string,
 ): Promise<{ claimed: boolean; image: ImageUploadRecord }> {
   await using transaction = await beginTransaction()
-  await lockActiveUserLifecycleForMutation(transaction, userId)
+  await assertActiveUploadUser(transaction, userId)
   const { rows } = await transaction<ImageUploadRecord>(
-    `/* claimImageUpload:lock */
+    `/* claimImageUpload:read */
     SELECT id, created_by_id, deleted_at, s3_key, sha_256, upload_staged_at,
       upload_started_at, upload_completed_at, upload_failed_at
     FROM images
     WHERE id = $1
-    FOR UPDATE
   `,
     [imageId],
   )
@@ -68,15 +56,16 @@ export async function claimImageUpload(
     `/* claimImageUpload:update */
     UPDATE images
     SET upload_started_at = CURRENT_TIMESTAMP
-    WHERE id = $1
+    WHERE id = $1 AND created_by_id = $2
       AND deleted_at IS NULL
       AND upload_started_at IS NULL
       AND upload_completed_at IS NULL
       AND upload_failed_at IS NULL
+      AND EXISTS (SELECT 1 FROM users WHERE users.id = $2 AND users.deleted_at IS NULL)
     RETURNING id, created_by_id, deleted_at, s3_key, sha_256, upload_staged_at,
       upload_started_at, upload_completed_at, upload_failed_at
   `,
-    [imageId],
+    [imageId, userId],
   )
   const claimed = claimedRows[0]
   if (!claimed) throw createHttpError(409, 'Upload is already being processed')
@@ -96,40 +85,21 @@ export async function persistPromotedImageKey(
   )
   const creatorId = creatorRows[0]?.created_by_id
   if (!creatorId) throw createHttpError(409, 'Image upload is no longer eligible for promotion')
-  await lockActiveUserLifecycleForMutation(transaction, creatorId)
-  const { rows } = await transaction<PromotableImageRecord>(
-    `/* persistPromotedImageKey:lock */
-    SELECT created_by_id, deleted_at, upload_started_at, upload_completed_at,
-      upload_failed_at, sha_256
-    FROM images
-    WHERE id = $1
-    FOR UPDATE
-  `,
-    [imageId],
-  )
-  const image = rows[0]
-  if (
-    !image ||
-    image.created_by_id !== creatorId ||
-    image.deleted_at ||
-    image.upload_started_at === null ||
-    image.upload_completed_at !== null ||
-    image.upload_failed_at !== null ||
-    !image.sha_256 ||
-    !Buffer.from(image.sha_256).equals(sha256)
-  ) {
-    throw createHttpError(409, 'Image upload is no longer eligible for promotion')
-  }
-
+  await assertActiveUploadUser(transaction, creatorId)
   const { rows: updatedRows } = await transaction<ImageCompletionRecord>(
     `/* persistPromotedImageKey:update */
     UPDATE images
     SET s3_key = $1
-    WHERE id = $2
+    WHERE id = $2 AND created_by_id = $3
+      AND deleted_at IS NULL AND upload_started_at IS NOT NULL
+      AND upload_completed_at IS NULL AND upload_failed_at IS NULL AND sha_256 = $4
+      AND EXISTS (SELECT 1 FROM users WHERE users.id = $3 AND users.deleted_at IS NULL)
     RETURNING id, s3_key, sha_256, upload_started_at, upload_completed_at, upload_failed_at
   `,
-    [s3Key, imageId],
+    [s3Key, imageId, creatorId, sha256],
   )
+  if (!updatedRows[0])
+    throw createHttpError(409, 'Image upload is no longer eligible for promotion')
   await transaction.commit()
   return updatedRows[0]!
 }
@@ -154,7 +124,7 @@ async function acknowledgeImageUploadSources(query: QueryExecutor, ids: string[]
     `/* markImageUploadSourcesDeleted:lock */
     SELECT id
     FROM images
-    WHERE id = ANY($1::uuid[])
+    WHERE id = ANY($1::uuid[]) AND upload_source_deleted_at IS NULL
     ORDER BY id LIMIT $2 FOR UPDATE
   `,
     [ids, ids.length],
@@ -174,4 +144,12 @@ async function acknowledgeImageUploadSources(query: QueryExecutor, ids: string[]
   `,
     [ids],
   )
+}
+
+async function assertActiveUploadUser(query: QueryExecutor, userId: string): Promise<void> {
+  const { rows } = await query(
+    '/* assertActiveUploadUser */ SELECT id FROM users WHERE id = $1 AND deleted_at IS NULL LIMIT 1',
+    [userId],
+  )
+  if (!rows[0]) throw createHttpError(401, 'User not found')
 }

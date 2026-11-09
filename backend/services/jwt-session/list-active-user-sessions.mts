@@ -12,16 +12,26 @@ export async function listActiveUserSessions(
   const query = sql`/* listActiveUserSessions */
     WITH active AS MATERIALIZED (
       SELECT id, user_id, device_id, device_name, user_agent_string_id,
-        ip_address, created_at, last_seen_at, expires_at
+        ip_address, created_at, last_seen_at, expires_at, authenticated_at
       -- no-mistakes-disable-next-line postgres-required-predicates: a SID may be minted before its owning user, so active-session pagination must include every session-ID partition
       FROM user_sessions
       WHERE user_id = ${currentUserId} AND revoked_at IS NULL
-        AND expires_at > CURRENT_TIMESTAMP
-      ORDER BY expires_at, id LIMIT ${sessionLimitsMaxValues.active_sessions_per_user}
+  `
+  if (options.after) {
+    query.append(
+      sql` AND (last_seen_at, id) < (${options.after.timestamp}::timestamptz, ${options.after.id}::uuid)`,
+    )
+  }
+  query.append(sql` ORDER BY last_seen_at DESC, id DESC LIMIT ${sessionLimitsMaxValues.active_sessions_per_user + 1}
     )
     SELECT s.id, s.device_id, s.device_name, ua.user_agent, s.ip_address, s.created_at,
       s.last_seen_at, s.expires_at,
       COALESCE(native_connections.connections, '[]'::json) AS mcp_connections,
+      (s.expires_at > CURRENT_TIMESTAMP AND NOT EXISTS (
+        SELECT 1 FROM user_session_revocation_cutoffs cutoff
+        WHERE cutoff.user_id = s.user_id AND s.authenticated_at <= cutoff.cutoff_at
+          AND s.id IS DISTINCT FROM cutoff.preserved_session_id
+      )) AS eligible,
       to_char(s.last_seen_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS last_seen_cursor
     FROM active s
     JOIN user_agent_strings ua ON ua.id = s.user_agent_string_id
@@ -42,30 +52,35 @@ export async function listActiveUserSessions(
         LIMIT 1
       ) AS connection
     ) AS native_connections ON TRUE
-    WHERE s.user_id = ${currentUserId}
-  `
-  if (options.after) {
-    query.append(sql` AND (s.last_seen_at < ${options.after.timestamp}::timestamptz
-      OR (s.last_seen_at = ${options.after.timestamp}::timestamptz AND s.id < ${options.after.id}))`)
-  }
-  query.append(sql` ORDER BY s.last_seen_at DESC, s.id DESC LIMIT ${limit + 1}`)
+    ORDER BY s.last_seen_at DESC, s.id DESC`)
   const { rows } = await write(query)
 
-  const hasNextPage = rows.length > limit
-  const results = (rows.slice(0, limit) as (UserSessionRow & { last_seen_cursor: string })[]).map(
-    row => ({
-      id: row.id,
-      device_id: row.device_id,
-      device_name: row.device_name,
-      user_agent: row.user_agent,
-      ip_address: row.ip_address,
-      created_at: row.created_at,
-      last_seen_at: row.last_seen_at,
-      expires_at: row.expires_at,
-      mcp_connections: row.mcp_connections,
-      is_current: row.id === currentSessionId,
-      cursor_timestamp: row.last_seen_cursor,
-    }),
-  )
-  return { results, hasNextPage }
+  const rawPage = rows.slice(
+    0,
+    sessionLimitsMaxValues.active_sessions_per_user,
+  ) as (UserSessionRow & {
+    last_seen_cursor: string
+    eligible: boolean
+  })[]
+  const eligible = rawPage.filter(row => row.eligible)
+  const hasNextPage = eligible.length > limit || rows.length > rawPage.length
+  const continuationRow = eligible.length > limit ? eligible[limit - 1] : rawPage.at(-1)
+  const continuation =
+    hasNextPage && continuationRow
+      ? { timestamp: continuationRow.last_seen_cursor, id: continuationRow.id }
+      : null
+  const results = eligible.slice(0, limit).map(row => ({
+    id: row.id,
+    device_id: row.device_id,
+    device_name: row.device_name,
+    user_agent: row.user_agent,
+    ip_address: row.ip_address,
+    created_at: row.created_at,
+    last_seen_at: row.last_seen_at,
+    expires_at: row.expires_at,
+    mcp_connections: row.mcp_connections,
+    is_current: row.id === currentSessionId,
+    cursor_timestamp: row.last_seen_cursor,
+  }))
+  return { results, hasNextPage, continuation }
 }

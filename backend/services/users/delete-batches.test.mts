@@ -1,3 +1,4 @@
+import { countTestUserDeletionCurrentPostVotes } from '@voucha/test-helpers/entities/user-deletion-batch-fixtures'
 import { describe, expect, it } from 'vitest'
 import { processUserDeletionBatch } from '@services/user-deletions'
 import {
@@ -96,27 +97,37 @@ describe('user deletion batches', () => {
     await drainUserDeletionForTest(attempt)
   })
 
-  it('drains 201 vote-history rows across partition keys in three committed batches of at most 100', async () => {
+  it('drains current ballots and vote history in bounded batches across posts', async () => {
     const [author, voter] = await Promise.all([createTestUser(), createTestUser()])
     const [firstPost, secondPost] = await Promise.all([
       createTestPost({ user: author }),
       createTestPost({ user: author }),
     ])
     await Promise.all([
-      insertTestUserDeletionPostVotes(voter.id, firstPost.id, 101),
-      insertTestUserDeletionPostVotes(voter.id, secondPost.id, 100),
+      insertTestUserDeletionPostVotes(voter.id, firstPost.id, 2),
+      insertTestUserDeletionPostVotes(voter.id, secondPost.id, 1),
     ])
     const attempt = await deleteUser(voter, voter)
 
-    for (const expectedRemaining of [101, 1, 0]) {
-      await processUserDeletionPhaseBatch({
+    expect(await countTestUserDeletionCurrentPostVotes(voter.id)).toBe(2)
+    expect(await countTestUserDeletionPostVotes(voter.id)).toBe(3)
+    for (const [expectedCurrent, expectedHistory] of [
+      [1, 3],
+      [0, 3],
+      [0, 2],
+      [0, 1],
+      [0, 0],
+    ]) {
+      const result = await processUserDeletionPhaseBatch({
         requestId: attempt.requestId,
         userId: voter.id,
         processingAttemptId: attempt.processingAttemptId,
         phase: 'votes',
-        batchSize: 100,
+        batchSize: 1,
       })
-      await expect(countTestUserDeletionPostVotes(voter.id)).resolves.toBe(expectedRemaining)
+      expect(result.hasMore).toBe(true)
+      expect(await countTestUserDeletionCurrentPostVotes(voter.id)).toBe(expectedCurrent)
+      expect(await countTestUserDeletionPostVotes(voter.id)).toBe(expectedHistory)
     }
     await drainUserDeletionForTest(attempt)
   })

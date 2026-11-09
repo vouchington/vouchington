@@ -60,6 +60,7 @@ WITH friends AS (
         COALESCE(fa.facebook_user_data->>'name', '') AS provider_friend_name
       FROM facebook_friends ff
       JOIN facebook_accounts my_fa ON my_fa.id = ff.facebook_account_id
+      JOIN users viewer ON viewer.id = my_fa.user_id AND viewer.deleted_at IS NULL
       JOIN facebook_accounts fa ON fa.id = ff.friend_facebook_account_id
       JOIN users u ON u.id = fa.user_id
       WHERE my_fa.user_id = $1
@@ -79,6 +80,7 @@ WITH friends AS (
         COALESCE(xa.x_user_data->>'name', xa.x_user_data->>'username', '') AS provider_friend_name
       FROM x_friends xf
       JOIN x_accounts my_xa ON my_xa.id = xf.x_account_id
+      JOIN users viewer ON viewer.id = my_xa.user_id AND viewer.deleted_at IS NULL
       JOIN x_accounts xa ON xa.id = xf.friend_x_account_id
       JOIN users u ON u.id = xa.user_id
       WHERE my_xa.user_id = $1
@@ -98,6 +100,7 @@ WITH friends AS (
         COALESCE(ga.github_user_data->>'name', ga.github_user_data->>'login', '') AS provider_friend_name
       FROM github_friends gf
       JOIN github_accounts my_ga ON my_ga.id = gf.github_account_id
+      JOIN users viewer ON viewer.id = my_ga.user_id AND viewer.deleted_at IS NULL
       JOIN github_accounts ga ON ga.id = gf.friend_github_account_id
       JOIN users u ON u.id = ga.user_id
       WHERE my_ga.user_id = $1

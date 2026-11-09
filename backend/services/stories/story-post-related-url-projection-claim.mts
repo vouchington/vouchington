@@ -12,21 +12,57 @@ const availableJobs = `
   ORDER BY last_claimed_at NULLS FIRST, post_id
   LIMIT 1`
 
-export async function claimStoryPostRelatedUrlProjectionWork(): Promise<ProjectionWork | null> {
+const availableJobsForPosts = `
+  SELECT available.post_id FROM unnest($2::uuid[]) AS scope(post_id)
+  CROSS JOIN LATERAL (
+    SELECT work.post_id, work.last_claimed_at
+    FROM story_post_related_url_projection_jobs work
+    WHERE work.post_id = scope.post_id
+      AND (work.lease_expires_at IS NULL OR work.lease_expires_at <= clock_timestamp())
+    LIMIT 1
+  ) available
+  ORDER BY available.last_claimed_at NULLS FIRST, available.post_id
+  LIMIT 1`
+
+const claimableJobsForPosts = `
+  SELECT 1 FROM unnest($1::uuid[]) AS scope(post_id)
+  CROSS JOIN LATERAL (
+    SELECT work.post_id
+    FROM story_post_related_url_projection_jobs work
+    WHERE work.post_id = scope.post_id
+      AND (work.lease_expires_at IS NULL OR work.lease_expires_at <= clock_timestamp())
+    LIMIT 1
+  ) available
+  LIMIT 1`
+
+type StoryPostScope = { postIds?: readonly string[] }
+
+export async function claimStoryPostRelatedUrlProjectionWork(
+  scope?: StoryPostScope,
+): Promise<ProjectionWork | null> {
+  const postIds = scope?.postIds
+  if (postIds?.length === 0) return null
+  const scoped = postIds !== undefined
   const { rows } = await write<ProjectionWork>(
-    `/* claimStoryPostRelatedUrlProjection */ WITH available AS (${availableJobs})
+    `/* claimStoryPostRelatedUrlProjection${scoped ? ':scoped' : ''} */ WITH available AS (${scoped ? availableJobsForPosts : availableJobs})
       UPDATE story_post_related_url_projection_jobs work
       SET lease_token = uuidv7(), leased_at = clock_timestamp(), last_claimed_at = clock_timestamp(),
           lease_expires_at = clock_timestamp() + ($1::integer * INTERVAL '1 second')
       FROM available WHERE work.post_id = available.post_id
         AND (work.lease_expires_at IS NULL OR work.lease_expires_at <= clock_timestamp())
       RETURNING ${claimReturning}`,
-    [LEASE_SECONDS],
+    scoped ? [LEASE_SECONDS, postIds] : [LEASE_SECONDS],
   )
   return rows[0] ?? null
 }
 
-export async function hasClaimableStoryPostRelatedUrlProjectionWork(): Promise<boolean> {
-  const { rows } = await write(`/* hasClaimableStoryPostRelatedUrlProjection */ ${availableJobs}`)
+export async function hasClaimableStoryPostRelatedUrlProjectionWork(
+  scope?: StoryPostScope,
+): Promise<boolean> {
+  const postIds = scope?.postIds
+  if (postIds?.length === 0) return false
+  const scoped = postIds !== undefined
+  const query = `/* hasClaimableStoryPostRelatedUrlProjection${scoped ? ':scoped' : ''} */ ${scoped ? claimableJobsForPosts : availableJobs}`
+  const { rows } = scoped ? await write(query, [postIds]) : await write(query)
   return rows.length > 0
 }

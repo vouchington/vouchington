@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
-import { authenticateLockedOAuthClient } from './clients.mts'
-import { lockOAuthParticipantUsers } from './active-users.mts'
+import { authenticateOAuthTokenClient } from './clients.mts'
+import { readActiveOAuthParticipantUsers } from './active-users.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import { revokeOAuthRefreshFamily } from './refresh-family.mts'
 
@@ -13,11 +13,11 @@ export async function revokeOAuthToken(input: {
   await using query = await beginTransaction()
   const accessHash = hashToken(OAUTH_SECRET_PURPOSES.accessToken, input.token)
   const refreshHash = hashToken(OAUTH_SECRET_PURPOSES.refreshToken, input.token)
-  const activeParticipantIds = await lockOAuthParticipantUsers(
+  const activeParticipantIds = await readActiveOAuthParticipantUsers(
     await readTokenParticipants(accessHash, refreshHash, input.clientId, query),
     query,
   )
-  const client = await authenticateLockedOAuthClient(
+  const client = await authenticateOAuthTokenClient(
     input.clientId,
     input.clientSecret,
     query,
@@ -84,7 +84,7 @@ export async function revokeOAuthToken(input: {
        JOIN oauth_grants AS oauth_grant ON oauth_grant.id = family.grant_id
        WHERE oauth_grant.client_id = $1
          AND refresh.token_hash = $2
-       FOR UPDATE OF refresh, family, oauth_grant`,
+       FOR UPDATE OF refresh, family`,
       [client.id, refreshHash],
     )
     const familyId = refresh.rows[0]?.family_id
@@ -97,7 +97,7 @@ async function readTokenParticipants(
   accessHash: string,
   refreshHash: string,
   inputClientId: string,
-  query: Parameters<typeof lockOAuthParticipantUsers>[1],
+  query: Parameters<typeof readActiveOAuthParticipantUsers>[1],
 ): Promise<(string | null)[]> {
   const artifacts = await query<{ user_id: string; owner_user_id: string | null }>(
     `/* revokeOAuthToken participants */ SELECT oauth_grant.user_id, client.owner_user_id
@@ -129,7 +129,7 @@ async function tokenParticipantsAreActive(
   refreshHash: string,
   clientId: string,
   activeParticipantIds: ReadonlySet<string>,
-  query: Parameters<typeof lockOAuthParticipantUsers>[1],
+  query: Parameters<typeof readActiveOAuthParticipantUsers>[1],
 ): Promise<boolean> {
   const result = await query<{ user_id: string; owner_user_id: string | null }>(
     `/* revokeOAuthToken active participants */ SELECT oauth_grant.user_id, client.owner_user_id

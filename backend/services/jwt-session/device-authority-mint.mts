@@ -10,7 +10,7 @@ import {
   type DeviceTokenPayload,
 } from '@ts-shared/session-jwt'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
-import { getJwtRevokedKey, getJwtUserRevokedBeforeKey } from './constants.mts'
+import { getJwtRevokedKey } from './constants.mts'
 import { assertSessionClientBinding } from './client-binding.mts'
 import type { DeviceContext, DeviceClass, SessionClientBinding } from './types.mts'
 import { registerAuthenticatedSession } from './user-sessions.mts'
@@ -39,12 +39,8 @@ export async function mintAuthenticatedDeviceAuthority(options: {
   assertOriginalMfaVerifiedAt(options.binding.mfa_at, options.issuedAt)
   return runWithTransaction(options.query, async query => {
     await lockSessionDeviceAuthority(query, options.uid, options.sid)
-    const [revoked, cutoff] = await sessionValkeyClient.mget([
-      getJwtRevokedKey(options.sid),
-      getJwtUserRevokedBeforeKey(options.uid),
-    ])
-    if (revoked !== null || (cutoff !== null && options.issuedAt <= Number(cutoff)))
-      throw sessionReloginRequired()
+    const revoked = await sessionValkeyClient.get(getJwtRevokedKey(options.sid))
+    if (revoked !== null) throw sessionReloginRequired()
     await registerAuthenticatedSession(
       {
         uid: options.uid,
@@ -86,7 +82,6 @@ export async function mintAuthenticatedDeviceAuthority(options: {
         device.exp !== Math.floor(row.expires_at.getTime() / 1000)
       )
         throw sessionReloginRequired()
-      if (cutoff !== null && device.iat! <= Number(cutoff)) throw sessionReloginRequired()
       assertSessionClientBinding(
         device,
         options.deviceContext?.user_agent,

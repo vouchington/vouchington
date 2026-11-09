@@ -82,8 +82,6 @@ export async function runContributionAdmission<T>(
       SELECT id FROM post_admission_reservations
       WHERE id = ${claim.reservationId} FOR UPDATE`)
     if (reservation.rowCount !== 1) throw new LostContributionAdmissionLeaseError()
-    await query(sql`/* runContributionAdmission.lockActor */
-    SELECT id FROM users WHERE id = ${input.actorId} FOR NO KEY UPDATE`)
     if (input.policy && input.source && !input.capacityExempt)
       await assertContributionAdmissionCapacityOrReject(
         query,

@@ -53,7 +53,7 @@ function makeFriendIds(prefix: string): string[] {
   )
 }
 
-export async function assertFriendsPageCommitsBeforeDeletionFence(
+export async function assertFriendsPageCommitsBeforeOwnerDeletion(
   input: FriendsBatchCase & {
     firstFriendIdPrefix: string
     secondFriendIdPrefix: string
@@ -74,17 +74,15 @@ export async function assertFriendsPageCommitsBeforeDeletionFence(
   input.fetchSpy.mockResolvedValueOnce({
     ok: true,
     json: async () => {
+      await expect(
+        getTestFriend(input.provider, providerUserId, firstFriendId),
+      ).resolves.toHaveLength(1)
       await softDeleteUser(userId)
       return input.secondPage(secondFriendId)
     },
   })
 
-  await expect(input.syncFriends(providerUserId)).rejects.toThrow(
-    'cannot own new data after deletion',
-  )
-  await expect(getTestFriend(input.provider, providerUserId, firstFriendId)).resolves.toHaveLength(
-    1,
-  )
+  await expect(input.syncFriends(providerUserId)).resolves.toBeNull()
   await expect(getTestFriend(input.provider, providerUserId, secondFriendId)).resolves.toEqual([])
   await expect(
     getTestOAuthAccountFriendsSyncedAt(input.provider, providerUserId),

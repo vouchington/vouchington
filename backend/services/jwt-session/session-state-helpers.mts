@@ -11,7 +11,6 @@ import {
   DEVICE_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
-import { getUserSessionsRevokedBefore } from './session-revocation-keys.mts'
 
 type DeviceState = {
   did: string
@@ -31,18 +30,6 @@ export async function resolveDeviceState(deviceToken?: string): Promise<DeviceSt
 
 export function getMembershipExpiryClaim(membershipExpiresAt?: Date | null): { mpe?: number } {
   return membershipExpiresAt ? { mpe: Math.floor(membershipExpiresAt.getTime() / 1000) } : {}
-}
-
-export async function getSessionIssuedAt(
-  uid: string | null,
-  clock: () => number = Date.now,
-): Promise<number> {
-  const now = Math.floor(clock() / 1000)
-  if (uid === null) return now
-  const revokedBeforeSeconds = await getUserSessionsRevokedBefore(uid)
-  return revokedBeforeSeconds !== null && revokedBeforeSeconds >= now
-    ? revokedBeforeSeconds + 1
-    : now
 }
 
 export function getSessionEnrichment(options: {

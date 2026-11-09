@@ -11,6 +11,7 @@ BEGIN
   FOR ownership IN
     SELECT * FROM (VALUES
       ('posts', 'created_by_id'),
+      ('post_vote_states', 'user_id'),
       ('post_topic_alias_sources', 'contributor_user_id'),
       ('user_email_addresses', 'user_id'),
       ('user_phone_numbers', 'user_id'),
@@ -18,6 +19,7 @@ BEGIN
       ('user_totp_authenticators', 'user_id'),
       ('api_keys', 'user_id'),
       ('user_sessions', 'user_id'),
+      ('user_session_revocation_cutoffs', 'user_id'),
       ('facebook_accounts', 'user_id'),
       ('apple_accounts', 'user_id'),
       ('google_accounts', 'user_id'),

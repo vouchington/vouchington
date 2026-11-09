@@ -5,7 +5,7 @@ import {
   prepareUpsertEntityRelationOptions,
   type UpsertEntityRelationOptions,
 } from './upsert-options.mts'
-import { buildInsertQuery } from './build-insert-query.mts'
+import { buildUpsertRelationQuery } from './remote-follow-cycle-query.mts'
 import { buildBidirectionalInsertQuery } from './build-bidirectional-insert-query.mts'
 import {
   handleElectionVotes,
@@ -50,12 +50,7 @@ export const upsertEntityRelation = async (
     prepareUpsertEntityRelationOptions(options)
   await assertEntityRelationUpsertAllowed(creator, relation, subject, objects, relationOptions)
   if (!relation.bidirectional || relation.subject_type !== relation.object_type) {
-    const query = buildInsertQuery(
-      relation,
-      creator,
-      objects.map(object => ({ subject, object })),
-      relationOptions,
-    )
+    const query = buildUpsertRelationQuery(relation, creator, subject, objects, relationOptions)
     const internalRelations = await runRelationPublicationMutation(
       relationOptions,
       relation.table_name,

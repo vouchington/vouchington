@@ -23,6 +23,7 @@ import {
   registerOAuthClient,
 } from './index.mts'
 import { validateOAuthAccessToken } from './access-tokens.mts'
+import { listUserOAuthGrants } from './grant-management.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
 
@@ -49,12 +50,22 @@ describe('OAuth refresh tokens', () => {
       refreshToken: initial.refresh_token,
     })
 
+    const beforeReplay = await listUserOAuthGrants(owner.id, { limit: 100 })
+    const grantBefore = beforeReplay.results.find(
+      grant => grant.client.client_id === flow.client.client_id,
+    )
+    expect(grantBefore?.last_used_at).toBeInstanceOf(Date)
     await expect(
       exchangeOAuthRefreshToken({
         clientId: flow.client.client_id,
         refreshToken: initial.refresh_token,
       }),
     ).rejects.toMatchObject({ code: 'invalid_grant' })
+    const afterReplay = await listUserOAuthGrants(owner.id, { limit: 100 })
+    expect(
+      afterReplay.results.find(grant => grant.client.client_id === flow.client.client_id)
+        ?.last_used_at,
+    ).toEqual(grantBefore?.last_used_at)
     await expect(
       getTestOAuthCredentialStorage({ refreshToken: initial.refresh_token }),
     ).resolves.toMatchObject({

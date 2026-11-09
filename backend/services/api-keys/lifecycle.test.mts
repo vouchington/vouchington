@@ -1,3 +1,4 @@
+import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -12,6 +13,7 @@ import {
 import { addUserRole } from '../users/roles-permissions.mts'
 import { deleteUser } from '../users/delete.mts'
 import { processUserDeletionCredentialsBatch } from '../users/delete-phase-credentials.mts'
+import { softDeleteUser } from '@voucha/test-helpers/entities/users-lifecycle'
 import { createApiKey } from './create.mts'
 import { rotateApiKey } from './rotate.mts'
 import { validateApiKey, validateApiKeyForMcpAudience } from './validate.mts'
@@ -21,6 +23,35 @@ import { claimApiKeyExpiryReminder, getApiKeysDueForExpiryReminder } from './exp
 describe('API key lifetime and rotation', () => {
   beforeAll(() => {
     process.env.API_KEY_CHECKSUM_SECRET ??= 'synthetic API key checksum secret for lifecycle tests'
+  })
+
+  it.each(['create', 'rotate'] as const)(
+    'rejects %s when deletion commits after the owner snapshot',
+    async action => {
+      const user = await createTestUser()
+      const existing = await createApiKey(user.id, 'rss', 'Existing', ['rss:read'])
+      const before = await countTestApiKeysForUser(user.id)
+      await expect(
+        observeTestPostgresClientQueries(
+          () =>
+            action === 'create'
+              ? createApiKey(user.id, 'rss', 'Late', ['rss:read'])
+              : rotateApiKey(user.id, existing.apiKey.id),
+          async query => {
+            if (query.text.includes('/* getActiveApiKeyOwnerRole */')) await softDeleteUser(user.id)
+          },
+        ),
+      ).rejects.toMatchObject({ status: 404 })
+      expect(await countTestApiKeysForUser(user.id)).toBe(before)
+    },
+  )
+
+  it('rejects a key immediately when its owner is deleted', async () => {
+    const user = await createTestUser()
+    const { rawKey } = await createApiKey(user.id, 'rss', 'Deleted owner', ['rss:read'])
+    expect((await validateApiKey(rawKey, 'rss:read')).valid).toBe(true)
+    await softDeleteUser(user.id)
+    expect(await validateApiKey(rawKey, 'rss:read')).toEqual({ valid: false })
   })
 
   it('defaults ordinary keys to 90 days and administrator keys to 30', async () => {

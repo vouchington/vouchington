@@ -9,6 +9,7 @@ import {
 } from '../seed-data/oauth-client-verification.mts'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { runHotPathLockScopeScenarios } from './hot-path-lock-scope.mts'
 
 const OAUTH_CLIENT_VERIFICATION_PAGE_LIMIT = 50
 const OAUTH_CLIENT_VERIFICATION_LATE_CURSOR_REMAINING_VERIFIED_COUNT =
@@ -34,6 +35,7 @@ export async function runOAuthClientVerificationScenarios(): Promise<void> {
       )
     }
   })
+  await runHotPathLockScopeScenarios()
 }
 
 async function assertOAuthClientVerificationSeed(): Promise<void> {

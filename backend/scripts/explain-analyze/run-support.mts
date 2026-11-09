@@ -91,6 +91,7 @@ async function captureScenario(
     localSettings?: Readonly<Record<string, string>>
     afterCapture?: () => Promise<void>
     exactCapturedNames?: readonly string[]
+    useWallClock?: boolean
   } = {},
 ): Promise<void> {
   ensureScenarioContract(label)
@@ -99,7 +100,9 @@ async function captureScenario(
   enableQueryCapture()
 
   try {
-    await withSeedAnchorClock(fn)
+    // Expiring authorization artifacts compare application time with PostgreSQL wall time.
+    if (explainOptions.useWallClock) await fn()
+    else await withSeedAnchorClock(fn)
   } finally {
     disableQueryCapture()
   }

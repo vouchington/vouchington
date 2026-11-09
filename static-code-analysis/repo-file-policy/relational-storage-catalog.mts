@@ -46,6 +46,9 @@ export {
 
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
+  // Provider-edge repair must advance after deleting the scanned edge; neither bound authorizes it.
+  'oauth_friend_reference_repair_cursors.cursor_edge_id',
+  'oauth_friend_reference_repair_cursors.cursor_upper_edge_id',
   // Durable keyset positions can outlive their scanned rows.
   'copyright_notice_operational_retention_cursors.cursor_record_id',
   'copyright_notice_operational_retention_cursors.sweep_upper_bound_record_id',
@@ -98,6 +101,12 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'retained_relation_identity_cleanup_cursors.cursor_relation_id',
   'retained_relation_identity_cleanup_cursors.cursor_subject_id',
   'story_post_related_url_projection_jobs.sweep_upper_bound_source_id',
+  'story_post_category_projection_jobs.sweep_upper_bound_item_id',
+  'story_post_category_projection_jobs.cursor_item_id',
+  'story_post_category_projection_jobs.active_item_id',
+  'story_post_category_projection_jobs.cursor_category_identity_id',
+  'story_post_category_projection_jobs.cursor_relation_topic_id',
+  'story_post_category_projection_jobs.cursor_receipt_topic_id',
   'user_data_request_attempts.processing_attempt_id',
   // Deletion-tolerant bounded merge positions; these coordinates never join target rows.
   'topic_merge_metric_users.cursor_review_post_id',

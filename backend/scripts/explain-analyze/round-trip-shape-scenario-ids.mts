@@ -5,6 +5,7 @@ export const ROUND_TRIP_SHAPE_SCENARIO_IDS = [
   'messaging-eligibility-batch',
   'copyright-staff-case-batch',
   'user-agent-read-first',
+  'user-agent-first-use',
   'community-post-review-load',
   'community-lifecycle-notifications',
   'community-create',

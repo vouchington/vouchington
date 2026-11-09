@@ -76,15 +76,21 @@ async function observePoolQueries<Result>(
 /** Records SQL run on a borrowed client. COPY does not go through `pool.query`. */
 export async function observeTestPostgresClientQueries<Result>(
   operation: () => Promise<Result>,
+  onQueryComplete?: (query: ObservedClientQuery) => Promise<void>,
 ): Promise<{ result: Result; queries: ObservedClientQuery[] }> {
   return runPoolObservationExclusively(async () => {
     const queries: ObservedClientQuery[] = []
-    const restoreRead = tapClientQueries(readPool, 'read', queries)
-    const restoreWrite = tapClientQueries(writePool, 'write', queries)
+    let active = true
+    const completed = async (query: ObservedClientQuery) => {
+      if (active) await onQueryComplete?.(query)
+    }
+    const restoreRead = tapClientQueries(readPool, 'read', queries, completed)
+    const restoreWrite = tapClientQueries(writePool, 'write', queries, completed)
     try {
       const result = await operation()
       return { result, queries }
     } finally {
+      active = false
       restoreWrite()
       restoreRead()
     }
@@ -95,7 +101,9 @@ function tapClientQueries(
   pool: pg.Pool,
   label: ObservedPostgresQueryPool,
   queries: ObservedClientQuery[],
+  onQueryComplete: (query: ObservedClientQuery) => Promise<void>,
 ): () => void {
+  const restoreClients: Array<() => void> = []
   const descriptor = Object.getOwnPropertyDescriptor(pool, 'connect')
   const original = pool.connect
   Object.defineProperty(pool, 'connect', {
@@ -106,11 +114,31 @@ function tapClientQueries(
       if (args.some(arg => typeof arg === 'function')) return Reflect.apply(original, pool, args)
       return Promise.resolve(Reflect.apply(original, pool, args)).then(client => {
         if (!client) return client
+        const queryDescriptor = Object.getOwnPropertyDescriptor(client, 'query')
         const query = client.query
-        client.query = ((...queryArgs: unknown[]) => {
-          queries.push({ pool: label, text: clientQueryText(queryArgs[0]) })
-          return Reflect.apply(query, client, queryArgs)
+        const wrappedQuery = ((...queryArgs: unknown[]) => {
+          const observed = { pool: label, text: clientQueryText(queryArgs[0]) }
+          queries.push(observed)
+          const pending = Reflect.apply(query, client, queryArgs)
+          if (
+            queryArgs.some(arg => typeof arg === 'function') ||
+            typeof pending !== 'object' ||
+            pending === null ||
+            !('then' in pending) ||
+            typeof pending.then !== 'function'
+          )
+            return pending
+          return Promise.resolve(pending).then(async (result: unknown) => {
+            await onQueryComplete(observed)
+            return result
+          })
         }) as typeof client.query
+        client.query = wrappedQuery
+        restoreClients.push(() => {
+          if (client.query !== wrappedQuery) return
+          if (queryDescriptor) Object.defineProperty(client, 'query', queryDescriptor)
+          else Reflect.deleteProperty(client, 'query')
+        })
         return client
       })
     }) as typeof pool.connect,
@@ -118,6 +146,7 @@ function tapClientQueries(
   return () => {
     if (descriptor) Object.defineProperty(pool, 'connect', descriptor)
     else Reflect.deleteProperty(pool, 'connect')
+    for (const restore of restoreClients.toReversed()) restore()
   }
 }
 
@@ -148,13 +177,7 @@ function wrapQuery(
   expectedContext: PoolObservationContext,
 ): pg.Pool['query'] {
   return ((...args: unknown[]) => {
-    const input = args[0]
-    const text =
-      typeof input === 'string'
-        ? input
-        : typeof input === 'object' && input !== null && 'text' in input
-          ? String(input.text)
-          : ''
+    const text = clientQueryText(args[0])
     const activeContext = poolObservationContext.getStore()
     const matchesContext =
       activeContext === expectedContext &&

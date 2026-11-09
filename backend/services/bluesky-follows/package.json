@@ -33,7 +33,6 @@
     "@queues/entity-listeners": "workspace:^",
     "@services/bluesky-accounts": "workspace:^",
     "@services/session-advisory-lock": "workspace:^",
-    "@services/user-deletions": "workspace:^",
     "@services/users": "workspace:^",
     "@vouchington/queue-errors": "^0.2.1",
     "http-errors": "^2.0.1",

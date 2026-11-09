@@ -14,7 +14,6 @@ import {
   getJwtLogoutCleanupKey,
   getJwtLogoutPushCleanupCompletionKey,
   getJwtRevokedKey,
-  getJwtUserRevokedBeforeKey,
 } from './constants.mts'
 import { REVOCATION_EXPIRATION_SECONDS } from './session-revocation-keys.mts'
 import { revokeSession } from './user-session-revocation.mts'
@@ -28,7 +27,6 @@ const LOGOUT_CLEANUP_WAIT_MS = 250
 
 type SessionRevocationOptions = {
   userId: string
-  issuedAt?: number
 }
 
 type ExactPushBinding = { endpoint: string; subscriptionId: string }
@@ -129,6 +127,11 @@ async function admitLogoutCleanup(
     WHERE s.id = ${sessionId} AND s.user_id = ${revocationOptions.userId}
       AND s.revoked_at IS NULL AND s.expires_at > CURRENT_TIMESTAMP
       AND s.device_token_digest IS NOT NULL AND u.deleted_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM user_session_revocation_cutoffs cutoff
+        WHERE cutoff.user_id = s.user_id AND s.authenticated_at <= cutoff.cutoff_at
+          AND s.id IS DISTINCT FROM cutoff.preserved_session_id
+      )
     FOR UPDATE OF s`)
   if (rows.length === 0) return false
   const result = await sessionValkeyClient.invokeScript(admitLogoutCleanupScript, {
@@ -136,12 +139,8 @@ async function admitLogoutCleanup(
       getJwtLogoutCleanupAdmissionKey(sessionId),
       getJwtLogoutCleanupFenceKey(sessionId),
       getJwtRevokedKey(sessionId),
-      getJwtUserRevokedBeforeKey(revocationOptions.userId),
     ],
-    args: [
-      String(REVOCATION_EXPIRATION_SECONDS),
-      String(revocationOptions.issuedAt ?? Number.MAX_SAFE_INTEGER),
-    ],
+    args: [String(REVOCATION_EXPIRATION_SECONDS)],
   })
   if (!Array.isArray(result) || result.length < 2 || Number(result[1]) === 0) return false
   if (!Number.isSafeInteger(Number(result[0]))) {

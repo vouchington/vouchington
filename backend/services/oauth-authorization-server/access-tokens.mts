@@ -1,7 +1,7 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { OAUTH_ACCESS_TOKEN_PREFIX, OAUTH_SECRET_PURPOSES } from './constants.mts'
-import { lockOAuthParticipantUsers } from './active-users.mts'
+import { readActiveOAuthParticipantUsers } from './active-users.mts'
 import { isSessionRevoked } from '@services/jwt-session'
 import { getOAuthResourceUrl, type OAuthResourceAudience } from './resources.mts'
 import type { OAuthAccessPrincipal } from './types.mts'
@@ -17,7 +17,7 @@ export async function validateOAuthAccessToken(
 ): Promise<OAuthAccessPrincipal | null> {
   await using query = await beginTransaction()
   const tokenHash = hashToken(OAUTH_SECRET_PURPOSES.accessToken, rawToken)
-  const activeParticipantIds = await lockOAuthParticipantUsers(
+  const activeParticipantIds = await readActiveOAuthParticipantUsers(
     await readAccessTokenParticipants(tokenHash, query),
     query,
   )
@@ -31,6 +31,10 @@ export async function validateOAuthAccessToken(
        AND oauth_grant.client_id = client.id
        AND access.token_hash = $1
        AND access.revoked_at IS NULL
+       AND (access.refresh_family_id IS NULL OR EXISTS (
+         SELECT 1 FROM oauth_refresh_token_families AS family
+         WHERE family.id = access.refresh_family_id AND family.revoked_at IS NULL
+       ))
        AND access.expires_at > CURRENT_TIMESTAMP
        AND oauth_grant.revoked_at IS NULL
        AND (oauth_grant.session_id IS NULL OR EXISTS (
@@ -40,6 +44,11 @@ export async function validateOAuthAccessToken(
            AND session.authentication_origin = 'native'
            AND session.revoked_at IS NULL
            AND session.expires_at > CURRENT_TIMESTAMP
+           AND NOT EXISTS (
+             SELECT 1 FROM user_session_revocation_cutoffs cutoff
+             WHERE cutoff.user_id = session.user_id AND session.authenticated_at <= cutoff.cutoff_at
+               AND session.id IS DISTINCT FROM cutoff.preserved_session_id
+           )
        ))
        AND client.revoked_at IS NULL
        AND EXISTS (

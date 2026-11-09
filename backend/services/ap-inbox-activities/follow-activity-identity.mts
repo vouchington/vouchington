@@ -1,19 +1,13 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-// An Undo asserts only its sender's cycle. Receipt of the original Follow establishes
-// the global URI owner. Take this fence before any actor/target pair lock.
-export async function lockRemoteFollowActivityIdentity(
+// Actor-bound Undo assertions never claim global ownership of an unconfirmed URI.
+export async function matchesConfirmedRemoteFollowActivityIdentity(
   query: QueryExecutor,
   activityId: string,
   remoteActorId: string,
   targetUserId: string,
 ): Promise<boolean> {
-  await query(sql`/* lockRemoteFollowActivityIdentity */
-    SELECT pg_advisory_xact_lock(hashtextextended(
-      'activitypub-follow-identity:' || ${activityId}, 0
-    ))
-  `)
   const { rows } = await query<{ remote_actor_identity_id: string; target_user_id: string }>(
     sql`/* findConfirmedRemoteFollowActivityOwner */
       SELECT remote_actor_identity_id, target_user_id

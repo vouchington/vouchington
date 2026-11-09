@@ -1,4 +1,5 @@
 import { read, write, type TransactionQuery } from '@data-stores/psql'
+import { seedTestCurrentPostVote } from './post-vote-state.mts'
 import sql from 'sql-template-strings'
 
 /** Inserts a post ballot that references an existing shared user-agent string. */
@@ -13,6 +14,7 @@ export async function insertTestPostVoteWithUserAgent(
     INSERT INTO post_votes (id, post_id, user_id, score, user_agent_string_id)
     VALUES (COALESCE(${id}::uuid, uuidv7()), ${postId}, ${userId}, ${score}, ${userAgentStringId}::uuid)
   `)
+  await seedTestCurrentPostVote(userId, postId)
 }
 
 export async function getTestPostVoteIds(
@@ -38,11 +40,19 @@ export async function setTestPostVoteActivityPubSource(
   distributedAt: Date | null = null,
 ): Promise<void> {
   await write(sql`/* setTestPostVoteActivityPubSource */
-    UPDATE post_votes
-    SET outbound_activitypub_like_activity_id = ${likeId}::uuid,
-      outbound_activitypub_original_like_activity_id = ${originalLikeId}::uuid,
-      outbound_activitypub_distributed_at = ${distributedAt}::timestamptz
-    WHERE post_id = ${postId}::uuid AND id = ${voteId}::uuid
+    WITH updated_event AS (
+      UPDATE post_votes
+      SET outbound_activitypub_like_activity_id = ${likeId}::uuid,
+        outbound_activitypub_original_like_activity_id = ${originalLikeId}::uuid,
+        outbound_activitypub_distributed_at = ${distributedAt}::timestamptz
+      WHERE post_id = ${postId}::uuid AND id = ${voteId}::uuid
+      RETURNING post_id, user_id, id, outbound_activitypub_like_activity_id
+    )
+    UPDATE post_vote_states AS state
+    SET outbound_activitypub_like_activity_id = updated_event.outbound_activitypub_like_activity_id
+    FROM updated_event
+    WHERE state.post_id = updated_event.post_id AND state.user_id = updated_event.user_id
+      AND state.id = updated_event.id
   `)
 }
 

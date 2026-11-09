@@ -19,7 +19,7 @@ import {
   exchangeOAuthAuthorizationCode,
 } from './index.mts'
 
-describe('OAuth participant lifecycle lock concurrency', () => {
+describe('Independent OAuth artifact concurrency', () => {
   it('lets distinct grant subjects exchange codes concurrently under one app owner', async () => {
     const [owner, firstUser, secondUser] = await Promise.all([
       createTestUserDirect(),

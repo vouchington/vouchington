@@ -1,5 +1,4 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
-import type { QueryExecutor } from '@data-stores/psql/types'
+import { read, write } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { getOAuthTokenPurpose } from '@services/oauth-accounts/upsert'
 
@@ -40,32 +39,11 @@ export async function persistXRefreshedTokens(
   generation: XCredentialGeneration,
   refreshedTokens: { accessToken: string; refreshToken: string | null; expiresAt: Date | null },
 ): Promise<boolean> {
-  await using query = await beginTransaction()
-  await query(`/* persistXRefreshedTokens */ SELECT fn_lock_active_user_for_mutation($1::uuid)`, [
-    userId,
-  ])
-  const owner = await query(
-    `/* persistXRefreshedTokens */ SELECT 1 FROM x_accounts WHERE x_user_id = $1 AND user_id = $2 FOR UPDATE`,
-    [xUserId, userId],
-  )
-  if (owner.rows.length === 0) return false
-
-  const persisted = await updateXTokens(xUserId, userId, generation, refreshedTokens, query)
-  await query.commit()
-  return persisted
-}
-
-async function updateXTokens(
-  xUserId: string,
-  userId: string,
-  generation: XCredentialGeneration,
-  refreshedTokens: { accessToken: string; refreshToken: string | null; expiresAt: Date | null },
-  query: QueryExecutor = write,
-): Promise<boolean> {
-  const { rowCount } = await query(
+  const { rowCount } = await write(
     `/* updateXTokens */ UPDATE x_accounts
      SET access_token_ciphertext = $1, refresh_token_ciphertext = $2, access_token_expires_at = $3
      WHERE x_user_id = $4 AND user_id = $5
+       AND EXISTS (SELECT 1 FROM users WHERE id = $5::uuid AND deleted_at IS NULL)
        AND access_token_ciphertext IS NOT DISTINCT FROM $6::text
        AND refresh_token_ciphertext IS NOT DISTINCT FROM $7::text
        AND access_token_expires_at::text IS NOT DISTINCT FROM $8::text`,

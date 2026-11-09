@@ -24,7 +24,7 @@ interface ReconcilePostVoteDriftOptions {
 }
 
 /**
- * Reconcile denormalized `posts.votes_count_*` against the source-of-truth `post_votes` for a
+ * Reconcile denormalized `posts.votes_count_*` against the source-of-truth `post_vote_states` for a
  * bounded sample of the newest posts, and emit the drift to analytics. Both the stored counters
  * and the recomputed scores/counts are read from the same replica snapshot, so replica lag cannot
  * create false positives. This also detects stale Like/Dislike-strength totals from old-writer
@@ -40,8 +40,9 @@ export async function reconcilePostVoteDrift(
       SELECT id
       -- no-mistakes-disable-next-line postgres-required-predicates: the LIMIT-capped newest-N sample covers votes on posts of every age, so no parent-post UUID floor can be imposed
       FROM posts
-      WHERE deleted_at IS NULL
-        AND (${samplePostIds}::uuid[] IS NULL OR id = ANY(${samplePostIds}::uuid[]))
+      WHERE deleted_at IS NULL`
+  if (samplePostIds) query.append(sql` AND id = ANY(${samplePostIds}::uuid[])`)
+  query.append(sql`
       ORDER BY id DESC
       LIMIT ${sampleSize}
     ),
@@ -57,10 +58,9 @@ export async function reconcilePostVoteDrift(
       FROM sample s
       JOIN posts p ON p.id = s.id
       LEFT JOIN LATERAL (
-        SELECT DISTINCT ON (user_id) user_id, score, score_is_neutral, score_is_semantic
-        FROM post_votes
+        SELECT user_id, score, score_is_neutral, score_is_semantic
+        FROM post_vote_states
         WHERE post_id = s.id
-        ORDER BY user_id, id DESC
       ) cv ON TRUE
       LEFT JOIN users u ON u.id = cv.user_id AND u.deleted_at IS NULL
       GROUP BY s.id, p.post_type
@@ -82,7 +82,7 @@ export async function reconcilePostVoteDrift(
     SELECT
       (SELECT count(*) FROM recomputed)::int AS sampled,
       (SELECT count(*) FROM drift)::int AS drifted,
-      (SELECT id FROM drift LIMIT 1)::text AS sample_entity_id`
+      (SELECT id FROM drift LIMIT 1)::text AS sample_entity_id`)
 
   const { rows } = await read<DriftRow>(query)
   const row = rows[0] ?? { sampled: 0, drifted: 0, sample_entity_id: null }

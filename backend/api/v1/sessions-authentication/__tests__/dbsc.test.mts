@@ -11,7 +11,7 @@ import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-valid
 import requestContracts from '../../../../../api-fixtures/v1/request-contracts.json' with { type: 'json' }
 
 const origin = 'https://dbsc.example'
-const userAgent = 'Synthetic browser/1.0'
+let userAgent: string
 const dbscResponseContracts = new RuntimeRequestValidatorRegistry({
   version: 1,
   source: 'checked-in-request-contracts',
@@ -57,6 +57,7 @@ function cookieTokens(headers: Record<string, unknown>): string[] {
 
 describe('browser device-bound session protocol', () => {
   beforeEach(() => {
+    userAgent = `Synthetic browser/${crypto.randomUUID()}`
     vi.stubEnv('SITE_ORIGIN', origin)
     vi.stubEnv('CF_WORKER_SECRET', 'synthetic-worker-secret-for-dbsc-tests')
   })

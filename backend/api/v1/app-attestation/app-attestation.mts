@@ -71,10 +71,7 @@ app.route('/api/v1/app-attestation/attest').post(async (ctx: Context) => {
       deviceToken: ctx.cookies.get('dt'),
       sessionToken: ctx.cookies.get('st'),
     })
-    if (
-      principal &&
-      !(await isSessionRevoked(principal.sid, { userId: principal.uid, issuedAt: principal.iat }))
-    ) {
+    if (principal && !(await isSessionRevoked(principal.sid, { userId: principal.uid }))) {
       ctx.throw(401, 'Unauthorized', AUTH_REQUIRED)
     }
   }

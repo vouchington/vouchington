@@ -14,7 +14,6 @@ import { throwBlueskySessionPersistenceError } from './session-persistence-error
 import {
   appendExactBlueskySessionOwner,
   createBlueskySessionLifecycleConflict,
-  lockBlueskySessionOwner,
   revokeExactBlueskySession,
 } from './session-generation.mts'
 
@@ -28,8 +27,8 @@ function blueskySessionSecretPurpose(did: string): string {
 
 // Postgres-backed NodeSavedSessionStore against bluesky_linked_accounts, keyed by DID. The SDK
 // invokes set() on the initial OAuth callback and again on every token refresh. The callback is
-// wrapped in session-lifecycle-context.mts, so it can persist an attributed authorization after
-// taking the user/DID lifecycle locks. Restore, refresh, and revoke also carry the exact attached
+// wrapped in session-lifecycle-context.mts, so it can persist an attributed authorization.
+// Restore, refresh, and revoke also carry the exact attached
 // owner/generation; context-free writes fail closed.
 export class BlueskySessionStore implements NodeSavedSessionStore {
   async get(did: string): Promise<NodeSavedSession | undefined> {
@@ -65,7 +64,6 @@ export class BlueskySessionStore implements NodeSavedSessionStore {
         query,
       )
     }
-    await lockBlueskySessionOwner(authorization.owner.userId, did, query)
     if (authorization.owner.kind === 'attached') {
       await refreshAttachedSession(did, sessionCiphertext, authorization, query)
     } else {
@@ -75,16 +73,13 @@ export class BlueskySessionStore implements NodeSavedSessionStore {
     await query.commit()
   }
 
-  // Full row delete (no tombstone), per the migration's table comment: unlike an inert OAuth
-  // profile blob, this row holds a live, replayable credential. Called by client.revoke() during
-  // unlink (see @modules/bluesky-oauth/revoke.mts) and internally by the SDK on unrecoverable
-  // session errors (e.g. a revoked-elsewhere refresh token).
+  // The SDK deletes this live credential on unlink or unrecoverable refresh failure;
+  // unlike an inert profile, it cannot remain as a tombstone.
   async del(did: string): Promise<void> {
     const authorization = getBlueskySessionAuthorizationContext()
     if (!authorization) throw createBlueskySessionLifecycleConflict(did)
     await using query = await beginTransaction()
 
-    await lockBlueskySessionOwner(authorization.owner.userId, did, query)
     await revokeExactBlueskySession(did, authorization, query)
 
     await query.commit()
@@ -145,10 +140,26 @@ async function persistAuthorizedSession(
       link_authorization_id,
       session_ciphertext
     )
-    VALUES (
+    SELECT
       ${did},
       ${authorization.authorizationId},
       ${sessionCiphertext}
+    WHERE EXISTS (
+      SELECT 1 FROM bluesky_link_authorizations link_auth
+      JOIN users owner ON owner.id = link_auth.user_id AND owner.deleted_at IS NULL
+      JOIN user_sessions actor ON actor.id = link_auth.initiating_session_id AND actor.user_id = owner.id
+      WHERE link_auth.id = ${authorization.authorizationId}
+        AND link_auth.user_id = ${authorization.owner.userId}
+        AND link_auth.status IN ('pending', 'callback_claimed')
+        AND actor.revoked_at IS NULL AND actor.expires_at > CURRENT_TIMESTAMP
+        AND NOT EXISTS (
+          SELECT 1 FROM user_session_revocation_cutoffs cutoff
+          WHERE cutoff.user_id = actor.user_id AND actor.authenticated_at <= cutoff.cutoff_at
+            AND actor.id IS DISTINCT FROM cutoff.preserved_session_id
+        )
+        AND actor.device_token_digest IS NOT NULL AND actor.device_token_encrypted IS NOT NULL
+        AND actor.device_token_issued_at IS NOT NULL AND actor.device_token_binding IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM user_suspensions WHERE user_id = owner.id AND lifted_at IS NULL)
     )
     ON CONFLICT (bluesky_did) DO UPDATE
     SET session_ciphertext = EXCLUDED.session_ciphertext

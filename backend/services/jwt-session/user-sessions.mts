@@ -43,14 +43,15 @@ async function writeAuthenticatedSession(
   options: AuthenticatedSessionOptions,
   memoizedUserAgentId?: string,
 ): Promise<{ session: UserSessionRow | null; userAgentId: string | null }> {
-  await query(
-    sql`/* upsertAuthenticatedSession */
-        SELECT pg_advisory_xact_lock(hashtextextended(${currentUserId}, 0))`,
-  )
   const existingActiveSession = await query<{ id: string }>(sql`/* hasAuthenticatedSession */
     SELECT id FROM user_sessions
     WHERE id = ${options.sid} AND user_id = ${currentUserId}
       AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP
+      AND NOT EXISTS (
+        SELECT 1 FROM user_session_revocation_cutoffs cutoff
+        WHERE cutoff.user_id = user_sessions.user_id AND user_sessions.authenticated_at <= cutoff.cutoff_at
+          AND user_sessions.id IS DISTINCT FROM cutoff.preserved_session_id
+      )
     LIMIT 1`)
   const deviceName = normalizeDeviceName(options.deviceName, options.userAgent)
   const userAgent = normalizeText(options.userAgent, 1024)
@@ -86,6 +87,11 @@ async function writeAuthenticatedSession(
       WHERE user_sessions.revoked_at IS NULL
         AND user_sessions.user_id = EXCLUDED.user_id
         AND user_sessions.device_id = EXCLUDED.device_id
+      AND NOT EXISTS (
+        SELECT 1 FROM user_session_revocation_cutoffs cutoff
+        WHERE cutoff.user_id = user_sessions.user_id AND user_sessions.authenticated_at <= cutoff.cutoff_at
+          AND user_sessions.id IS DISTINCT FROM cutoff.preserved_session_id
+      )
       RETURNING id, user_id, device_id, authentication_origin, device_name,
         (SELECT user_agent FROM user_agent_strings
           WHERE id = user_sessions.user_agent_string_id) AS user_agent,

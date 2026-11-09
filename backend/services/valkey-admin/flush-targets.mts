@@ -47,7 +47,6 @@ export const SERVICE_FLUSH_TARGET_PREFIXES = {
   sessions: [
     'voucha:jwt-stale:',
     'voucha:jwt-revoked:',
-    'voucha:jwt-user-revoked-before:',
     'passkey-challenge:',
     'mfa-login-attempt:',
     'mfa-reauth:',

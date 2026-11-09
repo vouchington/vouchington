@@ -899,6 +899,29 @@ CREATE INDEX idx_facebook_friends__unresolved_reference
 ON facebook_friends (facebook_friend_id, last_observed_at, id)
 WHERE friend_facebook_account_id IS NULL;
 
+DO $$ BEGIN
+  CREATE TYPE oauth_friend_repair_providers AS ENUM ('facebook', 'github', 'x');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS oauth_friend_reference_repair_cursors (
+  provider oauth_friend_repair_providers PRIMARY KEY,
+  cursor_edge_id UUID,
+  cursor_upper_edge_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK (cursor_edge_id IS NULL OR cursor_upper_edge_id IS NOT NULL)
+);
+
+CREATE OR REPLACE TRIGGER trigger_oauth_friend_reference_repair_cursors_updated_at
+BEFORE UPDATE ON oauth_friend_reference_repair_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+COMMENT ON TABLE oauth_friend_reference_repair_cursors IS 'Bounded sweep progress for provider friend edges.';
+COMMENT ON COLUMN oauth_friend_reference_repair_cursors.provider IS 'Provider whose edge index is traversed.';
+COMMENT ON COLUMN oauth_friend_reference_repair_cursors.cursor_edge_id IS 'Edge identifier at the last scanned position, retained only as a cursor.';
+COMMENT ON COLUMN oauth_friend_reference_repair_cursors.cursor_upper_edge_id IS 'Edge identifier at the fixed end of the current sweep, retained only as a cursor.';
+COMMENT ON COLUMN oauth_friend_reference_repair_cursors.updated_at IS 'Time the current repair checkpoint last changed.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_facebook_friends_updated_at
 BEFORE UPDATE ON facebook_friends
