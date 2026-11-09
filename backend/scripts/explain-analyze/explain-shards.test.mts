@@ -32,13 +32,21 @@ describe('getShardScenarioIds', () => {
 describe('assertShardsPartitionManifest', () => {
   it('accepts disjoint subsets whose union is the manifest', () => {
     expect(() =>
-      assertShardsPartitionManifest(manifest, { main: ['a', 'b'], partition: ['p1', 'p2'], 'hn-scale': [] }),
+      assertShardsPartitionManifest(manifest, {
+        main: ['a', 'b'],
+        partition: ['p1', 'p2'],
+        'hn-scale': [],
+      }),
     ).not.toThrow()
   })
 
   it('fails for a scenario in neither shard, in both shards, or outside the manifest', () => {
     expect(() =>
-      assertShardsPartitionManifest(manifest, { main: ['a'], partition: ['p1', 'p2'], 'hn-scale': [] }),
+      assertShardsPartitionManifest(manifest, {
+        main: ['a'],
+        partition: ['p1', 'p2'],
+        'hn-scale': [],
+      }),
     ).toThrow('neither=[b]')
     expect(() =>
       assertShardsPartitionManifest(manifest, {
