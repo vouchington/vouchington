@@ -105,9 +105,18 @@ async function selectReportContextRows(
         ORDER BY sample.id DESC) FILTER (WHERE sample.report_rank <= ${Math.min(cap, MAX_REPORTS_FOR_JUDGEMENT)}), '[]'::jsonb) AS reports
       FROM unnest(${ids}::uuid[]) entity(id)
       LEFT JOIN LATERAL (SELECT bounded.*, row_number() OVER (ORDER BY bounded.id DESC) AS report_rank FROM (
-        SELECT r.id, r.reason, r.note FROM moderation_reports r WHERE r.`)
-    query.append(fkColumn)
-    query.append(sql` = entity.id ORDER BY r.id DESC LIMIT ${cap + 1}) bounded) sample ON true
+        SELECT * FROM (`)
+    for (const [index, outcome] of [null, 'reviewed', 'actioned', 'dismissed'].entries()) {
+      if (index > 0) query.append(sql` UNION ALL `)
+      query.append(sql`(SELECT r.id, r.reason, r.note FROM moderation_reports r WHERE r.`)
+      query.append(fkColumn)
+      query.append(sql` = entity.id AND r.resolution_action `)
+      query.append(
+        outcome === null ? sql`IS NULL` : sql`= ${outcome}::moderation_report_resolution_actions`,
+      )
+      query.append(sql` ORDER BY r.id DESC LIMIT ${cap + 1})`)
+    }
+    query.append(sql`) outcomes ORDER BY id DESC LIMIT ${cap + 1}) bounded) sample ON true
       GROUP BY entity.id`)
   }
   const { rows } = await read<ReportContextRow>(query)
