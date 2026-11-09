@@ -14,9 +14,6 @@
       "archived_at": null,
       "archived_by_id": null,
       "broadcast": "everyone",
-      "can_delete": false,
-      "can_edit_content": false,
-      "can_lock": false,
       "clearance_reason": null,
       "clearance_status": null,
       "clearance_updated_at": null,
@@ -62,7 +59,7 @@
       },
       "count": {
         "children": 0,
-        "descendants": 1
+        "descendants": 0
       },
       "id": "70000000-0000-7000-8000-000000005437",
       "updated_at": "2026-01-01T00:00:00Z"

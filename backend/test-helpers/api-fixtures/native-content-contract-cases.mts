@@ -42,9 +42,10 @@ const postReference = {
   stories: [
     { hacker_news_item_id: 301, points: 12, reply_count: 4, posted_at: '2026-01-01T00:00:00Z' },
   ],
+  // mergeEntityUrls returns comments newest posted_at first, then higher item id.
   comments: [
-    { hacker_news_item_id: 302, parent_story_item_id: 301, posted_at: '2026-01-01T01:00:00Z' },
     { hacker_news_item_id: 303, parent_story_item_id: 301, posted_at: '2026-01-01T02:00:00Z' },
+    { hacker_news_item_id: 302, parent_story_item_id: 301, posted_at: '2026-01-01T01:00:00Z' },
   ],
 }
 const itemReference = postReference
