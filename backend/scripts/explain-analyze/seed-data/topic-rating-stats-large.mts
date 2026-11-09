@@ -14,17 +14,19 @@ const VOTE_ONLY_VOTERS = 3_000
 const REVOTERS = 1_500
 
 /**
- * Rows for other topics. Without them the popular topic is a fifth to a half of these small
- * partitions and the planner legitimately seq scans them; with them its topic_id index wins, as
- * it does in a production table where one topic is a small share of all ratings and ballots.
+ * Rows for other topics, spread thinly over thousands of them. Without them the popular topic is
+ * a fifth to a half of these small partitions and the planner legitimately seq scans them; spread
+ * thinly, the average topic stays small, so even a generic plan probes users by index instead of
+ * hash joining a whole users scan, as it does in production where one topic is a small share.
  */
-const FILLER_RATED_TOPICS = 2
+const FILLER_RATED_TOPICS = 2_000
 const FILLER_REVIEW_POSTS = 40_000
-const FILLER_VOTED_TOPICS = 100
-const FILLER_VOTERS = 600
+const FILLER_RATINGS_PER_POST = 2
+const FILLER_VOTED_TOPICS = 2_000
+const FILLER_VOTERS = 30
 
 export const LARGE_RATING_TOPIC_REVIEW_ROWS =
-  LARGE_RATING_TOPIC_REVIEWERS + REPEAT_REVIEWERS + FILLER_RATED_TOPICS * FILLER_REVIEW_POSTS
+  LARGE_RATING_TOPIC_REVIEWERS + REPEAT_REVIEWERS + FILLER_RATINGS_PER_POST * FILLER_REVIEW_POSTS
 export const LARGE_RATING_TOPIC_VOTE_ROWS =
   OVERLAPPING_VOTERS + VOTE_ONLY_VOTERS + REVOTERS + FILLER_VOTED_TOPICS * FILLER_VOTERS
 
@@ -67,10 +69,16 @@ export async function seedLargeRatingTopic(): Promise<void> {
   await transaction(
     `/* seedLargeRatingTopic */ INSERT INTO post_review_topic_ratings (post_id, topic_id, rating)
      SELECT post.id, topic.id, 3
-     FROM (SELECT id FROM posts WHERE post_type = 'review' ORDER BY id LIMIT $2) post
-     CROSS JOIN (SELECT id FROM topics WHERE id <> $1 ORDER BY id LIMIT $3 OFFSET 50) topic
+     FROM (
+       SELECT id, row_number() OVER (ORDER BY id) AS rn
+       FROM posts WHERE post_type = 'review' ORDER BY id LIMIT $2
+     ) post
+     CROSS JOIN generate_series(0, $4::int - 1) AS pass
+     JOIN (
+       SELECT id, row_number() OVER (ORDER BY id) - 1 AS rn FROM topics WHERE id <> $1
+     ) topic ON topic.rn = (post.rn * 3 + pass) % $3
      ON CONFLICT DO NOTHING`,
-    [LARGE_RATING_TOPIC_ID, FILLER_REVIEW_POSTS, FILLER_RATED_TOPICS],
+    [LARGE_RATING_TOPIC_ID, FILLER_REVIEW_POSTS, FILLER_RATED_TOPICS, FILLER_RATINGS_PER_POST],
   )
   const { rowCount: existingFiller } = await transaction(
     `/* seedLargeRatingTopic */ SELECT 1 FROM topic_votes
@@ -88,9 +96,7 @@ export async function seedLargeRatingTopic(): Promise<void> {
     )
   await transaction.commit()
 
-  await write(
-    `/* seedLargeRatingTopic */ ANALYZE post_review_topic_ratings, topic_votes, users, posts`,
-  )
+  await write(`/* seedLargeRatingTopic */ ANALYZE post_review_topic_ratings, topic_votes`)
 
   async function seedBallots(): Promise<void> {
     await transaction(
