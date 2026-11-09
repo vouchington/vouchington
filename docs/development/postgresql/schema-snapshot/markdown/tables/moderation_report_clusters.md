@@ -17,7 +17,6 @@ Not partitioned — growth: unbounded.
 | `resolution_action` | `moderation_report_resolution_actions` | yes      |                              |          |           |           | NULL for pending reports, otherwise the reviewed report outcome.      |
 | `first_reported_at` | `timestamp with time zone`             | no       |                              |          |           |           | Earliest UUIDv7 report timestamp in this target and outcome cluster.  |
 | `last_reported_at`  | `timestamp with time zone`             | no       |                              |          |           |           | Latest UUIDv7 report timestamp in this target and outcome cluster.    |
-| `report_count`      | `integer`                              | no       |                              |          |           |           | Number of current report rows in this target and outcome cluster.     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -28,7 +27,6 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `moderation_report_clusters_one_target`: `CHECK ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1))`
-- `moderation_report_clusters_report_count_check`: `CHECK ((report_count > 0))`
 - `moderation_report_clusters_reported_order`: `CHECK ((first_reported_at <= last_reported_at))`
 
 **Foreign keys:**
