@@ -50,6 +50,34 @@ describe('moderation report cluster projection', () => {
     ])
   })
 
+  it('removes the empty cluster after concurrent final report removals', async () => {
+    const [author, firstReporter, secondReporter] = await Promise.all([
+      createTestUser(),
+      createTestUser(),
+      createTestUser(),
+    ])
+    const postId = await insertTestPost({
+      createdById: author.id,
+      slug: `cluster-concurrent-final-removals-${crypto.randomUUID()}`,
+      title: 'Concurrent final report removals',
+      markdown: 'body',
+    })
+    const reportIds = await Promise.all(
+      [firstReporter, secondReporter].map(reporter =>
+        insertTestModerationReport({
+          reporterUserId: reporter.id,
+          entityType: 'post',
+          entityId: postId,
+        }),
+      ),
+    )
+    expect(await getTestModerationReportClusters('post', postId)).toHaveLength(1)
+
+    await Promise.all(reportIds.map(reportId => deleteTestModerationReports([reportId])))
+
+    expect(await getTestModerationReportClusters('post', postId)).toEqual([])
+  })
+
   it('keeps status membership and head timestamps exact across concurrent inserts and removals', async () => {
     const [author, firstReporter, secondReporter, thirdReporter] = await Promise.all([
       createTestUser(),
