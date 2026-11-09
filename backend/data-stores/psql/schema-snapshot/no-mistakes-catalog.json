@@ -15858,16 +15858,6 @@
           "nullable": false,
           "ordinalPosition": 2
         },
-        "community_prompt_any_flagged": {
-          "comment": "Whether a completed page in this community prompt traversal flagged the post.",
-          "dataType": "boolean",
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9
-        },
         "community_prompt_completed_at": {
           "comment": "The final community prompt page completed; only a new explicit request rearms the traversal.",
           "dataType": "timestamp with time zone",
@@ -15907,6 +15897,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 14
+        },
+        "has_flagged_community_prompt": {
+          "comment": "Whether a completed page in this community prompt traversal flagged the post.",
+          "dataType": "boolean",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9
         },
         "id": {
           "comment": null,

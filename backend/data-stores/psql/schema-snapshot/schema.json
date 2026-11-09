@@ -14862,17 +14862,6 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "community_prompt_any_flagged": {
-          "collation": null,
-          "comment": "Whether a completed page in this community prompt traversal flagged the post.",
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9,
-          "type": "boolean"
-        },
         "community_prompt_completed_at": {
           "collation": null,
           "comment": "The final community prompt page completed; only a new explicit request rearms the traversal.",
@@ -14916,6 +14905,17 @@
           "nullable": true,
           "ordinalPosition": 14,
           "type": "timestamp with time zone"
+        },
+        "has_flagged_community_prompt": {
+          "collation": null,
+          "comment": "Whether a completed page in this community prompt traversal flagged the post.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "boolean"
         },
         "id": {
           "collation": null,
