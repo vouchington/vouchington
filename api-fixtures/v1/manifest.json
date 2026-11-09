@@ -105117,7 +105117,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/topics",
       "bodyFile": "responses/web.topics.link-count.default.json",
-      "consumers": ["web"],
+      "consumers": ["web", "dotnet-core"],
       "id": "web.topics.link-count.default",
       "method": "GET",
       "migratedFrom": ["web/lib/api/server/trending-referral-programs.ts"],

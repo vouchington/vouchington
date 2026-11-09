@@ -163,7 +163,7 @@ export const referralApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: referralProgramTopicSearchBody,
-    consumers: ['web'],
+    consumers: ['web', 'dotnet-core'],
     migratedFrom: ['web/lib/api/server/trending-referral-programs.ts'],
   },
   {
