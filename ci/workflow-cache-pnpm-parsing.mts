@@ -15,11 +15,16 @@ export type Host = {
 export type YamlSources = ReadonlyMap<string, string>
 export const WORKFLOW = '.github/workflows/'
 export const ACTION = '.github/actions/'
-const WEB_ACTION = `${ACTION}build-web-targets/action.yml`
-const SETUP_BACKEND_ACTION = `${ACTION}setup-backend/action.yml`
 const LINGUA_RS_PATH =
   'node_modules/.pnpm/lingua-rs@${{ steps.lingua-rs.outputs.version }}/node_modules/lingua-rs/lingua_rs.*.node'
-const WEB_PATHS = ['web/.next/standalone', 'web/.next/static', 'cloudflare-worker/dist']
+const ACTION_CACHE_PATHS: Readonly<Record<string, readonly string[]>> = {
+  [`${ACTION}build-web-targets/action.yml`]: [
+    'web/.next/standalone',
+    'web/.next/static',
+    'cloudflare-worker/dist',
+  ],
+  [`${ACTION}setup-backend/action.yml`]: [LINGUA_RS_PATH],
+}
 export const SCRIPT_FREE = [
   'fix-main-self-retry.yml#retry',
   'fix-main.yml#classify-self-failure',
@@ -119,11 +124,11 @@ export function cachePathsAreAllowed(value: unknown, sourcePath = ''): boolean {
   const paths = normalizedCachePaths(value)
   if (paths === null || paths.length === 0) return false
   if (paths.every(path => path === '~/.cache/ms-playwright')) return true
-  if (sourcePath === SETUP_BACKEND_ACTION) return paths.length === 1 && paths[0] === LINGUA_RS_PATH
+  const allowed = ACTION_CACHE_PATHS[sourcePath]
   return (
-    sourcePath === WEB_ACTION &&
-    paths.length === WEB_PATHS.length &&
-    paths.every((path, index) => path === WEB_PATHS[index])
+    allowed !== undefined &&
+    paths.length === allowed.length &&
+    paths.every((path, index) => path === allowed[index])
   )
 }
 export function isActionsCacheStep(step: Step): boolean {
