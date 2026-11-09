@@ -16,7 +16,7 @@ type RunnableCallback<Value> = Value extends (...args: infer Args) => infer Resu
       : Value
   : Value
 
-// Current public test APIs have at most five call overloads (including test.fail). Compiler
+// Current public test APIs have at most five call overloads (test.fail has six). Compiler
 // contracts exercise each supported overload and check the source member independently.
 export type RunnableCalls<Callable> = Callable extends {
   (...args: infer First): infer FirstResult
@@ -31,6 +31,25 @@ export type RunnableCalls<Callable> = Callable extends {
       (...args: { [Key in keyof Third]: RunnableCallback<Third[Key]> }): ThirdResult
       (...args: { [Key in keyof Fourth]: RunnableCallback<Fourth[Key]> }): FourthResult
       (...args: { [Key in keyof Fifth]: RunnableCallback<Fifth[Key]> }): FifthResult
+    }
+  : never
+
+// Playwright 1.65 added test.fail(description), so it has six call overloads.
+type RunnableSixCalls<Callable> = Callable extends {
+  (...args: infer First): infer FirstResult
+  (...args: infer Second): infer SecondResult
+  (...args: infer Third): infer ThirdResult
+  (...args: infer Fourth): infer FourthResult
+  (...args: infer Fifth): infer FifthResult
+  (...args: infer Sixth): infer SixthResult
+}
+  ? {
+      (...args: { [Key in keyof First]: RunnableCallback<First[Key]> }): FirstResult
+      (...args: { [Key in keyof Second]: RunnableCallback<Second[Key]> }): SecondResult
+      (...args: { [Key in keyof Third]: RunnableCallback<Third[Key]> }): ThirdResult
+      (...args: { [Key in keyof Fourth]: RunnableCallback<Fourth[Key]> }): FourthResult
+      (...args: { [Key in keyof Fifth]: RunnableCallback<Fifth[Key]> }): FifthResult
+      (...args: { [Key in keyof Sixth]: RunnableCallback<Sixth[Key]> }): SixthResult
     }
   : never
 
@@ -110,7 +129,7 @@ export type RunnablePlaywrightTest<Tests extends {}, Workers extends {}> = Runna
 > &
   Omit<TestType<Tests, Workers>, ReplacedMembers> & {
     only: RunnableCalls<TestType<Tests, Workers>['only']>
-    fail: RunnableCalls<TestType<Tests, Workers>['fail']> & {
+    fail: RunnableSixCalls<TestType<Tests, Workers>['fail']> & {
       only: RunnableCalls<TestType<Tests, Workers>['fail']['only']>
     }
     beforeEach: RunnableCalls<TestType<Tests, Workers>['beforeEach']>
