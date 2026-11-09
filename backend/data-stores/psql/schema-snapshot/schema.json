@@ -75204,6 +75204,15 @@
           "referencedTable": "rss_feed_items",
           "validated": true
         },
+        "moderation_report_judgements_run_id_fkey": {
+          "columns": ["run_id"],
+          "definition": "FOREIGN KEY (run_id) REFERENCES moderation_report_judgement_runs(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "moderation_report_judgement_runs",
+          "validated": true
+        },
         "moderation_report_judgements_triggering_report_id_fkey": {
           "columns": ["triggering_report_id"],
           "definition": "FOREIGN KEY (triggering_report_id) REFERENCES moderation_reports(id) ON DELETE SET NULL",

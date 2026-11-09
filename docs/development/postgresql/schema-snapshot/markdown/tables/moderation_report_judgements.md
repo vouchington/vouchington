@@ -47,6 +47,7 @@ Not partitioned — growth: unbounded.
 - `moderation_report_judgements_reported_user_id_fkey`: `FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - `moderation_report_judgements_rerun_by_id_fkey`: `FOREIGN KEY (rerun_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `moderation_report_judgements_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
+- `moderation_report_judgements_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES moderation_report_judgement_runs(id) ON DELETE SET NULL`
 - `moderation_report_judgements_triggering_report_id_fkey`: `FOREIGN KEY (triggering_report_id) REFERENCES moderation_reports(id) ON DELETE SET NULL`
 
 **Indexes:**

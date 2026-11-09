@@ -79640,6 +79640,14 @@
           "referencedTable": "rss_feed_items",
           "validated": true
         },
+        "moderation_report_judgements_run_id_fkey": {
+          "columns": ["run_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "moderation_report_judgement_runs",
+          "validated": true
+        },
         "moderation_report_judgements_triggering_report_id_fkey": {
           "columns": ["triggering_report_id"],
           "onDelete": "SET NULL",
