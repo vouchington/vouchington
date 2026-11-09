@@ -1,7 +1,5 @@
 import { SEED_PREFIX, heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
-import * as services from '../run-services.mts'
-
-const { getAllReferralLinksPage, getPrioritizedReferralLinks } = services
+import { getAllReferralLinksPage, getPrioritizedReferralLinks } from '../run-services.mts'
 
 export async function runPrioritizedReferralLinkScenarios(): Promise<void> {
   const seedReferralProgramId = `${SEED_PREFIX}-0900-7000-8000-000000000000`

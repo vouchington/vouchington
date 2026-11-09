@@ -4,9 +4,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runUserProfileMetricsScenario } from './hot-path-profile-metrics.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import { seedUuid } from '../seed-data/common.mts'
-import * as services from '../run-services.mts'
-
-const {
+import {
   getCommunitiesByIdBatch,
   getPostElectionsByIdBatch,
   getIndividualCards,
@@ -18,7 +16,7 @@ const {
   getPublicUsersByAnyBatch,
   getBookmarksForEntityGroups,
   listProfileLinks,
-} = services
+} from '../run-services.mts'
 
 async function seededIds(table: string, tableTag: string, limit: number): Promise<string[]> {
   const { rows } = await read<{ id: string }>(

@@ -1,12 +1,6 @@
 import { SEED_PREFIX, runAndCapture, seedTopicId, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import * as services from '../run-services.mts'
-import { runAdminUserSearchScenarios } from './admin-user-search.mts'
-import { runDataPointSearchScenarios } from './data-point-search.mts'
-import { runUserRemovedPostPageScenarios } from './user-removed-post-pages.mts'
-import { runViewDrivenHostnameScenarios } from './view-driven-hostnames.mts'
-
-const {
+import {
   getCommunityModmailInbox,
   getConversationsByCreatedById,
   getMyDirectConversations,
@@ -16,7 +10,11 @@ const {
   getUserBookmarkCounts,
   searchTopicAliases,
   updateTopicRatingStats,
-} = services
+} from '../run-services.mts'
+import { runAdminUserSearchScenarios } from './admin-user-search.mts'
+import { runDataPointSearchScenarios } from './data-point-search.mts'
+import { runUserRemovedPostPageScenarios } from './user-removed-post-pages.mts'
+import { runViewDrivenHostnameScenarios } from './view-driven-hostnames.mts'
 
 export async function runTopicAliasSearchScenarios(): Promise<void> {
   // The alias keyset owns the order; topics are looked up by alias target id before limiting.

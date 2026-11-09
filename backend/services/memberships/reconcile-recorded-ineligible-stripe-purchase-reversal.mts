@@ -1,5 +1,5 @@
 import { getMembershipWorkLimit } from './work-limits.mts'
-import * as stripeDisputes from '@modules/stripe/disputes'
+import { getStripeDisputeSettlementForPayment } from '@modules/stripe/disputes'
 import * as stripeInvoices from '@modules/stripe/invoices'
 import * as stripeRefunds from '@modules/stripe/refunds'
 import * as stripeSubscriptions from '@modules/stripe/subscriptions'
@@ -77,7 +77,7 @@ function getStripeOperations(): IneligibleStripePurchaseOperations {
     cancelSubscriptionImmediately: stripeSubscriptions.cancelStripeSubscriptionImmediately,
     createRefund: stripeRefunds.createStripeRefund,
     getDisputeSettlementForPayment: options =>
-      stripeDisputes.getStripeDisputeSettlementForPayment(options, disputePages),
+      getStripeDisputeSettlementForPayment(options, disputePages),
     retrieveRefund: stripeRefunds.getStripeRefund,
     listSubscriptionInvoices: id =>
       stripeInvoices.listAllStripeSubscriptionInvoices(id, invoiceLimits),

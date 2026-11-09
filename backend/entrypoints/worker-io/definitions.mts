@@ -4,8 +4,10 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
   {
     queueName: 'background',
     load: async () => {
-      const [{ upsertBackgroundSchedules }, ...domains] = await Promise.all([
-        import('@queues/background/enqueues/schedules'),
+      const [background, ...domains] = await Promise.all([
+        import('@queues/background/enqueues/schedules').then(
+          module => module.upsertBackgroundSchedules,
+        ),
         import('@queues/ses-inbound/enqueues/schedules'),
         import('@queues/openai-moderation/enqueues/schedules'),
         import('@queues/story-post-related-url-projections/enqueues/schedules'),
@@ -24,7 +26,7 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/background/enqueues/topic-merge-schedules'),
       ])
       return async () => {
-        await upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
+        await background(domains.map(domain => domain.scheduledJobManifest))
       }
     },
   },

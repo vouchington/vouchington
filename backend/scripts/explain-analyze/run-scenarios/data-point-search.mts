@@ -8,9 +8,7 @@ import {
 } from '../seed-data/data-point-search-selective.mts'
 import { registerScenarioContract, type PlanExpectation } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
-import * as services from '../run-services.mts'
-
-const { getPostIds } = services
+import { getPostIds } from '../run-services.mts'
 
 const PAGE_LIMIT = 21
 const JOIN_SLACK = 8
