@@ -144568,6 +144568,17 @@
         "urls_url_check2": "CHECK ((starts_with(url, 'https://'::text) OR starts_with(url, 'http://'::text)))"
       },
       "columns": {
+        "canonical_root_id": {
+          "collation": null,
+          "comment": "The URL id only while this row is a terminal canonical destination; referenced by aliases to prevent cycles and chains.",
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "\nCASE\n    WHEN (canonical_url_id IS NULL) THEN id\n    ELSE NULL::uuid\nEND",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        },
         "canonical_url_id": {
           "collation": null,
           "comment": "Self-referencing FK to the canonical version of this URL, if different.",
@@ -144587,7 +144598,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -144598,7 +144609,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "feed_rank": {
@@ -144686,7 +144697,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "url": {
@@ -144703,12 +144714,12 @@
       },
       "comment": "Canonical URL registry. All URLs in the system reference this table.",
       "foreignKeys": {
-        "urls_canonical_url_id_fkey": {
+        "fk_urls__canonical_root": {
           "columns": ["canonical_url_id"],
-          "definition": "FOREIGN KEY (canonical_url_id) REFERENCES urls(id) ON DELETE SET NULL",
+          "definition": "FOREIGN KEY (canonical_url_id) REFERENCES urls(canonical_root_id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": ["canonical_root_id"],
           "referencedTable": "urls",
           "validated": true
         },
@@ -144944,6 +144955,26 @@
           "unique": false,
           "valid": true
         },
+        "uq_urls__canonical_root_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_urls__canonical_root_id ON public.urls USING btree (canonical_root_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "canonical_root_id",
+              "descending": false,
+              "expression": "canonical_root_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "urls_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -144997,6 +145028,10 @@
         "trigger_urls_updated_at": "CREATE TRIGGER trigger_urls_updated_at BEFORE UPDATE ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
+        "uq_urls__canonical_root_id": {
+          "columns": ["canonical_root_id"],
+          "definition": "UNIQUE (canonical_root_id)"
+        },
         "urls_url_key": {
           "columns": ["url"],
           "definition": "UNIQUE (url)"
