@@ -38,12 +38,11 @@ export async function decideHouseholdInvitation(
     owner_user_id: string
     invited_by_id: string
   }>(
-    sql`/* decideHouseholdInvitation:lock-household */
+    sql`/* decideHouseholdInvitation:read-household */
       SELECT h.id, h.owner_user_id, hi.invited_by_id
       FROM households h
       JOIN household_invitations hi ON hi.household_id = h.id
-      WHERE hi.id = ${invitationId} AND hi.invited_user_id = ${currentUser.id}
-      FOR UPDATE OF h`,
+      WHERE hi.id = ${invitationId} AND hi.invited_user_id = ${currentUser.id}`,
     options,
   )
   const household = households[0]
