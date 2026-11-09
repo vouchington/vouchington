@@ -43,6 +43,7 @@ test.describe('My Household pagination', () => {
     await loginAndOpenHousehold(page, viewer)
     await expect(page.getByTestId('household-section')).toHaveCount(INDIVIDUAL_CAP)
     await expect(page.getByTestId('household-member-row')).toHaveCount(INDIVIDUAL_CAP)
+    await expect(page.getByTestId('household-members-retry')).toHaveCount(0)
     await expect(page.getByTestId('paginated-list-continuation')).toHaveCount(0)
   })
 
