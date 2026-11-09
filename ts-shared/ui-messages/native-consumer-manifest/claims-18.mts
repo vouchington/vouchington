@@ -146,7 +146,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_18 = [
   { key: 'native.swift.reviewDisputes.rerunStillProcessing', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.reviewDisputes.resolution', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.reviewDisputes.resolved', consumers: ['dotnet', 'swift'] },
-  { key: 'native.swift.reviewDisputes.reviewDispute', consumers: ['dotnet', 'swift'] },
+  { key: 'native.swift.reviewDisputes.reviewDispute', consumers: ['swift'] },
   { key: 'native.swift.reviewDisputes.save', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.reviewDisputes.signInMessage', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.reviewDisputes.staffAccessMessage', consumers: ['dotnet', 'swift'] },

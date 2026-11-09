@@ -184,7 +184,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_14 = [
   { key: 'native.swift.integrity.active', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.integrity.administratorMessage', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.integrity.administratorRequired', consumers: ['swift'] },
-  { key: 'native.swift.integrity.agentModerationId', consumers: ['dotnet', 'swift'] },
+  { key: 'native.swift.integrity.agentModerationId', consumers: ['swift'] },
   { key: 'native.swift.integrity.all', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.integrity.applyVotePenalty', consumers: ['dotnet', 'swift'] },
 ] as const satisfies readonly NativeConsumerManifestEntry[]
