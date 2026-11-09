@@ -30,11 +30,11 @@ function topicMetricsSelectSql(): string {
     ),
     latest_counts AS (
       SELECT feed.topic_id, COUNT(*)::bigint AS count
-      FROM rss_feed_item_sources source
+      FROM requested_topic_ids requested
+      JOIN rss_feeds feed ON feed.topic_id = requested.id
+      JOIN rss_feed_item_sources source ON source.rss_feed_id = feed.id
       JOIN rss_feed_items item ON item.id = source.rss_feed_item_id
-      JOIN rss_feeds feed ON feed.id = source.rss_feed_id
-      WHERE feed.topic_id IN (SELECT id FROM requested_topic_ids)
-        AND item.deleted_at IS NULL AND feed.deleted_at IS NULL
+      WHERE item.deleted_at IS NULL AND feed.deleted_at IS NULL
         AND feed.is_enabled = TRUE AND feed.is_discoverable = TRUE
       GROUP BY feed.topic_id
     )
