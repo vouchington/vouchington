@@ -16,10 +16,13 @@ export async function mayUserAuthorizeOAuthResource(
 ): Promise<boolean> {
   const audience = findOAuthProtectedResource(resource)?.audience
   if (!audience) return false
-  const requiresAdministrator = OAUTH_AUDIENCE_REQUIRES_ADMINISTRATOR[audience]
-  const requiresModerationStaff = OAUTH_AUDIENCE_REQUIRES_MODERATION_STAFF[audience]
-  if (!requiresAdministrator && !requiresModerationStaff) return true
-  const requiredRoles = requiresAdministrator ? ['administrator'] : ['administrator', 'moderator']
+  let requiredRoles: string[] | null = null
+  if (OAUTH_AUDIENCE_REQUIRES_ADMINISTRATOR[audience]) {
+    requiredRoles = ['administrator']
+  } else if (OAUTH_AUDIENCE_REQUIRES_MODERATION_STAFF[audience]) {
+    requiredRoles = ['administrator', 'moderator']
+  }
+  if (requiredRoles === null) return true
   const result = await query<{ allowed: boolean }>(
     `/* mayUserAuthorizeOAuthResource */ SELECT EXISTS (
        SELECT 1
