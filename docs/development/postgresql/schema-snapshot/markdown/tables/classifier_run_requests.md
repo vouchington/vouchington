@@ -6,19 +6,23 @@ Durable per-subject request for a classifier run, written in the same transactio
 
 Not partitioned — growth: unbounded.
 
-| Column             | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                   |
-| ------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`               | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                           |
-| `classifier_id`    | `uuid`                     | no       |                              |          |           |           | Fixed classifier the subject is requested for.                                                                                            |
-| `post_id`          | `uuid`                     | yes      |                              |          |           |           | Retained post identity in the request deduplication key; deleting the live post does not erase it or authorize replay.                    |
-| `rss_feed_item_id` | `uuid`                     | yes      |                              |          |           |           | Retained feed-item identity in the request deduplication key; deleting the live item does not erase it or authorize replay.               |
-| `input_sha256`     | `bytea`                    | no       |                              |          |           |           | Subject content digest current when the request was written; a request settles once per content version.                                  |
-| `run_identity_id`  | `uuid`                     | yes      |                              |          |           |           | Cache run identity that settled this request while present; cache eviction clears this FK without reopening the request.                  |
-| `run_settled_at`   | `timestamp with time zone` | yes      |                              |          |           |           | Durable time a run settled this request, retained after its cache identity is removed.                                                    |
-| `no_work_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Time the classifier resolved to no configured work for the subject; a settled request is not swept again until a new approval re-arms it. |
-| `stale_at`         | `timestamp with time zone` | yes      |                              |          |           |           | Time the request was superseded by a newer content version of the same subject.                                                           |
-| `created_at`       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                           |
-| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                           |
+| Column                          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                   |
+| ------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                            | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                           |
+| `classifier_id`                 | `uuid`                     | no       |                              |          |           |           | Fixed classifier the subject is requested for.                                                                                            |
+| `post_id`                       | `uuid`                     | yes      |                              |          |           |           | Retained post identity in the request deduplication key; deleting the live post does not erase it or authorize replay.                    |
+| `rss_feed_item_id`              | `uuid`                     | yes      |                              |          |           |           | Retained feed-item identity in the request deduplication key; deleting the live item does not erase it or authorize replay.               |
+| `input_sha256`                  | `bytea`                    | no       |                              |          |           |           | Subject content digest current when the request was written; community moderation may resume the request for another prompt page.         |
+| `run_identity_id`               | `uuid`                     | yes      |                              |          |           |           | Cache run identity that settled this request while present; cache eviction clears this FK without reopening the request.                  |
+| `community_prompt_cursor`       | `jsonb`                    | yes      |                              |          |           |           | Activation-order position after the last completed candidate page for this post request.                                                  |
+| `community_prompt_end_cursor`   | `jsonb`                    | yes      |                              |          |           |           | Activation-order upper position fixed when the community prompt traversal starts.                                                         |
+| `community_prompt_any_flagged`  | `boolean`                  | no       | `false`                      |          |           |           | Whether a completed page in this community prompt traversal flagged the post.                                                             |
+| `community_prompt_completed_at` | `timestamp with time zone` | yes      |                              |          |           |           | The final community prompt page completed; only a new explicit request rearms the traversal.                                              |
+| `run_settled_at`                | `timestamp with time zone` | yes      |                              |          |           |           | Durable time a run settled this request, retained after its cache identity is removed.                                                    |
+| `no_work_at`                    | `timestamp with time zone` | yes      |                              |          |           |           | Time the classifier resolved to no configured work for the subject; a settled request is not swept again until a new approval re-arms it. |
+| `stale_at`                      | `timestamp with time zone` | yes      |                              |          |           |           | Time the request was superseded by a newer content version of the same subject.                                                           |
+| `created_at`                    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                           |
+| `updated_at`                    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -27,8 +31,11 @@ _none_
 
 **Check constraints:**
 
+- `chk_classifier_run_requests__community_prompt_completion`: `CHECK (((community_prompt_completed_at IS NULL) OR (run_settled_at IS NOT NULL)))`
 - `chk_classifier_run_requests__one_settlement`: `CHECK (((num_nonnulls(run_settled_at, no_work_at, stale_at) <= 1) AND ((run_identity_id IS NULL) OR (run_settled_at IS NOT NULL))))`
 - `chk_classifier_run_requests__one_subject`: `CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))`
+- `classifier_run_requests_community_prompt_cursor_check`: `CHECK (((community_prompt_cursor IS NULL) OR (jsonb_typeof(community_prompt_cursor) = 'object'::text)))`
+- `classifier_run_requests_community_prompt_end_cursor_check`: `CHECK (((community_prompt_end_cursor IS NULL) OR (jsonb_typeof(community_prompt_end_cursor) = 'object'::text)))`
 - `classifier_run_requests_input_sha256_check`: `CHECK ((octet_length(input_sha256) = 32))`
 
 **Foreign keys:**
