@@ -55,6 +55,15 @@ describe('ReportsClient clustered staff reports', () => {
     expect(screen.getByText('Copied post')).toBeVisible()
   })
 
+  it('marks a capped report count with a compact plus count', () => {
+    renderStaffReports({
+      ...makeClusteredReportsResponse(),
+      results: [makeCluster({ report_count: 1000, report_count_capped: true })],
+    })
+
+    expect(screen.getByText('1K+ reports')).toBeVisible()
+  })
+
   it('removes every post in a duplicate cluster once', async () => {
     mockDeletePost.mockResolvedValue(undefined)
     renderStaffReports(

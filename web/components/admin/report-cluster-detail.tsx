@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useMemo } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { TimeAgo } from '@/components/shared/time-ago'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +23,8 @@ export function ReportDetail({
   onRerun,
   onWarn,
   onBanEvasionAction,
+  reportCountCapped = false,
+  uiLocale = 'en',
 }: {
   report: AdminModerationReport
   disabled: boolean
@@ -29,8 +32,15 @@ export function ReportDetail({
   onRerun: () => void
   onWarn: () => void
   onBanEvasionAction?: (reportId: string) => void
+  reportCountCapped?: boolean
+  uiLocale?: string
 }) {
   const t = useTranslations()
+  const compactNumberFormat = useMemo(
+    () => new Intl.NumberFormat(uiLocale, { notation: 'compact', maximumFractionDigits: 0 }),
+    [uiLocale],
+  )
+  const exactNumberFormat = useMemo(() => new Intl.NumberFormat(uiLocale), [uiLocale])
   const reporterLabel = getUserLabel(
     {
       username: report.reporter_username,
@@ -43,6 +53,19 @@ export function ReportDetail({
       <div className='space-y-1'>
         <div className='flex flex-wrap items-center gap-2'>
           <Badge variant='outline'>{report.reason}</Badge>
+          {report.report_count > 1 || reportCountCapped ? (
+            <span className='text-xs text-muted-foreground'>
+              {reportCountCapped
+                ? t('shared.countLabel.format', {
+                    count: report.report_count,
+                    unit: 'report',
+                  }).replace(
+                    exactNumberFormat.format(report.report_count),
+                    `${compactNumberFormat.format(report.report_count)}+`,
+                  )
+                : t('shared.countLabel.format', { count: report.report_count, unit: 'report' })}
+            </span>
+          ) : null}
           <span className='text-muted-foreground'>
             <TimeAgo date={report.created_at} />
           </span>

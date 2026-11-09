@@ -1,6 +1,7 @@
 'use client'
 
 import { Copy, RefreshCw, Trash2 } from 'lucide-react'
+import { useMemo } from 'react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +35,11 @@ export function DuplicateClusterCard({
   uiLocale: string
 }) {
   const t = useTranslations()
+  const compactNumberFormat = useMemo(
+    () => new Intl.NumberFormat(uiLocale, { notation: 'compact', maximumFractionDigits: 0 }),
+    [uiLocale],
+  )
+  const exactNumberFormat = useMemo(() => new Intl.NumberFormat(uiLocale), [uiLocale])
   return (
     <div className='rounded-md border border-destructive/30 bg-destructive/5 p-4'>
       <div className='flex flex-wrap items-start justify-between gap-3'>
@@ -49,7 +55,15 @@ export function DuplicateClusterCard({
               {t('shared.countLabel.format', { count: duplicate.post_count, unit: 'post' })}
             </span>
             <span className='text-sm text-muted-foreground'>
-              {t('shared.countLabel.format', { count: duplicate.report_count, unit: 'report' })}
+              {duplicate.report_count_capped
+                ? t('shared.countLabel.format', {
+                    count: duplicate.report_count,
+                    unit: 'report',
+                  }).replace(
+                    exactNumberFormat.format(duplicate.report_count),
+                    `${compactNumberFormat.format(duplicate.report_count)}+`,
+                  )
+                : t('shared.countLabel.format', { count: duplicate.report_count, unit: 'report' })}
             </span>
           </div>
           <p className='text-sm text-muted-foreground'>

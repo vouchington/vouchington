@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useMemo } from 'react'
 import { ChevronDown, ExternalLinkIcon } from 'lucide-react'
 import { TimeAgo } from '@/components/shared/time-ago'
 import { Badge } from '@/components/ui/badge'
@@ -53,6 +54,12 @@ export function ReportClusterCard({
   const t = useTranslations()
   const targetLabelFor = useModerationTargetLabel()
   const targetLabel = targetLabelFor(cluster.target_label)
+  const compactNumberFormat = useMemo(
+    () => new Intl.NumberFormat(uiLocale, { notation: 'compact', maximumFractionDigits: 0 }),
+    [uiLocale],
+  )
+  const exactNumberFormat = useMemo(() => new Intl.NumberFormat(uiLocale), [uiLocale])
+  const displayedReportCount = compactNumberFormat.format(cluster.report_count)
   const hasPendingReports = selectOrdinaryPendingReports(cluster).length > 0
   const isPartialReportSet = cluster.reports.length < cluster.report_count
   const canRemoveTarget =
@@ -104,7 +111,18 @@ export function ReportClusterCard({
                 </span>
                 <span className='flex flex-wrap items-center gap-2 text-sm text-muted-foreground'>
                   <span>
-                    {t('shared.countLabel.format', { count: cluster.report_count, unit: 'report' })}
+                    {cluster.report_count_capped
+                      ? t('shared.countLabel.format', {
+                          count: cluster.report_count,
+                          unit: 'report',
+                        }).replace(
+                          exactNumberFormat.format(cluster.report_count),
+                          `${displayedReportCount}+`,
+                        )
+                      : t('shared.countLabel.format', {
+                          count: cluster.report_count,
+                          unit: 'report',
+                        })}
                   </span>
                   <span>
                     {t('shared.countLabel.format', {
@@ -164,6 +182,8 @@ export function ReportClusterCard({
                 <ReportDetail
                   key={report.id}
                   report={report}
+                  reportCountCapped={report.report_count_capped}
+                  uiLocale={uiLocale}
                   disabled={disabled || entityRerunPending}
                   rerunning={rerunningReportId === report.id}
                   onRerun={() => onRerun(report)}
