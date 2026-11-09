@@ -96,6 +96,8 @@ function evaluateExpectation(
       return
     }
     case 'queryBinds':
+      if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
+        return
       if (!new RegExp(String.raw`\b${expectation.token}\b`).test(result.query_text))
         throw new Error(`${result.name} must constrain the query through ${expectation.token}`)
       return

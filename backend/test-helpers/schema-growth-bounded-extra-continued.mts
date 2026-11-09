@@ -1,5 +1,9 @@
 export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
   [
+    'boilerplate_removal_hostname_cursors',
+    'A checked singleton bounds the scheduled boilerplate removal hostname sweep to one row.',
+  ],
+  [
     'bedrock_embedding_batches',
     'Terminal batches are deleted after 30 days by capped deletion batches; in-flight batches remain until terminal.',
   ],

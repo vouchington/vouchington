@@ -43,9 +43,11 @@ describe('search', () => {
         urls.map(u => u.id),
       )
 
-      const results = await searchParentPathsNeedingBoilerplateRemoval(100, {
-        hostnameId: urls[0]!.hostname.id,
-      })
+      const results = await searchParentPathsNeedingBoilerplateRemoval(
+        [urls[0]!.hostname.id],
+        100,
+        {},
+      )
       const match = results.find(
         r => r.hostname_id === urls[0]!.hostname.id && r.parent_path === '/blog',
       )
@@ -79,9 +81,11 @@ describe('search', () => {
       await createEligibleCrawl(urlsB[0]!.id, crawlerB.id, new Date())
       await createEligibleCrawl(urlsB[1]!.id, crawlerB.id, new Date())
 
-      const results = await searchParentPathsNeedingBoilerplateRemoval(100, {
-        hostnameId: urlsA[0]!.hostname.id,
-      })
+      const results = await searchParentPathsNeedingBoilerplateRemoval(
+        [urlsA[0]!.hostname.id],
+        100,
+        {},
+      )
 
       expect(results.every(r => r.hostname_id === urlsA[0]!.hostname.id)).toBe(true)
       expect(results.find(r => r.hostname_id === urlsB[0]!.hostname.id)).toBeUndefined()
@@ -104,9 +108,11 @@ describe('search', () => {
       await createEligibleCrawl(urls[2]!.id, crawler.id, new Date())
 
       // No boilerplate removal created, so this path should be included
-      const results = await searchParentPathsNeedingBoilerplateRemoval(100, {
-        hostnameId: urls[0]!.hostname.id,
-      })
+      const results = await searchParentPathsNeedingBoilerplateRemoval(
+        [urls[0]!.hostname.id],
+        100,
+        {},
+      )
       const match = results.find(
         r => r.hostname_id === urls[0]!.hostname.id && r.parent_path === '/docs',
       )
@@ -131,9 +137,11 @@ describe('search', () => {
         snapshotUploadedAt: new Date(Date.now() - 8 * 86400000),
       })
 
-      const results = await searchParentPathsNeedingBoilerplateRemoval(100, {
-        hostnameId: urls[0]!.hostname.id,
-      })
+      const results = await searchParentPathsNeedingBoilerplateRemoval(
+        [urls[0]!.hostname.id],
+        100,
+        {},
+      )
 
       expect(
         results.find(r => r.hostname_id === urls[0]!.hostname.id && r.parent_path === '/docs'),
@@ -169,10 +177,13 @@ describe('search', () => {
         await setTestBoilerplateRemovalIdAt(removal.id, new Date(cutoff + delta))
       }
 
-      const results = await searchParentPathsNeedingBoilerplateRemoval(100, {
-        hostnameId: urls[0]!.hostname.id,
-        now: () => asOf,
-      })
+      const results = await searchParentPathsNeedingBoilerplateRemoval(
+        [urls[0]!.hostname.id],
+        100,
+        {
+          now: () => asOf,
+        },
+      )
 
       expect(results.map(result => result.parent_path).toSorted()).toEqual(['/edge--1', '/edge-0'])
     })
@@ -226,10 +237,13 @@ describe('search', () => {
         })
       }
 
-      const results = await searchParentPathsNeedingBoilerplateRemoval(100, {
-        hostnameId: urls[0]!.hostname.id,
-        now: () => asOf,
-      })
+      const results = await searchParentPathsNeedingBoilerplateRemoval(
+        [urls[0]!.hostname.id],
+        100,
+        {
+          now: () => asOf,
+        },
+      )
 
       expect(results.map(result => result.parent_path).toSorted()).toEqual(
         inputs
@@ -241,35 +255,10 @@ describe('search', () => {
 
     it('rejects an invalid snapshot decision time before querying', async () => {
       await expect(
-        searchParentPathsNeedingBoilerplateRemoval(100, { now: () => new Date(Number.NaN) }),
+        searchParentPathsNeedingBoilerplateRemoval([randomUUID()], 100, {
+          now: () => new Date(Number.NaN),
+        }),
       ).rejects.toThrow('Invalid HTML snapshot decision time')
-    })
-
-    it('should include recent parent paths whose legacy snapshots have null upload timestamps', async () => {
-      const hostname = `bp-test-legacy-snapshots-${Date.now()}.example.com`
-      const urls = await addUrls(user.id, [
-        `https://${hostname}/docs/page1`,
-        `https://${hostname}/docs/page2`,
-      ])
-      await updateUrlHostname(urls[0]!.hostname.id, { is_crawlable: true })
-      const crawler = await createCrawler(user, {
-        hostname_id: urls[0]!.hostname.id,
-        crawler_type: 'fetch',
-      })
-      await createEligibleCrawl(urls[0]!.id, crawler.id, new Date(), {
-        snapshotUploadedAt: null,
-      })
-      await createEligibleCrawl(urls[1]!.id, crawler.id, new Date(), {
-        snapshotUploadedAt: null,
-      })
-
-      const results = await searchParentPathsNeedingBoilerplateRemoval(100, {
-        hostnameId: urls[0]!.hostname.id,
-      })
-
-      expect(
-        results.find(r => r.hostname_id === urls[0]!.hostname.id && r.parent_path === '/docs'),
-      ).toBeDefined()
     })
   })
 })

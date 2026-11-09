@@ -113,9 +113,7 @@ describe('create.generated', () => {
     await createEligibleCrawl(url1!.id, crawler.id, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000))
     await createEligibleCrawl(url2!.id, crawler.id, new Date(Date.now() - 1 * 24 * 60 * 60 * 1000))
 
-    const results = await searchParentPathsNeedingBoilerplateRemoval(1000, {
-      hostnameId: url1!.hostname.id,
-    })
+    const results = await searchParentPathsNeedingBoilerplateRemoval([url1!.hostname.id], 1000)
 
     const match = results.find(
       r => r.hostname_id === url1!.hostname.id && r.parent_path === '/blog',
@@ -144,7 +142,7 @@ describe('create.generated', () => {
       { cssSelectorsToRemove: [], htmlToRemove: [] },
       [],
     )
-    const results = await searchParentPathsNeedingBoilerplateRemoval(1000)
+    const results = await searchParentPathsNeedingBoilerplateRemoval([url1!.hostname.id], 1000)
 
     const match = results.find(
       r => r.hostname_id === url1!.hostname.id && r.parent_path === '/news',
@@ -167,7 +165,7 @@ describe('create.generated', () => {
     await createEligibleCrawl(url1!.id, crawler.id, new Date())
     await createNonEligible304Crawl(url2!.id, crawler.id, new Date())
 
-    const results = await searchParentPathsNeedingBoilerplateRemoval(1000)
+    const results = await searchParentPathsNeedingBoilerplateRemoval([url1!.hostname.id], 1000)
 
     const match = results.find(
       r => r.hostname_id === url1!.hostname.id && r.parent_path === '/solo',

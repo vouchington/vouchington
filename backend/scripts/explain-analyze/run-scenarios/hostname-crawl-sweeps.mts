@@ -7,6 +7,13 @@ import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { write } from '@data-stores/psql'
+import { sweepNextBoilerplateHostnameBatch } from '@services/boilerplate-removals'
+import {
+  BOILERPLATE_BATCH_CURSOR,
+  BOILERPLATE_BATCH_HOSTNAME_COUNT,
+  BOILERPLATE_BATCH_PATHS_PER_HOSTNAME,
+  withBoilerplateRemovalBatch,
+} from '../seed-data/boilerplate-removal-batch.mts'
 import { crawlSeedUuid, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 
 export async function runHostnameCrawlSweepScenarios(): Promise<void> {
@@ -40,6 +47,27 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
     if (rows.length !== 1 || !rows[0]?.is_due)
       throw new Error('Expected a single never-swept candidate at the run cap')
   })
+  await withBoilerplateRemovalBatch(() =>
+    runAndCapture(
+      'boilerplate-removal-hostname-batch',
+      async () => {
+        await write(
+          `/* seedExplainBoilerplateCursor */ INSERT INTO boilerplate_removal_hostname_cursors
+             (is_singleton, cursor_hostname_id) VALUES (TRUE, $1::uuid)
+           ON CONFLICT (is_singleton) DO UPDATE SET cursor_hostname_id = EXCLUDED.cursor_hostname_id`,
+          [BOILERPLATE_BATCH_CURSOR],
+        )
+        const rows = await sweepNextBoilerplateHostnameBatch(
+          { hostnameBatchSize: BOILERPLATE_BATCH_HOSTNAME_COUNT, candidateLimit: 500 },
+          async () => undefined,
+        )
+        if (rows.length !== BOILERPLATE_BATCH_HOSTNAME_COUNT * BOILERPLATE_BATCH_PATHS_PER_HOSTNAME)
+          throw new Error('Expected every seeded hostname batch parent path to need removal')
+      },
+      undefined,
+      ['listBoilerplateRemovalHostnameBatch', 'searchParentPathsNeedingBoilerplateRemoval'],
+    ),
+  )
   // The fresh bootstrap only creates current crawl partitions; a fixed future cutoff makes
   // this same bounded candidate shape eligible without inserting into a retired partition.
   const oldId = crawlSeedUuid(0, '9c')
@@ -81,6 +109,32 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
   }
 }
 
+registerScenarioContract('boilerplate-removal-hostname-batch', {
+  expectations: [
+    {
+      kind: 'usesIndexes',
+      indexes: ['url_hostnames_pkey'],
+      queryContains: 'listBoilerplateRemovalHostnameBatch',
+      noSort: true,
+    },
+    {
+      kind: 'usesIndexes',
+      indexes: ['idx_urls__hostname_id'],
+      queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
+    },
+    {
+      kind: 'queryBinds',
+      token: 'ANY',
+      queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
+    },
+    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 700 },
+    { kind: 'maxProcessedRows', relation: 'urls', max: 700 },
+  ],
+  crossPartition: {
+    crawls:
+      'The recent-HTML-crawl count probes each candidate url by url_id, and crawl ids are time-ordered so those rows span every crawls partition.',
+  },
+})
 registerScenarioContract('crawl-hostname-threshold-seek', {
   expectations: [
     {

@@ -10,6 +10,7 @@ export const DISPATCH_AND_CRAWL_SCENARIO_IDS = [
   'crawl-hostname-threshold-seek',
   'crawl-hostnames-due',
   'crawl-hostnames-due-capped',
+  'boilerplate-removal-hostname-batch',
   'bluesky-followee-receipts-page',
   'bluesky-followee-receipts-continuation',
 ] as const

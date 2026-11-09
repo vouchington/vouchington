@@ -4,14 +4,14 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 export const PRIORITY_DEFAULT = 10
 export const PRIORITY_DISPATCHER = 100
 
-const defaultFields = { batch_size: 500 }
+const defaultFields = { batch_size: 500, hostname_batch_size: 50 }
 
 /** Hard ceilings for the current runtime configuration contract. */
-export const crawlBoilerplateRemovalWorkMaxValues = { batch_size: 5000 }
+export const crawlBoilerplateRemovalWorkMaxValues = { batch_size: 5000, hostname_batch_size: 500 }
 
 export const crawlBoilerplateRemovalWorkConfig = new DynamicConfig({
   key: 'crawl-boilerplate-removal-work-config',
-  fieldTypes: { batch_size: 'number' },
+  fieldTypes: { batch_size: 'number', hostname_batch_size: 'number' },
   defaultFields,
 })
 
