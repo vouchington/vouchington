@@ -7,7 +7,7 @@ const REPORTERS_PER_ENTITY = 16
 const HOT_REPORT_COUNT = 10_000
 const DISTINCT_CLUSTER_COUNT = 20_000
 const DISTINCT_CLUSTER_START = 60_000
-const REPORT_TIMES = [Date.parse('1970-01-02T00:00:00Z'), Date.parse('2200-01-02T00:00:00Z')]
+const REPORT_TIMES = [Date.parse('1970-01-01T00:00:00Z'), Date.parse('2200-01-02T00:00:00Z')]
 const STATUSES = ['pending', 'reviewed', 'actioned', 'dismissed'] as const
 export const MODERATION_CLUSTER_REPORT_COUNT =
   2 * ENTITIES_PER_ERA * REPORTERS_PER_ENTITY * STATUSES.length +

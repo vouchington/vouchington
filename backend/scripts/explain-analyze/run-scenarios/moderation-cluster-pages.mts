@@ -40,7 +40,7 @@ export async function runModerationClusterPageScenarios(): Promise<void> {
     'pending',
     true,
     {
-      createdAt: '1970-01-02T00:00:00.000000Z',
+      createdAt: '1970-01-01T00:00:00.000000Z',
       id: MODERATION_CLUSTER_TIED_USER_ID,
       entityType: 'post',
     },
@@ -55,7 +55,7 @@ export async function runModerationClusterPageScenarios(): Promise<void> {
     'pending',
     true,
     {
-      createdAt: '1970-01-02T00:00:00.000000Z',
+      createdAt: '1970-01-01T00:00:00.000000Z',
       id: MODERATION_CLUSTER_TIED_USER_ID,
       entityType: 'user',
     },

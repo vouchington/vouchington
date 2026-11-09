@@ -129,7 +129,13 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__rss_feed_item_id
 -- A dense pending post cluster needs its latest report without sorting every sibling.
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_post_id_id
   ON moderation_reports (post_id, id DESC)
-  WHERE reviewed_at IS NULL AND post_id IS NOT NULL;
+  WHERE reviewed_at IS NULL AND resolution_action IS NULL AND post_id IS NOT NULL;
+
+-- The pending user head probe needs the same bounded ordered access when a cursor
+-- lands on a user sharing an entity id and timestamp with a post.
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_reported_user_id_id
+  ON moderation_reports (reported_user_id, id DESC)
+  WHERE reviewed_at IS NULL AND resolution_action IS NULL AND reported_user_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__case_id
