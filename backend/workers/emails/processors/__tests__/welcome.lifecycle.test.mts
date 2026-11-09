@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
 import { createTestUser, createTestUserDirect } from '@voucha/test-helpers'
-import { processSendCommunityApplicationDecisionEmail } from './community-application-decision.mts'
-import { processSendCommunityOwnershipTransferEmail } from './community-ownership-transfer.mts'
-import { processSendCommunityRoleChangeEmail } from './community-role-change.mts'
-import { processSendWelcomeEmail } from './welcome.mts'
-import { deleteUser } from '../../../services/users/delete.mts'
+import { processSendCommunityApplicationDecisionEmail } from '../community-application-decision.mts'
+import { processSendCommunityOwnershipTransferEmail } from '../community-ownership-transfer.mts'
+import { processSendCommunityRoleChangeEmail } from '../community-role-change.mts'
+import { processSendWelcomeEmail } from '../welcome.mts'
+import { deleteUser } from '../../../../services/users/delete.mts'
 
 describe('processSendWelcomeEmail', () => {
   beforeEach(() => {

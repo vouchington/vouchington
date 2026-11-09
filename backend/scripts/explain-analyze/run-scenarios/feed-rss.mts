@@ -5,9 +5,7 @@ import {
   registerRssFeedPageScenario,
   runRssFeedFirstAndContinuationScenarios,
 } from './rss-feed-pages.mts'
-import * as services from '../run-services.mts'
-
-const { getPostIds, getRssFeedItemFeedIds, searchRssFeedItems } = services
+import { getPostIds, getRssFeedItemFeedIds, searchRssFeedItems } from '../run-services.mts'
 
 export async function runFeedRssScenarios(): Promise<void> {
   await runRssFeedFirstAndContinuationScenarios('rss-feed-item-feed', seedUser, {

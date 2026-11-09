@@ -1,5 +1,8 @@
 import { getMembershipWorkLimit } from './work-limits.mts'
-import * as stripeDisputes from '@modules/stripe/disputes'
+import {
+  getStripeDisputeSettlementForPayment,
+  getWonStripeDisputeInvoice,
+} from '@modules/stripe/disputes'
 import * as stripeInvoices from '@modules/stripe/invoices'
 import * as stripeRefunds from '@modules/stripe/refunds'
 import * as stripeSubscriptions from '@modules/stripe/subscriptions'
@@ -20,9 +23,7 @@ import {
 import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
 type WonStripeDisputeOperations = IneligibleStripePurchaseOperations & {
-  getWonStripeDisputeInvoice: (
-    id: string,
-  ) => ReturnType<typeof stripeDisputes.getWonStripeDisputeInvoice>
+  getWonStripeDisputeInvoice: (id: string) => ReturnType<typeof getWonStripeDisputeInvoice>
 }
 
 export async function reconcileWonStripeDispute(options: {
@@ -107,9 +108,8 @@ function getStripeOperations(): WonStripeDisputeOperations {
     cancelSubscriptionImmediately: stripeSubscriptions.cancelStripeSubscriptionImmediately,
     createRefund: stripeRefunds.createStripeRefund,
     getDisputeSettlementForPayment: options =>
-      stripeDisputes.getStripeDisputeSettlementForPayment(options, disputePages),
-    getWonStripeDisputeInvoice: id =>
-      stripeDisputes.getWonStripeDisputeInvoice(id, invoiceLimits.paymentPages),
+      getStripeDisputeSettlementForPayment(options, disputePages),
+    getWonStripeDisputeInvoice: id => getWonStripeDisputeInvoice(id, invoiceLimits.paymentPages),
     retrieveRefund: stripeRefunds.getStripeRefund,
     listSubscriptionInvoices: id =>
       stripeInvoices.listAllStripeSubscriptionInvoices(id, invoiceLimits),

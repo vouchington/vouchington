@@ -6,12 +6,15 @@ import type {
 } from '@services/feeds/rss-feed-items/story-member-pages'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
 import { heavyFollowUser, runAndCapture } from '../run-support.mts'
-import * as services from '../run-services.mts'
+import {
+  getPrivateUserByAny,
+  getRssFeedItemFeedIds,
+  getStoryMemberPagesBatch,
+  getStoryPreviews,
+  hydrateStoryMemberPage,
+} from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 
-const { getPrivateUserByAny, getRssFeedItemFeedIds, getStoryPreviews, getStoryMemberPagesBatch } =
-  services
-const { hydrateStoryMemberPage } = services
 const HYDRATION_QUERY_NAMES = [
   'getRssFeedItemsByIdBatch',
   'getElectionsByIdBatch',

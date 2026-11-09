@@ -1,5 +1,3 @@
-import buildCommentTreeQuery from '@services/comments/query-builder'
-
 export { getPostFeedIds } from '@services/feeds/posts/get-ids'
 export { getTrendingTopics } from '@services/trending-topics/get-trending-topics'
 export { searchRssFeeds } from '@services/rss-feeds/search'
@@ -30,7 +28,6 @@ export { getPostMetricsByAny } from '@services/posts/metrics'
 export { getPostMetricsByAnyBatch } from '@services/posts/metrics-batch'
 export { searchUrlHostnames } from '@services/urls-hostnames/search'
 export { getTopicIds } from '@services/topics/search/get-ids'
-export { buildCommentTreeQuery }
 export { getRecommendedTopics } from '@services/recommended-topics'
 export { getEntityRelations } from '@services/entity-relations/query'
 export { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'

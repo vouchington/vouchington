@@ -1,6 +1,6 @@
 import { heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import * as services from '../run-services.mts'
+import { getPostFeedIds, getPostIds, getRssFeedItemFeedIds } from '../run-services.mts'
 import {
   RSS_FEED_WEEKLY_STORY_ID,
   RSS_FEED_WEEKLY_STORY_TOKEN,
@@ -12,8 +12,6 @@ import {
 } from './rss-feed-pages.mts'
 import { runRssFeedWeeklyFilterScenarios } from './rss-feed-weekly-filters.mts'
 import { runRssFeedWeeklyProxyScenario } from './rss-feed-weekly-proxy.mts'
-
-const { getPostFeedIds, getPostIds, getRssFeedItemFeedIds } = services
 
 export async function runHeavyFollowScenarios() {
   registerScenarioContract('post-feed-heavy-follows', {

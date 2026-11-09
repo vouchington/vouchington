@@ -4,12 +4,7 @@ import { runCommunitySearchScenarios } from './community-search.mts'
 import { SEED_PREFIX, runAndCapture, seedPostId, seedTopicId, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
-import * as services from '../run-services.mts'
-import { runPartitionPruningScenarios } from './partition-pruning.mts'
-import { runEntityTailScenarios } from './entity-tail.mts'
-import { runViewDrivenPostScenarios } from './view-driven-posts.mts'
-
-const {
+import {
   aggregateElectionVoteStatsFromReplica,
   gatherVoteWeightFactors,
   getFollowedUsersByElectionVote,
@@ -24,7 +19,10 @@ const {
   searchRssFeeds,
   POST_ELECTION_CONFIG,
   TOPIC_ELECTION_CONFIG,
-} = services
+} from '../run-services.mts'
+import { runPartitionPruningScenarios } from './partition-pruning.mts'
+import { runEntityTailScenarios } from './entity-tail.mts'
+import { runViewDrivenPostScenarios } from './view-driven-posts.mts'
 
 export async function runEntityAndCommunityScenarios() {
   // Vote aggregation — post and topic stats (reads from post_votes / topic_votes)

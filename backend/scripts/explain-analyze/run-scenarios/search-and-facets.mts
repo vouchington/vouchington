@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import buildCommentTreeQuery from '@services/comments/query-builder'
 import {
   heavyFollowUser,
   runAndCapture,
@@ -9,23 +10,20 @@ import {
 } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import * as services from '../run-services.mts'
+import {
+  ANONYMOUS_ENTITY_RELATION_VIEWER,
+  getEntityRelations,
+  getPostFacets,
+  getPostIds,
+  getRecommendedTopics,
+  searchUrls,
+} from '../run-services.mts'
 import { runRssItemSearchScenarios } from './rss-item-search.mts'
 import { runRssFeedSearchScopeScenarios } from './rss-feed-search.mts'
 import {
   runSemanticPostSearchScenarios,
   runSimilarPostSearchScenarios,
 } from './semantic-post-search.mts'
-
-const {
-  ANONYMOUS_ENTITY_RELATION_VIEWER,
-  buildCommentTreeQuery,
-  getEntityRelations,
-  getPostFacets,
-  getPostIds,
-  getRecommendedTopics,
-  searchUrls,
-} = services
 
 export async function runSearchAndFacetScenarios() {
   await runSemanticPostSearchScenarios()

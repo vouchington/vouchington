@@ -4,15 +4,7 @@ import { SEED_PREFIX, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import * as services from '../run-services.mts'
-import { runFeedRssScenarios } from './feed-rss.mts'
-import { runTopicMetricsBatchScenario } from './topic-metrics.mts'
-import { runPrioritizedReferralLinkScenarios } from './prioritized-referral-links.mts'
-import { runRssFeedSearchScenarios } from './rss-feed-search.mts'
-import { runCommentDescendantDepthScenario } from './comment-descendant-depth.mts'
-import { runTopUrlRankingScenarios } from './top-url-ranking.mts'
-
-const {
+import {
   getCommentAncestorsByAny,
   getConversationMessagesByConversationId,
   getElectionVotesByUser,
@@ -31,7 +23,13 @@ const {
   searchUrlHostnames,
   TOPIC_ELECTION_CONFIG,
   aggregateCommunityActivityDigestBatch,
-} = services
+} from '../run-services.mts'
+import { runFeedRssScenarios } from './feed-rss.mts'
+import { runTopicMetricsBatchScenario } from './topic-metrics.mts'
+import { runPrioritizedReferralLinkScenarios } from './prioritized-referral-links.mts'
+import { runRssFeedSearchScenarios } from './rss-feed-search.mts'
+import { runCommentDescendantDepthScenario } from './comment-descendant-depth.mts'
+import { runTopUrlRankingScenarios } from './top-url-ranking.mts'
 
 export async function runFeedAndMetricScenarios() {
   registerScenarioContract('post-feed', {
