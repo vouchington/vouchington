@@ -16,7 +16,7 @@ import {
   communityOwnerAiExclusions,
   writeExclusions,
 } from '@voucha/test-helpers/mcp-write-exclusions'
-import { REQUEST_CONTRACT_EXEMPTIONS } from '../../api/request-contract-exemptions-helpers.mts'
+import { REQUEST_CONTRACT_EXEMPTIONS } from '../../test-helpers/api/request-contract-exemptions.mts'
 import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 
 // The authoritative inventory of REST writes exposed through any MCP server (#208).

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import contracts from '../../api-fixtures/v1/request-contracts.json' with { type: 'json' }
 import { routeKeyForResponseContract } from '../test-helpers/api-fixtures/response-contract-types.mts'
-import { REQUEST_CONTRACT_EXEMPTIONS as EXEMPTIONS } from './request-contract-exemptions-helpers.mts'
+import { REQUEST_CONTRACT_EXEMPTIONS as EXEMPTIONS } from '../test-helpers/api/request-contract-exemptions.mts'
 
 // Other API tests can preload index.mts in this shared Vitest fork. Reload the graph so this
 // inventory observes registration even when those tests ran first; no HTTP test-server import.
