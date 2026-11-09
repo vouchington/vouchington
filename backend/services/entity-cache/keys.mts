@@ -56,34 +56,34 @@ export const getUserCacheKeys = async (...keys: unknown[]): Promise<string[]> =>
 export const getTopicCacheKeys = async (...keys: unknown[]): Promise<string[]> => {
   const { ids, slugs } = getCacheKeys(keys)
   if (!(ids.size > 0 || slugs.size > 0)) return []
-  const filters = []
-  const values = []
-  if (ids.size > 0) filters.push(`t.id = ANY($${values.push([...ids])})`)
+  const lookups: string[] = []
+  const values: unknown[] = []
+  if (ids.size > 0)
+    lookups.push(`SELECT id FROM topics WHERE id = ANY($${values.push([...ids])}::uuid[])`)
   const normalizedSlugs = [...slugs].map(normalizeKey)
   if (normalizedSlugs.length > 0) {
     const slugPosition = values.push(normalizedSlugs)
-    filters.push(`t.slug = ANY($${slugPosition})`)
-    filters.push(`ta.alias = ANY($${slugPosition})`)
+    lookups.push(`SELECT id FROM topics WHERE slug = ANY($${slugPosition}::text[])`)
+    lookups.push(
+      `SELECT topic_id AS id FROM topic_aliases WHERE alias = ANY($${slugPosition}::text[])`,
+    )
   }
   const { rows } = await read<{ id: string; slug: string; alias: string | null }>(
     `/* getTopicCacheKeys */
     WITH matched_topics AS (
-      SELECT DISTINCT t.id, t.slug
-      FROM topics t
-      LEFT JOIN topic_aliases ta ON ta.topic_id = t.id
-      WHERE (${filters.join(' OR ')})
+      ${lookups.join(' UNION ')}
     ),
     related_topics AS (
-      SELECT id, slug
-      FROM matched_topics
+      SELECT id FROM matched_topics
       UNION
-      SELECT source_topic.id, source_topic.slug
+      SELECT source_topic.id
       FROM topics source_topic
       JOIN matched_topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id
     )
-    SELECT related_topics.id, related_topics.slug, ta.alias
+    SELECT topic.id, topic.slug, ta.alias
     FROM related_topics
-    LEFT JOIN topic_aliases ta ON ta.topic_id = related_topics.id
+    JOIN topics topic ON topic.id = related_topics.id
+    LEFT JOIN topic_aliases ta ON ta.topic_id = topic.id
   `,
     values,
   )

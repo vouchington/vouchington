@@ -15,16 +15,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
-// Regression coverage for #11080, mirroring metrics-batch.test.mts's #11028 fixture: the
-// count__discussions candidate-bind rewrite reads posts through a topic-side
-// relation__post__category__topic UNION ALL relation__post__category__topic_alias subselect
-// instead of a correlated EXISTS, so a post attached via BOTH branches must still dedupe to one
-// row via the outer COUNT(DISTINCT candidate_post.id). Broadcast/privacy visibility, creator-sees-
-// own, archived exclusion, zero-score relations, and alias-only attachment (in isolation) are
-// already covered in metrics.part-2.test.mts and metrics.viewer-alias.part-2.test.mts and are not
-// repeated here. The alias-only fixture IS repeated below alongside the dual-attached one, because
-// (unlike the old correlated EXISTS) the rewritten UNION ALL only proves it isn't silently dropping
-// the alias arm when something else in the same result set forces a dedupe.
+// Attachment multiplicity must not affect counts, and discovery eligibility still applies.
 describe('getTopicViewerCounts — eligibility and dedup', () => {
   it('dedupes dual-attached posts, counts alias-only posts, and excludes ineligible ones', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -48,12 +39,19 @@ describe('getTopicViewerCounts — eligibility and dedup', () => {
       authoredToken: `#viewer-dual-alias-${random}`,
     })
 
+    const secondAliasId = await createTopHashtagAliasForTest(topic.id, `viewer-second-${random}`)
+    await createTopHashtagPostSourceForTest({
+      postId: dualAttachedPost.id,
+      topicAliasId: secondAliasId,
+      userId: author.id,
+      authoredToken: `#viewer-second-${random}`,
+    })
+
     // Eligible, attached via the direct relation only.
     const directOnlyPost = await createTestPost({ user: author, post_type: 'discussion' })
     await insertScoredPostTopicCategoryRelation(directOnlyPost.id, topic.id, author.id)
 
-    // Eligible, attached via the alias relation only -- proves the alias arm of the UNION ALL
-    // contributes on its own rather than only ever appearing as a duplicate of the direct arm.
+    // An alias-only attachment contributes even without a direct category relation.
     const aliasOnlyPost = await createTestPost({ user: author, post_type: 'discussion' })
     const aliasOnlyAliasId = await createTopHashtagAliasForTest(
       topic.id,

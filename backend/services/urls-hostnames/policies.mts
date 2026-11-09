@@ -148,9 +148,11 @@ export async function getBlocklistedDomainKeys(
     sql`/* getBlocklistedDomainKeys */
     SELECT DISTINCT p.hostname
     FROM unnest(${keys}::text[], ${candidates}::text[]) AS p(hostname, candidate)
-    INNER JOIN blocklisted_domains db ON db.domain = p.candidate
-    INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
-    WHERE dbs.type = 'url'::domain_blocklist_types
+    WHERE EXISTS (
+      SELECT 1 FROM blocklisted_domains db
+      INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
+      WHERE db.domain = p.candidate AND dbs.type = 'url'::domain_blocklist_types
+    )
   `,
     options,
   )

@@ -2,6 +2,7 @@ import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.m
 import { runReferralValidationPages } from './run-scenarios/referral-program-validation-pages.mts'
 import { runModerationReportDetailScenarios } from './run-scenarios/moderation-report-detail.mts'
 import { runMcpAdmissionScenario } from './run-scenarios/mcp-admission.mts'
+import { runCopyrightAcceptedPageScenarios } from './run-scenarios/copyright-accepted-pages.mts'
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
@@ -82,6 +83,7 @@ import { continueAfterFailure as runStep } from './scenario-failures.mts'
 // Order matters: earlier scenarios mutate the one shared corpus. See the comments below
 // before moving a runner.
 export async function runScenariosBeforePartition(): Promise<void> {
+  await runStep(runCopyrightAcceptedPageScenarios.name, runCopyrightAcceptedPageScenarios)
   await runStep(runSitemapPageScenarios.name, runSitemapPageScenarios)
   await runStep(runStoryProjectionWorkScenarios.name, runStoryProjectionWorkScenarios)
   await runStep(runImageQuarantineScenarios.name, runImageQuarantineScenarios)

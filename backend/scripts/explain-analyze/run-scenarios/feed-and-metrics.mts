@@ -164,7 +164,11 @@ export async function runFeedAndMetricScenarios() {
         'Topic viewer counts follow candidate topic relations across posts.',
     },
   })
-  await runAndCapture('topic-viewer-counts', () => getTopicViewerCounts(seedUser, seedTopicId))
+  await runAndCapture('topic-viewer-counts', async () => {
+    const counts = await getTopicViewerCounts(seedUser, seedTopicId)
+    if (counts.discussions !== 1 || counts.reviews !== 1 || counts['data-points'] !== 1)
+      throw new Error('The anchor topic must count each eligible post once')
+  })
   await runAndCapture('topic-search-text', () =>
     getTopicIds({ text_search_query: 'seed', limit: 25 }),
   )

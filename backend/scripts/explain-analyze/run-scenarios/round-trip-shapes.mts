@@ -14,6 +14,7 @@ import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { PURGE_EVIDENCE_SEEDED_ROWS } from '../seed-data/copyright-case-purge-volume.mts'
 import { runNotificationBlockSet } from './notification-block-set.mts'
+import { runTopicCacheKeysScenario } from './topic-cache-keys.mts'
 
 // The community and viewer membership come back in one statement, by slug and by id.
 async function runCommunityWithViewer(): Promise<void> {
@@ -63,6 +64,9 @@ async function runHostnamePolicies(): Promise<void> {
     'hostname-policies-batch',
     async () => {
       const groups = getHostnamePolicyGroups(hostnames)
+      // Input keys repeat across suffixes even after blocklist matches become existence tests.
+      const repeated = groups.at(-1)!
+      repeated.candidates.push(...repeated.candidates)
       const local = await getLocalHostnamePolicies(groups)
       const full = await getFullHostnamePolicies(groups)
       const keys = await getBlocklistedDomainKeys(groups)
@@ -168,6 +172,7 @@ export async function runRoundTripShapeScenarios(): Promise<void> {
   await runNotificationBlockSet()
   await runCommunityWithViewer()
   await runHostnamePolicies()
+  await runTopicCacheKeysScenario()
   await runMessagingEligibility()
   await runCopyrightStaffCases()
   await runUserAgentReadFirst()

@@ -8,6 +8,7 @@ import {
   createTestRssFeedWithTiming,
   createTestUser,
   createTopHashtagAliasForTest,
+  createTopHashtagPostSourceForTest,
   followTopic,
   insertScoredPostTopicCategoryRelation,
   insertTestDataPoint,
@@ -43,6 +44,33 @@ describe('getTopicMetricsByAnyBatch set-based metrics', () => {
 
     const discussion = await createTestPost({ user: author, post_type: 'discussion' })
     await insertScoredPostTopicCategoryRelation(discussion.id, populatedTopicId, author.id)
+    const discussionAliasId = await createTopHashtagAliasForTest(
+      populatedTopicId,
+      `batch-metrics-discussion-${suffix}`,
+    )
+    await createTopHashtagPostSourceForTest({
+      postId: discussion.id,
+      topicAliasId: discussionAliasId,
+      userId: author.id,
+      authoredToken: `#batch-metrics-discussion-${suffix}`,
+    })
+    const aliasOnlyDiscussion = await createTestPost({ user: author, post_type: 'discussion' })
+    const secondDiscussionAliasId = await createTopHashtagAliasForTest(
+      populatedTopicId,
+      `batch-metrics-second-discussion-${suffix}`,
+    )
+    await createTopHashtagPostSourceForTest({
+      postId: aliasOnlyDiscussion.id,
+      topicAliasId: discussionAliasId,
+      userId: author.id,
+      authoredToken: `#batch-metrics-discussion-${suffix}`,
+    })
+    await createTopHashtagPostSourceForTest({
+      postId: aliasOnlyDiscussion.id,
+      topicAliasId: secondDiscussionAliasId,
+      userId: author.id,
+      authoredToken: `#batch-metrics-second-discussion-${suffix}`,
+    })
     await insertTestReview({
       userId: author.id,
       topicRatings: [{ topicId: populatedTopicId, rating: 4 }],
@@ -58,6 +86,7 @@ describe('getTopicMetricsByAnyBatch set-based metrics', () => {
     const duplicateSourceFeedId = await createTestRssFeedWithTiming(duplicateSourceTopicId)
     const item = await createTestRssFeedItemWithUrl(primaryFeedId)
     await addCategoryToRssFeedItem(item.id, populatedTopicId, `batch-metrics-${suffix}`)
+    await addCategoryToRssFeedItem(item.id, populatedTopicId, `batch-metrics-second-${suffix}`)
     await addRssFeedItemSource(duplicateSourceFeedId, item.id)
     await setTopicBestSortInputs(populatedTopicId, 4)
     await followTopic(follower, { id: populatedTopicId })
@@ -69,7 +98,7 @@ describe('getTopicMetricsByAnyBatch set-based metrics', () => {
       __entity_type: 'topic_metrics',
       id: populatedTopicId,
       count: {
-        discussions: 1,
+        discussions: 2,
         reviews: 1,
         'data-points': 1,
         news: 1,
