@@ -196,7 +196,7 @@ describe('reviewed dependency image pins', () => {
     const matches = [...readFileSync('backend/Dockerfile', 'utf8').matchAll(matcher)]
     expect(matches).toHaveLength(1)
     expect(matches[0]?.groups).toMatchObject({
-      depName: 'ghcr.io/vouchington/dependency-distroless-nodejs',
+      depName: 'ghcr.io/vouchington/dependency-distroless-cc',
       currentValue: 'nonroot',
     })
     expect(matches[0]?.groups?.currentDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)

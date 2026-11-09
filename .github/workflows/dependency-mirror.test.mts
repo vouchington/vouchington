@@ -148,10 +148,7 @@ describe('reviewed CI dependency mirror', () => {
     expect(result.calls.length).toBeGreaterThan(0)
   })
 
-  it.each([
-    ['dependency-distroless-nodejs', 'gcr.io/distroless/nodejs26-debian13'],
-    ['dependency-distroless-cc', 'gcr.io/distroless/cc-debian13'],
-  ])(
+  it.each([['dependency-distroless-cc', 'gcr.io/distroless/cc-debian13']])(
     'publishes the reviewed distroless GCR source %s through the same verified path',
     async (pkg, source) => {
       const distroless = { package: pkg, source, tag: 'nonroot', digest: second }
@@ -169,19 +166,18 @@ describe('reviewed CI dependency mirror', () => {
     },
   )
 
-  it.each(['quay.io/distroless/nodejs26-debian13', 'gcr.io/unreviewed/nodejs26-debian13'])(
-    'rejects an unreviewed source registry or repository: %s',
-    async source => {
-      const result = await runMirror({
-        images: [
-          { package: 'dependency-distroless-nodejs', source, tag: 'nonroot', digest: second },
-        ],
-      })
-      expect(result.code).toBe(2)
-      expect(result.stderr).toContain('Invalid or duplicate reviewed dependency image entry')
-      expect(result.calls).toEqual([])
-    },
-  )
+  it.each([
+    'quay.io/distroless/cc-debian13',
+    'gcr.io/unreviewed/cc-debian13',
+    'gcr.io/distroless/nodejs26-debian13',
+  ])('rejects an unreviewed source registry or repository: %s', async source => {
+    const result = await runMirror({
+      images: [{ package: 'dependency-distroless-cc', source, tag: 'nonroot', digest: second }],
+    })
+    expect(result.code).toBe(2)
+    expect(result.stderr).toContain('Invalid or duplicate reviewed dependency image entry')
+    expect(result.calls).toEqual([])
+  })
 
   it('verifies candidates before immutable approved tags and retains every digest', async () => {
     const result = await runMirror()
