@@ -13,7 +13,6 @@ export { buildExcludedCTE } from './excluded-cte.mts'
 export { buildHostnameExclusionExists } from './hostname-exclusion-filter.mts'
 export { buildTimeRangeFilter, DEFAULT_POST_SEARCH_TIME_RANGE } from './time-range.mts'
 export {
-  buildTopicPostCandidateSelect,
   buildUniversalTopicPostCandidatePairsSelect,
   buildTopicMembershipExists,
   buildTopicAliasMembershipExists,
