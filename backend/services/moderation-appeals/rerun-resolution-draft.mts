@@ -20,14 +20,20 @@ export async function rerunModerationAppealResolutionDraft(
     staffUserId,
     { actionType: 'appeal_resolution_draft_rerun', moderationAppealId: appealId },
     async () => {
-      // A failed or ambiguous enqueue must leave the previous paid generation eligible to finish.
-      const requestToken = await createAppealResolutionRun(write, appealId)
-      const { enqueueAppealResolutionQueued } =
-        await import('@queues/ai-agents/enqueues/appeal-resolution')
-      const runId = await enqueueAppealResolutionQueued(appealId, requestToken, staffUserId)
+      const { requestToken, runId } = await enqueueAppealRerun(staffUserId, appealId)
       // The worker may start before this acknowledgement. Both paths use the same monotonic claim.
       await claimAppealResolutionRun(appealId, requestToken)
       return runId
     },
   )
+}
+
+async function enqueueAppealRerun(staffUserId: string, appealId: string) {
+  // Commit the outcome before enqueue without invalidating the previous paid generation.
+  const [requestToken, { enqueueAppealResolutionQueued }] = await Promise.all([
+    createAppealResolutionRun(write, appealId),
+    import('@queues/ai-agents/enqueues/appeal-resolution'),
+  ])
+  const runId = await enqueueAppealResolutionQueued(appealId, requestToken, staffUserId)
+  return { requestToken, runId }
 }
