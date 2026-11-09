@@ -11,48 +11,16 @@ import {
   MODERATION_CLUSTER_REPORT_COUNT,
   MODERATION_CLUSTER_HOT_POST_ID,
   MODERATION_CLUSTER_TIED_USER_ID,
-  type ClusterFixtureStatus,
 } from '../seed-data/moderation-cluster-pages.mts'
 
-const STATUSES: readonly ClusterFixtureStatus[] = ['pending', 'reviewed', 'actioned', 'dismissed']
 const PAGE_LIMIT = 4
 
 /** Captures full and continued pages, including tied timestamps and dense sibling reports. */
 export async function runModerationClusterPageScenarios(): Promise<void> {
-  for (const status of STATUSES) {
-    for (const sortAsc of [true, false]) {
-      const sortName = sortAsc ? 'asc' : 'desc'
-      const fixtureIds = clusterFixturePostIds(sortAsc ? 0 : 1)
-      const orderedIds = sortAsc ? fixtureIds : fixtureIds.toReversed()
-      const firstRows = await capturePage(
-        `moderation-clusters-${status}-${sortName}-first`,
-        status,
-        sortAsc,
-        null,
-        'after',
-        orderedIds.slice(0, PAGE_LIMIT + 1),
-      )
-      if (status !== 'pending') continue
-      const afterRow = firstRows[PAGE_LIMIT - 1]!
-      await capturePage(
-        `moderation-clusters-${status}-${sortName}-after`,
-        status,
-        sortAsc,
-        cursorFromRow(afterRow),
-        'after',
-        orderedIds.slice(PAGE_LIMIT, PAGE_LIMIT * 2 + 1),
-      )
-      const beforeRow = firstRows[PAGE_LIMIT]!
-      await capturePage(
-        `moderation-clusters-${status}-${sortName}-before`,
-        status,
-        sortAsc,
-        cursorFromRow(beforeRow),
-        'before',
-        orderedIds.slice(0, PAGE_LIMIT).toReversed(),
-      )
-    }
-  }
+  await captureStatusPages('pending')
+  await captureStatusPages('reviewed')
+  await captureStatusPages('actioned')
+  await captureStatusPages('dismissed')
   await capturePage(
     'moderation-clusters-pending-hot',
     'pending',
@@ -96,6 +64,44 @@ export async function runModerationClusterPageScenarios(): Promise<void> {
     undefined,
     PAGE_LIMIT,
     ['post', 'post', 'post', 'post', 'post'],
+  )
+}
+
+async function captureStatusPages(status: ModerationReportStatus): Promise<void> {
+  await captureSortPages(status, true)
+  await captureSortPages(status, false)
+}
+
+async function captureSortPages(status: ModerationReportStatus, sortAsc: boolean): Promise<void> {
+  const sortName = sortAsc ? 'asc' : 'desc'
+  const fixtureIds = clusterFixturePostIds(sortAsc ? 0 : 1)
+  const orderedIds = sortAsc ? fixtureIds : fixtureIds.toReversed()
+  const firstRows = await capturePage(
+    `moderation-clusters-${status}-${sortName}-first`,
+    status,
+    sortAsc,
+    null,
+    'after',
+    orderedIds.slice(0, PAGE_LIMIT + 1),
+  )
+  if (status !== 'pending') return
+  const afterRow = firstRows[PAGE_LIMIT - 1]!
+  await capturePage(
+    `moderation-clusters-${status}-${sortName}-after`,
+    status,
+    sortAsc,
+    cursorFromRow(afterRow),
+    'after',
+    orderedIds.slice(PAGE_LIMIT, PAGE_LIMIT * 2 + 1),
+  )
+  const beforeRow = firstRows[PAGE_LIMIT]!
+  await capturePage(
+    `moderation-clusters-${status}-${sortName}-before`,
+    status,
+    sortAsc,
+    cursorFromRow(beforeRow),
+    'before',
+    orderedIds.slice(0, PAGE_LIMIT).toReversed(),
   )
 }
 

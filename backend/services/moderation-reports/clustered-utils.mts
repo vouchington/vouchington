@@ -23,17 +23,6 @@ export function appendUuidList(query: SQLStatement, ids: string[]) {
   })
 }
 
-export function appendClusterEntityMatch(
-  query: SQLStatement,
-  reportAlias: 'r' | 'rr',
-  clusterAlias: 'p' | 'g',
-): void {
-  query.append(`(${reportAlias}.post_id = ${clusterAlias}.post_id
-    OR ${reportAlias}.reported_user_id = ${clusterAlias}.reported_user_id
-    OR ${reportAlias}.hostname_id = ${clusterAlias}.hostname_id
-    OR ${reportAlias}.rss_feed_item_id = ${clusterAlias}.rss_feed_item_id)`)
-}
-
 export function appendCandidateCursorClause(
   query: SQLStatement,
   beforeCursor: { createdAt: string; entityType?: string; id: string },

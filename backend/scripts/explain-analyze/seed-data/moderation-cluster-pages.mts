@@ -7,7 +7,6 @@ const REPORTERS_PER_ENTITY = 16
 const HOT_REPORT_COUNT = 10_000
 const DISTINCT_CLUSTER_COUNT = 20_000
 const DISTINCT_CLUSTER_START = 60_000
-const DISTINCT_CLUSTER_BATCH = 500
 const REPORT_TIMES = [Date.parse('1970-01-02T00:00:00Z'), Date.parse('2200-01-02T00:00:00Z')]
 const STATUSES = ['pending', 'reviewed', 'actioned', 'dismissed'] as const
 export const MODERATION_CLUSTER_REPORT_COUNT =
@@ -111,32 +110,26 @@ export async function seedModerationClusterPages(): Promise<void> {
     ],
   )
 
-  for (
-    let start = DISTINCT_CLUSTER_START;
-    start < DISTINCT_CLUSTER_START + DISTINCT_CLUSTER_COUNT;
-    start += DISTINCT_CLUSTER_BATCH
-  ) {
-    const distinctPostIds = Array.from({ length: DISTINCT_CLUSTER_BATCH }, (_, offset) =>
-      seedUuid(start + offset, '05'),
-    )
-    const distinctReportIds = Array.from({ length: DISTINCT_CLUSTER_BATCH }, (_, offset) =>
-      seedUuidAtTimestamp(Date.parse('2050-01-02T00:00:00Z'), start + offset),
-    )
-    await write(
-      `/* seedModerationClusterPages:distinctCases */
+  const distinctPostIds = Array.from({ length: DISTINCT_CLUSTER_COUNT }, (_, offset) =>
+    seedUuid(DISTINCT_CLUSTER_START + offset, '05'),
+  )
+  const distinctReportIds = Array.from({ length: DISTINCT_CLUSTER_COUNT }, (_, offset) =>
+    seedUuidAtTimestamp(Date.parse('2050-01-02T00:00:00Z'), DISTINCT_CLUSTER_START + offset),
+  )
+  await write(
+    `/* seedModerationClusterPages:distinctCases */
       INSERT INTO moderation_cases (post_id)
       SELECT id FROM unnest($1::uuid[]) AS target(id) ORDER BY id`,
-      [distinctPostIds],
-    )
-    await write(
-      `/* seedModerationClusterPages:distinctReports */
+    [distinctPostIds],
+  )
+  await write(
+    `/* seedModerationClusterPages:distinctReports */
       INSERT INTO moderation_reports
         (id, created_via, reporter_user_id, post_id, case_id, reason, original_reason)
       SELECT input.id, 'system', $3::uuid, input.post_id, c.id, 'spam', 'spam'
       FROM unnest($1::uuid[], $2::uuid[]) AS input(id, post_id)
       JOIN moderation_cases c ON c.post_id = input.post_id AND c.resolved_at IS NULL
       ORDER BY input.id`,
-      [distinctReportIds, distinctPostIds, seedUuid(0, '01')],
-    )
-  }
+    [distinctReportIds, distinctPostIds, seedUuid(0, '01')],
+  )
 }
