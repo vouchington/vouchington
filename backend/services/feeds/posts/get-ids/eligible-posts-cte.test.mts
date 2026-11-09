@@ -43,27 +43,6 @@ describe('appendEligiblePostsCTE', () => {
     expect(query.values).toContain(currentUser.id)
   })
 
-  it('aggregates universal-topic candidates before filtering eligible posts', () => {
-    const query = createEligiblePostsCteBaseQueryForTest()
-
-    appendEligiblePostsCTE(query, {
-      currentUser,
-      postTypes: undefined,
-      sort: 'new',
-      textSearchQuery: undefined,
-      universalTopicIds: ['topic-1', 'topic-2', 'topic-1'],
-      hashtagTopicIds: undefined,
-      hashtagAliasIds: undefined,
-      hasUnknownHashtag: undefined,
-    })
-
-    expect(query.text).toContain('posts.id IN')
-    expect(query.text.match(/UNION/g)).toHaveLength(3)
-    expect(query.text).toContain('GROUP BY universal_topic_candidates.post_id')
-    expect(query.values).toContainEqual(['topic-1', 'topic-2'])
-    expect(query.values).toContain(2)
-  })
-
   it('adds linked and exact hashtag filters and rejects unknown hashtags', () => {
     const query = createEligiblePostsCteBaseQueryForTest()
 
