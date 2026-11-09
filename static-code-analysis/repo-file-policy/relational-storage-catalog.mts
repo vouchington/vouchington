@@ -46,6 +46,8 @@ export {
 
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
+  // Generated alias of this image row's own primary identity, nullable when admission is closed.
+  'images.capacity_admissible_image_id',
   // Durable keyset positions can outlive their scanned rows.
   'copyright_notice_operational_retention_cursors.cursor_record_id',
   'copyright_notice_operational_retention_cursors.sweep_upper_bound_record_id',

@@ -42,6 +42,25 @@ function snapshot(
 }
 
 describe('relational storage guard hardening', () => {
+  it('accepts the generated image own-identity alias while rejecting unrelated image references', () => {
+    const value = snapshot('images', {
+      id: column('uuid'),
+      capacity_admissible_image_id: column(
+        'uuid',
+        'CASE WHEN (deleted_at IS NULL) THEN id ELSE NULL::uuid END',
+      ),
+    })
+    value.tables.images.columns.id.defaultExpression = 'uuidv7()'
+    value.tables.images.primaryKey = { columns: ['id'], definition: 'PRIMARY KEY (id)' }
+    value.tables.images.columns.capacity_admissible_image_id.generated = 'stored'
+    expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).toEqual([])
+
+    value.tables.images.columns.unrelated_owner_id = column('uuid')
+    expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).toEqual([
+      expect.stringContaining('images.unrelated_owner_id: UUID reference'),
+    ])
+  })
+
   it.each([
     'CHECK ((num_nonnulls(topic_id, rss_feed_id, community_id) >= 1))',
     'CHECK ((num_nonnulls(community_id, topic_id, rss_feed_id) = 1))',
