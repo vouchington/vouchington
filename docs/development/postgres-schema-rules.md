@@ -274,7 +274,10 @@ Unenforced.
 
 A materialized view's defining query is limited by an indexed id range or time window (for example
 `fn_min_uuidv7(...)` on a UUIDv7 key), never a full-history scan of a growing table, so refresh cost
-tracks the window instead of table history. The view has a unique index on its key and a ranking
+tracks the window instead of table history. The one exception is an all-time ranking by an
+unbounded count (see above): a window would drop older rows and corrupt the ranking, so its
+defining query aggregates the indexed relation by group and is refreshed on a schedule off the
+request path. The view has a unique index on its key and a ranking
 index matching its read order, and reads are one keyset walk on that ranking index (see
 [R6](#r6--query-shape)). The defining query has an
 [explain-analyze scenario](postgresql/explain-analyze/README.md), which explains it from

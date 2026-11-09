@@ -34,7 +34,8 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   relations) walk the membership index and join the targets with eligibility in WHERE; they do not
   page raw memberships and discard targets afterward. Saved posts and list items have no write cap
   (#4979), so the keyset walk, not a write limit, bounds each page. A nonterminal page is full and
-  its cursor names the last returned row; a page is short only at the end. Small viewer-scoped sets
+  its cursor names the last returned row; a page is short only at the end, except under an
+  inspected-row cap (below). Small viewer-scoped sets
   may be subqueries or semijoins. Preserve filter inputs on every continuation request and reject a
   cursor whose encoded query or sort shape is incompatible.
 - Relevance-ranked RSS search uses the same rule with a score, microsecond publication timestamp,
@@ -55,6 +56,10 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   eligibility predicates in the same walk, applied before the ordered limit.
 - Fetch `limit + 1`, return at most `limit`, and derive `has_next_page` from the extra row. A result
   count equal to `limit` does not prove another page exists.
+- Inspected-row cap: a filtered walk that caps the rows it inspects may return a short or empty
+  page that is still nonterminal. Its cursor names the last inspected row, not the last returned
+  row, and `has_next_page` is true while the walk has not reached the end of the index. Clients
+  treat such a page as "load more", not as the end.
 - List responses use `{ results, page_info, ...pageLocalSidecars }`. `page_info` includes accurate
   `has_next_page`, `start_cursor`, and `end_cursor`; bidirectional responses also expose
   `has_previous_page` through their dedicated page-info type.
