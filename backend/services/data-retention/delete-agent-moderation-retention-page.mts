@@ -136,6 +136,7 @@ export async function deleteAgentModerationRetentionPage(
      )
      INSERT INTO agent_moderation_retention_post_work_items (post_id)
      SELECT DISTINCT post_id FROM blocked WHERE retention_blocked_reason = 'hash'
+     ORDER BY post_id ASC NULLS LAST
      ON CONFLICT (post_id) DO UPDATE
        SET cursor_moderation_record_id = '00000000-0000-0000-0000-000000000000',
            changed_at = CURRENT_TIMESTAMP`,
