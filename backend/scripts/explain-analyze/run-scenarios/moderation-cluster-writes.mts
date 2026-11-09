@@ -57,11 +57,10 @@ export async function runModerationClusterWriteScenarios(): Promise<void> {
       })),
     ],
   })
-  let hotCount = 0
   await runAndCapture(
     'moderation-cluster-writer-targets',
     async () => {
-      hotCount = await captureTarget({
+      await captureTarget({
         name: LOOKUP_NAMES[0],
         action: null,
         ids: [MODERATION_CLUSTER_HOT_POST_ID, null, null, null],
@@ -123,10 +122,10 @@ export async function runModerationClusterWriteScenarios(): Promise<void> {
       { kind: 'queryBinds', token: 'LIMIT' },
       {
         kind: 'usesIndexes',
-        indexes: ['idx_moderation_reports__post_id', 'idx_moderation_reports__pending_post_id_id'],
-        anyOf: true,
+        indexes: ['idx_moderation_reports__pending_post_id_id'],
+        noSort: true,
       },
-      { kind: 'maxProcessedRows', relation: 'moderation_reports', max: hotCount },
+      { kind: 'maxProcessedRows', relation: 'moderation_reports', max: 1 },
     ],
   })
   await runAndCapture(
@@ -163,7 +162,7 @@ async function captureOrderedMove(): Promise<void> {
   )
 }
 
-async function captureTarget(target: ClusterLookup): Promise<number> {
+async function captureTarget(target: ClusterLookup): Promise<void> {
   const query = `/* ${target.name} */
     SELECT cluster.id, cluster.report_count, cluster.first_reported_at, cluster.last_reported_at
     FROM moderation_report_clusters cluster
@@ -173,7 +172,6 @@ async function captureTarget(target: ClusterLookup): Promise<number> {
   const { rows } = await read<{ report_count: number }>(query, [target.action, ...target.ids])
   assert.equal(rows.length, 1)
   assert.equal(rows[0]!.report_count, target.expectedCount)
-  return rows[0]!.report_count
 }
 
 async function captureHotEdge(
@@ -183,17 +181,9 @@ async function captureHotEdge(
   const query = `/* ${name} */
     SELECT uuid_extract_timestamp(s.id) AS reported_at
     FROM moderation_reports s
-    WHERE (s.post_id = $1::uuid OR s.reported_user_id = $2::uuid
-      OR s.hostname_id = $3::uuid OR s.rss_feed_item_id = $4::uuid)
-      AND s.resolution_action IS NOT DISTINCT FROM $5::moderation_report_resolution_actions
+    WHERE s.post_id = $1::uuid AND s.reviewed_at IS NULL AND s.resolution_action IS NULL
     ORDER BY s.id ${order} LIMIT 1`
-  const { rows } = await read<{ reported_at: Date }>(query, [
-    MODERATION_CLUSTER_HOT_POST_ID,
-    null,
-    null,
-    null,
-    null,
-  ])
+  const { rows } = await read<{ reported_at: Date }>(query, [MODERATION_CLUSTER_HOT_POST_ID])
   assert.equal(rows.length, 1)
   assert.equal(rows[0]!.reported_at.getTime(), HOT_REPORTED_AT)
 }
