@@ -44,6 +44,10 @@ describe('combined removal event pagination', () => {
       [postIds[0], 'platform'],
       [postIds[0], 'community'],
     ])
+    expect(first.results.map(row => [row.community_id, row.community_slug])).toEqual([
+      [community.id, community.slug],
+      [community.id, community.slug],
+    ])
     expect(first.page_info.has_next_page).toBe(true)
     const next = await listUserRemovedPosts(author.id, {
       includePlatform: true,
@@ -53,6 +57,10 @@ describe('combined removal event pagination', () => {
     expect(next.results.map(row => [row.post_id, row.post_removal_kind])).toEqual([
       [postIds[2], 'platform'],
       [postIds[2], 'community'],
+    ])
+    expect(next.results.map(row => [row.community_id, row.community_slug])).toEqual([
+      [community.id, community.slug],
+      [community.id, community.slug],
     ])
     expect(next.page_info.has_next_page).toBe(false)
   })
