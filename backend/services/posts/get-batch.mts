@@ -44,10 +44,9 @@ export const getPostsByAnyBatch = async (
       FROM id_input
     ),
     slug_lookups AS (
-      SELECT DISTINCT ON (slug_input.input_order) ps.post_id AS id, slug_input.input_order
+      SELECT ps.post_id AS id, slug_input.input_order
       FROM post_slugs ps
       JOIN slug_input ON ps.slug = slug_input.input_value
-      ORDER BY slug_input.input_order, ps.post_id
     ),
     combined_ids AS (
       SELECT id, input_order FROM id_lookups

@@ -38,7 +38,7 @@ export async function getPendingApplicationCommunityIds(
   const execute = (query: QueryExecutor) =>
     query<{ community_id: string }>(
       sql`/* getPendingApplicationCommunityIds */
-    SELECT DISTINCT community_id FROM community_applications
+    SELECT community_id FROM community_applications
     WHERE user_id = ${userId}
       AND community_id = ANY(${communityIds}::uuid[])
       AND approved_at IS NULL

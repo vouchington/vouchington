@@ -25,6 +25,7 @@ export type Capture = {
   captureIndex: number
   planCacheMode: ExplainPlanCacheMode
   localSettings?: Readonly<Record<string, string>>
+  setupSql?: string
 }
 
 const repeatedResults: ExplainResult[] = []
@@ -46,6 +47,7 @@ async function probeSeqScanAlternative(input: Capture, result: ProbedExplainResu
   if (scannedRelations.length === 0) return
   const probe = await explainAnalyze(input.name, input.text, input.values, {
     localSettings: { ...input.localSettings, enable_seqscan: 'off' },
+    setupSql: input.setupSql,
     planCacheMode: input.planCacheMode,
     planOnly: true,
   })
@@ -71,6 +73,7 @@ async function probeBaselinedScans(
       enable_bitmapscan: 'off',
       enable_indexonlyscan: 'off',
     },
+    setupSql: input.setupSql,
     planCacheMode: input.planCacheMode,
     planOnly: true,
   })
@@ -111,6 +114,7 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
   }
   const result = await explainAnalyze(input.name, input.text, input.values, {
     localSettings: input.localSettings,
+    setupSql: input.setupSql,
     planCacheMode: input.planCacheMode,
   })
   if (contract.expectations.some(expectation => expectation.kind === 'maxFunctionCalls')) {
@@ -118,6 +122,7 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
     // transaction-local function counters omit calls in parallel worker backends.
     const serial = await explainAnalyze(input.name, input.text, input.values, {
       localSettings: { ...input.localSettings, max_parallel_workers_per_gather: '0' },
+      setupSql: input.setupSql,
       planCacheMode: input.planCacheMode,
     })
     if (hasLaunchedParallelWorkers(serial.plan))

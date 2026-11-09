@@ -166,7 +166,7 @@ async function populatePostNotificationRecipients(
         )
     )
     INSERT INTO ${recipientTable} (user_id)
-    SELECT DISTINCT user_id
+    SELECT user_id
     FROM recipients
     WHERE user_id IS NOT NULL
       AND ($4::uuid IS NULL OR user_id != $4)

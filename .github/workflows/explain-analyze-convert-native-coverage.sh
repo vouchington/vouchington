@@ -19,5 +19,7 @@ pnpm exec coverage-check native-v8-to-lcov \
 --include 'backend/workers/openai-moderation/processors/openai-moderation-omni-single.mts' \
 --include 'backend/scripts/explain-analyze/run-scenarios/{community-round-trips,conversation-participant-admission,modmail-option-a,modmail-first-reply}.mts' \
 --include 'backend/scripts/explain-analyze/run-scenarios/{ai-usage-lookups,url-identities}.mts' \
+--include 'backend/scripts/explain-analyze/{capture-passes,raw-pool-query-capture,run-support}.mts' \
+--include 'backend/scripts/explain-analyze/run-scenarios/{aggregate-existence,notification-population,notification-visibility,query-shape-no-ops}.mts' \
 --include 'backend/scripts/explain-analyze/pruning/{run,retirement-controls,retirement-fixture,retirement-schema,retirement-transaction,migration-*}.mts' \
 --include 'backend/scripts/explain-analyze/pruning/idle-embedding-retention.mts'

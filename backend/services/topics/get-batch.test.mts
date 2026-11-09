@@ -123,11 +123,12 @@ describe('get-batch', () => {
     })
     await createTopicAliases(topic1.id, alias)
 
-    const results = await getTopicsBySlugBatch([slug2.toUpperCase(), topic1.id, alias])
+    const results = await getTopicsBySlugBatch([slug2.toUpperCase(), topic1.id, alias, slug2])
 
-    expect(results).toHaveLength(3)
+    expect(results).toHaveLength(4)
     expect(results[0]?.id).toBe(topic2.id)
     expect(results[1]).toBeNull()
     expect(results[2]).toBeNull()
+    expect(results[3]?.id).toBe(topic2.id)
   })
 })

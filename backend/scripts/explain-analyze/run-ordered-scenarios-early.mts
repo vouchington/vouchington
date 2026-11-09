@@ -5,6 +5,8 @@ import { runSitemapPageScenarios } from './run-scenarios/sitemap-pages.mts'
 import { runBloomReconciliationScenarios } from './run-scenarios/bloom-reconciliation.mts'
 import { runFollowerDistributionScenarios } from './run-scenarios/follower-distributions.mts'
 import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-communities.mts'
+import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
+import { runQueryShapeNoOpScenarios } from './run-scenarios/query-shape-no-ops.mts'
 import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
 import { runModerationRerunOutcomeScenarios } from './run-scenarios/moderation-rerun-outcomes.mts'
 import { runHeavyFollowScenarios } from './run-scenarios/heavy-follows.mts'
@@ -56,6 +58,8 @@ export async function runEarlyScenarios(): Promise<void> {
   await runStep(runOAuthClientVerificationScenarios.name, runOAuthClientVerificationScenarios)
   await runStep(runFollowerDistributionScenarios.name, runFollowerDistributionScenarios)
   await runStep(runEntityAndCommunityScenarios.name, runEntityAndCommunityScenarios)
+  await runStep(runAggregateExistenceScenarios.name, runAggregateExistenceScenarios)
+  await runStep(runQueryShapeNoOpScenarios.name, runQueryShapeNoOpScenarios)
   await runStep(runViewDrivenReadScenarios.name, runViewDrivenReadScenarios)
   await runStep(runTopicImportAttemptScenarios.name, runTopicImportAttemptScenarios)
   await runStep(runImportRequestRetentionScenarios.name, runImportRequestRetentionScenarios)

@@ -18,7 +18,8 @@ export async function assertCommunityPostTopicsNotMuted(
     predicate: 'mute',
   })
   const mutedPostsQuery = sql`/* assertCommunityPostTopicsNotMuted */
-    SELECT DISTINCT mt.subject_id AS community_id
+    SELECT EXISTS (
+    SELECT 1
     FROM relation__post__category__topic pc
     JOIN `
   mutedPostsQuery.append(`${mutedTopicsTable} mt`)
@@ -35,8 +36,8 @@ export async function assertCommunityPostTopicsNotMuted(
         ))
       )
       AND mt.subject_id = ${communityId}
-    UNION
-    SELECT DISTINCT mt.subject_id AS community_id
+    ) OR EXISTS (
+    SELECT 1
     FROM relation__post__category__topic_alias pca
     JOIN topic_aliases alias ON alias.id = pca.object_id
     JOIN `)
@@ -57,11 +58,8 @@ export async function assertCommunityPostTopicsNotMuted(
         ))
       )
       AND mt.subject_id = ${communityId}
+    ) AS is_muted
     `)
-  const { rows } = await read(mutedPostsQuery, options)
-  assert(
-    !rows.some(row => row.community_id === communityId),
-    422,
-    'Post topics are muted in this community',
-  )
+  const { rows } = await read<{ is_muted: boolean }>(mutedPostsQuery, options)
+  assert(!rows[0]!.is_muted, 422, 'Post topics are muted in this community')
 }

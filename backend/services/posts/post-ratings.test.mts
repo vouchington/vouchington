@@ -130,6 +130,36 @@ describe('post-ratings', () => {
     })
   })
 
+  it('allows a single rating but rejects a second equal rating and accepts a different one', async () => {
+    const suffix = randomUUID()
+    const topics = await Promise.all(
+      ['first', 'second'].map(label =>
+        insertTestTopic({
+          name: `Rating ${label} ${suffix}`,
+          slug: `rating-${label}-${suffix}`,
+          createdById: user.id,
+        }),
+      ),
+    )
+    const post = await createPost(user, WEB_PROVENANCE, {
+      title: 'Review rating comparison',
+      markdown: VALID_REVIEW_MARKDOWN,
+      post_type: 'review',
+      review_topic_ratings: [{ topic_id: topics[0]!, rating: 3 }],
+    })
+    await expect(
+      addPostRating(user, post, { topic_id: topics[1]!, rating: 3, order_index: 1 }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'Ratings must not all be the same when comparing multiple topics',
+    })
+    await expect(countPostReviewTopicRatingsForTest(post.id)).resolves.toBe(1)
+    await withEntityListenerCompletion([{ jobName: 'processPostUpdated', entityId: post.id }], () =>
+      addPostRating(user, post, { topic_id: topics[1]!, rating: 4, order_index: 1 }),
+    )
+    await expect(countPostReviewTopicRatingsForTest(post.id)).resolves.toBe(2)
+  })
+
   it('addPostRating rejects adding a rating above the configured cap', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topicIds = await Promise.all(

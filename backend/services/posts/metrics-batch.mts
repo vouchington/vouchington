@@ -84,11 +84,10 @@ function buildPostMetricsBatchQuery(idInputs: NormalizedInput[], slugInputs: Nor
       JOIN id_input ON p.id = id_input.input_value
     ),
     slug_lookups AS (
-      SELECT DISTINCT ON (slug_input.input_order) p.id, p.updated_at, slug_input.input_order
+      SELECT p.id, p.updated_at, slug_input.input_order
       FROM posts p
       JOIN post_slugs ps ON ps.post_id = p.id
       JOIN slug_input ON ps.slug = slug_input.input_value
-      ORDER BY slug_input.input_order, p.id
     ),
     combined_posts AS (
       SELECT id, updated_at, input_order FROM id_lookups

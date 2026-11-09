@@ -27,7 +27,7 @@ export async function getFollowedUsersFollowingTopicIds(
 
   const query = `/* getFollowedUsersFollowingTopic */
     WITH matched AS MATERIALIZED (
-      SELECT topic_follows.subject_id AS user_id, MAX(topic_follows.created_at) AS followed_at
+      SELECT topic_follows.subject_id AS user_id, topic_follows.created_at AS followed_at
       FROM relation__user__follow__topic AS topic_follows
       JOIN relation__user__follow__user AS user_follows
         ON user_follows.subject_id = $1
@@ -38,7 +38,6 @@ export async function getFollowedUsersFollowingTopicIds(
         AND topic_follows.deleted_at IS NULL
         AND follow_user.deleted_at IS NULL
         ${topicFollowsVisibilityFilter}
-      GROUP BY topic_follows.subject_id
     )
     SELECT (SELECT COUNT(*)::INT FROM matched) AS total,
       ARRAY(SELECT user_id FROM matched

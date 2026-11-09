@@ -1,3 +1,4 @@
+import { assertRatingsNotAllSame } from './post-rating-variety.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Post } from './types.mts'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
@@ -27,21 +28,6 @@ async function settlePostRatingEffects(postId: string, topicIds: string[]): Prom
     onError(new Error('Post-rating RSS discoverability preparation failed', { cause: err }))
   }
   await entityAdmission
-}
-
-async function assertRatingsNotAllSame(query: TransactionQuery, postId: string) {
-  const { rows } = await query(sql`/* assertRatingsNotAllSame */
-    SELECT COUNT(*) AS total, COUNT(DISTINCT rating) AS distinct_ratings
-    FROM post_review_topic_ratings
-    WHERE post_id = ${postId}
-  `)
-  const total = Number(rows[0].total)
-  const distinctRatings = Number(rows[0].distinct_ratings)
-  assert(
-    total < 2 || distinctRatings > 1,
-    422,
-    'Ratings must not all be the same when comparing multiple topics',
-  )
 }
 
 export async function addPostRating(
