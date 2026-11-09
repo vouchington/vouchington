@@ -13,7 +13,7 @@ export type PlanExpectation =
       queryContains?: string
       noSort?: boolean
     }
-  | { kind: 'queryBinds'; token: string }
+  | { kind: 'queryBinds'; token: string; queryContains?: string }
   | { kind: 'forbidCorrelatedAggregates' }
   | { kind: 'singleLeaf'; parent: string; key?: string }
   | { kind: 'maxFunctionCalls'; function: string; max: number }

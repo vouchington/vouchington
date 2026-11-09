@@ -122,7 +122,11 @@ registerScenarioContract('boilerplate-removal-hostname-batch', {
       indexes: ['idx_urls__hostname_id'],
       queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
     },
-    { kind: 'queryBinds', token: 'ANY' },
+    {
+      kind: 'queryBinds',
+      token: 'ANY',
+      queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
+    },
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 700 },
     { kind: 'maxProcessedRows', relation: 'urls', max: 700 },
   ],
