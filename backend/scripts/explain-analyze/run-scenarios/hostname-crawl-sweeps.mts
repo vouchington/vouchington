@@ -130,6 +130,10 @@ registerScenarioContract('boilerplate-removal-hostname-batch', {
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 700 },
     { kind: 'maxProcessedRows', relation: 'urls', max: 700 },
   ],
+  crossPartition: {
+    crawls:
+      'The recent-HTML-crawl count probes each candidate url by url_id, and crawl ids are time-ordered so those rows span every crawls partition.',
+  },
 })
 registerScenarioContract('crawl-hostname-threshold-seek', {
   expectations: [
