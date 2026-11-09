@@ -5,14 +5,15 @@ import { REPORT_CONTEXT_REPORTS_PER_ENTITY } from '../seed-data/moderation-repor
 import { loadReportContextEntities } from '../seed-data/moderation-report-contexts.mts'
 
 const REPORT_INDEXES = [
-  'idx_moderation_reports__post_id',
-  'idx_moderation_reports__reported_user_id',
-  'idx_moderation_reports__hostname_id',
-  'idx_moderation_reports__rss_feed_item_id',
+  'idx_moderation_reports__pending_post_id_id',
+  'idx_moderation_reports__pending_reported_user_id_id',
+  'idx_moderation_reports__pending_hostname_id_id',
+  'idx_moderation_reports__pending_rss_feed_item_id_id',
 ] as const
 
-// Reports on posts, users, hostnames and feed items share one statement, a branch per entity kind
-// that probes that kind's own index. Every entity carries more reports than the judgement cap.
+// Pending reports on posts, users, hostnames, and feed items share one statement. Each entity
+// kind probes its pending ordered index. Resolved branches may use another index when they
+// match nothing. Every entity carries more reports than the judgement cap.
 export async function runModerationReportContextScenarios(): Promise<void> {
   registerScenarioContract('report-judgement-contexts-batch', {
     expectations: [
