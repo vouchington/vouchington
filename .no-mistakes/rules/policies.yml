@@ -3282,8 +3282,8 @@
       # slow runner; the partition shard (comment fixture, about 5m measured) fits the same cap.
       - job: '.github/workflows/explain-analyze.yml#explain-analyze'
         maxMinutes: 30
-      # Setup, restore, the crawl-tier check, both seeds (up to 7m), the dump and its uploads; steps
-      # sum to 34m, cap 20m is below it.
+      # Setup, restore, the crawl-tier check, both seeds (up to 9m), the dump and its uploads; steps
+      # sum to 36m, cap 20m is below it.
       - job: '.github/workflows/explain-analyze.yml#seed-explain'
         maxMinutes: 20
       # Dispatch-only evals; steps sum to 27m, cap 20m is below it. The two eval steps are
