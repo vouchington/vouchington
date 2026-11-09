@@ -45,6 +45,17 @@ flowchart TD
   never alter a replacement owner. Payloads without the exact binding are rejected.
 - **Reports leak nothing.** Report-review notifications are generic and route to the inbox; copy
   never exposes the reported target, reporter note, or moderator identity.
+- **Critical alerts follow current staff membership.** A new urgent report alerts the first bounded
+  staff page immediately and queues later pages. Each page discovers currently assigned moderators
+  and administrators, and the notification write checks that the recipient is still active and holds
+  a staff role. Removing a role can exclude a recipient from a later page; granting one can include
+  them if their user ID is still ahead of the cursor. A grant behind that cursor is not picked up by
+  that run. The cursor represents progress through user IDs, not a frozen staff cohort.
+- **Critical alert replay is idempotent.** A replayed page cannot create another live alert for the
+  same report and recipient, and push work follows only newly inserted alerts. Queued pages can be
+  retried, and a page for a removed report ends without creating alerts. The queue resumes work it
+  has admitted; it does not independently discover staff who became eligible behind a completed
+  cursor or reconstruct a continuation that was never admitted.
 - **Digest catch-up preserves complete weeks.** A sent-through cursor records completed windows,
   while GlideMQ owns attempts and recipient-page progress. Scheduled recovery re-admits unfinished
   windows with stable identities. The cursor advances only across a contiguous completed window,

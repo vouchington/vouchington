@@ -57,7 +57,9 @@ export function getBackgroundOrderingLimits(key: string): {
   maxValue: number
 } {
   const configKey =
-    key.startsWith('notifications:bulk:post:') || key.startsWith('notifications:bulk:rss:')
+    key.startsWith('notifications:bulk:post:') ||
+    key.startsWith('notifications:bulk:rss:') ||
+    key.startsWith('notifications:bulk:critical-moderation-alert:')
       ? 'notifications:bulk'
       : key
   const defaultValue = BACKGROUND_ORDERING_CAPS[configKey as keyof typeof BACKGROUND_ORDERING_CAPS]

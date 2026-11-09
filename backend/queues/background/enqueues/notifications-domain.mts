@@ -47,6 +47,11 @@ export type ReconcileRssFeedItemNotificationsData = {
   changeId: string
   afterUserId?: string
 }
+/** One continuation page of live staff recipients for a critical moderation alert. */
+export type CriticalModerationAlertNotificationData = {
+  reportId: string
+  afterUserId: string
+}
 export type ReconcileContentVisibilityData =
   | {
       postId: string

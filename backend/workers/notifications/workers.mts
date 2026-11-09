@@ -39,8 +39,10 @@ import {
 import * as processors from './processors.mts'
 import { enqueueVisibilityContinuations } from './processors/visibility-continuations.mts'
 import { processCommunityActivityDigestScheduleTick } from './processors/community-activity-digest-schedule.mts'
+import { criticalModerationAlertHandlers } from './processors/critical-moderation-alert.mts'
 
 export const notificationsHandlers = [
+  ...criticalModerationAlertHandlers,
   backgroundHandler(NOTIFICATIONS_RECONCILE_POST_JOB, job =>
     processPagedDispatcher(job, {
       dispatcher: 'notifications',

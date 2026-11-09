@@ -26,6 +26,7 @@ import {
   type ReferralSignupNotificationData,
   type ReplayMediaDeliveryRegistryData,
 } from './notifications-domain.mts'
+import { NOTIFICATIONS_CRITICAL_MODERATION_ALERT_JOB } from './critical-moderation-alert-job.mts'
 
 export const NOTIFICATIONS_RECONCILE_POST_JOB = defineBackgroundJob<ReconcilePostNotificationsData>(
   DOMAIN,
@@ -171,6 +172,7 @@ export const NOTIFICATIONS_RECONCILE_MEDIA_REGISTRY_JOB =
 export const NOTIFICATIONS_JOBS = [
   NOTIFICATIONS_RECONCILE_POST_JOB,
   NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB,
+  NOTIFICATIONS_CRITICAL_MODERATION_ALERT_JOB,
   NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
   NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB,
   NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,

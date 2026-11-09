@@ -28,7 +28,7 @@ _none_
 
 **Indexes:**
 
-- `idx_user_roles__role_type_id`: `CREATE INDEX idx_user_roles__role_type_id ON public.user_roles USING btree (role_type_id)`
+- `idx_user_roles__role_type_id`: `CREATE INDEX idx_user_roles__role_type_id ON public.user_roles USING btree (role_type_id, user_id)`
 - `user_roles_pkey`: `CREATE UNIQUE INDEX user_roles_pkey ON public.user_roles USING btree (user_id, role_type_id)`
 
 **Triggers:**

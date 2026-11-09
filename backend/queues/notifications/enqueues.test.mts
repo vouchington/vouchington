@@ -18,7 +18,7 @@ import { notifications } from './queues.mts'
 import { PRIORITY_DISPATCH } from '@queues/background/config'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
-describe('copyright and media-delivery notification enqueue wiring', () => {
+describe('notification enqueue wiring', () => {
   it('throttles action-intent reconciliation to one five-minute schedule', async () => {
     await enqueueReconcileCopyrightActionIntents()
     const job = (await readAllQueueJobs(notifications)).find(
