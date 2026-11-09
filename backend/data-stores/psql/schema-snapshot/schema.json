@@ -74373,6 +74373,17 @@
         "moderation_report_clusters_reported_order": "CHECK ((first_reported_at <= last_reported_at))"
       },
       "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
         "first_reported_at": {
           "collation": null,
           "comment": "Earliest UUIDv7 report timestamp in this target and outcome cluster.",
@@ -74381,7 +74392,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "hostname_id": {
@@ -74392,7 +74403,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "id": {
@@ -74414,7 +74425,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "post_id": {
@@ -74425,7 +74436,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "report_count": {
@@ -74436,7 +74447,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "integer"
         },
         "reported_user_id": {
@@ -74447,7 +74458,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "resolution_action": {
@@ -74458,7 +74469,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "moderation_report_resolution_actions"
         },
         "rss_feed_item_id": {
@@ -74469,7 +74480,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         }
       },
@@ -74512,7 +74523,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_moderation_report_clusters__first_reported_at": {
           "accessMethod": "btree",

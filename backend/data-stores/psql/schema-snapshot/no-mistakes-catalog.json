@@ -78791,6 +78791,16 @@
         }
       },
       "columns": {
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
         "first_reported_at": {
           "comment": "Earliest UUIDv7 report timestamp in this target and outcome cluster.",
           "dataType": "timestamp with time zone",
@@ -78799,7 +78809,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "hostname_id": {
           "comment": "Reported hostname, including the live target for this cluster.",
@@ -78809,7 +78819,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "id": {
           "comment": null,
@@ -78829,7 +78839,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "post_id": {
           "comment": "Reported post or comment, including the live target for this cluster.",
@@ -78839,7 +78849,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 2
+          "ordinalPosition": 3
         },
         "report_count": {
           "comment": "Number of current report rows in this target and outcome cluster.",
@@ -78849,7 +78859,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "reported_user_id": {
           "comment": "Reported user, including the live target for this cluster.",
@@ -78859,7 +78869,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "resolution_action": {
           "comment": "NULL for pending reports, otherwise the reviewed report outcome.",
@@ -78869,7 +78879,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "rss_feed_item_id": {
           "comment": "Reported RSS feed item, including the live target for this cluster.",
@@ -78879,7 +78889,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         }
       },
       "comment": "Current per-entity and per-outcome report cluster keys, kept exact by report row triggers and removed when no reports remain.",
