@@ -3708,6 +3708,12 @@ importers:
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../services/ai-usage
+      '@services/ap-inbox-activities':
+        specifier: workspace:^
+        version: link:../services/ap-inbox-activities
+      '@services/api-keys':
+        specifier: workspace:^
+        version: link:../services/api-keys
       '@services/articles':
         specifier: workspace:^
         version: link:../services/articles
