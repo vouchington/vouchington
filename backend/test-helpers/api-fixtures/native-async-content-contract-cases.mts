@@ -57,6 +57,7 @@ export const nativeAsyncContentContractApiFixtureCases: ApiFixtureCase[] = [
   {
     ...shared,
     id: 'native.rss-feeds.delete.accepted',
+    auth: 'fixture-admin',
     method: 'DELETE',
     path: `/api/v1/rss-feeds/${feedId}`,
     route: { routeTemplate: '/api/v1/rss-feeds/:id', pathParams: { id: feedId } },
@@ -69,6 +70,7 @@ export const nativeAsyncContentContractApiFixtureCases: ApiFixtureCase[] = [
   {
     ...shared,
     id: 'native.topics.merge.accepted',
+    auth: 'fixture-admin',
     method: 'POST',
     path: `/api/v1/topics/${sourceTopicId}/merges`,
     route: {
@@ -83,6 +85,7 @@ export const nativeAsyncContentContractApiFixtureCases: ApiFixtureCase[] = [
   ...(['queued', 'running', 'completed', 'failed'] as const).map(status => ({
     ...shared,
     id: `native.topics.merge.status.${status}`,
+    auth: 'fixture-admin' as const,
     method: 'GET' as const,
     path: mergeStatusUrl,
     route: mergeRoute,
