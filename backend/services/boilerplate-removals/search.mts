@@ -32,7 +32,14 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
     new Date(recentCutoffDate.getTime() - CRAWL_CLEANUP_MAX_AGE_DAYS * 24 * 60 * 60 * 1000),
   )
   const query = sql`/* searchParentPathsNeedingBoilerplateRemoval */
-    WITH recent_html_urls AS (
+    WITH eligible_hostnames AS MATERIALIZED (
+      SELECT h.id
+      FROM url_hostnames h
+      WHERE h.id = ANY(${hostnameIds}::uuid[])
+        AND NOT h.is_blocked
+        AND h.is_crawlable
+    ),
+    recent_html_urls AS (
       SELECT
         u.id,
         u.hostname_id,
@@ -42,7 +49,7 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
           ELSE '/'
         END AS parent_path
       FROM urls u
-      JOIN url_hostnames h ON h.id = u.hostname_id
+      JOIN eligible_hostnames h ON h.id = u.hostname_id
       JOIN LATERAL (
         SELECT 1
         FROM crawls c
@@ -55,8 +62,6 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
         LIMIT 1
       ) recent_crawl ON TRUE
       WHERE u.hostname_id = ANY(${hostnameIds}::uuid[])
-        AND NOT h.is_blocked
-        AND h.is_crawlable
     )
     SELECT hostname_id, parent_path
     FROM recent_html_urls
