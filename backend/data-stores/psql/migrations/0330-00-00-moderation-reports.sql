@@ -173,6 +173,7 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__reporter_user_id
 -- No report-id pointer survives a report's retention deletion.
 CREATE TABLE IF NOT EXISTS moderation_report_clusters (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   post_id uuid REFERENCES posts (id) ON DELETE CASCADE,
   reported_user_id uuid REFERENCES users (id) ON DELETE CASCADE,
   hostname_id uuid REFERENCES url_hostnames (id) ON DELETE CASCADE,
