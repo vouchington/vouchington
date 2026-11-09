@@ -59,7 +59,7 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. sort=link_count lists enabled referral programs by all-time active link count, excluding programs with zero active links. It accepts only limit and after, and rejects every other search filter.',
+      'Search topics by name or slug, meaning, or similar-item signals; combine text and meaning for hybrid search. sort=link_count ranks enabled programs by positive all-time active-link counts. Counts and newly enabled programs appear after a scheduled refresh; eligibility is checked live. This sort accepts only limit and after; all other filters are rejected.',
     parameters: {
       type: 'object',
       properties: {

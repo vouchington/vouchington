@@ -58,6 +58,8 @@ function register(id: string, maxRows: number): void {
         noSort: true,
       },
       { kind: 'maxProcessedRows', relation: 'mv_referral_program_link_counts', max: maxRows },
+      { kind: 'maxProcessedRows', relation: 'referral_program_topics', max: maxRows },
+      { kind: 'maxProcessedRows', relation: 'topics', max: maxRows },
     ],
   })
 }

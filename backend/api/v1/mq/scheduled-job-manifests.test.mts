@@ -93,6 +93,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'psql/moderation-retention-cleanup-daily',
   'psql/reconcile-vote-drift',
   'psql/refresh-platform-stats',
+  'psql/refresh-referral-program-link-counts',
   'psql/refresh-revenue-changes',
   'psql/refresh-revenue-memberships',
   'psql/refresh-rss-feed-crawl-tiers',
