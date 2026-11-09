@@ -16,6 +16,15 @@ export async function markTestPostDeletedBy(postId: string, deletedById: string)
 }
 
 /**
+ * Every deleted post runs one foreign-key probe per referencing table (about 65), so a single
+ * 1,000-post statement made roughly 65,000 probes and took about 450 ms on an idle local database.
+ * That left under 5x headroom against the 2 s test statement_timeout on a loaded CI runner. A batch
+ * of 100 keeps each statement near 45 ms inside the one transaction, so the locks and atomicity of
+ * the delete are unchanged.
+ */
+const HARD_DELETE_POST_BATCH_SIZE = 100
+
+/**
  * Hard-deletes posts under the publication post-scope locks. The `posts` delete cascades into
  * relation rows, so without the scope lock it takes post row -> relation row while a live
  * vote-stats or publication worker takes relation row -> post row (the FK check), a lock cycle.
@@ -29,10 +38,13 @@ export async function hardDeleteTestPosts(postIds: readonly string[]): Promise<v
     'post_deleted',
     postIds.map(postId => ({ postId })),
   )
-  await transaction(sql`/* hardDeleteTestPosts */
-    DELETE FROM posts
-    WHERE id = ANY(${postIds})
-  `)
+  for (let start = 0; start < postIds.length; start += HARD_DELETE_POST_BATCH_SIZE) {
+    const batch = postIds.slice(start, start + HARD_DELETE_POST_BATCH_SIZE)
+    await transaction(sql`/* hardDeleteTestPosts */
+      DELETE FROM posts
+      WHERE id = ANY(${batch})
+    `)
+  }
   await transaction.commit()
 }
 
