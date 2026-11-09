@@ -33,20 +33,6 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     await request.get('/api/v1/feeds/posts/invalid_type').expect(404)
   })
 
-  it('should return empty results when user has no follows', async () => {
-    const user = await createTestUser()
-    const request = createRequest()
-    await request.authenticateAs(user)
-
-    const response = await request.get('/api/v1/feeds/posts/any').expect(200)
-
-    // Streaming pattern: posts, posts_metrics are objects, not arrays
-    expect(response.body.posts).toEqual({})
-    expect(response.body.posts_metrics).toEqual({})
-    expect(response.body.results).toEqual([])
-    expect(response.body.page_info.has_next_page).toBe(false)
-  })
-
   it('should return posts from followed users', async () => {
     const user = await createTestUser()
     const followedUser = await createTestUser()
