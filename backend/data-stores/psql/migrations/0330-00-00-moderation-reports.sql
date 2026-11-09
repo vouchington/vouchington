@@ -216,7 +216,7 @@ COMMENT ON COLUMN moderation_report_clusters.report_count IS 'Number of current 
 
 CREATE OR REPLACE FUNCTION fn_sync_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
-  prior_cluster moderation_report_clusters%ROWTYPE;
+  prior_cluster record;
   next_first timestamptz;
   next_last timestamptz;
   prior_reported_at timestamptz;
@@ -233,7 +233,8 @@ BEGIN
   END IF;
 
   IF TG_OP IN ('DELETE', 'UPDATE') THEN
-    SELECT * INTO prior_cluster
+    SELECT cluster.id, cluster.report_count, cluster.first_reported_at,
+      cluster.last_reported_at INTO prior_cluster
     FROM moderation_report_clusters cluster
     WHERE cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
       AND cluster.post_id IS NOT DISTINCT FROM OLD.post_id
