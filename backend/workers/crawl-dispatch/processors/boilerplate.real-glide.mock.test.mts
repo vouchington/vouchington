@@ -187,16 +187,61 @@ describe('boilerplate removal hostname sweep cursor', () => {
     )
     await setTestBoilerplateRemovalHostnameCursorBefore(hostnameIds[0]!)
 
+    const admit = vi.fn<(candidates: unknown[]) => Promise<void>>(async () => undefined)
     for (const hostnameId of hostnameIds) {
-      expect(await processBoilerplateRemovalDispatcher()).toEqual([
+      expect(await processBoilerplateRemovalDispatcher(admit)).toEqual([
         { hostname_id: hostnameId, parent_path: '/blog' },
       ])
       expect(await getTestBoilerplateRemovalHostnameCursor()).toBe(hostnameId)
     }
 
     await setTestBoilerplateRemovalHostnameCursor('ffffffff-ffff-7fff-bfff-ffffffffffff')
-    expect(await processBoilerplateRemovalDispatcher()).toEqual([])
+    expect(await processBoilerplateRemovalDispatcher(admit)).toEqual([])
     expect(await getTestBoilerplateRemovalHostnameCursor()).toBeNull()
+  })
+
+  it('keeps the cursor when admission fails or the candidate cap truncates the batch', async () => {
+    const user = await createTestUser()
+    const hostname = `bp-hold-${randomUUID()}.example.com`
+    const hostnameId = await insertTestUrlHostname({
+      id: getMinUUIDv7ForDate(
+        new Date(Date.UTC(1970, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)),
+      ),
+      hostname,
+    })
+    const urls = await addUrls(user.id, [
+      `https://${hostname}/blog/post-1`,
+      `https://${hostname}/blog/post-2`,
+    ])
+    await updateUrlHostname(hostnameId, { is_crawlable: true })
+    const crawler = await createCrawler(user, { hostname_id: hostnameId, crawler_type: 'fetch' })
+    for (const url of urls) {
+      const crawl = await createCrawl(url.id, crawler.id)
+      await updateCrawl(crawl.id, url.id, {
+        response_status_code: 200,
+        completed_at: new Date(),
+        html_sha256: createHash('sha256').update(url.id).digest(),
+        html_snapshot_uploaded_at: new Date(),
+      })
+    }
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(crawlBoilerplateRemovalWorkConfig, {
+        hostname_batch_size: 1,
+        batch_size: 1,
+      }),
+    )
+    await setTestBoilerplateRemovalHostnameCursorBefore(hostnameId)
+    const before = await getTestBoilerplateRemovalHostnameCursor()
+
+    await expect(
+      processBoilerplateRemovalDispatcher(async () => {
+        throw new Error('admission failed')
+      }),
+    ).rejects.toThrow('admission failed')
+    expect(await getTestBoilerplateRemovalHostnameCursor()).toBe(before)
+
+    expect(await processBoilerplateRemovalDispatcher(async () => undefined)).toHaveLength(1)
+    expect(await getTestBoilerplateRemovalHostnameCursor()).toBe(before)
   })
 
   it('does not advance when another run already moved the cursor', async () => {

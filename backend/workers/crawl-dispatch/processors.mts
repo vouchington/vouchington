@@ -36,13 +36,14 @@ export async function processCrawlDispatchJob(rawJob: Job<unknown>): Promise<unk
     case 'crawl.crawl_cleanup':
       return processCrawlHostnamesJob(job)
     case 'crawl.boilerplate_removal_dispatcher': {
-      const candidates = await processBoilerplateRemovalDispatcher()
-      await enqueueBulkBoilerplateRemoval(
-        candidates.map(candidate => ({
-          hostnameId: candidate.hostname_id,
-          parentPath: candidate.parent_path,
-        })),
-      )
+      const candidates = await processBoilerplateRemovalDispatcher(async admitted => {
+        await enqueueBulkBoilerplateRemoval(
+          admitted.map(candidate => ({
+            hostnameId: candidate.hostname_id,
+            parentPath: candidate.parent_path,
+          })),
+        )
+      })
       return candidates.length
     }
     case 'crawl.boilerplate_removal': {

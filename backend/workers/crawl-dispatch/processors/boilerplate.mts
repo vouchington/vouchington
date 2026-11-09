@@ -43,11 +43,16 @@ async function extractDomRemovalsExclusively(files: CrawlHtmlTempFile[]) {
   }
 }
 
-export const processBoilerplateRemovalDispatcher = (): Promise<ParentPathCandidate[]> => {
-  return sweepNextBoilerplateHostnameBatch({
-    hostnameBatchSize: getCrawlBoilerplateRemovalWorkLimit('hostname_batch_size'),
-    candidateLimit: getCrawlBoilerplateRemovalWorkLimit('batch_size'),
-  })
+export const processBoilerplateRemovalDispatcher = (
+  admit: (candidates: ParentPathCandidate[]) => Promise<void>,
+): Promise<ParentPathCandidate[]> => {
+  return sweepNextBoilerplateHostnameBatch(
+    {
+      hostnameBatchSize: getCrawlBoilerplateRemovalWorkLimit('hostname_batch_size'),
+      candidateLimit: getCrawlBoilerplateRemovalWorkLimit('batch_size'),
+    },
+    admit,
+  )
 }
 
 export const processBoilerplateRemoval = async (
