@@ -24,6 +24,7 @@ export async function buildRecommendationQuery(
   options: QueryOptions,
 ): Promise<SQLStatement> {
   const WORK_PAGE_SIZE = getRecommendedTopicsWorkLimit('candidate_page_size')
+  const VOTE_HISTORY_WINDOW = getRecommendedTopicsWorkLimit('vote_history_window')
   const { score_lt, id_gt, name_gt, limit, topic_types, spending_category, rss_feed, sort } =
     options
 
@@ -58,8 +59,13 @@ export async function buildRecommendationQuery(
         'from_upvoted_posts' AS reason
       FROM (
         SELECT DISTINCT ON (post_id) post_id, score
-        FROM post_votes
-        WHERE user_id = ${userId}
+        FROM (
+          SELECT post_id, id, score
+          FROM post_votes
+          WHERE user_id = ${userId}
+          ORDER BY id DESC
+          LIMIT ${VOTE_HISTORY_WINDOW}
+        ) recent_votes
         ORDER BY post_id, id DESC
       ) ev
       INNER JOIN posts p

@@ -18,6 +18,7 @@ import {
   getRecommendedTopics,
   searchUrls,
 } from '../run-services.mts'
+import { runRecommendedTopicsVoteHistoryScenario } from './recommended-topics-vote-history.mts'
 import { runRssItemSearchScenarios } from './rss-item-search.mts'
 import { runRssFeedSearchScopeScenarios } from './rss-feed-search.mts'
 import {
@@ -41,6 +42,7 @@ export async function runSearchAndFacetScenarios() {
   )
 
   await runAndCapture('recommended-topics', () => getRecommendedTopics(seedUser, { limit: 25 }))
+  await runRecommendedTopicsVoteHistoryScenario()
 
   // Post search — text search
   registerScenarioContract('post-search-text', {

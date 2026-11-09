@@ -1,8 +1,11 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { SEED_PREFIX, seedUuid } from './common.mts'
+import { seedRecommendedTopicsVoteHistory } from './recommended-topics-vote-history.mts'
 
 export async function seedVotes(postVoteCount = 2000, topicVoteCount = 500): Promise<void> {
   console.log(`Seeding ${postVoteCount} post votes and ${topicVoteCount} topic votes...`)
+  // The long-history viewer's votes must be older than the bulk votes below (UUIDv7 id order).
+  await seedRecommendedTopicsVoteHistory()
   // Posts moved off the fixed SEED_PREFIX instant onto per-day real-clock timestamps (see
   // seed-data/common.mts), so they can no longer be located by a LIKE pattern on the id prefix —
   // compute the ids directly instead, same as feed-and-metrics.mts's post-votes-by-user scenario.
