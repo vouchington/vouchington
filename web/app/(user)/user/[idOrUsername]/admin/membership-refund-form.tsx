@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import * as refundAttemptStorage from './membership-refund-attempt.ts'
+import { useMembershipRefundAttempt } from './membership-refund-attempt.ts'
 import { chargeKey } from './membership-refund-charge-key.ts'
 import { MembershipRefundChargeList } from './membership-refund-charge-list.tsx'
 import { MembershipRefundSubmitButton } from './membership-refund-submit-button.tsx'
@@ -30,10 +30,7 @@ export function MembershipRefundForm({
   charges,
   onReload,
 }: MembershipRefundFormProps) {
-  const restored = refundAttemptStorage.useMembershipRefundAttempt(
-    { actorUserId, targetUserId: userId },
-    charges,
-  )
+  const restored = useMembershipRefundAttempt({ actorUserId, targetUserId: userId }, charges)
   return (
     <MembershipRefundFormStateful
       key={`${actorUserId}:${userId}:${restored?.attempt.requestFingerprint ?? 'new'}:${restored?.reconciliationRetryAt ?? 'ready'}`}
@@ -53,7 +50,7 @@ function MembershipRefundFormStateful({
   onReload,
   restored,
 }: MembershipRefundFormProps & {
-  restored: ReturnType<typeof refundAttemptStorage.useMembershipRefundAttempt>
+  restored: ReturnType<typeof useMembershipRefundAttempt>
 }) {
   const t = useTranslations()
   const reasonId = useId()

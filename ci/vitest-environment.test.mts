@@ -4,15 +4,11 @@ const originalArgv = [...process.argv]
 const originalCoverageScope = process.env.VITEST_COVERAGE_SCOPE
 const originalCoverageEnabled = process.env.VITEST_COVERAGE_ENABLED
 
-// Cache-busting query suffixes force vitest to re-evaluate the module with the
-// current process.argv; computed specifiers keep tsc from resolving the query URL.
-const environmentModulePath = '../test-helpers/vitest-config/environment.mts'
-const loadEnvironment = (
-  name: string,
-): Promise<typeof import('../test-helpers/vitest-config/environment.mts')> => {
+// vi.resetModules() makes each import re-evaluate the module with the current process.argv.
+const loadEnvironment = async () => {
   vi.resetModules()
-  const cacheBustingQuery = name === 'single-web-project' ? name : 'multiple-projects'
-  return import(`${environmentModulePath}?${cacheBustingQuery}`)
+  const environment = await import('../test-helpers/vitest-config/environment.mts')
+  return environment
 }
 
 describe('vitest environment coverage config', () => {
@@ -35,7 +31,7 @@ describe('vitest environment coverage config', () => {
     delete process.env.VITEST_COVERAGE_SCOPE
     process.argv = ['node', 'vitest', 'run', '--project', 'web', '--coverage']
 
-    const { coverageConfig } = await loadEnvironment('single-web-project')
+    const { coverageConfig } = await loadEnvironment()
 
     expect(coverageConfig().include).toEqual(['web/**/*.{mts,ts,tsx}'])
   })
@@ -52,7 +48,7 @@ describe('vitest environment coverage config', () => {
       '--coverage',
     ]
 
-    const { coverageConfig } = await loadEnvironment('multiple-projects')
+    const { coverageConfig } = await loadEnvironment()
 
     expect(coverageConfig().include).toEqual(['**/*.{mts,ts,tsx}'])
   })
@@ -61,7 +57,7 @@ describe('vitest environment coverage config', () => {
     process.env.VITEST_COVERAGE_SCOPE = 'web-storybook'
     process.argv = ['node', 'vitest', 'run', '--project', 'web-storybook', '--coverage']
 
-    const { coverageConfig } = await loadEnvironment('multiple-projects')
+    const { coverageConfig } = await loadEnvironment()
 
     expect(coverageConfig().include).toEqual([
       'web/storybook/entities/entity-fixtures.ts',
@@ -73,7 +69,7 @@ describe('vitest environment coverage config', () => {
     process.env.VITEST_COVERAGE_SCOPE = 'portability'
     process.argv = ['node', 'vitest', 'run', '--project', 'lambdas-portability', '--coverage']
 
-    const { coverageConfig } = await loadEnvironment('multiple-projects')
+    const { coverageConfig } = await loadEnvironment()
 
     expect(coverageConfig().include).toEqual([
       'lambdas/dev-server.mts',
@@ -85,7 +81,7 @@ describe('vitest environment coverage config', () => {
     process.env.VITEST_COVERAGE_ENABLED = 'false'
     process.argv = ['node', 'vitest', 'run', '--project', 'backend-modules']
 
-    const { coverageConfig } = await loadEnvironment('multiple-projects')
+    const { coverageConfig } = await loadEnvironment()
 
     expect(coverageConfig().enabled).toBe(false)
   })
@@ -94,7 +90,7 @@ describe('vitest environment coverage config', () => {
     process.env.VITEST_COVERAGE_ENABLED = 'false'
     process.argv = ['node', 'vitest', 'run', '--project', 'backend-modules', '--coverage']
 
-    const { coverageConfig } = await loadEnvironment('single-web-project')
+    const { coverageConfig } = await loadEnvironment()
 
     expect(coverageConfig().enabled).toBe(true)
   })

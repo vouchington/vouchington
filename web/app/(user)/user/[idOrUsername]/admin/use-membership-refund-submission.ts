@@ -10,7 +10,13 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import * as refundAttemptStorage from './membership-refund-attempt.ts'
+import {
+  clearMembershipRefundAttempt,
+  persistPendingRefundAttempt,
+  prepareMembershipRefundAttempt,
+  submitMembershipRefundAttempt,
+  type MembershipRefundAttempt,
+} from './membership-refund-attempt.ts'
 import { createRefundRequest } from './membership-refund-request.ts'
 import type { MembershipRefundFormState } from './membership-refund-form.types.ts'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -23,7 +29,7 @@ export function useMembershipRefundSubmission(options: {
   selectedCharge: RefundableCharge
   formState: MembershipRefundFormState
   reconciliationRetryAt: number | null
-  attemptRef: RefObject<refundAttemptStorage.MembershipRefundAttempt | null>
+  attemptRef: RefObject<MembershipRefundAttempt | null>
   setReconciliationRetryAt: (value: number | null) => void
   resetForm: () => void
   onReload: () => void
@@ -45,7 +51,7 @@ export function useMembershipRefundSubmission(options: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPending, startTransition] = useTransition()
   const finishTerminalRefundAttempt = useCallback(() => {
-    refundAttemptStorage.clearMembershipRefundAttempt({ actorUserId, targetUserId: userId })
+    clearMembershipRefundAttempt({ actorUserId, targetUserId: userId })
     attemptRef.current = null
     setReconciliationRetryAt(null)
     resetForm()
@@ -54,12 +60,12 @@ export function useMembershipRefundSubmission(options: {
   }, [actorUserId, attemptRef, onReload, refresh, resetForm, setReconciliationRetryAt, userId])
 
   const submitAttempt = useCallback(
-    async (attempt: refundAttemptStorage.MembershipRefundAttempt) => {
+    async (attempt: MembershipRefundAttempt) => {
       setIsSubmitting(true)
       try {
-        const response = await refundAttemptStorage.submitMembershipRefundAttempt(attempt)
+        const response = await submitMembershipRefundAttempt(attempt)
         if (response.outcome === 'reconciling') {
-          const pendingAttempt = refundAttemptStorage.persistPendingRefundAttempt(
+          const pendingAttempt = persistPendingRefundAttempt(
             { actorUserId, targetUserId: userId },
             attempt,
             response.retry_after_seconds,
@@ -77,7 +83,7 @@ export function useMembershipRefundSubmission(options: {
         }
         switch (response.cancellation_status) {
           case 'pending': {
-            const pendingAttempt = refundAttemptStorage.persistPendingRefundAttempt(
+            const pendingAttempt = persistPendingRefundAttempt(
               { actorUserId, targetUserId: userId },
               attempt,
               300,
@@ -110,7 +116,7 @@ export function useMembershipRefundSubmission(options: {
         }
       } catch (err) {
         if (attempt.reconciliationRetryAt !== null) {
-          const pendingAttempt = refundAttemptStorage.persistPendingRefundAttempt(
+          const pendingAttempt = persistPendingRefundAttempt(
             { actorUserId, targetUserId: userId },
             attempt,
             300,
@@ -155,7 +161,7 @@ export function useMembershipRefundSubmission(options: {
     event.preventDefault()
     if (reconciliationRetryAt !== null) return
     const request = createRefundRequest(userId, selectedCharge, formState, uiLocale)
-    const attempt = refundAttemptStorage.prepareMembershipRefundAttempt(
+    const attempt = prepareMembershipRefundAttempt(
       { actorUserId, targetUserId: userId },
       attemptRef.current,
       request,
