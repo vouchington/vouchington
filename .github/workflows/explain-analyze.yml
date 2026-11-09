@@ -209,6 +209,9 @@ jobs:
   # scenario, so they run once over the merged shard results.
   explain-analyze-gates:
     needs: [explain-analyze]
+    # prepare-postgres is skipped when the caller supplies the database, and a skipped ancestor
+    # would otherwise skip this job silently while the workflow stays green.
+    if: ${{ !cancelled() && needs.explain-analyze.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
