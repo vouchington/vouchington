@@ -98774,7 +98774,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/rss-feed-items/:id",
       "bodyFile": "responses/native.rss-feed-items.hacker-news.detail.json",
-      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.rss-feed-items.hacker-news.detail",
       "method": "GET",
       "migratedFrom": ["backend/api/v1/rss-feed-items/rss-feed-item.mts"],

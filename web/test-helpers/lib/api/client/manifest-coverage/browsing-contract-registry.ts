@@ -17,6 +17,10 @@ export const browsingContractEndpointRegistry = {
     path: '/api/v1/rss-feed-items',
     query: { limit: '20' },
   },
+  'native.rss-feed-items.hacker-news.detail': {
+    method: 'GET',
+    path: '/api/v1/rss-feed-items/00000000-0000-7000-8000-000000007886',
+  },
   'native.podcast-episodes.hacker-news.list': {
     method: 'GET',
     path: '/api/v1/feeds/rss_feed_items/any',

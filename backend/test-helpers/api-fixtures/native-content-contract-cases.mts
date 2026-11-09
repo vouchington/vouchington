@@ -82,6 +82,7 @@ export const nativeContentContractApiFixtureCases: ApiFixtureCase[] = [
   {
     ...itemDetail,
     id: 'native.rss-feed-items.hacker-news.detail',
+    consumers: shared.consumers,
     body: {
       ...itemDetailBody,
       rss_feed_item_hacker_news_references: { [rssFeedItemDetailId]: itemReference },
