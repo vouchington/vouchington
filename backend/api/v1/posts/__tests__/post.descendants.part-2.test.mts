@@ -15,6 +15,7 @@ import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import type { PrivateUser } from '@services/users/types'
 
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
+import { nativeCommentDescendantContinuationApiFixtureCases } from '../../../../test-helpers/api-fixtures/native-comment-descendant-continuation-cases.mts'
 
 describe('post.descendants', () => {
   let creator: PrivateUser
@@ -95,6 +96,12 @@ describe('post.descendants', () => {
         .expect(200)
 
       expect(response.body.results).toEqual([])
+      const emptyFixture = nativeCommentDescendantContinuationApiFixtureCases.find(
+        fixture => fixture.id === 'native.comments.descendants.empty-continuation',
+      )!
+      expect(Object.keys(response.body).toSorted()).toEqual(
+        Object.keys(emptyFixture.body as object).toSorted(),
+      )
       expect(response.body.page_info).toEqual({
         has_next_page: true,
         start_cursor: expect.any(String),

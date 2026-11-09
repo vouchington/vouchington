@@ -1,0 +1,79 @@
+{
+  "markdown_to_html": {
+    "70000000-0000-7000-8000-000000005437": "<p>Nested reply with votes</p>"
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwNTQzNyIsInNjb3BlIjoiY29tbWVudC1kZXNjZW5kYW50cy12Mjo3MDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDU0MzA6NzAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDA1NDM0In0"
+  },
+  "post_elections": {},
+  "posts": {
+    "70000000-0000-7000-8000-000000005437": {
+      "__entity_type": "post",
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": "everyone",
+      "can_delete": false,
+      "can_edit_content": false,
+      "can_lock": false,
+      "clearance_reason": null,
+      "clearance_status": null,
+      "clearance_updated_at": null,
+      "community_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "account_type": null,
+        "id": "comment-user-2",
+        "profile_image_id": "00000000-0000-7000-8000-000000000202",
+        "profile_image_placement": {
+          "image_id": "00000000-0000-7000-8000-000000000202",
+          "placement_id": "00000000-0000-7000-8000-000000000302",
+          "placement_revision": 3
+        },
+        "roles": [],
+        "username": "commenter"
+      },
+      "created_by_id": "comment-user-2",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "70000000-0000-7000-8000-000000005437",
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": "Nested reply with votes",
+      "parent_post_id": "70000000-0000-7000-8000-000000005434",
+      "post_type": "comment",
+      "privacy": "public",
+      "root_post_id": "70000000-0000-7000-8000-000000005430",
+      "slug": null,
+      "title": "",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "updated_by_id": null
+    }
+  },
+  "posts_metrics": {
+    "70000000-0000-7000-8000-000000005437": {
+      "__entity_type": "post_metrics",
+      "bookmarks": {
+        "follow": 0,
+        "save": 0
+      },
+      "count": {
+        "children": 0,
+        "descendants": 1
+      },
+      "id": "70000000-0000-7000-8000-000000005437",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  "results": [
+    {
+      "__entity_type": "post",
+      "id": "70000000-0000-7000-8000-000000005437",
+      "ranking": 0,
+      "search_vector_ts": null
+    }
+  ]
+}

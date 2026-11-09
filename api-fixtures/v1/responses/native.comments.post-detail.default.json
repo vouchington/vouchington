@@ -6,7 +6,7 @@
     "profile_links": []
   },
   "bookmarks": {
-    "comment-root-post": {
+    "70000000-0000-7000-8000-000000005400": {
       "save": true
     }
   },
@@ -14,7 +14,7 @@
     "__entity_type": "election_vote",
     "choice": "like",
     "created_at": "2026-01-01T00:00:00Z",
-    "entity_id": "comment-root-post",
+    "entity_id": "70000000-0000-7000-8000-000000005400",
     "user_id": "user-1"
   },
   "html": "<p>Root post markdown</p>",
@@ -47,7 +47,7 @@
     "created_by_id": "user-1",
     "deleted_at": null,
     "deleted_by_id": null,
-    "id": "comment-root-post",
+    "id": "70000000-0000-7000-8000-000000005400",
     "is_anonymous": false,
     "locked_at": null,
     "locked_by_id": null,
@@ -63,7 +63,7 @@
   },
   "post_election": {
     "__entity_type": "post_election",
-    "id": "comment-root-post",
+    "id": "70000000-0000-7000-8000-000000005400",
     "votes_count_down": 1,
     "votes_count_up": 4,
     "votes_score_net": 3
@@ -78,7 +78,7 @@
       "children": 2,
       "descendants": 3
     },
-    "id": "comment-root-post",
+    "id": "70000000-0000-7000-8000-000000005400",
     "updated_at": "2026-01-01T00:00:00Z"
   }
 }

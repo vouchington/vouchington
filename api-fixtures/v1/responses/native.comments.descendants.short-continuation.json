@@ -1,0 +1,142 @@
+{
+  "markdown_to_html": {
+    "70000000-0000-7000-8000-000000005431": "<p>Top-level native comment</p>",
+    "70000000-0000-7000-8000-000000005434": "<p>Nested reply with votes</p>"
+  },
+  "page_info": {
+    "end_cursor": "eyJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwNTQzMyIsInNjb3BlIjoiY29tbWVudC1kZXNjZW5kYW50cy12Mjo3MDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDU0MzA6NzAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDA1NDMwIn0",
+    "has_next_page": true,
+    "start_cursor": "eyJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwNTQzMSIsInNjb3BlIjoiY29tbWVudC1kZXNjZW5kYW50cy12Mjo3MDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDU0MzA6NzAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDA1NDMwIn0"
+  },
+  "post_elections": {},
+  "posts": {
+    "70000000-0000-7000-8000-000000005431": {
+      "__entity_type": "post",
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": "everyone",
+      "can_delete": true,
+      "can_edit_content": true,
+      "can_lock": true,
+      "clearance_reason": null,
+      "clearance_status": null,
+      "clearance_updated_at": null,
+      "community_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "account_type": null,
+        "id": "user-1",
+        "profile_image_id": "00000000-0000-7000-8000-000000000201",
+        "profile_image_placement": {
+          "image_id": "00000000-0000-7000-8000-000000000201",
+          "placement_id": "00000000-0000-7000-8000-000000000301",
+          "placement_revision": 2
+        },
+        "roles": [],
+        "username": "testuser"
+      },
+      "created_by_id": "user-1",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "70000000-0000-7000-8000-000000005431",
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": "Top-level native comment",
+      "parent_post_id": "70000000-0000-7000-8000-000000005430",
+      "post_type": "comment",
+      "privacy": "public",
+      "root_post_id": "70000000-0000-7000-8000-000000005430",
+      "slug": null,
+      "title": "",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "updated_by_id": null
+    },
+    "70000000-0000-7000-8000-000000005434": {
+      "__entity_type": "post",
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": "everyone",
+      "can_delete": false,
+      "can_edit_content": false,
+      "can_lock": false,
+      "clearance_reason": null,
+      "clearance_status": null,
+      "clearance_updated_at": null,
+      "community_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "account_type": null,
+        "id": "comment-user-2",
+        "profile_image_id": "00000000-0000-7000-8000-000000000202",
+        "profile_image_placement": {
+          "image_id": "00000000-0000-7000-8000-000000000202",
+          "placement_id": "00000000-0000-7000-8000-000000000302",
+          "placement_revision": 3
+        },
+        "roles": [],
+        "username": "commenter"
+      },
+      "created_by_id": "comment-user-2",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "70000000-0000-7000-8000-000000005434",
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": "Nested reply with votes",
+      "parent_post_id": "70000000-0000-7000-8000-000000005431",
+      "post_type": "comment",
+      "privacy": "public",
+      "root_post_id": "70000000-0000-7000-8000-000000005430",
+      "slug": null,
+      "title": "",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "updated_by_id": null
+    }
+  },
+  "posts_metrics": {
+    "70000000-0000-7000-8000-000000005431": {
+      "__entity_type": "post_metrics",
+      "bookmarks": {
+        "follow": 0,
+        "save": 0
+      },
+      "count": {
+        "children": 0,
+        "descendants": 1
+      },
+      "id": "70000000-0000-7000-8000-000000005431",
+      "updated_at": "2026-01-01T00:00:00Z"
+    },
+    "70000000-0000-7000-8000-000000005434": {
+      "__entity_type": "post_metrics",
+      "bookmarks": {
+        "follow": 0,
+        "save": 0
+      },
+      "count": {
+        "children": 0,
+        "descendants": 1
+      },
+      "id": "70000000-0000-7000-8000-000000005434",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  "results": [
+    {
+      "__entity_type": "post",
+      "id": "70000000-0000-7000-8000-000000005431",
+      "ranking": 0,
+      "search_vector_ts": null
+    },
+    {
+      "__entity_type": "post",
+      "id": "70000000-0000-7000-8000-000000005434",
+      "ranking": 0,
+      "search_vector_ts": null
+    }
+  ]
+}

@@ -36,7 +36,7 @@ const moderationNulls = {
 
 export const rootPost = {
   __entity_type: 'post',
-  id: 'comment-root-post',
+  id: '70000000-0000-7000-8000-000000005400',
   slug: 'comment-root',
   post_type: 'discussion',
   title: 'Comment thread fixture',
@@ -66,7 +66,7 @@ export const rootPost = {
 
 export const topLevelComment = {
   __entity_type: 'post',
-  id: 'comment-a',
+  id: '70000000-0000-7000-8000-000000005401',
   slug: null,
   post_type: 'comment',
   title: '',
@@ -96,7 +96,7 @@ export const topLevelComment = {
 
 export const nestedComment = {
   __entity_type: 'post',
-  id: 'comment-b',
+  id: '70000000-0000-7000-8000-000000005402',
   slug: null,
   post_type: 'comment',
   title: '',
@@ -126,7 +126,7 @@ export const nestedComment = {
 
 export const anonymousComment = {
   __entity_type: 'post',
-  id: 'comment-c',
+  id: '70000000-0000-7000-8000-000000005403',
   slug: null,
   post_type: 'comment',
   title: '',
@@ -156,7 +156,7 @@ export const anonymousComment = {
 
 export const deletedComment = {
   __entity_type: 'post',
-  id: 'comment-d',
+  id: '70000000-0000-7000-8000-000000005404',
   slug: null,
   post_type: 'comment',
   title: '',

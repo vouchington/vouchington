@@ -78,6 +78,7 @@ function profilePostFeedBody(
     })),
     page_info: pageInfo,
     posts: Object.fromEntries(sidecars.map(post => [post.id, post])),
+    post_hacker_news_references: {},
     posts_metrics: Object.fromEntries(
       results.map((post, index) => [post.id, completePostMetrics(post.id, index)]),
     ),
