@@ -64,6 +64,20 @@ describe('searchWeb paging', () => {
       expect(page3.page_info.end_cursor).toBeNull()
     })
 
+    it('continues inside the url tier from a url cursor, newest url first', async () => {
+      const token = randomUUID().replace(/-/g, '')
+      const older = await seedUrlOnly(token)
+      const newer = await seedUrlOnly(token)
+
+      const page1 = await searchWeb({ query: token, limit: 1 })
+      expect(page1.results.map(r => r.url.id)).toEqual([newer])
+      expect(page1.page_info.has_next_page).toBe(true)
+
+      const page2 = await searchWeb({ query: token, limit: 1, after: page1.page_info.end_cursor! })
+      expect(page2.results.map(r => r.url.id)).toEqual([older])
+      expect(page2.page_info.has_next_page).toBe(false)
+    })
+
     it('rejects malformed, empty, and foreign-query cursors with 400', async () => {
       const token = randomUUID().replace(/-/g, '')
       await seedMatch(token, 2)
