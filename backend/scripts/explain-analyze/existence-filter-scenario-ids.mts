@@ -25,4 +25,5 @@ export const EXISTENCE_FILTER_SCENARIO_IDS = [
   'moderation-clusters-pending-same-key-before',
   'moderation-cluster-writer-targets',
   'moderation-cluster-writer-hot-edges',
+  'moderation-cluster-writer-ordered-update',
 ] as const
