@@ -27,10 +27,11 @@ async function admitThenAdvance(
   candidates: ParentPathCandidate[],
   options: { candidateLimit: number },
   admit: (candidates: ParentPathCandidate[]) => Promise<void>,
-): Promise<void> {
+): Promise<ParentPathCandidate[]> {
   await admit(candidates)
   const settled = settledBatch(batch, candidates, options.candidateLimit)
   if (settled) await advanceBoilerplateHostnameCursor(settled)
+  return candidates
 }
 
 /**
@@ -48,6 +49,5 @@ export async function sweepNextBoilerplateHostnameBatch(
     batch.hostnameIds,
     options.candidateLimit,
   )
-  await admitThenAdvance(batch, candidates, options, admit)
-  return candidates
+  return admitThenAdvance(batch, candidates, options, admit)
 }
