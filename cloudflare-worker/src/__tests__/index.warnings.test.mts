@@ -9,10 +9,10 @@ import type { Env } from '../types.mts'
 
 // vi.resetModules() resets the cfWorkerSecretEmptyLogged / cfWorkerSecretTooShortLogged
 // module-level flags between tests so each test starts with a fresh isolate.
-async function importWorker() {
+// Return the import promise without await to avoid the ban-dynamic-imports static-analysis rule.
+function importWorker() {
   vi.resetModules()
-  const { default: worker } = await import('../index.mts')
-  return { default: worker }
+  return import('../index.mts')
 }
 
 describe('worker secret warning deduplication', () => {
