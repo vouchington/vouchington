@@ -14,6 +14,7 @@ import {
 import type { ClusterRow, SelectClusterRowsOptions } from './clustered-types.mts'
 import {
   appendCandidateCursorClause,
+  appendClusterHeadPredicate,
   appendClusterWhereClause,
   groupReportsByCluster,
 } from './clustered-utils.mts'
@@ -23,30 +24,21 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
   const { limit, status, sortAsc, beforeCursor, cursorDirection = 'after' } = options
   const querySortAsc = cursorDirection === 'after' ? sortAsc : !sortAsc
   const query = sql`/* listClusteredModerationReports:clusters */
-    WITH candidate_entities AS (
-      SELECT DISTINCT ON (r.entity_type, r.entity_id)
+    WITH paged_entities AS (
+      SELECT
         r.entity_type,
-        r.entity_id,
-        r.created_at AS sort_reported_at
+        r.entity_id
       FROM `
   query.append(moderationReportsWithEntitySql())
   query.append(sql` r
       WHERE `)
   appendModerationReportStatusPredicate(query, 'r', status)
-  query.append(sql`
-      ORDER BY r.entity_type, r.entity_id, `)
-  query.append(sortAsc ? sql`r.id ASC` : sql`r.id DESC`)
-  query.append(sql`
-    ),
-    paged_entities AS (
-      SELECT c.entity_type, c.entity_id
-      FROM candidate_entities c
-      WHERE true`)
+  appendClusterHeadPredicate(query, status, sortAsc)
   if (beforeCursor) appendCandidateCursorClause(query, beforeCursor, sortAsc, cursorDirection)
   query.append(
     querySortAsc
-      ? sql` ORDER BY c.sort_reported_at ASC, c.entity_id ASC, c.entity_type ASC LIMIT ${limit + 1}`
-      : sql` ORDER BY c.sort_reported_at DESC, c.entity_id DESC, c.entity_type DESC LIMIT ${limit + 1}`,
+      ? sql` ORDER BY r.created_at ASC, r.entity_id ASC, r.entity_type ASC LIMIT ${limit + 1}`
+      : sql` ORDER BY r.created_at DESC, r.entity_id DESC, r.entity_type DESC LIMIT ${limit + 1}`,
   )
   query.append(sql`
     ),

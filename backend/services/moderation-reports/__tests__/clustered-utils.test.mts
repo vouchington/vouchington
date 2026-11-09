@@ -70,7 +70,7 @@ describe('clustered moderation report utils', () => {
       true,
     )
 
-    expect(query.text).toContain('(c.sort_reported_at, c.entity_id) >')
+    expect(query.text).toContain('(r.created_at, r.entity_id) >')
   })
 })
 
