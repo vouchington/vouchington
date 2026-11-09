@@ -52,7 +52,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_05 = [
   { key: 'native.dotnet.csharpCommunities.rejectedFirstPosts', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.remove', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.reopen', consumers: ['dotnet'] },
-  { key: 'native.dotnet.csharpCommunities.reportId', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.resolve', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.resolveReport', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.restrictionId', consumers: ['dotnet'] },
