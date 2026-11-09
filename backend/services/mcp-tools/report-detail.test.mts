@@ -9,6 +9,9 @@ import {
 import { callMcpTool } from './call-tool.mts'
 import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
 import { suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers/entities/users'
+import { removeTestUserRole } from '@voucha/test-helpers/entities/user-role-removal'
+import { getMcpAdmissionUser } from './admission-user.mts'
+import { buildMcpContextUser } from './list-tools.mts'
 
 const invoke = (user: Awaited<ReturnType<typeof createTestUser>>, id: string, suspended = false) =>
   callMcpTool(
@@ -20,6 +23,25 @@ const invoke = (user: Awaited<ReturnType<typeof createTestUser>>, id: string, su
   )
 
 describe('moderation report detail MCP tool', () => {
+  it('rechecks a staff role revoked after bearer admission before reading a report', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const admitted = await getMcpAdmissionUser(moderator.id)
+    expect(admitted?.roles).toContain('moderator')
+    if (!admitted) throw new Error('Expected admitted moderator')
+
+    await removeTestUserRole(moderator.id, 'moderator')
+    const result = await callMcpTool(
+      'read_moderation_report',
+      { id: crypto.randomUUID() },
+      buildMcpContextUser(admitted, false),
+      ['moderation:read'],
+      ADMIN_MCP_SERVER_CONFIG,
+    )
+
+    expect(result.isError).toBe(true)
+    expect(result.content).toMatchObject([{ type: 'text', text: expect.stringContaining('403') }])
+  })
+
   it('returns the current persisted judgement, rejects unavailable reports, and permits suspended reads', async () => {
     const author = await createTestUser()
     const reporter = await createTestUser()

@@ -6,6 +6,7 @@ export {
   type McpCallAuditOutcome,
 } from './audit.mts'
 export { authenticateMcpBearer } from './authenticate.mts'
+export { getMcpAdmissionUser } from './admission-user.mts'
 export { buildMcpBearerChallenge } from './challenge.mts'
 export {
   exceedsMcpAuditBatchLimit,

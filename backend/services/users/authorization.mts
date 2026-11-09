@@ -45,16 +45,16 @@ export function currentUserCanAccessDataRequest(
   return currentUser.id === userId
 }
 
-export function isAdminUser(currentUser: BasicUser | null): boolean {
+export function isAdminUser(currentUser: Pick<BasicUser, 'roles'> | null): boolean {
   return currentUser?.roles?.includes('administrator') ?? false
 }
 
-export function isModeratorUser(currentUser: PrivateUser | null): boolean {
+export function isModeratorUser(currentUser: Pick<BasicUser, 'roles'> | null): boolean {
   return currentUser?.roles?.includes('moderator') ?? false
 }
 
 /** Returns true for site administrators and site moderators. */
-export function isModerationStaff(currentUser: PrivateUser | null): boolean {
+export function isModerationStaff(currentUser: Pick<BasicUser, 'roles'> | null): boolean {
   return isAdminUser(currentUser) || isModeratorUser(currentUser)
 }
 

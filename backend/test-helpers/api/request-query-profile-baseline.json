@@ -328,6 +328,7 @@
       "POST /api/v1/communities/:idOrSlug/restrictions",
       "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
       "POST /api/v1/mcp",
+      "POST /api/v1/mcp tools/call create_content_report",
       "POST /api/v1/referral-programs/:id/official-referral-links",
       "POST /api/v1/reports",
       "POST /api/v1/rss-feed-categories/assignments",

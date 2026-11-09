@@ -3,10 +3,11 @@ import {
   isOAuthAccessToken,
   validateOAuthAccessToken,
 } from '@services/oauth-authorization-server/access-tokens'
-import { getPrivateUserByAny, isModerationStaff, type PrivateUser } from '@services/users'
+import { isModerationStaff } from '@services/users'
 import { getLoadedMembershipPlan } from '@services/users/loaded-membership-plan'
 import { hasEveryScope, type ApiScope } from '@modules/scopes'
 import type { McpServerConfig } from './config.mts'
+import { getMcpAdmissionUser, type McpAdmissionUser } from './admission-user.mts'
 
 const BEARER_CREDENTIAL_PATTERN = /^Bearer +([A-Za-z0-9\-._~+/]+=*) *$/i
 
@@ -30,7 +31,7 @@ type McpBearerAuthentication =
   | { status: 'invalid' }
   | (McpVerifiedCredential & {
       status: 'authenticated'
-      owner: PrivateUser
+      owner: McpAdmissionUser
       scopes: ApiScope[]
       // True when suspension permits this credential to reach per-tool authorization.
       suspended: boolean
@@ -50,7 +51,7 @@ export async function authenticateMcpBearer(
   if (!verified) return { status: 'invalid' }
   // Suspension and plan are the authorization decision. The primary read keeps a replica
   // from serving a just-suspended owner or a plan that has already lapsed.
-  const storedOwner = await getPrivateUserByAny(verified.userId, { readOnly: false })
+  const storedOwner = await getMcpAdmissionUser(verified.userId)
   const owner =
     storedOwner &&
     (config.audience === 'admin' || config.audience === 'legal'
@@ -59,7 +60,7 @@ export async function authenticateMcpBearer(
   if (!owner) return { status: 'invalid' }
   // Suspension is decided here for OAuth and API keys, on every request. Access-token validation
   // and refresh rotation do not look at it. A new authorization still rejects a suspended user.
-  const suspended = owner.suspended_at != null
+  const suspended = owner.is_suspended
   const plan = getLoadedMembershipPlan(owner)
   const paying = plan === 'plus' || plan === 'pro'
   const canReadMessages = hasEveryScope(verified.scopes, ['messages:read'])

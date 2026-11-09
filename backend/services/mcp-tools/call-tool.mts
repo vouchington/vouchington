@@ -1,6 +1,6 @@
 import { McpError, ErrorCode, type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import onError from '@modules/on-error'
-import { runWithRequestContext, setRequestCurrentUser } from '@modules/utils/request-context'
+import { runWithRequestContext } from '@modules/utils/request-context'
 import createHttpError, { isHttpError } from 'http-errors'
 import {
   CONFLICT,
@@ -22,7 +22,7 @@ import {
   EMAIL_VERIFICATION_REQUIRED,
   FEED_NOT_DISCOVERABLE,
 } from '@modules/on-error/error-codes'
-import type { BasicUser, PrivateUser } from '@services/users/types'
+import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
 import type { ApiScope } from '@modules/scopes'
 import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
@@ -53,7 +53,6 @@ export async function callMcpTool(
     onRateLimited: () => Promise<void>
     onInvoked?: (durationMs: number) => void
   },
-  authenticatedOwner?: PrivateUser,
 ): Promise<CallToolResult> {
   const resolution = resolveMcpToolCall(
     toolName,
@@ -79,11 +78,9 @@ export async function callMcpTool(
     const started = performance.now()
     let result: unknown
     try {
-      result = await runWithRequestContext(() => {
-        // Each call has its own store; carry only the verified owner into that store.
-        if (authenticatedOwner) setRequestCurrentUser(authenticatedOwner)
-        return tool.function(user)(args as never, invocationContext)
-      })
+      result = await runWithRequestContext(() =>
+        tool.function(user)(args as never, invocationContext),
+      )
     } finally {
       rateLimitContext?.onInvoked?.(Math.round(performance.now() - started))
     }

@@ -19,6 +19,7 @@ import { STORY_SCENARIO_IDS } from './story-scenario-ids.mts'
 import { TOP_URL_RANKING_SCENARIO_IDS } from './top-url-ranking-scenario-ids.mts'
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...MODERATION_REPORT_DETAIL_SCENARIO_IDS,
+  'mcp-admission-user',
   ...VOTE_SCORE_SCENARIO_IDS,
   ...VIEW_DRIVEN_SCENARIO_IDS,
   ...BOUNDED_WORK_SCENARIOS,

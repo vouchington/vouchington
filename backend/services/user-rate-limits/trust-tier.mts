@@ -2,6 +2,20 @@ import { getDateFromUUIDv7 } from '@modules/utils/ids'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TrustTierContext } from './types.mts'
 
+type OAuthAccountField =
+  | 'facebook_account'
+  | 'apple_account'
+  | 'google_account'
+  | 'x_account'
+  | 'linkedin_account'
+  | 'microsoft_account'
+  | 'github_account'
+
+export type TrustTierUser = Pick<
+  PrivateUser,
+  'id' | 'roles' | 'verification_status' | 'bad_faith_reporter_at'
+> & { [K in OAuthAccountField]?: PrivateUser[K] | boolean }
+
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
 const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000
@@ -10,7 +24,7 @@ const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000
 // Penalty applied when a confirmed bad-faith reporter penalty is active.
 const BAD_FAITH_REPORTER_PENALTY = 2
 
-export function hasOAuthAccount(user: PrivateUser): boolean {
+export function hasOAuthAccount(user: TrustTierUser): boolean {
   return !!(
     user.facebook_account ||
     user.apple_account ||
@@ -22,7 +36,7 @@ export function hasOAuthAccount(user: PrivateUser): boolean {
   )
 }
 
-export function getAccountAgeMs(user: PrivateUser): number {
+export function getAccountAgeMs(user: TrustTierUser): number {
   const createdAt = getDateFromUUIDv7(user.id)
   // Non-UUIDv7 IDs (e.g. seeded test fixtures with all-zero UUIDs) carry no
   // timestamp. Treat them as ancient accounts so age gates do not block them.
@@ -30,7 +44,7 @@ export function getAccountAgeMs(user: PrivateUser): number {
   return Date.now() - createdAt.getTime()
 }
 
-export function computeTrustTier(user: PrivateUser, context: TrustTierContext): number {
+export function computeTrustTier(user: TrustTierUser, context: TrustTierContext): number {
   if (user.roles.includes('administrator')) return 5
   if (getAccountAgeMs(user) < TWENTY_FOUR_HOURS_MS) return 0
 

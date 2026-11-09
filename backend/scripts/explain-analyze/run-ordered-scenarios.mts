@@ -1,6 +1,7 @@
 import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
 import { runReferralValidationPages } from './run-scenarios/referral-program-validation-pages.mts'
 import { runModerationReportDetailScenarios } from './run-scenarios/moderation-report-detail.mts'
+import { runMcpAdmissionScenario } from './run-scenarios/mcp-admission.mts'
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
@@ -137,6 +138,7 @@ export async function runScenariosBeforePartition(): Promise<void> {
   await runStep(runDispatchWorkPlanScenarios.name, runDispatchWorkPlanScenarios)
   await runStep(runModerationReportContextScenarios.name, runModerationReportContextScenarios)
   await runStep(runModerationReportDetailScenarios.name, runModerationReportDetailScenarios)
+  await runStep(runMcpAdmissionScenario.name, runMcpAdmissionScenario)
   await runStep(runRssFeedStateChangeScenarios.name, runRssFeedStateChangeScenarios)
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
   await runStep(seedVoteWeightDispatch.name, seedVoteWeightDispatch)

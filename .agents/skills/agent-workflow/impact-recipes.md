@@ -87,7 +87,7 @@ Run the MCP boundary and ingress suites so a new tool or changed authority reach
 consumers and the actual OAuth, suspension, and HTTP admission boundaries.
 
 ```sh
-pnpm exec vitest run --project backend-data-stores backend/services/mcp-tools backend/api/v1/mcp
+pnpm exec vitest run --project backend-data-stores backend/services/mcp-tools backend/api/v1/mcp backend/api/v1/admin/mcp backend/api/v1/brand/mcp
 ```
 
 ## Native API Parity
