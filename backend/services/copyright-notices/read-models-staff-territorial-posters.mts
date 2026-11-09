@@ -58,7 +58,6 @@ export async function selectTerritorialStaffPosters(
     WHERE target.copyright_notice_id = ${decision.noticeId}
       AND target.id = ANY(${targetIds}::uuid[])
     ORDER BY target.id, party.user_id`)
-  // no-mistakes-disable-next-line postgres-bounded-statements: The placement roots are reached only through the page's targets, which `target.id = ANY(targetIds)` limits to at most `options.limit` ids of one notice. `image_placements` and `image_surface_placements` are keyed by `placement_id` and activations by `(placement_id, placement_revision)`, and the community owner arm is off for `notify`, so each target adds at most a few rows.
   const { rows } = await query<{ target_id: string; user_id: string | null }>(partiesSql)
   const delivery = await selectTerritorialPosterDelivery(
     decision.noticeId,
