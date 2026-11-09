@@ -14870,7 +14870,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "community_prompt_cursor": {
@@ -14903,7 +14903,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "has_flagged_community_prompt": {
@@ -14915,6 +14915,17 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 9,
+          "type": "boolean"
+        },
+        "has_new_community_prompt_decision": {
+          "collation": null,
+          "comment": "Whether this traversal completed a newly evaluated community prompt decision; replayed receipts do not set it.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
           "type": "boolean"
         },
         "id": {
@@ -14947,7 +14958,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "post_id": {
@@ -14991,7 +15002,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "stale_at": {
@@ -15002,7 +15013,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -15013,7 +15024,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         }
       },

@@ -15866,7 +15866,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "community_prompt_cursor": {
           "comment": "Activation-order position after the last completed candidate page for this post request.",
@@ -15896,7 +15896,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "has_flagged_community_prompt": {
           "comment": "Whether a completed page in this community prompt traversal flagged the post.",
@@ -15907,6 +15907,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 9
+        },
+        "has_new_community_prompt_decision": {
+          "comment": "Whether this traversal completed a newly evaluated community prompt decision; replayed receipts do not set it.",
+          "dataType": "boolean",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10
         },
         "id": {
           "comment": null,
@@ -15936,7 +15946,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "post_id": {
           "comment": "Retained post identity in the request deduplication key; deleting the live post does not erase it or authorize replay.",
@@ -15976,7 +15986,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "stale_at": {
           "comment": "Time the request was superseded by a newer content version of the same subject.",
@@ -15986,7 +15996,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "updated_at": {
           "comment": null,
@@ -15996,7 +16006,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         }
       },
       "comment": "Durable per-subject request for a classifier run, written in the same transaction as the fact that makes a subject eligible so the sweep can recover a subject that never got a run receipt; independent of classifier configuration.",
