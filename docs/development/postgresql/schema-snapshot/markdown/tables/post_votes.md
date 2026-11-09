@@ -52,7 +52,6 @@ _none_
 - `idx_post_votes__retention_delivered_id`: `CREATE INDEX idx_post_votes__retention_delivered_id ON ONLY public.post_votes USING btree (id) WHERE ((ballot_retention_deferred_at IS NOT NULL) AND (outbound_activitypub_distributed_at IS NOT NULL))`
 - `idx_post_votes__retention_ordinary_actor`: `CREATE INDEX idx_post_votes__retention_ordinary_actor ON ONLY public.post_votes USING btree (post_id, user_id, id) WHERE (ballot_retention_deferred_at IS NULL)`
 - `idx_post_votes__user_agent__id`: `CREATE INDEX idx_post_votes__user_agent__id ON ONLY public.post_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
-- `idx_post_votes__user_id__id`: `CREATE INDEX idx_post_votes__user_id__id ON ONLY public.post_votes USING btree (user_id, id DESC) INCLUDE (post_id, score)`
 - `idx_post_votes__user_id__post_id__id`: `CREATE INDEX idx_post_votes__user_id__post_id__id ON ONLY public.post_votes USING btree (user_id, post_id, id DESC)`
 - `post_votes_pkey`: `CREATE UNIQUE INDEX post_votes_pkey ON ONLY public.post_votes USING btree (post_id, id)`
 

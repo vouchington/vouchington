@@ -36,6 +36,7 @@ _none_
 
 **Indexes:**
 
+- `idx_post_vote_states__user_id_id_post_id_score`: `CREATE INDEX idx_post_vote_states__user_id_id_post_id_score ON public.post_vote_states USING btree (user_id, id DESC) INCLUDE (post_id, score)`
 - `idx_post_vote_states__user_id_post_id`: `CREATE INDEX idx_post_vote_states__user_id_post_id ON public.post_vote_states USING btree (user_id, post_id)`
 - `post_vote_states_pkey`: `CREATE UNIQUE INDEX post_vote_states_pkey ON public.post_vote_states USING btree (post_id, user_id)`
 
