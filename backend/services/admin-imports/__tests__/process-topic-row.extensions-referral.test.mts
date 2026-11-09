@@ -7,6 +7,7 @@ import { getTopicParents } from '@services/topics/hierarchy'
 import { getReferralProgramAttributes } from '@services/topics/referral-programs'
 import { getReferralLinkValidationBySlug } from '@services/referral-program-link-validations/validations'
 import { getReferralLinkValidationRules } from '@services/referral-program-link-validations/rules/get'
+import { listReferralLinkValidationsForProgram } from '@services/referral-program-link-validations/list'
 import { createImportBatch } from '../create-batch.mts'
 import { processTopicRow } from '../process-topic-row.mts'
 import { getTopicByAny } from '@services/topics/get'
@@ -224,7 +225,9 @@ describe('process-topic-row (extensions and referral)', () => {
     expect(attrs).not.toBeNull()
     expect(attrs!.enabled_at).not.toBeNull()
     expect(attrs!.company_topic_id).not.toBeNull()
-    expect(attrs!.referral_program_link_validation_ids).toHaveLength(1)
+    expect(
+      (await listReferralLinkValidationsForProgram(topicId, { limit: 2 })).results,
+    ).toHaveLength(1)
 
     const validation = await getReferralLinkValidationBySlug(validationSlug)
     expect(validation).not.toBeNull()
@@ -261,7 +264,9 @@ describe('process-topic-row (extensions and referral)', () => {
     const attrs = await getReferralProgramAttributes(topic!)
     expect(attrs).not.toBeNull()
     // Only one validation should be linked even after two runs
-    expect(attrs!.referral_program_link_validation_ids).toHaveLength(1)
+    expect(
+      (await listReferralLinkValidationsForProgram(topicId1, { limit: 2 })).results,
+    ).toHaveLength(1)
 
     // Only one rule should exist even after two runs
     const validation = await getReferralLinkValidationBySlug(validationSlug)

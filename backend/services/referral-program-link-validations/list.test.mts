@@ -1,4 +1,5 @@
 import { it, beforeAll, describe } from 'vitest'
+import { encodeCursor } from '@modules/pagination'
 import assert from 'node:assert/strict'
 import {
   createTestUser,
@@ -17,7 +18,7 @@ describe('listReferralLinkValidationsForProgram', () => {
     adminUser = await createTestUser({ administrator: true })
   })
 
-  it('returns validations linked to the program, ordered by slug', async () => {
+  it('returns validations linked to the program, ordered by newest ID', async () => {
     const suffix = Math.random().toString(36).slice(7)
 
     const programId = await insertTestTopic({
@@ -38,16 +39,14 @@ describe('listReferralLinkValidationsForProgram', () => {
     await assignValidationToReferralProgram(programId, v1Id)
     await assignValidationToReferralProgram(programId, v2Id)
 
-    const results = await listReferralLinkValidationsForProgram(programId)
+    const { results } = await listReferralLinkValidationsForProgram(programId)
 
     const ids = results.map(v => v.id)
     assert.ok(ids.includes(v1Id), 'v1 should be present')
     assert.ok(ids.includes(v2Id), 'v2 should be present')
     assert.equal(ids.length, 2, 'should return exactly 2 validations')
 
-    // Results should be ordered by slug ASC
-    const slugs = results.map(v => v.slug)
-    assert.deepEqual(slugs, [...slugs].toSorted(), 'results should be ordered by slug ASC')
+    assert.deepEqual(ids, [...ids].toSorted().toReversed())
   })
 
   it('returns empty array for a program with no linked validations', async () => {
@@ -61,8 +60,62 @@ describe('listReferralLinkValidationsForProgram', () => {
     })
     await enableReferralProgramByTopicId(programId)
 
-    const results = await listReferralLinkValidationsForProgram(programId)
-    assert.deepEqual(results, [])
+    const page = await listReferralLinkValidationsForProgram(programId)
+    assert.deepEqual(page.results, [])
+    assert.equal(page.page_info.has_next_page, false)
+    assert.equal(page.page_info.end_cursor, null)
+  })
+
+  it('returns one keyset page and continues after the last ID', async () => {
+    const suffix = Math.random().toString(36).slice(7)
+    const programId = await insertTestTopic({
+      name: `Paged Referral Program ${suffix}`,
+      slug: `paged-referral-program-${suffix}`,
+      createdById: adminUser!.id,
+      topicType: 'referral_program',
+    })
+    await enableReferralProgramByTopicId(programId)
+
+    const firstId = await createReferralProgramLinkValidation(`aaa_page_${suffix}`, 'Help 1')
+    const secondId = await createReferralProgramLinkValidation(`bbb_page_${suffix}`, 'Help 2')
+    const thirdId = await createReferralProgramLinkValidation(`ccc_page_${suffix}`, 'Help 3')
+    await assignValidationToReferralProgram(programId, firstId)
+    await assignValidationToReferralProgram(programId, secondId)
+    await assignValidationToReferralProgram(programId, thirdId)
+
+    const expected = [firstId, secondId, thirdId].toSorted().toReversed()
+    const page = await listReferralLinkValidationsForProgram(programId, { limit: 2 })
+    assert.deepEqual(
+      page.results.map(row => row.id),
+      expected.slice(0, 2),
+    )
+    assert.equal(page.page_info.has_next_page, true)
+
+    const next = await listReferralLinkValidationsForProgram(programId, {
+      limit: 2,
+      after: page.page_info.end_cursor ?? undefined,
+    })
+    assert.deepEqual(
+      next.results.map(row => row.id),
+      expected.slice(2),
+    )
+    assert.equal(next.page_info.has_next_page, false)
+  })
+
+  it('rejects the former name cursor for program pages', async () => {
+    const programId = await insertTestTopic({
+      name: `Cursor program ${Math.random()}`,
+      slug: `cursor-program-${Math.random().toString(36).slice(2)}`,
+      createdById: adminUser!.id,
+      topicType: 'referral_program',
+    })
+    await assert.rejects(
+      () =>
+        listReferralLinkValidationsForProgram(programId, {
+          after: encodeCursor({ name: 'old', id: programId }),
+        }),
+      /Invalid cursor/,
+    )
   })
 
   it('throws 422 for an invalid UUID', async () => {

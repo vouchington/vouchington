@@ -1,3 +1,4 @@
+import { encodeCursor } from '@modules/pagination'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { expect, it, describe } from 'vitest'
 import searchTopicsTool from './search-topics.mts'
@@ -50,5 +51,29 @@ describe('search-topics', () => {
     expect(defaulted.page_info.has_next_page).toBe(true)
     expect(oversized.topics).toHaveLength(30)
     expect(oversized.page_info.has_next_page).toBe(false)
+  })
+
+  it('rejects link-count filters even when a similar item does not resolve', async () => {
+    await expect(
+      searchPage({ sort: 'link_count', similar_post_id: `missing-${crypto.randomUUID()}` }),
+    ).rejects.toMatchObject({ status: 400 })
+    await expect(
+      searchPage({ sort: 'link_count', q: `#missing-${crypto.randomUUID()}` }),
+    ).rejects.toMatchObject({ status: 400 })
+    const after = encodeCursor({ score: 1, id: 'ffffffff-ffff-7fff-bfff-ffffffffffff' })
+    await expect(searchPage({ sort: 'link_count', q: 'cards', after })).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining('does not combine'),
+    })
+  })
+
+  it('returns an invalid cursor result for an out-of-range link count', async () => {
+    const after = encodeCursor({
+      score: Number.MAX_SAFE_INTEGER + 1,
+      id: 'ffffffff-ffff-7fff-bfff-ffffffffffff',
+    })
+    await expect(
+      searchTopicsTool.function(null as never)({ sort: 'link_count', after }),
+    ).resolves.toEqual({ success: false, error: 'Invalid cursor' })
   })
 })

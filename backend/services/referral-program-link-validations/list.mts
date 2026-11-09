@@ -4,7 +4,8 @@ import assert from 'http-assert'
 import { validateUUID } from '@modules/utils'
 import { escapeLikePattern } from '@services/topics/search/query-builder-utils'
 import type { PageInfo } from '@voucha/types/pagination'
-import { decodeUuidCursor, encodeCursor, isNameCursor } from '@modules/pagination'
+import { decodeUuidCursor, encodeCursor, isNameCursor, isSimpleCursor } from '@modules/pagination'
+import { clampLimit } from '@services/pagination'
 import type { ReferralLinkValidation } from './validations.mts'
 
 export async function listReferralLinkValidations(
@@ -86,21 +87,65 @@ export async function listReferralLinkValidations(
   }
 }
 
+export const PROGRAM_VALIDATION_HYDRATION_LIMIT = 1
+
 export async function listReferralLinkValidationsForProgram(
   referralProgramId: string,
-  options?: QueryOptions,
-): Promise<ReferralLinkValidation[]> {
+  options?: QueryOptions & {
+    limit?: number
+    after?: string
+  },
+): Promise<{
+  results: ReferralLinkValidation[]
+  page_info: PageInfo
+}> {
   validateUUID(referralProgramId)
-  const { rows } = await read<ReferralLinkValidation>(
-    sql`/* listReferralLinkValidationsForProgram */
+  const limit = clampLimit(options?.limit, 50)
+  const cursorId = options?.after
+    ? decodeUuidCursor(options.after, isSimpleCursor, 'Invalid cursor format: expected UUID cursor')
+        .id
+    : undefined
+  const { limit: _limit, after: _after, ...queryOptions } = options ?? {}
+
+  // The junction primary key supplies the scoped descending walk before hydration.
+  const query = sql`/* listReferralLinkValidationsForProgram */
+    WITH page AS MATERIALIZED (
+      SELECT referral_program_link_validation_rule_set_id AS id
+      FROM referral_program_topic_link_validation_rule_sets
+      WHERE referral_program_topic_id = ${referralProgramId}`
+  if (cursorId !== undefined) {
+    query.append(sql` AND referral_program_link_validation_rule_set_id < ${cursorId}::uuid`)
+  }
+  query.append(sql`
+      ORDER BY referral_program_link_validation_rule_set_id DESC
+      LIMIT ${limit + 1}
+    )
+    SELECT validation.id, validation.slug, validation.user_help_text, validation.updated_at
+    FROM page
+    CROSS JOIN LATERAL (
       SELECT v.id, v.slug, v.user_help_text, v.updated_at
       FROM referral_program_link_validation_rule_sets v
-      JOIN referral_program_topic_link_validation_rule_sets j
-        ON j.referral_program_link_validation_rule_set_id = v.id
-      WHERE j.referral_program_topic_id = ${referralProgramId}
-      ORDER BY v.slug ASC, v.id ASC
-    `,
-    options,
-  )
-  return rows
+      WHERE v.id = page.id
+      LIMIT ${PROGRAM_VALIDATION_HYDRATION_LIMIT}
+    ) validation
+    ORDER BY page.id DESC
+  `)
+
+  const { rows } = await read<ReferralLinkValidation>(query, queryOptions)
+  const hasNextPage = rows.length > limit
+  const results: typeof rows = []
+  const itemCount = Math.min(rows.length, limit)
+  for (let i = 0; i < itemCount; i++) {
+    results.push(rows[i]!)
+  }
+
+  return {
+    results,
+    page_info: {
+      has_next_page: hasNextPage,
+      end_cursor:
+        hasNextPage && results.length > 0 ? encodeCursor({ id: results.at(-1)!.id }) : null,
+      start_cursor: results.length > 0 ? encodeCursor({ id: results[0].id }) : null,
+    },
+  }
 }

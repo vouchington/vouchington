@@ -16,6 +16,8 @@ export function ReferralValidationsSettings({
   referralProgramId,
   linkedValidations,
   validationsBasePath,
+  previousHref,
+  nextHref,
 }: ReferralValidationsSettingsProps) {
   const t = useTranslations()
   return (
@@ -23,6 +25,8 @@ export function ReferralValidationsSettings({
       referralProgramId={referralProgramId}
       linkedValidations={linkedValidations}
       validationsBasePath={validationsBasePath}
+      previousHref={previousHref}
+      nextHref={nextHref}
       labels={referralValidationsSettingsLabels(t)}
     />
   )

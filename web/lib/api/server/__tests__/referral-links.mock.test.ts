@@ -32,6 +32,7 @@ import {
   getOfficialReferralLinks,
   getReferralProgramValidationInfo,
   getReferralProgramValidations,
+  getReferralProgramLinkedValidation,
 } from '../referral-links'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 
@@ -148,8 +149,53 @@ describe('referral-links server api helpers', () => {
 
       const result = await getReferralProgramValidations('program-1')
 
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/program-1/referral-program/validations')
+      expect(mockGet).toHaveBeenCalledWith(
+        '/api/v1/topics/program-1/referral-program/validations',
+        { searchParams: { limit: 100 } },
+      )
       expect(result).toEqual({ results })
+    })
+
+    it('passes the cursor when a later page is requested', async () => {
+      mockGet.mockResolvedValueOnce({
+        results: [],
+        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+      })
+
+      await getReferralProgramValidations('program-1', 'cursor-1')
+
+      expect(mockGet).toHaveBeenCalledWith(
+        '/api/v1/topics/program-1/referral-program/validations',
+        { searchParams: { limit: 100, after: 'cursor-1' } },
+      )
+    })
+
+    it('reads one linked validation by its resolved id', async () => {
+      const validation = {
+        id: 'val-2',
+        slug: 'amex',
+        user_help_text: '',
+        updated_at: '2026-01-02',
+      }
+      mockGet.mockResolvedValueOnce({ validation })
+
+      await expect(getReferralProgramLinkedValidation('program-1', 'val-2')).resolves.toEqual(
+        validation,
+      )
+      expect(mockGet).toHaveBeenCalledWith(
+        '/api/v1/topics/program-1/referral-program/validations/val-2',
+      )
+      expect(mockGet).toHaveBeenCalledTimes(1)
+    })
+
+    it('returns null for an unlinked validation', async () => {
+      mockGet.mockResolvedValueOnce({ validation: null })
+      mockReturnNullForMissingEntity.mockResolvedValueOnce(null)
+
+      await expect(getReferralProgramLinkedValidation('program-1', 'missing')).resolves.toBeNull()
+      expect(mockGet).toHaveBeenCalledWith(
+        '/api/v1/topics/program-1/referral-program/validations/missing',
+      )
     })
 
     it('returns empty results when no validations are linked', async () => {

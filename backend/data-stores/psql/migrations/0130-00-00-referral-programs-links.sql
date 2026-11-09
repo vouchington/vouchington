@@ -238,7 +238,7 @@ ON referral_program_topic_link_validation_rule_sets (referral_program_topic_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_referral_program_topic_link_validation_rule_sets__rule_set
-ON referral_program_topic_link_validation_rule_sets (referral_program_link_validation_rule_set_id);
+ON referral_program_topic_link_validation_rule_sets (referral_program_link_validation_rule_set_id, referral_program_topic_id);
 
 COMMENT ON TABLE referral_program_topic_link_validation_rule_sets IS 'Join table linking referral programs to their URL validation rule sets.';
 COMMENT ON COLUMN referral_program_topic_link_validation_rule_sets.referral_program_topic_id IS 'The referral program (topic).';

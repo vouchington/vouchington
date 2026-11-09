@@ -58,10 +58,12 @@ BEGIN
       END IF;
     END LOOP;
     -- Missing identities remain the foreign key constraint's responsibility.
-    IF referenced_topic_id IS NOT NULL AND EXISTS (
-      SELECT 1 FROM topics WHERE id = referenced_topic_id
-        AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)
-    ) THEN
+    -- Re-enabling a deleted or merged program must not reuse its unchanged topic id.
+    IF referenced_topic_id IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM topics WHERE id = referenced_topic_id
+          AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)
+      ) THEN
       RAISE EXCEPTION USING ERRCODE = 'V0409',
         MESSAGE = 'Topic reference must identify an active topic',
         DETAIL = json_build_object('code', 'topic_reference_inactive', 'topic_id', referenced_topic_id)::TEXT;
@@ -192,7 +194,7 @@ BEGIN
       'CREATE OR REPLACE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OR DELETE ON %s FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references(%s)',
       reference_table.qualified_name, reference_table.column_arguments
     );
-    -- Current reference mutations serialize with merge capture and reject inactive targets.
+    -- Current reference changes serialize with merge capture and reject a new inactive target.
   END LOOP;
 END;
 $$;

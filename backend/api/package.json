@@ -211,7 +211,6 @@
     "@services/topics": "workspace:^",
     "@services/totp": "workspace:^",
     "@services/trending-posts": "workspace:^",
-    "@services/trending-referral-programs": "workspace:^",
     "@services/trending-topics": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",

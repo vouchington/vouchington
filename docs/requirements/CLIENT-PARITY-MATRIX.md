@@ -70,6 +70,14 @@ Web,
 Swift, and .NET have no consumers of this administrative endpoint, and no staff membership MCP tool
 exists for it. The vouchington-clients screen is a follow-up. This adds no native UI parity claim.
 
+## Referral validation management
+
+Program-scoped validation management is a web administration surface. Its list uses
+creation-order keyset pages, and its detail view reads a single program/validation binding.
+Swift and .NET have no corresponding management surface in the parity matrix, so these
+administrative reads add no native UI parity claim. Public referral-program topic reads
+remain part of the existing referral-program client feature.
+
 ## Notification mark-all continuation
 
 REST and MCP mark one bounded page, return the immediate `marked_read` count and `has_more`, and

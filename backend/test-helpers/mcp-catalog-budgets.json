@@ -6,17 +6,17 @@
       "all": {
         "on": {
           "count": 78,
-          "list": 265000,
-          "core": 112000,
-          "output": 248000
+          "list": 263000,
+          "core": 111000,
+          "output": 246000
         }
       },
       "Reader": {
         "on": {
           "count": 9,
           "list": 61000,
-          "core": 26000,
-          "output": 58000
+          "core": 25000,
+          "output": 56000
         }
       },
       "Plus": {

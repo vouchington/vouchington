@@ -8,6 +8,7 @@ const {
   mockGet,
   mockGetTopic,
   mockGetReferralProgramValidations,
+  mockGetReferralProgramLinkedValidation,
   mockNotFound,
   mockPermanentRedirect,
   mockRequireAdmin,
@@ -15,6 +16,7 @@ const {
   mockGet: vi.fn<VitestLooseMock>(),
   mockGetTopic: vi.fn<VitestLooseMock>(),
   mockGetReferralProgramValidations: vi.fn<VitestLooseMock>(),
+  mockGetReferralProgramLinkedValidation: vi.fn<VitestLooseMock>(),
   mockNotFound: vi.fn<VitestLooseMock>(() => {
     throw new Error('NEXT_NOT_FOUND')
   }),
@@ -31,6 +33,7 @@ vi.mock(
       serverApi: { get: mockGet },
       getTopic: mockGetTopic,
       getReferralProgramValidations: mockGetReferralProgramValidations,
+      getReferralProgramLinkedValidation: mockGetReferralProgramLinkedValidation,
     }) as unknown as typeof import('@/lib/api/server'),
 )
 vi.mock(
@@ -134,7 +137,11 @@ describe('referral-validation-factories', () => {
     mockGet.mockReset() // clear queued one-time responses so prior tests don't bleed into next
     mockRequireAdmin.mockResolvedValue({ id: 'admin', roles: ['administrator'] })
     mockGetTopic.mockResolvedValue({ topic: program })
-    mockGetReferralProgramValidations.mockResolvedValue({ results: [] })
+    mockGetReferralProgramValidations.mockResolvedValue({
+      results: [],
+      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+    })
+    mockGetReferralProgramLinkedValidation.mockResolvedValue(null)
   })
 
   describe('list page', () => {
@@ -147,7 +154,7 @@ describe('referral-validation-factories', () => {
     it('calls getReferralProgramValidations with the program UUID (not slug)', async () => {
       const { default: Page } = createReferralProgramValidationsListPage()
       await Page({ params: Promise.resolve({ id: 'amex-rp' }) })
-      expect(mockGetReferralProgramValidations).toHaveBeenCalledWith('rp-uuid')
+      expect(mockGetReferralProgramValidations).toHaveBeenCalledWith('rp-uuid', undefined)
     })
 
     it('calls notFound when the topic is not a referral program', async () => {
@@ -218,26 +225,24 @@ describe('referral-validation-factories', () => {
     }
 
     it('renders the validation edit form and rules table', async () => {
-      mockGetReferralProgramValidations.mockResolvedValue({ results: [validation] })
-      mockGet.mockResolvedValueOnce({ validation }).mockResolvedValueOnce({ results: [] })
+      mockGetReferralProgramLinkedValidation.mockResolvedValue(validation)
+      mockGet.mockResolvedValueOnce({ results: [] })
       const { default: Page } = createReferralProgramValidationDetailPage()
       render(await Page({ params: Promise.resolve({ id: 'amex-rp', validationId: 'val-1' }) }))
       expect(screen.getByTestId('existing-slug')).toHaveTextContent('chase')
       expect(screen.getByTestId('rules-table-val-1')).toBeInTheDocument()
     })
 
-    it('calls notFound when the validation is missing globally', async () => {
-      mockGet.mockResolvedValueOnce(null)
+    it('calls notFound when the keyed validation is missing', async () => {
       const { default: Page } = createReferralProgramValidationDetailPage()
       await expect(
         Page({ params: Promise.resolve({ id: 'amex-rp', validationId: 'missing' }) }),
       ).rejects.toThrow('NEXT_NOT_FOUND')
+      expect(mockGetReferralProgramLinkedValidation).toHaveBeenCalledWith('rp-uuid', 'missing')
+      expect(mockGet).not.toHaveBeenCalled()
     })
 
     it('calls notFound when the validation is not linked to this program', async () => {
-      // The validation exists globally but is not in this program's linked list
-      mockGet.mockResolvedValueOnce({ validation }).mockResolvedValueOnce({ results: [] })
-      // mockGetReferralProgramValidations already returns { results: [] } from beforeEach
       const { default: Page } = createReferralProgramValidationDetailPage()
       await expect(
         Page({ params: Promise.resolve({ id: 'amex-rp', validationId: 'val-1' }) }),
@@ -245,7 +250,6 @@ describe('referral-validation-factories', () => {
     })
 
     it('does not redirect a validation UUID linked to another program', async () => {
-      mockGet.mockResolvedValueOnce({ validation })
       const { default: Page } = createReferralProgramValidationDetailPage()
       await expect(
         Page({ params: Promise.resolve({ id: programUuid, validationId: validationUuid }) }),
@@ -253,14 +257,12 @@ describe('referral-validation-factories', () => {
       expect(mockPermanentRedirect).not.toHaveBeenCalled()
     })
 
-    it('renders when accessed by slug and validation is linked (compares resolved UUID)', async () => {
-      // validationId in URL is the slug 'chase', but the API resolves it to id 'val-1'.
-      // The guard must compare the resolved validation.id (not the raw slug) against the
-      // program's linked validation IDs; otherwise slug-based URLs always notFound().
-      mockGetReferralProgramValidations.mockResolvedValue({ results: [validation] })
-      mockGet.mockResolvedValueOnce({ validation }).mockResolvedValueOnce({ results: [] })
+    it('renders when accessed by slug and validation is linked', async () => {
+      mockGetReferralProgramLinkedValidation.mockResolvedValue(validation)
+      mockGet.mockResolvedValueOnce({ results: [] })
       const { default: Page } = createReferralProgramValidationDetailPage()
       render(await Page({ params: Promise.resolve({ id: 'amex-rp', validationId: 'chase' }) }))
+      expect(mockGetReferralProgramLinkedValidation).toHaveBeenCalledWith('rp-uuid', 'chase')
       expect(screen.getByTestId('existing-slug')).toHaveTextContent('chase')
     })
 
@@ -271,8 +273,7 @@ describe('referral-validation-factories', () => {
     ])(
       'redirects UUID segments only after linked validation resolution',
       async (id, validationId) => {
-        mockGetReferralProgramValidations.mockResolvedValue({ results: [validation] })
-        mockGet.mockResolvedValueOnce({ validation })
+        mockGetReferralProgramLinkedValidation.mockResolvedValue(validation)
         const { default: Page } = createReferralProgramValidationDetailPage()
         await expect(Page({ params: Promise.resolve({ id, validationId }) })).rejects.toThrow(
           'NEXT_PERMANENT_REDIRECT',

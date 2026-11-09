@@ -16,6 +16,7 @@ import { ReferralValidationsSettings } from '@/components/topics/settings/referr
 
 interface AdminSubPageProps {
   params: Promise<{ id: string }>
+  searchParams?: Promise<{ after?: string | string[] }>
 }
 
 export function createTopicSettingsValidationsPage() {
@@ -23,7 +24,7 @@ export function createTopicSettingsValidationsPage() {
     return createNoIndexMetadata('Referral Program Settings - Validations')
   }
 
-  async function TopicSettingsValidationsRoutePage({ params }: AdminSubPageProps) {
+  async function TopicSettingsValidationsRoutePage({ params, searchParams }: AdminSubPageProps) {
     await requireAdmin()
 
     const { id } = await params
@@ -33,41 +34,33 @@ export function createTopicSettingsValidationsPage() {
 
     // Use the canonical UUID (not the URL slug) for API calls that require UUID
     const topicId = topicData.topic.id
+    const rawAfter = (await searchParams)?.after
+    const after = Array.isArray(rawAfter) ? rawAfter[0] : rawAfter
+    const settingsPath = createTopicPathname(topicData.topic, '/settings/validations')
 
-    interface ReferralProgramAttributes {
-      referral_program_link_validation_ids: string[]
-    }
-
-    const attributesData = await returnNullForMissingEntity(
-      serverApi.get<{ referral_program_attributes: ReferralProgramAttributes }>(
-        `/api/v1/topics/${topicId}/referral-program`,
-      ),
+    const validationsData = await returnNullForMissingEntity(
+      serverApi.get<{
+        results: ReferralLinkValidation[]
+        page_info?: { has_next_page: boolean; end_cursor: string | null }
+      }>(`/api/v1/topics/${topicId}/referral-program/validations`, {
+        searchParams: after ? { limit: 100, after } : { limit: 100 },
+      }),
     )
-    if (!attributesData) notFound()
+    if (!validationsData) notFound()
 
-    const linkedIds =
-      attributesData.referral_program_attributes.referral_program_link_validation_ids ?? []
-
-    const linkedValidations = (
-      await Promise.all(
-        linkedIds.map(vid =>
-          returnNullForMissingEntity(
-            serverApi
-              .get<{ validation: ReferralLinkValidation }>(
-                `/api/v1/referral-link-validations/${vid}`,
-              )
-              .then(d => d.validation),
-          ),
-        ),
-      )
-    ).filter((v): v is ReferralLinkValidation => v !== null)
-
+    const pageInfo = validationsData.page_info
     return (
       <ReferralValidationsSettings
         key={id}
         referralProgramId={topicData.topic.id}
-        linkedValidations={linkedValidations}
+        linkedValidations={validationsData.results}
         validationsBasePath={createTopicPathname(topicData.topic, '/validations')}
+        previousHref={after ? settingsPath : null}
+        nextHref={
+          pageInfo?.has_next_page && pageInfo.end_cursor
+            ? `${settingsPath}?after=${encodeURIComponent(pageInfo.end_cursor)}`
+            : null
+        }
       />
     )
   }

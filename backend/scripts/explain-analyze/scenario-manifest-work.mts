@@ -3,6 +3,7 @@ import { MEDIA_DELIVERY_LOCK_SCENARIOS } from './media-delivery-lock-scenario-id
 import { MEMBERSHIP_COLLISION_REVIEW_SCENARIO_IDS } from './membership-collision-review-scenario-ids.mts'
 import { ELIGIBLE_LIST_SCENARIO_IDS } from './eligible-list-scenario-ids.mts'
 import { HACKER_NEWS_WORK_SCENARIO_IDS } from './hacker-news-work-scenario-ids.mts'
+import { REFERRAL_VALIDATION_SCENARIO_IDS } from './referral-validation-scenario-ids.mts'
 import { COMMUNITY_BAN_SCENARIO_IDS } from './community-ban-scenario-ids.mts'
 import { COPYRIGHT_CASE_PURGE_SCENARIO_IDS } from './copyright-case-purge-scenario-ids.mts'
 import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
@@ -19,6 +20,7 @@ export const BOUNDED_WORK_SCENARIOS = [
   ...COMMUNITY_BAN_SCENARIO_IDS,
   ...ELIGIBLE_LIST_SCENARIO_IDS,
   ...COMMUNITY_AGENT_PROMPT_SCENARIO_IDS,
+  ...REFERRAL_VALIDATION_SCENARIO_IDS,
   'fk-actor-images-deleted-by-no-match',
   'fk-actor-agent-moderations-deleted-by-no-match',
   'fk-actor-moderation-cases-resolved-by-no-match',

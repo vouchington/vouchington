@@ -3,7 +3,11 @@ import { getPaginationLimits } from '@services/pagination'
 import { VALID_TOPIC_TYPES } from '@modules/pagination/filters'
 import type { BasicUser } from '@services/users/types'
 import { getTopicIds } from '@services/topics/search/get-ids'
-import { prepareTopicsSearchParams, resolveTopicsSearchParams } from '@services/search-params'
+import {
+  assertLinkCountQueryStandsAlone,
+  prepareTopicsSearchParams,
+  resolveTopicsSearchParams,
+} from '@services/search-params'
 import {
   EMPTY_PAGE_INFO,
   findPageOrNull,
@@ -20,7 +24,7 @@ import { componentSchema } from './route-response-schema.mts'
 type ToolArgs = PagedSearchArgs & {
   rss_feed?: boolean
   slugs?: string[]
-  sort?: 'new' | 'best' | 'relevance'
+  sort?: 'new' | 'best' | 'relevance' | 'link_count'
   spending_category?: boolean
   topic_types?: Array<(typeof VALID_TOPIC_TYPES)[number]>
 }
@@ -55,7 +59,7 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search.',
+      'Search topics by name or slug, meaning, or similar-item signals; combine text and meaning for hybrid search. sort=link_count ranks enabled programs by positive all-time active-link counts. Counts and newly enabled programs appear after a scheduled refresh; eligibility is checked live. This sort accepts only limit and after; all other filters are rejected.',
     parameters: {
       type: 'object',
       properties: {
@@ -64,7 +68,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         ),
         rss_feed: { type: 'boolean' },
         slugs: { type: 'array', items: { type: 'string' } },
-        sort: { type: 'string', enum: ['new', 'best', 'relevance'] },
+        sort: { type: 'string', enum: ['new', 'best', 'relevance', 'link_count'] },
         spending_category: { type: 'boolean' },
         topic_types: { type: 'array', items: { type: 'string', enum: [...VALID_TOPIC_TYPES] } },
       },
@@ -82,18 +86,17 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const query = {
+        ...pagedSearchQuery(args),
+        rss_feed: args.rss_feed,
+        slugs: args.slugs,
+        sort: args.sort,
+        spending_category: args.spending_category,
+        topic_types: args.topic_types,
+      }
+      assertLinkCountQueryStandsAlone(query)
       const page = await findPageOrNull(args.after, async () => {
-        const prepared = prepareTopicsSearchParams(
-          {
-            ...pagedSearchQuery(args),
-            rss_feed: args.rss_feed,
-            slugs: args.slugs,
-            sort: args.sort,
-            spending_category: args.spending_category,
-            topic_types: args.topic_types,
-          },
-          getPaginationLimits(25),
-        )
+        const prepared = prepareTopicsSearchParams(query, getPaginationLimits(25))
         const { shouldReturnEmpty, searchOptions } = await resolveTopicsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 

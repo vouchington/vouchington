@@ -33,5 +33,6 @@ describe('topics', () => {
   it('detectTopicSort respects explicit sort option', () => {
     expect(detectTopicSort({ text_search_query: 'hello', sort: 'best' })).toBe('best')
     expect(detectTopicSort({ sort: 'best' })).toBe('best')
+    expect(detectTopicSort({ text_search_query: 'hello', sort: 'link_count' })).toBe('link_count')
   })
 })

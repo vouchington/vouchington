@@ -2947,6 +2947,45 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Refresh mv_referral_program_link_counts materialized view (every five minutes)",
+        "id": "refresh-referral-program-link-counts",
+        "kind": "scheduled-jobs",
+        "schedule": "0,5,10,15,20,25,30,35,40,45,50,55 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0,5,10,15,20,25,30,35,40,45,50,55 * * * *",
+    },
+    "schedulerId": "refresh-referral-program-link-counts",
+    "template": {
+      "data": {
+        "viewName": "mv_referral_program_link_counts",
+      },
+      "name": "refreshMaterializedView",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "mv_refresh",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "jobType": "createPartitions",
         "kind": "psql",
       },
@@ -3470,6 +3509,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "job_name": "refreshMaterializedView",
     "queue_name": "psql",
     "schedule": "3,8,13,18,23,28,33,38,43,48,53,58 * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Refresh mv_referral_program_link_counts materialized view (every five minutes)",
+    "id": "refresh-referral-program-link-counts",
+    "job_name": "refreshMaterializedView",
+    "queue_name": "psql",
+    "schedule": "0,5,10,15,20,25,30,35,40,45,50,55 * * * *",
     "triggerName": "trigger",
   },
   {

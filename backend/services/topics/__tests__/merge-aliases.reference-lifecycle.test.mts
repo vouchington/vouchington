@@ -2,9 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import {
+  createReferralProgramFixture,
+  disableReferralProgramByTopicId,
+} from '@voucha/test-helpers/entities/referral-programs'
+import { mergeTopicForTest, softDeleteTopic } from '@voucha/test-helpers/entities/topics'
+import {
   getTopicReferenceGuardCoverage,
   getActiveTopicReferenceGuardFollows,
   insertTopicReferenceGuardFollow,
+  reenableTopicReferenceGuardProgram,
+  updateTopicReferenceGuardFollow,
   withTopicReferenceGuardFence,
   withTopicAttachmentFence,
 } from '@voucha/test-helpers/topic-reference-guard'
@@ -110,4 +117,40 @@ describe('topic merge reference lifecycle', () => {
       getActiveTopicReferenceGuardFollows([source.id, destination.id], user.id),
     ).resolves.toEqual([])
   })
+
+  it('rejects an update that retains an inactive topic reference', async () => {
+    const user = await createTestUser()
+    const topic = await createTestTopic({ user })
+    await insertTopicReferenceGuardFollow(topic.id, user.id)
+    await softDeleteTopic(topic.id, user.id)
+
+    await expect(updateTopicReferenceGuardFollow(topic.id, user.id)).rejects.toMatchObject({
+      status: 409,
+      code: 'topic_reference_inactive',
+      topic_id: topic.id,
+    })
+  })
+
+  it.each(['deleted', 'merged'] as const)(
+    'rejects re-enabling a %s referral program through its retained topic id',
+    async lifecycle => {
+      const user = await createTestUser()
+      const program = await createReferralProgramFixture({ createdById: user.id })
+      await disableReferralProgramByTopicId(program.referralProgramId)
+      if (lifecycle === 'deleted') {
+        await softDeleteTopic(program.referralProgramId, user.id)
+      } else {
+        const destination = await createTestTopic({ user })
+        await mergeTopicForTest(program.referralProgramId, destination.id, user.id)
+      }
+
+      await expect(
+        reenableTopicReferenceGuardProgram(program.referralProgramId),
+      ).rejects.toMatchObject({
+        status: 409,
+        code: 'topic_reference_inactive',
+        topic_id: program.referralProgramId,
+      })
+    },
+  )
 })

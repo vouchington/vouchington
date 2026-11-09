@@ -19,16 +19,16 @@ import { subtypeReferences } from '../backend/services/topics/merge-subtypes.mts
 const schemaPath = fileURLToPath(
   new URL('../backend/data-stores/psql/schema-snapshot/schema.json', import.meta.url),
 )
-
-const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
-const failures = topicMergeForeignKeyFailures(schema)
-if (failures.length > 0) {
-  console.error(failures.join('\n'))
-  process.exit(1)
+if (import.meta.main) {
+  const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
+  const failures = topicMergeForeignKeyFailures(schema)
+  if (failures.length > 0) {
+    console.error(failures.join('\n'))
+    process.exitCode = 1
+  }
 }
-process.exit(0)
 
-function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): string[] {
+export function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): string[] {
   const topicFailures: string[] = []
   const targets = new Set<string>(['topics', ...TOPIC_MERGE_SUBTYPE_TABLES])
   const foreignKeys = Object.entries(schemaSnapshot.tables).flatMap(([table, definition]) =>
@@ -50,7 +50,7 @@ function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): string[] 
     )
   }
 
-  const executed = new Map<string, string>([
+  const executedEntries: readonly (readonly [string, string])[] = [
     ...plainReferences.flatMap(({ table, columns }) =>
       columns.map(column => [`${table}.${column}`, 'references'] as const),
     ),
@@ -67,7 +67,11 @@ function topicMergeForeignKeyFailures(schemaSnapshot: SchemaSnapshot): string[] 
     ['rewards_program_status_topics.lifetime_version_id', 'subtype'],
     ...derivedReferences.map(([table, column]) => [`${table}.${column}`, 'derived'] as const),
     ['classifier_candidates.topic_id', 'configuration'],
-  ])
+  ]
+  const executed = new Map(executedEntries)
+  if (executed.size !== executedEntries.length) {
+    topicFailures.push('topic merge execution registry contains duplicate references')
+  }
   const activeGroups: string[] = []
   for (const [reference, group] of Object.entries(TOPIC_MERGE_REFERENCE_GROUPS)) {
     if (group === 'history' || group === 'alias') continue

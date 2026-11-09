@@ -1524,7 +1524,7 @@
       "returnsSet": false
     },
     "fn_ensure_active_topic_references()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  reference_column TEXT;\n  referenced_topic_id UUID;\n  previous_topic_id UUID;\n  reserved_topic_id UUID;\nBEGIN\n  FOREACH reference_column IN ARRAY TG_ARGV LOOP\n    -- Inspect both sides: a deletion or non-key edit can change a merge preflight or capture.\n    referenced_topic_id := NULL;\n    previous_topic_id := NULL;\n    IF TG_OP <> 'DELETE' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;\n    END IF;\n    IF TG_OP <> 'INSERT' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;\n    END IF;\n    FOR reserved_topic_id IN\n      SELECT DISTINCT id FROM unnest(ARRAY[previous_topic_id, referenced_topic_id]) AS ids(id)\n      WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      -- Never wait while holding a child row or publication scope: admission takes this fence first.\n      IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(\n        'topic-merge-lifecycle:' || reserved_topic_id::TEXT, 0\n      )) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic references are changing; retry the request',\n          DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (\n        SELECT 1 FROM topic_merge_parent_ancestors ancestor\n        JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id\n        WHERE ancestor.topic_id = reserved_topic_id\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations merge_operation\n        WHERE (merge_operation.source_topic_id = reserved_topic_id\n            OR merge_operation.destination_topic_id = reserved_topic_id)\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n    END LOOP;\n    -- Missing identities remain the foreign key constraint's responsibility.\n    IF referenced_topic_id IS NOT NULL AND EXISTS (\n      SELECT 1 FROM topics WHERE id = referenced_topic_id\n        AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)\n    ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic reference must identify an active topic',\n        DETAIL = json_build_object('code', 'topic_reference_inactive', 'topic_id', referenced_topic_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  reference_column TEXT;\n  referenced_topic_id UUID;\n  previous_topic_id UUID;\n  reserved_topic_id UUID;\nBEGIN\n  FOREACH reference_column IN ARRAY TG_ARGV LOOP\n    -- Inspect both sides: a deletion or non-key edit can change a merge preflight or capture.\n    referenced_topic_id := NULL;\n    previous_topic_id := NULL;\n    IF TG_OP <> 'DELETE' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;\n    END IF;\n    IF TG_OP <> 'INSERT' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;\n    END IF;\n    FOR reserved_topic_id IN\n      SELECT DISTINCT id FROM unnest(ARRAY[previous_topic_id, referenced_topic_id]) AS ids(id)\n      WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      -- Never wait while holding a child row or publication scope: admission takes this fence first.\n      IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(\n        'topic-merge-lifecycle:' || reserved_topic_id::TEXT, 0\n      )) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic references are changing; retry the request',\n          DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (\n        SELECT 1 FROM topic_merge_parent_ancestors ancestor\n        JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id\n        WHERE ancestor.topic_id = reserved_topic_id\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations merge_operation\n        WHERE (merge_operation.source_topic_id = reserved_topic_id\n            OR merge_operation.destination_topic_id = reserved_topic_id)\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n    END LOOP;\n    -- Missing identities remain the foreign key constraint's responsibility.\n    -- Re-enabling a deleted or merged program must not reuse its unchanged topic id.\n    IF referenced_topic_id IS NOT NULL\n      AND EXISTS (\n        SELECT 1 FROM topics WHERE id = referenced_topic_id\n          AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)\n      ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic reference must identify an active topic',\n        DETAIL = json_build_object('code', 'topic_reference_inactive', 'topic_id', referenced_topic_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_ensure_copyright_email_ancestor_live_endpoints()": {
@@ -99800,7 +99800,7 @@
         "idx_referral_program_topic_link_validation_rule_sets__rule_set": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_referral_program_topic_link_validation_rule_sets__rule_set ON public.referral_program_topic_link_validation_rule_sets USING btree (referral_program_link_validation_rule_set_id)",
+          "definition": "CREATE INDEX idx_referral_program_topic_link_validation_rule_sets__rule_set ON public.referral_program_topic_link_validation_rule_sets USING btree (referral_program_link_validation_rule_set_id, referral_program_topic_id)",
           "immediate": true,
           "keys": [
             {
@@ -99808,6 +99808,15 @@
               "column": "referral_program_link_validation_rule_set_id",
               "descending": false,
               "expression": "referral_program_link_validation_rule_set_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "referral_program_topic_id",
+              "descending": false,
+              "expression": "referral_program_topic_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -170642,6 +170651,68 @@
               "expression": "singleton_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "materialized": true
+    },
+    "mv_referral_program_link_counts": {
+      "comment": "All-time active referral-link counts for enabled programs, refreshed on the PostgreSQL materialized-view schedule; topic deletion and merge are checked by readers.",
+      "definition": " SELECT program.topic_id,\n    count(link.id) AS active_link_count\n   FROM referral_program_topics program\n     LEFT JOIN user_referral_program_links link ON link.referral_program_topic_id = program.topic_id AND link.activated_at IS NOT NULL AND link.deleted_at IS NULL\n  WHERE program.enabled_at IS NOT NULL AND program.disabled_at IS NULL\n  GROUP BY program.topic_id;",
+      "indexes": {
+        "idx_mv_referral_program_link_counts__count__topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mv_referral_program_link_counts__count__topic_id ON public.mv_referral_program_link_counts USING btree (active_link_count DESC, topic_id DESC) WHERE (active_link_count > 0)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "active_link_count",
+              "descending": true,
+              "expression": "active_link_count",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "topic_id",
+              "descending": true,
+              "expression": "topic_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(active_link_count > 0)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_mv_referral_program_link_counts__topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_mv_referral_program_link_counts__topic_id ON public.mv_referral_program_link_counts USING btree (topic_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],

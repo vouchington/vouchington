@@ -13,6 +13,7 @@ import {
   updateTopicMarkdown,
 } from '@voucha/test-helpers'
 import { insertTestUserReferralProgramLink } from '@voucha/test-helpers/entities/referral-links'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view-for-test'
 import {
   ownedEngagementDispatch,
   scopedEngagementClaimResult,
@@ -199,6 +200,7 @@ describe('dispatchEngagementEmails', () => {
       referralProgramId,
       urlId: url!.id,
     })
+    await refreshMaterializedViewForTest('mv_referral_program_link_counts')
     const observed = await ownedEngagementDispatch(user.id, foreign.id, 'post_referral_link')
     expect(observed.claims).toEqual(scopedEngagementClaimResult)
     expect(observed.targetJobs).toMatchObject([

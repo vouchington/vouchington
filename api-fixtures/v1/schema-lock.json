@@ -925,6 +925,7 @@
         "native.rewards-program-status-topics.search.default",
         "native.rewards-program-topics.search.default",
         "native.spending-category-topics.search.default",
+        "web.topics.link-count.default",
         "web.topics.search.default",
         "web.topics.search.referral-programs.default"
       ],
@@ -949,10 +950,6 @@
     "GET:/api/v1/topics/user-tags": {
       "fixtureIds": ["native.topics.user-tags.default"],
       "hash": "c82a3bed39f4cd3c6e52927e52a7fd41d0bcd57fb950e45adced3ebf5d27dac5"
-    },
-    "GET:/api/v1/trending-referral-programs": {
-      "fixtureIds": ["web.trending-referral-programs.default"],
-      "hash": "a356e5960f47d6f4beb1326e129dee6c54c7dc7554267712b76d6e161d113d3f"
     },
     "GET:/api/v1/urls#public": {
       "fixtureIds": ["native.urls.default"],
@@ -3577,6 +3574,10 @@
       "fixtureIds": ["web.rss-feed-items.feed.default"],
       "hash": "dd95863b6725d1474d5458e191361696df7f543645f038e1381ed54a59768d5d"
     },
+    "web.topics.link-count.default": {
+      "fixtureIds": ["web.topics.link-count.default"],
+      "hash": "fa39f9f5da472f81168586700a7b12e370c9e2303888138ec6130261890fdc20"
+    },
     "web.topics.mutation.default": {
       "fixtureIds": ["web.topics.mutation.default"],
       "hash": "21521a6adb21656bc12cba7f82c28d2bfba2e6788c29042bbad2df5544a8c29f"
@@ -3596,10 +3597,6 @@
     "web.topics.show.default": {
       "fixtureIds": ["web.topics.show.default"],
       "hash": "a5996ec59ba64ecae2ad641dd11e5d08dee9f6c187497791ded8fcff6ec90074"
-    },
-    "web.trending-referral-programs.default": {
-      "fixtureIds": ["web.trending-referral-programs.default"],
-      "hash": "86c4e4b9aa4dcbc078a60b081c11935da32583e9b764e996cf2f99a9d1cae44d"
     }
   },
   "source": {

@@ -4,6 +4,7 @@ const REFRESH_ADVISORY_LOCK_NAME = 'refresh-materialized-view'
 
 // Same names as refreshMaterializedView. Production still rejects contention; tests wait.
 const REFRESHABLE_MATERIALIZED_VIEWS = new Set([
+  'mv_referral_program_link_counts',
   'mv_rss_feed_crawl_tiers',
   'mv_top_hashtags',
   'mv_platform_stats',

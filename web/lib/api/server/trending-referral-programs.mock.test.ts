@@ -31,11 +31,11 @@ describe('getTrendingReferralPrograms', () => {
     mockGet.mockResolvedValue(makeTopicsSearchResponse())
   })
 
-  it('calls the correct endpoint with default referral_program filter', async () => {
+  it('calls topic search sorted by active link count', async () => {
     await getTrendingReferralPrograms()
 
     expect(mockGet).toHaveBeenCalledWith('/api/v1/topics', {
-      searchParams: { topic_types: 'referral_program', sort: 'best', limit: 5 },
+      searchParams: { sort: 'link_count', limit: 5 },
     })
   })
 
@@ -43,7 +43,7 @@ describe('getTrendingReferralPrograms', () => {
     await getTrendingReferralPrograms({ searchParams: { limit: 3 } })
 
     expect(mockGet).toHaveBeenCalledWith('/api/v1/topics', {
-      searchParams: { topic_types: 'referral_program', sort: 'best', limit: 3 },
+      searchParams: { sort: 'link_count', limit: 3 },
     })
   })
 })

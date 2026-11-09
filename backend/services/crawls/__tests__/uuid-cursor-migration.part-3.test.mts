@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import '../../rss-feed-items/search-filters.mts'
 import '../../topics/search/get-ids-page-info.mts'
 import '../../trending-posts/get-trending-posts.mts'
-import '../../trending-referral-programs/get-trending-referral-programs.mts'
+import '../../topics/search/get-ids.mts'
 import '../../rss-feeds/search-page.mts'
 import '../../trending-topics/get-trending-topics.mts'
 import '../../urls-hostnames/search-query.mts'
@@ -84,10 +84,12 @@ const cases: CursorCase[] = [
       timeRange: 'day',
     }),
   ),
-  cursorCase('getTrendingReferralPrograms', async () =>
-    (
-      await import('../../trending-referral-programs/get-trending-referral-programs.mts')
-    ).getTrendingReferralPrograms({ after: score, limit: 1 }),
+  cursorCase('getTopicIds link_count', async () =>
+    (await import('../../topics/search/get-ids.mts')).getTopicIds({
+      sort: 'link_count',
+      after: score,
+      limit: 1,
+    }),
   ),
   cursorCase('decodeRssFeedsCursor trending', async () =>
     (await import('../../rss-feeds/search-page.mts')).decodeRssFeedsCursor(score, 'trending'),

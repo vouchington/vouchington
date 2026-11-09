@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "@data-stores/graceful-shutdown": "workspace:^",
+    "@services/referral-program-link-validations": "workspace:^",
     "@voucha/api": "workspace:^"
   },
   "devDependencies": {

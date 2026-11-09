@@ -9,6 +9,29 @@ export async function insertTopicReferenceGuardFollow(topicId: string, userId: s
   )
 }
 
+export async function updateTopicReferenceGuardFollow(
+  topicId: string,
+  userId: string,
+): Promise<void> {
+  await write(
+    `/* updateTopicReferenceGuardFollow */
+      UPDATE relation__user__follow__topic
+      SET deleted_at = NULL
+      WHERE subject_id = $1::uuid AND object_id = $2::uuid`,
+    [userId, topicId],
+  )
+}
+
+export async function reenableTopicReferenceGuardProgram(topicId: string): Promise<void> {
+  await write(
+    `/* reenableTopicReferenceGuardProgram */
+      UPDATE referral_program_topics
+      SET enabled_at = CURRENT_TIMESTAMP, disabled_at = NULL
+      WHERE topic_id = $1::uuid`,
+    [topicId],
+  )
+}
+
 export async function insertTopicReferenceGuardFollowInTransaction(
   query: TransactionQuery,
   topicId: string,

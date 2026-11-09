@@ -77,10 +77,40 @@ export interface ReferralLinkValidationSummary {
   updated_at: string
 }
 
+export interface ReferralProgramValidationPage {
+  results: ReferralLinkValidationSummary[]
+  page_info: {
+    has_next_page: boolean
+    end_cursor: string | null
+    start_cursor: string | null
+  }
+}
+
+const PROGRAM_VALIDATION_PAGE_LIMIT = 100
+
 export const getReferralProgramValidations = cache(
-  (referralProgramId: string): Promise<{ results: ReferralLinkValidationSummary[] }> => {
-    return serverApi.get<{ results: ReferralLinkValidationSummary[] }>(
+  (referralProgramId: string, after?: string): Promise<ReferralProgramValidationPage> => {
+    return serverApi.get<ReferralProgramValidationPage>(
       `/api/v1/topics/${referralProgramId}/referral-program/validations`,
+      {
+        searchParams: after
+          ? { limit: PROGRAM_VALIDATION_PAGE_LIMIT, after }
+          : { limit: PROGRAM_VALIDATION_PAGE_LIMIT },
+      },
     )
   },
+)
+
+export const getReferralProgramLinkedValidation = cache(
+  (
+    referralProgramId: string,
+    validationIdOrSlug: string,
+  ): Promise<ReferralLinkValidationSummary | null> =>
+    returnNullForMissingEntity(
+      serverApi
+        .get<{ validation: ReferralLinkValidationSummary }>(
+          `/api/v1/topics/${referralProgramId}/referral-program/validations/${validationIdOrSlug}`,
+        )
+        .then(data => data.validation),
+    ),
 )

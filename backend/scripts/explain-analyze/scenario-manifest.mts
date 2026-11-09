@@ -7,6 +7,7 @@ import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
 import { RSS_FEED_WEEKLY_SCENARIO_IDS, RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
 import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
 import { RELATION_READ_BATCH_SCENARIO_IDS } from './relation-read-batch-scenario-ids.mts'
+import { TOPIC_LINK_COUNT_SCENARIOS } from './topic-link-count-scenario-ids.mts'
 import { BOUNDED_WORK_SCENARIOS } from './scenario-manifest-work.mts'
 import { SEARCH_PAGE_SCENARIO_IDS } from './search-page-scenario-ids.mts'
 import { VOTE_WEIGHT_DISPATCH_SCENARIO_IDS } from './vote-weight-dispatch-scenario-ids.mts'
@@ -156,7 +157,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-by-slug',
   'topic-data-point-insights',
   'topic-import-attempts-retention',
-  'topic-import-attempts-user-key',
+  ...TOPIC_LINK_COUNT_SCENARIOS,
   'topic-metrics-batch',
   'topic-rating-stats',
   'topic-search-best',

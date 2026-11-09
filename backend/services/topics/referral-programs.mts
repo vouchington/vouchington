@@ -20,30 +20,18 @@ type ReferralProgramAttributes = {
   disabled_at?: string | null
 }
 
-type ReferralProgramAttributesWithValidations = ReferralProgramAttributes & {
-  referral_program_link_validation_ids?: string[] | null
-}
-
 export async function getReferralProgramAttributes(
   topic: Topic,
-): Promise<ReferralProgramAttributesWithValidations | null> {
+): Promise<ReferralProgramAttributes | null> {
   assert(topic.topic_type === 'referral_program', 400, 'Topic is not a referral program')
 
   const { rows } = await read(sql`/* getReferralProgramAttributes */
     SELECT
       rp.company_topic_id,
       rp.enabled_at,
-      rp.disabled_at,
-      COALESCE(
-        array_agg(trplv.referral_program_link_validation_rule_set_id ORDER BY trplv.referral_program_link_validation_rule_set_id)
-          FILTER (WHERE trplv.referral_program_link_validation_rule_set_id IS NOT NULL),
-        ARRAY[]::uuid[]
-      ) AS referral_program_link_validation_ids
+      rp.disabled_at
     FROM referral_program_topics rp
-    LEFT JOIN referral_program_topic_link_validation_rule_sets trplv
-      ON trplv.referral_program_topic_id = rp.topic_id
     WHERE rp.topic_id = ${topic.id}
-    GROUP BY rp.topic_id
     LIMIT 1
   `)
   return rows[0] ?? null
@@ -108,7 +96,7 @@ export async function updateReferralProgramAttributes(
   currentUser: PrivateUser | null,
   topic: Topic,
   attributes: ReferralProgramAttributes,
-): Promise<ReferralProgramAttributesWithValidations | null> {
+): Promise<ReferralProgramAttributes | null> {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
   assert(topic.topic_type === 'referral_program', 400, 'Topic is not a referral program')

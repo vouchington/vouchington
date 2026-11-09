@@ -236,11 +236,6 @@ describe('topic management factories', () => {
   })
 
   describe('createTopicSettingsValidationsPage', () => {
-    const fakeAttributesData = {
-      referral_program_attributes: {
-        referral_program_link_validation_ids: ['val-1'],
-      },
-    }
     const fakeValidation = {
       id: 'val-1',
       slug: 'chase-sapphire',
@@ -250,9 +245,7 @@ describe('topic management factories', () => {
     beforeEach(() => {
       mockGetTopic.mockResolvedValue({ topic: referralProgramTopic })
       mockReturnNullForMissingEntity.mockImplementation((p: Promise<unknown>) => p)
-      mockServerApiGet
-        .mockResolvedValueOnce(fakeAttributesData)
-        .mockResolvedValueOnce({ validation: fakeValidation })
+      mockServerApiGet.mockResolvedValueOnce({ results: [fakeValidation] })
     })
 
     it('redirects to / for non-admin', () =>
@@ -277,16 +270,16 @@ describe('topic management factories', () => {
     it('renders ReferralValidationsSettings with linked validations', async () => {
       const result = await ValidationsPage({ params: Promise.resolve({ id: 'rp-alias' }) })
       expect(result.key).toBe('rp-alias')
+      expect(mockServerApiGet).toHaveBeenCalledWith(
+        '/api/v1/topics/rp-topic-1/referral-program/validations',
+        { searchParams: { limit: 100 } },
+      )
       expect(result.props.linkedValidations).toEqual([fakeValidation])
     })
 
     it('renders with empty linkedValidations when no IDs', async () => {
       mockServerApiGet.mockReset()
-      mockServerApiGet.mockResolvedValueOnce({
-        referral_program_attributes: {
-          referral_program_link_validation_ids: [],
-        },
-      })
+      mockServerApiGet.mockResolvedValueOnce({ results: [] })
       const result = await ValidationsPage({ params: Promise.resolve({ id: 'rp-topic-1' }) })
       expect(result.key).toBe('rp-topic-1')
       expect(result.props.linkedValidations).toEqual([])

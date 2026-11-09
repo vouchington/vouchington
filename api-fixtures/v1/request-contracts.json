@@ -36427,38 +36427,6 @@
       "required": ["post"],
       "type": "object"
     },
-    "TrendingReferralProgram": {
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "link_count": {
-          "type": "number"
-        },
-        "trending_score": {
-          "type": "number"
-        }
-      },
-      "required": ["id", "link_count", "trending_score"],
-      "type": "object"
-    },
-    "TrendingReferralProgramsResult": {
-      "additionalProperties": false,
-      "properties": {
-        "page_info": {
-          "$ref": "#/components/schemas/PageInfo"
-        },
-        "referral_programs": {
-          "items": {
-            "$ref": "#/components/schemas/TrendingReferralProgram"
-          },
-          "type": "array"
-        }
-      },
-      "required": ["page_info", "referral_programs"],
-      "type": "object"
-    },
     "UkCopyrightReview": {
       "additionalProperties": false,
       "properties": {
@@ -46504,7 +46472,7 @@
             "type": "array"
           },
           "sort": {
-            "enum": ["new", "best", "relevance"],
+            "enum": ["new", "best", "relevance", "link_count"],
             "type": "string"
           },
           "spending_category": {
@@ -46705,17 +46673,6 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/topics/:idOrSlug/referral-program": {
-      "path": {
-        "properties": {
-          "idOrSlug": {
-            "type": "string"
-          }
-        },
-        "required": ["idOrSlug"],
-        "type": "object"
-      }
-    },
     "GET:/api/v1/topics/:idOrSlug/referral-program/validation-info": {
       "path": {
         "properties": {
@@ -46790,6 +46747,35 @@
           }
         },
         "required": ["referralProgramId"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/topics/:referralProgramId/referral-program/validations/:validationIdOrSlug": {
+      "path": {
+        "properties": {
+          "referralProgramId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "validationIdOrSlug": {
+            "type": "string"
+          }
+        },
+        "required": ["referralProgramId", "validationIdOrSlug"],
         "type": "object"
       }
     },
@@ -46867,22 +46853,6 @@
           "topic_id": {
             "format": "uuid",
             "type": "string"
-          }
-        },
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/trending-referral-programs": {
-      "query": {
-        "properties": {
-          "after": {
-            "type": "string"
-          },
-          "limit": {
-            "default": 10,
-            "maximum": 50,
-            "minimum": 1,
-            "type": "integer"
           }
         },
         "type": "object"
@@ -52638,9 +52608,6 @@
     },
     "GET:/api/v1/trending-posts": {
       "$ref": "#/components/schemas/Record_string_unknown"
-    },
-    "GET:/api/v1/trending-referral-programs": {
-      "$ref": "#/components/schemas/TrendingReferralProgramsResult"
     },
     "GET:/api/v1/trending-topics": {
       "$ref": "#/components/schemas/Record_string_unknown"

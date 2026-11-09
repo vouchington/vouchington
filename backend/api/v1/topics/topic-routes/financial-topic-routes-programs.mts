@@ -11,7 +11,6 @@ import {
   validateRequestContract,
 } from '../../../response-helpers.mts'
 import {
-  getReferralProgramAttributes,
   getRewardsProgramAttributes,
   getRewardsProgramStatusAttributes,
   getTopicByAny,
@@ -102,46 +101,32 @@ app
     })
   })
 
-app
-  .route('/api/v1/topics/:idOrSlug/referral-program')
-  .get(async (ctx: Context) => {
-    await ctx.applyRouteRateLimit('GET:/api/v1/topics/:idOrSlug/referral-program')
-    validateRequestContract(ctx, 'GET:/api/v1/topics/:idOrSlug/referral-program', {
-      path: ctx.params,
-    })
-    const topic = await getTopicByAnyCached(ctx.params.idOrSlug!)
-    if (!topic) ctx.throw(404, 'Topic not found')
-    const attributes = await getReferralProgramAttributes(topic)
-    if (!attributes) ctx.throw(404, 'Referral program attributes not found')
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
-    ctx.json({ referral_program_attributes: attributes })
+app.route('/api/v1/topics/:idOrSlug/referral-program').patch(async (ctx: Context) => {
+  const currentUser = await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanUpdateTopic,
+    'PATCH:/api/v1/topics/:idOrSlug/referral-program',
+  )
+  assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'PATCH:/api/v1/topics/:idOrSlug/referral-program', {
+    path: ctx.params,
   })
-  .patch(async (ctx: Context) => {
-    const currentUser = await requireAuthAndRateLimit(
-      ctx,
-      currentUserCanUpdateTopic,
-      'PATCH:/api/v1/topics/:idOrSlug/referral-program',
-    )
-    assertNotSuspended(currentUser)
-    validateRequestContract(ctx, 'PATCH:/api/v1/topics/:idOrSlug/referral-program', {
-      path: ctx.params,
-    })
-    const topic = await getTopicByAny(ctx.params.idOrSlug!)
-    if (!topic) ctx.throw(404, 'Topic not found')
-    const attributes = (await parseJsonBody(ctx, '1mb')) as Parameters<
-      typeof updateReferralProgramAttributes
-    >[2]
-    validateRequestContract(ctx, 'PATCH:/api/v1/topics/:idOrSlug/referral-program', {
-      body: attributes,
-    })
-    ctx.json({
-      referral_program_attributes: await updateReferralProgramAttributes(
-        currentUser,
-        topic,
-        attributes,
-      ),
-    })
+  const topic = await getTopicByAny(ctx.params.idOrSlug!)
+  if (!topic) ctx.throw(404, 'Topic not found')
+  const attributes = (await parseJsonBody(ctx, '1mb')) as Parameters<
+    typeof updateReferralProgramAttributes
+  >[2]
+  validateRequestContract(ctx, 'PATCH:/api/v1/topics/:idOrSlug/referral-program', {
+    body: attributes,
   })
+  ctx.json({
+    referral_program_attributes: await updateReferralProgramAttributes(
+      currentUser,
+      topic,
+      attributes,
+    ),
+  })
+})
 
 app.route('/api/v1/topics/:idOrSlug/referral-program/validation-info').get(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('GET:/api/v1/topics/:idOrSlug/referral-program/validation-info')
