@@ -233,19 +233,12 @@ independently drifting source of the same fact, and an index sorting by it dupli
 
 ## Prefer no counter columns; trending and rankings are materialized views
 
-<<<<<<< HEAD
-A denormalized count column is updated in the same transaction as the rows it counts, or by a row
-trigger when `ON DELETE CASCADE` or hard deletes can remove those rows, because a cascade bypasses
-application code. It carries `CHECK (count >= 0)` and has a test proving a purge keeps it exact. No
-periodic recount repairs drift: a repair job hides the write path that lost the update and leaves
-readers wrong until it runs. The advisory `postgres-column-check-constraints` check reports integer
-`*_count` columns without a provable non-negative constraint. Counter maintenance, purge correctness,
-and the prohibition on periodic recount remain unenforced.
-=======
 A counter column needs maintenance: same-transaction updates, row triggers for cascades and hard
 deletes, a `CHECK (count >= 0)`, and a purge test proving it stays exact. No periodic recount
 repairs drift, because a repair job hides the write path that lost the update. Adding a counter
-needs evidence that it is necessary. Unenforced.
+needs evidence that it is necessary. The advisory `postgres-column-check-constraints` check reports
+integer `*_count` columns without a provable non-negative constraint; counter maintenance, purge
+correctness, and the prohibition on periodic recount remain unenforced.
 
 - **Displayed counts are capped counts.** Count over a `LIMIT cap + 1` subquery and return the exact
   number up to the cap plus a `capped` flag; clients render "1k+". The cap is a `DynamicConfig`
@@ -259,7 +252,6 @@ needs evidence that it is necessary. Unenforced.
   programs by all-time active links is a materialized view of the counts, indexed by
   `(count DESC, id DESC)`, refreshed on a schedule, with live eligibility joined at read time. It is
   not a counter column.
->>>>>>> b5148c798f (docs(postgres): record 2026-11-09 owner query, count and ranking rules)
 
 ## No per-row queries while holding locks
 
