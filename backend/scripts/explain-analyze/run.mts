@@ -8,7 +8,6 @@ import {
 import { assertScenarioManifest } from './scenario-manifest-check.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 import {
-  EXPLAIN_SHARD_ENV,
   assertShardDeclarations,
   getShardScenarioIds,
   parseExplainShard,
@@ -26,7 +25,7 @@ import { assertNoLeftoverCommentPartitions } from './seed-data/comment-descendan
 
 // EXPLAIN_SHARD=main|partition splits the CI run (explain-shards.mts); unset runs everything.
 async function main() {
-  const shard = parseExplainShard(process.env[EXPLAIN_SHARD_ENV])
+  const shard = parseExplainShard(process.env.EXPLAIN_SHARD)
   assertShardDeclarations(EXPLAIN_SCENARIO_MANIFEST)
   prepareOutputDir()
   try {
@@ -47,7 +46,10 @@ async function main() {
       runErrors.push(err)
     }
     try {
-      assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
+      assertPlanRegistry(
+        getResults().map(result => result.scenario_id ?? ''),
+        getShardScenarioIds(shard, EXPLAIN_SCENARIO_MANIFEST),
+      )
     } catch (err) {
       runErrors.push(err)
     }

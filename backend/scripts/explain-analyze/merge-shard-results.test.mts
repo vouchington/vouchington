@@ -86,8 +86,8 @@ describe('mergeShardDirectories', () => {
       }
       expect(merged.completedScenarioIds.toSorted()).toEqual(EXPLAIN_SCENARIO_MANIFEST.toSorted())
       expect(readdirSync(join(output, 'pruning-v8')).toSorted()).toEqual([
-        'main-coverage-1.json',
-        'partition-coverage-1.json',
+        'coverage-main-1.json',
+        'coverage-partition-1.json',
       ])
       expect(readdirSync(output).filter(file => file.startsWith('repeat-'))).toHaveLength(1)
       expect(readdirSync(output)).toContain('pruning-proof-1.json')

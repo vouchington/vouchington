@@ -4,8 +4,6 @@ import { CRITICAL_ALERT_SCENARIO_IDS } from './critical-alert-scenario-ids.mts'
 export const EXPLAIN_SHARDS = ['main', 'partition'] as const
 export type ExplainShard = (typeof EXPLAIN_SHARDS)[number]
 
-export const EXPLAIN_SHARD_ENV = 'EXPLAIN_SHARD'
-
 // The partitioned comment fixture is additive: its monthly bounds start after the current UTC
 // month, so no other scenario reads it. runCommentDescendantPartitionedPages seeds and captures
 // exactly these scenarios (the critical-alert recipient pages run at its end), which makes them
@@ -20,9 +18,7 @@ export function parseExplainShard(value: string | undefined): ExplainShard | und
   if (value === undefined || value === '') return undefined
   const shard = EXPLAIN_SHARDS.find(candidate => candidate === value)
   if (shard === undefined)
-    throw new Error(
-      `Invalid ${EXPLAIN_SHARD_ENV}: "${value}"; expected ${EXPLAIN_SHARDS.join('|')}`,
-    )
+    throw new Error(`Invalid EXPLAIN_SHARD:"${value}"; expected ${EXPLAIN_SHARDS.join('|')}`)
   return shard
 }
 

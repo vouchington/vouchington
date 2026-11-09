@@ -51,6 +51,13 @@ describe('plan expectation registry', () => {
     expect(() => assertPlanRegistry(['post-search-new'])).not.toThrow()
   })
 
+  it('checks only registrations inside the scope a shard runs', async () => {
+    const { registerScenarioContract, assertPlanRegistry } = await loadGates()
+    registerScenarioContract('post-search-new', { expectations: [] })
+    expect(() => assertPlanRegistry([], ['post-search-hot'])).not.toThrow()
+    expect(() => assertPlanRegistry([], ['post-search-new'])).toThrow('has no captured result')
+  })
+
   it('evaluates query binding, index and processed-row limits from one registry entry', async () => {
     const { registerScenarioContract, assertRequiredPlanShape } = await loadGates()
     registerScenarioContract('post-metrics-batch', {

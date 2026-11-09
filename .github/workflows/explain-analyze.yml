@@ -221,6 +221,9 @@ jobs:
         with:
           pattern: explain-analyze-results-*
           path: ${{ runner.temp }}/explain-shards
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
       - name: Merge shard results and require every scenario
         timeout-minutes: 2
         run: node backend/scripts/explain-analyze/merge-shard-results.mts "$RUNNER_TEMP/explain-shards"

@@ -48,14 +48,15 @@ export function mergeShardResults(
 }
 
 // Native V8 records from both shards feed one LCOV conversion; prefix the names so two runners
-// that happened to pick the same process id and instant cannot overwrite each other.
+// that happened to pick the same process id and instant cannot overwrite each other. The
+// converter reads only `coverage-*.json`, so the prefix goes after that stem.
 function copyV8Coverage(shard: ExplainShard, shardDirectory: string, outputDir: string): void {
   const source = join(shardDirectory, V8_DIRECTORY)
   if (!existsSync(source)) return
   const target = join(outputDir, V8_DIRECTORY)
   mkdirSync(target, { recursive: true })
   for (const file of readdirSync(source))
-    copyFileSync(join(source, file), join(target, `${shard}-${file}`))
+    copyFileSync(join(source, file), join(target, file.replace(/^coverage-/, `coverage-${shard}-`)))
 }
 
 // The pruning proof runs in one shard; the merged output keeps its evidence beside the results.
