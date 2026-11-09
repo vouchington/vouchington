@@ -88,7 +88,9 @@ export async function seedLargeRatingTopic(): Promise<void> {
     )
   await transaction.commit()
 
-  await write(`/* seedLargeRatingTopic */ ANALYZE post_review_topic_ratings, topic_votes, users, posts`)
+  await write(
+    `/* seedLargeRatingTopic */ ANALYZE post_review_topic_ratings, topic_votes, users, posts`,
+  )
 
   async function seedBallots(): Promise<void> {
     await transaction(
