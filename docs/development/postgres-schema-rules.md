@@ -164,7 +164,10 @@ state from the latest history row.
   of its rows, or sort or aggregate them, the query reads every row up to the CTE's own LIMIT. A
   `MATERIALIZED` CTE or subquery must always be bounded: allowed only when it holds the final LIMIT,
   or when it is a viewer-scoped set (follows, subscriptions) capped by a per-type write
-  limit with a hard maximum. A set with no such cap is a candidate pool and is forbidden. Unenforced.
+  limit with a hard maximum. A set with no such cap is a candidate pool and is forbidden.
+  The advisory `postgres-bounded-statements` materialized-body check reports missing body bounds;
+  configured per-owner bounds require a reason grounded in the write path. Whether a body holds
+  the final result limit remains a review invariant.
 - **A list or feed read is one walk over the listed entity** or, for membership-ordered lists
   (saved posts and list items are uncapped user content, #4979), over the membership index joined to
   the targets, with eligibility in WHERE. Filters go in WHERE and are served by an index. Use, for example, `ORDER BY key DESC, id DESC LIMIT page+1` with a `(key, id) < ($1, $2)` keyset
@@ -218,7 +221,9 @@ A denormalized count column is updated in the same transaction as the rows it co
 trigger when `ON DELETE CASCADE` or hard deletes can remove those rows, because a cascade bypasses
 application code. It carries `CHECK (count >= 0)` and has a test proving a purge keeps it exact. No
 periodic recount repairs drift: a repair job hides the write path that lost the update and leaves
-readers wrong until it runs. Unenforced.
+readers wrong until it runs. The advisory `postgres-column-check-constraints` check reports integer
+`*_count` columns without a provable non-negative constraint. Counter maintenance, purge correctness,
+and the prohibition on periodic recount remain unenforced.
 
 ## No per-row queries while holding locks
 
@@ -238,7 +243,9 @@ index matching its read order, and reads are one keyset walk on that ranking ind
 [R6](#r6--query-shape)). The defining query has an
 [explain-analyze scenario](postgresql/explain-analyze/README.md), which explains it from
 `pg_get_viewdef` because `REFRESH` cannot be explained. View composition rules live in
-[views](postgresql/reference-views.md). Unenforced.
+[views](postgresql/reference-views.md). The advisory `postgres-materialized-view-shape` check reports
+missing refresh and additional indexes or unproved bounds on indexed keys in the defining query.
+Matching the ranking index to the read order and proving keyset read shape remain unenforced.
 
 ## Related
 

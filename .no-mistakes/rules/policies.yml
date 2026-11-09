@@ -2565,6 +2565,7 @@
   severity: advisory
   options:
     unanalyzableSql: ignore
+    materializedBodies: require-bound
     importSpecifier: '@data-stores/psql'
     executorFactoryNames: [beginTransaction, beginBoundedTransaction]
     executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
@@ -2666,6 +2667,29 @@
         { reason: 'a rule set has a few rules' }
       hostname_path_boilerplate_removal_urls.hostname_path_boilerplate_removal_id:
         { reason: 'the sole writer stores the at most 3 sampled candidate urls per removal' }
+
+- name: counter columns have nonnegative checks
+  rule: postgres-column-check-constraints
+  scope: repository
+  severity: advisory
+  options:
+    schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+    columns:
+      - pattern: '*_count'
+        types: [smallint, integer, bigint]
+        require: non-negative
+
+- name: materialized views are bounded and indexed
+  rule: postgres-materialized-view-shape
+  scope: repository
+  severity: advisory
+  options:
+    schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+    minAdditionalIndexes: 1
+    windowFunctions: [fn_min_uuidv7]
+    allowBaseTables:
+      - table: currencies
+        reason: 'code is a currency_codes enum primary key, so the catalogue has at most the finite enum values'
 
 - name: reject unsafe PostgreSQL query shapes
   rule: postgres-sql-shape-policy
