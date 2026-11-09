@@ -11577,6 +11577,84 @@
         }
       }
     },
+    "boilerplate_removal_hostname_cursors": {
+      "checkConstraints": {
+        "boilerplate_removal_hostname_cursors_is_singleton_check": {
+          "definition": "CHECK (is_singleton)",
+          "validated": true
+        }
+      },
+      "columns": {
+        "cursor_hostname_id": {
+          "comment": "UUIDv7 of the last hostname the sweep covered; NULL starts at the first hostname. No FK so the position survives deletion of that hostname.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "is_singleton": {
+          "comment": "Restricts the boilerplate removal sweep to one persisted cursor.",
+          "dataType": "boolean",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "updated_at": {
+          "comment": "Time the sweep position last advanced.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        }
+      },
+      "comment": "Singleton position of the scheduled boilerplate removal sweep over hostnames in id order.",
+      "foreignKeys": {},
+      "indexes": {
+        "boilerplate_removal_hostname_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX boilerplate_removal_hostname_cursors_pkey ON public.boilerplate_removal_hostname_cursors USING btree (is_singleton)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_boilerplate_removal_hostname_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_boilerplate_removal_hostname_cursors_updated_at BEFORE UPDATE ON public.boilerplate_removal_hostname_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "card_topics": {
       "checkConstraints": {
         "card_topics_annual_fee_minor_units_check": {
