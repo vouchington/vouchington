@@ -12,6 +12,7 @@ import {
   ONE_BILLED_CALL,
   reportedContentVersion,
   reserveSeededRun,
+  reserveSeededRunOutcome,
 } from '@voucha/test-helpers/classifier-call-efficiency-run'
 import { describeClassifierCallEfficiency } from '@voucha/test-helpers/classifier-call-efficiency-tests'
 import {
@@ -115,8 +116,8 @@ describe('C8 community moderation content and rule versions (real PG, determinis
         unpublished_by_id: await getModerationSystemUserId(),
       })
 
-      // The unpublish withdrew the post's approval, so the redelivery is stale: it does nothing.
-      expect(await deliverRun(SLUG, run)).toBe('stale')
+      // The receipt already completed, so redelivery replays without running its action again.
+      expect(await deliverRun(SLUG, run)).toBe('replay')
       expect(await reviewOf()).toEqual(unpublished)
       await updateTestCommunityPostReviewState({
         communityId: fixture.community.id,
@@ -124,9 +125,7 @@ describe('C8 community moderation content and rule versions (real PG, determinis
         approvedAt: new Date(),
         unpublishedAt: null,
       })
-      const again = await reserveSeededRun(SLUG, fixture)
-      expect(again.runId).toBe(run.runId)
-      expect(await deliverRun(SLUG, again)).toBe('replay')
+      expect(await reserveSeededRunOutcome(SLUG, fixture)).toEqual({ kind: 'no-work' })
 
       expect(await reviewOf()).toMatchObject({ unpublished_at: null })
       expect(provider.requests).toHaveLength(1)
