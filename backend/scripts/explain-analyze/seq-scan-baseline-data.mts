@@ -50,8 +50,6 @@ export const BASELINE_FINGERPRINTS = [
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
   'topic-search-text|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
-  'trending-topics|0|getTrendingTopics:force_custom_plan|force_custom_plan:topics',
-  'trending-topics|0|getTrendingTopics:force_generic_plan|force_generic_plan:topics',
   'user-metrics-batch|0|getUserMetricsByAnyBatch:force_generic_plan|force_generic_plan:relation__user__follow__rss_feed',
   'user-metrics-batch|0|getUserMetricsByAnyBatch:force_generic_plan|force_generic_plan:relation__user__follow__topic',
 ] as const
