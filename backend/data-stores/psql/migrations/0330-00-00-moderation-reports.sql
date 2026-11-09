@@ -137,6 +137,14 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_reported_user_id_id
   ON moderation_reports (reported_user_id, id DESC)
   WHERE reviewed_at IS NULL AND resolution_action IS NULL AND reported_user_id IS NOT NULL;
 
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_hostname_id_id
+  ON moderation_reports (hostname_id, id DESC)
+  WHERE reviewed_at IS NULL AND resolution_action IS NULL AND hostname_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__pending_rss_feed_item_id_id
+  ON moderation_reports (rss_feed_item_id, id DESC)
+  WHERE reviewed_at IS NULL AND resolution_action IS NULL AND rss_feed_item_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__case_id
   ON moderation_reports (case_id);
