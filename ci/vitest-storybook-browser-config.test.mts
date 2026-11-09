@@ -3,12 +3,12 @@ import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const originalEnv = { ...process.env }
-// Cache-busting queries re-evaluate the module for current process.env without tsc resolving the URL.
-const environmentModulePath = '../test-helpers/vitest-config/environment.mts'
-const importEnvironmentModule = (
-  cacheBustingQuery: string,
-): Promise<typeof import('../test-helpers/vitest-config/environment.mts')> =>
-  import(`${environmentModulePath}?${cacheBustingQuery}`)
+// vi.resetModules() makes each import re-evaluate the module with the current process.env.
+const importEnvironmentModule = async () => {
+  vi.resetModules()
+  const environment = await import('../test-helpers/vitest-config/environment.mts')
+  return environment
+}
 
 describe('Storybook browser Vitest environment overrides', () => {
   afterEach(() => {
@@ -27,7 +27,7 @@ describe('Storybook browser Vitest environment overrides', () => {
       VITEST_STORYBOOK_BROWSER_CACHE_DIR: '/tmp/storybook-browser-cache',
     }
 
-    const envConfig = await importEnvironmentModule('storybook-browser-overrides')
+    const envConfig = await importEnvironmentModule()
 
     expect(envConfig.isStorybookBrowserEnabled).toBe(true)
     expect(envConfig.coverageConfig().include).toEqual([
@@ -54,7 +54,7 @@ describe('Storybook browser Vitest environment overrides', () => {
       delete process.env.VITEST_STORYBOOK_BROWSER_CACHE_DIR
       delete process.env.STORYBOOK_BROWSER_HANG_MS
 
-      const envConfig = await importEnvironmentModule(`storybook-browser-fixed-${run}`)
+      const envConfig = await importEnvironmentModule()
 
       expect(envConfig.storybookBrowserCacheDir).toBe('/runner-temp/vite-storybook-browser')
       expect(envConfig.parseStorybookBrowserApiPort()).toBeUndefined()
@@ -74,7 +74,7 @@ describe('Storybook browser Vitest environment overrides', () => {
     delete process.env.VITEST_STORYBOOK_BROWSER_API_PORT
     delete process.env.VITEST_STORYBOOK_BROWSER_CACHE_DIR
 
-    const envConfig = await importEnvironmentModule('storybook-browser-blank-runner-temp')
+    const envConfig = await importEnvironmentModule()
 
     expect(envConfig.storybookBrowserCacheDir).toBe(`${tmpdir()}/vite-storybook-browser`)
   })
@@ -83,9 +83,7 @@ describe('Storybook browser Vitest environment overrides', () => {
     vi.stubEnv('CI', 'true')
     vi.stubEnv('GITHUB_RUN_ID', '123')
     vi.stubEnv('VITEST_STORYBOOK_BROWSER_API_PORT', port)
-    const envConfig = await importEnvironmentModule(
-      `storybook-browser-invalid-${port.replace('.', '-')}`,
-    )
+    const envConfig = await importEnvironmentModule()
     expect(envConfig.parseStorybookBrowserApiPort()).toBeUndefined()
   })
 

@@ -3,7 +3,10 @@ import type { WorkerQueryProfile } from '../backend/test-helpers/query-profiles.
 
 describe('worker query profile adapter', () => {
   it('exposes queue terminal events through the in-memory GlideMQ alias', async () => {
-    const { Queue, QueueEvents } = await import('./worker-query-profile.mts')
+    const [{ Queue }, { QueueEvents }] = await Promise.all([
+      import('glide-mq'),
+      import('./worker-query-profile.mts'),
+    ])
     const queueName = `app-factory-events-${crypto.randomUUID()}`
     const queue = new Queue(queueName, {})
     const events = new QueueEvents(queueName)
