@@ -14,6 +14,9 @@ export const BACKGROUND_ORDERING_CAPS = {
   'post-publication:effects': 5,
   'post-publication:publisher-type-feeds': 1,
   'vote-aggregation': 10,
+  // Each job re-reads a topic's full rating history; operators lower this lane without
+  // throttling elections.
+  'vote-aggregation:topic-ratings': 10,
   'entity-listeners': 5,
   'account-lifecycle': 2,
   'article-sync': 1,

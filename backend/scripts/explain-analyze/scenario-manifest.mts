@@ -166,6 +166,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   ...TOPIC_LINK_COUNT_SCENARIOS,
   'topic-metrics-batch',
   'topic-rating-stats',
+  'topic-rating-stats-large',
   'topic-search-best',
   'topic-search-text',
   'topic-viewer-counts',

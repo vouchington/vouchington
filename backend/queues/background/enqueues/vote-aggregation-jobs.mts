@@ -118,7 +118,13 @@ export const VOTE_AGGREGATION_VOTE_INTEGRITY_JOB = defineBackgroundJob<{
 })
 export const VOTE_AGGREGATION_TOPIC_RATING_STATS_JOB = defineBackgroundJob<{ topicId: string }>(
   VOTE_AGGREGATION_DOMAIN,
-  { name: 'processUpdateTopicRatingStats', priority: PRIORITY_TASK },
+  {
+    name: 'processUpdateTopicRatingStats',
+    priority: PRIORITY_TASK,
+    // Its own lane: the recompute reads a topic's whole rating history, so operators lower this
+    // cap (DynamicConfig `ordering_vote_aggregation_topic_ratings`) without throttling elections.
+    ordering: { key: 'vote-aggregation:topic-ratings' },
+  },
 )
 
 const refreshJob = (name: string) =>
