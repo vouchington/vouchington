@@ -74,10 +74,8 @@ export async function createModerationAppealDraft(
     completed_run AS (
       UPDATE moderation_appeal_resolution_runs run
       SET completed_at = ${now},
-          result = jsonb_build_object(
-            'ai_drafted_at', updated.ai_drafted_at,
-            'latest_lifecycle_change_id', updated.latest_lifecycle_change_id
-          )
+          ai_drafted_at = updated.ai_drafted_at,
+          latest_lifecycle_change_id = updated.latest_lifecycle_change_id
       FROM updated
       WHERE run.id = ${input.requestToken}::uuid
         AND run.moderation_appeal_id = updated.id

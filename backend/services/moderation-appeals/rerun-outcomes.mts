@@ -91,10 +91,11 @@ export async function getAppealResolutionRunOutcome(
 
   const { rows } = await read<{
     status: AppealResolutionRunStatus
-    result: { ai_drafted_at: string; latest_lifecycle_change_id: string } | null
+    ai_drafted_at: Date | null
+    latest_lifecycle_change_id: string | null
   }>(sql`
     /* getAppealResolutionRunOutcome */
-    SELECT status, result
+    SELECT status, ai_drafted_at, latest_lifecycle_change_id
     FROM moderation_appeal_resolution_runs
     WHERE moderation_appeal_id = ${appealId}::uuid AND id = ${requestToken}::uuid
   `)
@@ -104,11 +105,8 @@ export async function getAppealResolutionRunOutcome(
     run_id: runId,
     status: row.status,
     ai_drafted_at:
-      row.status === 'succeeded' && row.result?.ai_drafted_at
-        ? new Date(row.result.ai_drafted_at).toISOString()
-        : null,
-    latest_lifecycle_change_id:
-      row.status === 'succeeded' ? (row.result?.latest_lifecycle_change_id ?? null) : null,
+      row.status === 'succeeded' && row.ai_drafted_at ? row.ai_drafted_at.toISOString() : null,
+    latest_lifecycle_change_id: row.status === 'succeeded' ? row.latest_lifecycle_change_id : null,
   }
 }
 

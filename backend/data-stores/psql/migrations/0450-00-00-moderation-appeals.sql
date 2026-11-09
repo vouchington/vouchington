@@ -188,7 +188,8 @@ CREATE TABLE IF NOT EXISTS moderation_appeal_resolution_runs (
   completed_at timestamptz,
   failed_at timestamptz,
   expired_at timestamptz,
-  result jsonb,
+  ai_drafted_at timestamptz,
+  latest_lifecycle_change_id uuid,
   status moderation_ai_rerun_statuses GENERATED ALWAYS AS (
     CASE WHEN completed_at IS NOT NULL THEN 'succeeded'::moderation_ai_rerun_statuses
          WHEN failed_at IS NOT NULL THEN 'failed'::moderation_ai_rerun_statuses
@@ -198,7 +199,7 @@ CREATE TABLE IF NOT EXISTS moderation_appeal_resolution_runs (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (moderation_appeal_id, id),
-  CHECK ((completed_at IS NULL) = (result IS NULL))
+  CHECK ((completed_at IS NULL) = (ai_drafted_at IS NULL))
 );
 CREATE OR REPLACE TRIGGER trigger_moderation_appeal_resolution_runs_updated_at
   BEFORE UPDATE ON moderation_appeal_resolution_runs
@@ -208,7 +209,8 @@ COMMENT ON COLUMN moderation_appeal_resolution_runs.moderation_appeal_id IS 'App
 COMMENT ON COLUMN moderation_appeal_resolution_runs.completed_at IS 'Committed with the actual draft and lifecycle marker; success wins over delayed failure observations.';
 COMMENT ON COLUMN moderation_appeal_resolution_runs.failed_at IS 'Definitive terminal worker failure, excluding retries and provider deferrals.';
 COMMENT ON COLUMN moderation_appeal_resolution_runs.expired_at IS 'Worker completed without saving because this generation no longer applies.';
-COMMENT ON COLUMN moderation_appeal_resolution_runs.result IS 'Unjoined snapshot of saved draft timestamp and lifecycle change identity; contains no AI response text and never supplies current appeal state.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.ai_drafted_at IS 'Draft timestamp saved by the completing worker; set exactly when completed_at is set.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.latest_lifecycle_change_id IS 'Lifecycle change committed with the saved draft; cleared if that change is deleted and never supplies current appeal state.';
 COMMENT ON COLUMN moderation_appeal_resolution_runs.status IS 'Outcome derived from durable lifecycle facts; missing generations remain inconclusive.';
 COMMENT ON COLUMN moderation_appeal_resolution_runs.updated_at IS 'Last mutation timestamp maintained by the shared trigger.';
 
@@ -267,6 +269,24 @@ END $$;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__latest_lifecycle_change_id
   ON moderation_appeals (latest_lifecycle_change_id)
+  WHERE latest_lifecycle_change_id IS NOT NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_moderation_appeal_resolution_runs_latest_lifecycle_change_id'
+  ) THEN
+    ALTER TABLE moderation_appeal_resolution_runs
+      ADD CONSTRAINT fk_moderation_appeal_resolution_runs_latest_lifecycle_change_id
+      FOREIGN KEY (latest_lifecycle_change_id)
+      REFERENCES moderation_appeal_lifecycle_changes(id)
+      ON DELETE SET NULL;
+  END IF;
+END $$;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_appeal_resolution_runs__latest_lifecycle_change_id
+  ON moderation_appeal_resolution_runs (latest_lifecycle_change_id)
   WHERE latest_lifecycle_change_id IS NOT NULL;
 
 -- Wire FK from notifications.moderation_appeal_id → moderation_appeals(id)

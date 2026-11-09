@@ -35,10 +35,9 @@ export async function insertTestAppealResolutionRunForRetention(
   const { completedAt, failedAt, expiredAt } = outcomeDates(status, at)
   await write(sql`/* insertTestAppealResolutionRunForRetention */
     INSERT INTO moderation_appeal_resolution_runs
-      (id, moderation_appeal_id, completed_at, failed_at, expired_at,
-       result)
+      (id, moderation_appeal_id, completed_at, failed_at, expired_at, ai_drafted_at)
     VALUES (${id}::uuid, ${appealId}::uuid, ${completedAt}, ${failedAt}, ${expiredAt},
-      ${status === 'succeeded' ? { draftSavedAt: at.toISOString() } : null}::jsonb)`)
+      ${status === 'succeeded' ? at : null})`)
   return id
 }
 
