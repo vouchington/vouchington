@@ -89,6 +89,7 @@ export interface StaffModerationReportCluster {
   entity_id: string
   report_count: number
   report_count_capped: boolean
+  summary_capped: boolean
   reporter_count: number
   reason_breakdown: Array<{ reason: ReportReason; count: number }>
   first_reported_at: string
@@ -114,6 +115,7 @@ export interface StaffModerationReportDuplicateCluster {
   post_count: number
   report_count: number
   report_count_capped: boolean
+  summary_capped: boolean
   reason_breakdown: Array<{ reason: ReportReason; count: number }>
   first_reported_at: string
   last_reported_at: string

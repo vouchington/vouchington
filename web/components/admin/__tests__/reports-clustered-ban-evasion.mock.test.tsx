@@ -84,6 +84,7 @@ function makeResponse(): AdminClusteredModerationReportsResponse {
         entity_id: 'suspect-1',
         report_count: 2,
         report_count_capped: false,
+        summary_capped: false,
         reporter_count: 2,
         reason_breakdown: [{ reason: 'other', count: 2 }],
         first_reported_at: '2026-05-31T00:00:00.000Z',

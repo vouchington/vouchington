@@ -137,9 +137,11 @@ for a page together. Native presentation and its executable evidence are tracked
 [vouchington-clients#526](https://github.com/vouchington/vouchington-clients/issues/526);
 this producer change makes no native UI parity claim.
 
-Staff report clusters return `report_count_capped` with the bounded `report_count`. Web marks capped
-values with a compact `+` count (for example, `1K+`) and renders uncapped values exactly; native
-clients should apply the same meaning when adopting this response contract.
+Staff report clusters return `report_count_capped` with the bounded `report_count`, plus
+`summary_capped` when `reporter_count` and `reason_breakdown` describe only the bounded sample.
+Web marks capped report counts with a compact `+` count (for example, `1K+`) and labels sampled
+reporter and reason summaries; native clients should apply the same meanings when adopting this
+response contract.
 
 ## Saved list and community applicant labels
 

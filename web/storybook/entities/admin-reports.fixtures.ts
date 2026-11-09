@@ -122,6 +122,7 @@ export const clusteredData: AdminClusteredModerationReportsResponse = {
       entity_id: 'post-1',
       report_count: 3,
       report_count_capped: false,
+      summary_capped: true,
       reporter_count: 3,
       reason_breakdown: [
         { reason: 'spam', count: 2 },
@@ -157,6 +158,7 @@ export const clusteredData: AdminClusteredModerationReportsResponse = {
       entity_id: 'post-2',
       report_count: 1,
       report_count_capped: false,
+      summary_capped: false,
       reporter_count: 1,
       reason_breakdown: [{ reason: 'spam', count: 1 }],
       first_reported_at: '2026-05-31T06:10:00.000Z',

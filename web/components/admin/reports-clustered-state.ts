@@ -24,6 +24,8 @@ export function filterVisibleDuplicateClusters(
         post_count: clusters.length,
         reason_breakdown: mergeReasonBreakdowns(clusters),
         report_count: clusters.reduce((sum, cluster) => sum + cluster.report_count, 0),
+        report_count_capped: clusters.some(cluster => cluster.report_count_capped),
+        summary_capped: clusters.some(cluster => cluster.summary_capped),
       },
     ]
   })

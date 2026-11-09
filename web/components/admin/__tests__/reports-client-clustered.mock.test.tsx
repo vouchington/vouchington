@@ -53,15 +53,44 @@ describe('ReportsClient clustered staff reports', () => {
     expect(screen.getAllByText('Content duplicate').length).toBeGreaterThan(0)
     expect(screen.getByText('Vote spike')).toBeVisible()
     expect(screen.getByText('Copied post')).toBeVisible()
+    expect(
+      screen.queryByText('Reporter and reason summaries reflect a sample of 2 reports'),
+    ).not.toBeInTheDocument()
   })
 
-  it('marks a capped report count with a compact plus count', () => {
+  it('marks capped report counts and sampled summaries', () => {
+    window.history.pushState({}, '', '/reports')
+    const cluster = makeCluster({
+      report_count: 1000,
+      report_count_capped: true,
+      summary_capped: true,
+      reporter_count: 1000,
+      reason_breakdown: [{ reason: 'spam', count: 1000 }],
+    })
+    expect(cluster.summary_capped).toBe(true)
+    const response = makeClusteredReportsResponse({
+      duplicatePostIds: ['post-1', 'post-2', 'post-3'],
+    })
     renderStaffReports({
-      ...makeClusteredReportsResponse(),
-      results: [makeCluster({ report_count: 1000, report_count_capped: true })],
+      ...response,
+      results: [cluster],
+      duplicate_clusters: response.duplicate_clusters.map(duplicate => ({
+        ...duplicate,
+        report_count: 1000,
+        report_count_capped: true,
+        summary_capped: true,
+        reason_breakdown: [{ reason: 'spam', count: 1000 }],
+        clusters: duplicate.clusters.map((duplicateCluster, index) => ({
+          ...duplicateCluster,
+          report_count_capped: index === 0,
+          summary_capped: index === 0,
+        })),
+      })),
     })
 
     expect(screen.getByText('1K+ reports')).toBeVisible()
+    expect(screen.getByText(/Reporter and reason summaries reflect a sample of/)).toBeVisible()
+    expect(screen.getByText(/Reason summaries reflect a sample of/)).toBeVisible()
   })
 
   it('removes every post in a duplicate cluster once', async () => {

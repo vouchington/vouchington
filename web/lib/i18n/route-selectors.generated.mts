@@ -293,7 +293,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/referral-programs", selectorId: "web.route.065ac5051f65d0bf.7249537b7ec97004", hasMembership: true },
   { pattern: "/report-integrity/flags", selectorId: "web.route.4d3e15fd814efa0e.0adbbbe29e9e30c7", hasMembership: true },
   { pattern: "/report-integrity/penalties", selectorId: "web.route.8bfc1269fe731164.2dc531ba718ea8ae", hasMembership: true },
-  { pattern: "/reports", selectorId: "web.route.884c69774049d7ad.49765203e442210e", hasMembership: true },
+  { pattern: "/reports", selectorId: "web.route.884c69774049d7ad.2aca5459ddef05cd", hasMembership: true },
   { pattern: "/review/[id]", selectorId: "web.route.c1a11e6f39341f20.8e1f180fdf384960", hasMembership: true },
   { pattern: "/review/[id]/comment/[commentId]", selectorId: "web.route.b35497eed569b737.889081d80f16950c", hasMembership: true },
   { pattern: "/review/[id]/edit", selectorId: "web.route.a4b5611e0fcecb19.e6c044756acf93d9", hasMembership: true },

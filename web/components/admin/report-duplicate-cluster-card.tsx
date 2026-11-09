@@ -70,6 +70,13 @@ export function DuplicateClusterCard({
             {t('extracted.admin.reportDuplicateClusterCard.reasons_39086c62')}{' '}
             {formatReasonBreakdown(duplicate.reason_breakdown, uiLocale)}
           </p>
+          {duplicate.summary_capped ? (
+            <p className='text-xs text-muted-foreground'>
+              {t('extracted.admin.reportDuplicateClusterCard.summaryPartial', {
+                count: duplicate.report_count,
+              })}
+            </p>
+          ) : null}
         </div>
         {canRemove ? (
           <AlertDialog>

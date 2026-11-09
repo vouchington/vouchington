@@ -7,6 +7,7 @@ export const duplicateClusters: AdminModerationReportDuplicateCluster[] = [
     post_count: 2,
     report_count: 4,
     report_count_capped: false,
+    summary_capped: true,
     reason_breakdown: [
       { reason: 'spam', count: 3 },
       { reason: 'harassment', count: 1 },

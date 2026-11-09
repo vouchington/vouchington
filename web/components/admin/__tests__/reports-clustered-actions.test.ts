@@ -105,6 +105,7 @@ function makeCluster(
     entity_id: 'user-1',
     report_count: reports.length,
     report_count_capped: false,
+    summary_capped: false,
     reporter_count: reports.length,
     reason_breakdown: [{ reason: 'other', count: reports.length }],
     first_reported_at: '2026-07-14T00:00:00.000Z',

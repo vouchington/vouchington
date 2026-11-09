@@ -16,7 +16,7 @@ import { formatReasonBreakdown } from './reports-clustered-format'
 import { ReportTargetContent } from '@/components/moderation/report-target-content'
 import { useModerationTargetLabel } from '@/components/moderation/use-moderation-target-label'
 import { selectOrdinaryPendingReports } from './reports-clustered-actions'
-import type { AdminModerationReport, AdminModerationReportCluster } from './reports-client-types'
+import type { ReportClusterCardProps } from './report-cluster-card-types'
 
 export function ReportClusterCard({
   active,
@@ -34,23 +34,7 @@ export function ReportClusterCard({
   rerunningReportId,
   pendingRerunEntities,
   uiLocale,
-}: {
-  active: boolean
-  cluster: AdminModerationReportCluster
-  canRemove: boolean
-  disabled: boolean
-  loadingAction: 'dismiss' | 'remove' | 'review' | null
-  onActiveChange: (clusterId: string) => void
-  onDismiss: () => void
-  onRemoveTarget: () => void
-  onReview: () => void
-  onRerun: (report: AdminModerationReport) => void
-  onWarn: (report: AdminModerationReport) => void
-  onBanEvasionAction: (reportId: string) => void
-  rerunningReportId: string | null
-  pendingRerunEntities?: ReadonlySet<string>
-  uiLocale: string
-}) {
+}: ReportClusterCardProps) {
   const t = useTranslations()
   const targetLabelFor = useModerationTargetLabel()
   const targetLabel = targetLabelFor(cluster.target_label)
@@ -60,6 +44,19 @@ export function ReportClusterCard({
   )
   const exactNumberFormat = useMemo(() => new Intl.NumberFormat(uiLocale), [uiLocale])
   const displayedReportCount = compactNumberFormat.format(cluster.report_count)
+  const exactReportLabel = t('shared.countLabel.format', {
+    count: cluster.report_count,
+    unit: 'report',
+  })
+  const reportCountLabel = exactReportLabel.replace(
+    exactNumberFormat.format(cluster.report_count),
+    cluster.report_count_capped
+      ? `${displayedReportCount}+`
+      : exactNumberFormat.format(cluster.report_count),
+  )
+  const summaryLabel = cluster.summary_capped
+    ? t('extracted.admin.reportClusterCard.summaryPartial', { count: cluster.report_count })
+    : null
   const hasPendingReports = selectOrdinaryPendingReports(cluster).length > 0
   const isPartialReportSet = cluster.reports.length < cluster.report_count
   const canRemoveTarget =
@@ -110,20 +107,7 @@ export function ReportClusterCard({
                   </span>
                 </span>
                 <span className='flex flex-wrap items-center gap-2 text-sm text-muted-foreground'>
-                  <span>
-                    {cluster.report_count_capped
-                      ? t('shared.countLabel.format', {
-                          count: cluster.report_count,
-                          unit: 'report',
-                        }).replace(
-                          exactNumberFormat.format(cluster.report_count),
-                          `${displayedReportCount}+`,
-                        )
-                      : t('shared.countLabel.format', {
-                          count: cluster.report_count,
-                          unit: 'report',
-                        })}
-                  </span>
+                  <span>{reportCountLabel}</span>
                   <span>
                     {t('shared.countLabel.format', {
                       count: cluster.reporter_count,
@@ -141,6 +125,9 @@ export function ReportClusterCard({
                   </span>
                   <IndicatorBadges cluster={cluster} />
                 </span>
+                {summaryLabel ? (
+                  <span className='block text-xs text-muted-foreground'>{summaryLabel}</span>
+                ) : null}
               </span>
             </Button>
           </CollapsibleTrigger>
