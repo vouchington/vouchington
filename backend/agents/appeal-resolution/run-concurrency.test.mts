@@ -4,10 +4,17 @@ import { createTestUser, insertTestUserWarning, WEB_PROVENANCE } from '@voucha/t
 import { approveModerationAppeal } from '@services/moderation-appeals/approve-appeal'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { getModerationAppealById } from '@services/moderation-appeals/get'
-import { getAppealResolutionRunOutcome } from '@services/moderation-appeals/rerun-outcomes'
+import {
+  appealResolutionRunId,
+  claimAppealResolutionRun,
+  getAppealResolutionRunOutcome,
+} from '@services/moderation-appeals/rerun-outcomes'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import { runAppealResolutionAgent, type AppealModelCaller } from './run.mts'
-import { appealResolutionRunInputForTest } from '@voucha/test-helpers/appeal-resolution-run'
+import {
+  appealResolutionRunInputForTest,
+  createUnclaimedAppealResolutionRunForTest,
+} from '@voucha/test-helpers/appeal-resolution-run'
 import type { PrivateUser } from '@services/users/types'
 import {
   makeModelCallResult,
@@ -33,6 +40,53 @@ describe('runAppealResolutionAgent concurrency', () => {
   beforeAll(async () => {
     staff = await createTestUser()
     appellant = await createTestUser()
+  })
+
+  it('lets the worker claim before acknowledgement and rejects an older late claim', async () => {
+    const warning = await insertTestUserWarning({
+      userId: appellant.id,
+      issuedById: staff.id,
+      reason: `Claim ordering ${randomUUID()}`,
+    })
+    const { appeal } = await createModerationAppeal(
+      appellant,
+      WEB_PROVENANCE,
+      parseCreateModerationAppealInput({
+        target_type: 'warning',
+        target_id: warning.id,
+        appeal_reason: `Claim ordering ${randomUUID()}`,
+      }),
+    )
+    const [olderToken, newerToken] = [
+      await createUnclaimedAppealResolutionRunForTest(appeal.id),
+      await createUnclaimedAppealResolutionRunForTest(appeal.id),
+    ].toSorted()
+    const newerRunId = appealResolutionRunId(newerToken)
+    await runAppealResolutionAgent(
+      { appealId: appeal.id, requestToken: newerToken, runId: newerRunId, rerunById: staff.id },
+      TEST_MODEL_SELECTION,
+      () => Promise.resolve(makeModelResponse('deny', 'Newer draft.', 'Newer private draft.')),
+    )
+    expect(await claimAppealResolutionRun(appeal.id, olderToken)).toBe(false)
+    await runAppealResolutionAgent(
+      {
+        appealId: appeal.id,
+        requestToken: olderToken,
+        runId: appealResolutionRunId(olderToken),
+        rerunById: staff.id,
+      },
+      TEST_MODEL_SELECTION,
+      () => {
+        throw new Error('Older run must not call the model')
+      },
+    )
+    expect((await getModerationAppealById(appeal.id))!.ai_draft_requested_run_id).toBe(newerRunId)
+    expect(await getAppealResolutionRunOutcome(appeal.id, newerRunId)).toMatchObject({
+      status: 'succeeded',
+    })
+    expect(
+      await getAppealResolutionRunOutcome(appeal.id, appealResolutionRunId(olderToken)),
+    ).toMatchObject({ status: 'expired' })
   })
 
   it('preserves an approval that wins while a queued rerun is calling the model', async () => {

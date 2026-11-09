@@ -6,6 +6,7 @@ import {
   createModerationAppealDraft,
   isCurrentModerationAppealDraftRequest,
   getAppealResolutionRunStatus,
+  claimAppealResolutionRun,
   markAppealResolutionRunExpired,
 } from '@services/moderation-appeals'
 import { getUserWarningById } from '@services/user-warnings'
@@ -41,6 +42,10 @@ export async function runAppealResolutionAgent(
     const runStatus = await getAppealResolutionRunStatus(appealId, requestToken)
     // A missing outcome is inconclusive, and terminal work must never make another paid call.
     if (runStatus !== 'active') return
+    if (!(await claimAppealResolutionRun(appealId, requestToken))) {
+      await markAppealResolutionRunExpired(appealId, requestToken)
+      return
+    }
   }
 
   const appeal = await getModerationAppealByIdFromPrimary(appealId)

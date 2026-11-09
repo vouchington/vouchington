@@ -7,6 +7,7 @@ export const MODERATION_RERUN_SCENARIO_IDS = [
   'report-rerun-failed',
   'report-rerun-expired',
   'appeal-rerun-admission',
+  'appeal-rerun-claim',
   'appeal-rerun-status',
   'appeal-rerun-result',
   'appeal-rerun-success',

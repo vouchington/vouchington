@@ -1,6 +1,7 @@
 import { read, withPrimaryReads, write } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
+import assert from 'http-assert'
 import sql from 'sql-template-strings'
 
 export type AppealResolutionRunStatus = 'active' | 'succeeded' | 'failed' | 'expired'
@@ -27,13 +28,43 @@ export function appealResolutionRequestToken(runId: string): string | null {
 export async function createAppealResolutionRun(
   query: QueryExecutor,
   appealId: string,
-  requestToken: string,
-): Promise<void> {
-  await query(sql`/* createAppealResolutionRun */
+  requestToken?: string,
+): Promise<string> {
+  const { rows } = await query<{ id: string }>(sql`/* createAppealResolutionRun */
     INSERT INTO moderation_appeal_resolution_runs (id, moderation_appeal_id)
-    VALUES (${requestToken}::uuid, ${appealId}::uuid)
+    SELECT COALESCE(${requestToken ?? null}::uuid, uuidv7()), appeal.id
+    FROM moderation_appeals appeal
+    WHERE appeal.id = ${appealId}::uuid
+      AND appeal.approved_at IS NULL
+      AND appeal.sent_at IS NULL
+      AND appeal.resolved_at IS NULL
     RETURNING id
   `)
+  assert(rows[0], 422, 'Appeal is no longer eligible for an AI rerun')
+  return rows[0].id
+}
+
+/** Claims an admitted generation after queue acknowledgement or at worker start. */
+export async function claimAppealResolutionRun(
+  appealId: string,
+  requestToken: string,
+): Promise<boolean> {
+  const { rows } = await write<{ id: string }>(sql`/* claimAppealResolutionRun */
+    UPDATE moderation_appeals appeal
+    SET ai_draft_request_token = ${requestToken}::uuid
+    WHERE appeal.id = ${appealId}::uuid
+      AND appeal.ai_draft_request_token <= ${requestToken}::uuid
+      AND appeal.approved_at IS NULL
+      AND appeal.sent_at IS NULL
+      AND appeal.resolved_at IS NULL
+      AND EXISTS (
+        SELECT 1 FROM moderation_appeal_resolution_runs run
+        WHERE run.id = ${requestToken}::uuid AND run.moderation_appeal_id = appeal.id
+          AND run.status = 'active'
+      )
+    RETURNING appeal.id
+  `)
+  return rows.length === 1
 }
 
 export async function getAppealResolutionRunStatus(

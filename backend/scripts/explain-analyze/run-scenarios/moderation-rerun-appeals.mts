@@ -3,6 +3,7 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { createModerationAppealDraft } from '@services/moderation-appeals/create-appeal-draft'
 import {
   appealResolutionRunId,
+  claimAppealResolutionRun,
   createAppealResolutionRun,
   getAppealResolutionRunOutcome,
   getAppealResolutionRunStatus,
@@ -30,6 +31,15 @@ export async function runAppealScenarios(appealId: string, requestToken: string)
   )
 
   await createAppealResolutionRun(write, appealId, requestToken)
+  register('appeal-rerun-claim')
+  await runAndCapture(
+    'appeal-rerun-claim',
+    async () => {
+      assert.equal(await claimAppealResolutionRun(appealId, requestToken), true)
+    },
+    undefined,
+    'claimAppealResolutionRun',
+  )
   register('appeal-rerun-status')
   await runAndCapture(
     'appeal-rerun-status',

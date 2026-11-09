@@ -5,6 +5,11 @@ import {
   createAppealResolutionRun,
 } from '../services/moderation-appeals/rerun-outcomes.mts'
 
+/** Admits a generation without changing the parent token, like pre-enqueue production admission. */
+export function createUnclaimedAppealResolutionRunForTest(appealId: string): Promise<string> {
+  return createAppealResolutionRun(write, appealId)
+}
+
 /** Reserve a real appeal request generation for direct agent tests. */
 export async function appealResolutionRunInputForTest(appealId: string, rerunById?: string) {
   const { rows } = rerunById
