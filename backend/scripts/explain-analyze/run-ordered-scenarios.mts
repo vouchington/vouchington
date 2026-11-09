@@ -1,3 +1,4 @@
+import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
 import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
@@ -22,4 +23,6 @@ export async function runScenariosAfterPartition(): Promise<void> {
   await runStep(runMembershipScenarios.name, runMembershipScenarios)
   // Expiry fixtures come after the shared membership writer's corpus and all ordinary plans.
   await runStep(runMembershipExpiryPageScenarios.name, runMembershipExpiryPageScenarios)
+  // These fixtures change crawler-table statistics; keep them after every existing plan.
+  await runStep(runAggregateExistenceScenarios.name, runAggregateExistenceScenarios)
 }
