@@ -9,7 +9,7 @@ export const FRIEND_TRUST_VOTES_PER_FRIEND = 25
 const FRIENDS_WITH_VOTES = 1500
 export const FRIEND_TRUST_VOTE_ROWS = FRIENDS_WITH_VOTES * FRIEND_TRUST_VOTES_PER_FRIEND
 // Votes wrap over this many hostnames, so every friend re-votes (and sometimes flips) hostnames.
-const DISTINCT_HOSTNAMES_PER_FRIEND = 12
+const DISTINCT_HOSTNAMES_PER_FRIEND = 18
 const FIRST_FRIEND_INDEX = 100
 
 /**

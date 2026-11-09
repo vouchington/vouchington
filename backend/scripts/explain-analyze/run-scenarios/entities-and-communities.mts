@@ -134,8 +134,8 @@ export async function runEntityAndCommunityScenarios() {
     searchRssFeeds({ sort: 'trending', time_range: 'week', limit: 25 }),
   )
 
-  // Friend trusted hostnames — a viewer following 10k users with 60-ballot histories reads only the
-  // newest 1,000 follows x 50 ballots (the DynamicConfig defaults), never all 600k ballots.
+  // Friend trusted hostnames — a viewer following 10k users reads only the newest 1,000 follows x
+  // 20 ballots each (the DynamicConfig defaults), never every ballot a friend has cast.
   registerScenarioContract('friend-trusted-hostnames', {
     expectations: [
       {
