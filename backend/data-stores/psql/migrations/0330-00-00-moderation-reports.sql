@@ -161,3 +161,139 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__created_via_oauth_client_id
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__reporter_user_id
   ON moderation_reports (reporter_user_id)
   WHERE reporter_user_id IS NOT NULL;
+
+-- Current, transactionally maintained cluster sort keys. A NULL resolution_action denotes pending.
+-- No report-id pointer survives a report's retention deletion.
+CREATE TABLE IF NOT EXISTS moderation_report_clusters (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  post_id uuid REFERENCES posts (id) ON DELETE CASCADE,
+  reported_user_id uuid REFERENCES users (id) ON DELETE CASCADE,
+  hostname_id uuid REFERENCES url_hostnames (id) ON DELETE CASCADE,
+  rss_feed_item_id uuid REFERENCES rss_feed_items (id) ON DELETE CASCADE,
+  resolution_action moderation_report_resolution_actions,
+  first_reported_at timestamptz NOT NULL,
+  last_reported_at timestamptz NOT NULL,
+  report_count integer NOT NULL CHECK (report_count > 0),
+  CONSTRAINT moderation_report_clusters_one_target
+    CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1),
+  CONSTRAINT moderation_report_clusters_one_status_target
+    UNIQUE NULLS NOT DISTINCT (
+      resolution_action, post_id, reported_user_id, hostname_id, rss_feed_item_id
+    ),
+  CONSTRAINT moderation_report_clusters_reported_order
+    CHECK (first_reported_at <= last_reported_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__post_id
+  ON moderation_report_clusters (post_id) WHERE post_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__reported_user_id
+  ON moderation_report_clusters (reported_user_id) WHERE reported_user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__hostname_id
+  ON moderation_report_clusters (hostname_id) WHERE hostname_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__rss_feed_item_id
+  ON moderation_report_clusters (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__first_reported_at
+  ON moderation_report_clusters (
+    resolution_action, first_reported_at,
+    (COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))
+  );
+CREATE INDEX IF NOT EXISTS idx_moderation_report_clusters__last_reported_at
+  ON moderation_report_clusters (
+    resolution_action, last_reported_at,
+    (COALESCE(post_id, reported_user_id, hostname_id, rss_feed_item_id))
+  );
+
+COMMENT ON TABLE moderation_report_clusters IS 'Current per-entity and per-outcome report cluster keys, kept exact by report row triggers and removed when no reports remain.';
+COMMENT ON COLUMN moderation_report_clusters.post_id IS 'Reported post or comment, including the live target for this cluster.';
+COMMENT ON COLUMN moderation_report_clusters.reported_user_id IS 'Reported user, including the live target for this cluster.';
+COMMENT ON COLUMN moderation_report_clusters.hostname_id IS 'Reported hostname, including the live target for this cluster.';
+COMMENT ON COLUMN moderation_report_clusters.rss_feed_item_id IS 'Reported RSS feed item, including the live target for this cluster.';
+COMMENT ON COLUMN moderation_report_clusters.resolution_action IS 'NULL for pending reports, otherwise the reviewed report outcome.';
+COMMENT ON COLUMN moderation_report_clusters.first_reported_at IS 'Earliest UUIDv7 report timestamp in this target and outcome cluster.';
+COMMENT ON COLUMN moderation_report_clusters.last_reported_at IS 'Latest UUIDv7 report timestamp in this target and outcome cluster.';
+COMMENT ON COLUMN moderation_report_clusters.report_count IS 'Number of current report rows in this target and outcome cluster.';
+
+CREATE OR REPLACE FUNCTION fn_sync_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  prior_cluster moderation_report_clusters%ROWTYPE;
+  next_first timestamptz;
+  next_last timestamptz;
+  prior_reported_at timestamptz;
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF OLD.id = NEW.id
+      AND OLD.resolution_action IS NOT DISTINCT FROM NEW.resolution_action
+      AND OLD.post_id IS NOT DISTINCT FROM NEW.post_id
+      AND OLD.reported_user_id IS NOT DISTINCT FROM NEW.reported_user_id
+      AND OLD.hostname_id IS NOT DISTINCT FROM NEW.hostname_id
+      AND OLD.rss_feed_item_id IS NOT DISTINCT FROM NEW.rss_feed_item_id THEN
+      RETURN NEW;
+    END IF;
+  END IF;
+
+  IF TG_OP IN ('DELETE', 'UPDATE') THEN
+    SELECT * INTO prior_cluster
+    FROM moderation_report_clusters cluster
+    WHERE cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
+      AND cluster.post_id IS NOT DISTINCT FROM OLD.post_id
+      AND cluster.reported_user_id IS NOT DISTINCT FROM OLD.reported_user_id
+      AND cluster.hostname_id IS NOT DISTINCT FROM OLD.hostname_id
+      AND cluster.rss_feed_item_id IS NOT DISTINCT FROM OLD.rss_feed_item_id
+    FOR UPDATE;
+
+    IF FOUND THEN
+      IF prior_cluster.report_count = 1 THEN
+        DELETE FROM moderation_report_clusters WHERE id = prior_cluster.id;
+      ELSE
+        prior_reported_at := uuid_extract_timestamp(OLD.id);
+        IF prior_cluster.first_reported_at = prior_reported_at THEN
+          SELECT uuid_extract_timestamp(s.id) INTO next_first
+          FROM moderation_reports s
+          WHERE (s.post_id = OLD.post_id OR s.reported_user_id = OLD.reported_user_id
+              OR s.hostname_id = OLD.hostname_id OR s.rss_feed_item_id = OLD.rss_feed_item_id)
+            AND s.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
+          ORDER BY s.id ASC LIMIT 1;
+        END IF;
+        IF prior_cluster.last_reported_at = prior_reported_at THEN
+          SELECT uuid_extract_timestamp(s.id) INTO next_last
+          FROM moderation_reports s
+          WHERE (s.post_id = OLD.post_id OR s.reported_user_id = OLD.reported_user_id
+              OR s.hostname_id = OLD.hostname_id OR s.rss_feed_item_id = OLD.rss_feed_item_id)
+            AND s.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
+          ORDER BY s.id DESC LIMIT 1;
+        END IF;
+        UPDATE moderation_report_clusters
+        SET report_count = report_count - 1,
+          first_reported_at = COALESCE(next_first, first_reported_at),
+          last_reported_at = COALESCE(next_last, last_reported_at)
+        WHERE id = prior_cluster.id;
+      END IF;
+    END IF;
+  END IF;
+
+  IF TG_OP IN ('INSERT', 'UPDATE') THEN
+    INSERT INTO moderation_report_clusters (
+      post_id, reported_user_id, hostname_id, rss_feed_item_id,
+      resolution_action, first_reported_at, last_reported_at, report_count
+    ) VALUES (
+      NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id,
+      NEW.resolution_action, uuid_extract_timestamp(NEW.id), uuid_extract_timestamp(NEW.id), 1
+    )
+    ON CONFLICT ON CONSTRAINT moderation_report_clusters_one_status_target
+    DO UPDATE SET
+      first_reported_at = LEAST(moderation_report_clusters.first_reported_at, EXCLUDED.first_reported_at),
+      last_reported_at = GREATEST(moderation_report_clusters.last_reported_at, EXCLUDED.last_reported_at),
+      report_count = moderation_report_clusters.report_count + 1;
+  END IF;
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE TRIGGER trigger_moderation_report_clusters_insert_delete
+  AFTER INSERT OR DELETE ON moderation_reports
+  FOR EACH ROW EXECUTE FUNCTION fn_sync_moderation_report_cluster();
+CREATE OR REPLACE TRIGGER trigger_moderation_report_clusters_update
+  AFTER UPDATE OF id, reviewed_at, resolution_action, post_id, reported_user_id,
+    hostname_id, rss_feed_item_id ON moderation_reports
+  FOR EACH ROW EXECUTE FUNCTION fn_sync_moderation_report_cluster();

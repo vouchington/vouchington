@@ -14,31 +14,33 @@ import {
 import type { ClusterRow, SelectClusterRowsOptions } from './clustered-types.mts'
 import {
   appendCandidateCursorClause,
-  appendClusterHeadPredicate,
+  appendClusterEntityMatch,
   appendClusterWhereClause,
   groupReportsByCluster,
 } from './clustered-utils.mts'
 import { appendModerationReportStatusPredicate } from './sort-sql.mts'
+import { moderationReportClusterCandidatesSql } from './clustered-candidates.mts'
 const MAX_REPORTS_PER_CLUSTER = 25
 export function selectEntityClusterRows(options: SelectClusterRowsOptions): Promise<ClusterRow[]> {
   const { limit, status, sortAsc, beforeCursor, cursorDirection = 'after' } = options
   const querySortAsc = cursorDirection === 'after' ? sortAsc : !sortAsc
   const query = sql`/* listClusteredModerationReports:clusters */
     WITH paged_entities AS (
-      SELECT
-        r.entity_type,
-        r.entity_id
+      SELECT c.entity_type, c.entity_id,
+        c.post_id, c.reported_user_id, c.hostname_id, c.rss_feed_item_id
       FROM `
-  query.append(moderationReportsWithEntitySql())
-  query.append(sql` r
-      WHERE `)
-  appendModerationReportStatusPredicate(query, 'r', status)
-  appendClusterHeadPredicate(query, status, sortAsc)
+  query.append(moderationReportClusterCandidatesSql(sortAsc))
+  query.append(sql` c WHERE `)
+  query.append(
+    status === 'pending'
+      ? sql`c.resolution_action IS NULL`
+      : sql`c.resolution_action = ${status}::moderation_report_resolution_actions`,
+  )
   if (beforeCursor) appendCandidateCursorClause(query, beforeCursor, sortAsc, cursorDirection)
   query.append(
     querySortAsc
-      ? sql` ORDER BY r.created_at ASC, r.entity_id ASC, r.entity_type ASC LIMIT ${limit + 1}`
-      : sql` ORDER BY r.created_at DESC, r.entity_id DESC, r.entity_type DESC LIMIT ${limit + 1}`,
+      ? sql` ORDER BY c.sort_reported_at ASC, c.entity_id ASC, c.entity_type ASC LIMIT ${limit + 1}`
+      : sql` ORDER BY c.sort_reported_at DESC, c.entity_id DESC, c.entity_type DESC LIMIT ${limit + 1}`,
   )
   query.append(sql`
     ),
@@ -46,20 +48,19 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
       SELECT
         p.entity_type,
         p.entity_id,
+        p.post_id, p.reported_user_id, p.hostname_id, p.rss_feed_item_id,
         COUNT(*)::int AS report_count,
         COUNT(DISTINCT r.reporter_user_id)::int AS reporter_count,
         MIN(r.created_at) AS first_reported_at,
         MAX(r.created_at) AS last_reported_at
       FROM paged_entities p
-      JOIN `)
-  query.append(moderationReportsWithEntitySql())
-  query.append(sql` r
-        ON r.entity_type = p.entity_type
-        AND r.entity_id = p.entity_id
-        AND `)
+      JOIN moderation_reports r ON `)
+  appendClusterEntityMatch(query, 'r', 'p')
+  query.append(sql` AND `)
   appendModerationReportStatusPredicate(query, 'r', status)
   query.append(sql`
-      GROUP BY p.entity_type, p.entity_id
+      GROUP BY p.entity_type, p.entity_id, p.post_id, p.reported_user_id,
+        p.hostname_id, p.rss_feed_item_id
     )
     SELECT
       g.entity_type,
@@ -70,12 +71,10 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
         SELECT jsonb_object_agg(reason_rows.reason, reason_rows.report_count)
         FROM (
           SELECT rr.reason, COUNT(*)::int AS report_count
-          FROM `)
-  query.append(moderationReportsWithEntitySql())
-  query.append(sql` rr
-          WHERE rr.entity_type = g.entity_type
-            AND rr.entity_id = g.entity_id
-            AND `)
+          FROM moderation_reports rr
+          WHERE `)
+  appendClusterEntityMatch(query, 'rr', 'g')
+  query.append(sql` AND `)
   appendModerationReportStatusPredicate(query, 'rr', status)
   query.append(sql`
           GROUP BY rr.reason
@@ -95,9 +94,9 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
     JOIN LATERAL (SELECT * FROM `)
   query.append(moderationReportsWithEntitySql())
   query.append(sql` r
-      WHERE r.entity_type = g.entity_type
-        AND r.entity_id = g.entity_id
-        AND `)
+      WHERE `)
+  appendClusterEntityMatch(query, 'r', 'g')
+  query.append(sql` AND `)
   appendModerationReportStatusPredicate(query, 'r', status)
   query.append(sql`
       ORDER BY r.id DESC

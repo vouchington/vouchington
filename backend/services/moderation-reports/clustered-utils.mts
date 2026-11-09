@@ -5,7 +5,7 @@ import {
   type ModerationReportStatus,
 } from './config.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { appendModerationReportStatusPredicate, type ModerationReportSort } from './sort-sql.mts'
+import type { ModerationReportSort } from './sort-sql.mts'
 import type { PendingModerationReport } from './pending-moderation-report.mts'
 import type { ModerationReportTargetContent } from './target-metadata.mts'
 import type {
@@ -23,23 +23,15 @@ export function appendUuidList(query: SQLStatement, ids: string[]) {
   })
 }
 
-export function appendClusterHeadPredicate(
+export function appendClusterEntityMatch(
   query: SQLStatement,
-  status: ModerationReportStatus,
-  sortAsc: boolean,
+  reportAlias: 'r' | 'rr',
+  clusterAlias: 'p' | 'g',
 ): void {
-  query.append(sql`
-    AND NOT EXISTS (
-      SELECT 1 FROM moderation_reports sibling
-      WHERE (
-        sibling.post_id = r.post_id
-        OR sibling.reported_user_id = r.reported_user_id
-        OR sibling.hostname_id = r.hostname_id
-        OR sibling.rss_feed_item_id = r.rss_feed_item_id
-      ) AND `)
-  appendModerationReportStatusPredicate(query, 'sibling', status)
-  query.append(sortAsc ? sql` AND sibling.id < r.id` : sql` AND sibling.id > r.id`)
-  query.append(sql`)`)
+  query.append(`(${reportAlias}.post_id = ${clusterAlias}.post_id
+    OR ${reportAlias}.reported_user_id = ${clusterAlias}.reported_user_id
+    OR ${reportAlias}.hostname_id = ${clusterAlias}.hostname_id
+    OR ${reportAlias}.rss_feed_item_id = ${clusterAlias}.rss_feed_item_id)`)
 }
 
 export function appendCandidateCursorClause(
@@ -52,15 +44,15 @@ export function appendCandidateCursorClause(
   if (beforeCursor.entityType) {
     query.append(
       sortAsc === forward
-        ? sql` AND (r.created_at, r.entity_id, r.entity_type) > (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid, ${beforeCursor.entityType})`
-        : sql` AND (r.created_at, r.entity_id, r.entity_type) < (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid, ${beforeCursor.entityType})`,
+        ? sql` AND (c.sort_reported_at, c.entity_id, c.entity_type) > (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid, ${beforeCursor.entityType})`
+        : sql` AND (c.sort_reported_at, c.entity_id, c.entity_type) < (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid, ${beforeCursor.entityType})`,
     )
     return
   }
   query.append(
     sortAsc === forward
-      ? sql` AND (r.created_at, r.entity_id) > (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid)`
-      : sql` AND (r.created_at, r.entity_id) < (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid)`,
+      ? sql` AND (c.sort_reported_at, c.entity_id) > (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid)`
+      : sql` AND (c.sort_reported_at, c.entity_id) < (${beforeCursor.createdAt}::timestamptz, ${beforeCursor.id}::uuid)`,
   )
 }
 

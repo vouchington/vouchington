@@ -8,6 +8,7 @@ import { REPORT_CONTEXT_SEED_ROW_COUNT } from '../seed-data/moderation-report-co
 import {
   clusterFixturePostIds,
   MODERATION_CLUSTER_REPORT_COUNT,
+  MODERATION_CLUSTER_HOT_POST_ID,
   type ClusterFixtureStatus,
 } from '../seed-data/moderation-cluster-pages.mts'
 
@@ -50,6 +51,19 @@ export async function runModerationClusterPageScenarios(): Promise<void> {
       )
     }
   }
+  await capturePage(
+    'moderation-clusters-pending-hot',
+    'pending',
+    false,
+    {
+      createdAt: '2150-01-01T00:00:00.000000Z',
+      id: MODERATION_CLUSTER_HOT_POST_ID,
+      entityType: 'post',
+    },
+    'after',
+    [MODERATION_CLUSTER_HOT_POST_ID, ...clusterFixturePostIds(0).toReversed().slice(0, PAGE_LIMIT)],
+    [10_000, 16, 16, 16, 16],
+  )
 }
 
 type ClusterCursor = { createdAt: string; entityType: string; id: string }
@@ -65,6 +79,7 @@ async function capturePage(
   beforeCursor: ClusterCursor | null,
   cursorDirection: 'after' | 'before',
   expectedIds: string[],
+  expectedCounts = expectedIds.map(() => 16),
 ): Promise<ClusterRow[]> {
   registerScenarioContract(scenarioId, {
     seededRows: {
@@ -87,7 +102,10 @@ async function capturePage(
         rows.map(row => row.entity_id),
         expectedIds,
       )
-      for (const row of rows) assert.equal(row.report_count, 16)
+      assert.deepEqual(
+        rows.map(row => row.report_count),
+        expectedCounts,
+      )
       capturedRows = rows
     },
     undefined,

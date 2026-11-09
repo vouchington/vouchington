@@ -4,10 +4,12 @@ import { seedUuid, seedUuidAtTimestamp } from './common.mts'
 const POST_START = 80_000
 const ENTITIES_PER_ERA = 12
 const REPORTERS_PER_ENTITY = 16
+const HOT_REPORT_COUNT = 10_000
 const REPORT_TIMES = [Date.parse('1970-01-02T00:00:00Z'), Date.parse('2200-01-02T00:00:00Z')]
 const STATUSES = ['pending', 'reviewed', 'actioned', 'dismissed'] as const
 export const MODERATION_CLUSTER_REPORT_COUNT =
-  2 * ENTITIES_PER_ERA * REPORTERS_PER_ENTITY * STATUSES.length
+  2 * ENTITIES_PER_ERA * REPORTERS_PER_ENTITY * STATUSES.length + HOT_REPORT_COUNT
+export const MODERATION_CLUSTER_HOT_POST_ID = seedUuid(POST_START + 2 * ENTITIES_PER_ERA, '05')
 
 export type ClusterFixtureStatus = (typeof STATUSES)[number]
 
@@ -19,7 +21,11 @@ export function clusterFixturePostIds(era: 0 | 1): string[] {
 
 /** Same-millisecond report ids force the cluster order's entity-id tie breaker. */
 export async function seedModerationClusterPages(): Promise<void> {
-  const postIds = [...clusterFixturePostIds(0), ...clusterFixturePostIds(1)]
+  const postIds = [
+    ...clusterFixturePostIds(0),
+    ...clusterFixturePostIds(1),
+    MODERATION_CLUSTER_HOT_POST_ID,
+  ]
   await write(
     `/* seedModerationClusterPages:cases */
     INSERT INTO moderation_cases (post_id)
@@ -45,6 +51,12 @@ export async function seedModerationClusterPages(): Promise<void> {
         }
       }
     }
+  }
+  for (let index = 0; index < HOT_REPORT_COUNT; index += 1) {
+    reportIds.push(seedUuidAtTimestamp(Date.parse('2100-01-02T00:00:00Z'), index))
+    targetIds.push(MODERATION_CLUSTER_HOT_POST_ID)
+    reporterIds.push(seedUuid(index, '01'))
+    actions.push(null)
   }
   await write(
     `/* seedModerationClusterPages:reports */

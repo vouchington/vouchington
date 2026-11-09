@@ -3,7 +3,7 @@ import { reportTargetContentSql, reportTargetLabelSql } from './target-content.m
 
 export type { ModerationReportTargetContent } from './target-content.mts'
 
-export type ModerationReportStatusSqlAlias = 'mr' | 'r' | 'rc' | 'rr' | 'sibling'
+export type ModerationReportStatusSqlAlias = 'mr' | 'r' | 'rc' | 'rr'
 
 export function appendReportTargetColumns(query: SQLStatement, { includeAvailable = false } = {}) {
   query.append(sql`
