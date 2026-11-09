@@ -1,6 +1,10 @@
 import type { ManifestEndpoint } from './endpoint-registry'
 
 const disputePath = '/api/v1/disputes/00000000-0000-7000-8000-000000000201'
+const reportJudgementRunPath =
+  '/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e/judgements/00000000-0000-7000-8000-000000000303'
+const appealResolutionRunPath =
+  '/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/appeal_resolution_00000000-0000-7000-8000-000000000303'
 const removedPostsPageTwoCursor =
   'eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAxVDA5OjAwOjAwLjAwMDAwMFoiLCJ0aWVyIjowLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMSIsInNjb3BlIjoidXNlci1yZW1vdmVkLXBvc3RzOjAwMDAwMDAwLTAwMDAtNzAwMC04NzAwLTAwMDAwMDAwMDEwMTpyZW1vdmVkLWRlc2Mta2luZC1kZXNjLXBvc3QtZGVzYzp2MiJ9'
 
@@ -15,7 +19,35 @@ export const moderationParityEndpointRegistry: Record<string, ManifestEndpoint> 
   },
   'native.moderation.report-judgement-run.pending': {
     method: 'GET',
-    path: '/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e/judgements/00000000-0000-7000-8000-000000000303',
+    path: reportJudgementRunPath,
+  },
+  'native.moderation.report-judgement-run.succeeded': {
+    method: 'GET',
+    path: reportJudgementRunPath,
+  },
+  'native.moderation.report-judgement-run.failed': {
+    method: 'GET',
+    path: reportJudgementRunPath,
+  },
+  'native.moderation.report-judgement-run.expired': {
+    method: 'GET',
+    path: reportJudgementRunPath,
+  },
+  'native.moderation.appeals.resolution-draft-run.active': {
+    method: 'GET',
+    path: appealResolutionRunPath,
+  },
+  'native.moderation.appeals.resolution-draft-run.succeeded': {
+    method: 'GET',
+    path: appealResolutionRunPath,
+  },
+  'native.moderation.appeals.resolution-draft-run.failed': {
+    method: 'GET',
+    path: appealResolutionRunPath,
+  },
+  'native.moderation.appeals.resolution-draft-run.expired': {
+    method: 'GET',
+    path: appealResolutionRunPath,
   },
   'native.moderation.appeals.member.default': {
     method: 'GET',

@@ -119,10 +119,6 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'Server-minted id shared by the audit rows of one MCP request; it names no Voucha entity.',
   ],
   [
-    'moderation_report_judgements.run_id',
-    'GlideMQ report-judgement run identity; queue jobs live outside PostgreSQL, while this unique correlation key supports exact result polling and retry replay.',
-  ],
-  [
     'rss_feed_item_category_snapshot_reconciliations.change_id',
     'Opaque notification enqueue identity with no owning entity row; stable across exact snapshot replay and fresh after each edit or acknowledged-row recreation.',
   ],

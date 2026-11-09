@@ -66,6 +66,19 @@ describe('report judgement queue admission and result polling', () => {
       reason: 'spam',
     })
     await request.get(`/api/v1/reports/${otherReportId}/judgements/${admission.run_id}`).expect(404)
+    await expect(
+      insertReportJudgement({
+        entityType: 'post',
+        entityId: postId,
+        triggeringReportId: otherReportId,
+        runId: admission.run_id,
+        rerunById: staff.id,
+        recommendedAction: 'no_action',
+        publicResponse: 'Wrong report',
+        internalResponse: 'Wrong report',
+        model: 'test-model',
+      }),
+    ).rejects.toThrow('Judgement run disappeared before completion')
     await createRequest()
       .get(`/api/v1/reports/${reportId}/judgements/${admission.run_id}`)
       .expect(401)

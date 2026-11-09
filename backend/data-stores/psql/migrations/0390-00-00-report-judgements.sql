@@ -57,8 +57,8 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgements (
   triggering_report_id uuid REFERENCES moderation_reports (id) ON DELETE SET NULL,
   -- guardrails-disable-next-line uuid-must-be-key
   rerun_by_id uuid REFERENCES users (id) ON DELETE SET NULL,
-  -- Opaque identity of a manually admitted run; automatic judgements have no run identity.
-  run_id uuid UNIQUE,
+  -- Manual admission relation; retention clears this link without erasing report attribution.
+  run_id uuid UNIQUE REFERENCES moderation_report_judgement_runs(id) ON DELETE SET NULL,
   recommended_action moderation_judgement_actions NOT NULL,
   public_response text NOT NULL,
   internal_response text NOT NULL,
@@ -70,10 +70,7 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgements (
   context_max_reason_rank integer,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   dispatched_at timestamptz,
-  CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1),
-  FOREIGN KEY (triggering_report_id, run_id)
-    REFERENCES moderation_report_judgement_runs(moderation_report_id, id)
-    ON DELETE SET NULL (run_id)
+  CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1)
 );
 
 CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__rerun_by_id

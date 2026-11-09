@@ -205,7 +205,7 @@ describe('ReportsClient re-run judgement button', () => {
     expect(screen.getByText('Reported post')).toBeVisible()
   })
 
-  it('re-enables a clustered rerun after its saved result times out', async () => {
+  it('keeps a clustered rerun locked after the client polling deadline', async () => {
     const judgement = {
       id: '00000000-0000-7000-8000-000000000001',
       recommended_action: 'remove' as const,
@@ -246,8 +246,10 @@ describe('ReportsClient re-run judgement button', () => {
       onTimeout?.([`rerun:${cluster.reports[0]!.id}:report_judgement_test-run`]),
     )
 
-    expect(button).toBeEnabled()
+    expect(button).toBeDisabled()
     expect(screen.getByText(/AI judgement is taking longer than expected/)).toBeVisible()
+    await act(async () => fireEvent.click(button))
+    expect(mockRerunReportJudgement).toHaveBeenCalledTimes(1)
   })
 })
 
