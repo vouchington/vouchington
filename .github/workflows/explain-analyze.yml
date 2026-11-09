@@ -145,6 +145,7 @@ jobs:
         timeout-minutes: 2
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
+          overwrite: true
           name: explain-seeded-postgres-${{ github.run_id }}
           path: ${{ runner.temp }}/explain-seeded/explain-seeded.dump
           if-no-files-found: error
@@ -155,6 +156,7 @@ jobs:
         timeout-minutes: 1
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
+          overwrite: true
           name: explain-seed-coverage-${{ github.run_id }}
           path: backend/scripts/explain-analyze/output/pruning-v8/
           if-no-files-found: error
@@ -165,6 +167,7 @@ jobs:
         timeout-minutes: 1
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
+          overwrite: true
           name: explain-seed-diagnostics
           path: |
             backend/scripts/explain-analyze/output/seed-resources.txt
