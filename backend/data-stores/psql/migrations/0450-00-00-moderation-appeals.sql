@@ -285,7 +285,7 @@ BEGIN
 END $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_moderation_appeal_resolution_runs__latest_lifecycle_change_id
+CREATE INDEX IF NOT EXISTS idx_moderation_appeal_resolution_runs__lifecycle_change_id
   ON moderation_appeal_resolution_runs (latest_lifecycle_change_id)
   WHERE latest_lifecycle_change_id IS NOT NULL;
 
