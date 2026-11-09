@@ -21,7 +21,7 @@
     "@modules/utils": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@ts-shared/languages": "workspace:^",
-    "lingua-rs": "^0.2.3",
+    "lingua-rs": "^0.2.4",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.15.0"
   },
