@@ -17,6 +17,7 @@ type Predecessor = {
   predecessor_id: string
   predecessor_type: string
 }
+type TargetKey = { first_reported_at: Date }
 
 /** A typed cursor exposes each target's ordered head probe after a preceding cluster. */
 export async function runModerationClusterTypedHeadScenarios(): Promise<void> {
@@ -28,20 +29,27 @@ export async function runModerationClusterTypedHeadScenarios(): Promise<void> {
 async function captureTypedHead(type: TypedTarget, entities: ReportContextEntity[]): Promise<void> {
   const target = entities.find(entity => entity.entityType === type)
   assert(target, `Missing ${type} report-context target`)
+  const targetColumn = type === 'url_hostname' ? 'hostname_id' : 'rss_feed_item_id'
+  const { rows: targetKeys } = await read<TargetKey>(
+    `/* moderationClusterTypedHeadTargetKey */
+     SELECT first_reported_at FROM moderation_report_clusters
+     WHERE ${targetColumn} = $1::uuid AND resolution_action IS NULL`,
+    [target.entityId],
+  )
+  assert.equal(targetKeys.length, 1)
+  const targetKey = targetKeys[0]!
   const candidates = moderationReportClusterCandidatesSql(true)
   assert.equal(candidates.values.length, 0)
   const { rows: predecessors } = await read<Predecessor>(
     `/* moderationClusterTypedHeadPredecessor */
-     WITH ordered AS (
-       SELECT c.entity_type, c.entity_id,
-         lag(c.sort_reported_at) OVER sort_order AS predecessor_at,
-         lag(c.entity_id) OVER sort_order AS predecessor_id,
-         lag(c.entity_type) OVER sort_order AS predecessor_type
-       FROM ${candidates.text} c WHERE c.resolution_action IS NULL
-       WINDOW sort_order AS (ORDER BY c.sort_reported_at, c.entity_id, c.entity_type)
-     ) SELECT predecessor_at, predecessor_id, predecessor_type FROM ordered
-       WHERE entity_type = $1::moderation_report_entity_types AND entity_id = $2::uuid`,
-    [type, target.entityId],
+     SELECT c.sort_reported_at AS predecessor_at,
+       c.entity_id AS predecessor_id, c.entity_type AS predecessor_type
+     FROM ${candidates.text} c WHERE c.resolution_action IS NULL
+       AND (c.sort_reported_at, c.entity_id) <= ($1::timestamptz, $2::uuid)
+       AND (c.sort_reported_at, c.entity_id, c.entity_type)
+         < ($1::timestamptz, $2::uuid, $3::moderation_report_entity_types)
+     ORDER BY c.sort_reported_at DESC, c.entity_id DESC, c.entity_type DESC LIMIT 1`,
+    [targetKey.first_reported_at, target.entityId, type],
   )
   assert.equal(predecessors.length, 1)
   const predecessor = predecessors[0]!
