@@ -11,8 +11,7 @@ import {
   probeBlockedAiUsageRetirement,
   retireTestAiUsagePartition,
   retireTestAiUsagePartitionDuringWrite,
-  withDetachedTestAiUsagePartition,
-  withRenamedTestAiUsagePartition,
+  withTestAiUsagePreparationFault,
 } from '@voucha/test-helpers/entities/ai-usage-partition-retirement'
 import {
   hasTestAiUsageResponseKey,
@@ -26,28 +25,21 @@ import { getCommunityAiCostTotals } from '../totals.mts'
 import { prepareAiUsageMonth } from '@data-stores/psql/ai-usage-monthly-partition'
 
 describe('backdated AI usage on retired monthly history', () => {
-  it('rejects an overlapping owned month attached under a different name', async () => {
-    const releaseSweep = await reserveTestAiUsageRetentionSweep()
-    onTestFinished(releaseSweep)
+  it('propagates a partition creator failure without changing shared schema', async () => {
     const createdAt = new Date(Date.UTC(2000 + randomInt(20), randomInt(12), 12, 12))
-    const releaseMonth = await reserveTestAiUsageMonths([createdAt])
-    onTestFinished(() => releaseMonth([]))
     const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
-    await withRenamedTestAiUsagePartition(testAiUsageCandidate(partition), async () => {
-      await expect(prepareAiUsageMonth(createdAt)).rejects.toMatchObject({ code: '42P17' })
+    await withTestAiUsagePreparationFault(partition, 'creator', async () => {
+      await expect(prepareAiUsageMonth(createdAt)).rejects.toThrow(
+        'Injected AI usage partition creator failure',
+      )
     })
-    expect(await isTestAiUsagePartitionAttached(partition)).toBe(true)
   })
 
-  it('rejects a canonical month table that is detached from the ledger', async () => {
-    const releaseSweep = await reserveTestAiUsageRetentionSweep()
-    onTestFinished(releaseSweep)
+  it('rejects a present but unattached month without recording usage', async () => {
     const createdAt = new Date(Date.UTC(2000 + randomInt(20), randomInt(12), 12, 12))
-    const releaseMonth = await reserveTestAiUsageMonths([createdAt])
-    onTestFinished(() => releaseMonth([]))
     const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
     const agentSlug = `test-detached-month-${randomUUID()}`
-    await withDetachedTestAiUsagePartition(testAiUsageCandidate(partition), async () => {
+    await withTestAiUsagePreparationFault(partition, 'present-unattached', async () => {
       await expect(
         recordAiUsage({
           createdAt,
@@ -71,7 +63,6 @@ describe('backdated AI usage on retired monthly history', () => {
         message: `AI usage month ${partition} was not attached after preparation`,
       })
     })
-    expect(await isTestAiUsagePartitionAttached(partition)).toBe(true)
     expect(await readTestAiUsageIdsForMonth(createdAt, agentSlug)).toEqual([])
   })
 

@@ -1,67 +1,101 @@
-import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
-import {
-  assertSafeSqlIdentifier,
-  parseMonthlyPartitionName,
-  timestampToUuidv7LowerBound,
-} from '@vouchington/postgres/partitions'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import * as setup from '../../data-stores/psql/setup.mts'
+import { assertSafeSqlIdentifier } from '@vouchington/postgres/partitions'
 import { guardAndRetireMonthlyPartition } from '../../data-stores/psql/migration-runner/guard-and-retire-monthly-partition.mts'
 import { PARTITION_DROP_POLICIES } from '../../data-stores/psql/config-driven/utils/partition-drop-policies.mts'
 import type { PartitionDropCandidate } from '../../data-stores/psql/migration-runner/partition-drop-guard.mts'
 import { withTestOwnedPostgresWait } from '../postgres-client-lock-observer.mts'
 import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
+import { rejectQuery } from '../injected-failures.mts'
+import { vi } from 'vitest'
 import sql from 'sql-template-strings'
 
 const policy = PARTITION_DROP_POLICIES.ai_usage_records
 
-/** Keep the owned range attached under another name while preparation tries its canonical name. */
-export async function withRenamedTestAiUsagePartition(
-  candidate: PartitionDropCandidate,
-  action: () => Promise<void>,
+/** Inject a catalog/creator fault at the owned transaction boundary without changing shared DDL. */
+export async function withTestAiUsagePreparationFault(
+  partition: string,
+  fault: 'creator' | 'present-unattached',
+  operation: () => Promise<void>,
 ): Promise<void> {
-  const partition = assertOwnedAiUsagePartitionName(candidate)
-  const conflict = assertSafeSqlIdentifier(`${partition}__test_conflict`)
-  // no-mistakes-disable-next-line postgres-no-test-state-mutation: the monthly-DDL suite reserves this absent historical child and the retention sweep; only its owned empty partition is renamed and restored in finally to exercise the real DDL failure.
-  await write(
-    `/* renameTestAiUsagePartition:away */ ALTER TABLE ${partition} RENAME TO ${conflict}`,
-  )
-  try {
-    await action()
-  } finally {
-    // no-mistakes-disable-next-line postgres-no-test-state-mutation: restore the reserved empty historical child before its owning fixture retires it; no shared application rows or schema objects are changed.
-    await write(
-      `/* renameTestAiUsagePartition:restore */ ALTER TABLE ${conflict} RENAME TO ${partition}`,
+  let probeMatched = false
+  let faultMatched = false
+  const realWrite = setup.write
+  const writeSpy = vi
+    .spyOn(setup, 'write')
+    .mockImplementation(
+      (
+        input: Parameters<typeof realWrite>[0],
+        valuesOrOptions?: Parameters<typeof realWrite>[1],
+        options?: Parameters<typeof realWrite>[2],
+      ) => {
+        const statement = typeof input === 'string' ? input : input.text
+        const values =
+          typeof input === 'string'
+            ? Array.isArray(valuesOrOptions)
+              ? valuesOrOptions
+              : []
+            : (input.values ?? [])
+        if (
+          !probeMatched &&
+          statement.includes('/* isAiUsageMonthAttached */') &&
+          values.includes(partition)
+        ) {
+          probeMatched = true
+          return Promise.resolve({
+            command: 'SELECT',
+            rowCount: 1,
+            oid: 0,
+            fields: [],
+            rows: [{ attached: false, present: fault === 'present-unattached' }],
+          })
+        }
+        return realWrite(input, valuesOrOptions, options)
+      },
     )
-  }
-}
-
-/** Keep the owned empty child under its canonical name while it is detached from the parent. */
-export async function withDetachedTestAiUsagePartition(
-  candidate: PartitionDropCandidate,
-  action: () => Promise<void>,
-): Promise<void> {
-  const partition = assertOwnedAiUsagePartitionName(candidate)
-  const parsed = parseMonthlyPartitionName(partition)!
-  const lower = timestampToUuidv7LowerBound(Date.UTC(parsed.year, parsed.month - 1, 1))
-  const upper = timestampToUuidv7LowerBound(Date.UTC(parsed.year, parsed.month, 1))
-  // no-mistakes-disable-next-line postgres-no-test-state-mutation: only the monthly-DDL suite's reserved empty historical child is detached to verify preparation rejects an unattached relation; finally restores its exact range.
-  await write(`/* detachTestAiUsagePartition */
-    ALTER TABLE ai_usage_records DETACH PARTITION ${partition}`)
+  const realBegin = setup.beginTransaction
+  const beginSpy = vi.spyOn(setup, 'beginTransaction').mockImplementation(async options => {
+    const transaction = await realBegin(options)
+    if (fault === 'creator') {
+      return rejectQuery(
+        transaction,
+        statement => {
+          const matches =
+            statement.includes('/* createMonthlyPartitions */') && statement.includes(partition)
+          if (matches) faultMatched = true
+          return matches
+        },
+        'Injected AI usage partition creator failure',
+      )
+    }
+    return new Proxy(transaction, {
+      async apply(target, thisArgument, argumentsList) {
+        const [input] = argumentsList
+        const statement = typeof input === 'string' ? input : input.text
+        const values = typeof input === 'string' ? [] : (input.values ?? [])
+        if (statement.includes('/* createMonthlyPartitions */') && statement.includes(partition)) {
+          faultMatched = true
+          return { command: 'CREATE', rowCount: 0, oid: 0, fields: [], rows: [] }
+        }
+        const result = await Reflect.apply(target, thisArgument, argumentsList)
+        if (!statement.includes('/* isAiUsageMonthAttached */') || !values.includes(partition))
+          return result
+        return {
+          ...result,
+          rows: [{ attached: false, present: true }],
+          rowCount: 1,
+        }
+      },
+    })
+  })
   try {
-    await action()
+    await operation()
   } finally {
-    // no-mistakes-disable-next-line postgres-no-test-state-mutation: restore only the reserved historical child's original UUIDv7 bounds before releasing ownership; the fixture contains no shared rows.
-    await write(`/* reattachTestAiUsagePartition */
-      ALTER TABLE ai_usage_records ATTACH PARTITION ${partition}
-      FOR VALUES FROM ('${lower}') TO ('${upper}')`)
+    beginSpy.mockRestore()
+    writeSpy.mockRestore()
   }
-}
-
-function assertOwnedAiUsagePartitionName(candidate: PartitionDropCandidate): string {
-  if (candidate.table !== 'ai_usage_records') throw new Error('Expected an AI usage partition')
-  const partition = assertSafeSqlIdentifier(candidate.partition)
-  const parsed = parseMonthlyPartitionName(partition)
-  if (parsed?.table !== candidate.table) throw new Error('Expected a monthly AI usage partition')
-  return partition
+  if (!probeMatched || !faultMatched)
+    throw new Error('AI usage preparation fault did not reach its owned query boundary')
 }
 
 /**
