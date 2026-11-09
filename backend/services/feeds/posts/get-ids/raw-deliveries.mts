@@ -1,11 +1,12 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getMaxUUIDv7ForDate, getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { postsWorkMaxValues } from '@services/posts/work-limits'
 import { buildStablePostHotRankExpression } from '@services/posts/search/stable-hot-rank'
-import type { PostFeedCursor } from './feed-cursor.mts'
+import { parsePostFeedCursorDate, type PostFeedCursor } from './feed-cursor.mts'
 import type { PostFeedPageQueryOptions } from './page-options.mts'
 
 const CURSOR_TIME_FORMAT = `'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'`
+const MAX_UUID_V7_MILLISECONDS = 0xffff_ffff_ffff
 
 /** The numeric literal is checked before interpolation so generic plans cost the finite walk. */
 function limitLiteral(limit: number): string {
@@ -39,9 +40,15 @@ function appendNewCandidates(query: SQLStatement, options: PostFeedPageQueryOpti
         NULL::timestamptz AS shared_at
        FROM posts WHERE posts.deleted_at IS NULL`)
   if (cutoff) query.append(sql` AND posts.id >= ${getMinUUIDv7ForDate(cutoff)}`)
-  if (cursor?.sort === 'new')
-    query.append(sql` AND posts.id < ${getMinUUIDv7ForDate(new Date(new Date(cursor.sortAt).getTime() + 1))}
+  if (cursor?.sort === 'new') {
+    const cursorMilliseconds = parsePostFeedCursorDate(cursor.sortAt).getTime()
+    // The same-millisecond maximum stays within UUIDv7's range at its final timestamp.
+    const upperPostId = getMaxUUIDv7ForDate(
+      new Date(Math.min(cursorMilliseconds, MAX_UUID_V7_MILLISECONDS)),
+    )
+    query.append(sql` AND posts.id <= ${upperPostId}
       AND (posts.created_at, posts.id) < (${cursor.sortAt}::timestamptz, ${cursor.id}::uuid)`)
+  }
   query
     .append(sql` ORDER BY posts.id DESC LIMIT `)
     .append(upper)

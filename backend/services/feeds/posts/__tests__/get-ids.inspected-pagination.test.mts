@@ -9,8 +9,56 @@ import { withDominantPostFixtures } from '@voucha/test-helpers/entities/trending
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { postsWorkConfig, getPostsWorkLimit } from '@services/posts/work-limits'
 import { getPostFeedIds } from '../get-ids.mts'
+import { decodeCursor } from '@modules/pagination'
 
 describe('bounded post feed pages', () => {
+  it('continues a filtered page at a valid five-digit UUIDv7 timestamp', async () => {
+    await postsWorkConfig.waitForInitialization()
+    const viewer = await createTestUser()
+    const author = await createTestUser()
+    await followUser(viewer, author)
+    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+      post_feed_candidate_limit: 1,
+    })
+    try {
+      await withDominantPostFixtures(
+        [2, 1, 0].map(offset => ({
+          createdAt: new Date(281_474_976_710_655 - offset),
+          createdById: author.id,
+        })),
+        async ([, middle, newest]) => {
+          await hidePost(viewer, { id: middle! })
+          await hidePost(viewer, { id: newest! })
+          const options = {
+            feed_type: 'follow_users' as const,
+            limit: 5,
+            post_types: ['discussion' as const],
+          }
+          const first = await getPostFeedIds(viewer, options)
+          expect(first.results).toEqual([])
+          expect(first.page_info.has_next_page).toBe(true)
+          const cursor = first.page_info.end_cursor
+          expect(cursor).toEqual(expect.any(String))
+          expect(decodeCursor(cursor!)).toMatchObject({
+            timestamp: '10889-08-02T05:31:50.655000Z',
+          })
+          const next = await getPostFeedIds(viewer, { ...options, after: cursor! })
+          expect(next.page_info.has_next_page).toBe(true)
+          expect(next.page_info.end_cursor).toEqual(expect.any(String))
+          expect(next.page_info.end_cursor).not.toBe(cursor)
+          const firstKey = decodeCursor(cursor!) as { timestamp: string; id: string }
+          const nextKey = decodeCursor(next.page_info.end_cursor!) as {
+            timestamp: string
+            id: string
+          }
+          expect(nextKey.timestamp !== firstKey.timestamp || nextKey.id < firstKey.id).toBe(true)
+        },
+      )
+    } finally {
+      restore()
+    }
+  })
+
   it.each([
     { label: 'new', sort: 'new', time_range: '1w' },
     { label: 'hot', sort: 'hot', time_range: '1w' },

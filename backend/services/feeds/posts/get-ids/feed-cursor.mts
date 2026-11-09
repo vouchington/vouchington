@@ -11,6 +11,7 @@ const SCOPES = {
   hot: 'post-feed-hot-stable-inspected-1',
 } as const
 const INVALID = 'Invalid cursor format for post feed'
+const PRECISE_UTC_TIMESTAMP = /^\d{4,5}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$/
 
 export type PostFeedCursor =
   | { sort: 'new'; sortAt: string; id: string }
@@ -71,6 +72,11 @@ export function parsePostFeedCursor(
       ...asOf,
     }
   throw createHttpError(400, INVALID)
+}
+
+/** PostgreSQL emits five-digit years without the extended ISO sign used by JavaScript. */
+export function parsePostFeedCursorDate(timestamp: string): Date {
+  return new Date(/^\d{5}-/.test(timestamp) ? `+0${timestamp}` : timestamp)
 }
 
 export function mapPostFeedResponse(
@@ -158,7 +164,7 @@ function isValidInstant(value: unknown): value is number {
 function isPreciseUtcTimestamp(value: unknown): value is string {
   return (
     typeof value === 'string' &&
-    /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$/.test(value) &&
-    Number.isFinite(new Date(value).getTime())
+    PRECISE_UTC_TIMESTAMP.test(value) &&
+    Number.isFinite(parsePostFeedCursorDate(value).getTime())
   )
 }
