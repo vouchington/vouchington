@@ -27,12 +27,23 @@ jobs:
       actions: read
       contents: read
 
+  # Two shards restore the same prepared database and seeds, so the shared corpus is identical.
+  # `main` runs every scenario except the partitioned comment fixture and `partition` runs only
+  # that fixture (backend/scripts/explain-analyze/explain-shards.mts), so the slowest scenario
+  # group no longer extends one serial run past its step budget. The `explain-analyze-gates` job
+  # merges both shards and enforces the plan gates, so `backend.yml` still needs one result.
   explain-analyze:
+    name: explain-analyze (${{ matrix.shard }})
     needs: [prepare-postgres]
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
-    # Include setup and the large partition fixture seeded after ordinary plan captures.
+    # Main: about 8 minutes of setup and seeds plus up to 20 minutes of scenarios on a slow
+    # runner. The partition shard needs less than the main shard's budget (see its step budgets).
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [main, partition]
     env:
       S3_BUCKET_IMAGES: test-images
       S3_BUCKET_IMAGE_UPLOADS: test-image-uploads
@@ -122,6 +133,8 @@ jobs:
             pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
             < "$RUNNER_TEMP/backend-postgres.dump"
       - name: Check native RSS crawl tier snapshot and dispatch
+        # Its coverage joins the merged native LCOV; one shard is enough.
+        if: ${{ matrix.shard == 'main' }}
         timeout-minutes: 2
         env:
           NODE_DISABLE_COMPILE_CACHE: '1'
@@ -142,11 +155,14 @@ jobs:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
         run: source "$GITHUB_WORKSPACE/.github/workflows/explain-analyze-seed-with-resource-samples.sh"
-      - run: node backend/scripts/explain-analyze/run.mts
-        # The full partitioned corpus takes about ten minutes to load locally; include its load
-        # after ordinary captures in the step budget.
+      - name: Run main EXPLAIN scenarios
+        if: ${{ matrix.shard == 'main' }}
+        # Every scenario but the partition fixture took about 14.4 minutes on the slow run
+        # 42533590490; 20 minutes leaves headroom for slower runners.
         timeout-minutes: 20
+        run: node backend/scripts/explain-analyze/run.mts
         env:
+          EXPLAIN_SHARD: main
           NODE_DISABLE_COMPILE_CACHE: '1'
           # Both canonical native runners append stock V8 records to the existing native coverage input.
           NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
@@ -154,17 +170,65 @@ jobs:
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
           # The invite-redeem scenario hashes its fixture invite code.
           VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake explain-analyze CI OTP HMAC secret
-      - name: Enforce plan gates and write job summary
-        timeout-minutes: 2
-        run: node backend/scripts/explain-analyze/analyze.mts >> "$GITHUB_STEP_SUMMARY"
+      - name: Run partitioned comment fixture scenarios
+        if: ${{ matrix.shard == 'partition' }}
+        # Seeding the partitioned fixture and capturing its plans took 5.3 minutes on the slow run
+        # 42533590490; 12 minutes covers a runner twice as slow.
+        timeout-minutes: 12
+        run: node backend/scripts/explain-analyze/run.mts
+        env:
+          EXPLAIN_SHARD: partition
+          NODE_DISABLE_COMPILE_CACHE: '1'
+          NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
+          EXPLAIN_PLAN_CACHE_MODE: compare
+          VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
+          VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake explain-analyze CI OTP HMAC secret
       - name: Prove pruning on migrated explicit partitions
+        # The proof builds its own database, so one shard owns it; the lighter shard takes it.
+        if: ${{ matrix.shard == 'partition' }}
         timeout-minutes: 3
         env:
           NODE_DISABLE_COMPILE_CACHE: '1'
           NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
         run: node backend/scripts/explain-analyze/pruning/run.mts
-      - name: Convert native EXPLAIN and pruning coverage
+      - name: Upload EXPLAIN ANALYZE results
+        if: always()
+        continue-on-error: true
         timeout-minutes: 1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: explain-analyze-results-${{ matrix.shard }}
+          path: backend/scripts/explain-analyze/output/
+          retention-days: 1
+      - if: failure()
+        uses: ./.github/actions/valkey-logs
+        timeout-minutes: 1
+
+  # Plan gates, the seq-scan and resource-pressure baselines, and native coverage need every
+  # scenario, so they run once over the merged shard results.
+  explain-analyze-gates:
+    needs: [explain-analyze]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+      - uses: ./.github/actions/setup-backend
+        timeout-minutes: 5
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        timeout-minutes: 2
+        with:
+          pattern: explain-analyze-results-*
+          path: ${{ runner.temp }}/explain-shards
+      - name: Merge shard results and require every scenario
+        timeout-minutes: 2
+        run: node backend/scripts/explain-analyze/merge-shard-results.mts "$RUNNER_TEMP/explain-shards"
+      - name: Enforce plan gates and write job summary
+        timeout-minutes: 2
+        run: node backend/scripts/explain-analyze/analyze.mts >> "$GITHUB_STEP_SUMMARY"
+      - name: Convert native EXPLAIN and pruning coverage
+        timeout-minutes: 2
         run: source "$GITHUB_WORKSPACE/.github/workflows/explain-analyze-convert-native-coverage.sh"
       - name: Preserve full native migration LCOV
         if: ${{ inputs.publish_coverage }}
@@ -199,6 +263,7 @@ jobs:
           RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload EXPLAIN ANALYZE results
+        # The merged run keeps the artifact name that scheduled prompts and tools read.
         if: always()
         continue-on-error: true
         timeout-minutes: 1
@@ -208,6 +273,3 @@ jobs:
           name: explain-analyze-results
           path: backend/scripts/explain-analyze/output/
           retention-days: 1
-      - if: failure()
-        uses: ./.github/actions/valkey-logs
-        timeout-minutes: 1

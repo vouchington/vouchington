@@ -28,9 +28,11 @@ The `explain:*` scripts use the caller's environment. Then, in order:
 
 If PostgreSQL cannot run in this session, download the `explain-analyze-results` artifact from the
 newest `main` run of the Nightly workflow (`nightly.yml`, which calls the backend workflow), whatever
-that run's conclusion, and review its `results-*.json`. The artifact is uploaded even when a gate
-fails, and it is kept for 1 day. The pruning proof runs only after the plan gates pass, so
-`pruning-proof-*.json` is missing from a failed run; review it when it is present. If neither works, report `Outcome: incomplete`.
+that run's conclusion, and review its `results-*.json`. The merged artifact is uploaded even when a
+plan gate fails, and it is kept for 1 day. If a run-level shard fails, only the per-shard
+`explain-analyze-results-main` and `explain-analyze-results-partition` artifacts exist, each with
+its own `results-*.json`. The pruning proof runs in the partition shard after its scenarios pass,
+so `pruning-proof-*.json` is missing from a failed run; review it when it is present. If neither works, report `Outcome: incomplete`.
 
 If a run fails a plan-shape gate, check the `results-*.json` artifact in
 `backend/scripts/explain-analyze/output/` before the thrown error message. `collectAndGate()` in

@@ -8,7 +8,8 @@ import {
   MEDIA_REPLAY_SCENARIOS,
   runMediaDeliveryReplayScenarios,
 } from './run-scenarios/media-delivery-replay.mts'
-import { assertScenarioManifest, getCompletedScenarioIds, getResults } from './run-support.mts'
+import { getCompletedScenarioIds, getResults } from './run-support.mts'
+import { assertScenarioManifest } from './scenario-manifest-check.mts'
 import { assertPlanRegistry } from './plan-expectations.mts'
 
 /** Focused native entrypoint; the same seed/scenarios also belong to the complete corpus. */

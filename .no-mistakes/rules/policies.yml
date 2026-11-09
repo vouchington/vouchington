@@ -3300,8 +3300,8 @@
       # Healthy max was 381 seconds (the test step 337) across 1,552 GitHub-hosted successes in #2260.
       - job: '.github/workflows/tests-web.yml#web-tests'
         maxMinutes: 30
-      # Ordinary plans previously finished in about 8m. The full partitioned comment corpus
-      # adds about 10m of local loading after those captures; the 30m cap includes setup and reports.
+      # The main shard needs about 8m of setup and seeds plus up to 20m of scenarios on a slow
+      # runner; the partition shard (comment fixture, about 5m measured) fits the same cap.
       - job: '.github/workflows/explain-analyze.yml#explain-analyze'
         maxMinutes: 30
       # Dispatch-only evals; steps sum to 27m, cap 20m is below it. The two eval steps are
@@ -3421,7 +3421,8 @@
       .github/workflows/dispatch-completed-deploy.yml: [dispatch]
       .github/workflows/docs-publish.yml: [publish]
       .github/workflows/evals-backend.yml: [backend-evals, prepare-postgres]
-      .github/workflows/explain-analyze.yml: [explain-analyze, prepare-postgres]
+      .github/workflows/explain-analyze.yml:
+        [explain-analyze, explain-analyze-gates, prepare-postgres]
       .github/workflows/fix-dependabot.yml:
         [
           check-duplicates,
