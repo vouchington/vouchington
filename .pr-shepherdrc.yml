@@ -8,6 +8,8 @@ checks:
   # pr-shepherd matches against the raw name; composite-name entries silently never match.
   ignore:
     - 'Kilo Code Review'
+    # codecov.yml marks this app report informational; area Patch Coverage checks still gate.
+    - 'codecov/patch'
     # Not 'CodeRabbit': its commit status stays pending while a review runs, so ignoring it lets
     # READY fire before the review posts. Notice-only CodeRabbit comments are already hidden by
     # the bundled `coderabbit-notices` rule below.
