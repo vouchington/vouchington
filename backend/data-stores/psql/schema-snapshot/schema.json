@@ -92301,6 +92301,33 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_post_vote_states__user_id_id_post_id_score": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_vote_states__user_id_id_post_id_score ON public.post_vote_states USING btree (user_id, id DESC) INCLUDE (post_id, score)",
+          "includedColumns": ["post_id", "score"],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_vote_states__user_id_post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -92744,33 +92771,6 @@
             }
           ],
           "predicate": "(user_agent_string_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_votes__user_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_votes__user_id__id ON ONLY public.post_votes USING btree (user_id, id DESC) INCLUDE (post_id, score)",
-          "includedColumns": ["post_id", "score"],
-          "keys": [
-            {
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
