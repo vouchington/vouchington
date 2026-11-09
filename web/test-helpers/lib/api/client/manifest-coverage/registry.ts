@@ -14,6 +14,7 @@ import { nativeChatEndpointRegistry } from './native-chat-registry'
 import { nativeModerationExportEndpointRegistry } from './native-moderation-export-registry'
 import { browsingContractEndpointRegistry } from './browsing-contract-registry'
 import { contentContractEndpointRegistry } from './content-contract-registry'
+import { rssContractEndpointRegistry } from './rss-contract-registry'
 
 export const nonWebEndpointRegistry = mergeEndpointRegistries(
   authAndFediverseEndpointRegistry,
@@ -31,4 +32,5 @@ export const nonWebEndpointRegistry = mergeEndpointRegistries(
   nativeModerationExportEndpointRegistry,
   browsingContractEndpointRegistry,
   contentContractEndpointRegistry,
+  rssContractEndpointRegistry,
 )

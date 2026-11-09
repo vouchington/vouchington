@@ -1,6 +1,6 @@
 import type { ManifestEndpoint } from './endpoint-registry'
 
-export const contentContractEndpointRegistry = {
+export const rssContractEndpointRegistry = {
   'native.rss-feeds.delete.accepted': {
     method: 'DELETE',
     path: '/api/v1/rss-feeds/70000000-0000-7000-8000-000000003680',
