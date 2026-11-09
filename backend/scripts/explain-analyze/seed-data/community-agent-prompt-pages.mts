@@ -10,7 +10,7 @@ import {
   COMMUNITY_AGENT_PROMPT_PAGE_COMMUNITY_ID,
 } from '../community-agent-prompt-page-ids.mts'
 
-/** The target owner retains 25 drafts; every other moderator has one active prompt. */
+/** One owner and 99 moderators each retain 25 drafts, one of them allocated. */
 export async function seedCommunityAgentPromptPages(): Promise<void> {
   const creatorIds = Array.from({ length: COMMUNITY_AGENT_PROMPT_CREATOR_COUNT }, (_, i) =>
     seedUuid(i, 'ec'),
@@ -18,16 +18,14 @@ export async function seedCommunityAgentPromptPages(): Promise<void> {
   const promptIds = Array.from({ length: COMMUNITY_AGENT_PROMPT_TOTAL_ROWS }, (_, i) =>
     seedUuid(i, 'ef'),
   )
-  const allocatedPromptIds = creatorIds.map((_, i) =>
-    i === 0 ? promptIds[0]! : promptIds[COMMUNITY_AGENT_PROMPTS_PER_CREATOR + i - 1]!,
+  const allocatedPromptIds = creatorIds.map(
+    (_, i) => promptIds[i * COMMUNITY_AGENT_PROMPTS_PER_CREATOR]!,
   )
   const systemUserIds = promptIds.map((_, i) => seedUuid(i, 'ed'))
   const agentIds = promptIds.map((_, i) => seedUuid(i, 'ee'))
   const promptCreatorIds = promptIds.map((_, i) =>
     i < COMMUNITY_AGENT_PROMPT_PAGE_ROWS
-      ? creatorIds[
-          i < COMMUNITY_AGENT_PROMPTS_PER_CREATOR ? 0 : i - COMMUNITY_AGENT_PROMPTS_PER_CREATOR + 1
-        ]!
+      ? creatorIds[Math.floor(i / COMMUNITY_AGENT_PROMPTS_PER_CREATOR)]!
       : creatorIds[0]!,
   )
   const noiseCommunityIds = Array.from(
@@ -115,8 +113,8 @@ export async function seedCommunityAgentPromptPages(): Promise<void> {
     ON CONFLICT (id) DO NOTHING`,
     [promptIds, promptCommunityIds, promptCreatorIds],
   )
-  // One allocated prompt per creator makes the active page large, while the target owner
-  // retains 24 unallocated siblings for the quota and allocation scenarios.
+  // One allocated prompt per creator makes the quota PK selective while each creator still
+  // owns 24 unallocated prompts; a target allocation must never lock those siblings.
   await query(
     `/* seedCommunityAgentPromptPages:allocated */
     UPDATE community_agent_prompts

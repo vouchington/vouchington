@@ -3,7 +3,7 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getActiveCommunityAgentPromptPage } from '@services/community-agent-prompts/get-active-prompts'
 import {
-  COMMUNITY_AGENT_PROMPT_PAGE_ROWS,
+  COMMUNITY_AGENT_PROMPTS_PER_CREATOR,
   COMMUNITY_AGENT_PROMPT_PAGE_COMMUNITY_ID,
 } from '../community-agent-prompt-page-ids.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -52,12 +52,11 @@ export async function runActiveCandidatePages(promptSeededRows: number): Promise
     undefined,
     'getActiveCommunityAgentPromptPage',
   )
-  const finalPageBoundaryId = seedUuid(COMMUNITY_AGENT_PROMPT_PAGE_ROWS - 11, 'ef')
   const { rows: boundary } = await read<{ activation_cursor: string }>(sql`
     /* activeCommunityPromptFinalPageBoundary */
     SELECT to_char(activated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
       AS activation_cursor
-    FROM community_agent_prompts WHERE id = ${finalPageBoundaryId}
+    FROM community_agent_prompts WHERE id = ${seedUuid(89 * COMMUNITY_AGENT_PROMPTS_PER_CREATOR, 'ef')}
     LIMIT 1
   `)
   const activatedAt = boundary[0]?.activation_cursor
@@ -71,7 +70,7 @@ export async function runActiveCandidatePages(promptSeededRows: number): Promise
     async () => {
       const page = await getActiveCommunityAgentPromptPage(
         communityId,
-        { activatedAt, id: finalPageBoundaryId },
+        { activatedAt, id: seedUuid(89 * COMMUNITY_AGENT_PROMPTS_PER_CREATOR, 'ef') },
         30,
       )
       assert.equal(page.items.length, 0)
