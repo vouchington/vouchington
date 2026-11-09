@@ -1,6 +1,18 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from 'vitest'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { spendCapConfig } from '@services/ai-usage'
+import { communityAgentPromptsConfig } from '@services/community-agent-prompts/config'
+import { getActiveCommunityAgentPromptPage } from '@services/community-agent-prompts/get-active-prompts'
 import { requestCommunityModerationRunForPost } from '@services/communities/publications/moderation-run'
 import { classifierRunJobFor } from '@voucha/test-helpers/classifier-run-worker'
 import {
@@ -85,6 +97,63 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     ).toBe(true)
   })
 
+  it('continues into a second bounded page and classifies every rule', async () => {
+    await communityAgentPromptsConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(communityAgentPromptsConfig, { moderation_page_size: 2 }),
+    )
+    const fixture = await createCommunityModerationFixture({
+      ruleTexts: ['First rule', 'Second rule', 'Third rule'],
+    })
+    await requestCommunityModerationFixtureRun(fixture)
+    const first = await handler.reserve(fixture.subject)
+    expect(first.kind).toBe('reserved')
+    if (first.kind !== 'reserved') throw new Error('first moderation page was not reserved')
+    await expect(processRun(first.run)).resolves.toEqual({ kind: 'completed' })
+
+    const second = await handler.reserve(fixture.subject)
+    expect(second.kind).toBe('reserved')
+    if (second.kind !== 'reserved') throw new Error('second moderation page was not reserved')
+    await expect(processRun(second.run)).resolves.toEqual({ kind: 'completed' })
+
+    expect(asked).toHaveLength(2)
+    expect(new Set(asked.flat()).size).toBe(3)
+    expect(asked.flat().toSorted()).toEqual(idsOf(fixture.prompts))
+    expect(
+      (await readCommunityModerationProjection(fixture.postId)).map(row => row.prompt_id),
+    ).toEqual(idsOf(fixture.prompts))
+  })
+
+  it('stales an edited current page and restarts at the first page on a new request', async () => {
+    await communityAgentPromptsConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(communityAgentPromptsConfig, { moderation_page_size: 2 }),
+    )
+    const fixture = await createCommunityModerationFixture({
+      ruleTexts: ['First rule', 'Second rule', 'Third rule'],
+    })
+    await requestCommunityModerationFixtureRun(fixture)
+    const first = await handler.reserve(fixture.subject)
+    if (first.kind !== 'reserved') throw new Error('first moderation page was not reserved')
+    const firstPage = await getActiveCommunityAgentPromptPage(fixture.community.id, null, 2)
+    const firstRuleId = firstPage.items[0]!.id
+    await editTestCommunityRule(firstRuleId, 'Edited first rule')
+    await expect(processRun(first.run)).resolves.toEqual({ kind: 'stale' })
+    expect(provider).not.toHaveBeenCalled()
+
+    const changed = await handler.reserve(fixture.subject)
+    expect(changed.kind).toBe('reserved')
+    if (changed.kind !== 'reserved') throw new Error('edited page was not reserved')
+    await expect(processRun(changed.run)).resolves.toEqual({ kind: 'completed' })
+    await editTestCommunityRule(firstRuleId, 'Edited first rule again')
+    await requestCommunityModerationFixtureRun(fixture)
+    const restarted = await handler.reserve(fixture.subject)
+    expect(restarted.kind).toBe('reserved')
+    if (restarted.kind !== 'reserved') throw new Error('new trigger did not restart at first page')
+    expect(restarted.run.configurationSha256.equals(changed.run.configurationSha256)).toBe(false)
+    expect(provider).toHaveBeenCalledOnce()
+  })
+
   it('replays a completed run without a second provider attempt, however often it is delivered', async () => {
     const fixture = await createCommunityModerationFixture()
     const run = await reserveCommunityModerationFixtureRun(fixture)
@@ -102,10 +171,9 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     const run = await reserveCommunityModerationFixtureRun(fixture)
     await processRun(run)
 
-    const again = await reserveCommunityModerationFixtureRun(fixture)
-    await processRun(again)
+    await requestCommunityModerationFixtureRun(fixture)
+    await expect(handler.reserve(fixture.subject)).resolves.toEqual({ kind: 'no-work' })
 
-    expect(again.runId).toBe(run.runId)
     expect(provider).toHaveBeenCalledOnce()
     expect(await runFacts(fixture.postId)).toHaveLength(1)
   })
@@ -139,8 +207,7 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     expect(changed.run.runId).not.toBe(first.runId)
     expect(changed.run.configurationSha256.equals(first.configurationSha256)).toBe(false)
     await expect(processRun(changed.run)).resolves.toEqual({ kind: 'completed' })
-    const replay = await handler.reserve(fixture.subject)
-    expect(replay.kind === 'reserved' && replay.run.runId).toBe(changed.run.runId)
+    await expect(handler.reserve(fixture.subject)).resolves.toEqual({ kind: 'no-work' })
 
     expect(provider).toHaveBeenCalledTimes(2)
     expect(await runFacts(fixture.postId)).toHaveLength(2)

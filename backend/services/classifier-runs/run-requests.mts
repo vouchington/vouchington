@@ -44,7 +44,7 @@ export async function requestClassifierRuns(
     ON CONFLICT `
       .append(conflict)
       .append(
-        ' DO UPDATE SET run_identity_id = NULL, run_settled_at = NULL, no_work_at = NULL, stale_at = NULL',
+        ' DO UPDATE SET run_identity_id = NULL, run_settled_at = NULL, no_work_at = NULL, stale_at = NULL, community_prompt_cursor = NULL, community_prompt_end_cursor = NULL, community_prompt_any_flagged = false, community_prompt_completed_at = NULL',
       ),
   )
 }

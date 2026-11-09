@@ -22,6 +22,7 @@ import {
   COMMUNITY_AGENT_PROMPT_TOTAL_ROWS,
 } from '../community-agent-prompt-page-ids.mts'
 import { runSlotRetainedRootCleanupScenario } from './community-agent-prompt-slot-retained-root.mts'
+import { runActiveCandidatePages } from './community-agent-prompt-active-pages.mts'
 
 export async function runCommunityAgentPromptPageScenarios(): Promise<void> {
   const promptSeededRows = COMMUNITY_AGENT_PROMPT_TOTAL_ROWS + 4
@@ -58,6 +59,7 @@ export async function runCommunityAgentPromptPageScenarios(): Promise<void> {
       `community:${COMMUNITY_AGENT_PROMPT_PAGE_COMMUNITY_ID}:agent-prompts`,
     ),
   )
+  await runActiveCandidatePages(promptSeededRows)
   try {
     await seedCommunityAgentPromptSlotCountNoise()
     await runSlotScenarios()

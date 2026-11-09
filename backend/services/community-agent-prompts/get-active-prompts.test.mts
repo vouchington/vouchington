@@ -12,9 +12,27 @@ import {
   activateTestCommunityAgentPromptHoursAgo,
   deactivateTestCommunityAgentPromptInTransaction,
 } from '@voucha/test-helpers/entities/community-automod-effects'
-import { getActiveCommunityAgentPrompts } from './get-active-prompts.mts'
+import { setTestCommunityModerationPromptActivatedAt } from '@voucha/test-helpers/community-moderation-prompt-activation'
 import { deleteCommunityAgentPrompt } from './delete.mts'
 import type { PrivateUser } from '@services/users/types'
+import type { QueryExecutor } from '@data-stores/psql'
+import type { CommunityAgentPrompt } from './types.mts'
+import {
+  getActiveCommunityAgentPromptPage,
+  type ActiveCommunityAgentPromptCursor,
+} from './get-active-prompts.mts'
+
+async function getActiveCommunityAgentPrompts(communityId: string, query?: QueryExecutor) {
+  const prompts: CommunityAgentPrompt[] = []
+  let after: ActiveCommunityAgentPromptCursor | null = null
+  for (let pageNumber = 0; pageNumber < 10; pageNumber++) {
+    const page = await getActiveCommunityAgentPromptPage(communityId, after, 30, query)
+    prompts.push(...page.items)
+    if (!page.next) return prompts
+    after = page.next
+  }
+  throw new Error('test fixture exceeded ten bounded pages')
+}
 
 describe('get-active-prompts', () => {
   let user: PrivateUser
@@ -126,6 +144,26 @@ describe('get-active-prompts', () => {
       expect(results.map(r => r.id)).toEqual([prompts[1]!.id, prompts[2]!.id, prompts[0]!.id])
     })
 
+    it('continues through equal activation timestamps without repeating a prompt', async () => {
+      const { community, prompts } = await activatedPrompts({
+        plan: 'pro',
+        hoursAgo: [1, 1, 1],
+      })
+      const sameInstant = new Date('2026-01-01T00:00:00.000Z')
+      for (const prompt of prompts) {
+        await setTestCommunityModerationPromptActivatedAt(prompt.id, sameInstant)
+      }
+      const first = await getActiveCommunityAgentPromptPage(community.id, null, 2)
+      expect(first.items).toHaveLength(2)
+      expect(first.next).not.toBeNull()
+      const second = await getActiveCommunityAgentPromptPage(community.id, first.next, 2)
+      expect(second.items).toHaveLength(1)
+      expect(second.next).toBeNull()
+      expect([...first.items, ...second.items].map(row => row.id).toSorted()).toEqual(
+        prompts.map(row => row.id).toSorted(),
+      )
+    })
+
     it('keeps the first three activated prompts of a plus plan and drops the later ones', async () => {
       const { community: capped, prompts } = await activatedPrompts({
         plan: 'plus',
@@ -182,6 +220,34 @@ describe('get-active-prompts', () => {
       await expect(getActiveCommunityAgentPrompts(paidCommunity.id)).resolves.not.toContainEqual(
         expect.objectContaining({ id: prompt.id }),
       )
+    })
+
+    it('advances across an ineligible candidate page to a later paid rule', async () => {
+      const unpaidOwner = await createTestUser()
+      const paidOwner = await createTestUser()
+      const community = await insertTestCommunity({ createdById: paidOwner.id })
+      const unpaidMembership = await createTestMembership({ user_id: unpaidOwner.id, plan: 'plus' })
+      await createTestMembership({ user_id: paidOwner.id, plan: 'plus' })
+      const early = await insertTestCommunityAgentPrompt({
+        communityId: community.id,
+        createdById: unpaidOwner.id,
+        slotAllocated: true,
+      })
+      const later = await insertTestCommunityAgentPrompt({
+        communityId: community.id,
+        createdById: paidOwner.id,
+        slotAllocated: true,
+      })
+      await activateTestCommunityAgentPromptHoursAgo(early.id, 2)
+      await activateTestCommunityAgentPromptHoursAgo(later.id, 1)
+      await updateTestMembershipExpiresAt(unpaidMembership.id, new Date(Date.now() - 60_000))
+
+      const first = await getActiveCommunityAgentPromptPage(community.id, null, 1)
+      expect(first.items).toEqual([])
+      expect(first.next).not.toBeNull()
+      const second = await getActiveCommunityAgentPromptPage(community.id, first.next, 1)
+      expect(second.items.map(row => row.id)).toEqual([later.id])
+      expect(second.next).toBeNull()
     })
   })
 })

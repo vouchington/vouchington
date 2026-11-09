@@ -672,7 +672,15 @@ CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__created_by_id__slot
 -- Active prompts for dispatcher
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__active
-  ON community_agent_prompts(community_id)
+  ON community_agent_prompts(community_id, activated_at, id)
+  WHERE is_slot_allocated = true
+    AND activated_at IS NOT NULL
+    AND deactivated_at IS NULL
+    AND deleted_at IS NULL;
+
+-- Creator-wide activation rank for a bounded active-prompt page.
+CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__active_creator_order
+  ON community_agent_prompts(created_by_id, activated_at, id)
   WHERE is_slot_allocated = true
     AND activated_at IS NOT NULL
     AND deactivated_at IS NULL

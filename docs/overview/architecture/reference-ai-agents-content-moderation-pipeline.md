@@ -17,9 +17,11 @@ flowchart TD
   labels --> effects[Topic relations and relation votes]
   post --> request[classifier_run_requests row for community-moderation]
   request --> community[classifier-run-dispatcher]
-  community --> run[One provider call over every active community prompt]
+  community --> run[Bounded provider call over one active prompt page]
   run --> stored[Store in agent_moderations]
-  stored --> action{Flagged by a prompt?}
+  stored --> more{More prompt pages?}
+  more -- Yes --> community
+  more -- No --> action{Flagged by any prompt?}
   action -- No --> clean[Nothing more to do]
   action -- Yes --> setting{communities.automod_action}
   setting -- record_only --> recorded[Flag stays in agent_moderations]
@@ -34,10 +36,17 @@ initial create event.
 
 ### Deduplication
 
-Community prompt results are keyed by `(post_id, content_sha256, prompt_id)`. A community moderation
-run is requested per post content digest and completes at most once, so a replay never repeats the
-provider call or the community's chosen action. Automated review-queue moves and unpublishes are
-attributed to the `automod` system user.
+Community prompt results are keyed by `(post_id, content_sha256, prompt_id)`. A request walks
+active prompts in bounded activation-order pages. It fixes an upper position when it starts, so
+new activations cannot prolong that traversal. Each page pins the exact rules it asks; reapproval
+under the same complete page configuration replays without another provider call. A changed
+upper cursor changes that configuration even when an earlier page's rules are unchanged. The
+community action waits until the final page, when
+every prompt considered by this traversal has a result. Reapproval at the same content restarts
+the walk; completed pages replay without reapplying the action to a post a moderator restored.
+Prompt edits behind an in-progress cursor enter the next triggered traversal rather than
+rewriting earlier completed pages. Automated review-queue moves and unpublishes are attributed to
+the `automod` system user.
 
 Superseded input results have a different lifetime from current moderation decisions and moderator
 evidence. A result becomes retention work when a newer decision displaces it; content edits and
@@ -85,7 +94,7 @@ entitlement service without changing the API response shape or toggle UI contrac
 
 Community toggles expose only the fixed-label built-in agents above. Custom community prompts use
 the separate community moderation classifier (`community-moderation`) on the shared classifier-run
-lifecycle: one provider call asks every active community prompt, and the community-level
+lifecycle: bounded provider calls cover successive active prompt pages, and the community-level
 `communities.automod_action` setting (`record_only`, `review_queue` or `unpublish`) decides what a
 flag does. Moderators set it from the moderation settings page.
 

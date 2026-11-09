@@ -49,16 +49,16 @@ async function supersedePrepared<C, L, E>(
 ): Promise<ReservedClassifierRun | null | typeof PREPARE_AGAIN> {
   await using query = await beginTransaction()
   const current = await adapter.lockCurrent(query, stale.subject)
-  const { rows } = await query<{ superseded_at: Date | null }>(sql`
+  const { rows } = await query<{ superseded_at: Date | null; completed_at: Date | null }>(sql`
     /* supersedeStaleClassifierRun.run */
-    SELECT superseded_at FROM classifier_runs
+    SELECT superseded_at, completed_at FROM classifier_runs
     WHERE id = ${stale.runId}
       AND input_sha256 = ${stale.inputSha256}
       AND configuration_sha256 = ${stale.configurationSha256}
     FOR UPDATE
   `)
   const run = rows[0]
-  if (!run || run.superseded_at !== null) return null
+  if (!run || run.superseded_at !== null || run.completed_at !== null) return null
   const resolved = current ? await adapter.resolve(stale.subject, current, query) : null
   if (
     current?.inputSha256.equals(stale.inputSha256) &&

@@ -6,6 +6,7 @@ import type { CommunityAutomodAction } from '@voucha/types'
 import sql from 'sql-template-strings'
 import { isCommunityPromptFlagged } from './community-prompt-flagged.mts'
 import type { CommunityModerationRunConfiguration } from './moderation-run-configuration.mts'
+import { advanceCommunityModerationRequest } from './moderation-run-progress.mts'
 
 export type CommunityModerationEffects = {
   flaggedPromptIds: readonly string[]
@@ -17,8 +18,8 @@ type PromptResult = { promptId: string; flagged: boolean; probability: number; u
 
 /**
  * Applies the durable community moderation decision in the completion transaction: the per-prompt
- * `agent_moderations` projection first, then the community's `automod_action` for the prompts that
- * flagged the post. The action is read here, not pinned in the run, so changing it never re-bills
+ * `agent_moderations` projection first, then the community's `automod_action` after the final
+ * page if any page flagged the post. The action is read here, not pinned in the run, so changing it never re-bills
  * a classification. A completed run is replayed, never re-applied, so a post a moderator restored
  * is not acted on again until its content changes.
  */
@@ -32,7 +33,14 @@ export async function applyCommunityModerationEffects(
   const results = readPromptResults(outcomes)
   await recordAgentModerations(query, { postId, inputSha256: lease.inputSha256, results })
   const flaggedPromptIds = results.flatMap(result => (result.flagged ? [result.promptId] : []))
-  if (flaggedPromptIds.length === 0) return { flaggedPromptIds, appliedAction: null }
+  const { anyFlagged, hasMore } = await advanceCommunityModerationRequest(query, {
+    runId: lease.runId,
+    postId,
+    inputSha256: lease.inputSha256,
+    nextCursor: lease.resolved.configuration.nextCursor,
+    pageFlagged: flaggedPromptIds.length > 0,
+  })
+  if (hasMore || !anyFlagged) return { flaggedPromptIds, appliedAction: null }
   const { communityId, actorId } = lease.resolved.configuration
   const action = await readCommunityAutomodAction(query, communityId)
   const input = { communityId, postId, contentSha256: lease.inputSha256 }
@@ -69,7 +77,7 @@ function readPromptResults(outcomes: ClassifierRunOutcomes<never>): PromptResult
 /**
  * One projection row per prompt asked, keyed by the post, its content digest and the prompt, so a
  * replay or a concurrent writer never duplicates or overwrites one. The row carries the model's
- * probability against the threshold it was judged by; the single-call classifier gives no reason.
+ * probability against the threshold it was judged by; a page's classifier call gives no reason.
  */
 async function recordAgentModerations(
   query: OwnedTransaction,

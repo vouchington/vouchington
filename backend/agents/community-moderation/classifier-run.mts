@@ -29,8 +29,8 @@ async function loadSubjectState(lease: Lease): Promise<(() => Promise<Classifier
 
 /**
  * Runs one leased C8 run. The shared classifier-run lifecycle reserves and caps the provider
- * attempt, records terminal failures and persists outcomes; this only builds the single call that
- * asks every pinned community rule over the post's content.
+ * attempt, records terminal failures and persists outcomes; this builds one call over the pinned
+ * page of community rules, or a local-only advance across an ineligible candidate page.
  */
 export async function executeCommunityModerationRun(
   input: {
@@ -51,7 +51,9 @@ export async function executeCommunityModerationRun(
     { lease, maxAttempts: input.maxAttempts, signal: input.signal },
     {
       buildRemoteInput: async currentLease =>
-        buildCommunityModerationRunInput(currentLease, await buildState()),
+        currentLease.resolved.remote
+          ? buildCommunityModerationRunInput(currentLease, await buildState())
+          : null,
       createClient: hooks => dependencies.createClient(hooks, lease),
     },
   )

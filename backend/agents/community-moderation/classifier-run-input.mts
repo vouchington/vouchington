@@ -5,7 +5,7 @@ import type { CommunityModerationRunConfiguration } from '@services/community-ag
 import { buildCommunityModerationBindings } from './classifier-run-bindings.mts'
 
 /**
- * C8's remote input: one yes/no question per prompt the run's configuration pinned, asked over
+ * C8's remote input: one yes/no question per prompt this page pinned, asked over
  * the post's content in a single call. Reading the pinned prompts (not the community's current
  * ones) is what keeps a retry, lease reclaim or replay asking the exact question set whose
  * configuration identity the receipt is keyed on, so a rule edited mid-flight never changes it.

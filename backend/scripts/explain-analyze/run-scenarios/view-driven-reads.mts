@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { getActiveCommunityAgentPrompts } from '@services/community-agent-prompts/get-active-prompts'
+import { getActiveCommunityAgentPromptPage } from '@services/community-agent-prompts/get-active-prompts'
 import { captureAutotaggerAgentCandidateTopicIds } from '@services/autotagger/agent/candidates'
 import { getRecoverableOAuthAuthorizationIds } from '@services/oauth/authorization-exchange-recovery'
 import { buildIdentityVerificationPaidMembershipGate } from '@services/identity-verification/attempt-grants'
@@ -135,7 +135,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
     expectations: [{ kind: 'maxProcessedRows', relation: 'memberships', max: 50 }],
   })
   await runAndCapture('active-community-agent-prompts', () =>
-    getActiveCommunityAgentPrompts(seedUuid(0, '14')),
+    getActiveCommunityAgentPromptPage(seedUuid(0, '14'), null, 30),
   )
 
   registerScenarioContract('identity-verification-attempt-membership-gate', {

@@ -70,6 +70,25 @@ describe('classifier run supersession (real PG)', () => {
     expect(facts!.superseded_at).toBeNull()
   })
 
+  it('leaves a completed receipt immutable when a stale supersession arrives after completion', async () => {
+    const setup = await createSyntheticFixture()
+    await requestSyntheticRun(setup)
+    const { run, lease } = await leaseSyntheticRun(setup)
+    expect(await persistClassifierRunOutcomes(setup.adapter, { lease })).toBe('persisted')
+    expect((await completeClassifierRun(setup.adapter, lease)).kind).toBe('completed')
+    setup.state.version = 2
+
+    expect(await supersedeStaleClassifierRun(setup.adapter, target(run))).toBeNull()
+    const [facts] = await getClassifierRunFacts(setup.post.id, setup.slug)
+    expect(facts).toMatchObject({
+      id: run.runId,
+      superseded_at: null,
+      completed_at: expect.any(Date),
+    })
+    const [request] = await getClassifierRunRequestFacts(setup.post.id, setup.slug)
+    expect(request).toMatchObject({ run_identity_id: run.runId, run_settled_at: expect.any(Date) })
+  })
+
   it('supersedes a run for revised content and reserves the replacement in one step', async () => {
     const setup = await createSyntheticFixture()
     await requestSyntheticRun(setup)
