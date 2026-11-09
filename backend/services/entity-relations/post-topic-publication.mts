@@ -35,14 +35,6 @@ export function isPostScopedPublicationRelationTable(relationTable: string): boo
   )
 }
 
-export function isRssFeedItemTopicAliasPublicationRelationTable(relationTable: string): boolean {
-  return relationTable === RSS_FEED_ITEM_TOPIC_ALIAS_CATEGORY_TABLE
-}
-
-export function isTopicPublisherTypePublicationRelationTable(relationTable: string): boolean {
-  return relationTable === TOPIC_PUBLISHER_TYPE_TABLE
-}
-
 /**
  * Records public-projection invalidation at the relation boundary. Callers pass the transaction
  * that changed the row, so rollback discards the captured post-commit effects.
