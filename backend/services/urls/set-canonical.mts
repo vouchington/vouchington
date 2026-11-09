@@ -1,5 +1,5 @@
 import { enqueueMissingHackerNewsLookups } from './hacker-news-lookup-enqueue.mts'
-import { setCanonicalUrls } from './set-canonical-batch.mts'
+import { writeCanonicalUrl } from './set-canonical-batch.mts'
 import { retryCanonicalWrite } from './canonical-write-retry.mts'
 import { write, beginTransaction } from '@data-stores/psql'
 
@@ -26,7 +26,7 @@ async function persistCanonicalRewrite(
   options: { promoteVariantTarget?: boolean },
 ): Promise<void> {
   await using query = await beginTransaction()
-  await setCanonicalUrls([{ urlId, canonicalUrlId, ...options }], query)
+  await writeCanonicalUrl({ urlId, canonicalUrlId, ...options }, query)
   await query.commit()
 }
 

@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { addUrl } from '../services/urls/upsert.mts'
-import { setCanonicalUrls } from '../services/urls/set-canonical-batch.mts'
+import { writeCanonicalUrl } from '../services/urls/set-canonical-batch.mts'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
@@ -11,7 +11,7 @@ export async function insertVariantDuringCanonicalRewriteForTest(
   variantHref: string,
 ): Promise<string | null> {
   await using holder = await beginTransaction()
-  await setCanonicalUrls([{ urlId: ownerId, canonicalUrlId: targetId }], holder)
+  await writeCanonicalUrl({ urlId: ownerId, canonicalUrlId: targetId }, holder)
   const holderProcessId = await getTestPostgresBackendProcessId(holder)
   const variant = await withTestOwnedPostgresWait(
     {

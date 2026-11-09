@@ -30,18 +30,13 @@ export type ResolvedCanonical = { urlId: string; finalCanonicalId: string }
  * repoints back-references before each source ceases to be a terminal root.
  * Callers commit; the Hacker News flag refresh is queued after that commit.
  */
-export async function setCanonicalUrls(
-  pairs: readonly CanonicalPair[],
+export async function writeCanonicalUrl(
+  input: CanonicalPair,
   query: TransactionQuery,
-): Promise<ResolvedCanonical[]> {
-  if (pairs.length === 0) return []
-  for (const pair of pairs) {
-    if (pair.urlId === pair.canonicalUrlId) throw new Error('URL cannot be its own canonical')
-  }
-  await promoteVariantTargets(
-    pairs.filter(pair => pair.promoteVariantTarget),
-    query,
-  )
+): Promise<ResolvedCanonical> {
+  if (input.urlId === input.canonicalUrlId) throw new Error('URL cannot be its own canonical')
+  const pairs = [input]
+  await promoteVariantTargets(input.promoteVariantTarget ? pairs : [], query)
 
   const urlIds = pairs.map(pair => pair.urlId)
   const canonicalIds = pairs.map(pair => pair.canonicalUrlId)
@@ -71,7 +66,7 @@ export async function setCanonicalUrls(
   registerPostCommitAction(query, async () => {
     await enqueueHackerNewsFlagsBestEffort([...new Set([...urlIds, ...canonicalIds, ...finalIds])])
   })
-  return results
+  return results[0]!
 }
 
 async function promoteVariantTargets(
