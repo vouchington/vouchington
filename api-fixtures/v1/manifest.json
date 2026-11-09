@@ -14711,6 +14711,320 @@
                             ]
                           }
                         },
+                        "case_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "claim": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "name": "ModerationQueueClaim",
+                                "type": "ref"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "community_ban_evasion": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "community_id": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "community_slug": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "created_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "entity_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "entity_type": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "comment"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "post"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "rss_feed_item"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "url_hostname"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "user"
+                              }
+                            ]
+                          }
+                        },
+                        "escalated_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "escalated_by_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "judgement": {
+                          "required": true,
+                          "schema": {
+                            "type": "null"
+                          }
+                        },
+                        "reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "harassment"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "illegal_content"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "misinformation"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "other"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "spam"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "vote_manipulation"
+                              }
+                            ]
+                          }
+                        },
+                        "report_count": {
+                          "required": true,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "resolved_by_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "reviewed_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "status": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "actioned"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "dismissed"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "pending"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "reviewed"
+                              }
+                            ]
+                          }
+                        },
+                        "target_available": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": false
+                              },
+                              {
+                                "type": "literal",
+                                "value": true
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "target_content": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "name": "ModerationReportTargetContent",
+                                "type": "ref"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "target_label": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "target_path": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "target_pending_community_review": {
+                          "required": false,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        },
+                        "target_user_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "admin_action_path": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
                         "automatic_judgement_enabled": {
                           "required": true,
                           "schema": {
@@ -14912,320 +15226,6 @@
                                 "type": "string"
                               }
                             ]
-                          }
-                        },
-                        "resolved_by_id": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
-                          }
-                        },
-                        "reviewed_at": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
-                          }
-                        },
-                        "status": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "literal",
-                                "value": "actioned"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "dismissed"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "pending"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "reviewed"
-                              }
-                            ]
-                          }
-                        },
-                        "target_available": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "literal",
-                                "value": false
-                              },
-                              {
-                                "type": "literal",
-                                "value": true
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "target_content": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "name": "ModerationReportTargetContent",
-                                "type": "ref"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "target_label": {
-                          "required": true,
-                          "schema": {
-                            "type": "string"
-                          }
-                        },
-                        "target_path": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
-                          }
-                        },
-                        "target_pending_community_review": {
-                          "required": false,
-                          "schema": {
-                            "type": "boolean"
-                          }
-                        },
-                        "target_user_id": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
-                          }
-                        }
-                      },
-                      "type": "object"
-                    },
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "admin_action_path": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
-                          }
-                        },
-                        "case_id": {
-                          "required": true,
-                          "schema": {
-                            "type": "string"
-                          }
-                        },
-                        "claim": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "name": "ModerationQueueClaim",
-                                "type": "ref"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "community_ban_evasion": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "community_id": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "community_slug": {
-                                    "required": true,
-                                    "schema": {
-                                      "type": "string"
-                                    }
-                                  }
-                                },
-                                "type": "object"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "created_at": {
-                          "required": true,
-                          "schema": {
-                            "type": "string"
-                          }
-                        },
-                        "entity_id": {
-                          "required": true,
-                          "schema": {
-                            "type": "string"
-                          }
-                        },
-                        "entity_type": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "literal",
-                                "value": "comment"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "post"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "rss_feed_item"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "url_hostname"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "user"
-                              }
-                            ]
-                          }
-                        },
-                        "escalated_at": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
-                          }
-                        },
-                        "escalated_by_id": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
-                          }
-                        },
-                        "id": {
-                          "required": true,
-                          "schema": {
-                            "type": "string"
-                          }
-                        },
-                        "judgement": {
-                          "required": true,
-                          "schema": {
-                            "type": "null"
-                          }
-                        },
-                        "reason": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "literal",
-                                "value": "harassment"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "illegal_content"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "misinformation"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "other"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "spam"
-                              },
-                              {
-                                "type": "literal",
-                                "value": "vote_manipulation"
-                              }
-                            ]
-                          }
-                        },
-                        "report_count": {
-                          "required": true,
-                          "schema": {
-                            "type": "number"
                           }
                         },
                         "resolved_by_id": {
@@ -18329,11 +18329,11 @@
                         "variants": [
                           {
                             "type": "literal",
-                            "value": "eu_dsa"
+                            "value": "us_dmca"
                           },
                           {
                             "type": "literal",
-                            "value": "us_dmca"
+                            "value": "eu_dsa"
                           }
                         ]
                       }
@@ -20411,6 +20411,9 @@
                                 "type": "union",
                                 "variants": [
                                   {
+                                    "type": "null"
+                                  },
+                                  {
                                     "additionalProperties": false,
                                     "properties": {
                                       "image_id": {
@@ -20433,9 +20436,6 @@
                                       }
                                     },
                                     "type": "object"
-                                  },
-                                  {
-                                    "type": "null"
                                   }
                                 ]
                               }
@@ -26801,6 +26801,31 @@
                   "required": true,
                   "schema": {
                     "type": "literal",
+                    "value": "pending"
+                  }
+                },
+                "totals": {
+                  "required": true,
+                  "schema": {
+                    "type": "null"
+                  }
+                }
+              },
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "operation_id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "status": {
+                  "required": true,
+                  "schema": {
+                    "type": "literal",
                     "value": "completed"
                   }
                 },
@@ -26829,31 +26854,6 @@
                       }
                     },
                     "type": "object"
-                  }
-                }
-              },
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "operation_id": {
-                  "required": true,
-                  "schema": {
-                    "type": "string"
-                  }
-                },
-                "status": {
-                  "required": true,
-                  "schema": {
-                    "type": "literal",
-                    "value": "pending"
-                  }
-                },
-                "totals": {
-                  "required": true,
-                  "schema": {
-                    "type": "null"
                   }
                 }
               },
@@ -30808,10 +30808,6 @@
                     },
                     {
                       "type": "literal",
-                      "value": "provider_unavailable"
-                    },
-                    {
-                      "type": "literal",
                       "value": "purchase_pending"
                     },
                     {
@@ -30844,6 +30840,10 @@
                     },
                     {
                       "type": "null"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "provider_unavailable"
                     }
                   ]
                 }
@@ -31446,10 +31446,6 @@
                                     },
                                     {
                                       "type": "literal",
-                                      "value": "provider_unavailable"
-                                    },
-                                    {
-                                      "type": "literal",
                                       "value": "purchase_pending"
                                     },
                                     {
@@ -31482,6 +31478,10 @@
                                     },
                                     {
                                       "type": "null"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "provider_unavailable"
                                     }
                                   ]
                                 }
@@ -31951,10 +31951,6 @@
                                     },
                                     {
                                       "type": "literal",
-                                      "value": "provider_unavailable"
-                                    },
-                                    {
-                                      "type": "literal",
                                       "value": "purchase_pending"
                                     },
                                     {
@@ -31987,6 +31983,10 @@
                                     },
                                     {
                                       "type": "null"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "provider_unavailable"
                                     }
                                   ]
                                 }
@@ -36534,19 +36534,7 @@
                   "variants": [
                     {
                       "type": "literal",
-                      "value": "ACCOUNT_SUSPENDED"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "CONTRIBUTION_LIMIT_EXCEEDED"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "FEED_FETCH_TIMEOUT"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "IMPORT_FAILED"
+                      "value": "INVALID_URL"
                     },
                     {
                       "type": "literal",
@@ -36554,7 +36542,19 @@
                     },
                     {
                       "type": "literal",
-                      "value": "INVALID_URL"
+                      "value": "FEED_FETCH_TIMEOUT"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "CONTRIBUTION_LIMIT_EXCEEDED"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "ACCOUNT_SUSPENDED"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "IMPORT_FAILED"
                     },
                     {
                       "type": "literal",
@@ -38624,11 +38624,11 @@
                   "type": "union",
                   "variants": [
                     {
-                      "name": "ImagePlacementTuple",
-                      "type": "ref"
+                      "type": "null"
                     },
                     {
-                      "type": "null"
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
                     }
                   ]
                 }
@@ -41494,15 +41494,15 @@
                     },
                     {
                       "type": "literal",
+                      "value": "verified"
+                    },
+                    {
+                      "type": "literal",
                       "value": "rejected"
                     },
                     {
                       "type": "literal",
                       "value": "revoked"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "verified"
                     }
                   ]
                 }
@@ -41564,11 +41564,11 @@
                     },
                     {
                       "type": "literal",
-                      "value": "manual_admin"
+                      "value": "well_known_file"
                     },
                     {
                       "type": "literal",
-                      "value": "well_known_file"
+                      "value": "manual_admin"
                     },
                     {
                       "type": "null"
@@ -50121,10 +50121,10 @@
                 "type": "union",
                 "variants": [
                   {
-                    "type": "null"
+                    "type": "string"
                   },
                   {
-                    "type": "string"
+                    "type": "null"
                   }
                 ]
               }
@@ -52290,11 +52290,7 @@
                   "variants": [
                     {
                       "type": "literal",
-                      "value": "admin"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "brand"
+                      "value": "user"
                     },
                     {
                       "type": "literal",
@@ -52302,11 +52298,15 @@
                     },
                     {
                       "type": "literal",
-                      "value": "legal"
+                      "value": "brand"
                     },
                     {
                       "type": "literal",
-                      "value": "user"
+                      "value": "admin"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "legal"
                     }
                   ]
                 }
@@ -52360,19 +52360,22 @@
                     },
                     {
                       "type": "literal",
-                      "value": "households_read"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "households_write"
-                    },
-                    {
-                      "type": "literal",
                       "value": "mcp_admin_full_access"
                     },
                     {
                       "type": "literal",
                       "value": "mcp_user_full_access"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "spending_read"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "spending_write"
+                    },
+                    {
+                      "type": "null"
                     },
                     {
                       "type": "literal",
@@ -52384,14 +52387,6 @@
                     },
                     {
                       "type": "literal",
-                      "value": "spending_read"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "spending_write"
-                    },
-                    {
-                      "type": "literal",
                       "value": "topic_claims_read"
                     },
                     {
@@ -52399,7 +52394,12 @@
                       "value": "topic_claims_write"
                     },
                     {
-                      "type": "null"
+                      "type": "literal",
+                      "value": "households_read"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "households_write"
                     }
                   ]
                 }
@@ -57775,6 +57775,9 @@
             "type": "union",
             "variants": [
               {
+                "type": "null"
+              },
+              {
                 "additionalProperties": false,
                 "properties": {
                   "image_id": {
@@ -57797,9 +57800,6 @@
                   }
                 },
                 "type": "object"
-              },
-              {
-                "type": "null"
               }
             ]
           },
@@ -57876,6 +57876,9 @@
                       "type": "union",
                       "variants": [
                         {
+                          "type": "null"
+                        },
+                        {
                           "additionalProperties": false,
                           "properties": {
                             "image_id": {
@@ -57898,9 +57901,6 @@
                             }
                           },
                           "type": "object"
-                        },
-                        {
-                          "type": "null"
                         }
                       ]
                     }
@@ -57911,6 +57911,9 @@
                       "type": "union",
                       "variants": [
                         {
+                          "type": "null"
+                        },
+                        {
                           "additionalProperties": false,
                           "properties": {
                             "image_id": {
@@ -57933,9 +57936,6 @@
                             }
                           },
                           "type": "object"
-                        },
-                        {
-                          "type": "null"
                         }
                       ]
                     }
@@ -58170,15 +58170,15 @@
                     },
                     {
                       "type": "literal",
+                      "value": "verified"
+                    },
+                    {
+                      "type": "literal",
                       "value": "rejected"
                     },
                     {
                       "type": "literal",
                       "value": "revoked"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "verified"
                     }
                   ]
                 }
@@ -58240,11 +58240,11 @@
                     },
                     {
                       "type": "literal",
-                      "value": "manual_admin"
+                      "value": "well_known_file"
                     },
                     {
                       "type": "literal",
-                      "value": "well_known_file"
+                      "value": "manual_admin"
                     },
                     {
                       "type": "null"
@@ -80353,6 +80353,31 @@
                   "required": true,
                   "schema": {
                     "type": "literal",
+                    "value": "pending"
+                  }
+                },
+                "totals": {
+                  "required": true,
+                  "schema": {
+                    "type": "null"
+                  }
+                }
+              },
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "operation_id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "status": {
+                  "required": true,
+                  "schema": {
+                    "type": "literal",
                     "value": "completed"
                   }
                 },
@@ -80381,31 +80406,6 @@
                       }
                     },
                     "type": "object"
-                  }
-                }
-              },
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "operation_id": {
-                  "required": true,
-                  "schema": {
-                    "type": "string"
-                  }
-                },
-                "status": {
-                  "required": true,
-                  "schema": {
-                    "type": "literal",
-                    "value": "pending"
-                  }
-                },
-                "totals": {
-                  "required": true,
-                  "schema": {
-                    "type": "null"
                   }
                 }
               },
@@ -86726,6 +86726,25 @@
             {
               "additionalProperties": false,
               "properties": {
+                "login_attempt_id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "mfa_required": {
+                  "required": true,
+                  "schema": {
+                    "type": "literal",
+                    "value": true
+                  }
+                }
+              },
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
                 "did": {
                   "required": true,
                   "schema": {
@@ -86871,25 +86890,6 @@
                       }
                     },
                     "type": "object"
-                  }
-                }
-              },
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "login_attempt_id": {
-                  "required": true,
-                  "schema": {
-                    "type": "string"
-                  }
-                },
-                "mfa_required": {
-                  "required": true,
-                  "schema": {
-                    "type": "literal",
-                    "value": true
                   }
                 }
               },
@@ -91332,34 +91332,13 @@
                   "required": true,
                   "schema": {
                     "type": "literal",
-                    "value": "completed"
+                    "value": "pending"
                   }
                 },
                 "totals": {
                   "required": true,
                   "schema": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "blocked_hostname_count": {
-                        "required": true,
-                        "schema": {
-                          "type": "number"
-                        }
-                      },
-                      "penalized_user_count": {
-                        "required": true,
-                        "schema": {
-                          "type": "number"
-                        }
-                      },
-                      "soft_deleted_relation_count": {
-                        "required": true,
-                        "schema": {
-                          "type": "number"
-                        }
-                      }
-                    },
-                    "type": "object"
+                    "type": "null"
                   }
                 }
               },
@@ -91390,13 +91369,34 @@
                   "required": true,
                   "schema": {
                     "type": "literal",
-                    "value": "pending"
+                    "value": "completed"
                   }
                 },
                 "totals": {
                   "required": true,
                   "schema": {
-                    "type": "null"
+                    "additionalProperties": false,
+                    "properties": {
+                      "blocked_hostname_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "penalized_user_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "soft_deleted_relation_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "type": "object"
                   }
                 }
               },
@@ -92242,10 +92242,6 @@
                         },
                         {
                           "type": "literal",
-                          "value": "provider_unavailable"
-                        },
-                        {
-                          "type": "literal",
                           "value": "purchase_pending"
                         },
                         {
@@ -92278,6 +92274,10 @@
                         },
                         {
                           "type": "null"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "provider_unavailable"
                         }
                       ]
                     }
@@ -94057,11 +94057,11 @@
                   "type": "union",
                   "variants": [
                     {
-                      "name": "ImagePlacementTuple",
-                      "type": "ref"
+                      "type": "null"
                     },
                     {
-                      "type": "null"
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
                     }
                   ]
                 }
