@@ -17,8 +17,6 @@ export const MODERATION_CLUSTER_REPORT_COUNT =
 export const MODERATION_CLUSTER_HOT_POST_ID = seedUuid(POST_START + 2 * ENTITIES_PER_ERA, '05')
 export const MODERATION_CLUSTER_TIED_USER_ID = clusterFixturePostIds(0)[10]!
 
-export type ClusterFixtureStatus = (typeof STATUSES)[number]
-
 export function clusterFixturePostIds(era: 0 | 1): string[] {
   return Array.from({ length: ENTITIES_PER_ERA }, (_, offset) =>
     seedUuid(POST_START + era * ENTITIES_PER_ERA + offset, '05'),
