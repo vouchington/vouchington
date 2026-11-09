@@ -236,7 +236,7 @@ COMMENT ON COLUMN moderation_report_clusters.first_reported_at IS 'Earliest UUID
 COMMENT ON COLUMN moderation_report_clusters.last_reported_at IS 'Latest UUIDv7 report timestamp in this target and outcome cluster.';
 COMMENT ON COLUMN moderation_report_clusters.report_count IS 'Number of current report rows in this target and outcome cluster.';
 
-CREATE OR REPLACE FUNCTION fn_sync_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION fn_update_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   prior_cluster record;
   next_first timestamptz;
@@ -336,8 +336,8 @@ END $$;
 
 CREATE OR REPLACE TRIGGER trigger_moderation_report_clusters_insert_delete
   AFTER INSERT OR DELETE ON moderation_reports
-  FOR EACH ROW EXECUTE FUNCTION fn_sync_moderation_report_cluster();
+  FOR EACH ROW EXECUTE FUNCTION fn_update_moderation_report_cluster();
 CREATE OR REPLACE TRIGGER trigger_moderation_report_clusters_update
   AFTER UPDATE OF id, reviewed_at, resolution_action, post_id, reported_user_id,
     hostname_id, rss_feed_item_id ON moderation_reports
-  FOR EACH ROW EXECUTE FUNCTION fn_sync_moderation_report_cluster();
+  FOR EACH ROW EXECUTE FUNCTION fn_update_moderation_report_cluster();
