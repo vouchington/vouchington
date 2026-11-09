@@ -42,13 +42,11 @@ describe('moderation report cluster status moves', () => {
         resolution_action: null,
         first_reported_at: secondAt,
         last_reported_at: secondAt,
-        report_count: 1,
       },
       {
         resolution_action: 'reviewed',
         first_reported_at: firstAt,
         last_reported_at: firstAt,
-        report_count: 1,
       },
     ])
   })

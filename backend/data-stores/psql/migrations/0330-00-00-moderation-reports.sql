@@ -195,7 +195,6 @@ CREATE TABLE IF NOT EXISTS moderation_report_clusters (
   resolution_action moderation_report_resolution_actions,
   first_reported_at timestamptz NOT NULL,
   last_reported_at timestamptz NOT NULL,
-  report_count integer NOT NULL CHECK (report_count > 0),
   CONSTRAINT moderation_report_clusters_one_target
     CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1),
   CONSTRAINT moderation_report_clusters_one_status_target
@@ -249,7 +248,6 @@ COMMENT ON COLUMN moderation_report_clusters.rss_feed_item_id IS 'Reported RSS f
 COMMENT ON COLUMN moderation_report_clusters.resolution_action IS 'NULL for pending reports, otherwise the reviewed report outcome.';
 COMMENT ON COLUMN moderation_report_clusters.first_reported_at IS 'Earliest UUIDv7 report timestamp in this target and outcome cluster.';
 COMMENT ON COLUMN moderation_report_clusters.last_reported_at IS 'Latest UUIDv7 report timestamp in this target and outcome cluster.';
-COMMENT ON COLUMN moderation_report_clusters.report_count IS 'Number of current report rows in this target and outcome cluster.';
 
 CREATE OR REPLACE FUNCTION fn_update_moderation_report_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
@@ -260,6 +258,7 @@ DECLARE
   report_target_column text;
   report_target_id uuid;
   edge_query text;
+  removed_clusters integer;
 BEGIN
   IF TG_OP = 'UPDATE' THEN
     IF OLD.id = NEW.id
@@ -277,7 +276,7 @@ BEGIN
       OR OLD.hostname_id IS DISTINCT FROM NEW.hostname_id
       OR OLD.rss_feed_item_id IS DISTINCT FROM NEW.rss_feed_item_id THEN
       -- Both existing clusters will be written. Lock them in one order before the OLD
-      -- decrement and NEW upsert, so opposite status/target moves cannot form ABBA.
+      -- removal and NEW upsert, so opposite status/target moves cannot form ABBA.
       PERFORM cluster.id FROM moderation_report_clusters cluster
       WHERE (cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
           AND (cluster.post_id = OLD.post_id
@@ -294,7 +293,7 @@ BEGIN
   END IF;
 
   IF TG_OP IN ('DELETE', 'UPDATE') THEN
-    SELECT cluster.id, cluster.report_count, cluster.first_reported_at,
+    SELECT cluster.id, cluster.first_reported_at,
       cluster.last_reported_at INTO prior_cluster
     FROM moderation_report_clusters cluster
     WHERE cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
@@ -305,46 +304,45 @@ BEGIN
     FOR UPDATE;
 
     IF FOUND THEN
-      IF prior_cluster.report_count = 1 THEN
-        DELETE FROM moderation_report_clusters WHERE id = prior_cluster.id;
+      -- Exactly one FK is present; this identifier is selected only from these literals.
+      IF OLD.post_id IS NOT NULL THEN
+        report_target_column := 'post_id';
+        report_target_id := OLD.post_id;
+      ELSIF OLD.reported_user_id IS NOT NULL THEN
+        report_target_column := 'reported_user_id';
+        report_target_id := OLD.reported_user_id;
+      ELSIF OLD.hostname_id IS NOT NULL THEN
+        report_target_column := 'hostname_id';
+        report_target_id := OLD.hostname_id;
       ELSE
+        report_target_column := 'rss_feed_item_id';
+        report_target_id := OLD.rss_feed_item_id;
+      END IF;
+      edge_query := format(
+        'SELECT uuid_extract_timestamp(s.id) FROM moderation_reports s WHERE s.%I = $1::uuid AND %s',
+        report_target_column,
+        CASE WHEN OLD.resolution_action IS NULL
+          THEN 's.reviewed_at IS NULL AND s.resolution_action IS NULL'
+          ELSE 's.reviewed_at IS NOT NULL AND s.resolution_action = $2::moderation_report_resolution_actions'
+        END
+      );
+      EXECUTE 'DELETE FROM moderation_report_clusters WHERE id = $3::uuid AND NOT EXISTS ('
+        || edge_query || ')' USING report_target_id, OLD.resolution_action, prior_cluster.id;
+      GET DIAGNOSTICS removed_clusters = ROW_COUNT;
+      IF removed_clusters = 0 THEN
         prior_reported_at := uuid_extract_timestamp(OLD.id);
-        IF prior_cluster.first_reported_at = prior_reported_at
-          OR prior_cluster.last_reported_at = prior_reported_at THEN
-          -- Exactly one FK is present; this identifier is selected only from these literals.
-          IF OLD.post_id IS NOT NULL THEN
-            report_target_column := 'post_id';
-            report_target_id := OLD.post_id;
-          ELSIF OLD.reported_user_id IS NOT NULL THEN
-            report_target_column := 'reported_user_id';
-            report_target_id := OLD.reported_user_id;
-          ELSIF OLD.hostname_id IS NOT NULL THEN
-            report_target_column := 'hostname_id';
-            report_target_id := OLD.hostname_id;
-          ELSE
-            report_target_column := 'rss_feed_item_id';
-            report_target_id := OLD.rss_feed_item_id;
-          END IF;
-          edge_query := format(
-            'SELECT uuid_extract_timestamp(s.id) FROM moderation_reports s WHERE s.%I = $1::uuid AND %s',
-            report_target_column,
-            CASE WHEN OLD.resolution_action IS NULL
-              THEN 's.reviewed_at IS NULL AND s.resolution_action IS NULL'
-              ELSE 's.reviewed_at IS NOT NULL AND s.resolution_action = $2::moderation_report_resolution_actions'
-            END
-          );
-          IF prior_cluster.first_reported_at = prior_reported_at THEN
-            EXECUTE edge_query || ' ORDER BY s.id ASC LIMIT 1'
-              INTO next_first USING report_target_id, OLD.resolution_action;
-          END IF;
-          IF prior_cluster.last_reported_at = prior_reported_at THEN
-            EXECUTE edge_query || ' ORDER BY s.id DESC LIMIT 1'
-              INTO next_last USING report_target_id, OLD.resolution_action;
-          END IF;
+        IF prior_cluster.first_reported_at = prior_reported_at THEN
+          EXECUTE edge_query || ' ORDER BY s.id ASC LIMIT 1'
+            INTO next_first USING report_target_id, OLD.resolution_action;
         END IF;
+        IF prior_cluster.last_reported_at = prior_reported_at THEN
+          EXECUTE edge_query || ' ORDER BY s.id DESC LIMIT 1'
+            INTO next_last USING report_target_id, OLD.resolution_action;
+        END IF;
+        -- Every removal writes the retained projection row. Serializing those writes
+        -- prevents concurrent last-report removals from each seeing a surviving sibling.
         UPDATE moderation_report_clusters
-        SET report_count = report_count - 1,
-          first_reported_at = COALESCE(next_first, first_reported_at),
+        SET first_reported_at = COALESCE(next_first, first_reported_at),
           last_reported_at = COALESCE(next_last, last_reported_at)
         WHERE id = prior_cluster.id;
       END IF;
@@ -354,16 +352,15 @@ BEGIN
   IF TG_OP IN ('INSERT', 'UPDATE') THEN
     INSERT INTO moderation_report_clusters (
       post_id, reported_user_id, hostname_id, rss_feed_item_id,
-      resolution_action, first_reported_at, last_reported_at, report_count
+      resolution_action, first_reported_at, last_reported_at
     ) VALUES (
       NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id,
-      NEW.resolution_action, uuid_extract_timestamp(NEW.id), uuid_extract_timestamp(NEW.id), 1
+      NEW.resolution_action, uuid_extract_timestamp(NEW.id), uuid_extract_timestamp(NEW.id)
     )
     ON CONFLICT ON CONSTRAINT moderation_report_clusters_one_status_target
     DO UPDATE SET
       first_reported_at = LEAST(moderation_report_clusters.first_reported_at, EXCLUDED.first_reported_at),
-      last_reported_at = GREATEST(moderation_report_clusters.last_reported_at, EXCLUDED.last_reported_at),
-      report_count = moderation_report_clusters.report_count + 1;
+      last_reported_at = GREATEST(moderation_report_clusters.last_reported_at, EXCLUDED.last_reported_at);
   END IF;
   IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
   RETURN NEW;

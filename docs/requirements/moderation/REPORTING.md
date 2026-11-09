@@ -7,8 +7,8 @@ still run asynchronously after report creation or update.
 
 Clustered review pages keep current ordering keys separately from the report rows. Mutations and
 cascades maintain those keys in the same transaction, so selecting a page does not scan every
-report against a heavily reported target. The projection stores current aggregate facts rather
-than pointers into report history; retention can remove reports without leaving stale cluster keys.
+report against a heavily reported target. The projection keeps current boundary timestamps;
+retention can remove reports without leaving stale cluster keys. Displayed report counts are bounded reads of the reports themselves.
 
 See also:
 

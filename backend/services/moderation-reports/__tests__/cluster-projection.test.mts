@@ -46,12 +46,11 @@ describe('moderation report cluster projection', () => {
         resolution_action: null,
         first_reported_at: times[2],
         last_reported_at: times[2],
-        report_count: 1,
       },
     ])
   })
 
-  it('keeps status counts and head timestamps exact across concurrent inserts and removals', async () => {
+  it('keeps status membership and head timestamps exact across concurrent inserts and removals', async () => {
     const [author, firstReporter, secondReporter, thirdReporter] = await Promise.all([
       createTestUser(),
       createTestUser(),
@@ -93,7 +92,6 @@ describe('moderation report cluster projection', () => {
         resolution_action: null,
         first_reported_at: firstAt,
         last_reported_at: lastAt,
-        report_count: 3,
       },
     ])
 
@@ -103,13 +101,11 @@ describe('moderation report cluster projection', () => {
         resolution_action: null,
         first_reported_at: firstAt,
         last_reported_at: firstAt,
-        report_count: 1,
       },
       {
         resolution_action: 'actioned',
         first_reported_at: middleAt,
         last_reported_at: lastAt,
-        report_count: 2,
       },
     ])
 
@@ -119,7 +115,6 @@ describe('moderation report cluster projection', () => {
         resolution_action: 'actioned',
         first_reported_at: lastAt,
         last_reported_at: lastAt,
-        report_count: 1,
       },
     ])
     await deleteTestModerationReports([lastId])
@@ -144,21 +139,41 @@ describe('moderation report cluster projection', () => {
     expect(await getTestModerationReportClusters('post', postId)).toEqual([])
   })
 
-  it('removes the last report cluster when the reporter is hard deleted', async () => {
-    const [author, reporter] = await Promise.all([createTestUser(), createTestUser()])
+  it('keeps remaining boundaries and removes the empty cluster after reporter cascades', async () => {
+    const [author, reporter, remainingReporter] = await Promise.all([
+      createTestUser(),
+      createTestUser(),
+      createTestUser(),
+    ])
     const postId = await insertTestPost({
       createdById: author.id,
       slug: `cluster-reporter-cascade-${crypto.randomUUID()}`,
       title: 'Reporter cascade target',
       markdown: 'body',
     })
+    const firstAt = new Date('2004-01-01T00:00:00.000Z')
+    const lastAt = new Date('2004-01-01T00:00:01.000Z')
     await insertTestModerationReport({
       reporterUserId: reporter.id,
       entityType: 'post',
       entityId: postId,
+      createdAt: firstAt,
     })
-    expect(await getTestModerationReportClusters('post', postId)).toHaveLength(1)
+    await insertTestModerationReport({
+      reporterUserId: remainingReporter.id,
+      entityType: 'post',
+      entityId: postId,
+      createdAt: lastAt,
+    })
     await hardDeleteTestUser(reporter.id)
+    expect(await getTestModerationReportClusters('post', postId)).toEqual([
+      {
+        resolution_action: null,
+        first_reported_at: lastAt,
+        last_reported_at: lastAt,
+      },
+    ])
+    await hardDeleteTestUser(remainingReporter.id)
     expect(await getTestModerationReportClusters('post', postId)).toEqual([])
   })
 })

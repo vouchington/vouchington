@@ -6,7 +6,6 @@ export type TestModerationReportCluster = {
   resolution_action: 'reviewed' | 'actioned' | 'dismissed' | null
   first_reported_at: Date
   last_reported_at: Date
-  report_count: number
 }
 
 export async function getTestModerationReportClusters(
@@ -15,7 +14,7 @@ export async function getTestModerationReportClusters(
 ): Promise<TestModerationReportCluster[]> {
   const fkColumn = ENTITY_TYPE_TO_REPORT_FK[entityType]
   const query = sql`/* getTestModerationReportClusters */
-    SELECT resolution_action, first_reported_at, last_reported_at, report_count
+    SELECT resolution_action, first_reported_at, last_reported_at
     FROM moderation_report_clusters WHERE `
   query.append(fkColumn)
   query.append(sql` = ${entityId}::uuid ORDER BY resolution_action NULLS FIRST`)
