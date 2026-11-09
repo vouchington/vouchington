@@ -48,30 +48,11 @@ describe('bluesky follow receipt ownership', () => {
       const follower = await createTestUserDirect()
       const followee = await createTestUserDirect()
       const account = await insertTestBlueskyLinkedAccount({ userId: follower.id })
-      await saveScopedBlueskyFollowReceipt(
-        follower.id,
-        followee.id,
-        account.bluesky_did,
-        account.link_authorization_id,
-        fakeRecordUri(),
-      )
+      const scope = [account.bluesky_did, account.link_authorization_id] as const
+      await saveScopedBlueskyFollowReceipt(follower.id, followee.id, ...scope, fakeRecordUri())
       await softDeleteUser(deleted === 'follower' ? follower.id : followee.id)
-      expect(
-        await getBlueskyFollowReceipt(
-          follower.id,
-          followee.id,
-          account.bluesky_did,
-          account.link_authorization_id,
-        ),
-      ).toBeNull()
-      expect(
-        await listBlueskyFollowReceiptsForFollower(
-          follower.id,
-          account.bluesky_did,
-          account.link_authorization_id,
-          null,
-        ),
-      ).toEqual([])
+      expect(await getBlueskyFollowReceipt(follower.id, followee.id, ...scope)).toBeNull()
+      expect(await listBlueskyFollowReceiptsForFollower(follower.id, ...scope, null, 1)).toEqual([])
     },
   )
 

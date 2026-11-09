@@ -4,7 +4,6 @@ import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 
 // Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
 export const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
-
 // CRUD on bluesky_follow_records (see migrations/0571-00-00-bluesky-follow-records.sql). A row is
 // Voucha's durable receipt that a live app.bsky.graph.follow record currently exists on Bluesky for
 // this pair — not a cache of Bluesky state, the source of truth for "does it exist." Bluesky's PDS
