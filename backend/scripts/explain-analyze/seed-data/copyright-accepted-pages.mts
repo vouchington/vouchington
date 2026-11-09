@@ -71,26 +71,25 @@ export async function seedCopyrightAcceptedPages(): Promise<void> {
 /** Remove only the fixture's cases and retained identities, then restore planner statistics. */
 export async function cleanupCopyrightAcceptedPages(): Promise<void> {
   await using transaction = await beginTransaction()
-  for (const noticeId of noticeIds) {
-    await transaction(
-      `/* cleanupCopyrightAcceptedPages:scopeTargets */
-       SELECT set_config('app.copyright_case_purge_notice_id', $1, true),
-         set_config('app.copyright_case_purge_table', 'copyright_notice_targets', true)`,
-      [noticeId],
-    )
-    await transaction(
-      '/* cleanupCopyrightAcceptedPages:targets */ DELETE FROM copyright_notice_targets WHERE copyright_notice_id = $1::uuid',
-      [noticeId],
-    )
-    await transaction(
-      `/* cleanupCopyrightAcceptedPages:scopeNotice */
-       SELECT set_config('app.copyright_case_purge_table', 'copyright_notices', true)`,
-    )
-    await transaction(
-      '/* cleanupCopyrightAcceptedPages:notice */ DELETE FROM copyright_notices WHERE id = $1::uuid',
-      [noticeId],
-    )
-  }
+  await transaction(
+    `/* cleanupCopyrightAcceptedPages:ownedIds */
+     SELECT set_config('app.explain_copyright_page_notice_ids', $1::uuid[]::text, true)`,
+    [noticeIds],
+  )
+  // Purge guards require a separate case scope for each delete; run that fixed loop in the server.
+  await transaction(`/* cleanupCopyrightAcceptedPages:cases */
+    DO $cleanup$
+    DECLARE notice_id uuid;
+    BEGIN
+      FOREACH notice_id IN ARRAY current_setting('app.explain_copyright_page_notice_ids')::uuid[] LOOP
+        PERFORM set_config('app.copyright_case_purge_notice_id', notice_id::text, true);
+        PERFORM set_config('app.copyright_case_purge_table', 'copyright_notice_targets', true);
+        DELETE FROM copyright_notice_targets WHERE copyright_notice_id = notice_id;
+        PERFORM set_config('app.copyright_case_purge_table', 'copyright_notices', true);
+        DELETE FROM copyright_notices WHERE id = notice_id;
+      END LOOP;
+    END;
+    $cleanup$`)
   await transaction(
     '/* cleanupCopyrightAcceptedPages:noticeIdentities */ DELETE FROM retained_copyright_notice_identities WHERE id = ANY($1::uuid[])',
     [noticeIds],
