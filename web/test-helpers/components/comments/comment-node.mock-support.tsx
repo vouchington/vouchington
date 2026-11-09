@@ -40,7 +40,6 @@ vi.mock(
     ({
       default: (fn: () => Promise<{ default: () => null }>) => {
         trackDynamicLoader(fn)
-        // oxlint-disable-next-line react/only-export-components -- next/dynamic test double, never fast-refreshed
         return function MockDynamic() {
           return null
         }
