@@ -1,0 +1,6 @@
+{
+  "has_email": true,
+  "has_passkey": true,
+  "has_totp": true,
+  "providers": ["google"]
+}

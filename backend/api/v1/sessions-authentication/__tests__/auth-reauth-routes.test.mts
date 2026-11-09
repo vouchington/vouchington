@@ -14,6 +14,10 @@ const { expireTestOAuthAuthorization, insertTestOAuthAuthorization } =
 const { createProviderReAuthChallenge } = await import('@services/oauth/provider-reauth-challenge')
 const { createTestAccountChangeProof } = await import('@voucha/test-helpers/account-change')
 const { disconnectOAuthAccount } = await import('@services/my/oauth-account')
+const { backendResponseContracts } =
+  await import('../../../../test-helpers/api-fixtures/response-contracts.mts')
+const { validateResponseContract } =
+  await import('../../../../test-helpers/api-fixtures/contract-schema.mts')
 
 describe('fresh provider and passkey proof routes', () => {
   afterAll(() => vi.unstubAllEnvs())
@@ -30,6 +34,13 @@ describe('fresh provider and passkey proof routes', () => {
       .post('/api/v1/auth/re-auth/providers/github/authorizations')
       .send({ callback_mode: 'web' })
       .expect(200)
+    expect(
+      validateResponseContract(
+        backendResponseContracts['POST:/api/v1/auth/re-auth/providers/:provider/authorizations']!
+          .schema,
+        started.body,
+      ),
+    ).toEqual([])
     expect(started.body).toMatchObject({
       flow_id: expect.any(String),
       redirect_url: expect.any(String),
@@ -91,6 +102,12 @@ describe('fresh provider and passkey proof routes', () => {
       .post('/api/v1/auth/re-auth/providers/github/proofs')
       .send({ flow_id: flowId })
       .expect(200)
+    expect(
+      validateResponseContract(
+        backendResponseContracts['POST:/api/v1/auth/re-auth/providers/:provider/proofs']!.schema,
+        proof.body,
+      ),
+    ).toEqual([])
     expect(proof.body.re_auth_token).toEqual(expect.any(String))
     await request
       .post('/api/v1/auth/re-auth/providers/github/proofs')
@@ -197,6 +214,13 @@ describe('fresh provider and passkey proof routes', () => {
       .post('/api/v1/auth/re-auth/providers/google/challenges')
       .send({})
       .expect(200)
+    expect(
+      validateResponseContract(
+        backendResponseContracts['POST:/api/v1/auth/re-auth/providers/:provider/challenges']!
+          .schema,
+        started.body,
+      ),
+    ).toEqual([])
     expect(started.body).toMatchObject({
       flow_id: expect.any(String),
       nonce: expect.any(String),
@@ -219,6 +243,12 @@ describe('fresh provider and passkey proof routes', () => {
       .post('/api/v1/auth/re-auth/passkeys/options')
       .send({ passkey_id: passkey.id })
       .expect(200)
+    expect(
+      validateResponseContract(
+        backendResponseContracts['POST:/api/v1/auth/re-auth/passkeys/options']!.schema,
+        started.body,
+      ),
+    ).toEqual([])
     expect(started.body).toMatchObject({ flow_id: expect.any(String), options: expect.any(Object) })
 
     await request

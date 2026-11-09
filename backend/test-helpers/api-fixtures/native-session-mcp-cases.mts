@@ -1,15 +1,54 @@
 import type { ApiFixtureCase } from './types.mts'
 
 const consumers = ['swift-core', 'swift-ui', 'dotnet-core'] as const
+const nativeJsonHeaders = {
+  'Content-Type': 'application/json',
+  'x-voucha-client': 'dotnet',
+  'x-voucha-platform': 'windows',
+  'x-voucha-app-version': 'test',
+}
 
 export const nativeSessionMcpApiFixtureCases: ApiFixtureCase[] = [
+  {
+    id: 'native.auth.session.refresh.rotated',
+    method: 'PATCH',
+    path: '/api/v1/session',
+    route: { routeTemplate: '/api/v1/session' },
+    auth: 'fixture-user',
+    requestHeaders: nativeJsonHeaders,
+    requestBody: { dt: 'fixture-previous-device-jwt', st: 'fixture-previous-session-jwt' },
+    status: 200,
+    body: {
+      session: {
+        dte: 2592000,
+        ste: 172800,
+        secure: true,
+        did: '00000000-0000-7000-8000-000000000732',
+        dt: 'fixture-rotated-device-jwt',
+        st: 'fixture-rotated-session-jwt',
+        sid: '00000000-0000-7000-8000-000000000733',
+        uid: '00000000-0000-7000-8000-000000000701',
+        session: {
+          did: '00000000-0000-7000-8000-000000000732',
+          sid: '00000000-0000-7000-8000-000000000733',
+          uid: '00000000-0000-7000-8000-000000000701',
+          client: 'native',
+          rol: [],
+          rca: 1780000000,
+          sca: 1780000000,
+        },
+      },
+    },
+    consumers: [...consumers],
+    migratedFrom: [],
+  },
   {
     id: 'native.auth.email-address.tokens',
     method: 'POST',
     path: '/api/v1/auth/native/email-address/tokens',
     route: { routeTemplate: '/api/v1/auth/native/email-address/tokens' },
     auth: 'none',
-    requestHeaders: { 'Content-Type': 'application/json' },
+    requestHeaders: nativeJsonHeaders,
     requestBody: { emailAddress: 'fixture@example.test' },
     status: 200,
     body: { email_address: 'fixture@example.test' },
@@ -22,8 +61,8 @@ export const nativeSessionMcpApiFixtureCases: ApiFixtureCase[] = [
     path: '/api/v1/auth/native/email-address/login',
     route: { routeTemplate: '/api/v1/auth/native/email-address/login' },
     auth: 'none',
-    requestHeaders: { 'Content-Type': 'application/json' },
-    requestBody: { emailAddress: 'fixture@example.test', token: '123456' },
+    requestHeaders: nativeJsonHeaders,
+    requestBody: { emailAddress: 'fixture@example.test', token: 'ABCDEFGHJK' },
     status: 200,
     body: {
       user: {
@@ -60,8 +99,8 @@ export const nativeSessionMcpApiFixtureCases: ApiFixtureCase[] = [
     path: '/api/v1/auth/native/email-address/login',
     route: { routeTemplate: '/api/v1/auth/native/email-address/login' },
     auth: 'none',
-    requestHeaders: { 'Content-Type': 'application/json' },
-    requestBody: { emailAddress: 'fixture@example.test', token: '123456' },
+    requestHeaders: nativeJsonHeaders,
+    requestBody: { emailAddress: 'fixture@example.test', token: 'ABCDEFGHJK' },
     status: 200,
     body: {
       mfa_required: true,

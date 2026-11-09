@@ -5,6 +5,8 @@ import { emails } from '@queues/emails/queues'
 import { RateLimiter, rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
 import { sentryCaptureExceptionMock } from '../../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
+import { backendResponseContracts } from '../../../../test-helpers/api-fixtures/response-contracts.mts'
+import { validateResponseContract } from '../../../../test-helpers/api-fixtures/contract-schema.mts'
 import {
   assertEmailTokenRequestAllowed,
   assertEmailTokenVerificationAllowed,
@@ -44,12 +46,24 @@ describe('re-authentication code boundaries', () => {
       return originalAdd.call(emails, name, data, options)
     })
     try {
-      await req.post(reAuthEmailTokens).expect(200)
+      const issued = await req.post(reAuthEmailTokens).expect(200)
+      expect(
+        validateResponseContract(
+          backendResponseContracts['POST:/api/v1/auth/mfa/re-auth/email/tokens']!.schema,
+          issued.body,
+        ),
+      ).toEqual([])
       expect(issuedCode).toBeTruthy()
       const verified = await req
         .post(reAuthEmailVerification)
         .send({ code: issuedCode })
         .expect(200)
+      expect(
+        validateResponseContract(
+          backendResponseContracts['POST:/api/v1/auth/mfa/re-auth/email/verification']!.schema,
+          verified.body,
+        ),
+      ).toEqual([])
       expect(verified.body.re_auth_token).toBeTruthy()
       expect(
         sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),

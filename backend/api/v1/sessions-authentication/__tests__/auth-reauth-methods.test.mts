@@ -9,6 +9,8 @@ import {
   insertTestTotpAuthenticator,
 } from '@voucha/test-helpers'
 import { getConfiguredOAuthProviders } from '../../../../services/oauth-accounts/configuration.mts'
+import { backendResponseContracts } from '../../../../test-helpers/api-fixtures/response-contracts.mts'
+import { validateResponseContract } from '../../../../test-helpers/api-fixtures/contract-schema.mts'
 
 describe('GET /api/v1/auth/re-auth/methods', () => {
   it('requires an authenticated actor', async () => {
@@ -21,6 +23,12 @@ describe('GET /api/v1/auth/re-auth/methods', () => {
     await request.authenticateAs(user)
 
     const response = await request.get('/api/v1/auth/re-auth/methods').expect(200)
+    expect(
+      validateResponseContract(
+        backendResponseContracts['GET:/api/v1/auth/re-auth/methods']!.schema,
+        response.body,
+      ),
+    ).toEqual([])
     expect(response.body).toMatchObject({ has_email: true, has_totp: false, has_passkey: false })
     expect(response.body.providers).toEqual([])
   })

@@ -1,0 +1,5 @@
+{
+  "action": "bot-challenge.mutation",
+  "code": "BOT_CHALLENGE_REQUIRED",
+  "message": "Bot challenge required"
+}
