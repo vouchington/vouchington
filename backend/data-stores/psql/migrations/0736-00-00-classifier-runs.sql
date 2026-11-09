@@ -211,6 +211,7 @@ CREATE TABLE IF NOT EXISTS classifier_run_requests (
     community_prompt_end_cursor IS NULL OR jsonb_typeof(community_prompt_end_cursor) = 'object'
   ),
   has_flagged_community_prompt BOOLEAN NOT NULL DEFAULT false,
+  has_new_community_prompt_decision BOOLEAN NOT NULL DEFAULT false,
   community_prompt_completed_at TIMESTAMPTZ,
   run_settled_at TIMESTAMPTZ,
   no_work_at TIMESTAMPTZ,
@@ -401,6 +402,8 @@ COMMENT ON COLUMN classifier_run_requests.community_prompt_end_cursor IS
   'Activation-order upper position fixed when the community prompt traversal starts.';
 COMMENT ON COLUMN classifier_run_requests.has_flagged_community_prompt IS
   'Whether a completed page in this community prompt traversal flagged the post.';
+COMMENT ON COLUMN classifier_run_requests.has_new_community_prompt_decision IS
+  'Whether this traversal completed a newly evaluated community prompt decision; replayed receipts do not set it.';
 COMMENT ON COLUMN classifier_run_requests.community_prompt_completed_at IS
   'The final community prompt page completed; only a new explicit request rearms the traversal.';
 COMMENT ON COLUMN classifier_run_requests.run_identity_id IS

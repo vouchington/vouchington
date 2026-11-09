@@ -200,7 +200,7 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     await processRun(first)
     await editTestCommunityRule(fixture.prompts[0]!.id, 'No spam of any kind, ever')
 
-    await requestCommunityModerationRunForPost(fixture.postId)
+    await requestCommunityModerationFixtureRun(fixture)
     const changed = await handler.reserve(fixture.subject)
     expect(changed.kind).toBe('reserved')
     if (changed.kind !== 'reserved') throw new Error('Edited rule was not reserved')
@@ -222,7 +222,7 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     await processRun(first)
     await deactivateTestCommunityPrompt(fixture.prompts[1]!.id)
 
-    await requestCommunityModerationRunForPost(fixture.postId)
+    await requestCommunityModerationFixtureRun(fixture)
     const changed = await handler.reserve(fixture.subject)
     expect(changed.kind).toBe('reserved')
     if (changed.kind !== 'reserved') throw new Error('Deactivated prompt was not reserved')

@@ -6,6 +6,7 @@ import {
 import { enqueueClassifierRunDispatcher } from '@queues/ai-agents/enqueues/classifier-run'
 import { requestClassifierRuns, type CurrentClassifierRunInput } from '@services/classifier-runs'
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
+import { communityModerationRequestReady } from '../../community-agent-prompts/moderation-run-progress.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
 /**
@@ -78,6 +79,7 @@ export function communityModerationRequestEligibility(): SQLStatement {
 export async function requestCommunityModerationRun(
   query: TransactionQuery,
   postId: string,
+  intent: 'approval' | 'automatic-recovery' = 'approval',
 ): Promise<boolean> {
   const subject = { postId, rssFeedItemId: null }
   const current = await lockCommunityModerationInput(query, subject)
@@ -86,14 +88,20 @@ export async function requestCommunityModerationRun(
     subject,
     inputSha256: current.inputSha256,
     classifierSlugs: [COMMUNITY_MODERATION_CLASSIFIER_SLUG],
+    rearmOnSameContent: intent === 'approval',
   })
-  registerPostCommitAction(query, async () => {
-    await enqueueClassifierRunDispatcher({
-      classifier: COMMUNITY_MODERATION_CLASSIFIER_SLUG,
-      postId,
-      rssFeedItemId: null,
+  if (
+    intent === 'approval' ||
+    (await communityModerationRequestReady(query, postId, current.inputSha256))
+  ) {
+    registerPostCommitAction(query, async () => {
+      await enqueueClassifierRunDispatcher({
+        classifier: COMMUNITY_MODERATION_CLASSIFIER_SLUG,
+        postId,
+        rssFeedItemId: null,
+      })
     })
-  })
+  }
   return true
 }
 
@@ -104,7 +112,7 @@ export async function requestCommunityModerationRun(
  */
 export async function requestCommunityModerationRunForPost(postId: string): Promise<boolean> {
   await using query = await beginTransaction()
-  const requested = await requestCommunityModerationRun(query, postId)
+  const requested = await requestCommunityModerationRun(query, postId, 'automatic-recovery')
   await query.commit()
   return requested
 }

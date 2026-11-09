@@ -9,6 +9,7 @@ import {
   type CommunityModerationRunConfiguration,
 } from './moderation-run-configuration.mts'
 import {
+  applyCommunityModerationAction,
   applyCommunityModerationEffects,
   type CommunityModerationEffects,
 } from './moderation-run-effects.mts'
@@ -50,13 +51,26 @@ export function createCommunityModerationRunAdapter(): CommunityModerationRunAda
       if (input.subject.postId === null) {
         throw new Error('community moderation replay subject must be a post')
       }
-      await replayCompletedCommunityModerationPage(query, {
+      const progress = await replayCompletedCommunityModerationPage(query, {
         runId: input.runId,
         postId: input.subject.postId,
         inputSha256: input.inputSha256,
         nextCursor: input.resolved.configuration.nextCursor,
         decisionBatchId: input.decisionBatchId,
       })
+      if (
+        progress.advanced &&
+        !progress.hasMore &&
+        progress.anyFlagged &&
+        progress.hasNewDecision
+      ) {
+        await applyCommunityModerationAction(query, {
+          communityId: input.resolved.configuration.communityId,
+          postId: input.subject.postId,
+          inputSha256: input.inputSha256,
+          actorId: input.resolved.configuration.actorId,
+        })
+      }
     },
     applyEffects: applyCommunityModerationEffects,
   }

@@ -33,13 +33,18 @@ export async function advanceCommunityModerationRequest(
     inputSha256: Buffer
     nextCursor: ActiveCommunityAgentPromptCursor | null
     pageFlagged: boolean
+    newDecision: boolean
   },
-): Promise<{ anyFlagged: boolean; hasMore: boolean }> {
-  const { rows } = await query<{ has_flagged_community_prompt: boolean }>(sql`
+): Promise<{ anyFlagged: boolean; hasMore: boolean; hasNewDecision: boolean; advanced: boolean }> {
+  const { rows } = await query<{
+    has_flagged_community_prompt: boolean
+    has_new_community_prompt_decision: boolean
+  }>(sql`
     /* advanceCommunityModerationRequest */
     UPDATE classifier_run_requests request
     SET community_prompt_cursor = ${input.nextCursor ? JSON.stringify(input.nextCursor) : null}::jsonb,
       has_flagged_community_prompt = request.has_flagged_community_prompt OR ${input.pageFlagged},
+      has_new_community_prompt_decision = request.has_new_community_prompt_decision OR ${input.newDecision},
       community_prompt_completed_at = CASE
         WHEN ${input.nextCursor === null} THEN COALESCE(request.community_prompt_completed_at, clock_timestamp())
         ELSE NULL END,
@@ -48,11 +53,14 @@ export async function advanceCommunityModerationRequest(
     WHERE request.run_identity_id = ${input.runId}
       AND request.input_sha256 = ${input.inputSha256}
       AND request.post_id = ${input.postId}
-    RETURNING has_flagged_community_prompt
+      AND request.community_prompt_completed_at IS NULL
+    RETURNING has_flagged_community_prompt, has_new_community_prompt_decision
   `)
   return {
-    anyFlagged: rows[0]?.has_flagged_community_prompt ?? input.pageFlagged,
-    hasMore: input.nextCursor !== null,
+    anyFlagged: rows[0]?.has_flagged_community_prompt ?? false,
+    hasMore: rows.length > 0 && input.nextCursor !== null,
+    hasNewDecision: rows[0]?.has_new_community_prompt_decision ?? false,
+    advanced: rows.length > 0,
   }
 }
 
@@ -66,7 +74,7 @@ export async function replayCompletedCommunityModerationPage(
     nextCursor: ActiveCommunityAgentPromptCursor | null
     decisionBatchId: string | null
   },
-): Promise<void> {
+): Promise<{ anyFlagged: boolean; hasMore: boolean; hasNewDecision: boolean; advanced: boolean }> {
   let pageFlagged = false
   if (input.decisionBatchId) {
     const { rows } = await query<{ flagged: boolean }>(sql`
@@ -80,7 +88,7 @@ export async function replayCompletedCommunityModerationPage(
     `)
     pageFlagged = rows[0]?.flagged ?? false
   }
-  await advanceCommunityModerationRequest(query, { ...input, pageFlagged })
+  return advanceCommunityModerationRequest(query, { ...input, pageFlagged, newDecision: false })
 }
 
 /** A completed page's follow-on is already durable; the queue admission is best effort. */

@@ -19,9 +19,8 @@ type PromptResult = { promptId: string; flagged: boolean; probability: number; u
 /**
  * Applies the durable community moderation decision in the completion transaction: the per-prompt
  * `agent_moderations` projection first, then the community's `automod_action` after the final
- * page if any page flagged the post. The action is read here, not pinned in the run, so changing it never re-bills
- * a classification. A completed run is replayed, never re-applied, so a post a moderator restored
- * is not acted on again until its content changes.
+ * page if a newly evaluated decision occurred and any page flagged the post. The action is read
+ * here, not pinned in the run, so changing it never re-bills a classification.
  */
 export async function applyCommunityModerationEffects(
   query: OwnedTransaction,
@@ -33,29 +32,52 @@ export async function applyCommunityModerationEffects(
   const results = readPromptResults(outcomes)
   await recordAgentModerations(query, { postId, inputSha256: lease.inputSha256, results })
   const flaggedPromptIds = results.flatMap(result => (result.flagged ? [result.promptId] : []))
-  const { anyFlagged, hasMore } = await advanceCommunityModerationRequest(query, {
-    runId: lease.runId,
+  const { anyFlagged, hasMore, hasNewDecision, advanced } = await advanceCommunityModerationRequest(
+    query,
+    {
+      runId: lease.runId,
+      postId,
+      inputSha256: lease.inputSha256,
+      nextCursor: lease.resolved.configuration.nextCursor,
+      pageFlagged: flaggedPromptIds.length > 0,
+      newDecision: outcomes.remoteDecision !== null,
+    },
+  )
+  if (!advanced || hasMore || !anyFlagged || !hasNewDecision)
+    return { flaggedPromptIds, appliedAction: null }
+  const { communityId, actorId } = lease.resolved.configuration
+  const appliedAction = await applyCommunityModerationAction(query, {
+    communityId,
     postId,
     inputSha256: lease.inputSha256,
-    nextCursor: lease.resolved.configuration.nextCursor,
-    pageFlagged: flaggedPromptIds.length > 0,
+    actorId,
   })
-  if (hasMore || !anyFlagged) return { flaggedPromptIds, appliedAction: null }
-  const { communityId, actorId } = lease.resolved.configuration
-  const action = await readCommunityAutomodAction(query, communityId)
-  const input = { communityId, postId, contentSha256: lease.inputSha256 }
+  return { flaggedPromptIds, appliedAction }
+}
+
+/** The final page may be a reused receipt; action still belongs to this traversal's new work. */
+export async function applyCommunityModerationAction(
+  query: OwnedTransaction,
+  input: { communityId: string; postId: string; inputSha256: Buffer; actorId: string },
+): Promise<CommunityModerationEffects['appliedAction']> {
+  const action = await readCommunityAutomodAction(query, input.communityId)
+  const target = {
+    communityId: input.communityId,
+    postId: input.postId,
+    contentSha256: input.inputSha256,
+  }
   if (action === 'review_queue') {
-    const flagged = await flagPostForAutomodReview(query, input)
-    return { flaggedPromptIds, appliedAction: flagged ? 'review_queue' : null }
+    const flagged = await flagPostForAutomodReview(query, target)
+    return flagged ? 'review_queue' : null
   }
   if (action === 'unpublish') {
     const removal = await unpublishPostForAutomodFlag(query, {
-      ...input,
-      moderationSystemUserId: actorId,
+      ...target,
+      moderationSystemUserId: input.actorId,
     })
-    return { flaggedPromptIds, appliedAction: removal === 'removed' ? 'unpublish' : null }
+    return removal === 'removed' ? 'unpublish' : null
   }
-  return { flaggedPromptIds, appliedAction: null }
+  return null
 }
 
 function readPromptResults(outcomes: ClassifierRunOutcomes<never>): PromptResult[] {
