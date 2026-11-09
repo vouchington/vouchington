@@ -49,6 +49,15 @@ changed files.
   store directly, without a cache restore path. `actions/setup-node` package-manager caching is also
   disabled. Playwright browsers and shared web test runtime output may use SHA-pinned
   `actions/cache` under the [GitHub Actions checklist](../checklists/github-actions.md).
+- `lingua-rs` downloads a native binary from GitHub releases in its postinstall, which made installs
+  slow and flaky. Jobs that never load language detection (web, Playwright, tooling, portability,
+  and shard-prep jobs) set `LINGUA_RS_SKIP_DOWNLOAD=1` and fetch nothing. Only the content-analysis
+  and background-cpu workers load it, so every job that runs backend code keeps the binary:
+  `setup-backend` caches that one file, keyed on the locked version and runner platform, and
+  pnpm leaves it in place so the postinstall verifies its checksum without a network call. The
+  Docker image build installs inside the Dockerfile under strict mode and stays uncached; its
+  lockfile-keyed install layer already avoids repeat downloads. A job that newly imports
+  `lingua-rs` must not set the skip variable.
 - Cache keys that use `hashFiles` must target source files and manifests, not broad directories, so
   dependency trees are never traversed while keys are evaluated.
 - Web-stack test jobs clear Next.js runtime output and Wrangler/Miniflare state before tests,

@@ -17,6 +17,8 @@ jobs:
   portability-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 18
+    env:
+      LINGUA_RS_SKIP_DOWNLOAD: '1'
     permissions:
       actions: read
       contents: read

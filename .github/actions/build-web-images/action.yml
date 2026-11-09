@@ -97,6 +97,9 @@ runs:
       run: 'source "$GITHUB_ACTION_PATH/report-image-size.sh"'
 
     - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@90e878e740edd47d19dae5d0dd28866afd719a01 # v0.85.3
+      env:
+        # The web image and its smoke test never load language detection.
+        LINGUA_RS_SKIP_DOWNLOAD: '1'
     - name: Run Docker smoke test
       shell: bash
       env:

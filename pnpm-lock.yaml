@@ -7830,8 +7830,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/languages
       lingua-rs:
-        specifier: ^0.2.3
-        version: 0.2.3
+        specifier: ^0.2.4
+        version: 0.2.4
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -22628,8 +22628,8 @@ packages:
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
-  lingua-rs@0.2.3:
-    resolution: {integrity: sha512-feKi+PsIR7ErVjjLxL+9wt6caSVbwE1iP7vJPjy9EArdiXYBWeNotVL03VJH/668x0OkwoiQ3qyO7KGnr+yh2w==}
+  lingua-rs@0.2.4:
+    resolution: {integrity: sha512-SEdaDyTR8PLvW4ysWfrN8Te5BW4EAN49aX+NqtPDu/C9WSZJEWo9AkNjxLrh8Xnp4MsTZ7+WJug0vQT7RxEYww==}
     engines: {node: '>=18'}
 
   linkify-it@5.0.2:
@@ -31601,7 +31601,7 @@ snapshots:
 
   lines-and-columns@1.2.4: {}
 
-  lingua-rs@0.2.3: {}
+  lingua-rs@0.2.4: {}
 
   linkify-it@5.0.2:
     dependencies:
