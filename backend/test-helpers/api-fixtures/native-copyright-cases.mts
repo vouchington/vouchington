@@ -1,3 +1,4 @@
+import { nativeImagePlacementApiFixtureCases } from './native-image-placement-cases.mts'
 import { claimantMisuseSummaryFixture } from './claimant-misuse-cases.mts'
 import { nativeCopyrightClaimantApiFixtureCases } from './native-copyright-claimant-cases.mts'
 import { formGuidance, reviewedStaffCase } from './native-copyright-staff-form-review.mts'
@@ -162,6 +163,7 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
     consumers: [...clientConsumers],
     migratedFrom: ['backend/api/v1/posts/post-images.mts'],
   },
+  ...nativeImagePlacementApiFixtureCases,
   {
     id: 'native.moderation.copyright.image-similarity-candidates.default',
     method: 'GET',

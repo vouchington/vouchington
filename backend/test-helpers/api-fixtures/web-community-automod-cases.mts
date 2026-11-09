@@ -43,7 +43,11 @@ export const webCommunityAutomodApiFixtureCases: ApiFixtureCase[] = [
         sample_count: 0,
         would_flag_count: 0,
         community_automod_action: 'record_only',
-        false_positive_estimate: null,
+        false_positive_estimate: {
+          sampled_flagged_count: 0,
+          sampled_approved_count: 0,
+          rate: null,
+        },
       },
       results: [],
     },

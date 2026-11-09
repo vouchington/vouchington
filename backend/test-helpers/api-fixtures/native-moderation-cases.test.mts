@@ -111,6 +111,9 @@ describe('native moderation fixtures', () => {
     expect(staffReport).toEqual(
       expect.objectContaining({
         reporter_user_id: 'user-1',
+        reporter_display_name: null,
+        resolver_username: null,
+        resolver_display_name: null,
         note: 'Looks automated.',
         is_system_generated: false,
         judgement: expect.any(Object),
@@ -120,6 +123,9 @@ describe('native moderation fixtures', () => {
     const memberReport = fixtureBody('native.moderation.reports.member.default').results[0]!
     for (const field of [
       'reporter_user_id',
+      'reporter_display_name',
+      'resolver_username',
+      'resolver_display_name',
       'note',
       'is_system_generated',
       'community_ban_evasion',

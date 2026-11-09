@@ -1,0 +1,27 @@
+{
+  "context": {
+    "account_age_ms": 86400000,
+    "active_suspension": null,
+    "community_removal_count": null,
+    "content_removal_count": null,
+    "content_removal_count_capped": null,
+    "trust_tier": null
+  },
+  "notes": [
+    {
+      "author_display_name": null,
+      "author_user_id": "00000000-0000-7000-8000-000000000913",
+      "author_username": "moderator",
+      "body": "Observed repeated spam.",
+      "community_id": "00000000-0000-7000-8000-000000000914",
+      "community_name": "Fixture community",
+      "created_at": "2026-06-01T12:00:00.000Z",
+      "deleted_at": null,
+      "id": "00000000-0000-7000-8000-000000000912",
+      "target_user_id": "00000000-0000-7000-8000-000000000911"
+    }
+  ],
+  "page_info": {
+    "has_next_page": false
+  }
+}

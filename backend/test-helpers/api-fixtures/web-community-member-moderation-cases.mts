@@ -1,3 +1,4 @@
+import { nativeCommunityModerationApiFixtureCases } from './native-community-moderation-cases.mts'
 import { community, pageInfo, timestamp, user } from './web-community-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
@@ -116,6 +117,7 @@ export const webCommunityMemberModerationApiFixtureCases: ApiFixtureCase[] = [
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['backend/api/v1/communities/bans.mts'],
   },
+  ...nativeCommunityModerationApiFixtureCases,
   {
     id: 'web.communities.restrictions.default',
     method: 'GET',

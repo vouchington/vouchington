@@ -1,3 +1,4 @@
+import { withStaffReportLabels } from './native-moderation-report-label-cases.mts'
 import { nativeMemberAppealApiFixtureCases } from './native-member-appeal-cases.mts'
 import { nativeModerationAppealApiFixtureCases } from './native-moderation-appeal-cases.mts'
 import { nativeModerationDisputeApiFixtureCases } from './native-moderation-dispute-cases.mts'
@@ -139,7 +140,7 @@ const paginationReportApiFixtureCases = nativeModerationReportApiFixtureCases.fl
 export { reviewQueueFixture } from './native-moderation-review-queue-cases.mts'
 
 export const nativeModerationApiFixtureCases = [
-  ...paginationReportApiFixtureCases,
+  ...paginationReportApiFixtureCases.map(withStaffReportLabels),
   ...nativeModerationAppealApiFixtureCases,
   ...nativeMemberAppealApiFixtureCases,
   ...nativeModerationDisputeApiFixtureCases,

@@ -1,3 +1,4 @@
+import { nativeUserModNoteApiFixtureCases } from './native-user-mod-note-cases.mts'
 import { nativeModerationFixtureCase as fixtureCase } from './native-moderation-fixture-case.mts'
 
 export const nativeModerationReportApiFixtureCases = [
@@ -159,4 +160,5 @@ export const nativeModerationReportApiFixtureCases = [
     body: null,
     migratedFrom: ['backend/api/v1/communities/ban-evasion.mts'],
   }),
+  ...nativeUserModNoteApiFixtureCases,
 ]
