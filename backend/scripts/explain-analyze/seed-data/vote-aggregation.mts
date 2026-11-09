@@ -11,6 +11,7 @@ import {
   updateElectionStatsIfChanged,
 } from '@services/elections-votes/shared/vote-aggregation'
 import { invalidate } from '@services/entity-cache'
+import { seedFriendTrustedHostnames } from './friend-trusted-hostnames.mts'
 import { seedFreshRelationId, seedRelationIdAfterPost, seedUuid } from './common.mts'
 
 // trending-posts, trending-posts-by-topic, trending-topics, and rss-feed-search-by-publisher-type
@@ -143,4 +144,6 @@ export async function seedHostnameVoteAggregation(): Promise<void> {
   )
   await updateElectionStatsIfChanged(HOSTNAME_ELECTION_CONFIG, hostnameId, hostnameStats)
   await invalidate.hostname_elections(hostnameId)
+  // The friend-trusted scenario's viewer follows 10k users with long hostname ballot histories.
+  await seedFriendTrustedHostnames()
 }

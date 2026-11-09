@@ -46,6 +46,7 @@ export const REGISTRY_ORDER = [
   'crawl-boilerplate-removal-work-config',
   'find-your-friends-work-config',
   'sitemaps-work-config',
+  'friend-trusted-hostnames-work-config',
   'stripe-work-config',
   'recommended-topics-work-config',
   'recommended-rss-feeds-work-config',

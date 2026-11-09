@@ -112,6 +112,7 @@
     "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@services/user-import-export": "workspace:^",
     "@services/user-rate-limits": "workspace:^",

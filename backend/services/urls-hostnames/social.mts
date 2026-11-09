@@ -1,5 +1,6 @@
 import { read } from '@data-stores/psql'
 import { buildPageInfo, decodeUuidCursor, isScoreCursor } from '@modules/pagination'
+import { getFriendTrustedHostnamesLimit } from './social-limits.mts'
 import type { PageInfo } from '@voucha/types/pagination'
 
 export type FriendTrustedHostname = {
@@ -38,6 +39,8 @@ export async function getFriendTrustedHostnames(
   }
 
   const userIdIdx = values.push(currentUserId)
+  const friendLimitIdx = values.push(getFriendTrustedHostnamesLimit('friend_follow_limit'))
+  const votesPerFriendIdx = values.push(getFriendTrustedHostnamesLimit('votes_per_friend_limit'))
   values.push(limit + 1)
 
   const cursorWhere = cursorConditions.length > 0 ? `AND ${cursorConditions.join(' AND ')}` : ''
@@ -49,15 +52,27 @@ export async function getFriendTrustedHostnames(
       FROM relation__user__follow__user
       WHERE subject_id = $${userIdIdx}
         AND deleted_at IS NULL
+      ORDER BY created_at DESC, object_id DESC
+      LIMIT $${friendLimitIdx}
+    ),
+    recent_friend_votes AS (
+      SELECT v.hostname_id, v.user_id, v.score, v.id
+      FROM friends f
+      CROSS JOIN LATERAL (
+        SELECT hv.hostname_id, hv.user_id, hv.score, hv.id
+        FROM hostname_votes hv
+        WHERE hv.user_id = f.friend_id
+        ORDER BY hv.id DESC
+        LIMIT $${votesPerFriendIdx}
+      ) v
     ),
     current_friend_votes AS (
-      SELECT DISTINCT ON (hv.user_id, hv.hostname_id)
-        hv.hostname_id,
-        hv.user_id,
-        hv.score
-      FROM hostname_votes hv
-      JOIN friends f ON f.friend_id = hv.user_id
-      ORDER BY hv.user_id, hv.hostname_id, hv.id DESC
+      SELECT DISTINCT ON (user_id, hostname_id)
+        hostname_id,
+        user_id,
+        score
+      FROM recent_friend_votes
+      ORDER BY user_id, hostname_id, id DESC
     ),
     friend_upvotes AS (
       SELECT

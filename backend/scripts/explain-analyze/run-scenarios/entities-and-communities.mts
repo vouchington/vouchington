@@ -6,6 +6,8 @@ import {
   cleanupRecommendedRssFeedsPopularFeed,
   seedRecommendedRssFeedsPopularFeed,
 } from '../seed-data/recommended-rss-feeds.mts'
+import { FRIEND_TRUST_VIEWER_INDEX } from '../seed-data/friend-trusted-hostnames.mts'
+import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import {
@@ -132,9 +134,21 @@ export async function runEntityAndCommunityScenarios() {
     searchRssFeeds({ sort: 'trending', time_range: 'week', limit: 25 }),
   )
 
-  // Friend trusted hostnames — 3 CTEs joining follows, hostname votes, and social graph
+  // Friend trusted hostnames — a viewer following 10k users with 60-ballot histories reads only the
+  // newest 1,000 follows x 50 ballots (the DynamicConfig defaults), never all 600k ballots.
+  registerScenarioContract('friend-trusted-hostnames', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_relation__user__follow__user__subject__newest'],
+      },
+      { kind: 'usesIndexes', indexes: ['hostname_votes__default_user_id_id_idx'] },
+      { kind: 'maxProcessedRows', relation: 'relation__user__follow__user', max: 1_100 },
+      { kind: 'maxProcessedRows', relation: 'hostname_votes', max: 50_000 },
+    ],
+  })
   await runAndCapture('friend-trusted-hostnames', () =>
-    getFriendTrustedHostnames(seedUser.id, { limit: 25 }),
+    getFriendTrustedHostnames(seedUuid(FRIEND_TRUST_VIEWER_INDEX, '01'), { limit: 25 }),
   )
 
   await runViewDrivenPostScenarios()
