@@ -12,7 +12,6 @@ import {
   insertTestRssFeed,
   insertTestRssFeedItem,
   insertTestTopic,
-  linkTwoHopCanonicalUrlForTest,
 } from '@voucha/test-helpers'
 import { createEntityRelationWithElection } from '@voucha/test-helpers/entities/dispatch'
 import { getPostIds } from '../posts/search/get-ids.mts'
@@ -157,9 +156,8 @@ describe('has_hacker_news_references', () => {
 })
 
 describe('references stored on a canonical URL', () => {
-  async function pointAtCanonical(hops: 1 | 2) {
-    const [source, middle, canonical] = await Promise.all([
-      createTestUrlWithHostname(),
+  async function pointAtCanonical() {
+    const [source, canonical] = await Promise.all([
       createTestUrlWithHostname(),
       createTestUrlWithHostname(),
     ])
@@ -167,18 +165,13 @@ describe('references stored on a canonical URL', () => {
       ...lookup(canonical, 2, 1),
       stories: [{ hacker_news_item_id: 77, points: 5, reply_count: 1, posted_at: '2026-01-01' }],
     })
-    if (hops === 1) {
-      await setCanonicalUrl(source, canonical)
-    } else {
-      // Readers also tolerate a two-hop chain.
-      await linkTwoHopCanonicalUrlForTest(source, middle, canonical)
-    }
+    await setCanonicalUrl(source, canonical)
     return source
   }
 
-  it.each([1, 2] as const)('shows and filters a post on a %i-hop non-canonical row', async hops => {
+  it('shows and filters a post on a non-canonical row', async () => {
     const user = await createTestUser()
-    const source = await pointAtCanonical(hops)
+    const source = await pointAtCanonical()
     const [post, plain] = await Promise.all([
       createTestPost({ user, url_id: source, post_type: 'link' }),
       createTestPost({ user }),
@@ -207,7 +200,7 @@ describe('references stored on a canonical URL', () => {
       createdById: user!.id,
     })
     const feedId = await insertTestRssFeed({ topicId, title: `HN Canon Feed ${random}` })
-    const source = await pointAtCanonical(1)
+    const source = await pointAtCanonical()
     const item = await insertTestRssFeedItem({
       rssFeedId: feedId,
       urlId: source,

@@ -1,1 +1,0 @@
-export const MAX_CANONICAL_CHAIN_DEPTH = 10

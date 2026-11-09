@@ -120,7 +120,6 @@ async function main() {
   await seedHostnameCacheInvalidationWork()
   await seedUserAgentStrings()
   await seedCopyrightStaffEvidence()
-  await seedRemoteFollowers()
   await seedUrls()
   await seedTopics(2500)
   await seedIndividualCards(INDIVIDUAL_CARD_SEED_COUNT)
@@ -128,7 +127,8 @@ async function main() {
   await seedSpendingCategories(SPENDING_CATEGORY_SEED_COUNT)
   await seedRewardsProgramStatuses(REWARDS_PROGRAM_STATUS_SEED_COUNT)
   await seedTopicParentRelations(500)
-  await seedPosts(100_000)
+  // Cohorts read committed users and write disjoint relations; global WAL samples cover both.
+  await Promise.all([seedRemoteFollowers(), seedPosts(100_000)])
   await seedPostCreationModerationBypass()
   await seedPostModerationRetention()
   await seedSemanticPosts()

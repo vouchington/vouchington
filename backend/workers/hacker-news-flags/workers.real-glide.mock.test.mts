@@ -1,8 +1,5 @@
 import { insertHackerNewsRelatedUrlsForTest } from '@voucha/test-helpers/hacker-news-related-urls'
-import {
-  hasHackerNewsLookupForTest,
-  linkTwoHopCanonicalUrlForTest,
-} from '@voucha/test-helpers/hacker-news-references'
+import { hasHackerNewsLookupForTest } from '@voucha/test-helpers/hacker-news-references'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import { randomUUID } from 'node:crypto'
@@ -113,11 +110,8 @@ describe('Hacker News flag queue', () => {
       createTestUrlWithHostname(),
     ])
     const post = await createTestPost({ user, post_type: 'link', url_id: source })
-    const [alias, middle] = await Promise.all([
-      createTestUrlWithHostname(),
-      createTestUrlWithHostname(),
-    ])
-    await linkTwoHopCanonicalUrlForTest(alias, middle, source)
+    const alias = await createTestUrlWithHostname()
+    await setCanonicalUrl(alias, source)
     const aliasedPost = await createTestPost({ user, post_type: 'link', url_id: alias })
     await insertHackerNewsReferencesForTest({ url_id: target, story_count: 1, comment_count: 0 })
     const done = completedUrl(target)

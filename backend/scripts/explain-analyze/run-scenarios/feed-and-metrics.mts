@@ -1,5 +1,6 @@
 import { runCommunityDigestRecipientScenarios } from './community-digest-recipients.mts'
 import { read } from '@data-stores/psql'
+import { buildPostSearchQuery } from '@services/posts/search/query-builder'
 import { SEED_PREFIX, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -60,10 +61,17 @@ export async function runFeedAndMetricScenarios() {
     `${SEED_PREFIX}-0300-7000-8000-000000000001`,
   ]
   registerScenarioContract('posts-by-url-ids', {
-    expectations: [],
+    expectations: [{ kind: 'maxProcessedRows', relation: 'urls', max: 10 }],
     crossPartition: { posts: 'The batch resolves posts for several requested URL ids.' },
   })
   await runAndCapture('posts-by-url-ids', () => getPostIdsByUrlIds(seedUser, seedUrlIds))
+  registerScenarioContract('post-search-url', {
+    expectations: [{ kind: 'maxProcessedRows', relation: 'urls', max: 5 }],
+    crossPartition: { posts: 'URL-filtered search ranks matching posts across post ID ranges.' },
+  })
+  await runAndCapture('post-search-url', () =>
+    read(buildPostSearchQuery(seedUser, { url_id: seedUrlIds[0], sort: 'new', limit: 25 })),
+  )
   await runFeedRssScenarios()
   await runAndCapture('notifications', () => listNotifications(seedUser.id, { limit: 25 }))
   await runAndCapture('notifications-unread-summary', () =>

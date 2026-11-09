@@ -6,25 +6,27 @@ Canonical URL registry. All URLs in the system reference this table.
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                            |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                    |
-| `url`                 | `text`                     | no       |                              |          |           |           | Full HTTPS URL (max 2083 chars). Unique, trimmed.                                                                                  |
-| `hostname_id`         | `uuid`                     | no       |                              |          |           |           | The hostname this URL belongs to.                                                                                                  |
-| `pathname`            | `text`                     | no       | `'/'::text`                  |          |           |           | URL pathname component (e.g. /path/to/page). Max 2048 chars.                                                                       |
-| `search_params`       | `jsonb`                    | no       |                              |          |           |           | URL query parameters stored as JSONB.                                                                                              |
-| `feed_rank`           | `smallint`                 | no       | `1`                          |          |           |           | 0 when a live enabled RSS feed uses this URL, otherwise 1; maintained synchronously by RSS feed triggers.                          |
-| `latest_published_at` | `timestamp with time zone` | yes      |                              |          |           |           | Maximum publication timestamp of all RSS feed items assigned to this URL, including soft-deleted items; NULL when no items remain. |
-| `media_type_id`       | `bigint`                   | yes      |                              |          |           |           | Detected MIME content type of the URL.                                                                                             |
-| `canonical_url_id`    | `uuid`                     | yes      |                              |          |           |           | Self-referencing FK to the canonical version of this URL, if different.                                                            |
-| `created_by_id`       | `uuid`                     | yes      |                              |          |           |           |                                                                                                                                    |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                    |
-| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                    |
+| Column                | Type                       | Nullable | Default                                                                     | Identity | Generated | Collation | Comment                                                                                                                            |
+| --------------------- | -------------------------- | -------- | --------------------------------------------------------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no       | `uuidv7()`                                                                  |          |           |           |                                                                                                                                    |
+| `url`                 | `text`                     | no       |                                                                             |          |           |           | Full HTTPS URL (max 2083 chars). Unique, trimmed.                                                                                  |
+| `hostname_id`         | `uuid`                     | no       |                                                                             |          |           |           | The hostname this URL belongs to.                                                                                                  |
+| `pathname`            | `text`                     | no       | `'/'::text`                                                                 |          |           |           | URL pathname component (e.g. /path/to/page). Max 2048 chars.                                                                       |
+| `search_params`       | `jsonb`                    | no       |                                                                             |          |           |           | URL query parameters stored as JSONB.                                                                                              |
+| `feed_rank`           | `smallint`                 | no       | `1`                                                                         |          |           |           | 0 when a live enabled RSS feed uses this URL, otherwise 1; maintained synchronously by RSS feed triggers.                          |
+| `latest_published_at` | `timestamp with time zone` | yes      |                                                                             |          |           |           | Maximum publication timestamp of all RSS feed items assigned to this URL, including soft-deleted items; NULL when no items remain. |
+| `media_type_id`       | `bigint`                   | yes      |                                                                             |          |           |           | Detected MIME content type of the URL.                                                                                             |
+| `canonical_url_id`    | `uuid`                     | yes      |                                                                             |          |           |           | Self-referencing FK to the canonical version of this URL, if different.                                                            |
+| `canonical_root_id`   | `uuid`                     | yes      | ` CASE     WHEN (canonical_url_id IS NULL) THEN id     ELSE NULL::uuid END` |          | stored    |           | The URL id only while this row is a terminal canonical destination; referenced by aliases to prevent cycles and chains.            |
+| `created_by_id`       | `uuid`                     | yes      |                                                                             |          |           |           |                                                                                                                                    |
+| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`                                                |          | virtual   |           |                                                                                                                                    |
+| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                                                         |          |           |           |                                                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
+- `uq_urls__canonical_root_id`: `UNIQUE (canonical_root_id)`
 - `urls_url_key`: `UNIQUE (url)`
 
 **Check constraints:**
@@ -39,7 +41,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `urls_canonical_url_id_fkey`: `FOREIGN KEY (canonical_url_id) REFERENCES urls(id) ON DELETE SET NULL`
+- `fk_urls__canonical_root`: `FOREIGN KEY (canonical_url_id) REFERENCES urls(canonical_root_id) ON DELETE SET NULL`
 - `urls_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `urls_hostname_id_fkey`: `FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE CASCADE`
 - `urls_media_type_id_fkey`: `FOREIGN KEY (media_type_id) REFERENCES media_types(id) ON DELETE SET NULL`
@@ -54,6 +56,7 @@ Not partitioned — growth: unbounded.
 - `idx_urls__updated_at_id_active`: `CREATE INDEX idx_urls__updated_at_id_active ON public.urls USING btree (updated_at, ((id)::text))`
 - `idx_urls__url__text_pattern_ops`: `CREATE INDEX idx_urls__url__text_pattern_ops ON public.urls USING btree (url text_pattern_ops)`
 - `idx_urls__url_trgm`: `CREATE INDEX idx_urls__url_trgm ON public.urls USING gin (url gin_trgm_ops)`
+- `uq_urls__canonical_root_id`: `CREATE UNIQUE INDEX uq_urls__canonical_root_id ON public.urls USING btree (canonical_root_id)`
 - `urls_pkey`: `CREATE UNIQUE INDEX urls_pkey ON public.urls USING btree (id)`
 - `urls_url_key`: `CREATE UNIQUE INDEX urls_url_key ON public.urls USING btree (url)`
 

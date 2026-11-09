@@ -6,13 +6,12 @@ import {
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
 
-const MAX_CANONICAL_CHAIN_DEPTH = 10
 const MAX_POSTS_PER_URL = 5
 
 /**
  * Given an array of url_id UUIDs (from RSS feed items), find posts
  * that have a `post -> related -> url` entity relation OR are link posts
- * with `posts.url_id` matching any of those URLs (following canonical URL chains).
+ * with `posts.url_id` matching an input URL or its terminal canonical URL.
  *
  * Returns a map from url_id to an array of post IDs.
  */
@@ -30,24 +29,11 @@ export async function getPostIdsByUrlIds(
     : buildPublicPostEligibilityFilter('posts', 'root_post')
 
   const query = sql`/* getPostIdsByUrlIds */
-    WITH RECURSIVE url_chain AS (
-      -- Start with all provided URL IDs
-      SELECT id, canonical_url_id, id AS origin_url_id, 0 AS depth
-      FROM urls
-      WHERE id = ANY(${urlIds})
-
+    WITH canonical_urls AS (
+      SELECT id AS origin_url_id, id FROM urls WHERE id = ANY(${urlIds})
       UNION ALL
-
-      -- Follow each canonical chain
-      SELECT u.id, u.canonical_url_id, uc.origin_url_id, uc.depth + 1
-      FROM urls u
-      INNER JOIN url_chain uc ON u.id = uc.canonical_url_id
-      WHERE uc.canonical_url_id IS NOT NULL
-        AND uc.depth < ${MAX_CANONICAL_CHAIN_DEPTH}
-    ),
-    canonical_urls AS (
-      SELECT DISTINCT id, origin_url_id
-      FROM url_chain
+      SELECT id AS origin_url_id, canonical_url_id AS id
+      FROM urls WHERE id = ANY(${urlIds}) AND canonical_url_id IS NOT NULL
     ),
     relation_posts AS (
       SELECT

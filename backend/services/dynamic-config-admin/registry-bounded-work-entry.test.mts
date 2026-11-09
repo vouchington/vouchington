@@ -16,7 +16,10 @@ describe('bounded work namespace policy', () => {
     config: aiUsageWorkConfig,
     label: 'Test',
     maxValues: aiUsageWorkMaxValues,
-    descriptions: {},
+    descriptions: {
+      release_batch_size: 'Rows per release page.',
+      record_partition_attempts: 'Usage insert attempts after partition retirement.',
+    },
   }
   it('rejects missing, stale and unsafe hard ceilings', () => {
     expect(() => defineBoundedWorkNamespace({ ...options, maxValues: {} })).toThrow('exactly')
@@ -29,7 +32,7 @@ describe('bounded work namespace policy', () => {
     expect(() =>
       defineBoundedWorkNamespace({
         ...options,
-        maxValues: { release_batch_size: 0 },
+        maxValues: { ...aiUsageWorkMaxValues, release_batch_size: 0 },
       }),
     ).toThrow('ceiling')
   })
@@ -42,9 +45,11 @@ describe('bounded work namespace policy', () => {
     const entry = defineBoundedWorkNamespace({
       ...options,
       minValues: { release_batch_size: 50 },
-      descriptions: { release_batch_size: 'Rows per release page.' },
     })
     expect(entry.fields.release_batch_size?.minValue).toBe(50)
+    expect(entry.fields.record_partition_attempts?.maxValue).toBe(
+      aiUsageWorkMaxValues.record_partition_attempts,
+    )
     expect(() =>
       defineBoundedWorkNamespace({ ...options, minValues: { release_batch_size: 101 } }),
     ).toThrow('default or ceiling')

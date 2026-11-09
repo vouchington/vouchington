@@ -2,6 +2,7 @@ import {
   hackerNewsWorkConfig,
   hackerNewsWorkMaxValues,
 } from '@services/urls/hacker-news-work-limits'
+import { canonicalWorkConfig, canonicalWorkMaxValues } from '@services/urls/canonical-work-limits'
 import {
   moderationAnalyticsWorkConfig,
   moderationAnalyticsWorkMaxValues,
@@ -37,6 +38,16 @@ import {
 } from '@services/sitemaps/work-limits'
 
 export const backgroundWorkRegistryEntries9 = {
+  'url-canonicalization-work-config': defineBoundedWorkNamespace({
+    namespace: 'url-canonicalization-work-config',
+    config: canonicalWorkConfig,
+    label: 'URL canonicalization',
+    maxValues: canonicalWorkMaxValues,
+    descriptions: {
+      rewrite_attempts:
+        'Whole-transaction attempts after a concurrent URL canonical-root conflict.',
+    },
+  }),
   'hacker-news-work-config': defineBoundedWorkNamespace({
     namespace: 'hacker-news-work-config',
     config: hackerNewsWorkConfig,

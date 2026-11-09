@@ -153105,6 +153105,16 @@
         }
       },
       "columns": {
+        "canonical_root_id": {
+          "comment": "The URL id only while this row is a terminal canonical destination; referenced by aliases to prevent cycles and chains.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "\nCASE\n    WHEN (canonical_url_id IS NULL) THEN id\n    ELSE NULL::uuid\nEND",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10
+        },
         "canonical_url_id": {
           "comment": "Self-referencing FK to the canonical version of this URL, if different.",
           "dataType": "uuid",
@@ -153123,7 +153133,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "created_by_id": {
           "comment": null,
@@ -153133,7 +153143,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "feed_rank": {
           "comment": "0 when a live enabled RSS feed uses this URL, otherwise 1; maintained synchronously by RSS feed triggers.",
@@ -153213,7 +153223,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "url": {
           "comment": "Full HTTPS URL (max 2083 chars). Unique, trimmed.",
@@ -153228,11 +153238,11 @@
       },
       "comment": "Canonical URL registry. All URLs in the system reference this table.",
       "foreignKeys": {
-        "urls_canonical_url_id_fkey": {
+        "fk_urls__canonical_root": {
           "columns": ["canonical_url_id"],
           "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
+          "referencedColumns": ["canonical_root_id"],
           "referencedTable": "urls",
           "validated": true
         },
@@ -153500,6 +153510,29 @@
           "unique": false,
           "valid": true
         },
+        "uq_urls__canonical_root_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_urls__canonical_root_id ON public.urls USING btree (canonical_root_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "canonical_root_id",
+              "descending": false,
+              "expression": "canonical_root_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "urls_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -153561,6 +153594,9 @@
         }
       },
       "uniqueConstraints": {
+        "uq_urls__canonical_root_id": {
+          "columns": ["canonical_root_id"]
+        },
         "urls_url_key": {
           "columns": ["url"]
         }

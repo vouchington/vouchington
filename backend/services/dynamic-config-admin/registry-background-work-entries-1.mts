@@ -35,6 +35,8 @@ export const backgroundWorkEntries1 = [
     maxValues: aiUsageWorkMaxValues,
     descriptions: {
       release_batch_size: 'Release batch size for ai usage processing.',
+      record_partition_attempts:
+        'Maximum usage insert attempts when a monthly partition retires concurrently.',
     },
   }),
   defineBoundedWorkNamespace({

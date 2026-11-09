@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { updateUrlHostnameBlocked } from '@voucha/test-helpers'
+import { insertVariantDuringCanonicalRewriteForTest } from '@voucha/test-helpers/url-canonical-races'
 import { getUrlByAny } from './get.mts'
 import { setCanonicalUrl } from './set-canonical.mts'
 import { addUrl, addUrls } from './upsert.mts'
@@ -44,7 +45,7 @@ describe('addUrls page identity', () => {
       expect(row.canonical_url_id).toBe(owner.id)
   })
 
-  it('points a new variant at the end of the owner canonical chain', async () => {
+  it('points a new variant at the owner terminal root', async () => {
     const host = runHost()
     const owner = await addUrl(null, `https://${host}/page`)
     const target = await addUrl(null, `https://${host}/target`)
@@ -54,6 +55,20 @@ describe('addUrls page identity', () => {
 
     expect(variant?.canonical_url_id).toBe(target!.id)
     expect(variant?.canonical_hostname_id).toBe(target!.hostname.id)
+  })
+
+  it('retries a new variant when its identity owner stops being a terminal root', async () => {
+    const host = runHost()
+    const owner = await addUrl(null, `https://${host}/page`)
+    const target = await addUrl(null, `https://${host}/target`)
+    if (!owner || !target) throw new Error('Expected URL identity fixtures')
+
+    const canonicalId = await insertVariantDuringCanonicalRewriteForTest(
+      owner.id,
+      target.id,
+      `https://www.${host}/page`,
+    )
+    expect(canonicalId).toBe(target.id)
   })
 
   it('links concurrent first inserts of variants of a new page to one owner', async () => {

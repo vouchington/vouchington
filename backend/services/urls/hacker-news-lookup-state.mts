@@ -11,8 +11,7 @@ export type HackerNewsLookupTarget = {
 }
 
 /**
- * Resolve canonical chains, including two-hop links, from the replica by default.
- * Lateral point probes keep recursive cardinality estimates from scanning the whole URL store.
+ * Resolve terminal canonical roots from the replica by default.
  */
 export async function getHackerNewsLookupTargets(
   urlIds: readonly string[],
@@ -27,25 +26,14 @@ export async function getHackerNewsLookupTargets(
     // no-mistakes-disable-next-line query-reached-per-item: each statement resolves one bounded batch of URL identities, not one URL
     const { rows } = await read<HackerNewsLookupTarget>( // oxlint-disable-line no-await-in-loop -- serialize bounded reads
       `/* getHackerNewsLookupTargets */
-      WITH RECURSIVE chain AS (
-        SELECT id, canonical_url_id, url, created_at, 0 AS depth
-        FROM urls WHERE id = ANY($1::uuid[])
-        UNION ALL
-        SELECT u.id, u.canonical_url_id, u.url, u.created_at, chain.depth + 1
-        FROM chain
-        CROSS JOIN LATERAL (
-          SELECT id, canonical_url_id, url, created_at FROM urls
-          WHERE id = chain.canonical_url_id LIMIT 1
-        ) u
-        WHERE chain.depth < 10
-      )
-      SELECT DISTINCT chain.id, chain.url, chain.created_at, totals.looked_up_at
-      FROM chain
+      SELECT target.id, target.url, target.created_at, totals.looked_up_at
+      FROM urls source
+      JOIN urls target ON target.id = COALESCE(source.canonical_url_id, source.id)
       LEFT JOIN LATERAL (
         SELECT looked_up_at FROM url_hacker_news_totals
-        WHERE url_id = chain.id LIMIT 1
+        WHERE url_id = target.id LIMIT 1
       ) totals ON TRUE
-      WHERE chain.canonical_url_id IS NULL`,
+      WHERE source.id = ANY($1::uuid[])`,
       [ids.slice(start, start + batchSize)],
       options,
     )

@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS rss_feeds (
   created_via_oauth_client_id UUID,
   CONSTRAINT rss_feeds_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
 
-  rss_feed_url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE,
+  -- Check after the feed-rank trigger writes the URL, avoiding an FK lock upgrade.
+  rss_feed_url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
   topic_id UUID NOT NULL REFERENCES topics ON DELETE RESTRICT, -- the owner of this feed
   title TEXT,
   CHECK (char_length(title) <= 255),
@@ -294,7 +295,8 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
   votes_score_net DOUBLE PRECISION GENERATED ALWAYS AS (votes_score_up - votes_score_down) STORED,
 
   has_hacker_news_references BOOLEAN NOT NULL DEFAULT FALSE,
-  url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE, -- as defined by the RSS feed
+  -- Check after the publication-maximum trigger writes the URL, avoiding an FK lock upgrade.
+  url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
   data JSONB NOT NULL, -- dump of the data
 
   -- bedrock nova multimodal v1 embedding

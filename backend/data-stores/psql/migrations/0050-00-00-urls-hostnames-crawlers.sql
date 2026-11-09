@@ -337,7 +337,14 @@ CREATE TABLE IF NOT EXISTS urls (
   latest_published_at TIMESTAMPTZ,
 
   media_type_id BIGINT REFERENCES media_types ON DELETE SET NULL,
-  canonical_url_id UUID REFERENCES urls ON DELETE SET NULL,
+  canonical_url_id UUID,
+  canonical_root_id UUID GENERATED ALWAYS AS (
+    CASE WHEN canonical_url_id IS NULL THEN id ELSE NULL END
+  ) STORED,
+  CONSTRAINT uq_urls__canonical_root_id UNIQUE (canonical_root_id),
+  CONSTRAINT fk_urls__canonical_root
+    FOREIGN KEY (canonical_url_id) REFERENCES urls (canonical_root_id)
+    ON DELETE SET NULL ON UPDATE NO ACTION,
   CHECK (canonical_url_id IS NULL OR canonical_url_id != id),
 
   created_by_id UUID REFERENCES users ON DELETE SET NULL,
@@ -415,6 +422,7 @@ COMMENT ON COLUMN urls.feed_rank IS '0 when a live enabled RSS feed uses this UR
 COMMENT ON COLUMN urls.latest_published_at IS 'Maximum publication timestamp of all RSS feed items assigned to this URL, including soft-deleted items; NULL when no items remain.';
 COMMENT ON COLUMN urls.media_type_id IS 'Detected MIME content type of the URL.';
 COMMENT ON COLUMN urls.canonical_url_id IS 'Self-referencing FK to the canonical version of this URL, if different.';
+COMMENT ON COLUMN urls.canonical_root_id IS 'The URL id only while this row is a terminal canonical destination; referenced by aliases to prevent cycles and chains.';
 
 -- Variants of one page (scheme, www., m., YouTube aliases) share an identity; the first registered
 -- row owns it, so a later variant can point its canonical_url_id at the owner when it is inserted.

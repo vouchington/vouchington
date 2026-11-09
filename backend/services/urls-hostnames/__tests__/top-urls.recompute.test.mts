@@ -17,6 +17,30 @@ import {
 import { getTopUrlsByHostnameIds } from '../top-urls.mts'
 
 describe('top URL ranking recomputation', () => {
+  it('commits concurrent items sharing a feed URL without FK lock upgrades', async () => {
+    const rssFeedUrl = `https://top-url-concurrent-${randomUUID()}.example.com/feed.xml`
+    const feed = await insertTestRssFeedDirect({ rssFeedUrl })
+    const urlId = feed.rss_feed_url_id
+    await Promise.all(
+      [2023, 2024].map(year =>
+        insertTestRssFeedItem({
+          rssFeedId: feed.id,
+          urlId,
+          guid: `ranking-${randomUUID()}`,
+          itemData: {
+            title: 'Concurrent ranking item',
+            isoDate: `${year}-01-01T00:00:00Z`,
+          },
+          contentSha256: createHash('sha256').update(randomUUID()).digest(),
+        }),
+      ),
+    )
+    expect(await getTestUrlRanking(urlId)).toMatchObject({
+      feedRank: 0,
+      latestPublishedAt: new Date('2024-01-01T00:00:00Z'),
+    })
+  })
+
   it('uses the next publication maximum when the newest item date falls, moves, or is deleted', async () => {
     const hostname = `top-url-recompute-${randomUUID()}.example.com`
     const source = await insertTestUrlDirect(null, `https://${hostname}/source`)

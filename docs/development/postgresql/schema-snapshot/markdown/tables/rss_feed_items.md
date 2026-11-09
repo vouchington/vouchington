@@ -81,7 +81,7 @@ _none_
 - `fk_rss_feed_items_story_id`: `FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE SET NULL`
 - `rss_feed_items_enclosure_media_type_id_fkey`: `FOREIGN KEY (enclosure_media_type_id) REFERENCES media_types(id) ON DELETE RESTRICT`
 - `rss_feed_items_id_fkey`: `FOREIGN KEY (id) REFERENCES rss_feed_item_guids(id) ON DELETE CASCADE`
-- `rss_feed_items_url_id_fkey`: `FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE`
+- `rss_feed_items_url_id_fkey`: `FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED`
 
 **Indexes:**
 

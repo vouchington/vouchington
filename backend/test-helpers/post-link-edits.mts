@@ -10,6 +10,19 @@ import { createTestUser } from './entities/users.mts'
 import { createTestUrlWithHostname } from './entities/urls.mts'
 import { insertTestPost } from './entities/posts.mts'
 import { updateUrlHostnameBlocked } from './entities/url-hostnames/mutations.mts'
+import { rejectQuery } from './injected-failures.mts'
+
+class CanonicalConflictForTest extends Error {
+  readonly constraint: string | undefined
+  readonly code: '23503' | '40P01'
+
+  constructor(code: '23503' | '40P01') {
+    super('Concurrent canonical root change')
+    this.code = code
+    this.name = 'CanonicalConflictForTest'
+    this.constraint = code === '23503' ? 'fk_urls__canonical_root' : undefined
+  }
+}
 
 export async function createPostLinkEditFixtureForTest() {
   const user = await createTestUser()
@@ -43,7 +56,24 @@ export async function persistAssessedPostLinkEditForTest(
   await persistPostLinkEdit(query, userId, changes, urls)
 }
 
-/** Hold real link persistence while a real canonical rewrite reaches its native advisory wait. */
+/** Inject a database root conflict at the real variant-link statement in a borrowed transaction. */
+export async function persistPostLinkWithCanonicalConflictForTest(
+  userId: string,
+  changes: Parameters<typeof persistPostLinkEdit>[2],
+  urls: Parameters<typeof persistPostLinkEdit>[3],
+  code: '23503' | '40P01',
+): Promise<void> {
+  await using query = await beginTransaction()
+  const conflict = new CanonicalConflictForTest(code)
+  await persistPostLinkEdit(
+    rejectQuery(query, statement => statement.includes('linkNewUrlVariants'), conflict),
+    userId,
+    changes,
+    urls,
+  )
+}
+
+/** Hold the edited URL row while a canonical rewrite reaches its native row-lock wait. */
 export async function persistPostLinkWhileCanonicalRewriteForTest(
   userId: string,
   changes: Parameters<typeof persistPostLinkEdit>[2],
@@ -59,13 +89,8 @@ export async function persistPostLinkWhileCanonicalRewriteForTest(
     {
       holderProcessId,
       pool: 'write',
-      lock: {
-        kind: 'advisory',
-        key: 'url-canonicalization',
-        holderMode: 'shared',
-        waiterMode: 'exclusive',
-      },
-      queryMarker: 'lockCanonicalUrlRewrites',
+      lock: { kind: 'transaction' },
+      queryMarker: 'flattenCanonicalChain',
       releaseHolder: () => holder[Symbol.asyncDispose](),
     },
     async waitForLock => {

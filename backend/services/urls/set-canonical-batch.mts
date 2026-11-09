@@ -1,4 +1,3 @@
-import { lockCanonicalUrlRewrites } from './canonical-lock.mts'
 import { hackerNewsReferenceMaxValues } from './hacker-news-reference-limits.mts'
 import { enqueueHackerNewsFlagsBestEffort } from '@queues/hacker-news-flags/enqueues'
 import { registerPostCommitAction } from '@data-stores/psql'
@@ -26,73 +25,48 @@ export type CanonicalPair = {
 }
 export type ResolvedCanonical = { urlId: string; finalCanonicalId: string }
 
-const MAX_CANONICAL_CHAIN_DEPTH = 10
-
-const CHAIN_CTE = `
-  WITH RECURSIVE chain AS (
-    SELECT input.url_id AS source_id, urls.id, urls.canonical_url_id, 0 AS depth
-    FROM unnest($1::uuid[], $2::uuid[]) AS input(url_id, canonical_url_id)
-    JOIN urls ON urls.id = input.canonical_url_id
-    UNION ALL
-    SELECT chain.source_id, urls.id, urls.canonical_url_id, chain.depth + 1
-    FROM urls JOIN chain ON urls.id = chain.canonical_url_id
-    WHERE chain.depth < $3
-  )`
-
 /**
- * The one canonical writer. Under the rewrite lock it rejects cycles, points each URL at the end of
- * its target's chain, repoints back-references, and clears the source's Hacker News references.
+ * The one canonical writer. The terminal-root FK rejects cycles and chains while this writer
+ * repoints back-references before each source ceases to be a terminal root.
  * Callers commit; the Hacker News flag refresh is queued after that commit.
  */
-export async function setCanonicalUrls(
-  pairs: readonly CanonicalPair[],
+export async function writeCanonicalUrl(
+  input: CanonicalPair,
   query: TransactionQuery,
-): Promise<ResolvedCanonical[]> {
-  if (pairs.length === 0) return []
-  for (const pair of pairs) {
-    if (pair.urlId === pair.canonicalUrlId) throw new Error('URL cannot be its own canonical')
-  }
-  // Canonical rewrites can otherwise observe uncommitted chains and create cycles or chains
-  // beyond the readers' two-hop bound. Serialize only this short database transaction.
-  await lockCanonicalUrlRewrites(query)
-
-  await promoteVariantTargets(
-    pairs.filter(pair => pair.promoteVariantTarget),
-    query,
-  )
+): Promise<ResolvedCanonical> {
+  if (input.urlId === input.canonicalUrlId) throw new Error('URL cannot be its own canonical')
+  const pairs = [input]
+  await promoteVariantTargets(input.promoteVariantTarget ? pairs : [], query)
 
   const urlIds = pairs.map(pair => pair.urlId)
   const canonicalIds = pairs.map(pair => pair.canonicalUrlId)
-  const chainValues = [urlIds, canonicalIds, MAX_CANONICAL_CHAIN_DEPTH]
-
-  const cycle = await query<{ source_id: string }>(
-    `/* setCanonicalUrl */ ${CHAIN_CTE}
-    SELECT source_id FROM chain WHERE id = source_id LIMIT 1`,
-    chainValues,
+  const resolved = await query<{ source_id: string; final_id: string }>(
+    `/* resolveCanonicalTargets */
+    SELECT input.url_id AS source_id,
+      COALESCE(target.canonical_url_id, target.id) AS final_id
+    FROM unnest($1::uuid[], $2::uuid[]) AS input(url_id, canonical_url_id)
+    JOIN urls target ON target.id = input.canonical_url_id`,
+    [urlIds, canonicalIds],
   )
-  if (cycle.rows[0]) await throwCircularReference(cycle.rows[0].source_id, pairs, query)
-
-  const resolved = await query<{ source_id: string; id: string }>(
-    `/* resolveCanonicalTargets */ ${CHAIN_CTE}
-    SELECT DISTINCT ON (source_id) source_id, id FROM chain
-    WHERE canonical_url_id IS NULL ORDER BY source_id, depth DESC`,
-    chainValues,
-  )
-  const finalById = new Map(resolved.rows.map(row => [row.source_id, row.id]))
+  const finalById = new Map(resolved.rows.map(row => [row.source_id, row.final_id]))
   const results = pairs.map(pair => {
     const finalCanonicalId = finalById.get(pair.urlId)
     if (!finalCanonicalId)
       throw new Error(`Cannot resolve canonical URL for ${pair.canonicalUrlId}`)
     return { urlId: pair.urlId, finalCanonicalId }
   })
+  const cycle = results.find(result => result.urlId === result.finalCanonicalId)
+  if (cycle) await throwCircularReference(cycle.urlId, pairs, query)
   const finalIds = results.map(result => result.finalCanonicalId)
 
+  // ast-grep-ignore: no-three-sequential-awaits -- the root FK requires incoming aliases to move before the root key changes; Hacker News cleanup follows that mutation on the same transaction.
+  await flattenCanonicalBackReferences(urlIds, finalIds, query)
   await rewriteCanonicalPointers(urlIds, finalIds, query)
   await removeSourceHackerNewsReferences(urlIds, query)
   registerPostCommitAction(query, async () => {
     await enqueueHackerNewsFlagsBestEffort([...new Set([...urlIds, ...canonicalIds, ...finalIds])])
   })
-  return results
+  return results[0]!
 }
 
 async function promoteVariantTargets(
@@ -109,7 +83,25 @@ async function promoteVariantTargets(
   )
 }
 
-/** Points each source at its final target, then repoints every direct back-reference to it. */
+/** An alias can stop referencing a root only before that root ceases to be terminal. */
+async function flattenCanonicalBackReferences(
+  urlIds: string[],
+  finalIds: string[],
+  query: TransactionQuery,
+): Promise<void> {
+  await query(
+    `/* flattenCanonicalChain */
+    -- no-mistakes-disable-next-line postgres-bounded-statements: every direct back-reference must be repointed in this transaction to preserve the canonical-root FK at commit; the number of referencing URLs is uncapped.
+    UPDATE urls SET canonical_url_id = input.final_id
+    FROM unnest($1::uuid[], $2::uuid[]) AS input(url_id, final_id)
+    WHERE urls.canonical_url_id = input.url_id AND urls.id <> input.url_id
+      -- A concurrent inverse rewrite can make the stale final_id this alias's own id.
+      AND urls.id <> input.final_id`,
+    [urlIds, finalIds],
+  )
+}
+
+/** Points each source at its final terminal target. */
 async function rewriteCanonicalPointers(
   urlIds: string[],
   finalIds: string[],
@@ -120,14 +112,6 @@ async function rewriteCanonicalPointers(
     UPDATE urls SET canonical_url_id = input.final_id
     FROM unnest($1::uuid[], $2::uuid[]) AS input(url_id, final_id)
     WHERE urls.id = input.url_id`,
-    [urlIds, finalIds],
-  )
-  await query(
-    `/* flattenCanonicalChain */
-    -- no-mistakes-disable-next-line postgres-bounded-statements: every direct back-reference must be repointed in this transaction to preserve one-hop canonical resolution at commit; the number of referencing URLs is uncapped, so a LIMIT would leave stale canonical chains.
-    UPDATE urls SET canonical_url_id = input.final_id
-    FROM unnest($1::uuid[], $2::uuid[]) AS input(url_id, final_id)
-    WHERE urls.canonical_url_id = input.url_id AND urls.id <> input.url_id`,
     [urlIds, finalIds],
   )
 }

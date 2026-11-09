@@ -11,7 +11,8 @@ import { attachDistinctCanonicalHostnames, type UpsertedUrlRow } from './upsert-
 /**
  * Registers each inserted URL's page identity. The oldest row (lowest UUIDv7 within a batch, first
  * committed across batches) owns an identity; every later row for it is a variant and is pointed at
- * the owner's canonical target in the inserting transaction, under the caller's shared fence.
+ * the owner's canonical target in the inserting transaction. A concurrent root rewrite can make
+ * that target stale; the root FK rejects it and an owned caller retries the whole transaction.
  */
 export async function linkNewUrlVariants(
   rows: UpsertedUrlRow[],
@@ -45,8 +46,8 @@ async function linkInsertedRows(
   if (ownedIds.size === urlIds.length) return rows
 
   // A brand-new row is invisible to others, so nothing points at it: no cycle, back-reference or
-  // Hacker News reference can exist. The caller holds the shared canonical fence, so the owner's
-  // flat chain cannot move; the owner's final target is its canonical, or the owner itself.
+  // Hacker News reference can exist. The owner's terminal target may move concurrently; the root
+  // FK rejects a stale target so an owned transaction can retry with the current target.
   const variantIds = urlIds.filter(id => !ownedIds.has(id))
   const variantIdentities = variantIds.map(id => identities[urlIds.indexOf(id)]!)
   const linked = await query<{ id: string; canonical_url_id: string }>(

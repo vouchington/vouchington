@@ -3,7 +3,6 @@ import pgvector from 'pgvector/pg'
 import { buildEmbeddingCtes } from '@modules/search-utils'
 import { buildExcludedCTE } from '@modules/feed-query-builders'
 import type { PostSearchOptions } from '../types.mts'
-import { MAX_CANONICAL_CHAIN_DEPTH } from './constants.mts'
 
 export function buildPostSearchCtes({
   exclude_for_user_id,
@@ -53,21 +52,10 @@ export function appendCtes(query: SQLStatement, ctes: SQLStatement[]): void {
 function buildCanonicalUrlsCte(urlId: string): SQLStatement {
   return sql`
       canonical_urls AS (
-        WITH RECURSIVE url_chain AS (
-          SELECT id, canonical_url_id, 0 AS depth
-          FROM urls
-          WHERE id = ${urlId}
-
-          UNION ALL
-
-          SELECT u.id, u.canonical_url_id, uc.depth + 1
-          FROM urls u
-          INNER JOIN url_chain uc ON u.id = uc.canonical_url_id
-          WHERE uc.canonical_url_id IS NOT NULL
-            AND uc.depth < ${MAX_CANONICAL_CHAIN_DEPTH}
-        )
-        SELECT DISTINCT id
-        FROM url_chain
+        SELECT id FROM urls WHERE id = ${urlId}
+        UNION ALL
+        SELECT canonical_url_id AS id FROM urls
+        WHERE id = ${urlId} AND canonical_url_id IS NOT NULL
       )
     `
 }

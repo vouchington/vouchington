@@ -1,5 +1,8 @@
 import { it, expect, describe } from 'vitest'
 import { getPostIds } from '../get-ids.mts'
+import { setCanonicalUrl } from '@services/urls/set-canonical'
+import { insertTestLinkPostBare } from '@voucha/test-helpers/entities/link-posts'
+import { createEntityRelationWithElection } from '@voucha/test-helpers/entities/dispatch'
 import {
   createTestPost,
   createTestTopic,
@@ -14,6 +17,29 @@ import {
 } from '@voucha/test-helpers'
 
 describe('get-ids (filters)', () => {
+  it('matches related posts for a URL and its canonical root', async () => {
+    const user = await createTestUser()
+    const [source, root, unrelated] = await Promise.all(
+      Array.from({ length: 3 }, () => insertTestLinkPostBare({ createdById: user.id })),
+    )
+    await Promise.all(
+      [source, root, unrelated].map(({ postId, urlId }) =>
+        createEntityRelationWithElection(postId, urlId, user.id, 1),
+      ),
+    )
+    await setCanonicalUrl(source.urlId, root.urlId)
+
+    const results = await getPostIds(undefined, {
+      user_id: user.id,
+      url_id: source.urlId,
+      time_range: 'all',
+      limit: 10,
+    })
+    const ids = results.results.map(row => row.id)
+    expect(ids).toEqual(expect.arrayContaining([source.postId, root.postId]))
+    expect(ids).not.toContain(unrelated.postId)
+  })
+
   it('getPostIds sort=new returns user posts by UUIDv7 newest first', async () => {
     const user = await createTestUserDirect()
     const createdAt = Date.now()

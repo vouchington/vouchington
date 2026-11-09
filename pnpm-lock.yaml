@@ -3702,6 +3702,9 @@ importers:
       '@services/admin-imports':
         specifier: workspace:^
         version: link:../services/admin-imports
+      '@services/ai-usage':
+        specifier: workspace:^
+        version: link:../services/ai-usage
       '@services/articles':
         specifier: workspace:^
         version: link:../services/articles

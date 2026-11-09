@@ -3,7 +3,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import type { ViewUrl } from './types.mts'
 import { getHackerNewsWorkLimit, hackerNewsWorkConfig } from './hacker-news-work-limits.mts'
 
-/** Resolve existing URL identities through bounded canonical chains before policy assessment. */
+/** Resolve existing URL identities through their terminal-root foreign keys. */
 export async function getCanonicalUrlsByIdBatch(
   ids: readonly string[],
   options: QueryOptions = {},
@@ -18,24 +18,11 @@ export async function getCanonicalUrlsByIdBatch(
     // no-mistakes-disable-next-line query-reached-per-item: each statement resolves one bounded batch of URL identities, not one URL
     const { rows } = await query<ViewUrl & { input_id: string }>( // oxlint-disable-line no-await-in-loop -- serialize bounded reads
       `/* getCanonicalUrlsByIdBatch */
-      WITH RECURSIVE chain AS (
-        SELECT id AS input_id, id, canonical_url_id, 0 AS depth
-        FROM urls WHERE id = ANY($1::uuid[])
-        UNION ALL
-        SELECT chain.input_id, target.id, target.canonical_url_id, chain.depth + 1
-        FROM chain
-        CROSS JOIN LATERAL (
-          SELECT id, canonical_url_id FROM urls
-          WHERE id = chain.canonical_url_id LIMIT 1
-        ) target
-        WHERE chain.depth < 10
-      )
-      SELECT chain.input_id, target.*
-      FROM chain
-      CROSS JOIN LATERAL (
-        SELECT * FROM view_urls WHERE id = chain.id LIMIT 1
-      ) target
-      WHERE chain.canonical_url_id IS NULL`,
+      SELECT source.id AS input_id, target.*
+      FROM urls source
+      JOIN view_urls target
+        ON target.id = COALESCE(source.canonical_url_id, source.id)
+      WHERE source.id = ANY($1::uuid[])`,
       [uniqueIds.slice(start, start + size)],
       options,
     )

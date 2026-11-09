@@ -17,6 +17,8 @@ import { EXISTENCE_FILTER_SCENARIO_IDS } from './existence-filter-scenario-ids.m
 
 export const BOUNDED_WORK_SCENARIOS = [
   ...EXISTENCE_FILTER_SCENARIO_IDS,
+  'ai-usage-month-attached',
+  'ai-usage-tier-existing',
   ...CATEGORY_PROJECTION_SCENARIO_IDS,
   ...MEDIA_DELIVERY_LOCK_SCENARIOS,
   ...COMMUNITY_BAN_SCENARIO_IDS,

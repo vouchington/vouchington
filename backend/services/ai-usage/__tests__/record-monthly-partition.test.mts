@@ -10,8 +10,9 @@ import {
 import {
   probeBlockedAiUsageRetirement,
   retireTestAiUsagePartition,
+  retireTestAiUsagePartitionDuringWrite,
+  withTestAiUsagePreparationFault,
 } from '@voucha/test-helpers/entities/ai-usage-partition-retirement'
-import { runAiUsageTierOrderRace } from '@voucha/test-helpers/entities/ai-usage-tier-lock-order'
 import {
   hasTestAiUsageResponseKey,
   insertTestAiUsageResponseKey,
@@ -21,9 +22,88 @@ import { retireMonthlyPartitionCandidate } from '@data-stores/psql/migration-run
 import { getDateFromUUIDv7, mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { recordAiUsage } from '../record.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
+import { prepareAiUsageMonth } from '@data-stores/psql/ai-usage-monthly-partition'
 
 describe('backdated AI usage on retired monthly history', () => {
-  it('registers a shared tier before either ordinary or backdated ledger table locks', async () => {
+  it('propagates a partition creator failure without changing shared schema', async () => {
+    const createdAt = new Date(Date.UTC(2000 + randomInt(20), randomInt(12), 12, 12))
+    const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
+    await withTestAiUsagePreparationFault(partition, 'creator', async () => {
+      await expect(prepareAiUsageMonth(createdAt)).rejects.toThrow(
+        'Injected AI usage partition creator failure',
+      )
+    })
+  })
+
+  it('rejects a present but unattached month without recording usage', async () => {
+    const createdAt = new Date(Date.UTC(2000 + randomInt(20), randomInt(12), 12, 12))
+    const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
+    const agentSlug = `test-detached-month-${randomUUID()}`
+    await withTestAiUsagePreparationFault(partition, 'present-unattached', async () => {
+      await expect(
+        recordAiUsage({
+          createdAt,
+          agentSlug,
+          provider: 'openai',
+          transport: 'direct',
+          model: 'gpt-6-luna',
+          serviceTier: 'flex',
+          usage: {
+            inputTokens: 10,
+            cacheReadTokens: 0,
+            cacheWrite5mTokens: 0,
+            cacheWrite1hTokens: 0,
+            outputTokens: 2,
+            reasoningOutputTokens: 0,
+          },
+        }),
+      ).rejects.toMatchObject({
+        name: 'AiUsageMonthPreparationError',
+        missing: false,
+        message: `AI usage month ${partition} was not attached after preparation`,
+      })
+    })
+    expect(await readTestAiUsageIdsForMonth(createdAt, agentSlug)).toEqual([])
+  })
+
+  it('retries when retirement commits after the attached-month probe', async () => {
+    const releaseSweep = await reserveTestAiUsageRetentionSweep()
+    onTestFinished(releaseSweep)
+    const createdAt = new Date(Date.UTC(2000 + randomInt(20), randomInt(12), 12, 12))
+    const releaseMonth = await reserveTestAiUsageMonths([createdAt])
+    const agentSlug = `test-retirement-race-${randomUUID()}`
+    onTestFinished(async () => {
+      const ids = await readTestAiUsageIdsForMonth(createdAt, agentSlug)
+      await releaseMonth(ids)
+    })
+    const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
+    await retireTestAiUsagePartitionDuringWrite(testAiUsageCandidate(partition), () =>
+      recordAiUsage({
+        createdAt,
+        agentSlug,
+        provider: 'openai',
+        transport: 'direct',
+        model: 'gpt-6-luna',
+        serviceTier: 'flex',
+        usage: {
+          inputTokens: 10,
+          cacheReadTokens: 0,
+          cacheWrite5mTokens: 0,
+          cacheWrite1hTokens: 0,
+          outputTokens: 2,
+          reasoningOutputTokens: 0,
+        },
+      }),
+    )
+    const ids = await readTestAiUsageIdsForMonth(createdAt, agentSlug)
+    expect(ids).toHaveLength(1)
+    expect(getDateFromUUIDv7(ids[0]!)?.toISOString().slice(0, 10)).toBe(
+      createdAt.toISOString().slice(0, 10),
+    )
+    expect(await isTestAiUsagePartitionAttached(partition)).toBe(true)
+  })
+
+  it('records concurrent backdated and ordinary usage after retiring the historical month', async () => {
     const releaseSweep = await reserveTestAiUsageRetentionSweep()
     onTestFinished(releaseSweep)
     const createdAt = new Date(Date.UTC(2000 + randomInt(20), randomInt(12), 12, 12))
@@ -32,8 +112,12 @@ describe('backdated AI usage on retired monthly history', () => {
     const agentSlug = `test-tier-order-${randomUUID()}`
     onTestFinished(async () => {
       const backdatedIds = await readTestAiUsageIdsForMonth(createdAt, `${agentSlug}-backdated`)
+      const secondBackdatedIds = await readTestAiUsageIdsForMonth(
+        createdAt,
+        `${agentSlug}-backdated-second`,
+      )
       const ordinaryIds = await readTestAiUsageIdsForMonth(normalAt, `${agentSlug}-ordinary`)
-      await releaseMonth([...backdatedIds, ...ordinaryIds])
+      await releaseMonth([...backdatedIds, ...secondBackdatedIds, ...ordinaryIds])
     })
     const partition = `ai_usage_records__p_${createdAt.getUTCFullYear()}_${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`
     const candidate = testAiUsageCandidate(partition)
@@ -53,13 +137,19 @@ describe('backdated AI usage on retired monthly history', () => {
       serviceTier: 'flex',
       usage,
     }
-    await runAiUsageTierOrderRace(
-      query => recordAiUsage({ ...common, query, createdAt, agentSlug: `${agentSlug}-backdated` }),
-      query => recordAiUsage({ ...common, query, agentSlug: `${agentSlug}-ordinary` }),
-    )
+    await Promise.all([
+      recordAiUsage({ ...common, createdAt, agentSlug: `${agentSlug}-backdated` }),
+      recordAiUsage({ ...common, createdAt, agentSlug: `${agentSlug}-backdated-second` }),
+      recordAiUsage({ ...common, agentSlug: `${agentSlug}-ordinary` }),
+    ])
     const backdatedIds = await readTestAiUsageIdsForMonth(createdAt, `${agentSlug}-backdated`)
+    const secondBackdatedIds = await readTestAiUsageIdsForMonth(
+      createdAt,
+      `${agentSlug}-backdated-second`,
+    )
     const ordinaryIds = await readTestAiUsageIdsForMonth(normalAt, `${agentSlug}-ordinary`)
     expect(backdatedIds).toHaveLength(1)
+    expect(secondBackdatedIds).toHaveLength(1)
     expect(ordinaryIds).toHaveLength(1)
   })
 
