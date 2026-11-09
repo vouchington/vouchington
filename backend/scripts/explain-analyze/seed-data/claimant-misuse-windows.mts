@@ -100,9 +100,13 @@ export async function seedClaimantMisuseWindows(): Promise<void> {
       CLAIMANT_MISUSE_USER_IDS,
     ],
   )
-  await write(`/* seedClaimantMisuseWindows:analyze */
-    ANALYZE copyright_notices, copyright_claimant_misuse_events, copyright_notice_submissions,
-      copyright_notice_form_intakes, users`)
+  // Plain ANALYZE leaves the visibility map to autovacuum's timing. The near-oldest window costs
+  // about 340 as an index-only scan on idx_copyright_notices__claimant_user once pages are
+  // all-visible, but about 397 beats it as copyright_notices_pkey plus a Sort while
+  // relallvisible is 0 (failed run 42592887517), so VACUUM fixes that input before the captures.
+  await write(`/* seedClaimantMisuseWindows:vacuum */
+    VACUUM (ANALYZE) copyright_notices, copyright_claimant_misuse_events,
+      copyright_notice_submissions, copyright_notice_form_intakes, users`)
 }
 
 async function seedRepeatedClaimantEvents(): Promise<void> {

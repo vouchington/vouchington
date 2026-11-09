@@ -149,8 +149,11 @@ jobs:
         run: node backend/scripts/seeds/dev-seed.mts
         timeout-minutes: 3
       - name: Seed EXPLAIN data with resource samples
-        # Full seeds completed just over three minutes in runs 42183283644 and 42184560914.
-        timeout-minutes: 4
+        # Both shards seed the identical corpus. Ten main-shard seeds on 2026-11-09 (runs
+        # 42592728690 to 42597072815) took 136s to 243s, and the slow runners clustered at 233s
+        # to 240s. Runs 42595278183 and 42597072815 were killed by the old 4 minute limit at 243s
+        # after "Seed complete." printed. Six minutes is about 1.5 times the slow-runner time.
+        timeout-minutes: 6
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
