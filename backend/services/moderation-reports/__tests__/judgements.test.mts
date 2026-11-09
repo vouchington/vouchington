@@ -17,6 +17,21 @@ describe('moderation-reports/judgements', () => {
   })
 
   describe('insertReportJudgement', () => {
+    it('rejects a manual run that names no triggering report', async () => {
+      await expect(
+        insertReportJudgement({
+          entityType: 'post',
+          entityId: crypto.randomUUID(),
+          runId: crypto.randomUUID(),
+          rerunById: null,
+          recommendedAction: 'no_action',
+          publicResponse: 'n/a',
+          internalResponse: 'n/a',
+          model: 'gpt-5.4-nano',
+        }),
+      ).rejects.toThrow('A manual judgement run requires its triggering report')
+    })
+
     it('inserts a judgement and returns the row', async () => {
       const postId = await insertTestPost({
         createdById: author.id,
