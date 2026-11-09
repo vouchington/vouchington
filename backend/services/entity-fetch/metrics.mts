@@ -7,6 +7,7 @@ import { getUserBookmarkCounts } from '@services/bookmarks/counts'
 import { getUserPostTypeFacets } from '@services/posts/search/get-facets'
 import { countUserMemberCommunities } from '@services/communities/members/member-communities'
 import { currentUserCanAccessUser } from '@services/users/authorization'
+import type { CappedCount } from '@services/users/profile-count-cap'
 import { getPrivateCounts } from './metrics-private-counts.mts'
 import { getMetricsCollectionVisibility } from './metrics-collection-visibility.mts'
 import { caches } from '@services/entity-cache/caches'
@@ -70,22 +71,26 @@ async function buildUserMetrics(
       getMetricsCollectionVisibility(currentUser, row.id),
     ])
 
-  const counts = {
+  const hidden: CappedCount = { count: 0, capped: false }
+  const bookmarks = bookmarkCounts.bookmarks
+  const cappedCounts: Record<keyof UserMetrics['count'], CappedCount> = {
     reviews: postTypeFacets.review,
     discussions: postTypeFacets.discussion,
     comments: postTypeFacets.comment,
-    users_following: collectionVisibility.follows
-      ? (bookmarkCounts.bookmarks.users.follow ?? 0)
-      : 0,
-    users_followers: collectionVisibility.followers ? (bookmarkCounts.bookmarkers.follow ?? 0) : 0,
+    users_following: collectionVisibility.follows ? (bookmarks.users.follow ?? hidden) : hidden,
+    users_followers: collectionVisibility.followers
+      ? (bookmarkCounts.bookmarkers.follow ?? hidden)
+      : hidden,
     topics_following: collectionVisibility.topicFollows
-      ? (bookmarkCounts.bookmarks.topics.follow ?? 0)
-      : 0,
+      ? (bookmarks.topics.follow ?? hidden)
+      : hidden,
     rss_feeds_following: collectionVisibility.rssFeedFollows
-      ? (bookmarkCounts.bookmarks.rss_feeds.follow ?? 0)
-      : 0,
+      ? (bookmarks.rss_feeds.follow ?? hidden)
+      : hidden,
     communities_member: communitiesMemberCount,
   }
+  const counts = mapCappedCounts(cappedCounts, capped => capped.count)
+  const countsCapped = mapCappedCounts(cappedCounts, capped => capped.capped)
 
   let privateCount: UserMetrics['private_count']
   const allowPrivateCounts = currentUserCanAccessUser(currentUser ?? null, row.id)
@@ -98,6 +103,7 @@ async function buildUserMetrics(
     __entity_type: 'user_metrics',
     id: row.id,
     count: counts,
+    count_capped: countsCapped,
     ...(privateCount ? { private_count: privateCount } : {}),
     bookmarks: {
       follow: {
@@ -113,6 +119,15 @@ async function buildUserMetrics(
     },
     bookmarks__updated_at: row.bookmarks__updated_at,
   }
+}
+
+function mapCappedCounts<T>(
+  counts: Record<keyof UserMetrics['count'], CappedCount>,
+  pick: (count: CappedCount) => T,
+): Record<keyof UserMetrics['count'], T> {
+  return Object.fromEntries(
+    Object.entries(counts).map(([key, value]) => [key, pick(value)]),
+  ) as Record<keyof UserMetrics['count'], T>
 }
 
 async function getUserMetricsRowByAny(

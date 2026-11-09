@@ -38,6 +38,16 @@
       "users_followers": 0,
       "users_following": 0
     },
+    "count_capped": {
+      "comments": false,
+      "communities_member": false,
+      "discussions": false,
+      "reviews": false,
+      "rss_feeds_following": false,
+      "topics_following": false,
+      "users_followers": false,
+      "users_following": false
+    },
     "id": "user-restricted"
   }
 }

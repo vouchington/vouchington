@@ -63,6 +63,16 @@ export const nativeUserProfileHeaderApiFixtureCases: ApiFixtureCase[] = [
           rss_feeds_following: 8,
           communities_member: 9,
         },
+        count_capped: {
+          comments: false,
+          discussions: false,
+          reviews: false,
+          users_following: false,
+          users_followers: false,
+          topics_following: false,
+          rss_feeds_following: false,
+          communities_member: false,
+        },
         bookmarks: {
           follow: { topics: 1, posts: 2, users: 3 },
         },
@@ -159,6 +169,16 @@ export const nativeUserProfileHeaderApiFixtureCases: ApiFixtureCase[] = [
           topics_following: 0,
           rss_feeds_following: 0,
           communities_member: 0,
+        },
+        count_capped: {
+          comments: false,
+          discussions: false,
+          reviews: false,
+          users_following: false,
+          users_followers: false,
+          topics_following: false,
+          rss_feeds_following: false,
+          communities_member: false,
         },
         bookmarks: {
           follow: { topics: 0, posts: 0, users: 0 },

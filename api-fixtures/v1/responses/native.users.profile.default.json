@@ -78,6 +78,16 @@
       "users_followers": 6,
       "users_following": 5
     },
+    "count_capped": {
+      "comments": false,
+      "communities_member": false,
+      "discussions": false,
+      "reviews": false,
+      "rss_feeds_following": false,
+      "topics_following": false,
+      "users_followers": false,
+      "users_following": false
+    },
     "id": "user-abc"
   }
 }

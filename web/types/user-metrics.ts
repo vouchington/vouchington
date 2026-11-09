@@ -43,6 +43,19 @@ export interface UserMetrics {
     rss_feeds_following: number
     communities_member: number
   }
+  /**
+   * `true` means the real total is larger than the cap and `count` holds the cap. Show it as "1k+".
+   */
+  count_capped: {
+    reviews: boolean
+    discussions: boolean
+    comments: boolean
+    users_following: boolean
+    users_followers: boolean
+    topics_following: boolean
+    rss_feeds_following: boolean
+    communities_member: boolean
+  }
   private_count?: UserPrivateMetricsCount
   bookmarks: {
     follow: {

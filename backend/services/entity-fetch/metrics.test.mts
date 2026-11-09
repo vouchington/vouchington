@@ -111,6 +111,16 @@ describe('metrics', () => {
           topics_following: 1,
           rss_feeds_following: 1,
         },
+        count_capped: {
+          reviews: false,
+          discussions: false,
+          comments: false,
+          users_following: false,
+          users_followers: false,
+          topics_following: false,
+          rss_feeds_following: false,
+          communities_member: false,
+        },
         private_count: {
           topics_blocked: 1,
           topics_muted: 1,

@@ -5,7 +5,8 @@ import type { MessageKey } from '@ts-shared/ui-messages'
 import type { useTranslations } from '@/lib/i18n/use-translations'
 import type { UserMetrics } from '@/types/user-metrics'
 import type { UserDetailTab } from './user-detail-tab-types'
-import { formatNumber, type NumberFormatLocale } from '@ts-shared/utils/format'
+import type { NumberFormatLocale } from '@ts-shared/utils/format'
+import { formatCappedCount } from '@/lib/users/format-capped-count'
 
 type PublicContentKey = 'reviews' | 'discussions' | 'comments'
 
@@ -24,7 +25,7 @@ export function appendContentTab(
   const routeSuffix = `/${key}`
   if (count === 0 && activeRouteSuffix !== routeSuffix) return
 
-  const countDisplay = formatNumber(count, uiLocale)
+  const countDisplay = formatCappedCount(count, metrics?.count_capped[key] ?? false, uiLocale)
   tabs.push({
     value: key,
     label: t(labelKey, { count: countDisplay }),
@@ -36,6 +37,7 @@ export function appendContentTab(
 export function appendCountTab(
   tabs: UserDetailTab[],
   count: number,
+  capped: boolean,
   value: string,
   t: ReturnType<typeof useTranslations>,
   labelKey: MessageKey,
@@ -48,7 +50,7 @@ export function appendCountTab(
 
   tabs.push({
     value,
-    label: t(labelKey, { count: formatNumber(count, uiLocale) }),
+    label: t(labelKey, { count: formatCappedCount(count, capped, uiLocale) }),
     href: `${userPath}${routeSuffix}`,
     routeSuffix,
   })

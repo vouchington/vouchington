@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { it, expect, describe } from 'vitest'
+import { it, expect, describe, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { profileCountConfig } from '@services/users/profile-count-cap'
 import { getUserMetricsByAnyBatch } from '@services/users/metrics-batch'
 import {
   createTestPost,
@@ -77,10 +79,39 @@ describe('metrics-batch', () => {
           topics_following: 1,
           rss_feeds_following: 1,
         },
+        count_capped: {
+          reviews: false,
+          discussions: false,
+          comments: false,
+          users_following: false,
+          users_followers: false,
+          topics_following: false,
+          rss_feeds_following: false,
+          communities_member: false,
+        },
       })
       expect(metrics).not.toHaveProperty('viewer_count')
       expect(metrics?.private_count).toBeUndefined()
     }
+  })
+
+  it('getUserMetricsByAnyBatch caps each count and flags the capped ones', async () => {
+    await profileCountConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(profileCountConfig, { count_cap: 1 }))
+    const fixture = await createUserProfileFixture({
+      suffix: `cap-${randomUUID().slice(0, 12)}`,
+    })
+    await createTestPost({
+      user: fixture.owner,
+      post_type: 'discussion',
+      title: `Second discussion ${randomUUID().slice(0, 12)}`,
+      markdown: 'A second public discussion pushes the count past the cap.',
+    })
+
+    const [metrics] = await getUserMetricsByAnyBatch([fixture.owner.id])
+
+    expect(metrics?.count.discussions).toBe(1)
+    expect(metrics?.count_capped).toMatchObject({ discussions: true, reviews: false })
   })
 
   it('getUserMetricsByAnyBatch excludes non-public authored posts from public counts', async () => {

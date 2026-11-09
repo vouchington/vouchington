@@ -58,11 +58,52 @@ describe('UserProfileHeader', () => {
             rss_feeds_following: 0,
             communities_member: 0,
           },
+          count_capped: {
+            reviews: false,
+            discussions: false,
+            comments: false,
+            users_following: false,
+            users_followers: false,
+            topics_following: false,
+            rss_feeds_following: false,
+            communities_member: false,
+          },
         }}
       />,
     )
     expect(screen.getByText(/3 reviews/)).toBeDefined()
     expect(screen.getByText(/5 discussions/)).toBeDefined()
+  })
+
+  it('shows a capped header count as a compact count with a plus sign', () => {
+    render(
+      <UserProfileHeader
+        user={baseUser}
+        metrics={{
+          count: {
+            reviews: 1000,
+            discussions: 0,
+            comments: 0,
+            users_following: 0,
+            users_followers: 0,
+            topics_following: 0,
+            rss_feeds_following: 0,
+            communities_member: 0,
+          },
+          count_capped: {
+            reviews: true,
+            discussions: false,
+            comments: false,
+            users_following: false,
+            users_followers: false,
+            topics_following: false,
+            rss_feeds_following: false,
+            communities_member: false,
+          },
+        }}
+      />,
+    )
+    expect(screen.getByText(/1K\+ reviews/)).toBeDefined()
   })
 
   it('shows the exact header count', () => {
@@ -79,6 +120,16 @@ describe('UserProfileHeader', () => {
             topics_following: 0,
             rss_feeds_following: 0,
             communities_member: 0,
+          },
+          count_capped: {
+            reviews: false,
+            discussions: false,
+            comments: false,
+            users_following: false,
+            users_followers: false,
+            topics_following: false,
+            rss_feeds_following: false,
+            communities_member: false,
           },
         }}
       />,

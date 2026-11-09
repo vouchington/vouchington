@@ -161,7 +161,7 @@ describe('index', () => {
 
         const counts = await getUserBookmarkCounts(user!.id)
 
-        expect(counts.bookmarks.rss_feeds?.follow).toBeGreaterThanOrEqual(1)
+        expect(counts.bookmarks.rss_feeds?.follow?.count).toBeGreaterThanOrEqual(1)
       })
     })
   })
