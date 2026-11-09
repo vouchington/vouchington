@@ -117,7 +117,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_08 = [
   { key: 'native.dotnet.profile.uploadAvatar', consumers: ['dotnet'] },
   { key: 'native.dotnet.profile.userSafety', consumers: ['dotnet'] },
   { key: 'native.dotnet.profile.videos', consumers: ['dotnet'] },
-  { key: 'native.dotnet.referralLinks.activeLinks', consumers: ['dotnet'] },
   { key: 'native.dotnet.referralLinks.empty', consumers: ['dotnet'] },
   { key: 'native.dotnet.referralLinks.emptyDescription', consumers: ['dotnet'] },
   { key: 'native.dotnet.referralLinks.inactive', consumers: ['dotnet'] },

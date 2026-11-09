@@ -1143,7 +1143,6 @@
 {"alias":"native.dotnet.profile.uploadAvatar","consumer":"dotnet","copyId":"copy.native.dotnet.profile.uploadAvatar"},
 {"alias":"native.dotnet.profile.userSafety","consumer":"dotnet","copyId":"copy.native.dotnet.profile.userSafety"},
 {"alias":"native.dotnet.profile.videos","consumer":"dotnet","copyId":"copy.native.dotnet.newsFeeds.videos"},
-{"alias":"native.dotnet.referralLinks.activeLinks","consumer":"dotnet","copyId":"copy.native.dotnet.referralLinks.activeLinks"},
 {"alias":"native.dotnet.referralLinks.empty","consumer":"dotnet","copyId":"copy.native.dotnet.referralLinks.empty"},
 {"alias":"native.dotnet.referralLinks.emptyDescription","consumer":"dotnet","copyId":"copy.native.dotnet.referralLinks.emptyDescription"},
 {"alias":"native.dotnet.referralLinks.inactive","consumer":"dotnet","copyId":"copy.native.dotnet.referralLinks.inactive"},
