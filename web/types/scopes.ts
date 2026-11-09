@@ -38,4 +38,5 @@ export interface ScopeAudiencePolicy {
   audience: McpScopeAudience
   accepts_api_keys: boolean
   requires_administrator: boolean
+  requires_moderation_staff: boolean
 }

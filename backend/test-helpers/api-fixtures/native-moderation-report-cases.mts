@@ -1,7 +1,9 @@
+import { nativeModerationReportDetailApiFixtureCases } from './native-moderation-report-detail-cases.mts'
 import { nativeUserModNoteApiFixtureCases } from './native-user-mod-note-cases.mts'
 import { nativeModerationFixtureCase as fixtureCase } from './native-moderation-fixture-case.mts'
 
 export const nativeModerationReportApiFixtureCases = [
+  ...nativeModerationReportDetailApiFixtureCases,
   fixtureCase({
     id: 'native.moderation.reports.default',
     backendResponseContractKey: 'GET:/api/v1/reports#staff',

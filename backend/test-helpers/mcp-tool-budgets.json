@@ -1408,6 +1408,16 @@
           "list": 1000,
           "core": 1000
         }
+      },
+      "read_moderation_report": {
+        "measured": {
+          "list": 1631,
+          "core": 242
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
       }
     },
     "legal": {

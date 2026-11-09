@@ -1,7 +1,7 @@
 /**
  * Tests for POST /api/v1/admin/mcp
  *
- * The admin MCP endpoint is OAuth-only: an admin-resource access token, the administrator role and
+ * The admin MCP endpoint is OAuth-only: an admin-resource access token, an eligible staff role and
  * an admin-audience scope. API keys never authenticate here, and every call of a verified OAuth
  * principal writes an audit row.
  */
@@ -12,9 +12,19 @@ import { setTestApiKeyPermissions } from '@voucha/test-helpers/entities/api-keys
 import { readTestMcpCallAuditEvents } from '@voucha/test-helpers/entities/mcp-call-audit'
 import { setTestOAuthAccessTokenScopes } from '@voucha/test-helpers/entities/oauth-access-token-scopes'
 import { removeTestUserRole } from '@voucha/test-helpers/entities/user-role-removal'
+import { suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers/entities/users'
 import { createApiKey } from '@services/api-keys'
-import { getOAuthResourceUrl } from '@services/oauth-authorization-server'
-import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
+import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
+import { createVerifiedMfaTestSession } from '@voucha/test-helpers/authenticated-session'
+import {
+  createTestPendingOAuthAuthorization,
+  issueTestOAuthTokensForClient,
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
+import {
+  getOAuthResourceUrl,
+  decideOAuthAuthorizationRequest,
+  exchangeOAuthAuthorizationCode,
+} from '@services/oauth-authorization-server'
 import type { PrivateUser } from '@services/users/types'
 
 const MCP_LIST_BODY = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }
@@ -24,6 +34,9 @@ const MCP_INITIALIZED_NOTIFICATION = {
   params: {},
 }
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const allAdminScopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
+  scope => SCOPE_DEFINITIONS[scope].audience === 'admin',
+)
 
 function postAdminMcp(token: string | null, body: object = MCP_LIST_BODY, scheme = 'Bearer') {
   const request = createRequest().post('/api/v1/admin/mcp').set('Content-Type', 'application/json')
@@ -37,6 +50,28 @@ async function issueAdminToken(user: PrivateUser, scope = 'mcp.admin:read') {
     scope,
   })
   return { clientId, token: tokens.access_token }
+}
+
+async function issueMfaAdminToken(user: PrivateUser, scope: string) {
+  const pending = await createTestPendingOAuthAuthorization(user, { audience: 'admin', scope })
+  const assuredSession = await createVerifiedMfaTestSession(user.id)
+  const decision = await decideOAuthAuthorizationRequest(
+    user.id,
+    pending.requestId,
+    'approve',
+    pending.bindingHash,
+    assuredSession.sessionToken.payload.mfa_at,
+  )
+  const code = new URL(decision.redirect_uri).searchParams.get('code')
+  if (!code) throw new Error('authorization code was not returned')
+  const tokens = await exchangeOAuthAuthorizationCode({
+    clientId: pending.client.client_id,
+    clientSecret: pending.client.client_secret,
+    code,
+    codeVerifier: pending.verifier,
+    redirectUri: pending.redirectUri,
+  })
+  return tokens.access_token
 }
 
 describe('POST /api/v1/admin/mcp', () => {
@@ -94,6 +129,49 @@ describe('POST /api/v1/admin/mcp', () => {
   })
 
   describe('OAuth access tokens', () => {
+    it('admits moderators to report tools without exposing other admin tools', async () => {
+      const moderator = await createTestUser({ extraRoles: ['moderator'] })
+      const token = await issueMfaAdminToken(moderator, allAdminScopes.join(' '))
+
+      const response = await postAdminMcp(token).expect(200)
+      const tools = (response.body as { result?: { tools?: Array<{ name?: string }> } }).result
+        ?.tools
+      const names = tools?.map(tool => tool.name) ?? []
+
+      expect(names).toEqual(
+        expect.arrayContaining([
+          'list_moderation_reports',
+          'read_moderation_report',
+          'resolve_moderation_report',
+          'rerun_report_judgement',
+        ]),
+      )
+      expect(names).not.toContain('read_crawler')
+      expect(names).not.toContain('read_user_moderation')
+      expect(names).not.toContain('set_user_suspension')
+    })
+
+    it('allows suspended moderators only the report reads admitted by REST', async () => {
+      const moderator = await createTestUser({ extraRoles: ['moderator'] })
+      const token = await issueMfaAdminToken(moderator, 'moderation:read')
+      await suspendTestUser(moderator.id)
+
+      try {
+        const response = await postAdminMcp(token).expect(200)
+        const tools = (response.body as { result?: { tools?: Array<{ name?: string }> } }).result
+          ?.tools
+        const names = tools?.map(tool => tool.name) ?? []
+
+        expect(names).toEqual(
+          expect.arrayContaining(['list_moderation_reports', 'read_moderation_report']),
+        )
+        expect(names).not.toContain('resolve_moderation_report')
+        expect(names).not.toContain('rerun_report_judgement')
+      } finally {
+        await unsuspendTestUser(moderator.id)
+      }
+    })
+
     it('lists tools for an admin token and audits the call with a correlation id', async () => {
       const owner = await createTestUser({ administrator: true })
       const { clientId, token } = await issueAdminToken(owner)

@@ -180,7 +180,9 @@ describe the surrounding lifecycle.
   - Staging Basic Auth exempts them; see
     [Cloudflare Worker staging auth](../../operations/cloudflare-worker-staging-auth.md).
 - `/authorize` redirects an unsupported `resource` back to the verified client as `invalid_target`.
-  Only administrators can approve the admin resource; anyone else gets `access_denied`.
+  Moderators and administrators can approve the admin resource. Report tools use the same staff
+  guard as REST; other admin tools remain administrator-only. The legal resource remains
+  administrator-only, and ineligible owners receive `access_denied`.
 - `/token` accepts an optional RFC 8707 `resource`, which must name the bound resource. A mismatch
   is `invalid_target` and leaves the code unconsumed. A refresh may narrow its scopes with `scope`.
 - A client's registered scopes cover a requested scope by the same rule as MCP tool authorization,

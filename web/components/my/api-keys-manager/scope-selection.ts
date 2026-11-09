@@ -28,11 +28,13 @@ export function availableScopeAudiences(
   policies: readonly ScopeAudiencePolicy[],
   surface: ScopeCredentialSurface,
   isAdministrator: boolean,
+  isModerationStaff = isAdministrator,
 ): McpScopeAudience[] {
   const audiences: McpScopeAudience[] = []
   for (const policy of policies) {
     if (surface === 'api-key' && !policy.accepts_api_keys) continue
     if (policy.requires_administrator && !isAdministrator) continue
+    if (policy.requires_moderation_staff && !isModerationStaff) continue
     audiences.push(policy.audience)
   }
   return audiences

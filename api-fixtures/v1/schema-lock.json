@@ -869,6 +869,13 @@
       "fixtureIds": ["native.moderation.reports.default"],
       "hash": "d5520d095f9e120dbb924ffb643ed4689267cb89f7657e45ea13efb044b71cf7"
     },
+    "GET:/api/v1/reports/:id": {
+      "fixtureIds": [
+        "native.moderation.report-detail.pending",
+        "native.moderation.report-detail.saved"
+      ],
+      "hash": "eeb0ad0ee2a26d86a3af7a432970db800d2b37eecb4f8da56cca9fefa370f41c"
+    },
     "GET:/api/v1/reports/:id/judgements/:runId": {
       "fixtureIds": ["native.moderation.report-judgement-run.pending"],
       "hash": "f0d33f06f7d1158701223df088fabef18ee1cc24e85728524cabc57b290621d5"
@@ -903,7 +910,7 @@
     },
     "GET:/api/v1/scopes": {
       "fixtureIds": ["shared.scopes.catalog"],
-      "hash": "e0b5c681dd4de39e06d55f3826114b71bc56601e113497a34cd9487d2fbfd128"
+      "hash": "cc10aa8116e3a8c06c5e4a6964b74ef6bb9a32a9b7f425e3c1f9cecd23aa5d81"
     },
     "GET:/api/v1/stories/:id": {
       "fixtureIds": ["native.stories.get.after", "native.stories.get.default"],
@@ -2494,6 +2501,14 @@
       "fixtureIds": ["native.moderation.removed-posts.page-2"],
       "hash": "3850c7ac9bb26da3f5641fd6621e70bb793e34e60758f0ba519f3a20491ca1b6"
     },
+    "native.moderation.report-detail.pending": {
+      "fixtureIds": ["native.moderation.report-detail.pending"],
+      "hash": "ccf5e945c5ddcb24b19916fe5a550b098af416c95270fa7e360445d26ea9e554"
+    },
+    "native.moderation.report-detail.saved": {
+      "fixtureIds": ["native.moderation.report-detail.saved"],
+      "hash": "8bbd7b37a91ae92451e9e8043f72e9504eaf68dfdeaffa14abdc00dd7abaff39"
+    },
     "native.moderation.report-integrity.default": {
       "fixtureIds": ["native.moderation.report-integrity.default"],
       "hash": "0c8a55205a6c7d8b749059adea267d1f62482caf476112b6b89bc3b70e0a64df"
@@ -3032,7 +3047,7 @@
     },
     "shared.scopes.catalog": {
       "fixtureIds": ["shared.scopes.catalog"],
-      "hash": "7afb4112d07808e708325f8e32ad1b6fc85a1a55603b68acaac41a5e0a7691ee"
+      "hash": "7fdfb9df3c4deeda33c3c60f4fa3f232a48b3433ebc59df76f0ece5c6144524b"
     },
     "swift.integration.rss-feed-items.audio": {
       "fixtureIds": ["swift.integration.rss-feed-items.audio"],

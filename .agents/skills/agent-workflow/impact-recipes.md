@@ -81,21 +81,25 @@ it. `git grep` searches tracked dotfiles as well as ordinary source files.
 
 When changing a tool description or input/output schema, regenerate the MCP catalog and run its
 catalog contracts before pushing. The generator's `--check` verifies generated files; it does not
-validate description limits, pinned catalog digests, or grant-budget snapshots. Recompute pins from
-the intended catalog and keep the existing semantic and size guards.
+validate description limits, pinned catalog digests, grant budgets, SDK listings, or operation
+inventories. Recompute pins from the intended catalog and keep the existing semantic and size guards.
+Run the MCP boundary and ingress suites so a new tool or changed authority reaches inventory
+consumers and the actual OAuth, suspension, and HTTP admission boundaries.
 
 ```sh
-pnpm exec vitest run --project backend-data-stores \
-  backend/services/mcp-tools/catalog/build-mcp-catalog.generated.test.mts \
-  backend/services/mcp-tools/catalog/build-mcp-catalog.hardening.test.mts \
-  backend/services/mcp-tools/catalog/build-mcp-catalog.bound.test.mts
+pnpm exec vitest run --project backend-data-stores backend/services/mcp-tools backend/api/v1/mcp backend/api/v1/admin/mcp backend/api/v1/brand/mcp
 ```
 
 ## Native API Parity
 
 Use this when an endpoint, response field, or shared API fixture changes. The goal is to reach the
 backend fixture source, generated contract, web client, Swift client, .NET client, final UI
-consumers, and their tests.
+consumers, and their tests. Non-web fixtures also have a web endpoint-registry consumer; verify it
+when adding or changing those fixtures:
+
+```sh
+pnpm exec vitest run --project web web/lib/api/client/__tests__/manifest-coverage.test.ts
+```
 
 1. Start from the backend route or client file when one is known:
 

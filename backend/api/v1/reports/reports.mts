@@ -13,6 +13,7 @@ import {
 import {
   currentUserCanResolveModerationReport,
   getModerationReportById,
+  getModerationReportDetail,
   getReportJudgementRunResult,
   type ModerationReportResolutionStatus,
 } from '@services/moderation-reports'
@@ -83,6 +84,19 @@ app.route('/api/v1/reports').get(async (ctx: Context) => {
       ),
     )
   }
+})
+
+app.route('/api/v1/reports/:id').get(async (ctx: Context) => {
+  await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanResolveModerationReport,
+    'GET:/api/v1/reports/:id',
+  )
+  const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'GET:/api/v1/reports/:id', { path: ctx.params })
+  const detail = await getModerationReportDetail(id)
+  ctx.assert(detail, 404, 'Report not found')
+  ctx.json(apiResponse('GET:/api/v1/reports/:id', detail))
 })
 
 app.route('/api/v1/reports/:id').patch(async (ctx: Context) => {

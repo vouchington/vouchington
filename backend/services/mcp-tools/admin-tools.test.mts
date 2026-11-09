@@ -34,6 +34,44 @@ describe('admin tool authorization contract', () => {
       expect(tool.meta?.outputSchema).toMatchObject({ type: 'object' })
     }
   })
+
+  it('admits moderators only to opted-in report tools, even with broad admin scopes', () => {
+    const moderator = {
+      id: 'moderator-tools-contract',
+      roles: ['moderator'],
+      membership_plan: null,
+    }
+    const listed = listMcpToolsForUser(moderator, allScopes, ADMIN_MCP_SERVER_CONFIG).map(
+      tool => tool.name,
+    )
+
+    expect(listed).toEqual(
+      expect.arrayContaining([
+        'list_moderation_reports',
+        'read_moderation_report',
+        'resolve_moderation_report',
+        'rerun_report_judgement',
+      ]),
+    )
+    expect(listed).not.toContain('read_crawler')
+    expect(listed).not.toContain('set_user_suspension')
+    for (const name of [
+      'list_moderation_reports',
+      'read_moderation_report',
+      'resolve_moderation_report',
+      'rerun_report_judgement',
+    ]) {
+      expect(resolveMcpToolCall(name, moderator, allScopes, ADMIN_MCP_SERVER_CONFIG).status).toBe(
+        'allowed',
+      )
+    }
+    expect(
+      resolveMcpToolCall('read_crawler', moderator, allScopes, ADMIN_MCP_SERVER_CONFIG),
+    ).toMatchObject({
+      status: 'role_denied',
+    })
+  })
+
   it.each([
     ['approve_review_response', 'moderation:approve', 'moderation:write'],
     ['pause_queue', 'site-operations:queues', 'site-operations:read'],

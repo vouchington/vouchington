@@ -257,20 +257,14 @@ describe('OAuthAppsManager', () => {
     expect(screen.getByText('You have not registered any OAuth apps.')).toBeInTheDocument()
   })
 
-  it('groups public audiences and offers admin and legal only to administrators', () => {
-    const { unmount } = renderManager()
-    expect(screen.getByRole('heading', { name: 'Community moderation' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Brand tools' })).toBeInTheDocument()
-    expect(screen.getByRole('checkbox', { name: 'community-moderation Read' })).toBeInTheDocument()
-    expect(screen.getByRole('checkbox', { name: 'topic-claims Read' })).toBeInTheDocument()
-    expect(screen.queryByRole('checkbox', { name: 'mcp.admin Read' })).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('checkbox', { name: 'copyright-notices Read' }),
-    ).not.toBeInTheDocument()
-    unmount()
+  it.each([
+    ['member', [], false, false],
+    ['moderator', ['moderator'], true, false],
+    ['administrator', ['administrator'], true, true],
+  ] as const)('offers only eligible OAuth audiences to a %s', (role, roles, staff, legal) => {
     render(
       <AuthProvider
-        initialUser={{ id: 'admin-user', roles: ['administrator'], account_type: 'official' }}
+        initialUser={{ id: `${role}-user`, roles: [...roles], account_type: 'official' }}
       >
         <OAuthAppsManager
           initialData={emptyPage}
@@ -278,8 +272,12 @@ describe('OAuthAppsManager', () => {
         />
       </AuthProvider>,
     )
-    expect(screen.getByRole('checkbox', { name: 'mcp.admin Read' })).toBeInTheDocument()
-    expect(screen.getByRole('checkbox', { name: 'copyright-notices Read' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Community moderation' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Brand tools' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'community-moderation Read' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'topic-claims Read' })).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'mcp.admin Read' }) !== null).toBe(staff)
+    expect(screen.queryByRole('checkbox', { name: 'copyright-notices Read' }) !== null).toBe(legal)
   })
 
   it('loads the next page of apps', async () => {

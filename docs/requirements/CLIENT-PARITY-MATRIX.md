@@ -336,7 +336,7 @@ adopt it.
 MCP API keys choose one eligible server audience, and switching servers clears the prior scope
 selection. OAuth apps may offer scopes across audiences; each eventual authorization and access
 token still binds to one protected resource. The shared scope catalog exposes server eligibility and
-staff-only policy, while web credential pickers and consent group permissions by server with
+separate moderator/admin and administrator-only eligibility, while web credential pickers and consent group permissions by server with
 localized labels. Native agent server selection and credential-picker adoption remain dependent
 client work under [the MCP audience split](https://github.com/vouchington/vouchington/issues/3179).
 The producer lands first; audience routing does not change tool arguments or results.
@@ -395,7 +395,11 @@ queue restarts. Each staff resource exposes the current requested run and the ru
 clients continue polling within the original deadline until those IDs match, even when another
 staff request supersedes theirs. A prior job cannot overwrite the newer request's draft. Staff
 dispute reconciliation and report lists read the primary. Report rerun result reads use the report
-ID and run ID together, and the worker reuses a saved exact result on retry. Staff report lists
+ID and run ID together, and the worker reuses a saved exact result on retry. After completion,
+clients read the originating report directly instead of chasing collection pages. This lean detail
+returns persisted report fields and the current judgement identity or null; matching text never
+substitutes for a persisted judgement ID. REST and MCP share moderator/admin access. Native
+adoption remains in clients #373. Staff report lists
 expose `automatic_judgement_enabled` for each report, based on the current community AI setting and
 target. The community moderation queue exposes it only to site staff. Clients poll an ordinary
 pending report automatically only when this is true; an explicitly admitted staff rerun still polls

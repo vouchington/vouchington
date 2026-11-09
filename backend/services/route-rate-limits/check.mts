@@ -4,8 +4,7 @@ import {
   type RouteRateLimitCheckOptions,
   type RouteRateLimitResult,
 } from '@vouchington/rate-limit'
-import type { PrivateUser } from '@services/users/types'
-import { computeTrustTier } from '@services/user-rate-limits/trust-tier'
+import { computeTrustTier, type TrustTierUser } from '@services/user-rate-limits/trust-tier'
 import { getUserRateLimitContext } from '@services/user-rate-limits/context'
 import { getRateLimitThreshold, getRateLimitTtl } from '@services/user-rate-limits/config'
 import {
@@ -38,7 +37,7 @@ const routeRateLimiters: Record<RouteRateLimitCategory, RateLimiter> = {
  */
 const checkPublishedRouteLimit = createRouteRateLimiter<{
   identities: RateLimitIdentities
-  currentUser: PrivateUser | null
+  currentUser: TrustTierUser | null
 }>({
   hashedDimensions: new Set(['email']),
   getBackend(routeKey) {
@@ -79,7 +78,7 @@ const checkPublishedRouteLimit = createRouteRateLimiter<{
 export async function checkRouteRateLimit(
   routeKey: string,
   identities: RateLimitIdentities,
-  currentUser: PrivateUser | null,
+  currentUser: TrustTierUser | null,
   options: RouteRateLimitCheckOptions = {},
 ): Promise<RouteRateLimitResult> {
   if (!isRouteRateLimitEnabled()) {

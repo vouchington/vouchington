@@ -16,7 +16,7 @@ import { insertReportJudgement } from '@services/moderation-reports/judgements'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('report judgement queue admission and result polling', () => {
-  it('returns queued while the report has no judgement, then lists the persisted judgement', async () => {
+  it('returns queued while the report has no judgement, then reads the persisted judgement directly', async () => {
     const staff = await createTestUser({ administrator: true })
     const author = await createTestUser()
     const reporter = await createTestUser()
@@ -59,8 +59,7 @@ describe('report judgement queue admission and result polling', () => {
       .get(`/api/v1/reports/${reportId}/judgements/${admission.run_id}`)
       .expect(403)
     const poll = async () => {
-      const response = await request.get('/api/v1/reports?status=pending&limit=100').expect(200)
-      return response.body.results.find((report: { id: string }) => report.id === reportId)
+      return (await request.get(`/api/v1/reports/${reportId}`).expect(200)).body
     }
     // A different judgement becoming latest must not complete this admitted manual run.
     await insertReportJudgement({
@@ -94,7 +93,7 @@ describe('report judgement queue admission and result polling', () => {
       expect(await pollRun()).toEqual({ completed: true, judgement_id: expect.any(String) })
       await processReportJudgement(job! as Job<ReportJudgementJobData>, callModel)
       expect(await poll()).toMatchObject({
-        id: reportId,
+        report: { id: reportId },
         judgement: { id: expect.any(String), recommended_action: 'no_action' },
       })
       expect(callModel).toHaveBeenCalledOnce()

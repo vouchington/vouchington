@@ -128,9 +128,9 @@ function invalid(target: string, input: Record<string, unknown>) {
 }
 
 describe('all merged admin MCP options', () => {
-  it('registers 56 admin tools and drops every replaced name', () => {
+  it('registers 57 admin tools and drops every replaced name', () => {
     const adminTools = ALL_TOOLS.filter(tool => tool.meta?.audience === 'admin')
-    expect(adminTools).toHaveLength(56)
+    expect(adminTools).toHaveLength(57)
     expect(adminMergedGroups).toHaveLength(27)
     expect(replacedAdminToolNames.size).toBe(59)
     for (const name of replacedAdminToolNames) expect(getRegisteredToolByName(name)).toBeUndefined()

@@ -1,5 +1,5 @@
 import assert from 'http-assert'
-import { isAdminUser, assertNotSuspended } from '@services/users'
+import { isAdminUser, isModerationStaff, assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import type {
@@ -20,6 +20,9 @@ type AdminToolConfig<TArgs> = {
   name: string
   description: string
   scope: ApiScope
+  /** Moderation tools may opt in to the same moderator/admin role as their REST route. */
+  authorization?: 'moderation_staff'
+  suspendedAccess?: 'free'
   /** One REST endpoint, or several when an option selects which twin the call runs. */
   api: ToolApiEndpoint | readonly ToolApiEndpoint[]
   /** Picks the REST route a call exercises when `api` lists several, so only its limits are charged. */
@@ -35,6 +38,11 @@ type AdminToolConfig<TArgs> = {
 export function createAdminTool<TArgs>(config: AdminToolConfig<TArgs>): Tool<TArgs> {
   const audience = SCOPE_DEFINITIONS[config.scope].audience
   assert(audience === 'admin' || audience === 'legal', 500, 'Staff tool scope required')
+  assert(
+    !config.authorization || audience === 'admin',
+    500,
+    'Moderation staff tools require admin audience',
+  )
   const prerequisite = SCOPE_DEFINITIONS[config.scope].requires
   return {
     schema: {
@@ -44,7 +52,10 @@ export function createAdminTool<TArgs>(config: AdminToolConfig<TArgs>): Tool<TAr
       parameters: config.parameters,
       strict: null,
     },
-    roles: { administrator: true, user: false },
+    roles:
+      config.authorization === 'moderation_staff'
+        ? { administrator: true, moderator: true, user: false }
+        : { administrator: true, user: false },
     meta: {
       title: config.name[0]!.toUpperCase() + config.name.slice(1).replaceAll('_', ' '),
       audience,
@@ -56,10 +67,17 @@ export function createAdminTool<TArgs>(config: AdminToolConfig<TArgs>): Tool<TAr
       outputSchema: adminOutputSchema(config.outputSchema) as ToolOutputSchema,
       ...(config.switch ? { switch: config.switch } : {}),
       ...(config.auditRationale ? { auditRationale: true } : {}),
+      ...(config.suspendedAccess ? { suspendedAccess: config.suspendedAccess } : {}),
     },
     function: currentUser => async args => {
       const user = await requirePrivateToolUser(currentUser)
-      assert(isAdminUser(user), 403, 'Administrator role required')
+      assert(
+        config.authorization === 'moderation_staff' ? isModerationStaff(user) : isAdminUser(user),
+        403,
+        config.authorization === 'moderation_staff'
+          ? 'Moderator or administrator role required'
+          : 'Administrator role required',
+      )
       if (!config.annotations.readOnlyHint) assertNotSuspended(user)
       const error = findSchemaViolation(config.parameters, args)
       assert(!error, 422, 'Invalid tool arguments')

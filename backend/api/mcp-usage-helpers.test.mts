@@ -35,7 +35,17 @@ async function unitsFor(
     try {
       const meter = startMcpUsageMeter(contextFor(res), USER_MCP_SERVER_CONFIG, {
         status: 'authenticated',
-        owner,
+        owner: {
+          ...owner,
+          is_suspended: false,
+          facebook_account: !!owner.facebook_account,
+          apple_account: !!owner.apple_account,
+          google_account: !!owner.google_account,
+          x_account: !!owner.x_account,
+          linkedin_account: !!owner.linkedin_account,
+          microsoft_account: !!owner.microsoft_account,
+          github_account: !!owner.github_account,
+        },
         scopes,
         suspended: false,
         credential: 'api_key',

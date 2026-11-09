@@ -86,6 +86,7 @@ export const RegisterForm: Story = {
     <Frame>
       <RegisterOAuthAppForm
         isAdmin={false}
+        isModerationStaff={false}
         scopeCatalog={storybookScopeCatalogResponse}
         onRegister={resolveTrue}
       />
@@ -98,6 +99,7 @@ export const AdministratorRegisterForm: Story = {
     <Frame>
       <RegisterOAuthAppForm
         isAdmin
+        isModerationStaff
         scopeCatalog={storybookScopeCatalogResponse}
         onRegister={resolveTrue}
       />

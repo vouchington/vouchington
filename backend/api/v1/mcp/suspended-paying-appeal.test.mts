@@ -1,6 +1,7 @@
 /**
  * A suspended Plus or Pro member keeps an existing OAuth grant and can appeal on the user MCP
- * server. Everyone else with a suspension is rejected, including the admin server.
+ * server. Suspended moderation staff retain report reads on the admin server; other admin tools
+ * and mutations remain unavailable.
  */
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -18,6 +19,7 @@ import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oau
 import { exchangeOAuthRefreshToken } from '@services/oauth-authorization-server'
 
 const APPEAL_TOOLS = ['create_moderation_appeal', 'read_my_moderation_appeals']
+const REPORT_READ_TOOLS = ['list_moderation_reports', 'read_moderation_report']
 const USER_MCP = '/api/v1/mcp'
 const ADMIN_MCP = '/api/v1/admin/mcp'
 const LIST_BODY = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }
@@ -45,10 +47,14 @@ function structuredResult(body: unknown): Record<string, unknown> {
   return JSON.parse(text ?? '{}') as Record<string, unknown>
 }
 
-async function refreshAfterSuspension(user: { id: string }, audience?: 'admin') {
+async function refreshAfterSuspension(
+  user: { id: string },
+  audience?: 'admin',
+  adminScope = 'mcp.admin:read',
+) {
   const issued = await issueTestOAuthTokensForClient(
     user,
-    audience === 'admin' ? { audience: 'admin', scope: 'mcp.admin:read' } : undefined,
+    audience === 'admin' ? { audience: 'admin', scope: adminScope } : undefined,
   )
   await suspendTestUser(user.id)
   const refreshed = await exchangeOAuthRefreshToken({
@@ -179,15 +185,55 @@ describe('suspended paying users on MCP', () => {
     await expect(readTestMcpCallAuditEvents(user.id)).resolves.toEqual([])
   })
 
-  it('rejects a suspended paying administrator on the admin server', async () => {
+  it('allows a suspended paying administrator report reads but denies other admin tools', async () => {
     const admin = await createTestUser({ administrator: true })
     await createTestMembership({ user_id: admin.id, plan: 'pro' })
-    const token = await refreshAfterSuspension(admin, 'admin')
+    const token = await refreshAfterSuspension(admin, 'admin', 'moderation:read')
 
-    const response = await postMcp(ADMIN_MCP, token, LIST_BODY).expect(401)
+    const listed = await postMcp(ADMIN_MCP, token, LIST_BODY).expect(200)
+    expect(toolNames(listed.body)).toEqual([...REPORT_READ_TOOLS].toSorted())
 
-    expect(response.headers['www-authenticate']).toContain('error="invalid_token"')
-    await expect(readTestMcpCallAuditEvents(admin.id)).resolves.toEqual([])
+    const read = await postMcp(
+      ADMIN_MCP,
+      token,
+      toolCall('read_moderation_report', { id: crypto.randomUUID() }),
+    ).expect(200)
+    expect(read.body.result).toMatchObject({ isError: true })
+    expect(structuredResult(read.body)).toMatchObject({ error: { status: 404 } })
+
+    for (const denied of [
+      toolCall('resolve_moderation_report', {
+        id: crypto.randomUUID(),
+        status: 'reviewed',
+      }),
+      toolCall('read_crawler', optionArgs('list', {})),
+    ]) {
+      const response = await postMcp(ADMIN_MCP, token, denied).expect(200)
+      expect(response.body.error).toMatchObject({
+        code: -32600,
+        message: expect.stringContaining('suspended'),
+      })
+    }
+
+    expect(await readTestMcpCallAuditEvents(admin.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actor_user_id: admin.id,
+          tool_name: 'read_moderation_report',
+          outcome: 'accepted',
+        }),
+        expect.objectContaining({
+          actor_user_id: admin.id,
+          tool_name: 'resolve_moderation_report',
+          outcome: 'suspended',
+        }),
+        expect.objectContaining({
+          actor_user_id: admin.id,
+          tool_name: 'read_crawler',
+          outcome: 'suspended',
+        }),
+      ]),
+    )
   })
 
   it('restores the normal tool list after the suspension is lifted', async () => {
