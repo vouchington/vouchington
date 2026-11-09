@@ -3,7 +3,7 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendTopicDescendantsCte } from '@services/topics/descendants-sql'
 import type { RssFeedSearchRow, SearchRssFeedsOptions } from './types.mts'
-import { mutedPublisherTypeFilter, publisherTypeCandidateJoin } from './search-publisher-types.mts'
+import { mutedPublisherTypeFilter, publisherTypeFilter } from './search-publisher-types.mts'
 import { feedStateFilters } from './search-state-filters.mts'
 import { searchTrendingRssFeeds } from './search-trending.mts'
 export type { SearchRssFeedsOptions }
@@ -52,10 +52,6 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     }
   }
 
-  const joinTopicDescendants =
-    effectiveTopicIds.length > 0 &&
-    include_descendants &&
-    !(effectiveTopicMatch === 'all' && effectiveTopicIds.length > 1)
   if (effectiveTopicIds.length > 0 && include_descendants) {
     if (effectiveTopicMatch === 'all' && effectiveTopicIds.length > 1) {
       filters.push(sql`(
@@ -63,6 +59,16 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
         FROM topic_descendants
         WHERE topic_descendants.topic_id = rss_feeds.topic_id
       ) = ${effectiveTopicIds.length}`)
+    } else {
+      const descendants = sql`EXISTS (
+        SELECT 1 FROM topic_descendants
+        WHERE topic_descendants.topic_id = rss_feeds.topic_id
+          AND topic_descendants.root_post_id IN (`
+      effectiveTopicIds.forEach((id, index) => {
+        if (index > 0) descendants.append(sql`, `)
+        descendants.append(sql`${id}::uuid`)
+      })
+      filters.push(descendants.append(sql`))`))
     }
   }
 
@@ -70,12 +76,11 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     filters.push(sql`rss_feeds.topic_id = ${hashtagTopicId}`)
   }
 
-  let joinPublisherTypes = false
   if (effectivePublisherTypeIds.length > 0) {
     if (publisher_type_match === 'all' && effectivePublisherTypeIds.length > 1) {
       filters.push(sql`FALSE`)
     } else {
-      joinPublisherTypes = true
+      filters.push(publisherTypeFilter(effectivePublisherTypeIds))
     }
   }
 
@@ -100,7 +105,8 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     `
   query.append(hasTextSearch || shouldIncludeTopicDescendants ? sql`WITH RECURSIVE ` : sql`WITH `)
   if (shouldIncludeTopicDescendants) {
-    appendTopicDescendantsCte(query, effectiveTopicIds)
+    // Keep input arity and root-key scope visible in both custom and generic plans.
+    appendTopicDescendantsCte(query, effectiveTopicIds, { bindRootIdsIndividually: true })
   }
 
   if (hasTextSearch) {
@@ -125,19 +131,8 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
         SELECT `)
     query.append(sql`id`)
   }
-  if (joinTopicDescendants) {
-    // Active topic_id is unique, so each descendant contributes at most one feed.
-    query.append(sql` FROM (SELECT DISTINCT topic_id FROM topic_descendants) selected_topics
-      JOIN LATERAL (
-        SELECT * FROM rss_feeds feed
-        WHERE feed.topic_id = selected_topics.topic_id AND feed.deleted_at IS NULL
-        LIMIT 1
-      ) rss_feeds ON TRUE`)
-  } else {
-    query.append(sql` FROM rss_feeds`)
-  }
+  query.append(sql` FROM rss_feeds`)
   if (hasTextSearch) query.append(sql` CROSS JOIN search_tsquery`)
-  if (joinPublisherTypes) query.append(publisherTypeCandidateJoin(effectivePublisherTypeIds))
 
   if (filters.length > 0) {
     query.append(sql` WHERE `)

@@ -8,12 +8,23 @@ import sql from 'sql-template-strings'
 export function appendTopicDescendantsCte(
   query: ReturnType<typeof sql>,
   topicIds: string[],
-  options: { trailingComma?: boolean } = {},
+  options: { trailingComma?: boolean; bindRootIdsIndividually?: boolean } = {},
 ): void {
   query.append(sql`topic_descendants AS (
     SELECT topics.id AS root_post_id, topics.id AS topic_id
     FROM topics
-    JOIN unnest(${topicIds}::uuid[]) AS roots(root_post_id)
+    JOIN unnest(`)
+  if (options.bindRootIdsIndividually) {
+    query.append(sql`ARRAY[`)
+    topicIds.forEach((id, index) => {
+      if (index > 0) query.append(sql`, `)
+      query.append(sql`${id}::uuid`)
+    })
+    query.append(sql`]::uuid[]`)
+  } else {
+    query.append(sql`${topicIds}::uuid[]`)
+  }
+  query.append(sql`) AS roots(root_post_id)
       ON roots.root_post_id = topics.id
     WHERE topics.deleted_at IS NULL
       AND topics.merged_into_topic_id IS NULL

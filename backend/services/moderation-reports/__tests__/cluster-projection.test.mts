@@ -9,6 +9,48 @@ import { hardDeleteTestPost } from '@voucha/test-helpers/entities/posts-deletion
 import { hardDeleteTestUser } from '@voucha/test-helpers/entities/users-lifecycle'
 
 describe('moderation report cluster projection', () => {
+  it('keeps the remaining boundary exact after concurrent head removals', async () => {
+    const [author, ...reporters] = await Promise.all([
+      createTestUser(),
+      createTestUser(),
+      createTestUser(),
+      createTestUser(),
+    ])
+    const postId = await insertTestPost({
+      createdById: author.id,
+      slug: `cluster-concurrent-heads-${crypto.randomUUID()}`,
+      title: 'Concurrent report removals',
+      markdown: 'body',
+    })
+    const times = [
+      new Date('2002-01-01T00:00:00.000Z'),
+      new Date('2002-01-01T00:00:01.000Z'),
+      new Date('2002-01-01T00:00:02.000Z'),
+    ]
+    const ids = await Promise.all(
+      reporters.map((reporter, index) =>
+        insertTestModerationReport({
+          reporterUserId: reporter.id,
+          entityType: 'post',
+          entityId: postId,
+          createdAt: times[index],
+        }),
+      ),
+    )
+    await Promise.all([
+      deleteTestModerationReports([ids[0]!]),
+      deleteTestModerationReports([ids[1]!]),
+    ])
+    expect(await getTestModerationReportClusters('post', postId)).toEqual([
+      {
+        resolution_action: null,
+        first_reported_at: times[2],
+        last_reported_at: times[2],
+        report_count: 1,
+      },
+    ])
+  })
+
   it('keeps status counts and head timestamps exact across concurrent inserts and removals', async () => {
     const [author, firstReporter, secondReporter, thirdReporter] = await Promise.all([
       createTestUser(),

@@ -26,7 +26,7 @@ export async function createHostnameExclusionFixture(
     : `blocked-${suffix}.example.com`
   const parentHostnameId = await insertTestUrlHostname({ hostname: parentHostname })
   const blockedHostname = options.patternWildcard
-    ? `blockedX${suffix}.example.com`
+    ? `child.blockedx${suffix}.example.com`
     : `child.${parentHostname}`
   const childHostnameId = await insertTestUrlHostname({ hostname: blockedHostname })
   const visibleHostnameId = await insertTestUrlHostname({

@@ -1,3 +1,4 @@
+import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
 import { runReferralValidationPages } from './run-scenarios/referral-program-validation-pages.mts'
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
@@ -162,6 +163,7 @@ export async function runScenariosBeforePartition(): Promise<void> {
 // Late fixture writers seed after every ordinary plan and never read the comment partitions.
 export async function runScenariosAfterPartition(): Promise<void> {
   await runStep(runCategoryProjectionScenarios.name, runCategoryProjectionScenarios)
+  await runStep(runExistenceFilterScenarios.name, runExistenceFilterScenarios)
   await runStep(runMembershipScenarios.name, runMembershipScenarios)
   // Expiry fixtures come after the shared membership writer's corpus and all ordinary plans.
   await runStep(runMembershipExpiryPageScenarios.name, runMembershipExpiryPageScenarios)
