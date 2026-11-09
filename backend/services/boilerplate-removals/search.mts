@@ -12,10 +12,16 @@ export type ParentPathCandidate = {
   parent_path: string
 }
 
+/**
+ * Finds parent paths of the given hostnames that have at least two recent HTML crawls and no
+ * recent removal. The caller bounds `hostnameIds`; there is no all-hostnames path.
+ */
 export const searchParentPathsNeedingBoilerplateRemoval = async (
+  hostnameIds: string[],
   limit: number,
-  options: { hostnameId?: string; queryOptions?: QueryOptions; now?: () => Date } = {},
+  options: { queryOptions?: QueryOptions; now?: () => Date } = {},
 ): Promise<ParentPathCandidate[]> => {
+  if (hostnameIds.length === 0) return []
   const sampledNowMs = (options.now ?? (() => new Date()))().getTime()
   if (!Number.isFinite(sampledNowMs)) throw new RangeError('Invalid HTML snapshot decision time')
   const recentCutoffDate = new Date(
@@ -40,18 +46,14 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
       JOIN url_hostnames h ON h.id = u.hostname_id
       JOIN crawls c ON c.url_id = u.id
         AND c.id >= ${crawlIdFloor}::uuid
-      WHERE NOT h.is_blocked
+      WHERE u.hostname_id = ANY(${hostnameIds}::uuid[])
+        AND NOT h.is_blocked
         AND h.is_crawlable
         AND c.response_status_code = 200
         AND c.completed_at >= ${recentCutoffDate}
         AND c.html_sha256 IS NOT NULL
         AND COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >= ${recentCutoffDate}
-  `
-  if (options.hostnameId) {
-    query.append(sql` AND u.hostname_id = ${options.hostnameId}::uuid`)
-  }
-  query.append(sql`
-        ORDER BY u.id, c.completed_at DESC, c.id DESC
+      ORDER BY u.id, c.completed_at DESC, c.id DESC
     )
     SELECT hostname_id, parent_path
     FROM recent_html_urls
@@ -64,9 +66,9 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
     )
     GROUP BY hostname_id, parent_path
     HAVING COUNT(*) >= 2
-    ORDER BY hostname_id
+    ORDER BY hostname_id, parent_path
     LIMIT ${limit}
-  `)
+  `
 
   const { rows } = await read<ParentPathCandidate>(query, undefined, options.queryOptions ?? {})
 

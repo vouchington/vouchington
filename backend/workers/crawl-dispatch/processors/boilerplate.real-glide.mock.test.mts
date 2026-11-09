@@ -16,6 +16,16 @@ import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { createTestUser, insertTestUrlHostname } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getMinUUIDv7ForDate } from '@modules/utils'
+import {
+  getTestBoilerplateRemovalHostnameCursor,
+  setTestBoilerplateRemovalHostnameCursor,
+  setTestBoilerplateRemovalHostnameCursorBefore,
+} from '@voucha/test-helpers/boilerplate-removals'
+import {
+  advanceBoilerplateHostnameCursor,
+  readBoilerplateHostnameBatch,
+} from '@services/boilerplate-removals/hostname-cursor'
+import { processBoilerplateRemovalDispatcher } from './boilerplate.mts'
 import { crawlBoilerplateRemovalWorkConfig } from '@queues/crawl-dispatch/config'
 import { processCrawlDispatchJob } from '../processors.mts'
 
@@ -72,7 +82,7 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
 
     const user = await createTestUser()
     const hostname = `bp-merged-${randomUUID()}.example.com`
-    // The dispatcher scans every hostname in id order, so an earliest-possible id keeps this fixture first.
+    // The sweep walks hostnames in id order from the cursor, so an earliest-possible id keeps this fixture first.
     const hostnameId = await insertTestUrlHostname({
       id: getMinUUIDv7ForDate(
         new Date(Date.UTC(1970, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)),
@@ -107,8 +117,12 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
     }
 
     onTestFinished(
-      overrideDynamicConfigFieldsForTest(crawlBoilerplateRemovalWorkConfig, { batch_size: 1 }),
+      overrideDynamicConfigFieldsForTest(crawlBoilerplateRemovalWorkConfig, {
+        batch_size: 1,
+        hostname_batch_size: 1,
+      }),
     )
+    await setTestBoilerplateRemovalHostnameCursorBefore(hostnameId)
     const dispatched = await runJob('crawl.boilerplate_removal_dispatcher')
     expect(dispatched).toBe(1)
     expect(
@@ -133,5 +147,67 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
         htmlToRemove: expect.any(Array),
       }),
     )
+  })
+})
+
+describe('boilerplate removal hostname sweep cursor', () => {
+  it('advances one hostname batch per run and wraps after the last hostname', async () => {
+    const user = await createTestUser()
+    const seed = parseInt(randomUUID().slice(0, 6), 16)
+    const hostnameIds: string[] = []
+    for (const offset of [0, 1, 2]) {
+      const hostname = `bp-sweep-${randomUUID()}.example.com`
+      // Distinct earliest-possible ids keep these fixtures first in id order.
+      const hostnameId = await insertTestUrlHostname({
+        id: getMinUUIDv7ForDate(new Date(Date.UTC(1970, 0, 1) + seed * 3 + offset)),
+        hostname,
+      })
+      hostnameIds.push(hostnameId)
+      const urls = await addUrls(user.id, [
+        `https://${hostname}/blog/post-1`,
+        `https://${hostname}/blog/post-2`,
+      ])
+      await updateUrlHostname(hostnameId, { is_crawlable: true })
+      const crawler = await createCrawler(user, { hostname_id: hostnameId, crawler_type: 'fetch' })
+      for (const url of urls) {
+        const crawl = await createCrawl(url.id, crawler.id)
+        await updateCrawl(crawl.id, url.id, {
+          response_status_code: 200,
+          completed_at: new Date(),
+          html_sha256: createHash('sha256').update(url.id).digest(),
+          html_snapshot_uploaded_at: new Date(),
+        })
+      }
+    }
+    hostnameIds.sort()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(crawlBoilerplateRemovalWorkConfig, {
+        hostname_batch_size: 1,
+      }),
+    )
+    await setTestBoilerplateRemovalHostnameCursorBefore(hostnameIds[0]!)
+
+    for (const hostnameId of hostnameIds) {
+      expect(await processBoilerplateRemovalDispatcher()).toEqual([
+        { hostname_id: hostnameId, parent_path: '/blog' },
+      ])
+      expect(await getTestBoilerplateRemovalHostnameCursor()).toBe(hostnameId)
+    }
+
+    await setTestBoilerplateRemovalHostnameCursor('ffffffff-ffff-7fff-bfff-ffffffffffff')
+    expect(await processBoilerplateRemovalDispatcher()).toEqual([])
+    expect(await getTestBoilerplateRemovalHostnameCursor()).toBeNull()
+  })
+
+  it('does not advance when another run already moved the cursor', async () => {
+    await setTestBoilerplateRemovalHostnameCursor(null)
+    const batch = await readBoilerplateHostnameBatch(1)
+    expect(batch.hostnameIds).toHaveLength(1)
+    expect(batch.nextCursor).toBe(batch.hostnameIds[0])
+
+    const winner = '00000000-0000-7000-8000-000000000001'
+    await setTestBoilerplateRemovalHostnameCursor(winner)
+    expect(await advanceBoilerplateHostnameCursor(batch)).toBe(false)
+    expect(await getTestBoilerplateRemovalHostnameCursor()).toBe(winner)
   })
 })

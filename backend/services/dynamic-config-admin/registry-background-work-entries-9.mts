@@ -104,7 +104,10 @@ export const backgroundWorkRegistryEntries9 = {
     config: crawlBoilerplateRemovalWorkConfig,
     label: 'Crawl boilerplate removal',
     maxValues: crawlBoilerplateRemovalWorkMaxValues,
-    descriptions: { batch_size: 'HTML snapshots per boilerplate removal batch.' },
+    descriptions: {
+      batch_size: 'Boilerplate removal parent paths dispatched per scheduled run.',
+      hostname_batch_size: 'Hostnames aggregated per scheduled boilerplate removal run.',
+    },
   }),
   'sitemaps-work-config': defineBoundedWorkNamespace({
     namespace: 'sitemaps-work-config',

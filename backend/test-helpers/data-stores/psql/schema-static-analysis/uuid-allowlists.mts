@@ -78,6 +78,10 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
   ],
   [
+    'boilerplate_removal_hostname_cursors.cursor_hostname_id',
+    'Operational hostname position survives deletion of the swept hostname; it is not a relationship.',
+  ],
+  [
     'retained_image_placement_binding_cleanup_cursors.cursor_placement_id',
     'Operational placement UUIDv7 position survives deletion of the swept binding; it is not a relationship.',
   ],

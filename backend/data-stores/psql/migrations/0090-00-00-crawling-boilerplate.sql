@@ -42,3 +42,20 @@ CREATE INDEX IF NOT EXISTS idx_hostname_path_boilerplate_removal_urls__url_id ON
 COMMENT ON TABLE hostname_path_boilerplate_removal_urls IS 'Join table linking boilerplate removal rules to the specific URLs they were computed from.';
 COMMENT ON COLUMN hostname_path_boilerplate_removal_urls.hostname_path_boilerplate_removal_id IS 'The boilerplate removal rule set.';
 COMMENT ON COLUMN hostname_path_boilerplate_removal_urls.url_id IS 'A URL used to compute this boilerplate removal.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS boilerplate_removal_hostname_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_hostname_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_boilerplate_removal_hostname_cursors_updated_at
+BEFORE UPDATE ON boilerplate_removal_hostname_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+COMMENT ON TABLE boilerplate_removal_hostname_cursors IS 'Singleton position of the scheduled boilerplate removal sweep over hostnames in id order.';
+COMMENT ON COLUMN boilerplate_removal_hostname_cursors.is_singleton IS 'Restricts the boilerplate removal sweep to one persisted cursor.';
+COMMENT ON COLUMN boilerplate_removal_hostname_cursors.cursor_hostname_id IS 'UUIDv7 of the last hostname the sweep covered; NULL starts at the first hostname. No FK so the position survives deletion of that hostname.';
+COMMENT ON COLUMN boilerplate_removal_hostname_cursors.updated_at IS 'Time the sweep position last advanced.';

@@ -49,7 +49,7 @@ For each URL crawl:
     `embed_oembed_resolved_at`. `html_snapshot_uploaded_at` records when the crawl actually writes a
     snapshot.
 11. **S3 upload** — raw HTML bodies are uploaded to short-lived S3 snapshots when the origin returns a body, including noindex pages; snapshot keys are hash-based (`hostname/urlId/htmlSha256`), so unchanged pages skip the PUT only while the previous snapshot is still inside the lifecycle window. Conditional request headers are also withheld after that window so stale snapshots force a full-body refresh.
-12. **Boilerplate extraction** — recent raw-body crawl HTML from S3 is the only input to nightly boilerplate removal; parsed crawl rows/history keep their existing DB retention and are not the source corpus for that pass, and the snapshot lifecycle remains safe because reads require a fresh `html_snapshot_uploaded_at`
+12. **Boilerplate extraction** — recent raw-body crawl HTML from S3 is the only input to nightly boilerplate removal; parsed crawl rows/history keep their existing DB retention and are not the source corpus for that pass, and the snapshot lifecycle remains safe because reads require a fresh `html_snapshot_uploaded_at`; each nightly run aggregates only the next `hostname_batch_size` hostnames after the persisted `boilerplate_removal_hostname_cursors` position and wraps to the first hostname once the last is covered, so one hostname's pages are revisited every full cycle rather than all hostnames every run
 13. **Canonical URL** — extract from `<link rel="canonical">`, create/link URL entry, and skip links that normalize to the current URL row
 14. **Embeddings** — chunk markdown via `@services/ai-chunking`, reuse existing embeddings by SHA256, enqueue OpenAI jobs for new chunks
 

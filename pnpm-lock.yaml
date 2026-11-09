@@ -3717,6 +3717,9 @@ importers:
       '@services/bluesky-follows':
         specifier: workspace:^
         version: link:../services/bluesky-follows
+      '@services/boilerplate-removals':
+        specifier: workspace:^
+        version: link:../services/boilerplate-removals
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../services/bookmarks

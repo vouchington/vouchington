@@ -7,7 +7,7 @@ import {
 import {
   getLatestBoilerplateRemovalByHostnameAndPath,
   createBoilerplateRemoval,
-  searchParentPathsNeedingBoilerplateRemoval,
+  sweepNextBoilerplateHostnameBatch,
   type ParentPathCandidate,
 } from '@services/boilerplate-removals'
 import { extractDomRemovals } from '@jongleberry/vurst-html'
@@ -44,9 +44,10 @@ async function extractDomRemovalsExclusively(files: CrawlHtmlTempFile[]) {
 }
 
 export const processBoilerplateRemovalDispatcher = (): Promise<ParentPathCandidate[]> => {
-  return searchParentPathsNeedingBoilerplateRemoval(
-    getCrawlBoilerplateRemovalWorkLimit('batch_size'),
-  )
+  return sweepNextBoilerplateHostnameBatch({
+    hostnameBatchSize: getCrawlBoilerplateRemovalWorkLimit('hostname_batch_size'),
+    candidateLimit: getCrawlBoilerplateRemovalWorkLimit('batch_size'),
+  })
 }
 
 export const processBoilerplateRemoval = async (
