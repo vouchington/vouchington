@@ -198,6 +198,17 @@ describe('boilerplate removal hostname sweep cursor', () => {
     await setTestBoilerplateRemovalHostnameCursor('ffffffff-ffff-7fff-bfff-ffffffffffff')
     expect(await processBoilerplateRemovalDispatcher(admit)).toEqual([])
     expect(await getTestBoilerplateRemovalHostnameCursor()).toBeNull()
+
+    // A capped run stops the cursor just before the last candidate's hostname.
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(crawlBoilerplateRemovalWorkConfig, {
+        hostname_batch_size: 3,
+        batch_size: 2,
+      }),
+    )
+    await setTestBoilerplateRemovalHostnameCursorBefore(hostnameIds[0]!)
+    expect(await processBoilerplateRemovalDispatcher(admit)).toHaveLength(2)
+    expect(await getTestBoilerplateRemovalHostnameCursor()).toBe(hostnameIds[0])
   })
 
   it('keeps the cursor when admission fails or the candidate cap truncates the batch', async () => {
