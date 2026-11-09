@@ -119,4 +119,8 @@ export async function cleanupModerationRerunOutcomes(
     `/* cleanupModerationRerunOutcomes:appeal */ DELETE FROM moderation_appeals WHERE id = $1::uuid`,
     [appealId],
   )
+  // Later fixtures share the judgement table; dead cohort tuples skew its planner statistics.
+  await write(
+    '/* cleanupModerationRerunOutcomes:vacuum */ VACUUM (ANALYZE) moderation_report_judgements, moderation_report_judgement_runs, moderation_appeal_resolution_runs',
+  )
 }
