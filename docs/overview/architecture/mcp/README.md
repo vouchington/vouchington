@@ -117,6 +117,10 @@ plan, and conservative hints. Its strict option envelope makes the action explic
 access in private or archived communities, and thread subjects retain reply access after membership
 removal. Moderator thread access and subject selection also follow REST.
 
+Moderator queue visibility and notification routing follow live roles independently of the
+participant roster. This keeps staffing changes from consuming conversation capacity; other
+moderators join through their first committed reply.
+
 ## Brand topic claims
 
 The brand server is a separate MCP audience at `/api/v1/brand/mcp`. It is free: there is no plan

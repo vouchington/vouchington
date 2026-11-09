@@ -75,6 +75,7 @@
     "@services/lists": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
     "@services/memberships": "workspace:^",
+    "@services/messaging": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/moderation-ai-config": "workspace:^",
     "@services/moderation-analytics": "workspace:^",

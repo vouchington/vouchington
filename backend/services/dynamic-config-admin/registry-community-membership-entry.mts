@@ -3,6 +3,7 @@ import {
   COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES,
 } from '@services/communities/membership-limits'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
+import { conversationParticipantLimitsRegistryEntry } from './registry-conversation-participant-entry.mts'
 
 export const communityMembershipLimitsRegistryEntry = defineDynamicConfigNamespace({
   namespace: 'community-membership-limits-config',
@@ -25,3 +26,8 @@ export const communityMembershipLimitsRegistryEntry = defineDynamicConfigNamespa
     },
   },
 })
+
+export const admissionLimitRegistryEntries = [
+  communityMembershipLimitsRegistryEntry,
+  conversationParticipantLimitsRegistryEntry,
+]

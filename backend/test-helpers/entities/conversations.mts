@@ -27,10 +27,10 @@ export async function createTestDirectConversation(options: CreateTestDirectConv
   const conversationId = convRows[0].id as string
 
   await write(sql`/* createTestDirectConversation:participants */
-    INSERT INTO conversation_participants (conversation_id, user_id, role)
+    INSERT INTO conversation_participants (conversation_id, user_id, role, participant_slot)
     VALUES
-      (${conversationId}, ${options.user1Id}, 'owner'),
-      (${conversationId}, ${options.user2Id}, 'member')
+      (${conversationId}, ${options.user1Id}, 'owner', 1),
+      (${conversationId}, ${options.user2Id}, 'member', 2)
   `)
 
   return { id: conversationId }
@@ -97,8 +97,9 @@ export async function createTestGroupConversation(options: CreateTestGroupConver
   const memberUserIds = [...options.memberUserIds]
   // UNION ALL keeps duplicate inputs so the active-participant unique index rejects them.
   await write(sql`/* createTestGroupConversation:participants */
-    INSERT INTO conversation_participants (conversation_id, user_id, role)
-    SELECT ${conversationId}::uuid, participant.user_id, participant.role
+    INSERT INTO conversation_participants (conversation_id, user_id, role, participant_slot)
+    SELECT ${conversationId}::uuid, participant.user_id, participant.role,
+      (participant.ordinal + 1)::smallint
     FROM (
       SELECT ${ownerUserId}::uuid AS user_id,
         'owner'::conversation_participant_roles AS role, 0::bigint AS ordinal
@@ -165,10 +166,10 @@ export async function createTestModmailThread(options: CreateTestModmailThreadOp
   const conversationId = convRows[0].id as string
 
   await write(sql`/* createTestModmailThread:participants */
-    INSERT INTO conversation_participants (conversation_id, user_id, role)
+    INSERT INTO conversation_participants (conversation_id, user_id, role, participant_slot)
     VALUES
-      (${conversationId}, ${options.subjectUserId}, 'member'),
-      (${conversationId}, ${options.modUserId}, 'admin')
+      (${conversationId}, ${options.subjectUserId}, 'member', 1),
+      (${conversationId}, ${options.modUserId}, 'admin', 2)
   `)
 
   return { id: conversationId }

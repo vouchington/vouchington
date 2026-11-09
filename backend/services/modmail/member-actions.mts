@@ -1,4 +1,5 @@
 import createError from 'http-errors'
+import type { TransactionQuery } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users/suspension-guard'
 import { getPrivateUserByAny } from '@services/users/get'
@@ -7,11 +8,15 @@ import {
   type LoadedCommunity,
 } from '@services/communities/load-with-viewer'
 import { getCommunityMember } from '@services/communities/members/get'
+import { isModerationStaff } from '@services/users'
+import { createConversationMessage } from '@services/messaging/create'
+import { admitConversationParticipants } from '@services/messaging/participant-admission'
+import sql from 'sql-template-strings'
 import {
   currentUserCanOpenModmailThread,
   currentUserCanViewModmailThread,
 } from './authorization.mts'
-import { openModmailThread, upsertModmailStaffParticipant } from './threads.mts'
+import { openModmailThread } from './threads.mts'
 import { getModmailThread } from './threads-get.mts'
 
 /** Authorize before parsing the REST body; MCP uses the same membership policy. */
@@ -64,10 +69,43 @@ export async function loadModmailReplyAccess(
   return { thread, isMod }
 }
 
-/** Run after body validation so invalid replies do not add a staff participant. */
-export async function admitModmailReplyParticipant(
+/** The first staff reply admits its author only when the message commits. */
+export async function replyToModmailThread(
   currentUser: PrivateUser,
   access: Awaited<ReturnType<typeof loadModmailReplyAccess>>,
+  provenance: Parameters<typeof createConversationMessage>[1],
+  text: string,
 ) {
-  if (access.isMod) await upsertModmailStaffParticipant(access.thread.id, currentUser.id)
+  return createConversationMessage(currentUser.id, provenance, access.thread.id, text, {
+    ...(access.isMod
+      ? {
+          beforeInsert: async (query: TransactionQuery) => {
+            const { rows } = await query<{
+              id: string
+              is_authorized: boolean
+            }>(sql`/* replyToModmailThread:current */
+              SELECT c.id, (
+                ${isModerationStaff(currentUser)} OR EXISTS (
+                  SELECT 1 FROM community_members cm
+                  WHERE cm.community_id = c.community_id
+                    AND cm.user_id = ${currentUser.id}
+                    AND cm.role IN ('owner', 'moderator')
+                    AND cm.removed_at IS NULL
+                )
+              ) AS is_authorized
+              FROM conversations c
+              WHERE c.id = ${access.thread.id}
+                AND c.channel_type = 'modmail'
+                AND c.community_id = ${access.thread.community_id}
+                AND c.resolved_at IS NULL AND c.deleted_at IS NULL
+              LIMIT 1`)
+            if (!rows[0]) throw createError(409, 'Modmail thread is no longer open')
+            if (!rows[0].is_authorized) throw createError(403, 'Access denied')
+            await admitConversationParticipants(query, access.thread.id, [
+              { userId: currentUser.id, role: 'admin' },
+            ])
+          },
+        }
+      : {}),
+  })
 }

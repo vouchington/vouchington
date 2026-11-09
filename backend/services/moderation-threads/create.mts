@@ -9,7 +9,7 @@ import {
 import sql from 'sql-template-strings'
 import type { ModInternalThread } from './types.mts'
 import { getReportResolutionContext } from '@services/moderation-reports/resolve'
-import { addModParticipants } from './participants.mts'
+import { admitConversationParticipants } from '@services/messaging/participant-admission'
 
 export async function openModInternalThread(
   currentUserId: string,
@@ -31,7 +31,7 @@ export async function openModInternalThread(
     throw createError(422, 'Exactly one of reportId or postId must be set')
   }
 
-  const observedTime = observeModerationVacationTime(dependencies.clock)
+  observeModerationVacationTime(dependencies.clock)
 
   if (reportId && !options.reportScopeVerified) {
     const context = await getReportResolutionContext(reportId, communityId)
@@ -51,8 +51,8 @@ export async function openModInternalThread(
 
   const run = (query: TransactionQuery) =>
     hasReport
-      ? openModInternalThreadForReport(query, currentUserId, communityId, reportId!, observedTime)
-      : openModInternalThreadForPost(query, currentUserId, communityId, postId!, observedTime)
+      ? openModInternalThreadForReport(query, currentUserId, communityId, reportId!)
+      : openModInternalThreadForPost(query, currentUserId, communityId, postId!)
   if (queryOptions?.query || queryOptions?.client) return withTransactionOptions(queryOptions, run)
   await using transaction = await beginTransaction()
   const result = await run(transaction)
@@ -65,7 +65,6 @@ async function openModInternalThreadForReport(
   currentUserId: string,
   communityId: string,
   reportId: string,
-  observedTime: Date | null,
 ): Promise<ModInternalThread> {
   const { rows: convRows } = await query(sql`/* openModInternalThread:report */
     INSERT INTO conversations (
@@ -102,10 +101,11 @@ async function openModInternalThreadForReport(
     thread = existingRows[0] as ModInternalThread
   } else {
     thread = convRows[0] as ModInternalThread
-    await addModParticipants(query, thread.id, communityId, observedTime)
+    await admitConversationParticipants(query, thread.id, [
+      { userId: currentUserId, role: 'admin' },
+    ])
   }
 
-  await upsertCallerParticipant(query, thread.id, currentUserId)
   return thread
 }
 
@@ -114,7 +114,6 @@ async function openModInternalThreadForPost(
   currentUserId: string,
   communityId: string,
   postId: string,
-  observedTime: Date | null,
 ): Promise<ModInternalThread> {
   const { rows: convRows } = await query(sql`/* openModInternalThread:post */
     INSERT INTO conversations (
@@ -151,23 +150,12 @@ async function openModInternalThreadForPost(
     thread = existingRows[0] as ModInternalThread
   } else {
     thread = convRows[0] as ModInternalThread
-    await addModParticipants(query, thread.id, communityId, observedTime)
+    await admitConversationParticipants(query, thread.id, [
+      { userId: currentUserId, role: 'admin' },
+    ])
   }
 
-  await upsertCallerParticipant(query, thread.id, currentUserId)
   return thread
-}
-
-async function upsertCallerParticipant(
-  query: TransactionQuery,
-  conversationId: string,
-  userId: string,
-): Promise<void> {
-  await query(sql`/* openModInternalThread:callerParticipant */
-    INSERT INTO conversation_participants (conversation_id, user_id, role)
-    VALUES (${conversationId}, ${userId}, 'admin')
-    ON CONFLICT DO NOTHING
-  `)
 }
 
 function observeModerationVacationTime(clock: (() => Date) | undefined): Date | null {

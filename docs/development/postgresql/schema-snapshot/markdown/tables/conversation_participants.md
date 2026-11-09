@@ -6,16 +6,17 @@ Registered-user participants in a conversation. Enables multi-party threads.
 
 Not partitioned — growth: unbounded.
 
-| Column            | Type                             | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                 |
-| ----------------- | -------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------- |
-| `conversation_id` | `uuid`                           | no       |                              |          |           |           | The conversation this participant belongs to.                                                           |
-| `id`              | `uuid`                           | no       | `uuidv7()`                   |          |           |           |                                                                                                         |
-| `user_id`         | `uuid`                           | no       |                              |          |           |           | Registered user participant.                                                                            |
-| `role`            | `conversation_participant_roles` | no       |                              |          |           |           | owner = conversation initiator; admin = support staff.                                                  |
-| `created_at`      | `timestamp with time zone`       | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                         |
-| `removed_at`      | `timestamp with time zone`       | yes      |                              |          |           |           | When set, this participant has been removed from the conversation (soft-remove).                        |
-| `removed_by_id`   | `uuid`                           | yes      |                              |          |           |           | The user who removed this participant. NULL if removed_at is not set, or if the actor was hard-deleted. |
-| `updated_at`      | `timestamp with time zone`       | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                         |
+| Column             | Type                             | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                 |
+| ------------------ | -------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------- |
+| `conversation_id`  | `uuid`                           | no       |                              |          |           |           | The conversation this participant belongs to.                                                           |
+| `id`               | `uuid`                           | no       | `uuidv7()`                   |          |           |           |                                                                                                         |
+| `user_id`          | `uuid`                           | no       |                              |          |           |           | Registered user participant.                                                                            |
+| `participant_slot` | `smallint`                       | no       |                              |          |           |           | Unique position from 1 to 50 within this conversation, retained while the participant is removed.       |
+| `role`             | `conversation_participant_roles` | no       |                              |          |           |           | owner = conversation initiator; admin = support staff.                                                  |
+| `created_at`       | `timestamp with time zone`       | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                         |
+| `removed_at`       | `timestamp with time zone`       | yes      |                              |          |           |           | When set, this participant has been removed from the conversation (soft-remove).                        |
+| `removed_by_id`    | `uuid`                           | yes      |                              |          |           |           | The user who removed this participant. NULL if removed_at is not set, or if the actor was hard-deleted. |
+| `updated_at`       | `timestamp with time zone`       | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                         |
 
 **Primary key:** `PRIMARY KEY (conversation_id, id)`
 
@@ -25,6 +26,7 @@ _none_
 **Check constraints:**
 
 - `chk_conversation_participants__identity`: `CHECK ((user_id IS NOT NULL))`
+- `chk_conversation_participants__participant_slot`: `CHECK (((participant_slot >= 1) AND (participant_slot <= 50)))`
 - `chk_conversation_participants__removed`: `CHECK (((removed_at IS NOT NULL) OR (removed_by_id IS NULL)))`
 
 **Foreign keys:**
@@ -36,7 +38,8 @@ _none_
 **Indexes:**
 
 - `conversation_participants_pkey`: `CREATE UNIQUE INDEX conversation_participants_pkey ON public.conversation_participants USING btree (conversation_id, id)`
-- `idx_conversation_participants__conversation_user`: `CREATE UNIQUE INDEX idx_conversation_participants__conversation_user ON public.conversation_participants USING btree (conversation_id, user_id) WHERE ((user_id IS NOT NULL) AND (removed_at IS NULL))`
+- `idx_conversation_participants__conversation_slot`: `CREATE UNIQUE INDEX idx_conversation_participants__conversation_slot ON public.conversation_participants USING btree (conversation_id, participant_slot)`
+- `idx_conversation_participants__conversation_user`: `CREATE UNIQUE INDEX idx_conversation_participants__conversation_user ON public.conversation_participants USING btree (conversation_id, user_id)`
 - `idx_conversation_participants__removed_by_id`: `CREATE INDEX idx_conversation_participants__removed_by_id ON public.conversation_participants USING btree (removed_by_id) WHERE (removed_by_id IS NOT NULL)`
 - `idx_conversation_participants__user_id`: `CREATE INDEX idx_conversation_participants__user_id ON public.conversation_participants USING btree (user_id, conversation_id DESC) WHERE (user_id IS NOT NULL)`
 

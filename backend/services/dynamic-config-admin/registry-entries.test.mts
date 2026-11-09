@@ -98,6 +98,12 @@ describe('dynamic config registry entry ordering', () => {
       max_rows_per_provider_per_run: { integer: true, minValue: 1 },
     })
   })
+  it('registers the conversation participant hard maximum', () => {
+    expect(
+      dynamicConfigRegistry.get('conversation-participant-limits')?.fields
+        .participants_per_conversation,
+    ).toMatchObject({ integer: true, minValue: 1, maxValue: 50 })
+  })
   it('registers the bounded SES reconciliation page budget', () => {
     expect(dynamicConfigRegistry.get('ses-inbound-work-config')?.fields).toMatchObject({
       reconcile_max_pages_per_run: { integer: true, minValue: 1, maxValue: 100 },

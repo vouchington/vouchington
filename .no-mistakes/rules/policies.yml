@@ -2613,6 +2613,8 @@
       community_pinned_posts.community_id: { reason: 'a community pins at most 3 posts' }
       community_auto_tagger_agents.community_id:
         { reason: 'a community enables a few tagger agents' }
+      conversation_participants.conversation_id:
+        { reason: 'a conversation has at most 50 participants' }
       url_hostname_blocks.url_hostname_id:
         { reason: 'a hostname has a short block and lift history' }
       curated_aside_items.aside_type: { reason: 'staff curate a short list per aside type' }

@@ -4,6 +4,7 @@ import createHttpError from 'http-errors'
 import { anyPairAmongUsersBlockedOrMuted } from '@services/entity-relations/check-block-mute'
 import { currentUserCanMessageUsers } from './message-eligibility.mts'
 import type { ConversationParticipant } from './types.mts'
+import { admitConversationParticipants } from './participant-admission.mts'
 
 export async function addConversationParticipant(
   currentUserId: string,
@@ -37,10 +38,6 @@ export async function addConversationParticipant(
         currentParticipantIds.includes(currentUserId)))
   if (!canManage) throw createHttpError(403, 'Access denied')
 
-  if (currentParticipantIds.length >= 26) {
-    throw createHttpError(400, 'Conversation has reached the maximum of 26 participants')
-  }
-
   if (currentParticipantIds.includes(newUserId)) {
     throw createHttpError(409, 'User is already a participant')
   }
@@ -60,15 +57,21 @@ export async function addConversationParticipant(
     throw createHttpError(403, 'Cannot add a blocked or muted user')
   }
 
+  const admission = await admitConversationParticipants(query, conversationId, [
+    { userId: newUserId, role: 'member' },
+  ])
+  if (admission.alreadyActiveIds.includes(newUserId)) {
+    throw createHttpError(409, 'User is already a participant')
+  }
+
   const { rows } = await query<ConversationParticipant>(sql`/* addConversationParticipant */
-      WITH inserted AS (
-        INSERT INTO conversation_participants (conversation_id, user_id, role)
-        VALUES (${conversationId}, ${newUserId}, 'member')
-        RETURNING id, conversation_id, user_id, role, created_at, removed_at
-      )
-      SELECT i.*, u.username, u.profile_image_id, u.profile_image_placement
-      FROM inserted i
-      LEFT JOIN view_embedded_users u ON u.id = i.user_id
+      SELECT cp.id, cp.conversation_id, cp.user_id, cp.role, cp.created_at, cp.removed_at,
+        u.username, u.profile_image_id, u.profile_image_placement
+      FROM conversation_participants cp
+      LEFT JOIN view_embedded_users u ON u.id = cp.user_id
+      WHERE cp.conversation_id = ${conversationId}
+        AND cp.user_id = ${newUserId}
+      LIMIT 1
     `)
   await query(sql`/* addConversationParticipant:record_activity */
       UPDATE conversations SET last_activity_at = CURRENT_TIMESTAMP WHERE id = ${conversationId}

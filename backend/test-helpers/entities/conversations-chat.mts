@@ -8,8 +8,8 @@ export async function createTestChatConversationWithParticipant(
 ) {
   const conversation = await createTestConversation({ createdById })
   await write(sql`/* createTestChatConversationWithParticipant */
-    INSERT INTO conversation_participants (conversation_id, user_id, role)
-    VALUES (${conversation.id}, ${participantUserId}, 'member')
+    INSERT INTO conversation_participants (conversation_id, user_id, role, participant_slot)
+    VALUES (${conversation.id}, ${participantUserId}, 'member', 1)
   `)
   return conversation
 }

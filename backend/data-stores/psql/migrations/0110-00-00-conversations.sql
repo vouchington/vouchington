@@ -309,6 +309,9 @@ CREATE TABLE IF NOT EXISTS conversation_participants (
   PRIMARY KEY (conversation_id, id),
 
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
+  participant_slot SMALLINT NOT NULL,
+  CONSTRAINT chk_conversation_participants__participant_slot
+    CHECK (participant_slot BETWEEN 1 AND 50),
   CONSTRAINT chk_conversation_participants__identity
     CHECK (user_id IS NOT NULL),
 
@@ -331,10 +334,14 @@ BEFORE UPDATE ON conversation_participants
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- One row per user for the life of the conversation, including removed participants.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_conversation_participants__conversation_user
-ON conversation_participants (conversation_id, user_id)
-WHERE user_id IS NOT NULL AND removed_at IS NULL;
+ON conversation_participants (conversation_id, user_id);
+
+-- A removed participant keeps its slot. The bounded slots make the hard cap a database invariant.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_conversation_participants__conversation_slot
+ON conversation_participants (conversation_id, participant_slot);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversation_participants__user_id
@@ -344,6 +351,7 @@ WHERE user_id IS NOT NULL;
 COMMENT ON TABLE conversation_participants IS 'Registered-user participants in a conversation. Enables multi-party threads.';
 COMMENT ON COLUMN conversation_participants.conversation_id IS 'The conversation this participant belongs to.';
 COMMENT ON COLUMN conversation_participants.user_id IS 'Registered user participant.';
+COMMENT ON COLUMN conversation_participants.participant_slot IS 'Unique position from 1 to 50 within this conversation, retained while the participant is removed.';
 COMMENT ON COLUMN conversation_participants.role IS 'owner = conversation initiator; admin = support staff.';
 COMMENT ON COLUMN conversation_participants.removed_at IS 'When set, this participant has been removed from the conversation (soft-remove).';
 COMMENT ON COLUMN conversation_participants.removed_by_id IS 'The user who removed this participant. NULL if removed_at is not set, or if the actor was hard-deleted.';
