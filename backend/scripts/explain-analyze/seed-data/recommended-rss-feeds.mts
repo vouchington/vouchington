@@ -43,7 +43,11 @@ export async function seedRecommendedRssFeedsPopularFeed(): Promise<void> {
      ON CONFLICT DO NOTHING`,
     [subjects, objects],
   )
-  await write('/* analyzeRecommendedRssFeedsFollows */ ANALYZE relation__user__follow__rss_feed')
+  // Vacuum like autovacuum does in production: the visibility map lets the ordered newest-follow
+  // indexes answer index-only, which is the plan the caps are written for.
+  await write(
+    '/* vacuumRecommendedRssFeedsFollows */ VACUUM (ANALYZE) relation__user__follow__rss_feed',
+  )
 }
 
 /** Removes the cohort so whole-table scenarios (MV refreshes) keep their seeded row counts. */
@@ -66,5 +70,7 @@ export async function cleanupRecommendedRssFeedsPopularFeed(): Promise<void> {
         OR subject_id BETWEEN $3 AND $4`,
     [viewerId, viewerFeeds, firstCoFollower, lastCoFollower],
   )
-  await write('/* analyzeRecommendedRssFeedsFollows */ ANALYZE relation__user__follow__rss_feed')
+  await write(
+    '/* vacuumRecommendedRssFeedsCleanup */ VACUUM (ANALYZE) relation__user__follow__rss_feed',
+  )
 }

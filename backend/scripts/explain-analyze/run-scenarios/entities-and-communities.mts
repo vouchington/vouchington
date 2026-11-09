@@ -66,9 +66,10 @@ export async function runEntityAndCommunityScenarios() {
   // The viewer follows a popular feed (1,000 co-followers with 30 follows each) plus 30 more feeds;
   // the collaborative arm reads the viewer's newest 10 follows x each feed's newest 25 co-followers
   // x each co-follower's newest 20 follows (at most 5,000 follows) through the newest-follow indexes.
+  // The 5,600 ceiling adds the viewer's own follows and the friends arm (seeduser1's 200 follows).
   registerScenarioContract('recommended-rss-feeds', {
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'relation__user__follow__rss_feed', max: 5_400 },
+      { kind: 'maxProcessedRows', relation: 'relation__user__follow__rss_feed', max: 5_600 },
       {
         kind: 'usesIndexes',
         indexes: [
