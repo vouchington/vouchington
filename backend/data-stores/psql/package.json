@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "no-mistakes": "^0.109.29",
-    "oxfmt": "^0.76.0",
+    "oxfmt": "^0.77.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   }
 }
