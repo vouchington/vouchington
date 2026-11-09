@@ -17,7 +17,6 @@ export { mockAuthState }
 const nextDynamicMock = vi.hoisted(() => {
   return {
     default: () => {
-      // oxlint-disable-next-line react/only-export-components -- next/dynamic test double, never fast-refreshed
       return function MockDynamic() {
         return null
       }

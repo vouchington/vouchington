@@ -37,7 +37,6 @@ vi.mock(
           trackDynamicImport(pending)
           return pending
         })
-        // oxlint-disable-next-line react/only-export-components -- next/dynamic test double, never fast-refreshed
         function DynWrapper(props: Record<string, unknown>) {
           return (
             <React.Suspense fallback={null}>
