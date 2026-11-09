@@ -31,15 +31,6 @@ export const BASELINE_FINGERPRINTS = [
   'mv-trending-communities-refresh|0|mv-trending-communities-refresh:force_generic_plan|force_generic_plan:community_post_reviews',
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_custom_plan|force_custom_plan:notifications',
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_generic_plan|force_generic_plan:notifications',
-  'post-search-hybrid-new|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
-  'post-search-hybrid-relevance|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
-  'post-search-semantic-hot|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
-  'post-search-semantic-new|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
-  // PR #4972 accepts the 30-day exact-sort path; clean a9d793 and PR captures both use it.
-  // Keep this control explicit rather than depending on unrelated planner-cost near ties.
-  'post-search-semantic-new-1m|0|buildPostSearchQuery:force_custom_plan|force_custom_plan:posts',
-  'post-search-semantic-new-1m|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
-  'post-search-semantic-relevance|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'recommended-topics|0|buildRecommendationQuery:force_custom_plan|force_custom_plan:topics',
   'search-admin-users-email|0|searchAdminUsers:email:force_custom_plan|force_custom_plan:users',
   'search-admin-users-email|0|searchAdminUsers:email:force_generic_plan|force_generic_plan:users',
