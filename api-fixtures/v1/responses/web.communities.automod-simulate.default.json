@@ -2,7 +2,11 @@
   "results": [],
   "simulation": {
     "community_automod_action": "record_only",
-    "false_positive_estimate": null,
+    "false_positive_estimate": {
+      "rate": null,
+      "sampled_approved_count": 0,
+      "sampled_flagged_count": 0
+    },
     "prompt_id": "prompt-1",
     "sample_count": 0,
     "time_window_hours": 24,

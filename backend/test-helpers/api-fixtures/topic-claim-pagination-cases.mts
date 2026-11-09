@@ -31,6 +31,9 @@ const body = {
   results: [claim],
   page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
 }
+const { state: _state, ...claimFields } = claim
+const adminClaim = { ...claimFields, submitted_at: '2026-07-01T00:00:00Z' }
+const nativeClaimConsumers = ['swift-core', 'swift-ui', 'dotnet-core'] as const
 
 export const topicClaimPaginationApiFixtureCases: ApiFixtureCase[] = [
   {
@@ -60,4 +63,66 @@ export const topicClaimPaginationApiFixtureCases: ApiFixtureCase[] = [
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['web/lib/api/server/topic-claims.ts'],
   },
+  {
+    id: 'native.moderation.topic-claims.pending',
+    method: 'GET',
+    path: '/api/v1/admin/topic-claims',
+    route: { routeTemplate: '/api/v1/admin/topic-claims' },
+    auth: 'fixture-admin',
+    status: 200,
+    body: { claims: [adminClaim] },
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['backend/api/v1/admin/topic-claims.mts'],
+  },
+  ...(
+    [
+      {
+        action: 'verification',
+        requestBody: undefined,
+        fields: {
+          verification_method: 'manual_admin',
+          verified_at: '2026-07-02T00:00:00Z',
+          verified_by_id: '00000000-0000-7000-8000-000000000002',
+          updated_at: '2026-07-02T00:00:00Z',
+        },
+      },
+      {
+        action: 'rejection',
+        requestBody: { rejection_reason: 'Insufficient evidence' },
+        fields: {
+          rejected_at: '2026-07-02T00:00:00Z',
+          rejected_by_id: '00000000-0000-7000-8000-000000000002',
+          rejection_reason: 'Insufficient evidence',
+          updated_at: '2026-07-02T00:00:00Z',
+        },
+      },
+      {
+        action: 'revocation',
+        requestBody: { revocation_reason: 'Evidence withdrawn' },
+        fields: {
+          verification_method: 'manual_admin',
+          verified_at: '2026-07-02T00:00:00Z',
+          verified_by_id: '00000000-0000-7000-8000-000000000002',
+          revoked_at: '2026-07-03T00:00:00Z',
+          revoked_by_id: '00000000-0000-7000-8000-000000000002',
+          revocation_reason: 'Evidence withdrawn',
+          updated_at: '2026-07-03T00:00:00Z',
+        },
+      },
+    ] as const
+  ).map(({ action, requestBody, fields }) => ({
+    id: `native.moderation.topic-claims.${action}`,
+    method: 'POST' as const,
+    path: `/api/v1/admin/topic-claims/${claim.id}/${action}`,
+    route: {
+      routeTemplate: `/api/v1/admin/topic-claims/:id/${action}`,
+      pathParams: { id: claim.id },
+    },
+    ...(requestBody === undefined ? {} : { requestBody }),
+    auth: 'fixture-admin' as const,
+    status: 200,
+    body: { claim: { ...adminClaim, ...fields } },
+    consumers: [...nativeClaimConsumers],
+    migratedFrom: ['backend/api/v1/admin/topic-claims.mts'],
+  })),
 ]

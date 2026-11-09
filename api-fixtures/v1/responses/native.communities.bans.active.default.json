@@ -1,0 +1,39 @@
+{
+  "community_bans": {
+    "00000000-0000-7000-8000-000000000901": {
+      "banned_by_id": "00000000-0000-7000-8000-000000000902",
+      "community_id": "community-1",
+      "created_at": "2026-01-01T00:00:00Z",
+      "expires_at": null,
+      "id": "00000000-0000-7000-8000-000000000901",
+      "lifted_at": null,
+      "lifted_by_id": null,
+      "updated_at": "2026-01-01T00:00:00Z",
+      "user_id": "00000000-0000-7000-8000-000000000904"
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJ0aW1lc3RhbXAiOiJpbmZpbml0eSIsInNjb3BlIjoiY29tbXVuaXR5LWFjdGl2ZS1iYW5zOmNvbW11bml0eS0xOjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDkwNCIsImlkIjoiMDAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwOTAxIn0"
+  },
+  "results": [
+    {
+      "__entity_type": "community_ban",
+      "id": "00000000-0000-7000-8000-000000000901"
+    }
+  ],
+  "users": {
+    "00000000-0000-7000-8000-000000000904": {
+      "__entity_type": "user",
+      "account_type": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "id": "00000000-0000-7000-8000-000000000904",
+      "name": "Test User",
+      "profile_image_id": null,
+      "roles": [],
+      "updated_at": "2026-01-01T00:00:00Z",
+      "username": "testuser"
+    }
+  }
+}
