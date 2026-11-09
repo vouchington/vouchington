@@ -30,15 +30,11 @@ const bashPatterns = (rules: string[]) =>
     return match?.[1] === undefined ? [] : [match[1]]
   })
 
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 function claudeBashMatches(rule: string, command: string): boolean {
   const pattern = rule.endsWith(':*') ? `${rule.slice(0, -2)} *` : rule
   const soleTrailingWildcard = pattern.endsWith(' *') && pattern.indexOf('*') === pattern.length - 1
   if (soleTrailingWildcard && command === pattern.slice(0, -2)) return true
-  return new RegExp(`^${escapeRegex(pattern).replaceAll('\\*', '.*')}$`, 's').test(command)
+  return new RegExp(`^${RegExp.escape(pattern).replaceAll('\\*', '.*')}$`, 's').test(command)
 }
 
 const allowPatterns = bashPatterns(claudeSettings.permissions.allow)

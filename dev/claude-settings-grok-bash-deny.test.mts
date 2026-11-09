@@ -22,17 +22,13 @@ function unwrapBash(rule: string): string | undefined {
   return match?.[1]
 }
 
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 function grokBashMatches(pattern: string, command: string): boolean {
   const cmd = command.trimStart()
   if (pattern.endsWith(':*')) return cmd.startsWith(pattern.slice(0, -2))
   if (pattern.endsWith(' *') && cmd.startsWith(pattern.slice(0, -1))) return true
   if (!pattern.includes('*') && cmd.startsWith(pattern)) return true
   if (pattern.includes('*') && cmd.startsWith(pattern)) return true
-  return new RegExp(`^${escapeRegex(pattern).replaceAll('\\*', '.*')}$`).test(cmd)
+  return new RegExp(`^${RegExp.escape(pattern).replaceAll('\\*', '.*')}$`).test(cmd)
 }
 
 function commandSegments(command: string): string[] {
