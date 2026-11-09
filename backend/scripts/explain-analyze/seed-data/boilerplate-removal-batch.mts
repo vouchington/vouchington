@@ -8,8 +8,43 @@ const URLS_PER_PATH = 4
 export const BOILERPLATE_BATCH_CURSOR = `${SEED_PREFIX}-9a00-7000-8000-000000000000`
 const HOSTNAME_TAG = '9a'
 
+/**
+ * Seeds the batch only for the scenario and removes it afterwards: other scenarios scan the
+ * shared urls corpus and budget their processed rows against its seeded size.
+ */
+export async function withBoilerplateRemovalBatch(run: () => Promise<void>): Promise<void> {
+  try {
+    await seedBoilerplateRemovalBatch()
+    await run()
+  } finally {
+    await removeBoilerplateRemovalBatch()
+  }
+}
+
+async function removeBoilerplateRemovalBatch(): Promise<void> {
+  const ids = Array.from({ length: BOILERPLATE_BATCH_HOSTNAME_COUNT }, (_, hostIndex) =>
+    seedUuid(hostIndex + 1, HOSTNAME_TAG),
+  )
+  await write(
+    `/* removeBoilerplateRemovalBatch:crawls */ DELETE FROM crawls
+     WHERE url_id IN (SELECT id FROM urls WHERE hostname_id = ANY($1::uuid[]))`,
+    [ids],
+  )
+  await write(
+    `/* removeBoilerplateRemovalBatch:urls */ DELETE FROM urls WHERE hostname_id = ANY($1::uuid[])`,
+    [ids],
+  )
+  await write(
+    `/* removeBoilerplateRemovalBatch:hostnames */ DELETE FROM url_hostnames WHERE id = ANY($1::uuid[])`,
+    [ids],
+  )
+  await write(
+    `/* removeBoilerplateRemovalBatch:cursor */ DELETE FROM boilerplate_removal_hostname_cursors`,
+  )
+}
+
 /** Fifty crawlable hostnames, each with three parent paths of four recently crawled HTML pages. */
-export async function seedBoilerplateRemovalBatch(): Promise<void> {
+async function seedBoilerplateRemovalBatch(): Promise<void> {
   const pagesPerHostname = BOILERPLATE_BATCH_PATHS_PER_HOSTNAME * URLS_PER_PATH
   const rows = Array.from({ length: BOILERPLATE_BATCH_HOSTNAME_COUNT }, (_, hostIndex) =>
     Array.from({ length: pagesPerHostname }, (_unused, pageIndex) => {
@@ -22,6 +57,7 @@ export async function seedBoilerplateRemovalBatch(): Promise<void> {
         url_id: seedUuid(index, HOSTNAME_TAG),
         crawl_id: crawlSeedUuid(index, HOSTNAME_TAG),
         url: `https://${hostname}/section-${section}/page-${pageIndex}`,
+        pathname: `/section-${section}/page-${pageIndex}`,
       }
     }),
   ).flat()
@@ -35,9 +71,10 @@ export async function seedBoilerplateRemovalBatch(): Promise<void> {
     [payload],
   )
   await write(
-    `/* seedBoilerplateRemovalBatch:urls */ INSERT INTO urls (id, url, hostname_id, search_params)
-    SELECT url_id, url, hostname_id, '{}'::jsonb
-    FROM jsonb_to_recordset($1::jsonb) AS seed(url_id uuid, hostname_id uuid, url text)
+    `/* seedBoilerplateRemovalBatch:urls */ INSERT INTO urls (id, url, hostname_id, pathname, search_params)
+    SELECT url_id, url, hostname_id, pathname, '{}'::jsonb
+    FROM jsonb_to_recordset($1::jsonb)
+      AS seed(url_id uuid, hostname_id uuid, url text, pathname text)
     ON CONFLICT DO NOTHING`,
     [payload],
   )

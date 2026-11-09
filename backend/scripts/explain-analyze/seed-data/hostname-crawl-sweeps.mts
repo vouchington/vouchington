@@ -1,6 +1,5 @@
 import { write } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
-import { seedBoilerplateRemovalBatch } from './boilerplate-removal-batch.mts'
 import { resolveSeedAnchor } from './seed-anchor.mts'
 
 export async function seedHostnameCrawlSweeps(): Promise<void> {
@@ -31,5 +30,4 @@ export async function seedHostnameCrawlSweeps(): Promise<void> {
     ON CONFLICT DO NOTHING`,
     [JSON.stringify(rows)],
   )
-  await seedBoilerplateRemovalBatch()
 }

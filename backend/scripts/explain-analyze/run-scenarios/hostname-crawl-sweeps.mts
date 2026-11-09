@@ -12,6 +12,7 @@ import {
   BOILERPLATE_BATCH_CURSOR,
   BOILERPLATE_BATCH_HOSTNAME_COUNT,
   BOILERPLATE_BATCH_PATHS_PER_HOSTNAME,
+  withBoilerplateRemovalBatch,
 } from '../seed-data/boilerplate-removal-batch.mts'
 import { crawlSeedUuid, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 
@@ -46,24 +47,26 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
     if (rows.length !== 1 || !rows[0]?.is_due)
       throw new Error('Expected a single never-swept candidate at the run cap')
   })
-  await runAndCapture(
-    'boilerplate-removal-hostname-batch',
-    async () => {
-      await write(
-        `/* seedExplainBoilerplateCursor */ INSERT INTO boilerplate_removal_hostname_cursors
-           (is_singleton, cursor_hostname_id) VALUES (TRUE, $1::uuid)
-         ON CONFLICT (is_singleton) DO UPDATE SET cursor_hostname_id = EXCLUDED.cursor_hostname_id`,
-        [BOILERPLATE_BATCH_CURSOR],
-      )
-      const rows = await sweepNextBoilerplateHostnameBatch(
-        { hostnameBatchSize: BOILERPLATE_BATCH_HOSTNAME_COUNT, candidateLimit: 500 },
-        async () => undefined,
-      )
-      if (rows.length !== BOILERPLATE_BATCH_HOSTNAME_COUNT * BOILERPLATE_BATCH_PATHS_PER_HOSTNAME)
-        throw new Error('Expected every seeded hostname batch parent path to need removal')
-    },
-    undefined,
-    ['listBoilerplateRemovalHostnameBatch', 'searchParentPathsNeedingBoilerplateRemoval'],
+  await withBoilerplateRemovalBatch(() =>
+    runAndCapture(
+      'boilerplate-removal-hostname-batch',
+      async () => {
+        await write(
+          `/* seedExplainBoilerplateCursor */ INSERT INTO boilerplate_removal_hostname_cursors
+             (is_singleton, cursor_hostname_id) VALUES (TRUE, $1::uuid)
+           ON CONFLICT (is_singleton) DO UPDATE SET cursor_hostname_id = EXCLUDED.cursor_hostname_id`,
+          [BOILERPLATE_BATCH_CURSOR],
+        )
+        const rows = await sweepNextBoilerplateHostnameBatch(
+          { hostnameBatchSize: BOILERPLATE_BATCH_HOSTNAME_COUNT, candidateLimit: 500 },
+          async () => undefined,
+        )
+        if (rows.length !== BOILERPLATE_BATCH_HOSTNAME_COUNT * BOILERPLATE_BATCH_PATHS_PER_HOSTNAME)
+          throw new Error('Expected every seeded hostname batch parent path to need removal')
+      },
+      undefined,
+      ['listBoilerplateRemovalHostnameBatch', 'searchParentPathsNeedingBoilerplateRemoval'],
+    ),
   )
   // The fresh bootstrap only creates current crawl partitions; a fixed future cutoff makes
   // this same bounded candidate shape eligible without inserting into a retired partition.
