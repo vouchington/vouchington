@@ -75925,6 +75925,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_moderation_reports__pending_hostname_id_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__pending_hostname_id_id ON public.moderation_reports USING btree (hostname_id, id DESC) WHERE ((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (hostname_id IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "hostname_id",
+              "descending": false,
+              "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (hostname_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_moderation_reports__pending_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -75948,7 +75975,7 @@
         "idx_moderation_reports__pending_post_id_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderation_reports__pending_post_id_id ON public.moderation_reports USING btree (post_id, id DESC) WHERE ((reviewed_at IS NULL) AND (post_id IS NOT NULL))",
+          "definition": "CREATE INDEX idx_moderation_reports__pending_post_id_id ON public.moderation_reports USING btree (post_id, id DESC) WHERE ((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (post_id IS NOT NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -75966,7 +75993,61 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((reviewed_at IS NULL) AND (post_id IS NOT NULL))",
+          "predicate": "((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (post_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_reports__pending_reported_user_id_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__pending_reported_user_id_id ON public.moderation_reports USING btree (reported_user_id, id DESC) WHERE ((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (reported_user_id IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reported_user_id",
+              "descending": false,
+              "expression": "reported_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (reported_user_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_reports__pending_rss_feed_item_id_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__pending_rss_feed_item_id_id ON public.moderation_reports USING btree (rss_feed_item_id, id DESC) WHERE ((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (rss_feed_item_id IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((reviewed_at IS NULL) AND (resolution_action IS NULL) AND (rss_feed_item_id IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
