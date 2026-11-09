@@ -182,6 +182,36 @@ CREATE INDEX IF NOT EXISTS idx_moderation_appeals__case_id
   ON moderation_appeals (case_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS moderation_appeal_resolution_runs (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  moderation_appeal_id uuid NOT NULL REFERENCES moderation_appeals(id) ON DELETE CASCADE,
+  completed_at timestamptz,
+  failed_at timestamptz,
+  expired_at timestamptz,
+  result jsonb,
+  status moderation_ai_rerun_statuses GENERATED ALWAYS AS (
+    CASE WHEN completed_at IS NOT NULL THEN 'succeeded'::moderation_ai_rerun_statuses
+         WHEN failed_at IS NOT NULL THEN 'failed'::moderation_ai_rerun_statuses
+         WHEN expired_at IS NOT NULL THEN 'expired'::moderation_ai_rerun_statuses
+         ELSE 'active'::moderation_ai_rerun_statuses END
+  ) STORED,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (moderation_appeal_id, id),
+  CHECK ((completed_at IS NULL) = (result IS NULL))
+);
+CREATE OR REPLACE TRIGGER trigger_moderation_appeal_resolution_runs_updated_at
+  BEFORE UPDATE ON moderation_appeal_resolution_runs
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE moderation_appeal_resolution_runs IS 'Durable manual appeal AI admissions and outcomes; bounded AI rerun retention preserves recovery beyond queue cleanup.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.moderation_appeal_id IS 'Appeal owning this exact admitted request token.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.completed_at IS 'Committed with the actual draft and lifecycle marker; success wins over delayed failure observations.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.failed_at IS 'Definitive terminal worker failure, excluding retries and provider deferrals.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.expired_at IS 'Worker completed without saving because this generation no longer applies.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.result IS 'Unjoined snapshot of saved draft timestamp and lifecycle change identity; contains no AI response text and never supplies current appeal state.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.status IS 'Outcome derived from durable lifecycle facts; missing generations remain inconclusive.';
+COMMENT ON COLUMN moderation_appeal_resolution_runs.updated_at IS 'Last mutation timestamp maintained by the shared trigger.';
+
 CREATE OR REPLACE TRIGGER trigger_moderation_appeals_updated_at
   BEFORE UPDATE ON moderation_appeals
   FOR EACH ROW

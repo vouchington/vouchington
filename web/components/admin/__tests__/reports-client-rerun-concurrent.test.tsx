@@ -76,8 +76,12 @@ describe('ReportsClient concurrent judgement reruns', () => {
     )
     mockGetReportJudgementRun.mockImplementation(async (reportId: unknown) =>
       reportId === 'report-1'
-        ? { completed: true, judgement_id: 'judgement-from-run-1' }
-        : { completed: false, judgement_id: null },
+        ? {
+            run_id: 'report_judgement_test-run',
+            status: 'succeeded',
+            judgement_id: 'judgement-from-run-1',
+          }
+        : { run_id: 'report_judgement_test-run', status: 'active', judgement_id: null },
     )
     let poll = mockUsePendingAiRefresh.mock.lastCall?.[1] as (() => Promise<void>) | undefined
     await act(async () => {
@@ -102,8 +106,12 @@ describe('ReportsClient concurrent judgement reruns', () => {
     )
     mockGetReportJudgementRun.mockImplementation(async (reportId: unknown) =>
       reportId === 'report-2'
-        ? { completed: true, judgement_id: 'judgement-from-run-2' }
-        : { completed: false, judgement_id: null },
+        ? {
+            run_id: 'report_judgement_test-run',
+            status: 'succeeded',
+            judgement_id: 'judgement-from-run-2',
+          }
+        : { run_id: 'report_judgement_test-run', status: 'active', judgement_id: null },
     )
     poll = mockUsePendingAiRefresh.mock.lastCall?.[1] as (() => Promise<void>) | undefined
     await act(async () => {
@@ -165,7 +173,8 @@ describe('ReportsClient concurrent judgement reruns', () => {
       expect.any(Function),
     )
     mockGetReportJudgementRun.mockResolvedValueOnce({
-      completed: true,
+      run_id: 'report_judgement_test-run',
+      status: 'succeeded',
       judgement_id: 'judgement-from-run-1',
     })
     const poll = mockUsePendingAiRefresh.mock.lastCall?.[1] as (() => Promise<void>) | undefined
@@ -177,7 +186,7 @@ describe('ReportsClient concurrent judgement reruns', () => {
     expect(mockRerunReportJudgement).toHaveBeenCalledTimes(2)
   })
 
-  it('releases only an expired rerun while another report is still pending', async () => {
+  it('keeps an inconclusive timed-out rerun pending while another report is pending', async () => {
     const judgement = makeJudgement()
     const first = makeReport({ id: 'report-1', judgement })
     const second = makeReport({ id: 'report-2', entity_id: 'post-2', judgement })
@@ -204,8 +213,13 @@ describe('ReportsClient concurrent judgement reruns', () => {
 
     await act(async () => onTimeout?.(['rerun:report-1:report_judgement_test-run']))
 
-    expect(buttons[0]).toBeEnabled()
+    expect(buttons[0]).toBeDisabled()
     expect(buttons[1]).toBeDisabled()
+    expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
+      'rerun:report-1:report_judgement_test-run|rerun:report-2:report_judgement_test-run',
+    )
     expect(screen.getByText(/AI judgement is taking longer than expected/)).toBeVisible()
+    await act(async () => fireEvent.click(buttons[0]!))
+    expect(mockRerunReportJudgement).toHaveBeenCalledTimes(2)
   })
 })

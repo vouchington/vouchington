@@ -48,6 +48,7 @@
     "@services/feeds": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/moderation-ai-config": "workspace:^",
+    "@services/moderation-appeals": "workspace:^",
     "@services/moderation-reports": "workspace:^",
     "@services/moderation-threads": "workspace:^",
     "@services/notifications": "workspace:^",

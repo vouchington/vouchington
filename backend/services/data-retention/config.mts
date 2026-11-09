@@ -1,9 +1,9 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
-
 export type DataRetentionConfig = {
   batch_size: number
   ai_usage_raw_retention_days: number
+  ai_rerun_retention_days: number
   classifier_retention_days: number
   post_moderation_retention_days: number
   community_moderator_scan_page_size: number
@@ -39,6 +39,7 @@ const DATA_RETENTION_CONFIG_KEY = 'data-retention-config'
 export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   batch_size: 500,
   ai_usage_raw_retention_days: 180,
+  ai_rerun_retention_days: 90,
   classifier_retention_days: 90,
   post_moderation_retention_days: 90,
   community_moderator_scan_page_size: 50,
@@ -66,6 +67,7 @@ export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
 export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
   batch_size: 5_000,
   ai_usage_raw_retention_days: 3_650,
+  ai_rerun_retention_days: 365,
   classifier_retention_days: 365,
   post_moderation_retention_days: 365,
   community_moderator_scan_page_size: 250,
@@ -94,6 +96,7 @@ export const dataRetentionConfig = new DynamicConfig({
   key: DATA_RETENTION_CONFIG_KEY,
   fieldTypes: {
     ai_usage_raw_retention_days: 'number',
+    ai_rerun_retention_days: 'number',
     batch_size: 'number',
     classifier_retention_days: 'number',
     post_moderation_retention_days: 'number',

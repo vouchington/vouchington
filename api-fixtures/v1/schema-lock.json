@@ -155,6 +155,15 @@
       "fixtureIds": ["native.moderation.appeals.detail.default"],
       "hash": "d3acbecb0fce29514ac00416aae5b6738a08079e83ce310227ad9e4f85799ff0"
     },
+    "GET:/api/v1/appeals/:id/resolution-drafts/:runId#staff": {
+      "fixtureIds": [
+        "native.moderation.appeals.resolution-draft-run.active",
+        "native.moderation.appeals.resolution-draft-run.expired",
+        "native.moderation.appeals.resolution-draft-run.failed",
+        "native.moderation.appeals.resolution-draft-run.succeeded"
+      ],
+      "hash": "bd98cdfe336a8612f72c1a4d1a9cdfe23e00e1f7b6a9abd304a379affcd76b58"
+    },
     "GET:/api/v1/article-syncs/:jobId#active": {
       "fixtureIds": ["web.admin.article-syncs.status.active"],
       "hash": "c9bf7660ac3eaa4e709e87979c50378e1e1dba5889ca5e83050ea99808775962"
@@ -877,8 +886,13 @@
       "hash": "eeb0ad0ee2a26d86a3af7a432970db800d2b37eecb4f8da56cca9fefa370f41c"
     },
     "GET:/api/v1/reports/:id/judgements/:runId": {
-      "fixtureIds": ["native.moderation.report-judgement-run.pending"],
-      "hash": "f0d33f06f7d1158701223df088fabef18ee1cc24e85728524cabc57b290621d5"
+      "fixtureIds": [
+        "native.moderation.report-judgement-run.expired",
+        "native.moderation.report-judgement-run.failed",
+        "native.moderation.report-judgement-run.pending",
+        "native.moderation.report-judgement-run.succeeded"
+      ],
+      "hash": "55bfb665f1921f7f6f2a7d4dfbdfe3642dd5bd19c4c6e4502539b0672f22c4af"
     },
     "GET:/api/v1/rss-feed-categories": {
       "fixtureIds": ["web.rss-feed-categories.default"],
@@ -2381,6 +2395,22 @@
       "fixtureIds": ["native.moderation.appeals.page-2"],
       "hash": "ed8c0d8f7236ac85068bec831f7c2adc2e2bab47d2ca5ac97bf0f34a22677f1e"
     },
+    "native.moderation.appeals.resolution-draft-run.active": {
+      "fixtureIds": ["native.moderation.appeals.resolution-draft-run.active"],
+      "hash": "c6298fa203b867aefb96fb9bc72067125edf7db8bfd649d4daf3d1b082b5dfd2"
+    },
+    "native.moderation.appeals.resolution-draft-run.expired": {
+      "fixtureIds": ["native.moderation.appeals.resolution-draft-run.expired"],
+      "hash": "c6298fa203b867aefb96fb9bc72067125edf7db8bfd649d4daf3d1b082b5dfd2"
+    },
+    "native.moderation.appeals.resolution-draft-run.failed": {
+      "fixtureIds": ["native.moderation.appeals.resolution-draft-run.failed"],
+      "hash": "c6298fa203b867aefb96fb9bc72067125edf7db8bfd649d4daf3d1b082b5dfd2"
+    },
+    "native.moderation.appeals.resolution-draft-run.succeeded": {
+      "fixtureIds": ["native.moderation.appeals.resolution-draft-run.succeeded"],
+      "hash": "efd5e722b647d5f6823732c5765674167e6bd73064064172b0917868bd06967d"
+    },
     "native.moderation.appeals.resolution-drafts.default": {
       "fixtureIds": ["native.moderation.appeals.resolution-drafts.default"],
       "hash": "dcdd714dddfac7e1552b4392112159658c36250bab5a33f8c6ec1705762646ee"
@@ -2577,9 +2607,21 @@
       "fixtureIds": ["native.moderation.report-integrity.resolved"],
       "hash": "de30a4c0680c14571963e0772330445cbca9b08d88d320ad371ea428c05f5659"
     },
+    "native.moderation.report-judgement-run.expired": {
+      "fixtureIds": ["native.moderation.report-judgement-run.expired"],
+      "hash": "d2c0e9e6c4b6fd51bd88924a51d98c3803471ec94fe388070d89c925a7de2ca2"
+    },
+    "native.moderation.report-judgement-run.failed": {
+      "fixtureIds": ["native.moderation.report-judgement-run.failed"],
+      "hash": "d2c0e9e6c4b6fd51bd88924a51d98c3803471ec94fe388070d89c925a7de2ca2"
+    },
     "native.moderation.report-judgement-run.pending": {
       "fixtureIds": ["native.moderation.report-judgement-run.pending"],
-      "hash": "77404d6091586656a5fd091b60f4d6e36569f02b84cf48f043f648dcc4fe5638"
+      "hash": "d2c0e9e6c4b6fd51bd88924a51d98c3803471ec94fe388070d89c925a7de2ca2"
+    },
+    "native.moderation.report-judgement-run.succeeded": {
+      "fixtureIds": ["native.moderation.report-judgement-run.succeeded"],
+      "hash": "35fb3b5a52117331b39db698a1d3e5847ba02bb3b46ab95745ee1cb6b4defbdd"
     },
     "native.moderation.report-judgement.default": {
       "fixtureIds": ["native.moderation.report-judgement.default"],

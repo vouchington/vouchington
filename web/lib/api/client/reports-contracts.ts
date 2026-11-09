@@ -153,6 +153,7 @@ export interface RerunReportJudgementResponse {
 }
 
 export interface ReportJudgementRunResponse {
-  completed: boolean
+  run_id: string
+  status: 'active' | 'succeeded' | 'failed' | 'expired'
   judgement_id: string | null
 }

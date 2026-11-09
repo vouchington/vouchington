@@ -44,11 +44,17 @@ export function useFlatReportsState({ canBulkRemove, data, viewerTier }: FlatRep
     () => data.results.filter(report => !resolvedIds.has(report.id)),
     [data.results, resolvedIds],
   )
-  const { pendingRerunEntities, pollingTimedOut, rerunTimedOut, clearRerunTimeout, markRerun } =
-    useReportsAiPolling(
-      viewerTier === 'staff' ? (reports as AdminModerationReport[]) : [],
-      viewerTier === 'staff',
-    )
+  const {
+    pendingRerunEntities,
+    pollingTimedOut,
+    rerunTimedOut,
+    rerunFailed,
+    clearRerunTimeout,
+    markRerun,
+  } = useReportsAiPolling(
+    viewerTier === 'staff' ? (reports as AdminModerationReport[]) : [],
+    viewerTier === 'staff',
+  )
 
   async function handleResolve(reportId: string, status: ResolveStatus) {
     if (rerunPending(reportId)) return
@@ -163,6 +169,7 @@ export function useFlatReportsState({ canBulkRemove, data, viewerTier }: FlatRep
     pollingTimedOut,
     reports,
     rerunTimedOut,
+    rerunFailed,
     rerunningId,
     selectedIds,
     setBulkAction,

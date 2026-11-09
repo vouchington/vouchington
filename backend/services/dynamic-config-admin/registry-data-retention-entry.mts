@@ -4,7 +4,7 @@ import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
   namespace: 'data-retention-config',
   label: 'Data Retention',
-  description: 'Per-run batch bounds for general and moderation-history retention cleanup.',
+  description: 'Retention windows and per-run batch bounds for general and moderation cleanup.',
   config: dataRetentionConfig,
   access: { update_roles: ['developer'] },
   fields: {
@@ -25,6 +25,12 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       description: 'Minimum age of AI provider-call records before folding and deletion.',
       minValue: 180,
       maxValue: DATA_RETENTION_MAX_VALUES.ai_usage_raw_retention_days,
+      integer: true,
+    },
+    ai_rerun_retention_days: {
+      description: 'Age in days before retiring durable report and appeal AI rerun outcomes.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.ai_rerun_retention_days,
       integer: true,
     },
     topic_import_attempt_batch_size: {

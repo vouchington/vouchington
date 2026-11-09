@@ -3,12 +3,20 @@ import {
   cleanupOldModerationQueueClaims,
 } from './cleanup-moderation-operations.mts'
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
+import {
+  cleanupAppealResolutionRuns,
+  cleanupReportJudgementRuns,
+} from './cleanup-ai-rerun-outcomes.mts'
 import { cleanupObsoleteAgentModerations } from './cleanup-agent-moderations.mts'
 import { cleanupTextEmbeddingCache } from './cleanup-text-embeddings.mts'
 import { cleanupTerminalEmbeddingBatches } from './cleanup-embedding-batches.mts'
 import { cleanupCompletedImportBatches } from './cleanup-import-batches.mts'
 import { applyRetentionLimits } from './cleanup-options.mts'
-import { getPostModerationRetentionDays, type DataRetentionLimits } from './config.mts'
+import {
+  getPostModerationRetentionDays,
+  readDataRetentionField,
+  type DataRetentionLimits,
+} from './config.mts'
 import type { DataRetentionCleanupFamily } from './cleanup-run-family.mts'
 import type { DataRetentionCleanupOptions } from './cleanup-run-options.mts'
 import type { DataRetentionCleanupResult } from './cleanup-run-result.mts'
@@ -20,6 +28,8 @@ export async function cleanupModerationEmbeddingFamilies(
   Pick<
     DataRetentionCleanupResult,
     | 'oldModerationQueueClaims'
+    | 'reportJudgementRuns'
+    | 'appealResolutionRuns'
     | 'oldModerationMediaReveals'
     | 'postModerationLedger'
     | 'agentModerations'
@@ -34,13 +44,32 @@ export async function cleanupModerationEmbeddingFamilies(
   const withLimits = (overrides: { batchSize?: number; maxBatches?: number } | undefined) =>
     applyRetentionLimits(limits, overrides)
 
-  // These four cleanups touch different tables and share no data, so they run together.
   const [
+    reportJudgementRuns,
+    appealResolutionRuns,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
     postModerationLedger,
     agentModerations,
   ] = await Promise.all([
+    active('reportJudgementRuns')
+      ? cleanupReportJudgementRuns({
+          ...options.reportJudgementRuns,
+          ...withLimits(options.reportJudgementRuns),
+          retentionDays:
+            options.reportJudgementRuns?.retentionDays ??
+            readDataRetentionField('ai_rerun_retention_days'),
+        })
+      : { deleted: 0, hasMore: false },
+    active('appealResolutionRuns')
+      ? cleanupAppealResolutionRuns({
+          ...options.appealResolutionRuns,
+          ...withLimits(options.appealResolutionRuns),
+          retentionDays:
+            options.appealResolutionRuns?.retentionDays ??
+            readDataRetentionField('ai_rerun_retention_days'),
+        })
+      : { deleted: 0, hasMore: false },
     active('oldModerationQueueClaims')
       ? cleanupOldModerationQueueClaims(withLimits(options.oldModerationQueueClaims))
       : { deleted: 0, hasMore: false, cursorId: null },
@@ -78,6 +107,8 @@ export async function cleanupModerationEmbeddingFamilies(
       : { deleted: 0, hasMore: false, continuation: null },
   ])
   return {
+    reportJudgementRuns,
+    appealResolutionRuns,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
     postModerationLedger,

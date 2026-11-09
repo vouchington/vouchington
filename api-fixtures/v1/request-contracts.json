@@ -41291,6 +41291,10 @@
         "target_user_id"
       ],
       "type": "object"
+    },
+    "ModerationAiRerunStatus": {
+      "type": "string",
+      "enum": ["active", "succeeded", "failed", "expired"]
     }
   },
   "operations": {
@@ -52522,14 +52526,17 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/reports/:id": {
+    "GET:/api/v1/appeals/:id/resolution-drafts/:runId": {
       "path": {
         "properties": {
           "id": {
             "type": "string"
+          },
+          "runId": {
+            "type": "string"
           }
         },
-        "required": ["id"],
+        "required": ["id", "runId"],
         "type": "object"
       }
     }
@@ -53194,93 +53201,41 @@
     "GET:/api/v1/communities/:idOrSlug/bans/users/:userId": {
       "$ref": "#/components/schemas/CommunityBanPageResponse"
     },
-    "GET:/api/v1/reports/:id": {
+    "GET:/api/v1/reports/:id/judgements/:runId": {
+      "type": "object",
       "additionalProperties": false,
       "properties": {
-        "report": {
-          "additionalProperties": false,
-          "properties": {
-            "id": {
-              "type": "string"
-            },
-            "case_id": {
-              "type": "string"
-            },
-            "created_at": {
-              "type": "string"
-            },
-            "reviewed_at": {
-              "type": ["string", "null"]
-            },
-            "reporter_user_id": {
-              "type": "string"
-            },
-            "reason": {
-              "type": "string"
-            },
-            "note": {
-              "type": ["string", "null"]
-            },
-            "status": {
-              "type": "string",
-              "enum": ["pending", "reviewed", "actioned", "dismissed"]
-            },
-            "resolved_by_id": {
-              "type": ["string", "null"]
-            },
-            "entity_type": {
-              "type": "string",
-              "enum": ["post", "comment", "user", "url_hostname", "rss_feed_item"]
-            },
-            "entity_id": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "id",
-            "case_id",
-            "created_at",
-            "reviewed_at",
-            "reporter_user_id",
-            "reason",
-            "note",
-            "status",
-            "resolved_by_id",
-            "entity_type",
-            "entity_id"
-          ],
-          "type": "object"
+        "run_id": {
+          "type": "string",
+          "format": "uuid"
         },
-        "judgement": {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "recommended_action": {
-                  "type": "string",
-                  "enum": ["no_action", "warn", "remove", "escalate"]
-                },
-                "public_response": {
-                  "type": "string"
-                },
-                "internal_response": {
-                  "type": "string"
-                }
-              },
-              "required": ["id", "recommended_action", "public_response", "internal_response"],
-              "type": "object"
-            },
-            {
-              "type": "null"
-            }
-          ]
+        "status": {
+          "$ref": "#/components/schemas/ModerationAiRerunStatus"
+        },
+        "judgement_id": {
+          "type": ["string", "null"]
         }
       },
-      "required": ["report", "judgement"],
-      "type": "object"
+      "required": ["run_id", "status", "judgement_id"]
+    },
+    "GET:/api/v1/appeals/:id/resolution-drafts/:runId": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/components/schemas/ModerationAiRerunStatus"
+        },
+        "ai_drafted_at": {
+          "type": ["string", "null"]
+        },
+        "latest_lifecycle_change_id": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["run_id", "status", "ai_drafted_at", "latest_lifecycle_change_id"]
     }
   },
   "source": "checked-in-request-contracts",

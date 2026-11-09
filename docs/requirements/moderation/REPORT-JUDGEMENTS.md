@@ -40,6 +40,12 @@ outdated without automatically spending another AI run.
 
 Judgements do not remove content or penalize users. Staff review the queue, inspect the target and reports, then take enforcement through the appropriate moderation surface.
 
+An explicitly admitted staff rerun has a durable outcome tied to its report and exact run identity.
+The saved judgement completes that run even if queue work is later cleaned up. Another automatic or
+staff judgement does not complete it. An old response cannot release the controls for a newer
+admission, and an absent run is inconclusive rather than evidence of failure. Bounded, configurable
+retention eventually removes run outcomes while leaving current judgements available for review.
+
 See also: [Reporting](./REPORTING.md), [Moderation Flows](./MODERATION-FLOWS.md).
 
 Paid transparency never exposes report-judgement recommendations, prompts, or raw AI output. Its

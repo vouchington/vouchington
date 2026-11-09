@@ -8,6 +8,40 @@ EXCEPTION
 END
 $$;
 
+DO $$
+BEGIN
+  CREATE TYPE moderation_ai_rerun_statuses AS ENUM ('active', 'succeeded', 'failed', 'expired');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END
+$$;
+
+CREATE TABLE IF NOT EXISTS moderation_report_judgement_runs (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  moderation_report_id uuid NOT NULL REFERENCES moderation_reports(id) ON DELETE CASCADE,
+  completed_at timestamptz,
+  failed_at timestamptz,
+  expired_at timestamptz,
+  status moderation_ai_rerun_statuses GENERATED ALWAYS AS (
+    CASE WHEN completed_at IS NOT NULL THEN 'succeeded'::moderation_ai_rerun_statuses
+         WHEN failed_at IS NOT NULL THEN 'failed'::moderation_ai_rerun_statuses
+         WHEN expired_at IS NOT NULL THEN 'expired'::moderation_ai_rerun_statuses
+         ELSE 'active'::moderation_ai_rerun_statuses END
+  ) STORED,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (moderation_report_id, id)
+);
+CREATE OR REPLACE TRIGGER trigger_moderation_report_judgement_runs_updated_at
+  BEFORE UPDATE ON moderation_report_judgement_runs
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE moderation_report_judgement_runs IS 'Durable manual report judgement admissions and outcomes, independent of queue retention; retired by bounded AI rerun retention.';
+COMMENT ON COLUMN moderation_report_judgement_runs.moderation_report_id IS 'Report whose exact admitted generation this run records.';
+COMMENT ON COLUMN moderation_report_judgement_runs.completed_at IS 'Committed with the saved judgement; success takes precedence over a delayed failure observation.';
+COMMENT ON COLUMN moderation_report_judgement_runs.failed_at IS 'Definitive terminal worker failure, never a retry or provider deferral.';
+COMMENT ON COLUMN moderation_report_judgement_runs.expired_at IS 'Worker completed without a result because the request no longer applies.';
+COMMENT ON COLUMN moderation_report_judgement_runs.status IS 'Outcome derived from durable lifecycle facts; a missing record is inconclusive.';
+COMMENT ON COLUMN moderation_report_judgement_runs.updated_at IS 'Last mutation timestamp maintained by the shared trigger.';
+
 -- AI-generated judgements on reported entities. Exactly one entity FK is set per row.
 -- post_id covers both posts and comments (distinguished by posts.post_type).
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -36,7 +70,10 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgements (
   context_max_reason_rank integer,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   dispatched_at timestamptz,
-  CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1)
+  CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1),
+  FOREIGN KEY (triggering_report_id, run_id)
+    REFERENCES moderation_report_judgement_runs(moderation_report_id, id)
+    ON DELETE SET NULL (run_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__rerun_by_id

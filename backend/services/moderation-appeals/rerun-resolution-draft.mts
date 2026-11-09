@@ -3,6 +3,7 @@ import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { getModerationAppealByIdFromPrimary } from './get.mts'
+import { createAppealResolutionRun } from './rerun-outcomes.mts'
 
 export async function rerunModerationAppealResolutionDraft(
   staffUserId: string,
@@ -16,8 +17,6 @@ export async function rerunModerationAppealResolutionDraft(
     'Only unapproved, unsent pending appeals can rerun resolution drafts',
   )
 
-  const { enqueueAppealResolutionQueued } =
-    await import('@queues/ai-agents/enqueues/appeal-resolution')
   return recordStaffOperation(
     staffUserId,
     { actionType: 'appeal_resolution_draft_rerun', moderationAppealId: appealId },
@@ -34,13 +33,12 @@ export async function rerunModerationAppealResolutionDraft(
         RETURNING ai_draft_request_token
       `)
       assert(rows[0], 422, 'Appeal is no longer eligible for an AI rerun')
-      const runId = await enqueueAppealResolutionQueued(
-        appealId,
-        rows[0].ai_draft_request_token,
-        staffUserId,
-      )
+      const requestToken = rows[0].ai_draft_request_token
+      await createAppealResolutionRun(query, appealId, requestToken)
       await query.commit()
-      return runId
+      const { enqueueAppealResolutionQueued } =
+        await import('@queues/ai-agents/enqueues/appeal-resolution')
+      return await enqueueAppealResolutionQueued(appealId, requestToken, staffUserId)
     },
   )
 }

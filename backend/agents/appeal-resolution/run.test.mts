@@ -133,13 +133,18 @@ describe('runAppealResolutionAgent', () => {
       public_response: 'Rerun response.',
       internal_response: 'Rerun internal.',
     })
-    await runAppealResolutionAgent(
-      await appealResolutionRunInputForTest(appeal.id, staff.id),
-      TEST_MODEL_SELECTION,
-      secondCaller,
-    )
+    const rerunInput = await appealResolutionRunInputForTest(appeal.id, staff.id)
+    await runAppealResolutionAgent(rerunInput, TEST_MODEL_SELECTION, secondCaller)
+
+    const replayCaller = makeModelCaller({
+      recommended_action: 'deny',
+      public_response: 'A duplicate run must not bill again.',
+      internal_response: 'A duplicate run must not bill again.',
+    })
+    await runAppealResolutionAgent(rerunInput, TEST_MODEL_SELECTION, replayCaller)
 
     expect(secondCaller).toHaveBeenCalledOnce()
+    expect(replayCaller).not.toHaveBeenCalled()
     const updated = await getModerationAppealById(appeal.id)
     expect(updated!.recommended_action).toBe('reduce')
   })

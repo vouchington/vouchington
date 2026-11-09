@@ -26,6 +26,7 @@ import { runBloomReconciliationScenarios } from './run-scenarios/bloom-reconcili
 import { runFollowerDistributionScenarios } from './run-scenarios/follower-distributions.mts'
 import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-communities.mts'
 import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
+import { runModerationRerunOutcomeScenarios } from './run-scenarios/moderation-rerun-outcomes.mts'
 import { runHeavyFollowScenarios } from './run-scenarios/heavy-follows.mts'
 import { runHotPathLoaderScenarios } from './run-scenarios/hot-path-loaders.mts'
 import { runStorySearchScenarios } from './run-scenarios/story-search.mts'
@@ -93,6 +94,7 @@ export async function runScenariosBeforePartition(): Promise<void> {
   await runStep(runHostnameCrawlSweepScenarios.name, runHostnameCrawlSweepScenarios)
   await runStep(runCrawlerBoilerplateScenario.name, runCrawlerBoilerplateScenario)
   await runStep(runFeedAndMetricScenarios.name, runFeedAndMetricScenarios)
+  await runStep(runModerationRerunOutcomeScenarios.name, runModerationRerunOutcomeScenarios)
   await runStep(runHeavyFollowScenarios.name, runHeavyFollowScenarios)
   await runStep(runPostFeedShareScenarios.name, runPostFeedShareScenarios)
   await runStep(runStoryMemberPageScenarios.name, runStoryMemberPageScenarios)

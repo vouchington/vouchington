@@ -6,6 +6,7 @@ import type { JudgementModelCaller } from '@agents/report-judgement/run'
 import { loadServiceModelSelection } from '@services/ai-usage'
 import type { ModerationReportEntityType } from '@services/moderation-reports'
 import onError from '@modules/on-error'
+import { markReportJudgementRunExpired } from '@services/moderation-reports/rerun-outcomes'
 
 export async function processReportJudgement(
   job: Job<ReportJudgementJobData>,
@@ -24,7 +25,12 @@ export async function processReportJudgement(
     callModel,
   )
 
-  if (!result) return { success: true }
+  if (!result) {
+    if (rerun_by_id && run_id) {
+      await markReportJudgementRunExpired(triggering_report_id, run_id)
+    }
+    return { success: true }
+  }
 
   /* v8 ignore start -- only reachable when the AI agent returns a real judgement (requires OpenAI credentials) */
   const { judgement, communityId } = result

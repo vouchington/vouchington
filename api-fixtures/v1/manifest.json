@@ -7355,6 +7355,84 @@
       "source": "backend/api/v1/appeals/appeals.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/appeals/:id/resolution-drafts/:runId#staff": {
+      "bodyKind": "content",
+      "hash": "bd98cdfe336a8612f72c1a4d1a9cdfe23e00e1f7b6a9abd304a379affcd76b58",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/appeals/:id/resolution-drafts/:runId",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "ai_drafted_at": {
+              "required": true,
+              "schema": {
+                "type": "union",
+                "variants": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "latest_lifecycle_change_id": {
+              "required": true,
+              "schema": {
+                "type": "union",
+                "variants": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "run_id": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "status": {
+              "required": true,
+              "schema": {
+                "type": "union",
+                "variants": [
+                  {
+                    "type": "literal",
+                    "value": "active"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "succeeded"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "failed"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "expired"
+                  }
+                ]
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/appeals/appeals-staff.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
     "GET:/api/v1/article-syncs/:jobId#active": {
       "bodyKind": "content",
       "hash": "c9bf7660ac3eaa4e709e87979c50378e1e1dba5889ca5e83050ea99808775962",
@@ -50239,7 +50317,7 @@
     },
     "GET:/api/v1/reports/:id/judgements/:runId": {
       "bodyKind": "content",
-      "hash": "f0d33f06f7d1158701223df088fabef18ee1cc24e85728524cabc57b290621d5",
+      "hash": "55bfb665f1921f7f6f2a7d4dfbdfe3642dd5bd19c4c6e4502539b0672f22c4af",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -50249,12 +50327,6 @@
         "root": {
           "additionalProperties": false,
           "properties": {
-            "completed": {
-              "required": true,
-              "schema": {
-                "type": "boolean"
-              }
-            },
             "judgement_id": {
               "required": true,
               "schema": {
@@ -50265,6 +50337,36 @@
                   },
                   {
                     "type": "null"
+                  }
+                ]
+              }
+            },
+            "run_id": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "status": {
+              "required": true,
+              "schema": {
+                "type": "union",
+                "variants": [
+                  {
+                    "type": "literal",
+                    "value": "active"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "succeeded"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "failed"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "expired"
                   }
                 ]
               }
@@ -107612,6 +107714,181 @@
     },
     {
       "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/reports/:id/judgements/:runId",
+      "bodyFile": "responses/native.moderation.report-judgement-run.succeeded.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.report-judgement-run.succeeded",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/reports/reports.mts"],
+      "path": "/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e/judgements/00000000-0000-7000-8000-000000000303",
+      "responseSchema": {
+        "hash": "35fb3b5a52117331b39db698a1d3e5847ba02bb3b46ab95745ee1cb6b4defbdd",
+        "key": "native.moderation.report-judgement-run.succeeded"
+      },
+      "route": {
+        "pathParams": {
+          "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e",
+          "runId": "00000000-0000-7000-8000-000000000303"
+        },
+        "routeTemplate": "/api/v1/reports/:id/judgements/:runId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/reports/:id/judgements/:runId",
+      "bodyFile": "responses/native.moderation.report-judgement-run.failed.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.report-judgement-run.failed",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/reports/reports.mts"],
+      "path": "/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e/judgements/00000000-0000-7000-8000-000000000303",
+      "responseSchema": {
+        "hash": "d2c0e9e6c4b6fd51bd88924a51d98c3803471ec94fe388070d89c925a7de2ca2",
+        "key": "native.moderation.report-judgement-run.failed"
+      },
+      "route": {
+        "pathParams": {
+          "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e",
+          "runId": "00000000-0000-7000-8000-000000000303"
+        },
+        "routeTemplate": "/api/v1/reports/:id/judgements/:runId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/reports/:id/judgements/:runId",
+      "bodyFile": "responses/native.moderation.report-judgement-run.expired.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.report-judgement-run.expired",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/reports/reports.mts"],
+      "path": "/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e/judgements/00000000-0000-7000-8000-000000000303",
+      "responseSchema": {
+        "hash": "d2c0e9e6c4b6fd51bd88924a51d98c3803471ec94fe388070d89c925a7de2ca2",
+        "key": "native.moderation.report-judgement-run.expired"
+      },
+      "route": {
+        "pathParams": {
+          "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e",
+          "runId": "00000000-0000-7000-8000-000000000303"
+        },
+        "routeTemplate": "/api/v1/reports/:id/judgements/:runId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/appeals/:id/resolution-drafts/:runId#staff",
+      "bodyFile": "responses/native.moderation.appeals.resolution-draft-run.active.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.appeals.resolution-draft-run.active",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/appeals/appeals-staff.mts"],
+      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/appeal_resolution_00000000-0000-7000-8000-000000000303",
+      "responseSchema": {
+        "hash": "c6298fa203b867aefb96fb9bc72067125edf7db8bfd649d4daf3d1b082b5dfd2",
+        "key": "native.moderation.appeals.resolution-draft-run.active"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000102",
+          "runId": "appeal_resolution_00000000-0000-7000-8000-000000000303"
+        },
+        "routeTemplate": "/api/v1/appeals/:id/resolution-drafts/:runId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/appeals/:id/resolution-drafts/:runId#staff",
+      "bodyFile": "responses/native.moderation.appeals.resolution-draft-run.succeeded.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.appeals.resolution-draft-run.succeeded",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/appeals/appeals-staff.mts"],
+      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/appeal_resolution_00000000-0000-7000-8000-000000000303",
+      "responseSchema": {
+        "hash": "efd5e722b647d5f6823732c5765674167e6bd73064064172b0917868bd06967d",
+        "key": "native.moderation.appeals.resolution-draft-run.succeeded"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000102",
+          "runId": "appeal_resolution_00000000-0000-7000-8000-000000000303"
+        },
+        "routeTemplate": "/api/v1/appeals/:id/resolution-drafts/:runId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/appeals/:id/resolution-drafts/:runId#staff",
+      "bodyFile": "responses/native.moderation.appeals.resolution-draft-run.failed.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.appeals.resolution-draft-run.failed",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/appeals/appeals-staff.mts"],
+      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/appeal_resolution_00000000-0000-7000-8000-000000000303",
+      "responseSchema": {
+        "hash": "c6298fa203b867aefb96fb9bc72067125edf7db8bfd649d4daf3d1b082b5dfd2",
+        "key": "native.moderation.appeals.resolution-draft-run.failed"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000102",
+          "runId": "appeal_resolution_00000000-0000-7000-8000-000000000303"
+        },
+        "routeTemplate": "/api/v1/appeals/:id/resolution-drafts/:runId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/appeals/:id/resolution-drafts/:runId#staff",
+      "bodyFile": "responses/native.moderation.appeals.resolution-draft-run.expired.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.appeals.resolution-draft-run.expired",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/appeals/appeals-staff.mts"],
+      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102/resolution-drafts/appeal_resolution_00000000-0000-7000-8000-000000000303",
+      "responseSchema": {
+        "hash": "c6298fa203b867aefb96fb9bc72067125edf7db8bfd649d4daf3d1b082b5dfd2",
+        "key": "native.moderation.appeals.resolution-draft-run.expired"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000102",
+          "runId": "appeal_resolution_00000000-0000-7000-8000-000000000303"
+        },
+        "routeTemplate": "/api/v1/appeals/:id/resolution-drafts/:runId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
       "backendResponseContractKey": "GET:/api/v1/reports/:id",
       "bodyFile": "responses/native.moderation.report-detail.saved.json",
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
@@ -107795,7 +108072,7 @@
       "migratedFrom": ["backend/api/v1/reports/reports.mts"],
       "path": "/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e/judgements/00000000-0000-7000-8000-000000000303",
       "responseSchema": {
-        "hash": "77404d6091586656a5fd091b60f4d6e36569f02b84cf48f043f648dcc4fe5638",
+        "hash": "d2c0e9e6c4b6fd51bd88924a51d98c3803471ec94fe388070d89c925a7de2ca2",
         "key": "native.moderation.report-judgement-run.pending"
       },
       "route": {

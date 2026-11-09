@@ -19,6 +19,12 @@ context, AI recommendations, internal drafts, and the original decision's intern
 in a member response. The original decision is snapshotted when the appeal is created, so accepting
 an appeal cannot rewrite its history.
 
+Staff rerun outcomes are durable against queue cleanup and belong to the exact admitted appeal run.
+Only authorized staff can read those internal outcomes; the member's redacted view does not change.
+The current draft still requires human approval and delivery, and a late older run cannot replace a
+newer draft. Bounded, configurable retention removes old run outcomes without turning an absent
+record into a failure.
+
 ## Policy
 
 - Appeals are expected to be answered within a service-level window; staff lists flag overdue ones.

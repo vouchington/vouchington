@@ -5,7 +5,10 @@ import {
   getModerationAppealByIdFromPrimary,
   createModerationAppealDraft,
   isCurrentModerationAppealDraftRequest,
+  getAppealResolutionRunStatus,
+  markAppealResolutionRunExpired,
 } from '@services/moderation-appeals'
+import { withPrimaryReads } from '@data-stores/psql'
 import { getUserWarningById } from '@services/user-warnings'
 import { getCommunityBanById } from '@services/communities/bans/get'
 import { getUserSuspensionById } from '@services/users/suspension'
@@ -35,15 +38,33 @@ export async function runAppealResolutionAgent(
 ): Promise<void> {
   const { appealId, requestToken, rerunById, runId } = input
 
+  if (rerunById) {
+    const runStatus = await withPrimaryReads(() =>
+      getAppealResolutionRunStatus(appealId, requestToken),
+    )
+    // A missing outcome is inconclusive, and terminal work must never make another paid call.
+    if (runStatus !== 'active') return
+  }
+
   const appeal = await getModerationAppealByIdFromPrimary(appealId)
   if (!appeal) {
+    if (rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
     onError(new Error(`runAppealResolutionAgent: appeal not found: ${appealId}`))
     return
   }
 
-  if (appeal.approved_at != null || appeal.sent_at != null || appeal.resolved_at != null) return
+  if (appeal.approved_at != null || appeal.sent_at != null || appeal.resolved_at != null) {
+    if (rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
+    return
+  }
 
-  if (!(await isCurrentModerationAppealDraftRequest(appealId, requestToken))) return
+  const currentRequest = await withPrimaryReads(() =>
+    isCurrentModerationAppealDraftRequest(appealId, requestToken),
+  )
+  if (!currentRequest) {
+    if (rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
+    return
+  }
 
   // Manual reruns bypass only existing-draft idempotency.
   if (!rerunById && appeal.ai_drafted_at != null) return
@@ -106,7 +127,7 @@ export async function runAppealResolutionAgent(
     postId: appeal.post_id,
   })
 
-  await createModerationAppealDraft({
+  const savedDraft = await createModerationAppealDraft({
     appealId,
     requestToken,
     runId,
@@ -115,6 +136,7 @@ export async function runAppealResolutionAgent(
     aiInternalResponse: result.output.internal_response,
     model: result.model,
   })
+  if (!savedDraft && rerunById) await markAppealResolutionRunExpired(appealId, requestToken)
 }
 
 function getPostRemovalActionLabel(kind: 'platform' | 'community' | null): string {

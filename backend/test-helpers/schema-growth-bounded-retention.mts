@@ -1,4 +1,10 @@
 export const RETENTION_BOUNDED_TABLES = new Map<string, string>([
+  ...['moderation_report_judgement_runs', 'moderation_appeal_resolution_runs'].map(
+    (table): [string, string] => [
+      table,
+      'Parent-keyed AI rerun outcomes retire through the configured bounded daily retention walk; queue cleanup does not own their lifecycle.',
+    ],
+  ),
   [
     'copyright_notice_operational_retention_cursors',
     'The finite copyright operational-retention family enum permits one durable keyset cursor per family.',

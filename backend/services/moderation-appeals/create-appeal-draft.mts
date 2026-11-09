@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { ModerationAppeal, ModerationAppealAction } from './config.mts'
@@ -39,7 +39,6 @@ export async function createModerationAppealDraft(
         AND approved_at IS NULL
         AND sent_at IS NULL
         AND resolved_at IS NULL
-        AND resolved_at IS NULL
       RETURNING
         id, appellant_user_id, user_warning_id, community_ban_id, post_id, community_id, post_removal_kind,
         appeal_reason,
@@ -71,6 +70,18 @@ export async function createModerationAppealDraft(
         ${JSON.stringify({ model: input.model, recommended_action: input.recommendedAction, run_id: input.runId })}::jsonb
       FROM updated
       CROSS JOIN lifecycle_change_id
+    ),
+    completed_run AS (
+      UPDATE moderation_appeal_resolution_runs run
+      SET completed_at = ${now},
+          result = jsonb_build_object(
+            'ai_drafted_at', updated.ai_drafted_at,
+            'latest_lifecycle_change_id', updated.latest_lifecycle_change_id
+          )
+      FROM updated
+      WHERE run.id = ${input.requestToken}::uuid
+        AND run.moderation_appeal_id = updated.id
+      RETURNING run.id
     )
     SELECT * FROM updated
   `)
@@ -100,12 +111,12 @@ export async function createModerationAppealDraft(
   return result
 }
 
-/** The row lock waits for an enqueueing transaction to commit or roll back before model IO. */
+/** Checks the committed request without fencing unrelated appeal readers or writers. */
 export async function isCurrentModerationAppealDraftRequest(
   appealId: string,
   requestToken: string,
 ): Promise<boolean> {
-  const { rows } = await write<{
+  const { rows } = await read<{
     ai_draft_request_token: string
     approved_at: Date | null
     sent_at: Date | null
@@ -115,7 +126,6 @@ export async function isCurrentModerationAppealDraftRequest(
     SELECT ai_draft_request_token, approved_at, sent_at, resolved_at
     FROM moderation_appeals
     WHERE id = ${appealId}
-    FOR UPDATE
   `)
   const appeal = rows[0]
   return (

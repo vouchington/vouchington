@@ -36,6 +36,7 @@ export function FlatReportsClient(props: FlatReportsClientProps) {
     pollingTimedOut,
     reports,
     rerunTimedOut,
+    rerunFailed,
     rerunningId,
     selectedIds,
     setBulkAction,
@@ -77,6 +78,11 @@ export function FlatReportsClient(props: FlatReportsClientProps) {
       {(pollingTimedOut || rerunTimedOut) && (
         <output className='block text-sm text-muted-foreground'>
           AI judgement is taking longer than expected. Refresh this page to check again.
+        </output>
+      )}
+      {rerunFailed && (
+        <output className='block text-sm text-muted-foreground'>
+          AI judgement could not be completed. You can re-run it.
         </output>
       )}
       <div className='flex flex-wrap items-center gap-2'>

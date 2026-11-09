@@ -1,4 +1,4 @@
-import type { Worker } from 'glide-mq'
+import type { Worker, WorkerOptions } from 'glide-mq'
 import { createWorker, type NamedQueueJob } from '@data-stores/valkey-glide-mq'
 import { recordSpendCapBreach } from '@modules/on-error'
 import { isModelProviderError } from '@vouchington/ai/providers'
@@ -16,6 +16,7 @@ import {
 } from '@queues/ai-agents/config'
 import { evaluateSpendCapBreach, SpendCapBreachError } from '@services/ai-usage'
 import { processAIAgent } from '../processors.mts'
+import { withDurableRerunOutcome } from '../processors/durable-rerun-outcomes.mts'
 import { handleModelProviderError } from '../processors/provider-failure.mts'
 import { classifierRunBackoffMs } from '../processors/classifier-run-backoff.mts'
 import type { AIAgentJobPayloads } from '@queues/ai-agents/types'
@@ -82,10 +83,13 @@ async function jobWouldIncurSpend(job: AIAgentWorkerJob): Promise<boolean> {
   return true
 }
 
-export function createAIAgentsWorker(): Worker {
+export function createAIAgentsWorker(
+  scheduling: Pick<WorkerOptions, 'blockTimeout' | 'promotionInterval'> = {},
+): Worker {
   return createWorker(
     AI_AGENTS_QUEUE_NAME,
-    (job: AIAgentWorkerJob): Promise<unknown> => processAIAgentWorkerJob(job),
+    (job: AIAgentWorkerJob): Promise<unknown> =>
+      withDurableRerunOutcome(job, () => processAIAgentWorkerJob(job)),
     {
       dedicatedCommandClient: true,
       concurrency: getWorkerConcurrency('aiAgents', { baseline: 5 }),
@@ -99,6 +103,7 @@ export function createAIAgentsWorker(): Worker {
       stalledInterval: 30_000,
       // Only the `classifier-run` job names this strategy; every other job keeps its own backoff.
       backoffStrategies: { [CLASSIFIER_RUN_BACKOFF.type]: classifierRunBackoffMs },
+      ...scheduling,
     },
   )
 }

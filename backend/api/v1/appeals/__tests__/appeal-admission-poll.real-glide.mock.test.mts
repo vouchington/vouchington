@@ -7,12 +7,19 @@ import {
   readAllQueueJobs,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { makeAgentModelCaller } from '@voucha/test-helpers/agents/model-call-result'
+import {
+  makeAgentModelCaller,
+  makeModelCallResult,
+} from '@voucha/test-helpers/agents/model-call-result'
 import { ai_agents } from '@queues/ai-agents/queues'
 import type { AppealResolutionJobData } from '@queues/ai-agents/types'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import { processAppealResolution } from '../../../../workers/ai-agents/processors/process-appeal-resolution.mts'
+import {
+  appealResolutionRequestToken,
+  markAppealResolutionRunFailed,
+} from '@services/moderation-appeals/rerun-outcomes'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
@@ -38,6 +45,22 @@ describe('appeal resolution queue admission and result polling', () => {
     expect(rerun.body.run_id).toMatch(/^appeal_resolution_[0-9a-f-]{36}$/)
 
     const detailPath = `/api/v1/appeals/${appeal.id}?consistency=primary`
+    const outcomePath = `/api/v1/appeals/${appeal.id}/resolution-drafts/${rerun.body.run_id}`
+    expect((await request.get(outcomePath).expect(200)).body).toMatchObject({
+      run_id: rerun.body.run_id,
+      status: 'active',
+      ai_drafted_at: null,
+      latest_lifecycle_change_id: null,
+    })
+    await createRequest().get(outcomePath).expect(401)
+    const appellantRequest = createRequest()
+    await appellantRequest.authenticateAs(appellant)
+    await appellantRequest.get(outcomePath).expect(403)
+    await request
+      .get(
+        `/api/v1/appeals/${appeal.id}/resolution-drafts/appeal_resolution_${crypto.randomUUID()}`,
+      )
+      .expect(404)
     const pending = await request.get(detailPath).expect(200)
     expect(pending.body.appeal).toMatchObject({
       status: 'pending',
@@ -85,7 +108,29 @@ describe('appeal resolution queue admission and result polling', () => {
         public_response: 'We reviewed this appeal.',
         internal_response: 'The warning was warranted.',
       })
-      await processAppealResolution(job! as Job<AppealResolutionJobData>, callModel)
+      const modelStarted = Promise.withResolvers<void>()
+      const releaseModel = Promise.withResolvers<void>()
+      callModel.mockImplementation(async () => {
+        modelStarted.resolve()
+        await releaseModel.promise
+        return makeModelCallResult({
+          recommended_action: 'deny',
+          public_response: 'We reviewed this appeal.',
+          internal_response: 'The warning was warranted.',
+        })
+      })
+      const processing = processAppealResolution(job! as Job<AppealResolutionJobData>, callModel)
+      await modelStarted.promise
+      const requestToken = appealResolutionRequestToken(rerun.body.run_id)
+      expect(requestToken).not.toBeNull()
+      await markAppealResolutionRunFailed(appeal.id, requestToken!)
+      expect((await request.get(outcomePath).expect(200)).body).toMatchObject({
+        status: 'failed',
+        ai_drafted_at: null,
+        latest_lifecycle_change_id: null,
+      })
+      releaseModel.resolve()
+      await processing
       const completed = await request.get(detailPath).expect(200)
       expect(completed.body.appeal).toMatchObject({
         status: 'pending',
@@ -94,6 +139,12 @@ describe('appeal resolution queue admission and result polling', () => {
         ai_drafted_at: expect.any(String),
         ai_draft_run_id: rerun.body.run_id,
         ai_draft_requested_run_id: rerun.body.run_id,
+      })
+      expect((await request.get(outcomePath).expect(200)).body).toMatchObject({
+        run_id: rerun.body.run_id,
+        status: 'succeeded',
+        ai_drafted_at: completed.body.appeal.ai_drafted_at,
+        latest_lifecycle_change_id: completed.body.appeal.latest_lifecycle_change_id,
       })
       expect(callModel).toHaveBeenCalledOnce()
     } finally {

@@ -1,4 +1,5 @@
 import type { AgentModerationCleanupContinuation } from './cleanup-agent-moderations.mts'
+import type { AiRerunOutcomeCleanupOptions } from './cleanup-ai-rerun-outcomes.mts'
 import type { MembershipOperationalCleanupOptions } from './cleanup-membership-operational.mts'
 import type { PaymentOperationCleanupOptions } from './cleanup-payment-operations.mts'
 import type { NotificationEmailCleanupOptions } from './cleanup-notification-email.mts'
@@ -75,6 +76,8 @@ export type DataRetentionCleanupOptions = {
     now?: Date
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
+  reportJudgementRuns?: OptionalRetentionLimits<AiRerunOutcomeCleanupOptions>
+  appealResolutionRuns?: OptionalRetentionLimits<AiRerunOutcomeCleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
   postModerationLedger?: Partial<DataRetentionLimits> & {
     postIds?: readonly string[]

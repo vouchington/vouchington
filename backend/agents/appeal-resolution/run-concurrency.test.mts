@@ -4,6 +4,7 @@ import { createTestUser, insertTestUserWarning, WEB_PROVENANCE } from '@voucha/t
 import { approveModerationAppeal } from '@services/moderation-appeals/approve-appeal'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { getModerationAppealById } from '@services/moderation-appeals/get'
+import { getAppealResolutionRunOutcome } from '@services/moderation-appeals/rerun-outcomes'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import { runAppealResolutionAgent, type AppealModelCaller } from './run.mts'
 import { appealResolutionRunInputForTest } from '@voucha/test-helpers/appeal-resolution-run'
@@ -92,7 +93,7 @@ describe('runAppealResolutionAgent concurrency', () => {
       appeal_reason: `Superseded appeal ${randomUUID()}`,
     })
     const { appeal } = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
-    const oldRunInput = await appealResolutionRunInputForTest(appeal.id)
+    const oldRunInput = await appealResolutionRunInputForTest(appeal.id, staff.id)
     const modelStarted = Promise.withResolvers<void>()
     const modelReleased = Promise.withResolvers<void>()
     const oldRun = runAppealResolutionAgent(oldRunInput, TEST_MODEL_SELECTION, async () => {
@@ -108,6 +109,11 @@ describe('runAppealResolutionAgent concurrency', () => {
     const pending = await getModerationAppealById(appeal.id)
     expect(pending!.ai_draft_run_id).toBeNull()
     expect(pending!.ai_draft_requested_run_id).toBe(newRunInput.runId)
+    expect(await getAppealResolutionRunOutcome(appeal.id, oldRunInput.runId)).toMatchObject({
+      status: 'expired',
+      ai_drafted_at: null,
+      latest_lifecycle_change_id: null,
+    })
 
     await runAppealResolutionAgent(newRunInput, TEST_MODEL_SELECTION, () =>
       Promise.resolve(makeModelResponse('accept', 'Current draft.', 'New model result.')),
@@ -115,5 +121,10 @@ describe('runAppealResolutionAgent concurrency', () => {
     const completed = await getModerationAppealById(appeal.id)
     expect(completed!.ai_draft_run_id).toBe(newRunInput.runId)
     expect(completed!.public_response).toBe('Current draft.')
+    expect(await getAppealResolutionRunOutcome(appeal.id, newRunInput.runId)).toMatchObject({
+      status: 'succeeded',
+      ai_drafted_at: completed!.ai_drafted_at!.toISOString(),
+      latest_lifecycle_change_id: completed!.latest_lifecycle_change_id,
+    })
   })
 })
