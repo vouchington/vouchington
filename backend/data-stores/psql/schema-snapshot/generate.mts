@@ -1,6 +1,5 @@
-import { readSchemaCatalog } from '@vouchington/postgres/pg-schema-snapshot'
 import { buildSchemaSnapshot } from './build-snapshot.mts'
-import { catalogQuery } from './catalog-query.mts'
+import { readSchemaCatalog } from './catalog-queries.mts'
 import { readNoMistakesCatalog } from './no-mistakes-catalog.mts'
 import { renderSchemaMarkdown } from './render-markdown.mts'
 import { publishSchemaSnapshot } from './publish.mts'
@@ -9,7 +8,7 @@ import { publishSchemaSnapshot } from './publish.mts'
 export async function generateSchemaSnapshot({
   check = false,
 }: { check?: boolean } = {}): Promise<void> {
-  const snapshot = buildSchemaSnapshot(await readSchemaCatalog(catalogQuery))
+  const snapshot = buildSchemaSnapshot(await readSchemaCatalog())
   const { generatePostgresCatalog } = await import('no-mistakes')
   await publishSchemaSnapshot({
     snapshot,
