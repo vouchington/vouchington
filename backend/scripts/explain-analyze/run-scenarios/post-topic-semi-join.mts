@@ -93,39 +93,10 @@ async function captureTopicPair(topic: TopicFixture): Promise<void> {
   await capture(continuationId, continuationOptions)
 }
 
-export async function runPostTopicSemiJoinScenarios(): Promise<void> {
-  await captureTopicPair('sparse')
-  await captureTopicPair('dense')
-
-  const topicIds = [
-    POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
-    POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
-  ]
-  const multiTopicOptions: PostSearchOptions = {
-    universal_topic_ids: topicIds,
-    sort: 'new',
-    time_range: 'all',
-    limit: PAGE_SIZE,
-  }
-  const multiTopicPage = await page(multiTopicOptions)
-  if (multiTopicPage.results.length === 0)
-    throw new Error('Two-topic post search omitted its seeded intersection')
-  registerTopicSemiJoinScenario('post-topic-semi-join-multi-topic-search', false)
-  await capture('post-topic-semi-join-multi-topic-search', multiTopicOptions)
-
-  const feedPage = await getPostFeedIds(seedUser, {
-    universal_topic_ids: [
-      POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
-      POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
-    ],
-    feed_type: 'any',
-    time_range: '1w',
-    limit: PAGE_SIZE,
-  })
-  if (feedPage.results.length === 0)
-    throw new Error('Two-topic post feed omitted its seeded intersection')
-  registerScenarioContract('post-topic-semi-join-multi-topic-feed', {
+function registerMultiTopicFeedScenario(id: string): void {
+  registerScenarioContract(id, {
     seededRows: POST_TOPIC_FIXTURES_SEEDED_ROWS,
+    allowEmptyResult: true,
     expectations: [
       { kind: 'maxProcessedRows', relation: 'posts', max: MAX_FEED_POST_ROWS },
       {
@@ -150,18 +121,64 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
       posts: 'A followed-post feed applies the bounded two-topic filter after delivery selection.',
     },
   })
+}
+
+export async function runPostTopicSemiJoinScenarios(): Promise<void> {
+  await captureTopicPair('sparse')
+  await captureTopicPair('dense')
+
+  const topicIds = [
+    POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
+    POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
+  ]
+  const multiTopicOptions: PostSearchOptions = {
+    universal_topic_ids: topicIds,
+    sort: 'new',
+    time_range: 'all',
+    limit: PAGE_SIZE,
+  }
+  const multiTopicPage = await page(multiTopicOptions)
+  if (multiTopicPage.results.length === 0)
+    throw new Error('Two-topic post search omitted its seeded intersection')
+  registerTopicSemiJoinScenario('post-topic-semi-join-multi-topic-search', false)
+  await capture('post-topic-semi-join-multi-topic-search', multiTopicOptions)
+
+  const multiTopicFeedOptions = {
+    universal_topic_ids: [
+      POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
+      POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
+    ],
+    feed_type: 'any' as const,
+    time_range: '1w' as const,
+    limit: PAGE_SIZE,
+  }
+  const feedPage = await getPostFeedIds(seedUser, multiTopicFeedOptions)
+  const feedCursor = feedPage.page_info.end_cursor
+  if (feedPage.results.length > PAGE_SIZE || !feedPage.page_info.has_next_page || !feedCursor)
+    throw new Error('Two-topic post feed must return a bounded page and usable continuation cursor')
+  registerMultiTopicFeedScenario('post-topic-semi-join-multi-topic-feed')
   await runAndCapture(
     'post-topic-semi-join-multi-topic-feed',
-    () =>
-      getPostFeedIds(seedUser, {
-        universal_topic_ids: [
-          POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
-          POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
-        ],
-        feed_type: 'any',
-        time_range: '1w',
-        limit: PAGE_SIZE,
-      }),
+    () => getPostFeedIds(seedUser, multiTopicFeedOptions),
+    undefined,
+    POST_FEED_QUERY,
+  )
+
+  const continuation = await getPostFeedIds(seedUser, {
+    ...multiTopicFeedOptions,
+    after: feedCursor,
+  })
+  if (
+    continuation.results.length > PAGE_SIZE ||
+    !continuation.page_info.has_next_page ||
+    !continuation.page_info.end_cursor ||
+    continuation.page_info.end_cursor === feedCursor
+  )
+    throw new Error('Two-topic post feed continuation must advance its bounded cursor')
+  registerMultiTopicFeedScenario('post-topic-semi-join-multi-topic-feed-after')
+  await runAndCapture(
+    'post-topic-semi-join-multi-topic-feed-after',
+    () => getPostFeedIds(seedUser, { ...multiTopicFeedOptions, after: feedCursor }),
     undefined,
     POST_FEED_QUERY,
   )

@@ -125,8 +125,8 @@
       },
       "read_feed": {
         "measured": {
-          "list": 5271,
-          "core": 3082
+          "list": 5266,
+          "core": 3077
         },
         "max": {
           "list": 6000,

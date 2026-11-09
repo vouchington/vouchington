@@ -7,6 +7,7 @@ import {
   POST_SHARE_DENSE_TARGET_COUNT,
 } from '../seed-data/post-feed-shares.mts'
 import { registerScenarioContract, type PlanExpectation } from '../plan-expectations.mts'
+import { runPostFeedInspectedCursorScenarios } from './post-feed-inspected-cursor.mts'
 
 const PAGE = 25
 /** The heavy follower follows 1000 users who each wrote a recent post. */
@@ -62,11 +63,13 @@ export async function runPostFeedShareScenarios(): Promise<void> {
       crossPartition: { posts: 'The feed walks direct and shared posts across id ranges.' },
     })
     let after: string | undefined
+    let firstPageIds: string[] = []
     await runAndCapture(scenarioId, async () => {
       const page = await getPostFeedIds(user, options)
-      if (page.results.length !== PAGE || !page.page_info.has_next_page)
-        throw new Error(`${scenarioId} must return a full page with a continuation`)
+      if (!page.page_info.has_next_page || !page.page_info.end_cursor)
+        throw new Error(`${scenarioId} must return an inspected-key continuation`)
       after = page.page_info.end_cursor ?? undefined
+      firstPageIds = page.results.map(result => result.id)
     })
     if (!after) throw new Error(`${scenarioId} must have a continuation cursor`)
     registerScenarioContract(`${scenarioId}-after`, {
@@ -75,7 +78,14 @@ export async function runPostFeedShareScenarios(): Promise<void> {
     })
     await runAndCapture(`${scenarioId}-after`, async () => {
       const next = await getPostFeedIds(user, { ...options, after })
-      if (!next.results.length) throw new Error(`${scenarioId} continuation must not be empty`)
+      if (!next.page_info.has_next_page || !next.page_info.end_cursor)
+        throw new Error(`${scenarioId} continuation must preserve inspected-key progress`)
+      if (next.page_info.end_cursor === after)
+        throw new Error(`${scenarioId} continuation did not advance its cursor`)
+      const firstIds = new Set(firstPageIds)
+      if (next.results.some(result => firstIds.has(result.id)))
+        throw new Error(`${scenarioId} continuation repeated a delivery from its first page`)
     })
   }
+  await runPostFeedInspectedCursorScenarios()
 }

@@ -13,4 +13,5 @@ export type PostFeedPageQueryOptions = {
   minScoreFollowTopics: number
   minScoreFollowUsers: number
   safeLimit: number
+  candidateLimit: number
 }

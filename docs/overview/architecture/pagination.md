@@ -47,6 +47,11 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
 - Post-search hot and trending ranks use a fixed epoch, keeping order stable across requests
   when vote scores are unchanged. Future timestamps participate in the rank; near ties can differ
   from an age-decayed calculation. Their opaque cursor binds that ordering.
+- Personalized post feeds inspect a bounded delivery prefix before applying post visibility and
+  feed filters. A short or empty page can still have `has_next_page`; the cursor advances over
+  inspected deliveries so later eligible posts and shares remain reachable, including more shares
+  for the same post. REST and MCP clients continue with the returned `end_cursor` and preserve the
+  feed filters until `has_next_page` is false.
 - Post search inspects a bounded index-ordered prefix before applying visibility and other residual
   filters. A short or empty page can have `has_next_page` true; clients continue with its cursor.
   Newest topic searches use that same inspected-key walk, checking membership against each post

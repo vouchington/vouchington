@@ -26,7 +26,7 @@ export async function runStoryMemberPageScenarios(): Promise<void> {
   const { storyId, feedSearchToken } = STORY_POST_RELATED_URL_PROJECTION_SEED
   const viewer = await getPrivateUserByAny(heavyFollowUser.id)
   if (!viewer) throw new Error('Story EXPLAIN viewer was not seeded')
-  // The seed dates these items six days before its anchor day. Under the wall clock, the feed's
+ The seed dates these items six days before its anchor day. Under the wall clock, the feed's
   // 7-day cutoff passes them for 15 minutes after noon UTC each day, so the lookup must use the
   // same pinned clock as the captured scenarios.
   const feedPage = await withSeedAnchorClock(() =>

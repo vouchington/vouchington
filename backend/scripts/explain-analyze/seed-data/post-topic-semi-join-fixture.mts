@@ -3,8 +3,6 @@ import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
 import sql from 'sql-template-strings'
 import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { seedUuid } from './common.mts'
-import { getPostFeedIds } from '../run-services.mts'
-import { seedUser } from '../run-support.mts'
 
 const ALIASES_PER_TOPIC = 300
 const SPARSE_POST_COUNT = 5
@@ -70,9 +68,21 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
   if (newestPosts.length !== newestPostCohortSize)
     throw new Error('Post topic fixture needs enough eligible newest posts for both raw windows')
 
-  const feedPostId = (await getPostFeedIds(seedUser, { time_range: '1w', limit: 1 })).results[0]
-    ?.entity_id
-  if (!feedPostId) throw new Error('Post topic fixture requires an existing feed delivery witness')
+  const { rows: feedPostRows } = await transaction<{ post_id: string }>(
+    `/* seedPostTopicSemiJoinFixture:feed-witness */
+     SELECT posts.id AS post_id
+     FROM posts
+     JOIN LATERAL (
+       SELECT id FROM post_feed_shares
+       WHERE recipient_user_id = $1 AND post_id = posts.id
+       ORDER BY id DESC LIMIT 1
+     ) shares ON TRUE
+     WHERE posts.id = $2
+     LIMIT 1`,
+    [seedUuid(0, '01'), seedUuid(2, '05')],
+  )
+  const feedPostId = feedPostRows[0]?.post_id
+  if (!feedPostId) throw new Error('Post topic fixture requires the seeded post-2 share witness')
   const sparsePostIds = newestPosts.slice(0, SPARSE_POST_COUNT).map(post => post.id)
   const sparseAliasIds = fixture.sparseAliasIds.slice(0, SPARSE_POST_COUNT)
   await transaction(

@@ -680,6 +680,10 @@ cap controls the checkbox interaction without changing the API's accepted time r
 searches retain hot ranking for every range, but the server restricts their eligible cohort to at most
 30 elapsed days; narrower requested windows remain narrower.
 
+REST and MCP post feeds may return a short or empty page with `has_next_page` while their bounded
+delivery walk inspects rows rejected by visibility or feed filters. Clients continue with the
+returned `page_info.end_cursor` and keep the same filters until the response says there is no next page.
+
 Swift and .NET must remove the personal discussions preference and client-side lookup, consume stored
 reference facts, and honor the producer's visibility behavior. Their adoption remains dependent work
 in [vouchington-clients#532](https://github.com/vouchington/vouchington-clients/issues/532); this producer

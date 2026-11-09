@@ -34,4 +34,5 @@ export const POST_DISCOVERY_SCENARIO_IDS = [
   'post-topic-semi-join-dense-continuation',
   'post-topic-semi-join-multi-topic-search',
   'post-topic-semi-join-multi-topic-feed',
+  'post-topic-semi-join-multi-topic-feed-after',
 ] as const

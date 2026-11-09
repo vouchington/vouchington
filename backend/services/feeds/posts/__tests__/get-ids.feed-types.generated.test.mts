@@ -20,7 +20,8 @@ describe('getPostFeedIds (feed types)', () => {
     const result = await getPostFeedIds(user, { feed_type: 'any' })
 
     expect(result.results).toEqual([])
-    expect(result.page_info.has_next_page).toBe(false)
+    const cursor = expect.any(String)
+    expect(result.page_info.end_cursor).toEqual(result.page_info.has_next_page ? cursor : null)
   })
 
   it('returns posts from followed users with feed_type=follow_users', async () => {

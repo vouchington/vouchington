@@ -8,7 +8,6 @@ export {
   type DirectPostEligibilityOptions,
 } from './post-publication-eligibility.mts'
 export { buildNotificationPostRecipientEligibilityFilter } from './post-notification-eligibility.mts'
-export { buildHotScoreExpression } from './hot-score.mts'
 export { buildExcludedCTE } from './excluded-cte.mts'
 export { buildHostnameExclusionExists } from './hostname-exclusion-filter.mts'
 export { buildTimeRangeFilter, DEFAULT_POST_SEARCH_TIME_RANGE } from './time-range.mts'
