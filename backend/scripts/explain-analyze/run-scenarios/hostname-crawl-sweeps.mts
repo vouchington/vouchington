@@ -55,10 +55,10 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
          ON CONFLICT (is_singleton) DO UPDATE SET cursor_hostname_id = EXCLUDED.cursor_hostname_id`,
         [BOILERPLATE_BATCH_CURSOR],
       )
-      const rows = await sweepNextBoilerplateHostnameBatch({
-        hostnameBatchSize: BOILERPLATE_BATCH_HOSTNAME_COUNT,
-        candidateLimit: 500,
-      })
+      const rows = await sweepNextBoilerplateHostnameBatch(
+        { hostnameBatchSize: BOILERPLATE_BATCH_HOSTNAME_COUNT, candidateLimit: 500 },
+        async () => undefined,
+      )
       if (rows.length !== BOILERPLATE_BATCH_HOSTNAME_COUNT * BOILERPLATE_BATCH_PATHS_PER_HOSTNAME)
         throw new Error('Expected every seeded hostname batch parent path to need removal')
     },
