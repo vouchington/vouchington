@@ -93,6 +93,8 @@ Numeric constants named `*BATCH_SIZE`, `*PAGE_SIZE`, `*CHUNK_SIZE`, `MAX_BATCHES
 
 The relational-storage guard reads the generated schema snapshot with no debt inventory: every UUID array, UUID reference without a target foreign key, and scoped encoded key fails unless an exact entry in the reviewed catalog covers it. Structured documents, data points, change history, and reviewed opaque or provider JSON stay JSON; a JSON column is not a defect. A stale catalog entry fails. See the [schema policy](../../postgres-schema-rules.md#prelaunch-relational-storage).
 
+The canonical URL terminal-root key is a generated copy of its own row's primary key, rather than a separate relationship. The guard recognizes only its exact conditional expression, the single-column `id` primary key, and the validated canonical self-reference FK; a writable key or altered target fails.
+
 Legacy migration exceptions use the committed comparison base rather than a frozen ceiling, so
 an exception removed from the base cannot later be reintroduced. The ratchet reads retired-marker
 SQL paths at that base: existing wording and stale-entry checks make those paths equivalent to

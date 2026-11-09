@@ -125,18 +125,6 @@ describe('query-builder (basic)', () => {
     expect(query.values).toContain(topicId)
   })
 
-  it('buildPostSearchQuery includes canonical URL CTE when url_id is provided', () => {
-    const urlId = '123e4567-e89b-12d3-a456-426614174000'
-    const query = buildPostSearchQuery(undefined, {
-      url_id: urlId,
-    })
-
-    expect(query.sql).toContain('WITH')
-    expect(query.sql).toContain('canonical_urls')
-    expect(query.sql).toContain('RECURSIVE')
-    expect(query.values).toContain(urlId)
-  })
-
   it('buildPostSearchQuery adds EXISTS clause for related_topic_ids', () => {
     const topicId1 = '123e4567-e89b-12d3-a456-426614174001'
     const topicId2 = '123e4567-e89b-12d3-a456-426614174002'

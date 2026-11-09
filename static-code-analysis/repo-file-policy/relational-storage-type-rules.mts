@@ -158,6 +158,25 @@ export function isGeneratedAlias(
   key: string,
   expression: string | null,
 ): boolean {
+  if (key === 'urls.canonical_root_id') {
+    const normalizedExpression = expression?.replace(/\s+/gu, ' ').trim().toLowerCase()
+    const hasCanonicalRootForeignKey = Object.values(table.foreignKeys).some(
+      fk =>
+        fk.columns.length === 1 &&
+        fk.columns[0] === 'canonical_url_id' &&
+        fk.referencedTable === 'urls' &&
+        fk.referencedColumns.length === 1 &&
+        fk.referencedColumns[0] === 'canonical_root_id' &&
+        fk.validated,
+    )
+    return (
+      normalizedExpression === 'case when (canonical_url_id is null) then id else null::uuid end' &&
+      table.primaryKey?.columns.length === 1 &&
+      table.primaryKey.columns[0] === 'id' &&
+      hasCanonicalRootForeignKey
+    )
+  }
+
   const expected = GENERATED_FK_ALIASES.get(key)
   return (
     expected !== undefined &&

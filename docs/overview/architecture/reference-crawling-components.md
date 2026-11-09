@@ -58,6 +58,11 @@ incoming aliases before changing a root, so concurrent rewrites cannot commit cy
 chains. Readers resolve the terminal reference directly; unrelated URLs do not share a rewrite
 mutex. Conflicting rewrites retry their complete transaction against the current roots.
 
+RSS feed and item foreign keys to URLs check existence at commit. Their triggers first write
+the URL's feed rank or latest publication time, so concurrent inserts do not acquire shared
+FK locks and then upgrade them while updating the generated root key. URL deletion cascades
+remain immediate, and a transaction cannot commit a missing URL reference.
+
 Crawler-related outbound HTTP uses centralized undici dispatchers to reuse sockets and avoid port exhaustion under worker/test concurrency. SSRF-validated HTML and robots.txt fetches use cached pinned dispatchers keyed by resolved addresses so DNS pinning still removes the TOCTOU window between validation and connect. `@jongleberry/vurst-html` decodes bounded HTML bytes before parsing, with BOM, `Content-Type`, and early HTML meta declarations taking precedence before UTF-8 and Windows-1252 fallbacks so legacy pages can still be parsed.
 
 The crawl URL handler on the shared CPU queue stores crawl output through the crawl service and
