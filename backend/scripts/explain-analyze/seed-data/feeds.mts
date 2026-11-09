@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { seedRecommendedRssFeedsPopularFeed } from './recommended-rss-feeds.mts'
 import { contentHash, FEED_URL_COUNT, HOSTNAME_COUNT, ITEM_URL_POOL, seedUuid } from './common.mts'
 
 export async function seedRssFeeds(feedCount = 500, itemCount = 5000): Promise<void> {
@@ -180,4 +181,5 @@ export async function seedHeavyFollowRelations(): Promise<void> {
   )
 
   await rssFeedTransaction.commit()
+  await seedRecommendedRssFeedsPopularFeed()
 }

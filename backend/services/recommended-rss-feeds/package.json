@@ -21,9 +21,11 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@services/pagination": "workspace:^",
-    "@voucha/types": "workspace:^"
+    "@voucha/types": "workspace:^",
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@services/rss-feeds": "workspace:^",

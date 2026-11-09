@@ -48,6 +48,7 @@ export const REGISTRY_ORDER = [
   'sitemaps-work-config',
   'stripe-work-config',
   'recommended-topics-work-config',
+  'recommended-rss-feeds-work-config',
   'engagement-emails-work-config',
   'user-deletions-work-config',
   'topics-work-config',

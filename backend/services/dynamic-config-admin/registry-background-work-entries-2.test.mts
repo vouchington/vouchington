@@ -16,6 +16,7 @@ import * as owner11 from '@services/topics/work-limits'
 import * as owner12 from '@services/user-deletions/work-limits'
 import * as owner14 from '@services/engagement-emails/work-limits'
 import * as owner15 from '@services/recommended-topics/work-limits'
+import * as owner20 from '@services/recommended-rss-feeds/work-limits'
 import * as owner16 from '@services/stripe/work-limits'
 import * as owner17 from '@queues/find-your-friends/config'
 import * as owner18 from '@queues/crawl-dispatch/config'
@@ -118,6 +119,14 @@ const owners = [
     read: (field: string) =>
       owner15.getRecommendedTopicsWorkLimit(
         field as keyof typeof owner15.recommendedTopicsWorkMaxValues,
+      ),
+  },
+  {
+    config: owner20.recommendedRssFeedsWorkConfig,
+    maxima: owner20.recommendedRssFeedsWorkMaxValues,
+    read: (field: string) =>
+      owner20.getRecommendedRssFeedsWorkLimit(
+        field as keyof typeof owner20.recommendedRssFeedsWorkMaxValues,
       ),
   },
   {

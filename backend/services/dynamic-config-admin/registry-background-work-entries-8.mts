@@ -11,6 +11,10 @@ import {
   recommendedTopicsWorkConfig,
   recommendedTopicsWorkMaxValues,
 } from '@services/recommended-topics/work-limits'
+import {
+  recommendedRssFeedsWorkConfig,
+  recommendedRssFeedsWorkMaxValues,
+} from '@services/recommended-rss-feeds/work-limits'
 import { stripeWorkConfig, stripeWorkMaxValues } from '@services/stripe/work-limits'
 
 export const backgroundWorkRegistryEntries8 = {
@@ -42,6 +46,20 @@ export const backgroundWorkRegistryEntries8 = {
     maxValues: recommendedTopicsWorkMaxValues,
     descriptions: {
       candidate_page_size: 'Candidate page size for recommended topics processing.',
+    },
+  }),
+  'recommended-rss-feeds-work-config': defineBoundedWorkNamespace({
+    namespace: 'recommended-rss-feeds-work-config',
+    config: recommendedRssFeedsWorkConfig,
+    label: 'Recommended RSS feeds',
+    maxValues: recommendedRssFeedsWorkMaxValues,
+    descriptions: {
+      collaborative_viewer_feed_limit:
+        'Newest feeds the viewer follows that seed collaborative RSS feed recommendations.',
+      collaborative_co_follower_limit:
+        'Newest co-followers read per seed feed for collaborative RSS feed recommendations.',
+      collaborative_co_follower_feed_limit:
+        'Newest follows read per co-follower for collaborative RSS feed recommendations.',
     },
   }),
   'stripe-work-config': defineBoundedWorkNamespace({

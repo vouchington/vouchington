@@ -58,7 +58,22 @@ export async function runEntityAndCommunityScenarios() {
   // Topic lookup by slug (hits topics + topic_aliases → view_topics)
   await runAndCapture('topic-by-slug', () => getTopicByAny('seed-topic-0'))
 
-  // Recommended RSS feeds — multi-CTE recommendation engine with friends, topic, and collaborative sources
+  // Recommended RSS feeds — multi-CTE recommendation engine with friends, topic, and collaborative sources.
+  // The viewer follows a popular feed (1,000 co-followers with 30 follows each) plus 30 more feeds;
+  // the collaborative arm reads the viewer's newest 10 follows x each feed's newest 25 co-followers
+  // x each co-follower's newest 20 follows (at most 5,000 follows) through the newest-follow indexes.
+  registerScenarioContract('recommended-rss-feeds', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'relation__user__follow__rss_feed', max: 5_400 },
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'idx_relation__user__follow__rss_feed__subject__newest',
+          'idx_relation__user__follow__rss_feed__object__newest',
+        ],
+      },
+    ],
+  })
   await runAndCapture('recommended-rss-feeds', () =>
     getRecommendedRssFeeds(seedUser.id, { limit: 25 }),
   )

@@ -2,6 +2,7 @@ import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import { buildPageInfo, decodeUuidCursor, isScoreCursor } from '@modules/pagination'
 
+import { collaborativeFeedsCtesSql } from './collaborative-feeds-sql.mts'
 import { rssFollowSignalEligibilitySql } from './rss-follow-signal-eligibility.mts'
 import type { GetRecommendedRssFeedsOptions, GetRecommendedRssFeedsResult } from './types.mts'
 
@@ -117,33 +118,7 @@ export async function getRecommendedRssFeeds(
       WHERE NOT EXISTS (SELECT 1 FROM user_followed_feeds WHERE user_followed_feeds.feed_id = rf.id)
         AND NOT EXISTS (SELECT 1 FROM user_muted_feeds WHERE user_muted_feeds.feed_id = rf.id)
     ),
-    -- Collaborative feeds (weight 2.0): feeds followed by users who share feed overlap
-    collaborative_feeds AS (
-      SELECT
-        ufr2.object_id AS feed_id,
-        2.0 AS score,
-        'collaborative'::TEXT AS reason
-      FROM relation__user__follow__rss_feed ufr1
-      JOIN relation__user__follow__rss_feed ufr2
-        ON ufr2.subject_id = ufr1.subject_id
-        AND ufr2.object_id != ufr1.object_id
-        AND ufr2.deleted_at IS NULL
-      JOIN users source_user ON source_user.id = ufr1.subject_id
-      CROSS JOIN viewer
-      JOIN rss_feeds rf
-        ON rf.id = ufr2.object_id
-        AND rf.deleted_at IS NULL
-      JOIN view_rss_feed_current_states current_state
-        ON current_state.rss_feed_id = rf.id
-        AND current_state.is_enabled = TRUE
-        AND current_state.is_discoverable = TRUE
-      WHERE ufr1.subject_id != $1
-        AND ufr1.object_id IN (SELECT feed_id FROM user_followed_feeds)
-        AND ufr1.deleted_at IS NULL
-        AND ${rssFollowSignalEligibilitySql}
-        AND NOT EXISTS (SELECT 1 FROM user_followed_feeds WHERE user_followed_feeds.feed_id = ufr2.object_id)
-        AND NOT EXISTS (SELECT 1 FROM user_muted_feeds WHERE user_muted_feeds.feed_id = ufr2.object_id)
-    ),
+    ${collaborativeFeedsCtesSql()}
     -- Union of selected sources
     all_candidates AS (
       ${includeFriends ? 'SELECT feed_id, score, reason FROM friends_feeds' : ''}
