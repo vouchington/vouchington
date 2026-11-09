@@ -1,5 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { advisoryLockPool, writePool, type PoolClient } from '@data-stores/psql'
+import {
+  advisoryLockPool,
+  jobSerializationPool,
+  writePool,
+  type PoolClient,
+} from '@data-stores/psql'
 import { onTestFinished } from 'vitest'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 import {
@@ -21,7 +26,12 @@ export async function withTestOwnedPostgresWait<Result>(
   options: TestOwnedPostgresWaitOptions,
   action: (waitForLock: (operation: Promise<unknown>) => Promise<void>) => Promise<Result>,
 ): Promise<Result> {
-  const pool = options.pool === 'write' ? writePool : advisoryLockPool
+  const pool =
+    options.pool === 'write'
+      ? writePool
+      : options.pool === 'job-serialization'
+        ? jobSerializationPool
+        : advisoryLockPool
   const token = {}
   const cancelled = Promise.withResolvers<never>()
   const captured = Promise.withResolvers<ReturnType<typeof createTestPostgresClientLoan>>()

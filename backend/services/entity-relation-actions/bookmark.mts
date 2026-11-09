@@ -109,7 +109,6 @@ async function writePreparedBookmarkGroups(
     const guards = group.flatMap(item => (item.guard ? [item.guard] : []))
     const postMutationGuard = guards.length
       ? {
-          postIds: [...new Set(guards.flatMap(guard => guard.postIds))],
           assertAllowed: async (query: Parameters<(typeof guards)[number]['assertAllowed']>[0]) => {
             // oxlint-disable-next-line no-await-in-loop -- authorization checks share this transaction client
             for (const guard of guards) await guard.assertAllowed(query)

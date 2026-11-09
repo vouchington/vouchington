@@ -200,6 +200,11 @@ describe('reviewed token and audit snapshot identifiers', () => {
       'change_id',
       'token, cursor or protocol identifier',
     ],
+    [
+      'rss_feed_item_category_projection_results',
+      'change_id',
+      'token, cursor or protocol identifier',
+    ],
   ])('reports %s.%s as stale once the column gains a foreign key', (table, name, label) => {
     const value = snapshot(table, { [name]: column('uuid') })
     expect(checkRelationalStorage(value, noFreshness)).toEqual([])

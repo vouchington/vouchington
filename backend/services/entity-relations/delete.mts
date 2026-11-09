@@ -17,7 +17,7 @@ import {
   getDeletedFollowPairs,
   type DeletedEntityRelation,
 } from './deleted-relation-results.mts'
-import { lockBidirectionalRelationMutation } from './bidirectional-pair-lock.mts'
+import { lockBidirectionalRelationPairs } from './bidirectional-pair-lock.mts'
 
 export type SoftDeleteEntityRelationOptions = QueryOptions & {
   // Remote-origin deletes must not re-trigger outbound-destined side effects.
@@ -100,12 +100,11 @@ export const softDeleteEntityRelation = async (
       AND deleted_at IS NULL
   `)
   await runRelationTransaction(options, async transactionQuery => {
-    await lockBidirectionalRelationMutation(
+    await lockBidirectionalRelationPairs(
       transactionQuery,
       relation.table_name,
       subject.id,
       objects.map(object => object.id),
-      relation.subject_type === 'user' ? [subject.id, ...objects.map(object => object.id)] : [],
     )
     await deleteBidirectionalRelationRows(transactionQuery, query, reverseQuery)
   })
@@ -187,12 +186,11 @@ export const softDeleteEntityRelationsForSubjects = async (
   `)
 
   await runRelationTransaction(options, async transactionQuery => {
-    await lockBidirectionalRelationMutation(
+    await lockBidirectionalRelationPairs(
       transactionQuery,
       relation.table_name,
       object.id,
       subjects.map(subject => subject.id),
-      relation.subject_type === 'user' ? [...subjects.map(subject => subject.id), object.id] : [],
     )
     await deleteBidirectionalRelationRows(transactionQuery, query, reverseQuery)
   })

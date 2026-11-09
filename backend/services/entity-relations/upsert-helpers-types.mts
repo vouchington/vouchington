@@ -46,11 +46,9 @@ export type UpsertEntityRelationsOptions = QueryOptions & {
   // URL persistence assessed provider policy before ownership locks and checked fresh local
   // policy under those locks. Repeating the pooled guard could self-block on a provider block.
   skipBlockedHostnameGuard?: boolean
-  // Trusted commands that need a state-dependent authorization recheck supply their participating
-  // post scopes and callback here. upsert invokes it inside its own mutation transaction, after
-  // canonical locks and before the insert, so post-commit effects never survive a failed guard.
+  // Trusted commands supply an authorization recheck inside the mutation transaction before
+  // the insert, so post-commit effects never survive a failed guard.
   postMutationGuard?: {
-    readonly postIds: readonly string[]
     readonly assertAllowed: (query: TransactionQuery) => Promise<void>
   }
 }

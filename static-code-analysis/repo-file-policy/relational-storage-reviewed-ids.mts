@@ -126,6 +126,10 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'rss_feed_item_category_snapshot_reconciliations.change_id',
     'Opaque notification enqueue identity with no owning entity row; stable across exact snapshot replay and fresh after each edit or acknowledged-row recreation.',
   ],
+  [
+    'rss_feed_item_category_projection_results.change_id',
+    'Opaque notification identity of the completed snapshot; has no owning entity row and survives pending reconciliation acknowledgement for exact replay.',
+  ],
 ])
 
 // Ids recorded at write time and never joined for authorization. They outlive their source row.

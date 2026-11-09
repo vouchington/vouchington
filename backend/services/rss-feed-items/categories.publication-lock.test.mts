@@ -46,7 +46,7 @@ describe('RSS feed item category publication locking', () => {
       releaseRow.resolve()
     }
     await holder
-    await expect(upserting).resolves.toBeUndefined()
+    await upserting
 
     async function contendForCategoryAliasScope(): Promise<void> {
       await using query = await beginTransaction()
@@ -101,7 +101,7 @@ describe('RSS feed item category publication locking', () => {
       releaseRow.resolve()
     }
     await holder
-    await expect(reconciling).resolves.toBeUndefined()
+    await reconciling
     await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([])
 
     async function contendForStaleCategoryAliasScope(): Promise<void> {

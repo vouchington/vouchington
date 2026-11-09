@@ -11,8 +11,10 @@ import { NOTIFICATION_VISIBILITY_SCENARIO_IDS } from './notification-visibility-
 import { POST_URL_CAPACITY_SCENARIOS } from './post-related-url-capacity-scenario-ids.mts'
 import { COMMUNITY_AGENT_PROMPT_SCENARIO_IDS } from './community-agent-prompt-page-ids.mts'
 import { CRITICAL_ALERT_SCENARIO_IDS } from './critical-alert-scenario-ids.mts'
+import { CATEGORY_PROJECTION_SCENARIO_IDS } from './category-projection-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
+  ...CATEGORY_PROJECTION_SCENARIO_IDS,
   ...MEDIA_DELIVERY_LOCK_SCENARIOS,
   ...COMMUNITY_BAN_SCENARIO_IDS,
   ...ELIGIBLE_LIST_SCENARIO_IDS,

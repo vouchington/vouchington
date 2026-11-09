@@ -22,13 +22,14 @@ import { invalidateRssFeedItemsAndWaitForPurge } from '@services/entity-cache/in
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { normalizeHashtag } from '@ts-shared/utils'
 import createHttpError from 'http-errors'
-import { withRssFeedItemCategorySnapshotLocks } from './category-snapshot-lock.mts'
+import {
+  applyRssFeedItemCategorySnapshots,
+  type PendingRssFeedItemCategorySnapshot,
+} from './category-projection-result.mts'
 import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
 import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
-
 // Keeps per-call Valkey work below the client in-flight ceiling during large category imports.
-
 // Canonical definition lives in @voucha/types/entities/rss-feed-item (avoids a
 // @queues/rss-feed-maintenance <-> @services/rss-feed-items workspace cycle:
 // the queue needs the input shape but must not reach into services/rss-feed-items).
@@ -38,16 +39,11 @@ export type { RssFeedItemCategoryInput }
 
 export async function upsertRssFeedItemCategories(
   items: RssFeedItemCategoryInput[],
-): Promise<void> {
-  if (!items || items.length === 0) {
-    return
-  }
-
+  pending?: PendingRssFeedItemCategorySnapshot,
+): Promise<boolean> {
+  if (!items || items.length === 0) return false
   const snapshots = normalizeRssFeedItemCategorySnapshots(items)
-  await withRssFeedItemCategorySnapshotLocks(
-    snapshots.map(snapshot => snapshot.rss_feed_item_id),
-    () => upsertRssFeedItemCategorySnapshots(snapshots),
-  )
+  return applyRssFeedItemCategorySnapshots(snapshots, upsertRssFeedItemCategorySnapshots, pending)
 }
 
 async function upsertRssFeedItemCategorySnapshots(

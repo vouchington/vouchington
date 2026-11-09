@@ -94,7 +94,7 @@ export async function markRssFeedCategorySnapshotsForReconciliation(
   )
 }
 
-/** Drains a bounded, oldest-first durable outbox; stale generation acknowledgements retain new work. */
+/** Drains a bounded, oldest-first durable outbox; stale change acknowledgements retain new work. */
 export async function reconcileRssFeedItemCategorySnapshots(
   CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE = getRssFeedItemsWorkLimit(
     'category_snapshot_reconciliation_batch_size',
@@ -122,19 +122,17 @@ async function reconcileRssFeedItemCategorySnapshotRows(
 ): Promise<{ reconciled: number }> {
   let reconciled = 0
   const errors: unknown[] = []
-  const categorySnapshots = await getRssFeedItemCategorySnapshots(
-    rows.map(row => row.rss_feed_item_id),
-  )
   for (const row of rows) {
     try {
       assertCategorySnapshot(row)
-      // eslint-disable-next-line no-await-in-loop -- complete one snapshot before its exact-generation acknowledgement.
-      await upsertRssFeedItemCategories([
-        {
-          rss_feed_item_id: row.rss_feed_item_id,
-          categories: categorySnapshots.get(row.rss_feed_item_id) ?? [],
-        },
-      ])
+      // eslint-disable-next-line no-await-in-loop -- one completed result serializes each item.
+      const current = await upsertRssFeedItemCategories([row], row)
+      if (!current) {
+        // A newer generation replaced this selected row. Count the scanned slot so a full
+        // bounded page schedules its continuation, which will select that newer generation.
+        reconciled += 1
+        continue
+      }
       // Keep notification eligibility in step with the durable category projection. The snapshot
       // remains pending if this enqueue fails, so the next reconciliation retries both the
       // notification prompt and its exact-generation acknowledgement.
@@ -161,37 +159,14 @@ function assertCategorySnapshot(snapshot: RssFeedItemCategorySnapshotReconciliat
   }
 }
 
-async function getRssFeedItemCategorySnapshots(
-  rssFeedItemIds: readonly string[],
-): Promise<Map<string, string[]>> {
-  if (rssFeedItemIds.length === 0) return new Map()
-  const { rows } = await write<{ rss_feed_item_id: string; categories: string[] }>(
-    `/* getRssFeedItemCategorySnapshots */
-      SELECT source_snapshot.rss_feed_item_id,
-             ARRAY_AGG(DISTINCT source_category.category_text ORDER BY source_category.category_text)
-               AS categories
-      FROM rss_feed_item_source_category_snapshots source_snapshot
-      JOIN rss_feed_item_sources source
-        ON source.rss_feed_id = source_snapshot.rss_feed_id
-       AND source.rss_feed_item_id = source_snapshot.rss_feed_item_id
-      JOIN rss_feeds feed ON feed.id = source.rss_feed_id
-      CROSS JOIN LATERAL jsonb_array_elements_text(source_snapshot.categories)
-        AS source_category(category_text)
-      WHERE source_snapshot.rss_feed_item_id = ANY($1::uuid[])
-        AND feed.deleted_at IS NULL
-      GROUP BY source_snapshot.rss_feed_item_id`,
-    [rssFeedItemIds],
-  )
-  return new Map(rows.map(row => [row.rss_feed_item_id, row.categories]))
-}
-
 async function acknowledgeRssFeedItemCategorySnapshot(
   snapshot: RssFeedItemCategorySnapshotReconciliation,
 ): Promise<void> {
   await write(
     `/* acknowledgeRssFeedItemCategorySnapshot */
       DELETE FROM rss_feed_item_category_snapshot_reconciliations
-      WHERE rss_feed_item_id = $1 AND generation = $2`,
-    [snapshot.rss_feed_item_id, snapshot.generation],
+      WHERE rss_feed_item_id = $1::uuid AND generation = $2::bigint AND change_id = $3::uuid
+      RETURNING rss_feed_item_id`,
+    [snapshot.rss_feed_item_id, snapshot.generation, snapshot.change_id],
   )
 }

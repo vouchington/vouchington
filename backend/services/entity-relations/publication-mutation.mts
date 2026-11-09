@@ -58,7 +58,6 @@ export async function runRelationPublicationMutation<
       isPostScopedPublicationRelationTable(relationTable)
         ? subjectIds
         : []),
-      ...(options?.postMutationGuard?.postIds ?? []),
     ]
     if (postScopeIds.length > 0) await lockPostPublicationPostScopes(query, postScopeIds)
     await options?.postMutationGuard?.assertAllowed(query)

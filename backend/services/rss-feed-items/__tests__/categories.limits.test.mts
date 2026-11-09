@@ -48,9 +48,7 @@ describe('categories limits', () => {
     testRssFeedItemId = items[0]!.id
   })
   it('does not mutate categories when a category list or batch is empty', async () => {
-    await expect(
-      upsertRssFeedItemCategories([{ rss_feed_item_id: testRssFeedItemId, categories: [] }]),
-    ).resolves.toBeUndefined()
+    await upsertRssFeedItemCategories([{ rss_feed_item_id: testRssFeedItemId, categories: [] }])
     await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual([])
 
     await upsertRssFeedItemCategories([

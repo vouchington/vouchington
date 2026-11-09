@@ -31,8 +31,7 @@ import { handleBidirectionalElectionVotes } from './handle-bidirectional-electio
 import { runRelationPublicationMutation } from './publication-mutation.mts'
 import { insertBidirectionalRelationRows } from './insert-bidirectional-rows.mts'
 import { runRelationTransaction } from './run-relation-transaction.mts'
-import { lockBidirectionalRelationMutation } from './bidirectional-pair-lock.mts'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
+import { lockBidirectionalRelationPairs } from './bidirectional-pair-lock.mts'
 export type { UpsertEntityTypes, EntityIdentifier, EntityRelation }
 export type { UpsertEntityRelationOptions } from './upsert-options.mts'
 export { assertEntityRelationUpsertAllowed } from './assert-upsert-allowed.mts'
@@ -148,19 +147,12 @@ export const upsertEntityRelation = async (
     relationOptions,
   )
   const run = async (transactionQuery: TransactionQuery) => {
-    await lockBidirectionalRelationMutation(
+    await lockBidirectionalRelationPairs(
       transactionQuery,
       relation.table_name,
       subject.id,
       objects.map(object => object.id),
-      relation.subject_type === 'user' ? [subject.id, ...objects.map(object => object.id)] : [],
-      relation.subject_type === 'topic' ? [subject.id, ...objects.map(object => object.id)] : [],
     )
-    if (relationOptions?.postMutationGuard?.postIds.length)
-      await lockPostPublicationPostScopes(
-        transactionQuery,
-        relationOptions.postMutationGuard.postIds,
-      )
     await relationOptions?.postMutationGuard?.assertAllowed(transactionQuery)
     return insertBidirectionalRelationRows<InternalEntityRelationMutationResult>(
       transactionQuery,
