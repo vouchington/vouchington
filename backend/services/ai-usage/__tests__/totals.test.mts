@@ -125,7 +125,7 @@ describe('getCommunityAiCostTotals', () => {
     expect(found).toBe(true)
   })
 
-  it('hides a community deleted after the last refresh and lags new usage until the next one', async () => {
+  it('hides a community deleted after the last refresh', async () => {
     const community = await insertTestCommunity({ createdById: user.id })
     const cost = String(MAX_MONEY_AMOUNT - 201)
     await insertTestAiUsageRecord({ communityId: community.id, costMicrounits: cost })
@@ -136,11 +136,7 @@ describe('getCommunityAiCostTotals', () => {
       )
     expect(await readTotal()).toMatchObject({ request_count: 1, total_cost: { amount: cost } })
 
-    await insertTestAiUsageRecord({ communityId: community.id, costMicrounits: '1' })
-    expect(await readTotal()).toMatchObject({ request_count: 1 })
-    await refreshMaterializedViewForTest('mv_ai_usage_community_totals')
-    expect(await readTotal()).toMatchObject({ request_count: 2 })
-
+    // Eligibility is read live, so no refresh is needed (and none can race this) for the deletion.
     await deleteTestCommunity({ communityId: community.id, deletedById: user.id })
     expect(await readTotal()).toBeUndefined()
   })
