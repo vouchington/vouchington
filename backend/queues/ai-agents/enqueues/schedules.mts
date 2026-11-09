@@ -27,10 +27,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
     template: {
       name: 'reconcile-ai-agent-failures',
       data: {},
-      opts: () => ({
-        ...reconcilerOptions('reconcile-ai-agent-failures'),
-        deduplication: { id: 'reconcile_ai_agent_failures', mode: 'simple' },
-      }),
+      opts: () => reconcilerOptions('reconcile-ai-agent-failures'),
     },
     operatorSurfaces: [
       {

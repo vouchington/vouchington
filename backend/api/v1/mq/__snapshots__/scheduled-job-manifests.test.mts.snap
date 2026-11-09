@@ -29,10 +29,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "deduplication": {
-          "id": "reconcile_ai_agent_failures",
-          "mode": "simple",
-        },
         "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": false,
