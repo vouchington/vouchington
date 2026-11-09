@@ -36,3 +36,19 @@ export async function resolveTestModerationReports(
     UPDATE moderation_reports SET reviewed_at = NOW(), resolution_action = ${resolutionAction}
     WHERE id = ANY(${reportIds}::uuid[])`)
 }
+
+export async function swapTestModerationReportStatuses(
+  pendingReportId: string,
+  reviewedReportId: string,
+): Promise<void> {
+  await Promise.all([
+    write(sql`/* swapTestModerationReportStatuses:review */
+      UPDATE moderation_reports
+      SET reviewed_at = NOW(), resolution_action = 'reviewed'
+      WHERE id = ${pendingReportId}::uuid`),
+    write(sql`/* swapTestModerationReportStatuses:reopen */
+      UPDATE moderation_reports
+      SET reviewed_at = NULL, resolution_action = NULL
+      WHERE id = ${reviewedReportId}::uuid`),
+  ])
+}

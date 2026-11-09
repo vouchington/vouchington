@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { createTestUser, insertTestModerationReport, insertTestPost } from '@voucha/test-helpers'
 import {
   getTestModerationReportClusters,
   resolveTestModerationReports,
+  swapTestModerationReportStatuses,
 } from '@voucha/test-helpers/entities/moderation-report-clusters'
 
 describe('moderation report cluster status moves', () => {
@@ -36,16 +35,7 @@ describe('moderation report cluster status moves', () => {
     })
     await resolveTestModerationReports([reviewedId], 'reviewed')
 
-    await Promise.all([
-      write(sql`/* swapModerationClusterStatus:review */
-        UPDATE moderation_reports
-        SET reviewed_at = NOW(), resolution_action = 'reviewed'
-        WHERE id = ${pendingId}::uuid`),
-      write(sql`/* swapModerationClusterStatus:reopen */
-        UPDATE moderation_reports
-        SET reviewed_at = NULL, resolution_action = NULL
-        WHERE id = ${reviewedId}::uuid`),
-    ])
+    await swapTestModerationReportStatuses(pendingId, reviewedId)
 
     expect(await getTestModerationReportClusters('post', postId)).toEqual([
       {
