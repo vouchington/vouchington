@@ -190,7 +190,7 @@
     },
     "F19": {
       "scopes": ["moderation:read", "moderation:write"],
-      "roles": ["administrator"],
+      "roles": ["administrator", "moderator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -1008,6 +1008,27 @@
         "readOnlyHint": false,
         "destructiveHint": true,
         "idempotentHint": false
+      }
+    },
+    "F102": {
+      "scopes": ["moderation:read"],
+      "roles": ["administrator", "moderator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F103": {
+      "scopes": ["moderation:ai-rerun", "moderation:read"],
+      "roles": ["administrator", "moderator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
       }
     }
   },
@@ -2098,7 +2119,7 @@
     "GET:/api/v1/reports": [
       {
         "audience": "admin",
-        "facts": "F09",
+        "facts": "F102",
         "inputFields": "I021",
         "requestBodyFields": null,
         "operation": {
@@ -2809,7 +2830,7 @@
     "POST:/api/v1/reports/:id/judgements": [
       {
         "audience": "admin",
-        "facts": "F23",
+        "facts": "F103",
         "inputFields": "I001",
         "requestBodyFields": null,
         "operation": {
@@ -6684,6 +6705,22 @@
           },
           "decision": false,
           "inputFields": "I205",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/reports/:id": {
+      "pullRequest": 5434,
+      "contracts": [
+        {
+          "audience": "admin",
+          "facts": "F102",
+          "operation": {
+            "tool": "read_moderation_report",
+            "option": null
+          },
+          "decision": false,
+          "inputFields": "I001",
           "requestBodyFields": null
         }
       ]

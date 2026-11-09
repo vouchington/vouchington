@@ -61,7 +61,7 @@ export const sdkCatalogCases = [
     scopes: preModerationScopes,
     plan: 'pro',
     admin: true,
-    count: 56,
+    count: 57,
   },
   {
     server: ADMIN_MCP_SERVER_CONFIG,
@@ -77,7 +77,7 @@ export const sdkCatalogCases = [
     scopes: ['moderation:read'] as ApiScope[],
     plan: null,
     admin: true,
-    count: 8,
+    count: 9,
   },
   {
     server: LEGAL_MCP_SERVER_CONFIG,
