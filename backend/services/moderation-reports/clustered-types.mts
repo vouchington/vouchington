@@ -18,11 +18,16 @@ export type ModerationReportClusterIndicators = {
   velocity_spike: boolean
 }
 
+export type ClusteredPendingModerationReport = PendingModerationReport & {
+  report_count_capped: boolean
+}
+
 export type ModerationReportEntityCluster = {
   id: string
   entity_type: ModerationReportEntityType
   entity_id: string
   report_count: number
+  report_count_capped: boolean
   reporter_count: number
   reason_breakdown: ModerationReportReasonBreakdown
   first_reported_at: Date
@@ -35,7 +40,7 @@ export type ModerationReportEntityCluster = {
   target_available: boolean | null
   target_is_restricted: boolean
   indicators: ModerationReportClusterIndicators
-  reports: PendingModerationReport[]
+  reports: ClusteredPendingModerationReport[]
 }
 
 export type ModerationReportDuplicateCluster = {
@@ -43,6 +48,7 @@ export type ModerationReportDuplicateCluster = {
   signal: 'content_hash_duplicate' | 'embeddings_similarity'
   post_count: number
   report_count: number
+  report_count_capped: boolean
   reason_breakdown: ModerationReportReasonBreakdown
   first_reported_at: Date
   last_reported_at: Date
@@ -79,6 +85,7 @@ export type ClusterRow = {
   entity_type: ModerationReportEntityType
   entity_id: string
   report_count: number
+  report_count_capped: boolean
   reporter_count: number
   reason_counts: Record<string, number> | null
   first_reported_at: Date

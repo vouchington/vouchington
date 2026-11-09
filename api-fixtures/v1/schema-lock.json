@@ -2576,11 +2576,11 @@
     },
     "native.moderation.reports.clustered.default": {
       "fixtureIds": ["native.moderation.reports.clustered.default"],
-      "hash": "33aa6c2f0ab3cd1140506c6f181d5df00e4f941494d21463af301766c9d20b1c"
+      "hash": "7d82f8317ca18a42d33abf46b42ab15522ca452e8af4a6ac227a2e0f9f5e6c4d"
     },
     "native.moderation.reports.clustered.page-2": {
       "fixtureIds": ["native.moderation.reports.clustered.page-2"],
-      "hash": "9efcdb770c1024a2fee967f92a7376f85495d34c24d7242b39ece5361f22b83a"
+      "hash": "ae647c3caaccb796bb7b45b6d7811b2f95530483efc8860a29adc1448b52606d"
     },
     "native.moderation.reports.default": {
       "fixtureIds": ["native.moderation.reports.default"],

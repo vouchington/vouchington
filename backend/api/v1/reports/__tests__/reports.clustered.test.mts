@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { acquireReportPaginationTestLock } from '@voucha/test-helpers/report-pagination-lock'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { moderationReportsWorkConfig } from '@services/moderation-reports/work-limits'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   addDummyEmbeddingToPost,
@@ -72,6 +74,7 @@ describe('GET /api/v1/reports?cluster=entity', () => {
       entity_type: 'post',
       entity_id: postId,
       report_count: 3,
+      report_count_capped: false,
       reporter_count: 3,
     })
     expect(cluster.reason_breakdown).toEqual(
@@ -89,6 +92,39 @@ describe('GET /api/v1/reports?cluster=entity', () => {
     expect(
       cluster.reports.every((report: { report_count: number }) => report.report_count === 3),
     ).toBe(true)
+
+    const restoreExact = overrideDynamicConfigFieldsForTest(moderationReportsWorkConfig, {
+      cluster_report_count_cap: 3,
+    })
+    try {
+      const exact = await request.get('/api/v1/reports?cluster=entity&limit=1000').expect(200)
+      const exactCluster = exact.body.results.find(
+        (item: { entity_id: string }) => item.entity_id === postId,
+      )
+      expect(exactCluster).toMatchObject({ report_count: 3, report_count_capped: false })
+    } finally {
+      restoreExact()
+    }
+
+    const restore = overrideDynamicConfigFieldsForTest(moderationReportsWorkConfig, {
+      cluster_report_count_cap: 2,
+    })
+    try {
+      const capped = await request.get('/api/v1/reports?cluster=entity&limit=1000').expect(200)
+      const cappedCluster = capped.body.results.find(
+        (item: { entity_id: string }) => item.entity_id === postId,
+      )
+      expect(cappedCluster).toMatchObject({ report_count: 2, report_count_capped: true })
+      expect(cappedCluster.reports).toHaveLength(3)
+      expect(
+        cappedCluster.reports.every(
+          (report: { report_count: number; report_count_capped: boolean }) =>
+            report.report_count === 2 && report.report_count_capped,
+        ),
+      ).toBe(true)
+    } finally {
+      restore()
+    }
   })
 
   it('surfaces content-hash duplicate clusters and velocity-spike indicators', async () => {

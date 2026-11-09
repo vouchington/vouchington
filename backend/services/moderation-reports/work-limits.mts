@@ -2,6 +2,7 @@ import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
+  cluster_report_count_cap: 1000,
   backfill_batch_size: 500,
   dispatch_batch_size: 200,
   dispatch_min_age_seconds: 120,
@@ -10,6 +11,7 @@ const defaultFields = {
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const moderationReportsWorkMaxValues = {
+  cluster_report_count_cap: 10000,
   backfill_batch_size: 5000,
   dispatch_batch_size: 2000,
   dispatch_min_age_seconds: 600,
@@ -22,6 +24,7 @@ export const MIN_DISPATCH_MAX_AGE_SECONDS = 1200
 export const moderationReportsWorkConfig = new DynamicConfig({
   key: 'moderation-reports-work-config',
   fieldTypes: {
+    cluster_report_count_cap: 'number',
     backfill_batch_size: 'number',
     dispatch_batch_size: 'number',
     dispatch_min_age_seconds: 'number',

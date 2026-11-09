@@ -1,4 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import type { ClusterRow } from './clustered-types.mts'
 import type { ModerationReportStatus } from './config.mts'
 import { appendModerationReportStatusPredicate } from './sort-sql.mts'
 
@@ -46,4 +47,33 @@ function appendIndexedReportOutcome(
   query.append(
     status === 'pending' ? sql`IS NULL` : sql`= ${status}::moderation_report_resolution_actions`,
   )
+}
+
+export function appendSelectedReportBranches(
+  query: SQLStatement,
+  clusters: ClusterRow[],
+  status: ModerationReportStatus,
+  sortAsc: boolean,
+): void {
+  for (const [index, cluster] of clusters.entries()) {
+    if (index > 0) query.append(sql` UNION ALL `)
+    const column =
+      cluster.entity_type === 'post' || cluster.entity_type === 'comment'
+        ? 'post_id'
+        : cluster.entity_type === 'user'
+          ? 'reported_user_id'
+          : cluster.entity_type === 'url_hostname'
+            ? 'hostname_id'
+            : 'rss_feed_item_id'
+    query.append(sql`(SELECT mr.id FROM moderation_reports mr WHERE `)
+    query.append(`mr.${column} = `).append(sql`${cluster.entity_id}::uuid AND `)
+    appendModerationReportStatusPredicate(query, 'mr', status)
+    query.append(
+      status === 'pending'
+        ? sql` AND mr.resolution_action IS NULL`
+        : sql` AND mr.resolution_action = ${status}::moderation_report_resolution_actions`,
+    )
+    query.append(sortAsc ? sql` ORDER BY mr.id ASC` : sql` ORDER BY mr.id DESC`)
+    query.append(sql` LIMIT ${25})`)
+  }
 }

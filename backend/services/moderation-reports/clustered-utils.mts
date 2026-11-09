@@ -59,8 +59,8 @@ export function appendClusterWhereClause(query: SQLStatement, clusters: ClusterR
   })
 }
 
-export function groupReportsByCluster(reports: PendingModerationReport[]) {
-  const reportsByCluster = new Map<string, PendingModerationReport[]>()
+export function groupReportsByCluster<T extends PendingModerationReport>(reports: T[]) {
+  const reportsByCluster = new Map<string, T[]>()
   for (const report of reports) {
     const id = clusterId(report.entity_type, report.entity_id)
     const list = reportsByCluster.get(id) ?? []
@@ -89,6 +89,7 @@ export function makeDuplicateCluster(
     signal,
     post_count: clusters.length,
     report_count: clusters.reduce((sum, cluster) => sum + cluster.report_count, 0),
+    report_count_capped: clusters.some(cluster => cluster.report_count_capped),
     reason_breakdown: mergeReasonBreakdowns(clusters),
     first_reported_at: new Date(
       Math.min(...clusters.map(cluster => cluster.first_reported_at.getTime())),

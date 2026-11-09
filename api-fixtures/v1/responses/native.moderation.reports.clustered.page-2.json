@@ -22,6 +22,7 @@
             }
           ],
           "report_count": 1,
+          "report_count_capped": false,
           "reporter_count": 1,
           "reports": [],
           "target_available": true,
@@ -50,6 +51,7 @@
             }
           ],
           "report_count": 4,
+          "report_count_capped": false,
           "reporter_count": 3,
           "reports": [],
           "target_available": true,
@@ -78,6 +80,7 @@
             }
           ],
           "report_count": 2,
+          "report_count_capped": false,
           "reporter_count": 2,
           "reports": [],
           "target_available": true,
@@ -99,6 +102,7 @@
         }
       ],
       "report_count": 7,
+      "report_count_capped": false,
       "signal": "content_hash_duplicate"
     }
   ],
@@ -128,6 +132,7 @@
         }
       ],
       "report_count": 4,
+      "report_count_capped": false,
       "reporter_count": 3,
       "reports": [],
       "target_available": true,
@@ -156,6 +161,7 @@
         }
       ],
       "report_count": 2,
+      "report_count_capped": false,
       "reporter_count": 2,
       "reports": [],
       "target_available": true,
@@ -184,6 +190,7 @@
         }
       ],
       "report_count": 1,
+      "report_count_capped": false,
       "reporter_count": 1,
       "reports": [],
       "target_available": true,

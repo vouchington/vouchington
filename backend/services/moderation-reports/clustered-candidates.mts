@@ -5,6 +5,7 @@ export function moderationReportClusterCandidatesSql(sortAsc: boolean) {
   const query = sql`(
     SELECT cluster.post_id, cluster.reported_user_id, cluster.hostname_id,
       cluster.rss_feed_item_id, cluster.resolution_action,
+      cluster.first_reported_at, cluster.last_reported_at,
       `
   query.append(sortAsc ? sql`cluster.first_reported_at` : sql`cluster.last_reported_at`)
   query.append(sql` AS sort_reported_at,
