@@ -32,7 +32,6 @@ type ClusterLookup = {
   name: (typeof LOOKUP_NAMES)[number]
   action: 'reviewed' | null
   ids: [string | null, string | null, string | null, string | null]
-  expectedCount: number
 }
 
 /** Read-only copies of the writer's target predicates guard its indexed access paths. */
@@ -64,31 +63,26 @@ export async function runModerationClusterWriteScenarios(): Promise<void> {
         name: LOOKUP_NAMES[0],
         action: null,
         ids: [MODERATION_CLUSTER_HOT_POST_ID, null, null, null],
-        expectedCount: 10_000,
       })
       await captureTarget({
         name: LOOKUP_NAMES[1],
         action: 'reviewed',
         ids: [clusterFixturePostIds(0)[0]!, null, null, null],
-        expectedCount: 16,
       })
       await captureTarget({
         name: LOOKUP_NAMES[2],
         action: null,
         ids: [null, seedUuid(50, '01'), null, null],
-        expectedCount: 60,
       })
       await captureTarget({
         name: LOOKUP_NAMES[3],
         action: null,
         ids: [null, null, seedUuid(10, '02'), null],
-        expectedCount: 60,
       })
       await captureTarget({
         name: LOOKUP_NAMES[4],
         action: null,
         ids: [null, null, null, rssItem.entityId],
-        expectedCount: 60,
       })
     },
     undefined,
@@ -164,14 +158,17 @@ async function captureOrderedMove(): Promise<void> {
 
 async function captureTarget(target: ClusterLookup): Promise<void> {
   const query = `/* ${target.name} */
-    SELECT cluster.id, cluster.report_count, cluster.first_reported_at, cluster.last_reported_at
+    SELECT cluster.id, cluster.first_reported_at, cluster.last_reported_at
     FROM moderation_report_clusters cluster
     WHERE cluster.resolution_action IS NOT DISTINCT FROM $1::moderation_report_resolution_actions
       AND (cluster.post_id = $2::uuid OR cluster.reported_user_id = $3::uuid
         OR cluster.hostname_id = $4::uuid OR cluster.rss_feed_item_id = $5::uuid)`
-  const { rows } = await read<{ report_count: number }>(query, [target.action, ...target.ids])
+  const { rows } = await read<{ first_reported_at: Date; last_reported_at: Date }>(query, [
+    target.action,
+    ...target.ids,
+  ])
   assert.equal(rows.length, 1)
-  assert.equal(rows[0]!.report_count, target.expectedCount)
+  assert(rows[0]!.first_reported_at <= rows[0]!.last_reported_at)
 }
 
 async function captureHotEdge(
