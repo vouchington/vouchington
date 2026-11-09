@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
 export const RECOMMENDED_RSS_FEEDS_POPULAR_FEED_INDEX = 2400
@@ -9,12 +9,6 @@ export const RECOMMENDED_RSS_FEEDS_VIEWER_EXTRA_FEEDS = 30
 const FIRST_CO_FOLLOWER_INDEX = 5000
 const FIRST_CANDIDATE_FEED_INDEX = 2000
 const CANDIDATE_FEED_COUNT = 400
-
-/** Rows this fixture adds to relation__user__follow__rss_feed. */
-export const RECOMMENDED_RSS_FEEDS_FOLLOW_ROWS =
-  1 +
-  RECOMMENDED_RSS_FEEDS_VIEWER_EXTRA_FEEDS +
-  RECOMMENDED_RSS_FEEDS_CO_FOLLOWER_COUNT * (1 + RECOMMENDED_RSS_FEEDS_CO_FOLLOWER_FEEDS)
 
 /**
  * One popular feed followed by the viewer (seeduser0) and by a large cohort, each of whom also
@@ -43,12 +37,34 @@ export async function seedRecommendedRssFeedsPopularFeed(): Promise<void> {
       add(coFollowerId, seedUuid(candidate, '08'))
     }
   }
-  await using transaction = await beginTransaction()
-  await transaction(
-    `/* seedExplainData */ INSERT INTO relation__user__follow__rss_feed (subject_id, object_id, created_by_id)
+  await write(
+    `/* seedRecommendedRssFeedsPopularFeed */ INSERT INTO relation__user__follow__rss_feed (subject_id, object_id, created_by_id)
      SELECT subject_id, object_id, subject_id FROM UNNEST($1::uuid[], $2::uuid[]) AS s(subject_id, object_id)
      ON CONFLICT DO NOTHING`,
     [subjects, objects],
   )
-  await transaction.commit()
+  await write('/* analyzeRecommendedRssFeedsFollows */ ANALYZE relation__user__follow__rss_feed')
+}
+
+/** Removes the cohort so whole-table scenarios (MV refreshes) keep their seeded row counts. */
+export async function cleanupRecommendedRssFeedsPopularFeed(): Promise<void> {
+  const viewerId = seedUuid(0, '01')
+  const firstCoFollower = seedUuid(FIRST_CO_FOLLOWER_INDEX, '01')
+  const lastCoFollower = seedUuid(
+    FIRST_CO_FOLLOWER_INDEX + RECOMMENDED_RSS_FEEDS_CO_FOLLOWER_COUNT - 1,
+    '01',
+  )
+  const viewerFeeds = [
+    seedUuid(RECOMMENDED_RSS_FEEDS_POPULAR_FEED_INDEX, '08'),
+    ...Array.from({ length: RECOMMENDED_RSS_FEEDS_VIEWER_EXTRA_FEEDS }, (_, i) =>
+      seedUuid(FIRST_CANDIDATE_FEED_INDEX + i, '08'),
+    ),
+  ]
+  await write(
+    `/* cleanupRecommendedRssFeedsPopularFeed */ DELETE FROM relation__user__follow__rss_feed
+     WHERE (subject_id = $1 AND object_id = ANY($2::uuid[]))
+        OR subject_id BETWEEN $3 AND $4`,
+    [viewerId, viewerFeeds, firstCoFollower, lastCoFollower],
+  )
+  await write('/* analyzeRecommendedRssFeedsFollows */ ANALYZE relation__user__follow__rss_feed')
 }

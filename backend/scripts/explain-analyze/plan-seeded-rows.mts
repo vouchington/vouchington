@@ -4,11 +4,11 @@ import { UPLOAD_CLEANUP_TOTAL_ROWS } from './seed-data/upload-cleanup-cohort.mts
 import { LANDING_PAGE_REVIEW_COUNT } from './seed-data/landing-page-candidates.mts'
 import { FOLLOWER_DISTRIBUTION_SEED_COUNT } from './seed-data/common.mts'
 import { REPORT_CONTEXT_SEED_ROW_COUNT } from './seed-data/moderation-report-context-counts.mts'
-import { RECOMMENDED_RSS_FEEDS_FOLLOW_ROWS } from './seed-data/recommended-rss-feeds.mts'
 import * as ingestion from './seed-data/ingestion-raw-pages.mts'
 import * as retention from './seed-data/agent-moderation-retention.mts'
 import { PURGE_EVIDENCE_ARTIFACT_SEEDED_ROWS } from './seed-data/copyright-case-purge-volume.mts'
 import * as claimantMisuse from './seed-data/claimant-misuse-windows.mts'
+
 // Seed counts include conservative bounds for ancillary fixtures.
 const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
@@ -44,7 +44,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   relation__user__block__user: 2_500,
   remote_actors: 100_000,
   relation__remote_actor__follow__user: 101_000,
-  relation__user__follow__rss_feed: 2_699 + RECOMMENDED_RSS_FEEDS_FOLLOW_ROWS,
+  relation__user__follow__rss_feed: 2_699,
   relation__user__follow__topic: 2_699,
   notifications: 2_000,
   conversations: 2_001,

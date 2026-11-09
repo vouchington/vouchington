@@ -2,6 +2,10 @@ import { runCrawlerRefreshScenario } from './crawler-refresh.mts'
 import { runRelationVoteReadScenarios } from './relation-vote-reads.mts'
 import { runCommunitySearchScenarios } from './community-search.mts'
 import { SEED_PREFIX, runAndCapture, seedPostId, seedTopicId, seedUser } from '../run-support.mts'
+import {
+  cleanupRecommendedRssFeedsPopularFeed,
+  seedRecommendedRssFeedsPopularFeed,
+} from '../seed-data/recommended-rss-feeds.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import {
@@ -74,9 +78,14 @@ export async function runEntityAndCommunityScenarios() {
       },
     ],
   })
-  await runAndCapture('recommended-rss-feeds', () =>
-    getRecommendedRssFeeds(seedUser.id, { limit: 25 }),
-  )
+  await seedRecommendedRssFeedsPopularFeed()
+  try {
+    await runAndCapture('recommended-rss-feeds', () =>
+      getRecommendedRssFeeds(seedUser.id, { limit: 25 }),
+    )
+  } finally {
+    await cleanupRecommendedRssFeedsPopularFeed()
+  }
 
   // Vote weight factors — multi-table UNION across OAuth providers + LATERAL subqueries
   await runAndCapture('vote-weight-factors', () => gatherVoteWeightFactors(seedUser.id))
