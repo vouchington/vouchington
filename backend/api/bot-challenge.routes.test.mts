@@ -24,8 +24,10 @@ describe('bot challenge error response', () => {
   it('returns the factual code and canonical operation action', async () => {
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
     vi.stubEnv('ENVIRONMENT', 'production')
+    const requestId = 'fixture-bot-request-id-1'
     const response = await request(app.callback())
       .post('/bot-challenge-test')
+      .set('x-request-id', requestId)
       .set('x-voucha-bot-score', '7')
 
     expect(response.status).toBe(403)
@@ -33,6 +35,7 @@ describe('bot challenge error response', () => {
       message: 'Bot challenge required',
       code: BOT_CHALLENGE_REQUIRED,
       action: BOT_CHALLENGE_ACTION_TAG,
+      request_id: requestId,
     })
     expect(
       validateResponseContract(

@@ -1686,7 +1686,7 @@
     },
     "POST:/api/v1/rss-feed-items/:rssFeedItemId/shares#bot-challenge": {
       "fixtureIds": ["native.bot-challenge.required"],
-      "hash": "a7eaa858164bf6b8565f9fc8a6e24342dde874b132381117b668a910867ed9fc"
+      "hash": "061d6108ad0e5d1b8146ec86bdd9803115555d1ec5a503c1f56521a0cefc62df"
     },
     "POST:/api/v1/rss-feeds": {
       "fixtureIds": ["native.rss-feeds.create.accepted"],
