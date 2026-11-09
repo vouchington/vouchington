@@ -11,7 +11,6 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { decodeScopedScoreCursor } from '@modules/pagination'
 import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
 import { getPostIds } from '../get-ids.mts'
-import { buildPostSearchQuery } from '../query-builder.mts'
 import { postsWorkConfig } from '../../work-limits.mts'
 import {
   createSemanticWindowEmbedding,
@@ -31,7 +30,7 @@ describe('Hacker News hot search bounds', () => {
     ])
     const ids: string[] = []
     const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      post_search_filter_candidate_limit: 1000,
+      hacker_news_hot_candidate_limit: 1000,
     })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,
@@ -103,7 +102,7 @@ describe('Hacker News hot search bounds', () => {
       hackerNewsVisibilityConfig.waitForInitialization(),
     ])
     const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      post_search_filter_candidate_limit: 1000,
+      hacker_news_hot_candidate_limit: 1000,
     })
     const ids: string[] = []
     try {
@@ -160,7 +159,7 @@ describe('Hacker News hot search bounds', () => {
       hackerNewsVisibilityConfig.waitForInitialization(),
     ])
     const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      post_search_filter_candidate_limit: 1000,
+      hacker_news_hot_candidate_limit: 1000,
     })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,
@@ -215,7 +214,7 @@ describe('Hacker News hot search bounds', () => {
       await setHackerNewsReferenceFlagsForTest(ids, [])
       const expected = ids.toSorted((a, b) => b.localeCompare(a))
       const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-        post_search_filter_candidate_limit: 1000,
+        hacker_news_hot_candidate_limit: 1000,
       })
       const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
         references_visible: true,
@@ -245,22 +244,4 @@ describe('Hacker News hot search bounds', () => {
       }
     },
   )
-
-  it('enforces the hard maximum in the SQL limit even if config bypasses admin validation', async () => {
-    await postsWorkConfig.waitForInitialization()
-    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      post_search_filter_candidate_limit: 1_000_000,
-    })
-    try {
-      const query = buildPostSearchQuery(undefined, {
-        has_hacker_news_references: true,
-        sort: 'hot',
-        time_range: '1m',
-      })
-      expect(query.values).toContain(1000)
-      expect(query.values).not.toContain(1_000_000)
-    } finally {
-      restore()
-    }
-  })
 })

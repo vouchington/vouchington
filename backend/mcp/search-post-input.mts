@@ -1,3 +1,4 @@
+import { MAX_TOPIC_SEARCH_TERMS } from '@services/search-params'
 import type { PostSearchSort } from '@services/posts/search/types'
 import { topicReferenceSchema, userReferenceSchema } from './entity-reference-schema.mts'
 import { VALID_SEARCH_POST_TYPES } from '@ts-shared/feed-capabilities'
@@ -36,7 +37,12 @@ export function postSearchFilterSchemaProperties() {
       type: 'array',
       items: { type: 'string', enum: [...VALID_SEARCH_POST_TYPES] },
     },
-    categories: { type: 'array', items: { type: 'string' } },
+    categories: {
+      type: 'array',
+      maxItems: MAX_TOPIC_SEARCH_TERMS,
+      items: { type: 'string' },
+      description: 'Match all categories; five maximum including category.',
+    },
     category: { type: 'string' },
     creator: userReferenceSchema,
     community_id: { type: 'string', format: 'uuid' },
@@ -57,7 +63,12 @@ export function postSearchFilterSchemaProperties() {
     },
     time_range: postTimeRangeSchema,
     topic: topicReferenceSchema,
-    topics: { type: 'array', items: topicReferenceSchema },
+    topics: {
+      type: 'array',
+      maxItems: MAX_TOPIC_SEARCH_TERMS,
+      items: topicReferenceSchema,
+      description: 'Match all topics; five topic and hashtag terms maximum.',
+    },
     url: {
       anyOf: [
         { type: 'string', format: 'uuid' },

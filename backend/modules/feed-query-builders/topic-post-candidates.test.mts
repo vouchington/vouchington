@@ -1,121 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import {
-  POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE,
-  POST_TOPIC_CATEGORY_RELATION_TABLE,
-} from '@voucha/types/entities/entity-relation-tables'
-import {
   buildTopicAliasMembershipExists,
   buildTopicMembershipExists,
-  buildTopicPostCandidateSelect,
-  buildUniversalTopicPostCandidatePairsSelect,
+  buildUniversalTopicMembershipExists,
 } from './topic-post-candidates.mts'
 
-// Collapses SQL comments and whitespace so a candidate body can be compared for structural
-// equality across two different placeholder conventions ($1/$2 vs. an outer-query column ref).
-function normalizeSqlFragment(raw: string): string {
-  return raw
-    .split('\n')
-    .map(line => line.replace(/--.*$/, ''))
-    .join(' ')
-    .replace(/\$\d+/g, '$PARAM')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-describe('buildTopicPostCandidateSelect', () => {
-  it('selects candidate post ids from the direct and alias relations', () => {
-    const select = buildTopicPostCandidateSelect('topic-1')
-
-    expect(select.text).toContain(`FROM ${POST_TOPIC_CATEGORY_RELATION_TABLE}`)
-    expect(select.text).toContain(`JOIN ${POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE}`)
-    expect(select.text).toContain('UNION ALL')
-    expect(select.text).toContain(
-      '(CASE WHEN rel.deleted_at IS NULL AND rel.votes_score_net > 0 THEN rel.object_id END) =',
-    )
-    expect(select.text).toContain(
-      '(CASE WHEN alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0 THEN alias_relation.object_id END) = alias.id',
-    )
-    expect(select.values).toEqual(['topic-1', 'topic-1'])
-  })
-})
-
-describe('buildUniversalTopicPostCandidatePairsSelect', () => {
-  it('selects (post_id, topic_id) pairs across all four attachment shapes', () => {
-    const select = buildUniversalTopicPostCandidatePairsSelect(['topic-1', 'topic-2'])
-
-    expect(select.text).toContain(`FROM ${POST_TOPIC_CATEGORY_RELATION_TABLE}`)
-    expect(select.text).toContain(`FROM ${POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE}`)
-    expect(select.text).toContain('FROM post_review_topic_ratings')
-    expect(select.text).toContain('FROM post_data_point_topics')
-    expect(select.text).toContain(
-      '(CASE WHEN deleted_at IS NULL AND votes_score_net > 0 THEN object_id END) = ANY(',
-    )
-    expect(select.text).toContain(
-      'alias.id = (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END)',
-    )
-    expect(select.values).toEqual([
-      ['topic-1', 'topic-2'],
-      ['topic-1', 'topic-2'],
-      ['topic-1', 'topic-2'],
-      ['topic-1', 'topic-2'],
-    ])
-  })
-})
-
-describe('buildTopicMembershipExists', () => {
-  it('throws for an invalid postIdColumn', () => {
-    expect(() => buildTopicMembershipExists('posts.id; DROP TABLE users', 'topic-1')).toThrow(
+describe('topic membership column validation', () => {
+  it.each([
+    buildTopicMembershipExists,
+    buildUniversalTopicMembershipExists,
+    buildTopicAliasMembershipExists,
+  ])('rejects an unqualified or injected post column', builder => {
+    expect(() => builder('id', 'topic-id')).toThrow('Invalid postIdColumn format: id')
+    expect(() => builder('posts.id; DROP TABLE users', 'topic-id')).toThrow(
       'Invalid postIdColumn format: posts.id; DROP TABLE users',
     )
-  })
-
-  it('throws for a bare column name without a table prefix', () => {
-    expect(() => buildTopicMembershipExists('id', 'topic-1')).toThrow(
-      'Invalid postIdColumn format: id',
-    )
-  })
-
-  it('builds a candidate-bind IN over the direct and alias relations, not a correlated EXISTS', () => {
-    const membership = buildTopicMembershipExists('candidate_post.id', 'topic-1')
-
-    expect(membership.text).toContain('candidate_post.id IN (')
-    expect(membership.text).toContain('SELECT candidate.post_id')
-    expect(membership.text).toContain(`FROM ${POST_TOPIC_CATEGORY_RELATION_TABLE}`)
-    expect(membership.text).toContain(POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE)
-    expect(membership.text).not.toContain('EXISTS (')
-    expect(membership.values).toContain('topic-1')
-  })
-
-  it('reuses buildTopicPostCandidateSelect verbatim as its candidate body', () => {
-    const membership = buildTopicMembershipExists('candidate_post.id', 'topic-1')
-    const candidateSelect = buildTopicPostCandidateSelect('topic-1')
-
-    expect(normalizeSqlFragment(membership.text)).toContain(
-      normalizeSqlFragment(candidateSelect.text),
-    )
-  })
-})
-
-describe('buildTopicAliasMembershipExists', () => {
-  it('throws for an invalid postIdColumn', () => {
-    expect(() => buildTopicAliasMembershipExists('posts.id; DROP TABLE users', 'alias-1')).toThrow(
-      'Invalid postIdColumn format: posts.id; DROP TABLE users',
-    )
-  })
-
-  it('throws for a bare column name without a table prefix', () => {
-    expect(() => buildTopicAliasMembershipExists('id', 'alias-1')).toThrow(
-      'Invalid postIdColumn format: id',
-    )
-  })
-
-  it('builds a correlated EXISTS over only the alias relation', () => {
-    const exists = buildTopicAliasMembershipExists('candidate_post.id', 'alias-1')
-
-    expect(exists.text).toContain('EXISTS (')
-    expect(exists.text).toContain(`FROM ${POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE}`)
-    expect(exists.text).not.toContain(`FROM ${POST_TOPIC_CATEGORY_RELATION_TABLE} `)
-    expect(exists.text).toContain('relation.subject_id = candidate_post.id')
-    expect(exists.values).toContain('alias-1')
   })
 })

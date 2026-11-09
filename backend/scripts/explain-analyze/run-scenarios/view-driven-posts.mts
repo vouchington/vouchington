@@ -3,113 +3,12 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { searchPendingPosts } from '@services/communities/publications/get'
 import { runPendingReviewDensityScenario } from './pending-review-density.mts'
 import { searchCommunityAgentPromptSimulationPosts } from '@services/community-agent-prompts/simulations'
-import { withSeedAnchorClock } from '../seed-clock.mts'
 import { getPostIds } from '../run-services.mts'
 
-const COMMUNITY_POST_LIMIT = 25
-const COMMUNITY_ID = `${SEED_PREFIX}-1400-7000-8000-000000000064`
 const EXISTING_COMMUNITY_ID = `${SEED_PREFIX}-1400-7000-8000-000000000000`
-const COMMUNITY_HOT_GATE = {
-  expectations: [
-    { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 2010 },
-    { kind: 'maxProcessedRows' as const, relation: 'posts', max: 3010 },
-    { kind: 'maxBitmapIndexRows' as const, max: 1050 },
-    { kind: 'usesIndexes' as const, indexes: ['posts__default_community_id_case_id_idx'] },
-  ],
-  crossPartition: {
-    posts: 'Community hot ranking traverses a bounded stable-rank candidate window.',
-  },
-}
-
-type CommunityHotCursor = Readonly<{
-  after: string
-  firstPageIds: readonly string[]
-}>
-
-export type CommunityHotCursors = Readonly<{
-  all: CommunityHotCursor
-  month: CommunityHotCursor
-}>
-
-type CommunityHotScenario = Readonly<{
-  id: string
-  run: () => Promise<unknown>
-  contract: Parameters<typeof registerScenarioContract>[1]
-}>
-
-async function prepareCommunityHotCursor(timeRange?: '1m'): Promise<CommunityHotCursor> {
-  const page = await getPostIds(undefined, {
-    community_id: COMMUNITY_ID,
-    sort: 'hot',
-    ...(timeRange ? { time_range: timeRange } : {}),
-    limit: COMMUNITY_POST_LIMIT,
-  })
-  const after = page.page_info.end_cursor
-  if (page.results.length !== COMMUNITY_POST_LIMIT || !page.page_info.has_next_page || !after)
-    throw new Error('Community hot fixture must return a full first page and continuation')
-  return { after, firstPageIds: page.results.map(post => post.id) }
-}
-
-export async function prepareCommunityHotCursors(): Promise<CommunityHotCursors> {
-  return withSeedAnchorClock(async () => ({
-    all: await prepareCommunityHotCursor(),
-    month: await prepareCommunityHotCursor('1m'),
-  }))
-}
-
-export function getCommunityHotScenarios(
-  cursors: CommunityHotCursors,
-): readonly CommunityHotScenario[] {
-  return [
-    {
-      id: 'search-community-posts-hot',
-      run: () => runCommunityHotPage(undefined, undefined, 'first page'),
-      contract: COMMUNITY_HOT_GATE,
-    },
-    {
-      id: 'search-community-posts-hot-after',
-      run: () => runCommunityHotPage(undefined, cursors.all, 'continuation'),
-      contract: COMMUNITY_HOT_GATE,
-    },
-    {
-      id: 'search-community-posts-hot-1m',
-      run: () => runCommunityHotPage('1m', undefined, 'first page'),
-      contract: COMMUNITY_HOT_GATE,
-    },
-    {
-      id: 'search-community-posts-hot-1m-after',
-      run: () => runCommunityHotPage('1m', cursors.month, 'continuation'),
-      contract: COMMUNITY_HOT_GATE,
-    },
-  ]
-}
-
-async function runCommunityHotPage(
-  timeRange: '1m' | undefined,
-  cursor: CommunityHotCursor | undefined,
-  label: string,
-): Promise<void> {
-  await withSeedAnchorClock(async () => {
-    const page = await getPostIds(undefined, {
-      community_id: COMMUNITY_ID,
-      sort: 'hot',
-      ...(timeRange ? { time_range: timeRange } : {}),
-      limit: COMMUNITY_POST_LIMIT,
-      ...(cursor ? { after: cursor.after } : {}),
-    })
-    assertCommunityHotPage(page, label)
-    if (cursor && page.results.some(post => cursor.firstPageIds.includes(post.id)))
-      throw new Error('Community hot continuation must contain only new post IDs')
-  })
-}
-
-function assertCommunityHotPage(page: Awaited<ReturnType<typeof getPostIds>>, label: string): void {
-  if (page.results.length !== COMMUNITY_POST_LIMIT || !page.page_info.has_next_page)
-    throw new Error(`Community hot ${label} must be a full page with another page`)
-}
 
 export async function runViewDrivenPostScenarios(): Promise<void> {
-  const communityId = COMMUNITY_ID
+  const communityId = EXISTING_COMMUNITY_ID
   const scenarios = [
     {
       id: 'search-community-posts',
@@ -146,7 +45,7 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
               { kind: 'maxBitmapIndexRows' as const, max: 1050 },
               {
                 kind: 'usesIndexes' as const,
-                indexes: ['posts__default_community_id_id_idx1'],
+                indexes: ['posts__default_community_id_id_idx'],
               },
             ]),
       ],
@@ -177,11 +76,5 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
     searchPendingPosts(EXISTING_COMMUNITY_ID, { limit: 25 }),
   )
 
-  const communityHotScenarios = getCommunityHotScenarios(await prepareCommunityHotCursors())
-  for (const scenario of communityHotScenarios) {
-    registerScenarioContract(scenario.id, scenario.contract)
-    // no-mistakes-disable-next-line query-reached-per-item: capture both pages separately.
-    await runAndCapture(scenario.id, scenario.run, undefined, 'buildPostSearchQuery')
-  }
   await runPendingReviewDensityScenario()
 }

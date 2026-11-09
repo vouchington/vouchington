@@ -3677,6 +3677,9 @@ importers:
       '@modules/csv':
         specifier: workspace:^
         version: link:../modules/csv
+      '@modules/feed-query-builders':
+        specifier: workspace:^
+        version: link:../modules/feed-query-builders
       '@modules/on-error':
         specifier: workspace:^
         version: link:../modules/on-error
@@ -3908,6 +3911,9 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../services/rss-feeds
+      '@services/search-params':
+        specifier: workspace:^
+        version: link:../services/search-params
       '@services/sitemaps':
         specifier: workspace:^
         version: link:../services/sitemaps

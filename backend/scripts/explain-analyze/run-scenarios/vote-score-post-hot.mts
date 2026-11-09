@@ -152,7 +152,14 @@ export function getVoteScorePostHotScenarios(
           ? [
               { kind: 'maxProcessedRows' as const, relation: 'posts', max: 3010 },
               { kind: 'maxBitmapIndexRows' as const, max: 1050 },
-              { kind: 'usesIndexes' as const, indexes: ['posts__default_case_id_idx'] },
+              {
+                kind: 'usesIndexes' as const,
+                indexes: [
+                  'posts__default_votes_score_sort_id_idx3',
+                  'posts__default_case_id_votes_score_sort_idx',
+                ],
+                anyOf: true,
+              },
             ]
           : scenario.id.startsWith('vote-score-post-search-hot-')
             ? boundedPostSearchScanGate()

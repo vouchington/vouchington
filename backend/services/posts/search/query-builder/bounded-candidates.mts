@@ -11,6 +11,7 @@ import { buildRawCandidates, candidateCap } from './bounded-candidate-raw.mts'
 import { candidateLimitLiteral } from './bounded-candidate-indexes.mts'
 import { candidateOrder, candidateReverseOrder } from './bounded-candidate-cursor.mts'
 import { indexServedDataPointTopicId, usesTopicBestCohort } from '../topic-best-cohort.mts'
+import { usesHackerNewsHotCandidates } from '../hacker-news-hot-options.mts'
 
 /** Every non-semantic list inspects a finite index-ordered raw prefix. */
 export function usesBoundedPostSearchCandidates(
@@ -18,6 +19,7 @@ export function usesBoundedPostSearchCandidates(
   sort: PostSearchSort,
 ): boolean {
   if (options.omitLimit || options.omitOrderBy) return false
+  if (usesHackerNewsHotCandidates(options)) return false
   // A resolved semantic search already has a finite nearest-vector candidate window.
   if (hasSemanticSearchFilter(options) && options.semanticSearchEmbedding !== undefined)
     return false

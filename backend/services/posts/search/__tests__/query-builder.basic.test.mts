@@ -138,40 +138,6 @@ describe('query-builder (basic)', () => {
     expect(query.values).toContain(topicId2)
   })
 
-  it('buildPostSearchQuery derives universal-topic membership from topic-side candidates', () => {
-    const topicId1 = '123e4567-e89b-12d3-a456-426614174001'
-    const topicId2 = '123e4567-e89b-12d3-a456-426614174002'
-    const query = buildPostSearchQuery(undefined, {
-      universal_topic_ids: [topicId1, topicId2, topicId1],
-    })
-
-    expect(query.sql).toContain('posts.id IN')
-    expect(query.sql).toContain(
-      '(CASE WHEN deleted_at IS NULL AND votes_score_net > 0 THEN object_id END) = ANY',
-    )
-    expect(query.sql).not.toContain('post_topic_alias_sources')
-    expect(query.sql).toContain('FROM relation__post__category__topic_alias relation')
-    expect(query.sql).toContain(
-      'JOIN topic_aliases alias ON alias.id = (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END)',
-    )
-    expect(query.sql).toContain('alias.topic_id = ANY')
-    expect(query.sql).toContain('AND deleted_at IS NULL')
-    expect(query.sql).toContain('AND votes_score_net > 0')
-    expect(query.sql.match(/\bUNION\b(?!\s+ALL\b)/g)).toHaveLength(3)
-    expect(query.sql).toContain('GROUP BY universal_topic_candidates.post_id')
-    expect(query.sql).toContain('HAVING COUNT(*) =')
-    expect(query.sql).not.toContain('ptc.subject_id = posts.id')
-    expect(query.values).toEqual(
-      expect.arrayContaining([
-        [topicId1, topicId2],
-        [topicId1, topicId2],
-        [topicId1, topicId2],
-        [topicId1, topicId2],
-        2,
-      ]),
-    )
-  })
-
   it('buildPostSearchQuery ignores an empty universal-topic filter', () => {
     const query = buildPostSearchQuery(undefined, { universal_topic_ids: [] })
 

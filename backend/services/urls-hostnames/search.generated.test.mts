@@ -91,4 +91,53 @@ describe('search.generated', () => {
     expect(results.some(h => h.hostname === childHostname)).toBe(true)
     expect(results.some(h => h.hostname === otherHostname)).toBe(false)
   })
+
+  it('requires every requested ancestor for descendant topic_match=all', async () => {
+    const user = await createTestUser()
+    const query = `hostname-all-${suffix}`
+    const firstParent = await createTestTopic({ hostname: `${query}-parent-1.com` })
+    const secondParent = await createTestTopic({ hostname: `${query}-parent-2.com` })
+    const bothHostname = `${query}-both.com`
+    const partialHostname = `${query}-partial.com`
+    const both = await createTestTopic({ hostname: bothHostname })
+    const partial = await createTestTopic({ hostname: partialHostname })
+    await Promise.all([
+      insertTestTopicParentRelation({
+        childTopicId: both.id,
+        parentTopicId: firstParent.id,
+        createdById: user.id,
+      }),
+      insertTestTopicParentRelation({
+        childTopicId: both.id,
+        parentTopicId: secondParent.id,
+        createdById: user.id,
+      }),
+      insertTestTopicParentRelation({
+        childTopicId: partial.id,
+        parentTopicId: firstParent.id,
+        createdById: user.id,
+      }),
+    ])
+
+    const result = await searchUrlHostnames({
+      topic_ids: [firstParent.id, secondParent.id],
+      topic_match: 'all',
+      include_descendants: true,
+      query,
+    })
+    expect(result.results.map(row => row.hostname)).toEqual([bothHostname])
+
+    const combinedInputs = await searchUrlHostnames({
+      topic_id: firstParent.id,
+      topic_ids: [secondParent.id],
+      topic_match: 'all',
+      include_descendants: true,
+      query,
+    })
+    // The singular topic retains its existing precedence over the plural input.
+    expect(combinedInputs.results.map(row => row.hostname)).toEqual(
+      expect.arrayContaining([bothHostname, partialHostname]),
+    )
+    expect(combinedInputs.results.map(row => row.hostname)).not.toContain(`${query}-parent-2.com`)
+  })
 })

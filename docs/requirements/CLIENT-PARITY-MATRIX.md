@@ -612,7 +612,10 @@ it as an opaque string. Keyword relevance is local to bounded newest-first cohor
 retains each cohort’s boundary and ranking position before advancing to older posts. Best sorting
 with a data-point topic filter uses the same bounded-window semantics, ranking by score within each
 newest-first topic cohort. Following-first
-search preserves followed-author priority while continuing past inspected keys. Native catalog and result-fixture adoption remains tracked in
+search preserves followed-author priority while continuing past inspected keys. Newest topic searches
+use the same inspected-key continuation; hashtag terms are ANDed together after linked aliases
+collapse to their topic. Excess hashtag terms are rejected equally by REST and MCP.
+Native catalog and result-fixture adoption remains tracked in
 [vouchington-clients#398](https://github.com/vouchington/vouchington-clients/issues/398); this
 producer contract makes no new native UI parity claim.
 

@@ -10,6 +10,7 @@ import {
 import { getPostIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { POST_DISCOVERY_FIXTURE_SEEDED_ROWS } from '../post-discovery-seeded-rows.mts'
 import { runPostDiscoveryUnscopedScenarios } from './post-discovery-unscoped.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
@@ -103,17 +104,21 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
   const globalHotCursor = globalHotFirst.page_info.end_cursor
   if (!globalHotCursor || !globalHotFirst.page_info.has_next_page)
     throw new Error('Global hot fixture must produce a continuation cursor')
-  const globalScenarios: readonly [string, PostSearchOptions, string | null][] = [
-    ['post-discovery-global-hot-first', globalHot, 'posts__default_case_id_idx'],
+  const globalScenarios: readonly [string, PostSearchOptions, readonly string[] | null][] = [
+    [
+      'post-discovery-global-hot-first',
+      globalHot,
+      ['posts__default_votes_score_sort_id_idx3', 'posts__default_case_id_votes_score_sort_idx'],
+    ],
     [
       'post-discovery-global-hot-continuation',
       { ...globalHot, after: globalHotCursor },
-      'posts__default_case_id_idx',
+      ['posts__default_votes_score_sort_id_idx3', 'posts__default_case_id_votes_score_sort_idx'],
     ],
     [
       'post-discovery-type-hot-first',
       { ...globalHot, post_types: ['discussion'] },
-      'posts__default_post_type_case_id_idx',
+      ['posts__default_post_type_case_id_idx'],
     ],
     [
       'post-discovery-mixed-recommendation-new',
@@ -138,10 +143,19 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
   ]
   for (const [id, options, index] of globalScenarios) {
     registerScenarioContract(id, {
+      seededRows: POST_DISCOVERY_FIXTURE_SEEDED_ROWS,
       expectations: [
         { kind: 'maxProcessedRows', relation: 'posts', max: EXPECTED_POST_WORK },
         { kind: 'maxBitmapIndexRows', max: 1050 },
-        ...(index ? [{ kind: 'usesIndexes' as const, indexes: [index] }] : []),
+        ...(index
+          ? [
+              {
+                kind: 'usesIndexes' as const,
+                indexes: index,
+                ...(index.length > 1 ? { anyOf: true } : {}),
+              },
+            ]
+          : []),
       ],
       crossPartition: {
         posts:

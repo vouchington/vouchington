@@ -1,3 +1,4 @@
+import { validateTopicSearchTerms } from '@services/search-params'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getRssFeedItemFeedIds, VALID_RSS_FEED_ITEM_FEED_TYPES } from '@services/feeds'
 import type { BasicUser } from '@services/users/types'
@@ -61,6 +62,7 @@ const getRssFeedItemFeedTool: MergedToolSource<ItemArgs, FeedResult> = {
     (currentUser: BasicUser) =>
     async (args: ItemArgs): Promise<FeedResult> => {
       const viewer = await requirePrivateToolUser(currentUser)
+      validateTopicSearchTerms(args, [], true)
       const page = await findPageOrNull(args.after, async () => {
         const hashtag = await hashtagOptions(args.q)
         const result = await getRssFeedItemFeedIds(viewer, {

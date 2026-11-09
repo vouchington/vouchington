@@ -15,6 +15,7 @@ import { getTopicIdByAnyCached, getTopicIdsByAnyCachedBatch } from '@services/en
 import { extractIdentifier, extractIdentifiers, checkShouldReturnEmpty } from './resolve.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { prepareQueryForValidation } from './prepare-query.mts'
+import { validateTopicSearchTerms, MAX_TOPIC_SEARCH_TERMS } from './hashtag-topic-search.mts'
 
 function parseModerationBooleanParam(canFilter: boolean, value: unknown): boolean | undefined {
   if (!canFilter || value === undefined || value === 'null') return undefined
@@ -47,6 +48,7 @@ export function prepareHostnamesSearchParams(
   query: Record<string, unknown>,
   runtimeLimits?: PaginationRuntimeLimitBounds,
 ) {
+  validateTopicSearchTerms(query, ['topic', 'topics'])
   const validationQuery = prepareQueryForValidation(query, {
     ...hostnamesParser.queryContract,
     ...hostnamesQueryContract.queryContract,
@@ -62,10 +64,11 @@ async function parseHostnamesSearchParamsImpl(
   currentUser: PrivateUser | null,
   runtimeLimits?: PaginationRuntimeLimitBounds,
 ) {
+  validateTopicSearchTerms(query, ['topic', 'topics'])
   const paginationOptions = hostnamesParser.parse(query, runtimeLimits)
   const canFilterModeration = currentUserCanFilterHostnameModeration(currentUser)
   const topicIdentifier = extractIdentifier(query, 'topic')
-  const topicIdentifiers = extractIdentifiers(query, ['topics'], 10)
+  const topicIdentifiers = extractIdentifiers(query, ['topics'], MAX_TOPIC_SEARCH_TERMS)
   const [resolvedTopicId, resolvedTopicIds] = await Promise.all([
     topicIdentifier ? getTopicIdByAnyCached(topicIdentifier) : Promise.resolve(undefined),
     getTopicIdsByAnyCachedBatch(topicIdentifiers),

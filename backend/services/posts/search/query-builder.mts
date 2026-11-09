@@ -61,10 +61,8 @@ export function buildPostSearchQuery(
   })
   if (hasSemanticSearch)
     ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch, decisionInstant))
-  // Facet count queries omit ordering and limits; retain their finite HN cohort.
-  // List queries use the shared bounded rank candidates above.
-  const useHackerNewsHotCandidates =
-    (omitLimit || omitOrderBy) && usesHackerNewsHotCandidates(options)
+  // Hacker News hot ranks within its fixed newest candidate cohort.
+  const useHackerNewsHotCandidates = usesHackerNewsHotCandidates(options)
   if (useHackerNewsHotCandidates) {
     ctes.push(
       buildHackerNewsHotCandidates(

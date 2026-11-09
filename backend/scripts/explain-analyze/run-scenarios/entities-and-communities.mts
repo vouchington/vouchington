@@ -103,7 +103,14 @@ export async function runEntityAndCommunityScenarios() {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'posts', max: 3010 },
       { kind: 'maxBitmapIndexRows', max: 1050 },
-      { kind: 'usesIndexes', indexes: ['posts__default_case_id_idx'] },
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'posts__default_votes_score_sort_id_idx3',
+          'posts__default_case_id_votes_score_sort_idx',
+        ],
+        anyOf: true,
+      },
     ],
     crossPartition: {
       posts: 'Trending ranks eligible posts through a bounded stable-rank candidate window.',
@@ -118,7 +125,14 @@ export async function runEntityAndCommunityScenarios() {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'posts', max: 3010 },
       { kind: 'maxBitmapIndexRows', max: 1050 },
-      { kind: 'usesIndexes', indexes: ['posts__default_case_id_idx'] },
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'posts__default_votes_score_sort_id_idx3',
+          'posts__default_case_id_votes_score_sort_idx',
+        ],
+        anyOf: true,
+      },
     ],
     crossPartition: {
       posts: 'Topic trending ranks eligible posts through a bounded stable-rank candidate window.',

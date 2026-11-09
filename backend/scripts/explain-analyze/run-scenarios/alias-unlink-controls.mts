@@ -74,7 +74,7 @@ export async function captureAliasUnlinkControlScenarios(): Promise<void> {
         transaction,
         {
           id: ALIAS_UNLINK_HASHTAG_ID,
-          alias: '#seed-publication-alias-guard',
+          alias: 'seed-publication-alias-guard',
           unlink_topic_id: seed.topic,
         },
         true,

@@ -54,11 +54,13 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
 
   if (effectiveTopicIds.length > 0 && include_descendants) {
     if (effectiveTopicMatch === 'all' && effectiveTopicIds.length > 1) {
-      filters.push(sql`(
-        SELECT COUNT(DISTINCT topic_descendants.root_post_id)
-        FROM topic_descendants
-        WHERE topic_descendants.topic_id = rss_feeds.topic_id
-      ) = ${effectiveTopicIds.length}`)
+      for (const topicId of effectiveTopicIds) {
+        filters.push(sql`EXISTS (
+          SELECT 1 FROM topic_descendants
+          WHERE topic_descendants.root_post_id = ${topicId}
+            AND topic_descendants.topic_id = rss_feeds.topic_id
+        )`)
+      }
     } else {
       filters.push(sql`EXISTS (
         SELECT 1 FROM topic_descendants

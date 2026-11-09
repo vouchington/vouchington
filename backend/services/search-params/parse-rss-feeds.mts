@@ -11,7 +11,11 @@ import {
 import type { ResolvedSearchParams } from './types.mts'
 import { getTopicIdByAnyCached, getTopicIdsByAnyCachedBatch } from '@services/entity-cache'
 import { extractIdentifier, extractIdentifiers, checkShouldReturnEmpty } from './resolve.mts'
-import { resolveHashtagTopicSearch } from './hashtag-topic-search.mts'
+import {
+  resolveHashtagTopicSearch,
+  validateTopicSearchTerms,
+  MAX_TOPIC_SEARCH_TERMS,
+} from './hashtag-topic-search.mts'
 import { prepareQueryForValidation } from './prepare-query.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import {
@@ -59,11 +63,12 @@ const rssFeedsQueryContract = defineQueryContract({
 })
 
 export function prepareRssFeedsSearchParams(query: Record<string, unknown>) {
+  validateTopicSearchTerms(query, ['topic', 'topics'], true)
   return {
     validationQuery: prepareQueryForValidation(query, rssFeedsQueryContract.queryContract),
     feedType: query.feed_type,
     topicIdentifier: extractIdentifier(query, 'topic'),
-    topicIdentifiers: extractIdentifiers(query, ['topics'], 10),
+    topicIdentifiers: extractIdentifiers(query, ['topics'], MAX_TOPIC_SEARCH_TERMS),
     publisherTypeIdentifier: extractIdentifier(query, 'publisher_type'),
     publisherTypeIdentifiers: extractIdentifiers(query, ['publisher_types'], 10),
     categoryIdentifier: extractIdentifier(query, 'category'),

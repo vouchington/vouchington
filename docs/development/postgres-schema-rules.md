@@ -159,15 +159,19 @@ state from the latest history row.
   cannot use an index or skip partitions. Pass a TypeScript-computed bound or a STABLE inlinable
   helper.
 - Explicit column lists for tables (no `SELECT *`, `alias.*`, `RETURNING *`); a view may be read
-  with `*` because its column list is the reviewed contract. No `OFFSET`. A `MATERIALIZED` CTE is
-  an optimizer fence: outer filters and ordering cannot reach its indexes, so when they reject most
-  of its rows, or sort or aggregate them, the query reads every row up to the CTE's own LIMIT. A
-  `MATERIALIZED` CTE or subquery must always be bounded: allowed only when it holds the final LIMIT,
-  or when it is a viewer-scoped set (follows, subscriptions) capped by a per-type write
-  limit with a hard maximum. A set with no such cap is a candidate pool and is forbidden.
-  The advisory `postgres-bounded-statements` materialized-body check reports missing body bounds;
-  configured per-owner bounds require a reason grounded in the write path. Whether a body holds
-  the final result limit remains a review invariant.
+  with `*` because its column list is the reviewed contract. No `OFFSET`.
+- Default to the straightforward query: a plain walk, filters in WHERE, and `EXISTS`, `NOT EXISTS`
+  or joins on keys. Any complex or non-obvious alternative, including UNION candidates,
+  `MATERIALIZED` CTEs, LATERAL fences or planner steering, requires an EXPLAIN ANALYZE scenario and
+  a benchmark against the straightforward shape showing its benefit. Put the evidence and tradeoff
+  in the PR. A materialized prefix is an optimizer fence: later filters cannot reduce the work
+  inside it, so its own read bound must hold independently. The advisory
+  `postgres-bounded-statements` materialized-body check reports missing body bounds; configured
+  per-owner bounds require a reason grounded in the write path. Whether a body holds the final
+  result limit remains a review invariant.
+- GROUP BY and DISTINCT serve real aggregates. Do not use them to deduplicate our own UNION or join
+  output, or to test existence, unless the same EXPLAIN and benchmark comparison justifies an
+  exception.
 - **A list or feed read is one walk over the listed entity** or, for membership-ordered lists
   (saved posts and list items are uncapped user content, #4979), over the membership index joined to
   the targets, with eligibility in WHERE. Filters go in WHERE and are served by an index. Use, for example, `ORDER BY key DESC, id DESC LIMIT page+1` with a `(key, id) < ($1, $2)` keyset
@@ -204,7 +208,8 @@ state from the latest history row.
   index walk with per-row `EXISTS` probes, a cap on inspected rows, and a continuation cursor. A
   short or empty page is fine when it carries "load more" and the cursor. Do not cap product data
   (such as aliases per topic) to make a query cheap. Each cap is a `DynamicConfig` field with a
-  default and a hard maximum. Unenforced.
+  default and a hard maximum. With an approved inspected-key cap, a short or empty page advances
+  on the inspected key and can still have `has_next_page` true. Unenforced.
 
 ## R7 — Every table, column and view has a comment
 

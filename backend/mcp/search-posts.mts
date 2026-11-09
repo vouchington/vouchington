@@ -8,7 +8,11 @@ import type { BasicUser } from '@services/users/types'
 import { getPostIds } from '@services/posts/search/get-ids'
 import { getPostsWithRootsByAnyCached } from '@services/posts/get-cached-with-roots'
 import { labelAndMaskPosts } from '@services/content-provenance'
-import { preparePostsSearchParams, resolvePostsSearchParams } from '@services/search-params'
+import {
+  preparePostsSearchParams,
+  resolvePostsSearchParams,
+  validateTopicSearchTerms,
+} from '@services/search-params'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import type { SearchPostType } from '@ts-shared/feed-capabilities'
 import {
@@ -90,7 +94,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       type: 'object',
       properties: {
         ...pagedSearchSchemaProperties(
-          'Keyword search. Same as GET /api/v1/posts q: matches post text and #hashtags.',
+          'Keyword search. Same as GET /api/v1/posts q: matches post text and up to five #hashtags.',
         ),
         ...postSearchFilterSchemaProperties(),
       },
@@ -109,6 +113,8 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const viewer = currentUser ? await requirePrivateToolUser(currentUser) : undefined
+      validateTopicSearchTerms(args, ['topic', 'topics'], true)
+      validateTopicSearchTerms(args, ['category', 'categories'])
       const page = await findPageOrNull(args.after, async () => {
         const [topics, creator] = await Promise.all([
           resolvedTopicFilters({

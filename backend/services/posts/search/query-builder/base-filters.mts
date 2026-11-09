@@ -19,7 +19,6 @@ export function appendBaseFilters(
     profileCountPostType,
     user_id,
   }: PostSearchOptions,
-  useBoundedCandidates = false,
 ): boolean {
   filters.push(sql`posts.deleted_at IS NULL`)
   // Profile facet counts retain their existing global-post scope; discovery accepts communities.
@@ -39,16 +38,10 @@ export function appendBaseFilters(
       : buildPublicPostEligibilityFilter('posts', rootAlias, {
           includeArchivedCommunities: include_archived_communities === true,
         })
-  const rootLookup = useBoundedCandidates
-    ? sql`LATERAL (
-        SELECT keyed_root_post.* FROM posts keyed_root_post
-        WHERE keyed_root_post.id = posts.root_post_id LIMIT 1
-      ) root_post WHERE `
-    : sql`posts root_post WHERE root_post.id = posts.root_post_id AND `
   // Root posts already supply their own access row; only replies need a keyed root probe.
   const discoveryEligibility = sql`CASE WHEN posts.root_post_id IS NULL THEN `
   discoveryEligibility.append(rootEligibility('posts')).append(sql` ELSE EXISTS (
-    SELECT 1 FROM `).append(rootLookup)
+    SELECT 1 FROM posts root_post WHERE root_post.id = posts.root_post_id AND `)
   discoveryEligibility.append(rootEligibility('root_post')).append(sql`) END`)
   filters.push(discoveryEligibility)
   if (exclude_for_user_id) appendUserExclusionFilters(filters, exclude_for_user_id)

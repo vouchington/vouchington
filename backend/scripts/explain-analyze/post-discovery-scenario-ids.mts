@@ -28,4 +28,10 @@ export const POST_DISCOVERY_SCENARIO_IDS = [
   'post-discovery-keyword-relevance-sparse-continuation',
   'post-discovery-keyword-relevance-empty-first',
   'post-discovery-keyword-relevance-empty-continuation',
+  'post-topic-semi-join-sparse-first',
+  'post-topic-semi-join-sparse-continuation',
+  'post-topic-semi-join-dense-first',
+  'post-topic-semi-join-dense-continuation',
+  'post-topic-semi-join-multi-topic-search',
+  'post-topic-semi-join-multi-topic-feed',
 ] as const

@@ -1,5 +1,6 @@
-import { runAndCapture, seedTopicId } from '../run-support.mts'
+import { runAndCapture, seedParentTopicId, seedTopicId } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { seedUuid } from '../seed-data/common.mts'
 import { searchBlockedHostnames, searchUrlHostnames } from '@services/urls-hostnames/search'
 
 // This seeded substring matches 111 of the 1,000 hostnames, leaving enough rows for a second page.
@@ -25,6 +26,23 @@ export async function runViewDrivenHostnameScenarios(): Promise<void> {
   await runAndCapture('search-hostnames-trust-by-topic', () =>
     searchUrlHostnames({ sort: 'trust', is_blocked: false, topic_id: seedTopicId, limit: 25 }),
   )
+  registerScenarioContract('search-hostnames-topic-match-all', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 100 },
+      { kind: 'maxProcessedRows', relation: 'topics', max: 3 },
+      { kind: 'maxProcessedRows', relation: 'relation__topic__parent__topic', max: 2 },
+    ],
+  })
+  await runAndCapture('search-hostnames-topic-match-all', async () => {
+    const page = await searchUrlHostnames({
+      topic_ids: [seedTopicId, seedParentTopicId],
+      topic_match: 'all',
+      include_descendants: true,
+      limit: 25,
+    })
+    if (!page.results.some(hostname => hostname.id === seedUuid(0, '02')))
+      throw new Error('All-of hostname descendant search omitted the seeded child hostname')
+  })
   registerScenarioContract('search-blocked-hostnames', {
     expectations: [
       { kind: 'queryBinds', token: 'candidate_hostnames' },

@@ -16,7 +16,11 @@ import {
   extractRssFeedItemId,
   checkShouldReturnEmpty,
 } from './resolve.mts'
-import { resolveHashtagTopicSearch } from './hashtag-topic-search.mts'
+import {
+  resolveHashtagTopicSearch,
+  validateTopicSearchTerms,
+  MAX_TOPIC_SEARCH_TERMS,
+} from './hashtag-topic-search.mts'
 import { postsParser, postsQueryContract } from './parse-posts-contract.mts'
 import { prepareQueryForValidation } from './prepare-query.mts'
 import { withInternalOmitLimit } from './types.mts'
@@ -25,6 +29,8 @@ export function preparePostsSearchParams(
   query: Record<string, unknown>,
   runtimeLimits?: PaginationRuntimeLimitBounds,
 ) {
+  validateTopicSearchTerms(query, ['topic', 'topics'], true)
+  validateTopicSearchTerms(query, ['category', 'categories'])
   const validationQuery = prepareQueryForValidation(query, {
     ...postsParser.queryContract,
     ...postsQueryContract.queryContract,
@@ -44,8 +50,12 @@ export function preparePostsSearchParams(
     reviewTopicIdentifier: extractIdentifier(query, 'review_topic'),
     dataPointTopicIdentifier: extractIdentifier(query, 'data_point_topic'),
     similarRssFeedItemIdentifier: extractRssFeedItemId(query, 'similar_rss_feed_item'),
-    uniqueTopicIdentifiers: extractIdentifiers(query, ['topic', 'topics'], 10),
-    uniqueCategoryIdentifiers: extractIdentifiers(query, ['category', 'categories'], 10),
+    uniqueTopicIdentifiers: extractIdentifiers(query, ['topic', 'topics'], MAX_TOPIC_SEARCH_TERMS),
+    uniqueCategoryIdentifiers: extractIdentifiers(
+      query,
+      ['category', 'categories'],
+      MAX_TOPIC_SEARCH_TERMS,
+    ),
     storyIdRaw: typeof query.story_id === 'string' ? query.story_id : undefined,
     drafts: query.drafts,
     hasHackerNewsReferences: query.has_hacker_news_references,
@@ -77,7 +87,10 @@ export async function resolvePostsSearchParams(
     dataPointVertical,
     q,
   } = prepared
-  const hashtagSearch = await resolveHashtagTopicSearch(q)
+  const hashtagSearch = await resolveHashtagTopicSearch(q, {
+    maxMentions: MAX_TOPIC_SEARCH_TERMS,
+    limitStatus: 400,
+  })
 
   const [
     creatorId,
@@ -126,7 +139,12 @@ export async function resolvePostsSearchParams(
     (communityIdRaw !== undefined && !isUUID(communityIdRaw)) ||
     hashtagSearch.hasUnknown
 
-  const universalTopicIds = [...new Set(resolvedTopicIds.filter((id): id is string => id !== null))]
+  const universalTopicIds = [
+    ...new Set([
+      ...resolvedTopicIds.filter((id): id is string => id !== null),
+      ...hashtagSearch.topicIds,
+    ]),
+  ]
   const relatedTopicIds = [
     ...new Set(resolvedCategoryIds.filter((id): id is string => id !== null)),
   ]
@@ -150,7 +168,6 @@ export async function resolvePostsSearchParams(
     }),
     ...(universalTopicIds.length > 0 && { universal_topic_ids: universalTopicIds }),
     ...(relatedTopicIds.length > 0 && { related_topic_ids: relatedTopicIds }),
-    ...(hashtagSearch.topicIds.length > 0 && { hashtag_topic_ids: hashtagSearch.topicIds }),
     ...(hashtagSearch.filters.some(filter => filter.kind === 'exact_alias') && {
       hashtag_alias_ids: hashtagSearch.filters.flatMap(filter =>
         filter.kind === 'exact_alias' ? [filter.aliasId] : [],

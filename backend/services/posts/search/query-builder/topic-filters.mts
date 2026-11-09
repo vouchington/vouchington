@@ -1,8 +1,8 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
-  buildTopicMembershipExists,
   buildTopicAliasMembershipExists,
-  buildUniversalTopicPostCandidatePairsSelect,
+  buildTopicMembershipExists,
+  buildUniversalTopicMembershipExists,
 } from '@modules/feed-query-builders'
 import type { PostSearchOptions } from '../types.mts'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/metadata'
@@ -23,8 +23,14 @@ export function appendTopicFilters(
 ): void {
   if (url_id) appendUrlFilter(filters)
   if (related_topic_ids?.length) appendRelatedTopicFilters(filters, related_topic_ids)
-  if (hashtag_topic_ids?.length) appendHashtagTopicFilters(filters, hashtag_topic_ids)
-  if (hashtag_alias_ids?.length) appendHashtagAliasFilters(filters, hashtag_alias_ids)
+  if (hashtag_topic_ids?.length) {
+    for (const topicId of new Set(hashtag_topic_ids))
+      filters.push(buildTopicMembershipExists('posts.id', topicId))
+  }
+  if (hashtag_alias_ids?.length) {
+    for (const aliasId of new Set(hashtag_alias_ids))
+      filters.push(buildTopicAliasMembershipExists('posts.id', aliasId))
+  }
   if (review_topic_ids?.length) appendReviewTopicFilters(filters, review_topic_ids)
   if (data_point_topic_ids?.length)
     appendDataPointTopicFilters(
@@ -33,18 +39,9 @@ export function appendTopicFilters(
       useBoundedCandidates,
       indexedDataPointTopicId,
     )
-  if (universal_topic_ids?.length) appendUniversalTopicFilters(filters, universal_topic_ids)
-}
-
-function appendHashtagTopicFilters(filters: SQLStatement[], topicIds: string[]): void {
-  for (const topicId of [...new Set(topicIds)]) {
-    filters.push(buildTopicMembershipExists('posts.id', topicId))
-  }
-}
-
-function appendHashtagAliasFilters(filters: SQLStatement[], aliasIds: string[]): void {
-  for (const aliasId of [...new Set(aliasIds)]) {
-    filters.push(buildTopicAliasMembershipExists('posts.id', aliasId))
+  if (universal_topic_ids?.length) {
+    for (const topicId of new Set(universal_topic_ids))
+      filters.push(buildUniversalTopicMembershipExists('posts.id', topicId))
   }
 }
 
@@ -120,18 +117,4 @@ function dataPointTopicExists(topicId: string, useBoundedCandidates: boolean): S
     ? query.append(sql` ORDER BY post_id, topic_id LIMIT 1
         ) matched_topic)`)
     : query.append(')')
-}
-
-function appendUniversalTopicFilters(filters: SQLStatement[], topicIds: string[]): void {
-  const uniqueTopicIds = [...new Set(topicIds)]
-  if (uniqueTopicIds.length === 0) return
-  filters.push(
-    sql`posts.id IN (
-      SELECT universal_topic_candidates.post_id
-      FROM (`.append(buildUniversalTopicPostCandidatePairsSelect(uniqueTopicIds))
-      .append(sql`) universal_topic_candidates
-      GROUP BY universal_topic_candidates.post_id
-      HAVING COUNT(*) = ${uniqueTopicIds.length}
-    )`),
-  )
 }

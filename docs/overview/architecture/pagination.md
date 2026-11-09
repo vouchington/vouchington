@@ -49,6 +49,9 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   from an age-decayed calculation. Their opaque cursor binds that ordering.
 - Post search inspects a bounded index-ordered prefix before applying visibility and other residual
   filters. A short or empty page can have `has_next_page` true; clients continue with its cursor.
+  Newest topic searches use that same inspected-key walk, checking membership against each post
+  rather than collecting all posts across the topic's aliases. Sparse topics can therefore need
+  several continuation requests before returning a match.
   Following-first search exhausts the followed phase before scanning the remaining authors, using
   the viewer’s follow set as a subquery. Keyword relevance ranks only within each bounded newest-first
   cohort. Its opaque cursor carries the cohort boundary and rank/ID position, so older posts enter
@@ -58,6 +61,9 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
   later cohort. Its cursor retains the cohort boundary, score and ID until that cohort is exhausted,
   then advances to older topic keys; posts beyond the cap remain reachable. Resolved semantic search
   retains its finite vector window.
+- Hacker News hot search fixes a bounded newest-first cohort before checking eligibility and ranking
+  by hot score. Continuations stay inside that cohort; older posts outside it do not enter later
+  pages. A sparse eligible subset can therefore end before filling a page.
 - Friend recommendation cursors use the exact
   `{"resource":"my-friend-recommendations","owner_id":"…","order":"id-asc"}` scope. Unscoped
   simple ID cursors are rejected.

@@ -5,7 +5,7 @@ import {
   buildHotScoreExpression,
   buildTopicMembershipExists,
   buildTopicAliasMembershipExists,
-  buildUniversalTopicPostCandidatePairsSelect,
+  buildUniversalTopicMembershipExists,
 } from '@modules/feed-query-builders'
 import type { PrivateUser } from '@services/users/types'
 import type { PostFeedOptions } from '../../types.mts'
@@ -164,18 +164,11 @@ export function appendEligiblePostsSelect(
     query.append(sql`\n      AND `).append(buildTopicAliasMembershipExists('posts.id', aliasId))
   }
   const uniqueUniversalTopicIds = [...new Set(universalTopicIds)]
-  if (uniqueUniversalTopicIds.length > 0) {
+  for (const topicId of uniqueUniversalTopicIds) {
     query
       .append(sql`
-      AND posts.id IN (
-        SELECT universal_topic_candidates.post_id
-        FROM (`)
-      .append(buildUniversalTopicPostCandidatePairsSelect(uniqueUniversalTopicIds))
-      .append(sql`) universal_topic_candidates
-        GROUP BY universal_topic_candidates.post_id
-        HAVING COUNT(*) = ${uniqueUniversalTopicIds.length}
-      )
-    `)
+      AND `)
+      .append(buildUniversalTopicMembershipExists('posts.id', topicId))
   }
 }
 

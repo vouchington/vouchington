@@ -5,6 +5,7 @@ import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { getPostIds } from '../run-services.mts'
 import { registerPostDiscoveryGate } from '../post-discovery-gates.mts'
+import { POST_DISCOVERY_FIXTURE_SEEDED_ROWS } from '../post-discovery-seeded-rows.mts'
 
 const PAGE_SIZE = 25
 const EXPECTED_POST_WORK = 3010
@@ -25,6 +26,7 @@ function registerGate(
   indexes?: readonly string[],
 ): void {
   registerScenarioContract(id, {
+    seededRows: POST_DISCOVERY_FIXTURE_SEEDED_ROWS,
     expectations: [
       { kind: 'maxProcessedRows', relation: 'posts', max: EXPECTED_POST_WORK },
       { kind: 'maxBitmapIndexRows', max: 1050 },

@@ -51,7 +51,7 @@ export function appendPostSearchWhereClause(
   if (sort === 'hot' || sort === 'trending') filters.push(sql`posts.votes_score_net > 0`)
   // A materialized eligible cohort already applied these filters in this statement's snapshot.
   if (!paginationOnly) {
-    appendBaseFilters(filters, currentUser, options, useBoundedCandidates)
+    appendBaseFilters(filters, currentUser, options)
     appendTopicFilters(filters, options, useBoundedCandidates, indexedDataPointTopicId)
     appendSimpleColumnFilters(filters, options)
     appendPostSearchSpecialFilters(filters, options, decisionInstant)

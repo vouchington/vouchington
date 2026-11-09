@@ -1,3 +1,4 @@
+import { validateTopicSearchTerms } from '@services/search-params'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { indexById } from '@modules/utils'
@@ -43,6 +44,7 @@ app.route('/api/v1/feeds/posts/:feed_type').get(async (ctx: Context) => {
   )
 
   // Parse pagination and common filters (sort is parsed as 'new' | 'hot' | undefined)
+  validateTopicSearchTerms(ctx.query, [], true)
   const paginationOptions = parseAndValidatePaginatedRequest(
     ctx,
     'GET:/api/v1/feeds/posts/:feed_type',
