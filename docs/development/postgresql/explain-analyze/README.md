@@ -15,6 +15,10 @@ The manifest establishes representative plan evidence for named production selec
 function-coverage inventory for every stage of a daily cleanup. Add a separate captured selector
 and realistic eligible and ineligible rows when a stage has a distinct access path.
 
+The seed phase needs headroom for hosted-runner variability and resource-sampler shutdown. When
+seeding reaches its completion message at the deadline, inspect the phase timings before treating
+the timeout as a query-plan failure or rerunning the job.
+
 ## How it works
 
 - **Capture.** Service functions run under query capture, which records annotated SQL with bound
