@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { runModerationCaseWriterScenario } from './moderation-case-writer.mts'
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -38,6 +38,11 @@ type ClusterLookup = {
 /** Read-only copies of the writer's target predicates guard its indexed access paths. */
 export async function runModerationClusterWriteScenarios(): Promise<void> {
   await runModerationCaseWriterScenario()
+  // Earlier cluster updates leave dead index TIDs. Vacuum before the lookup so the bitmap
+  // count follows live rows rather than autovacuum timing.
+  await write(
+    '/* prepareModerationClusterWriterPlans */ VACUUM (ANALYZE) moderation_report_clusters',
+  )
   const rssItem = (await loadReportContextEntities()).find(
     entity => entity.entityType === 'rss_feed_item',
   )
