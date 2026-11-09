@@ -1513,7 +1513,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_url_crawl_states()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO url_crawl_states (url_id, hostname_id) VALUES (NEW.id, NEW.hostname_id);\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_user_individual_household": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id)\n  VALUES (NEW.id)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id)\n  VALUES (new_household_id, new_individual_id);\n\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id, owner_slot)\n  VALUES (NEW.id, 1)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id, member_slot)\n  VALUES (new_household_id, new_individual_id, 1);\n\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM copyright_notice_form_intakes intake\n    JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON execution.state = 'completed'\n    JOIN copyright_notice_form_screenings screening\n      ON screening.id = execution.copyright_notice_form_screening_id\n    JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id\n    JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id\n    WHERE submission.id = submission_id AND screening.id = screening_id\n      AND screening.recommendation = 'not_obviously_invalid'\n      AND submission.kind = 'notice' AND submission.source_kind = 'signed_in_form'\n      AND intake.requester_user_id IS NOT NULL AND notice.jurisdiction = 'us_dmca'\n      AND char_length(notice.claimant_contact_ciphertext) > 0\n      AND char_length(btrim(notice.work_description)) > 0\n      AND intake.has_good_faith_belief AND intake.has_accuracy_authority_under_penalty_of_perjury\n      AND char_length(intake.electronic_signature_ciphertext) > 0\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_targets target\n        JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id\n        WHERE target.copyright_notice_id = notice.id AND char_length(btrim(target.hosted_use_url)) > 0\n      )\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_delivery_work_items receipt\n        JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_work_item_id = receipt.id\n        WHERE receipt.copyright_notice_id = notice.id AND receipt.recipient_role = 'claimant'\n          AND receipt.channel = 'email' AND receipt.delivery_kind = 'claimant_receipt'\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_form_intake_reviews review\n        WHERE review.copyright_notice_form_intake_id = intake.id AND NOT review.is_accepted\n      )\n  );\n$function$\n"
@@ -54825,6 +54825,7 @@
     },
     "household_members": {
       "checkConstraints": {
+        "household_members_member_slot_check": "CHECK (((member_slot >= 1) AND (member_slot <= 25)))",
         "household_members_relationship_check": "CHECK (((relationship IS NULL) OR (char_length(relationship) <= 64)))"
       },
       "columns": {
@@ -54836,7 +54837,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "household_id": {
@@ -54872,6 +54873,17 @@
           "ordinalPosition": 3,
           "type": "uuid"
         },
+        "member_slot": {
+          "collation": null,
+          "comment": "Bounded per-household slot (1 to the max_members_per_household hard maximum); the unique key caps members and deleting the row frees the slot.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "smallint"
+        },
         "relationship": {
           "collation": null,
           "comment": "Relationship to the household owner (e.g. husband, wife, child).",
@@ -54880,7 +54892,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "updated_at": {
@@ -54891,7 +54903,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         }
       },
@@ -55025,6 +55037,33 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uniq_household_members__household_id_member_slot": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uniq_household_members__household_id_member_slot ON public.household_members USING btree (household_id, member_slot)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "household_id",
+              "descending": false,
+              "expression": "household_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "member_slot",
+              "descending": false,
+              "expression": "member_slot",
+              "nullsFirst": false,
+              "opclass": "int2_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -55041,11 +55080,17 @@
         "uniq_household_members__household_id_individual_id": {
           "columns": ["household_id", "individual_id"],
           "definition": "UNIQUE (household_id, individual_id)"
+        },
+        "uniq_household_members__household_id_member_slot": {
+          "columns": ["household_id", "member_slot"],
+          "definition": "UNIQUE (household_id, member_slot)"
         }
       }
     },
     "households": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "households_owner_slot_check": "CHECK (((owner_slot >= 1) AND (owner_slot <= 2)))"
+      },
       "columns": {
         "created_at": {
           "collation": null,
@@ -55055,7 +55100,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -55068,6 +55113,17 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
+        },
+        "owner_slot": {
+          "collation": null,
+          "comment": "Bounded per-owner slot (1 to the max_households_per_user hard maximum); the unique key caps owned households and deleting the row frees the slot.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "smallint"
         },
         "owner_user_id": {
           "collation": null,
@@ -55088,7 +55144,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         }
       },
@@ -55126,10 +55182,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_households__owner_updated_id": {
+        "uniq_households__owner_user_id_owner_slot": {
           "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_households__owner_updated_id ON public.households USING btree (owner_user_id, updated_at DESC, id DESC)",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uniq_households__owner_user_id_owner_slot ON public.households USING btree (owner_user_id, owner_slot)",
           "includedColumns": [],
           "keys": [
             {
@@ -55140,24 +55196,17 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "updated_at",
-              "descending": true,
-              "expression": "updated_at",
-              "nullsFirst": true,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
+              "column": "owner_slot",
+              "descending": false,
+              "expression": "owner_slot",
+              "nullsFirst": false,
+              "opclass": "int2_ops"
             }
           ],
           "predicate": null,
           "primary": false,
           "ready": true,
-          "unique": false,
+          "unique": true,
           "valid": true
         }
       },
@@ -55171,7 +55220,12 @@
       "triggers": {
         "trigger_households_fn_update_updated_at": "CREATE TRIGGER trigger_households_fn_update_updated_at BEFORE UPDATE ON public.households FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uniq_households__owner_user_id_owner_slot": {
+          "columns": ["owner_user_id", "owner_slot"],
+          "definition": "UNIQUE (owner_user_id, owner_slot)"
+        }
+      }
     },
     "identity_verification_attempts": {
       "checkConstraints": {
