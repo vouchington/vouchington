@@ -45,7 +45,7 @@ async function seedLinkCountPrograms(): Promise<void> {
     '/* refreshLinkCountFixture */ REFRESH MATERIALIZED VIEW mv_referral_program_link_counts',
   )
   await write(
-    '/* analyzeLinkCountFixture */ ANALYZE mv_referral_program_link_counts, referral_program_topics, topics',
+    '/* analyzeLinkCountFixture */ ANALYZE mv_referral_program_link_counts, referral_program_topics, topics, user_referral_program_links',
   )
 }
 

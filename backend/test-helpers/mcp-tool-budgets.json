@@ -85,8 +85,8 @@
       },
       "discover_topics": {
         "measured": {
-          "list": 4391,
-          "core": 2742
+          "list": 4390,
+          "core": 2741
         },
         "max": {
           "list": 5000,
