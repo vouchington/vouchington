@@ -21,7 +21,6 @@ import {
 } from '@services/posts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { isAdminUser } from '@services/users'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { apiQuery } from '../../../api-query-contract.mts'
@@ -82,9 +81,10 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
     search_vector_ts: null,
   }))
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
+  // The edge Cache-Tag scheme tags this route by the path idOrSlug, but the body embeds every
+  // descendant post on the page. A child edit would leave a stale cached response with no tag to
+  // purge it by. CachedOrigin caches any 2xx that lacks an explicit private/no-store directive.
+  ctx.set('Cache-Control', 'private, no-store')
 
   let communityMemberRole: CommunityMemberRole | null = null
   if (currentUser && rootPost.community_id) {

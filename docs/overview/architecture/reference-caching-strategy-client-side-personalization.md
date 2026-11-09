@@ -70,10 +70,10 @@ despite the per-request CSP nonce. What's still excluded from the edge cache:
   headers on the client response as a defense in depth if an origin route accidentally emits a
   public header. When a bot-classified request hits one of these private bypasses, the Worker
   keeps the bot session invariant and strips `st`/`dt` before forwarding to the backend.
-- **`GET /api/v1/posts/:idOrSlug/ancestors`**: the Cache-Tag scheme tags API detail routes by a
-  single leaf `idOrSlug`, but this response embeds every ancestor post, so a parent-post edit
-  would have no tag to purge a cached response by — the route bypasses edge caching entirely
-  instead of risking stale ancestor data
+- **`GET /api/v1/posts/:idOrSlug/ancestors` and `GET /api/v1/posts/:idOrSlug/descendants`**: the
+  Cache-Tag scheme tags each response by the single path `idOrSlug`. Ancestors embed every parent
+  post, and descendants embed every child post on the page, so an edit to a post other than that
+  path identifier has no tag to purge the cached response. Both routes bypass edge caching.
 
 ## Related
 

@@ -10,8 +10,6 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-
 import type { PrivateUser } from '@services/users/types'
 
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
@@ -80,10 +78,7 @@ describe('post.descendants', () => {
         .get(`/api/v1/posts/${postId}/descendants?max_depth=2`)
         .expect(200)
 
-      expect(response.headers['cache-control']).toContain('public')
-      expect(response.headers['cache-control']).toContain(
-        `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-      )
+      expect(response.headers['cache-control']).toBe('private, no-store')
 
       expect(Array.isArray(response.body.results)).toBe(true)
       expect(response.body.page_info).toBeDefined()
