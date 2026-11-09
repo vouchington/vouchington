@@ -6,14 +6,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { heavyFollowUser, runAndCapture } from '../run-support.mts'
 import { seedHostnameExclusionPages } from '../seed-data/hostname-exclusion-pages.mts'
 
-const URL_HOSTNAME_PLAN_EXPECTATIONS = [
-  {
-    kind: 'usesIndexes' as const,
-    indexes: ['idx_url_hostnames__reversed_hostname__text_pattern_ops'],
-  },
-]
-
-/** Capture each consumer of the shared block/mute hostname exclusion CTE. */
+/** Capture each consumer of the candidate-correlated block/mute hostname exclusion filter. */
 export async function runHostnameExclusionPageScenarios(): Promise<void> {
   await seedHostnameExclusionPages()
   const { rows } = await read<{ count: string }>(
@@ -30,7 +23,7 @@ export async function runHostnameExclusionPageScenarios(): Promise<void> {
     'hostname-exclusion-referral-links',
   ]) {
     registerScenarioContract(scenarioId, {
-      expectations: URL_HOSTNAME_PLAN_EXPECTATIONS,
+      expectations: [],
       seededRows: { url_hostnames: hostnameRowCount },
       forbidSequentialScans: ['url_hostnames'],
     })

@@ -1,7 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import pgvector from 'pgvector/pg'
 import { buildEmbeddingCtes } from '@modules/search-utils'
-import { buildExcludedCTE, buildExcludedHostnameIdsCTE } from '@modules/feed-query-builders'
+import { buildExcludedCTE } from '@modules/feed-query-builders'
 import type { PostSearchOptions } from '../types.mts'
 import { MAX_CANONICAL_CHAIN_DEPTH } from './constants.mts'
 
@@ -36,7 +36,6 @@ export function buildPostSearchCtes({
   if (exclude_for_user_id) {
     ctes.push(buildExcludedUsersCte(exclude_for_user_id))
     ctes.push(buildExcludedTopicsCte(exclude_for_user_id))
-    ctes.push(buildExcludedHostnameIdsCTE(exclude_for_user_id))
   }
   return ctes
 }

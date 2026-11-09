@@ -6,7 +6,11 @@ import { insertTestUrl } from './entities/urls.mts'
 import { insertTestUrlHostname } from './entities/url-hostnames/mutations.mts'
 
 /** A viewer who both blocks and mutes a parent hostname with an eligible child URL. */
-export async function createHostnameExclusionFixture(): Promise<{
+export async function createHostnameExclusionFixture(
+  options: {
+    patternWildcard?: '_' | '%'
+  } = {},
+): Promise<{
   viewer: PrivateUser
   publisher: PrivateUser
   blockedUrlId: string
@@ -17,17 +21,20 @@ export async function createHostnameExclusionFixture(): Promise<{
   await followUser(viewer, publisher)
 
   const suffix = randomUUID()
-  const parentHostname = `blocked-${suffix}.example.com`
+  const parentHostname = options.patternWildcard
+    ? `blocked${options.patternWildcard}${suffix}.example.com`
+    : `blocked-${suffix}.example.com`
   const parentHostnameId = await insertTestUrlHostname({ hostname: parentHostname })
-  const childHostnameId = await insertTestUrlHostname({
-    hostname: `child.${parentHostname}`,
-  })
+  const blockedHostname = options.patternWildcard
+    ? `blockedX${suffix}.example.com`
+    : `child.${parentHostname}`
+  const childHostnameId = await insertTestUrlHostname({ hostname: blockedHostname })
   const visibleHostnameId = await insertTestUrlHostname({
     hostname: `visible-${suffix}.example.net`,
   })
   const [blockedUrlId, visibleUrlId] = await Promise.all([
     insertTestUrl({
-      url: `https://child.${parentHostname}/blocked`,
+      url: `https://${blockedHostname}/blocked`,
       hostnameId: childHostnameId,
     }),
     insertTestUrl({

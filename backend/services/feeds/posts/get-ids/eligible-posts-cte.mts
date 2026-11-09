@@ -1,6 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   buildViewerPostDiscoveryEligibilityFilter,
+  buildHostnameExclusionExists,
   buildHotScoreExpression,
   buildTopicMembershipExists,
   buildTopicAliasMembershipExists,
@@ -120,7 +121,9 @@ export function appendEligiblePostsSelect(
       )
       AND posts.community_id IS NULL
       AND `)
-  query.append(discoveryEligibility).append(sql`
+  query
+    .append(discoveryEligibility)
+    .append(sql`
       AND NOT EXISTS (
         SELECT 1
         FROM relation__post__related__url pru
@@ -129,8 +132,14 @@ export function appendEligiblePostsSelect(
         WHERE pru.subject_id = posts.id
           AND pru.deleted_at IS NULL
           AND pru.votes_score_net > 0
-          AND (urls.hostname_id IN (SELECT hostname_id FROM excluded_hostname_ids)
-               OR blocked_hostname.is_blocked)
+          AND (`)
+    .append(
+      buildHostnameExclusionExists(
+        currentUser.id,
+        sql`blocked_hostname.id`,
+        sql`blocked_hostname.reversed_hostname`,
+      ),
+    ).append(sql` OR blocked_hostname.is_blocked)
       )
   `)
   if (postTypes?.length) {

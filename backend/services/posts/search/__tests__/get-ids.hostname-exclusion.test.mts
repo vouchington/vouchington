@@ -7,21 +7,25 @@ import {
 import { getPostIds } from '../get-ids.mts'
 
 describe('getPostIds hostname exclusion', () => {
-  it('excludes one child-hostname post for overlapping block and mute relations', async () => {
-    const { viewer, publisher, blockedUrlId, visibleUrlId } = await createHostnameExclusionFixture()
-    const blockedPost = await createTestPost({ user: publisher })
-    const visiblePost = await createTestPost({ user: publisher })
-    await createEntityRelationWithElection(blockedPost.id, blockedUrlId, publisher.id, 1)
-    await createEntityRelationWithElection(visiblePost.id, visibleUrlId, publisher.id, 1)
+  it.each(['_', '%'] as const)(
+    'preserves SQL LIKE wildcard semantics for %s with overlapping block and mute relations',
+    async patternWildcard => {
+      const { viewer, publisher, blockedUrlId, visibleUrlId } =
+        await createHostnameExclusionFixture({ patternWildcard })
+      const blockedPost = await createTestPost({ user: publisher })
+      const visiblePost = await createTestPost({ user: publisher })
+      await createEntityRelationWithElection(blockedPost.id, blockedUrlId, publisher.id, 1)
+      await createEntityRelationWithElection(visiblePost.id, visibleUrlId, publisher.id, 1)
 
-    const result = await getPostIds(viewer, {
-      exclude_for_user_id: viewer.id,
-      user_id: publisher.id,
-      time_range: 'all',
-      limit: 100,
-    })
-    const resultIds = result.results.map(row => row.id)
+      const result = await getPostIds(viewer, {
+        exclude_for_user_id: viewer.id,
+        user_id: publisher.id,
+        time_range: 'all',
+        limit: 100,
+      })
+      const resultIds = result.results.map(row => row.id)
 
-    expect(resultIds).toEqual([visiblePost.id])
-  })
+      expect(resultIds).toEqual([visiblePost.id])
+    },
+  )
 })
