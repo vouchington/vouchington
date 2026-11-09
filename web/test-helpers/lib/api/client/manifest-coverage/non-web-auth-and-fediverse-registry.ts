@@ -1,23 +1,30 @@
 import { endpoint, type ManifestEndpoint } from './endpoint-registry'
 
+const nativeRequestHeaders = {
+  'Content-Type': 'application/json',
+  'x-voucha-app-version': 'test',
+  'x-voucha-client': 'dotnet',
+  'x-voucha-platform': 'windows',
+}
+
 export const authAndFediverseEndpointRegistry = {
   'native.auth.email-address.tokens': {
     method: 'POST',
     path: '/api/v1/auth/native/email-address/tokens',
-    requestHeaders: { 'Content-Type': 'application/json' },
+    requestHeaders: nativeRequestHeaders,
     requestBody: { emailAddress: 'fixture@example.test' },
   },
   'native.auth.email-address.login.authenticated': {
     method: 'POST',
     path: '/api/v1/auth/native/email-address/login',
-    requestHeaders: { 'Content-Type': 'application/json' },
-    requestBody: { emailAddress: 'fixture@example.test', token: '123456' },
+    requestHeaders: nativeRequestHeaders,
+    requestBody: { emailAddress: 'fixture@example.test', token: 'ABCDEFGHJK' },
   },
   'native.auth.email-address.login.mfa': {
     method: 'POST',
     path: '/api/v1/auth/native/email-address/login',
-    requestHeaders: { 'Content-Type': 'application/json' },
-    requestBody: { emailAddress: 'fixture@example.test', token: '123456' },
+    requestHeaders: nativeRequestHeaders,
+    requestBody: { emailAddress: 'fixture@example.test', token: 'ABCDEFGHJK' },
   },
   'native.oauth.session-mcp-token.ios': {
     method: 'POST',

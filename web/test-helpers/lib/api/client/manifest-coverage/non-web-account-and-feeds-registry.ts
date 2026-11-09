@@ -51,7 +51,7 @@ export const accountAndFeedsEndpointRegistry = {
   'native.my.email-addresses.verify.default': {
     method: 'POST',
     path: '/api/v1/my/email-addresses/tests%2Bnative-user%40voucha.ai/verifications',
-    requestBody: { token: 'ABCD1234', re_auth_token: 'fresh-auth-fixture' },
+    requestBody: { token: 'ABCDEFGHJK', re_auth_token: 'fresh-auth-fixture' },
   },
   'swift.my.profile.default': { method: 'GET', path: '/api/v1/my/profile' },
   'swift.rss-feeds.default': endpoint('/api/v1/rss-feeds', { limit: '25' }),
