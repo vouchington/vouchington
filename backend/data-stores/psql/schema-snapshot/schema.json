@@ -1513,7 +1513,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_url_crawl_states()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO url_crawl_states (url_id, hostname_id) VALUES (NEW.id, NEW.hostname_id);\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_user_individual_household": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id, owner_slot)\n  VALUES (NEW.id, 1)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id, member_slot)\n  VALUES (new_household_id, new_individual_id, 1);\n\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id, owner_slot)\n  VALUES (NEW.id, 1)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id, member_slot, individual_slot)\n  VALUES (new_household_id, new_individual_id, 1, 1);\n\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM copyright_notice_form_intakes intake\n    JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON execution.state = 'completed'\n    JOIN copyright_notice_form_screenings screening\n      ON screening.id = execution.copyright_notice_form_screening_id\n    JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id\n    JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id\n    WHERE submission.id = submission_id AND screening.id = screening_id\n      AND screening.recommendation = 'not_obviously_invalid'\n      AND submission.kind = 'notice' AND submission.source_kind = 'signed_in_form'\n      AND intake.requester_user_id IS NOT NULL AND notice.jurisdiction = 'us_dmca'\n      AND char_length(notice.claimant_contact_ciphertext) > 0\n      AND char_length(btrim(notice.work_description)) > 0\n      AND intake.has_good_faith_belief AND intake.has_accuracy_authority_under_penalty_of_perjury\n      AND char_length(intake.electronic_signature_ciphertext) > 0\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_targets target\n        JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id\n        WHERE target.copyright_notice_id = notice.id AND char_length(btrim(target.hosted_use_url)) > 0\n      )\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_delivery_work_items receipt\n        JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_work_item_id = receipt.id\n        WHERE receipt.copyright_notice_id = notice.id AND receipt.recipient_role = 'claimant'\n          AND receipt.channel = 'email' AND receipt.delivery_kind = 'claimant_receipt'\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_form_intake_reviews review\n        WHERE review.copyright_notice_form_intake_id = intake.id AND NOT review.is_accepted\n      )\n  );\n$function$\n"
@@ -54825,6 +54825,7 @@
     },
     "household_members": {
       "checkConstraints": {
+        "household_members_individual_slot_check": "CHECK (((individual_slot >= 1) AND (individual_slot <= 5)))",
         "household_members_member_slot_check": "CHECK (((member_slot >= 1) AND (member_slot <= 25)))",
         "household_members_relationship_check": "CHECK (((relationship IS NULL) OR (char_length(relationship) <= 64)))"
       },
@@ -54837,7 +54838,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "household_id": {
@@ -54873,6 +54874,17 @@
           "ordinalPosition": 3,
           "type": "uuid"
         },
+        "individual_slot": {
+          "collation": null,
+          "comment": "Bounded per-individual slot (1 to the max_households_per_individual hard maximum); the unique key caps households per individual and deleting the row frees the slot.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "smallint"
+        },
         "member_slot": {
           "collation": null,
           "comment": "Bounded per-household slot (1 to the max_members_per_household hard maximum); the unique key caps members and deleting the row frees the slot.",
@@ -54892,7 +54904,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "updated_at": {
@@ -54903,7 +54915,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         }
       },
@@ -55064,6 +55076,33 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uniq_household_members__individual_id_individual_slot": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uniq_household_members__individual_id_individual_slot ON public.household_members USING btree (individual_id, individual_slot)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "individual_id",
+              "descending": false,
+              "expression": "individual_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "individual_slot",
+              "descending": false,
+              "expression": "individual_slot",
+              "nullsFirst": false,
+              "opclass": "int2_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -55084,6 +55123,10 @@
         "uniq_household_members__household_id_member_slot": {
           "columns": ["household_id", "member_slot"],
           "definition": "UNIQUE (household_id, member_slot)"
+        },
+        "uniq_household_members__individual_id_individual_slot": {
+          "columns": ["individual_id", "individual_slot"],
+          "definition": "UNIQUE (individual_id, individual_slot)"
         }
       }
     },
