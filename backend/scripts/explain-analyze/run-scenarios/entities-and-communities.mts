@@ -2,6 +2,10 @@ import { runCrawlerRefreshScenario } from './crawler-refresh.mts'
 import { runRelationVoteReadScenarios } from './relation-vote-reads.mts'
 import { runCommunitySearchScenarios } from './community-search.mts'
 import { SEED_PREFIX, runAndCapture, seedPostId, seedTopicId, seedUser } from '../run-support.mts'
+import {
+  cleanupRecommendedRssFeedsPopularFeed,
+  seedRecommendedRssFeedsPopularFeed,
+} from '../seed-data/recommended-rss-feeds.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import {
@@ -58,10 +62,31 @@ export async function runEntityAndCommunityScenarios() {
   // Topic lookup by slug (hits topics + topic_aliases → view_topics)
   await runAndCapture('topic-by-slug', () => getTopicByAny('seed-topic-0'))
 
-  // Recommended RSS feeds — multi-CTE recommendation engine with friends, topic, and collaborative sources
-  await runAndCapture('recommended-rss-feeds', () =>
-    getRecommendedRssFeeds(seedUser.id, { limit: 25 }),
-  )
+  // Recommended RSS feeds — multi-CTE recommendation engine with friends, topic, and collaborative sources.
+  // The viewer follows a popular feed (1,000 co-followers with 30 follows each) plus 30 more feeds;
+  // the collaborative arm reads the viewer's newest 10 follows x each feed's newest 25 co-followers
+  // x each co-follower's newest 20 follows (at most 5,000 follows) through the newest-follow indexes.
+  // The 5,600 ceiling adds the viewer's own follows and the friends arm (seeduser1's 200 follows).
+  registerScenarioContract('recommended-rss-feeds', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'relation__user__follow__rss_feed', max: 5_600 },
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'idx_relation__user__follow__rss_feed__subject__newest',
+          'idx_relation__user__follow__rss_feed__object__newest',
+        ],
+      },
+    ],
+  })
+  await seedRecommendedRssFeedsPopularFeed()
+  try {
+    await runAndCapture('recommended-rss-feeds', () =>
+      getRecommendedRssFeeds(seedUser.id, { limit: 25 }),
+    )
+  } finally {
+    await cleanupRecommendedRssFeedsPopularFeed()
+  }
 
   // Vote weight factors — multi-table UNION across OAuth providers + LATERAL subqueries
   await runAndCapture('vote-weight-factors', () => gatherVoteWeightFactors(seedUser.id))

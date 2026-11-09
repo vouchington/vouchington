@@ -6498,6 +6498,9 @@ importers:
       '@services/recaptcha':
         specifier: workspace:^
         version: link:../recaptcha
+      '@services/recommended-rss-feeds':
+        specifier: workspace:^
+        version: link:../recommended-rss-feeds
       '@services/recommended-topics':
         specifier: workspace:^
         version: link:../recommended-topics
@@ -10249,6 +10252,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -10258,6 +10264,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@services/rss-feeds':
         specifier: workspace:^

@@ -53,6 +53,11 @@ export const entityRelations: EntityRelations = {
           `CREATE INDEX IF NOT EXISTS idx_relation__user__follow__rss_feed__created_at
 ON relation__user__follow__rss_feed (created_at, object_id)
 WHERE deleted_at IS NULL;`,
+          // Newest followers of one feed; the recommended RSS feeds collaborative arm reads the
+          // newest M co-followers per seed feed from this ordering.
+          `CREATE INDEX IF NOT EXISTS idx_relation__user__follow__rss_feed__object__newest
+ON relation__user__follow__rss_feed (object_id, created_at DESC, subject_id DESC)
+WHERE deleted_at IS NULL;`,
         ],
       },
       subscribe: {},
