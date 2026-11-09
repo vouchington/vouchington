@@ -5,7 +5,9 @@ export const FRIEND_TRUST_VIEWER_INDEX = 19_998
 export const FRIEND_TRUST_FOLLOW_COUNT = 10_000
 // Longer than the default votes_per_friend_limit (20), so the per-friend bound is exercised.
 export const FRIEND_TRUST_VOTES_PER_FRIEND = 25
-export const FRIEND_TRUST_VOTE_ROWS = FRIEND_TRUST_FOLLOW_COUNT * FRIEND_TRUST_VOTES_PER_FRIEND
+// Only the newest follows are ever read (default friend_follow_limit is 1000), so only they carry ballots.
+const FRIENDS_WITH_VOTES = 1500
+export const FRIEND_TRUST_VOTE_ROWS = FRIENDS_WITH_VOTES * FRIEND_TRUST_VOTES_PER_FRIEND
 // Votes wrap over this many hostnames, so every friend re-votes (and sometimes flips) hostnames.
 const DISTINCT_HOSTNAMES_PER_FRIEND = 12
 const FIRST_FRIEND_INDEX = 100
@@ -17,7 +19,7 @@ const FIRST_FRIEND_INDEX = 100
  */
 export async function seedFriendTrustedHostnames(): Promise<void> {
   console.log(
-    `Seeding ${FRIEND_TRUST_FOLLOW_COUNT} follows with ${FRIEND_TRUST_VOTES_PER_FRIEND} hostname votes each for the friend-trusted viewer...`,
+    `Seeding ${FRIEND_TRUST_FOLLOW_COUNT} follows (newest ${FRIENDS_WITH_VOTES} with ${FRIEND_TRUST_VOTES_PER_FRIEND} hostname votes each) for the friend-trusted viewer...`,
   )
   await using transaction = await beginTransaction()
   await transaction(
@@ -38,7 +40,7 @@ export async function seedFriendTrustedHostnames(): Promise<void> {
        ($1 || lpad(to_hex((n * 31 + (v % $5::int)) % $6::int), 12, '0'))::uuid,
        ($2 || lpad(to_hex($3::int + n), 12, '0'))::uuid,
        CASE WHEN v < $5::int THEN 1 ELSE -1 END
-     FROM generate_series(0, $4::int - 1) AS n
+     FROM generate_series($8::int, $4::int - 1) AS n
      CROSS JOIN generate_series(0, $7::int - 1) AS v
      ORDER BY n, v`,
     [
@@ -49,6 +51,7 @@ export async function seedFriendTrustedHostnames(): Promise<void> {
       DISTINCT_HOSTNAMES_PER_FRIEND,
       HOSTNAME_COUNT,
       FRIEND_TRUST_VOTES_PER_FRIEND,
+      FRIEND_TRUST_FOLLOW_COUNT - FRIENDS_WITH_VOTES,
     ],
   )
   await transaction.commit()
