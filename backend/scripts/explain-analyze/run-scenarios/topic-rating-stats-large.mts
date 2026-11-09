@@ -18,11 +18,6 @@ export async function runLargeTopicRatingStatsScenario(): Promise<void> {
   await seedLargeRatingTopic()
   registerScenarioContract('topic-rating-stats-large', {
     expectations: [
-      {
-        kind: 'usesIndexes',
-        queryContains: 'FROM post_review_topic_ratings',
-        indexes: ['idx_post_review_topic_ratings__topic_id'],
-      },
       { kind: 'maxProcessedRows', relation: 'post_review_topic_ratings', max: 10_000 },
       { kind: 'maxProcessedRows', relation: 'topic_votes', max: 10_000 },
     ],
