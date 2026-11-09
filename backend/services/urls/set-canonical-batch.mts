@@ -94,7 +94,9 @@ async function flattenCanonicalBackReferences(
     -- no-mistakes-disable-next-line postgres-bounded-statements: every direct back-reference must be repointed in this transaction to preserve the canonical-root FK at commit; the number of referencing URLs is uncapped.
     UPDATE urls SET canonical_url_id = input.final_id
     FROM unnest($1::uuid[], $2::uuid[]) AS input(url_id, final_id)
-    WHERE urls.canonical_url_id = input.url_id AND urls.id <> input.url_id`,
+    WHERE urls.canonical_url_id = input.url_id AND urls.id <> input.url_id
+      -- A concurrent inverse rewrite can make the stale final_id this alias's own id.
+      AND urls.id <> input.final_id`,
     [urlIds, finalIds],
   )
 }

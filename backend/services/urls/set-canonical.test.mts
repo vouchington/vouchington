@@ -7,6 +7,7 @@ import {
   hardDeleteTestUrl,
   insertTestUrl,
 } from '@voucha/test-helpers/entities/urls'
+import { setCanonicalUrlDuringConcurrentTargetRewriteForTest } from '@voucha/test-helpers/url-canonical-races'
 import { getUrlById } from './get.mts'
 import { CircularCanonicalReferenceError, setCanonicalUrl } from './set-canonical.mts'
 import { canonicalWorkConfig } from './canonical-work-limits.mts'
@@ -53,6 +54,16 @@ describe('concurrent canonical URL rewrites', () => {
     expect(results.find(result => result.status === 'rejected')).toMatchObject({
       reason: expect.any(CircularCanonicalReferenceError),
     })
+  })
+
+  it('rejects an inverse rewrite when the target changes after root resolution', async () => {
+    const [a, b] = await Promise.all([createTestUrlWithHostname(), createTestUrlWithHostname()])
+    await expect(
+      setCanonicalUrlDuringConcurrentTargetRewriteForTest(b, a, a, b),
+    ).rejects.toBeInstanceOf(CircularCanonicalReferenceError)
+
+    expect(await getTestUrlCanonicalId(a)).toBe(b)
+    expect(await getTestUrlCanonicalId(b)).toBeNull()
   })
 
   it('rejects an alias pointing to another alias at the foreign key boundary', async () => {
