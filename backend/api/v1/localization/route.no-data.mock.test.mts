@@ -7,7 +7,6 @@ import { createSampleLocalizationContext } from '@voucha/test-helpers/localizati
 
 function createContext(query: Record<string, unknown>, ifNoneMatch?: string) {
   const ctx = {
-    requestContractOperation: 'GET:/api/v1/localization',
     query,
     req: { headers: { 'if-none-match': ifNoneMatch } },
     set: vi.fn<(name: string, value: string) => void>(),

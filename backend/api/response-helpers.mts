@@ -6,10 +6,13 @@ import type { PageInfo } from '@voucha/types/pagination'
 import { isUUID } from '@modules/utils'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
 import { assertNotSuspended } from '@services/users/suspension-guard'
-import {
-  assertRequestContractOperation,
-  markRequestContractValidated,
-} from './request-contract-enforcement-helpers.mts'
+
+declare module '@jongleberry/api-server' {
+  interface Context {
+    /** Operation key of the last request contract validation; test enforcement compares it to the route. */
+    requestContractValidatedOperation?: string
+  }
+}
 import { withOverlappedRateLimit } from '@vouchington/rate-limit'
 import { enforceLowScoreBotChallenge } from './bot-challenge.mts'
 import { hasSignedWebRefreshCredential } from './optional-web-session-renewal.mts'
@@ -128,9 +131,8 @@ export function validateRequestContract(
   operation: string,
   input: Parameters<RuntimeRequestValidatorRegistry['validateAuthenticated']>[1],
 ): void {
-  assertRequestContractOperation(ctx, operation)
   const error = RuntimeRequestValidatorRegistry.shared.validateAuthenticated(operation, input)
-  markRequestContractValidated(ctx)
+  ctx.requestContractValidatedOperation = operation
   if (error) ctx.throw(422, error.message)
 }
 export async function parseJsonBody<T = unknown>(ctx: Context, maxSize = '1mb'): Promise<T> {
