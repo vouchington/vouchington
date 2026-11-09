@@ -66,18 +66,21 @@ _none_
 - `idx_moderation_reports__community_id`: `CREATE INDEX idx_moderation_reports__community_id ON public.moderation_reports USING btree (community_id) WHERE (community_id IS NOT NULL)`
 - `idx_moderation_reports__created_via_oauth_client_id`: `CREATE INDEX idx_moderation_reports__created_via_oauth_client_id ON public.moderation_reports USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_moderation_reports__escalated_by_id`: `CREATE INDEX idx_moderation_reports__escalated_by_id ON public.moderation_reports USING btree (escalated_by_id) WHERE (escalated_by_id IS NOT NULL)`
-- `idx_moderation_reports__hostname_id`: `CREATE INDEX idx_moderation_reports__hostname_id ON public.moderation_reports USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`
+- `idx_moderation_reports__hostname_id`: `CREATE INDEX idx_moderation_reports__hostname_id ON public.moderation_reports USING btree (hostname_id, resolution_action, id DESC) WHERE (hostname_id IS NOT NULL)`
 - `idx_moderation_reports__pending_id`: `CREATE INDEX idx_moderation_reports__pending_id ON public.moderation_reports USING btree (id DESC) WHERE (reviewed_at IS NULL)`
-- `idx_moderation_reports__post_id`: `CREATE INDEX idx_moderation_reports__post_id ON public.moderation_reports USING btree (post_id) WHERE (post_id IS NOT NULL)`
-- `idx_moderation_reports__reported_user_id`: `CREATE INDEX idx_moderation_reports__reported_user_id ON public.moderation_reports USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL)`
+- `idx_moderation_reports__pending_post_id_id`: `CREATE INDEX idx_moderation_reports__pending_post_id_id ON public.moderation_reports USING btree (post_id, id DESC) WHERE ((reviewed_at IS NULL) AND (post_id IS NOT NULL))`
+- `idx_moderation_reports__post_id`: `CREATE INDEX idx_moderation_reports__post_id ON public.moderation_reports USING btree (post_id, resolution_action, id DESC) WHERE (post_id IS NOT NULL)`
+- `idx_moderation_reports__reported_user_id`: `CREATE INDEX idx_moderation_reports__reported_user_id ON public.moderation_reports USING btree (reported_user_id, resolution_action, id DESC) WHERE (reported_user_id IS NOT NULL)`
 - `idx_moderation_reports__reporter_user_id`: `CREATE INDEX idx_moderation_reports__reporter_user_id ON public.moderation_reports USING btree (reporter_user_id) WHERE (reporter_user_id IS NOT NULL)`
 - `idx_moderation_reports__resolution_id`: `CREATE INDEX idx_moderation_reports__resolution_id ON public.moderation_reports USING btree (resolution_action, id DESC) WHERE (reviewed_at IS NOT NULL)`
 - `idx_moderation_reports__resolved_by_id`: `CREATE INDEX idx_moderation_reports__resolved_by_id ON public.moderation_reports USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)`
-- `idx_moderation_reports__rss_feed_item_id`: `CREATE INDEX idx_moderation_reports__rss_feed_item_id ON public.moderation_reports USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)`
+- `idx_moderation_reports__rss_feed_item_id`: `CREATE INDEX idx_moderation_reports__rss_feed_item_id ON public.moderation_reports USING btree (rss_feed_item_id, resolution_action, id DESC) WHERE (rss_feed_item_id IS NOT NULL)`
 - `moderation_reports_pkey`: `CREATE UNIQUE INDEX moderation_reports_pkey ON public.moderation_reports USING btree (id)`
 
 **Triggers:**
 
+- `trigger_moderation_report_clusters_insert_delete`: `CREATE TRIGGER trigger_moderation_report_clusters_insert_delete AFTER INSERT OR DELETE ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_sync_moderation_report_cluster()`
+- `trigger_moderation_report_clusters_update`: `CREATE TRIGGER trigger_moderation_report_clusters_update AFTER UPDATE OF id, reviewed_at, resolution_action, post_id, reported_user_id, hostname_id, rss_feed_item_id ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_sync_moderation_report_cluster()`
 - `trigger_moderation_reports_content_provenance_immutable`: `CREATE TRIGGER trigger_moderation_reports_content_provenance_immutable AFTER UPDATE ON public.moderation_reports FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_moderation_transparency_reports_delete_rollup`: `CREATE TRIGGER trigger_moderation_transparency_reports_delete_rollup AFTER DELETE ON public.moderation_reports REFERENCING OLD TABLE AS deleted_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_reports', 'original_reason', 'reports')`
 - `trigger_moderation_transparency_reports_original_reason_guard`: `CREATE TRIGGER trigger_moderation_transparency_reports_original_reason_guard BEFORE UPDATE OF original_reason ON public.moderation_reports FOR EACH ROW WHEN ((old.original_reason IS DISTINCT FROM new.original_reason)) EXECUTE FUNCTION fn_reject_mutation()`

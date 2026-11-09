@@ -1621,6 +1621,14 @@ CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind
  LANGUAGE plpgsql
 ```
 
+## `fn_sync_moderation_report_cluster`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_moderation_report_cluster()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_text_to_timestamptz(text_value text)`
 
 ```sql
