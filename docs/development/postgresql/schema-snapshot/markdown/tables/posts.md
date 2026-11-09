@@ -148,7 +148,7 @@ _none_
   CASE
       WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)
       ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)
-  END) DESC, id DESC) WHERE ((community_id IS NOT NULL) AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))
+  END) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((community_id IS NOT NULL) AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))
   ```
 
 - `idx_posts__community_id__votes_score_sort__id`: `CREATE INDEX idx_posts__community_id__votes_score_sort__id ON ONLY public.posts USING btree (community_id, votes_score_sort DESC, id DESC) WHERE ((community_id IS NOT NULL) AND (deleted_at IS NULL))`
@@ -196,7 +196,7 @@ _none_
   CASE
       WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)
       ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)
-  END) DESC, id DESC) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))
+  END) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))
   ```
 
 - `idx_posts__structured_data`: `CREATE INDEX idx_posts__structured_data ON ONLY public.posts USING gin (structured_data jsonb_path_ops) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))`
