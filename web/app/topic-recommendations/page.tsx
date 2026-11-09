@@ -33,6 +33,7 @@ interface TopicRecommendationsPageProps {
     q?: string | string[]
     status?: string | string[]
     tab?: string | string[]
+    after?: string | string[]
   }>
 }
 
@@ -44,6 +45,7 @@ export default async function TopicRecommendationsPage({
   if (!currentUser || !Array.isArray(currentUser.roles)) redirect('/login')
   const params = await searchParams
   const q = typeof params.q === 'string' ? params.q : undefined
+  const after = typeof params.after === 'string' ? params.after : undefined
   const rawStatus = typeof params.status === 'string' ? params.status : undefined
   const status =
     rawStatus === 'pending' || rawStatus === 'approved' || rawStatus === 'rejected'
@@ -57,6 +59,7 @@ export default async function TopicRecommendationsPage({
         limit: 50,
         q,
         status,
+        after,
       },
     }),
     getTopHashtags({ searchParams: { limit: 25 } }),
@@ -128,6 +131,19 @@ export default async function TopicRecommendationsPage({
                   isAdmin={currentUser.roles.includes('administrator')}
                   hideDownCount={!canCurrentUserSeeDownvotes(currentUser)}
                 />
+                {data.page_info.has_next_page && data.page_info.end_cursor && (
+                  <Button
+                    asChild
+                    variant='outline'
+                  >
+                    <Link
+                      href={recommendationsPageUrl(q, status, tab, data.page_info.end_cursor)}
+                      prefetch={false}
+                    >
+                      {t('extracted.admin.adminPagination.next_1ff57a29')}
+                    </Link>
+                  </Button>
+                )}
               </>
             ) : (
               <ListSearchError
@@ -153,4 +169,19 @@ export default async function TopicRecommendationsPage({
       </div>
     </PageWithAside>
   )
+}
+
+function recommendationsPageUrl(
+  q: string | undefined,
+  status: string | undefined,
+  tab: string,
+  after: string,
+): string {
+  const params = new URLSearchParams()
+  if (q) params.set('q', q)
+  if (status) params.set('status', status)
+  params.set('tab', tab)
+  if (after) params.set('after', after)
+  const query = params.toString()
+  return query ? `/topic-recommendations?${query}` : '/topic-recommendations'
 }

@@ -8,10 +8,59 @@ import {
 } from '@voucha/test-helpers'
 import { getPostIds } from '../get-ids.mts'
 import type { PostSearchOptions } from '../types.mts'
+import { encodeCursor } from '@modules/pagination'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { postsWorkConfig } from '../../work-limits.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('getPostIds default time range', () => {
+  it('exhausts a finite newest window before the raw candidate cap', async () => {
+    await postsWorkConfig.waitForInitialization()
+    const user = await createTestUserDirect()
+    if (!user) throw new Error('Failed to create time-range test user')
+    const suffix = createRandomString(10)
+    const insert = (ageDays: number) =>
+      insertTestPost({
+        createdAt: new Date(Date.now() - ageDays * DAY_MS),
+        title: `finite window ${ageDays} ${suffix}`,
+        slug: `finite-window-${ageDays}-${suffix}`,
+        createdById: user.id,
+        markdown: `finite window ${suffix}`,
+        postType: 'discussion',
+      })
+    const [recentId, olderId, oldestId] = await Promise.all([insert(2), insert(40), insert(41)])
+    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+      post_search_filter_candidate_limit: 1,
+    })
+    try {
+      const options = {
+        user_id: user.id,
+        post_types: ['discussion'] as const,
+        sort: 'new' as const,
+        limit: 1,
+        after: encodeCursor({ id: recentId }),
+      }
+      const finite = await getPostIds(undefined, {
+        ...options,
+        post_types: [...options.post_types],
+        time_range: '1w',
+      })
+      expect(finite.results).toEqual([])
+      expect(finite.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
+      const all = await getPostIds(undefined, {
+        ...options,
+        post_types: [...options.post_types],
+        time_range: 'all',
+      })
+      expect(all.results.map(row => row.id)).toEqual([olderId])
+      expect(all.page_info.has_next_page).toBe(true)
+    } finally {
+      restore()
+      await Promise.all([recentId, olderId, oldestId].map(id => deleteTestPost(id)))
+    }
+  })
+
   it('bounds a request without time_range to 30 days for every sort and honors an explicit range', async () => {
     const user = await createTestUserDirect()
     if (!user) throw new Error('Failed to create time-range test user')

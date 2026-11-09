@@ -11,6 +11,8 @@ import {
   indexServedPostType,
 } from './bounded-candidate-indexes.mts'
 import { indexServedDataPointTopicId } from '../topic-best-cohort.mts'
+import { buildPostSearchTimeRangeFilter } from '../hacker-news-hot-options.mts'
+import { buildTimeRangeFilter } from '@modules/feed-query-builders/time-range'
 
 export function candidateCap(options: PostSearchOptions): number {
   return options.cohort_cap ?? getPostsWorkLimit('post_search_filter_candidate_limit')
@@ -21,11 +23,19 @@ export function buildRawCandidates(
   options: PostSearchOptions,
   sort: PostSearchSort,
   cap: number,
-  topicBestCohort = false,
-  includePostRows = false,
+  topicBestCohort: boolean,
+  includePostRows: boolean,
+  decisionInstant: Date,
 ): SQLStatement {
   const topicId = indexServedDataPointTopicId(options, topicBestCohort ? 'best' : sort)
-  if (topicId) return buildDataPointTopicRawCandidates(topicId, cap, options, topicBestCohort)
+  const newestSort = sort === 'new' || sort === 'relevance' || sort === 'following_new'
+  if (topicId) {
+    const topicTimeFilter =
+      !topicBestCohort && newestSort
+        ? buildTimeRangeFilter(options.time_range ?? 'all', 'topic_post.post_id', decisionInstant)
+        : null
+    return buildDataPointTopicRawCandidates(topicId, cap, options, topicBestCohort, topicTimeFilter)
+  }
   const query = sql`raw_post_search_candidates AS MATERIALIZED (
     SELECT `
   query.append(includePostRows ? sql`posts.*` : sql`posts.id`)
@@ -62,6 +72,10 @@ export function buildRawCandidates(
     query.append(sql` AND posts.community_id = ${options.community_id}`)
   if (postTypeFilter) query.append(postTypeFilter)
   if (dataPointFilter) query.append(dataPointFilter)
+  if (newestSort) {
+    const timeRangeFilter = buildPostSearchTimeRangeFilter(options, 'posts.id', decisionInstant)
+    if (timeRangeFilter) query.append(sql` AND `).append(timeRangeFilter)
+  }
   appendSourceEmbeddingGuards(query, options)
   appendCandidateCursor(query, options, sort)
   return query

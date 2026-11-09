@@ -27,6 +27,7 @@ export function buildDataPointTopicRawCandidates(
   cap: number,
   options: PostSearchOptions,
   topicBestCohort: boolean,
+  timeRangeFilter: SQLStatement | null,
 ): SQLStatement {
   const query = sql`raw_post_search_candidates AS MATERIALIZED (
     SELECT topic_post.post_id AS id
@@ -38,6 +39,7 @@ export function buildDataPointTopicRawCandidates(
   else if (topicBestCohort && options.cohort_before_id)
     query.append(sql` AND topic_post.post_id < ${options.cohort_before_id}`)
   else if (options.id_lt) query.append(sql` AND topic_post.post_id < ${options.id_lt}`)
+  if (timeRangeFilter) query.append(sql` AND `).append(timeRangeFilter)
   appendSourceEmbeddingGuards(query, options)
   return query
     .append(sql` ORDER BY topic_post.post_id DESC LIMIT `)

@@ -147,8 +147,28 @@ describe('TopicRecommendationsPage', () => {
       searchParams: Promise.resolve({ q: 'test', status: 'pending' }),
     })
     expect(mockGetTopicRecommendations).toHaveBeenCalledWith({
-      searchParams: { limit: 50, q: 'test', status: 'pending' },
+      searchParams: { limit: 50, q: 'test', status: 'pending', after: undefined },
     })
+  })
+
+  it('continues an empty page with its cursor and retains the filters', async () => {
+    mockGetCurrentUser.mockResolvedValue(makeAuthenticatedUser())
+    mockGetTopicRecommendations.mockResolvedValue({
+      results: [],
+      page_info: { has_next_page: true, start_cursor: null, end_cursor: 'next+/cursor' },
+    })
+    render(
+      await TopicRecommendationsPage({
+        searchParams: Promise.resolve({ q: 'bank', status: 'pending', after: 'first' }),
+      }),
+    )
+    expect(mockGetTopicRecommendations).toHaveBeenCalledWith({
+      searchParams: { limit: 50, q: 'bank', status: 'pending', after: 'first' },
+    })
+    expect(screen.getByRole('link', { name: 'Next' })).toHaveAttribute(
+      'href',
+      '/topic-recommendations?q=bank&status=pending&tab=recommendations&after=next%2B%2Fcursor',
+    )
   })
 
   it('server-renders the first top-hashtag page for signed-in users', async () => {

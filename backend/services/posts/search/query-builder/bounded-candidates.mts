@@ -49,7 +49,9 @@ export function buildBoundedPostSearchQuery(
     (sort === 'new' || sort === 'best') &&
     !indexServedDataPointTopicId(options, sort)
   const ctes = buildPostSearchCtes({ ...options, hasSemanticSearch, hasTextSearch })
-  ctes.push(buildRawCandidates(options, rawSort, cap, rawSort !== sort, includePostRows))
+  ctes.push(
+    buildRawCandidates(options, rawSort, cap, rawSort !== sort, includePostRows, decisionInstant),
+  )
   ctes.push(
     sql`bounded_post_search_candidates AS MATERIALIZED (
       SELECT * FROM raw_post_search_candidates ORDER BY `

@@ -14,6 +14,8 @@ export const POST_DISCOVERY_SCENARIO_IDS = [
   'post-discovery-community-new-missing-parent',
   'post-discovery-recommendation-new-exhausted',
   'post-discovery-global-new-first',
+  'post-discovery-global-new-finite-window-exhausted',
+  'post-discovery-data-point-topic-new-finite-window-exhausted',
   'post-discovery-global-new-continuation',
   'post-discovery-global-best-first',
   'post-discovery-global-best-continuation',

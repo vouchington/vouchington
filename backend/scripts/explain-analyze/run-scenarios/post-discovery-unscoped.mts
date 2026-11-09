@@ -6,6 +6,7 @@ import { seedUuid } from '../seed-data/common.mts'
 import { getPostIds } from '../run-services.mts'
 import { registerPostDiscoveryGate } from '../post-discovery-gates.mts'
 import { POST_DISCOVERY_FIXTURE_SEEDED_ROWS } from '../post-discovery-seeded-rows.mts'
+import { runPostDiscoveryFiniteWindowScenario } from './post-discovery-finite-window.mts'
 
 const PAGE_SIZE = 25
 const EXPECTED_POST_WORK = 3010
@@ -123,6 +124,7 @@ async function captureKeywordRelevanceScenarios(): Promise<void> {
 }
 
 export async function runPostDiscoveryUnscopedScenarios(): Promise<void> {
+  await runPostDiscoveryFiniteWindowScenario()
   await captureCursorPair('post-discovery-global-new', {
     sort: 'new',
     time_range: 'all',
