@@ -4,7 +4,7 @@ import type { UserDetailTab, BuildUserDetailTabsOptions } from './user-detail-ta
 import type { TopLevelTabName } from './user-profile-tabs-config'
 import { appendContentTab, appendCountTab } from './user-detail-tab-builders'
 import { createUserPathname } from '@/lib/links/entity-href'
-import { formatNumber } from '@ts-shared/utils/format'
+import { formatCappedCount } from '@/lib/users/format-capped-count'
 
 export function buildUserProfileDropdownItems(
   t: ReturnType<typeof useTranslations>,
@@ -27,8 +27,14 @@ export function buildUserProfileDropdownItems(
       (metrics?.count.reviews ?? 0) +
       (metrics?.count.discussions ?? 0) +
       (metrics?.count.comments ?? 0)
+    // A sum of lower bounds is a lower bound, so one capped part caps the total.
+    const allCapped =
+      metrics?.count_capped.reviews ||
+      metrics?.count_capped.discussions ||
+      metrics?.count_capped.comments ||
+      false
     if (allCount > 0 || routeSuffix === '/posts') {
-      const allCountDisplay = formatNumber(allCount, uiLocale)
+      const allCountDisplay = formatCappedCount(allCount, allCapped, uiLocale)
       tabs.push({
         value: 'posts-all',
         label: t('extracted.users.userDetailTabDefinitions.allCount_a58a7734', {
@@ -74,6 +80,7 @@ export function buildUserProfileDropdownItems(
     appendCountTab(
       tabs,
       followingCount,
+      metrics?.count_capped.users_following ?? false,
       'users-following',
       t,
       'extracted.users.userDetailTabBuilders.followingCount_cea8f8cd',
@@ -85,6 +92,7 @@ export function buildUserProfileDropdownItems(
     appendCountTab(
       tabs,
       followersCount,
+      metrics?.count_capped.users_followers ?? false,
       'users-followers',
       t,
       'extracted.users.userDetailTabBuilders.followedByCount_0849e5b9',
@@ -101,7 +109,11 @@ export function buildUserProfileDropdownItems(
         {
           value: 'sources-all',
           label: t('extracted.users.userDetailTabDefinitions.allCount_a58a7734', {
-            count: formatNumber(allCount, uiLocale),
+            count: formatCappedCount(
+              allCount,
+              metrics?.count_capped.rss_feeds_following ?? false,
+              uiLocale,
+            ),
           }),
           href: `${userPath}/rss-feeds/following`,
           routeSuffix: '/rss-feeds/following',

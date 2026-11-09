@@ -1,9 +1,17 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTestUser, insertTestPost } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { profileCountConfig } from '@services/users/profile-count-cap'
 import { observePostgresReadRoutingForTest } from '@voucha/test-helpers/postgres-read-routing'
 import type { PrivateUser } from '@services/users/types'
 import { getUserPostTypeFacets } from './get-facets.mts'
+
+const exactCounts = (review: number, discussion: number, comment: number) => ({
+  review: { count: review, capped: false },
+  discussion: { count: discussion, capped: false },
+  comment: { count: comment, capped: false },
+})
 
 async function publicPost(
   author: PrivateUser,
@@ -38,7 +46,7 @@ describe('profile post facet counts', () => {
           ? [routing.primaryAcquisitions(), routing.replicaAcquisitions()]
           : [routing.replicaAcquisitions(), routing.primaryAcquisitions()]
 
-      expect(counts).toEqual({ review: 1, discussion: 0, comment: 0 })
+      expect(counts).toEqual(exactCounts(1, 0, 0))
       expect(expectedPoolAcquisitions).toBeGreaterThan(0)
       expect(otherPoolAcquisitions).toBe(0)
     } finally {
@@ -64,9 +72,9 @@ describe('profile post facet counts', () => {
     const asAuthor = await getUserPostTypeFacets(author.id, author)
     const asStranger = await getUserPostTypeFacets(author.id, stranger)
 
-    expect(anonymous).toEqual({ review: 1, discussion: 0, comment: 0 })
-    expect(asAuthor).toEqual({ review: 2, discussion: 0, comment: 0 })
-    expect(asStranger).toEqual({ review: 2, discussion: 0, comment: 0 })
+    expect(anonymous).toEqual(exactCounts(1, 0, 0))
+    expect(asAuthor).toEqual(exactCounts(2, 0, 0))
+    expect(asStranger).toEqual(exactCounts(2, 0, 0))
   })
 
   it('counts each post type on its own, including a review beside several comments', async () => {
@@ -78,9 +86,28 @@ describe('profile post facet counts', () => {
     await publicPost(author, 'comment', 'counted-comment-2', reviewId)
     await publicPost(author, 'comment', 'counted-comment-3', reviewId)
 
-    const expected = { review: 1, discussion: 1, comment: 3 }
+    const expected = exactCounts(1, 1, 3)
     expect(await getUserPostTypeFacets(author.id)).toEqual(expected)
     expect(await getUserPostTypeFacets(author.id, author)).toEqual(expected)
     expect(await getUserPostTypeFacets(author.id, stranger)).toEqual(expected)
+  })
+
+  it('reports the cap and a capped flag once a type has more posts than the cap', async () => {
+    await profileCountConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(profileCountConfig, { count_cap: 2 }))
+    const author = await createTestUser()
+    await Promise.all([
+      publicPost(author, 'review', 'capped-review-1'),
+      publicPost(author, 'review', 'capped-review-2'),
+      publicPost(author, 'review', 'capped-review-3'),
+      publicPost(author, 'discussion', 'capped-discussion-1'),
+      publicPost(author, 'discussion', 'capped-discussion-2'),
+    ])
+
+    expect(await getUserPostTypeFacets(author.id)).toEqual({
+      review: { count: 2, capped: true },
+      discussion: { count: 2, capped: false },
+      comment: { count: 0, capped: false },
+    })
   })
 })

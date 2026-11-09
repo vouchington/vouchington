@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { read, write } from '@data-stores/psql'
 import { getUserPostTypeFacets } from '@services/posts/search/get-facets'
+import { PROFILE_COUNT_CAP_DEFAULT } from '@services/users/profile-count-cap'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { getPrivateUserByAny, getUserProfileMetricsByAny } from '../run-services.mts'
@@ -114,16 +115,15 @@ async function runProfilePostTypeCountsScenario(): Promise<void> {
       ],
       forbidSequentialScans: ['posts'],
       crossPartition: {
-        posts: "The scale profile counts this author's exact totals across all post id ranges.",
+        posts: "The scale profile counts this author's capped totals across all post id ranges.",
       },
     })
     await runAndCapture('profile-post-type-counts', async () => {
       const counts = await getUserPostTypeFacets(author.id, author)
-      assert.deepEqual(counts, {
-        review: PROFILE_POST_COUNT_PER_TYPE,
-        discussion: PROFILE_POST_COUNT_PER_TYPE,
-        comment: PROFILE_POST_COUNT_PER_TYPE,
-      })
+      // The author has more posts of each type than the cap, so each count stops at the cap.
+      assert(PROFILE_POST_COUNT_PER_TYPE > PROFILE_COUNT_CAP_DEFAULT)
+      const capped = { count: PROFILE_COUNT_CAP_DEFAULT, capped: true }
+      assert.deepEqual(counts, { review: capped, discussion: capped, comment: capped })
     })
   } finally {
     await cleanupProfilePostCounts()

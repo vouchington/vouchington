@@ -107,7 +107,7 @@ describe('listUserMemberCommunities pagination', () => {
     ]
     for (const testCase of viewers) {
       const list = await listUserMemberCommunities(target.id, testCase.viewer, { limit: 100 })
-      const count = await countUserMemberCommunities(target.id, testCase.viewer)
+      const count = (await countUserMemberCommunities(target.id, testCase.viewer)).count
       expect(list.results.map(member => member.community_id).toSorted()).toEqual(
         testCase.expected.toSorted(),
       )

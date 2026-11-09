@@ -63293,6 +63293,63 @@
                   "type": "object"
                 }
               },
+              "count_capped": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "comments": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "communities_member": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "discussions": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "reviews": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feeds_following": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_following": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_followers": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_following": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
               "id": {
                 "required": true,
                 "schema": {
@@ -64940,6 +64997,63 @@
                       "required": true,
                       "schema": {
                         "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "count_capped": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "comments": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "communities_member": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "discussions": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "reviews": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "rss_feeds_following": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "topics_following": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_followers": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "users_following": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
                       }
                     }
                   },
@@ -109477,7 +109591,7 @@
         "include_bio": "1"
       },
       "responseSchema": {
-        "hash": "1cbb19c8a419883c7a72b94fa6e5d189779de1a0c2e30947a9a3c4c514759920",
+        "hash": "9916e44bc1ec26c720ff2bf9ddcf3f4c65e25ead8ac9c524b6f6c2b6577ce3c0",
         "key": "native.users.profile.default"
       },
       "route": {
@@ -109528,7 +109642,7 @@
         "include_bio": "1"
       },
       "responseSchema": {
-        "hash": "933e269f481e5ff8b1861cd027a009b2a0d7cab9177b9e41ee707923728d9a8f",
+        "hash": "f1340afa58290ca4f39b6bc4e46c2900766949cefd0f5798680d0660ffffe2d6",
         "key": "native.users.profile.restricted"
       },
       "route": {

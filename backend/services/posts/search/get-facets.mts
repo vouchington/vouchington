@@ -5,6 +5,12 @@ import { executePostSearchQuery } from './execute-query.mts'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import { buildCountQuery, hasSemanticSearch } from '@modules/search-utils'
 import { read } from '@data-stores/psql'
+import {
+  getProfileCountCap,
+  profileCountProbeLimit,
+  toCappedCount,
+  type CappedCount,
+} from '@services/users/profile-count-cap'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
 type PostSearchFacets = {
@@ -48,16 +54,18 @@ export async function getPostFacets(
   }
 }
 
-export type UserPostTypeFacets = Record<'review' | 'discussion' | 'comment', number>
+export type UserPostTypeFacets = Record<'review' | 'discussion' | 'comment', CappedCount>
 
+/** Reads at most cap + 1 rows, unordered: only their number matters, never which rows they are. */
 function profileCountOptions(
   userId: string,
   postType: 'review' | 'discussion' | 'comment',
+  cap: number,
 ): PostSearchOptions {
   return {
     user_id: userId,
     profileCountPostType: postType,
-    omitLimit: true,
+    limit: profileCountProbeLimit(cap),
     omitOrderBy: true,
   }
 }
@@ -66,11 +74,12 @@ function profileCountOptions(
 function buildReviewProfileCount(
   userId: string,
   currentUser: PrivateUser | undefined,
+  cap: number,
 ): SQLStatement {
   const query = sql`/* getUserPostTypeFacetsReview */
     -- cross-partition: a profile total counts this author's reviews across id ranges
     SELECT COUNT(*)::int AS review_count FROM (`
-  query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'review')))
+  query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'review', cap)))
   query.append(sql`) AS review_posts`)
   return query
 }
@@ -79,11 +88,12 @@ function buildReviewProfileCount(
 function buildDiscussionProfileCount(
   userId: string,
   currentUser: PrivateUser | undefined,
+  cap: number,
 ): SQLStatement {
   const query = sql`/* getUserPostTypeFacetsDiscussion */
     -- cross-partition: a profile total counts this author's discussions across id ranges
     SELECT COUNT(*)::int AS discussion_count FROM (`
-  query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'discussion')))
+  query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'discussion', cap)))
   query.append(sql`) AS discussion_posts`)
   return query
 }
@@ -92,11 +102,12 @@ function buildDiscussionProfileCount(
 function buildCommentProfileCount(
   userId: string,
   currentUser: PrivateUser | undefined,
+  cap: number,
 ): SQLStatement {
   const query = sql`/* getUserPostTypeFacetsComment */
     -- cross-partition: a profile total counts this author's comments across id ranges
     SELECT COUNT(*)::int AS comment_count FROM (`
-  query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'comment')))
+  query.append(buildPostSearchQuery(currentUser, profileCountOptions(userId, 'comment', cap)))
   query.append(sql`) AS comment_posts`)
   return query
 }
@@ -107,9 +118,13 @@ function countFrom(rows: readonly Record<string, unknown>[], column: string): nu
 }
 
 /** Each type has its own author-index scan; read() preserves an active primary-read scope. */
-async function readProfileCount(statement: SQLStatement, column: string): Promise<number> {
+async function readProfileCount(
+  statement: SQLStatement,
+  column: string,
+  cap: number,
+): Promise<CappedCount> {
   const { rows } = await read(statement)
-  return countFrom(rows, column)
+  return toCappedCount(countFrom(rows, column), cap)
 }
 
 export async function getUserPostTypeFacets(
@@ -117,10 +132,15 @@ export async function getUserPostTypeFacets(
   currentUser?: PrivateUser,
 ): Promise<UserPostTypeFacets> {
   // The three types fix the fanout at three pooled reads, regardless of the author's post count.
+  const cap = getProfileCountCap()
   const [review, discussion, comment] = await Promise.all([
-    readProfileCount(buildReviewProfileCount(userId, currentUser), 'review_count'),
-    readProfileCount(buildDiscussionProfileCount(userId, currentUser), 'discussion_count'),
-    readProfileCount(buildCommentProfileCount(userId, currentUser), 'comment_count'),
+    readProfileCount(buildReviewProfileCount(userId, currentUser, cap), 'review_count', cap),
+    readProfileCount(
+      buildDiscussionProfileCount(userId, currentUser, cap),
+      'discussion_count',
+      cap,
+    ),
+    readProfileCount(buildCommentProfileCount(userId, currentUser, cap), 'comment_count', cap),
   ])
   return { review, discussion, comment }
 }

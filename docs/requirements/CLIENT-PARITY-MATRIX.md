@@ -34,13 +34,18 @@ their supported image attachment flows is tracked in
 [vouchington-clients#559](https://github.com/vouchington/vouchington-clients/issues/559); native
 handling remains partial until those flows and their behavioral evidence are complete.
 
-## Profile post counts
+## Profile counts
 
-`GET /api/v1/users/:idOrSlug` returns `user_metrics.count.reviews`,
-`user_metrics.count.discussions`, and `user_metrics.count.comments` as the exact number of
-posts this viewer can see. Web profile tabs and the profile header show that number for the
-author, a stranger, and an anonymous viewer. Swift and .NET show the same numbers. This adds
-no new route or native parity claim.
+`GET /api/v1/users/:idOrSlug` returns `user_metrics.count` (reviews, discussions, comments, users
+following and followers, topics following, RSS feeds following, and communities joined). Each
+number is the exact count up to the profile count cap (1,000 by default, `profile-count-config`).
+`user_metrics.count_capped` carries one boolean per count key: `true` means the real total is larger
+and the number holds the cap. Clients show a capped count as a compact number with a plus sign (web
+shows "1K+") and must not add or compare capped numbers as totals. Web profile tabs and the profile
+header render this for the author, a stranger, and an anonymous viewer. Swift and .NET must add
+`count_capped` to their response models and fixtures and render capped counts the same way; that
+native work is a vouchington-clients follow-up and does not gate this producer change. MCP has no
+user-metrics tool, so the change adds no MCP surface.
 
 ## Membership verification outcomes
 

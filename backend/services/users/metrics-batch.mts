@@ -4,6 +4,7 @@ import createError from 'http-errors'
 import { isUUID, isUsername } from '@modules/utils'
 import type { UserMetrics } from './types.mts'
 import { USER_METRICS_BATCH_SQL } from './metrics-batch-sql.mts'
+import { getProfileCountCap, profileCountProbeLimit, toCappedCount } from './profile-count-cap.mts'
 
 type UserMetricsBatchRow = {
   input_order: number
@@ -47,6 +48,7 @@ export const getUserMetricsByAnyBatch = async (
   const idInputs = normalizedInputs.filter(input => input.type === 'id')
   const usernameInputs = normalizedInputs.filter(input => input.type === 'username')
 
+  const cap = getProfileCountCap()
   const sqlPrefix = '\n    WITH '
   if (!USER_METRICS_BATCH_SQL.startsWith(sqlPrefix))
     throw new Error('User metrics SQL must begin with WITH')
@@ -57,23 +59,42 @@ export const getUserMetricsByAnyBatch = async (
       idInputs.map(input => input.index),
       usernameInputs.map(input => input.value),
       usernameInputs.map(input => input.index),
+      profileCountProbeLimit(cap),
     ],
     options,
   )
 
   for (const row of rows as UserMetricsBatchRow[]) {
+    const reviews = toCappedCount(row.reviews_count, cap)
+    const discussions = toCappedCount(row.discussions_count, cap)
+    const comments = toCappedCount(row.comments_count, cap)
+    const usersFollowing = toCappedCount(row.users_following_count, cap)
+    const usersFollowers = toCappedCount(row.users_followers_count, cap)
+    const topicsFollowing = toCappedCount(row.topics_following_count, cap)
+    const rssFeedsFollowing = toCappedCount(row.rss_feeds_following_count, cap)
+    const communitiesMember = toCappedCount(row.communities_member_count, cap)
     results[row.input_order] = {
       __entity_type: 'user_metrics',
       id: row.id,
       count: {
-        reviews: Number(row.reviews_count) || 0,
-        discussions: Number(row.discussions_count) || 0,
-        comments: Number(row.comments_count) || 0,
-        users_following: Number(row.users_following_count) || 0,
-        users_followers: Number(row.users_followers_count) || 0,
-        topics_following: Number(row.topics_following_count) || 0,
-        rss_feeds_following: Number(row.rss_feeds_following_count) || 0,
-        communities_member: Number(row.communities_member_count) || 0,
+        reviews: reviews.count,
+        discussions: discussions.count,
+        comments: comments.count,
+        users_following: usersFollowing.count,
+        users_followers: usersFollowers.count,
+        topics_following: topicsFollowing.count,
+        rss_feeds_following: rssFeedsFollowing.count,
+        communities_member: communitiesMember.count,
+      },
+      count_capped: {
+        reviews: reviews.capped,
+        discussions: discussions.capped,
+        comments: comments.capped,
+        users_following: usersFollowing.capped,
+        users_followers: usersFollowers.capped,
+        topics_following: topicsFollowing.capped,
+        rss_feeds_following: rssFeedsFollowing.capped,
+        communities_member: communitiesMember.capped,
       },
       bookmarks: {
         follow: {
