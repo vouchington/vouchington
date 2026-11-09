@@ -45,6 +45,17 @@ describe('background registry', () => {
     ).toBe('notifications')
   })
 
+  it('bounds topic rating recompute in its own tunable lane', () => {
+    expect(
+      getBackgroundJob('vote-aggregation.processUpdateTopicRatingStats')?.options.ordering,
+    ).toEqual({ key: 'vote-aggregation:topic-ratings', concurrency: 10 })
+    expect(getBackgroundOrderingLimits('vote-aggregation:topic-ratings')).toEqual({
+      configKey: 'vote-aggregation:topic-ratings',
+      defaultValue: 10,
+      maxValue: 40,
+    })
+  })
+
   it('maps per-report critical alert ordering keys to the shared bulk cap', () => {
     expect(
       getBackgroundOrderingLimits('notifications:bulk:critical-moderation-alert:report-id'),

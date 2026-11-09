@@ -72,6 +72,7 @@ import { runModerationReportContextScenarios } from './run-scenarios/moderation-
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
+import { runLargeTopicRatingStatsScenario } from './run-scenarios/topic-rating-stats-large.mts'
 import { runSpamSignalScenarios } from './run-scenarios/spam-signals.mts'
 import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
 import { continueAfterFailure as runStep } from './scenario-failures.mts'
@@ -145,6 +146,7 @@ export async function runScenariosBeforePartition(): Promise<void> {
   await runStep(runNotificationVisibilityScenarios.name, runNotificationVisibilityScenarios)
   await runStep(runPublicationScopePageScenarios.name, runPublicationScopePageScenarios)
   await runStep(runDenseTopicViewerCountsScenario.name, runDenseTopicViewerCountsScenario)
+  await runStep(runLargeTopicRatingStatsScenario.name, runLargeTopicRatingStatsScenario)
   await runStep(runTopicAliasCategoryWorkScenarios.name, runTopicAliasCategoryWorkScenarios)
   await runStep(runHackerNewsFilterScenarios.name, runHackerNewsFilterScenarios)
   await runStep(runRetentionStagePageScenarios.name, runRetentionStagePageScenarios)

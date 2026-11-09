@@ -245,6 +245,10 @@ deletion from cascading into communities or requiring a worker to hold the whole
 - **Dispatchers rank below tasks across independent lanes.** Recovery and dispatch jobs use the
   lowest tier. Within an existing shared domain lane, GlideMQ's group FIFO decides the order before
   queue priority; those domains retain their established ordering.
+- **Topic rating recompute is live and capped by its own lane.** Ratings must be near-real-time, so
+  each job re-reads the topic's full rating history instead of keeping counters or a materialized
+  view. The `vote-aggregation:topic-ratings` lane (DynamicConfig default 10, hard maximum 40) bounds
+  that cost across all workers apart from election work; operators lower it if recompute load grows.
 - **Email cannot be exactly-once.** PostgreSQL and the mail provider do not share a transaction, so
   each processor picks one contract: retryable (may duplicate) or at-most-once (a delivery marker is
   committed before the send, and may lose the email). Jobs marked sensitive are removed on either
