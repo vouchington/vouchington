@@ -44,6 +44,8 @@ export async function runHouseholdLimitScenarios(): Promise<void> {
   )
 
   registerScenarioContract('household-owner-capacity', {
+    // The capacity refusal inserts no row by design.
+    allowEmptyResult: true,
     expectations: [
       {
         kind: 'usesIndexes',
@@ -80,6 +82,8 @@ export async function runHouseholdLimitScenarios(): Promise<void> {
   )
 
   registerScenarioContract('household-member-capacity', {
+    // The membership insert has no RETURNING.
+    allowEmptyResult: true,
     expectations: [
       {
         kind: 'usesIndexes',

@@ -1,3 +1,4 @@
+/* oxlint-disable no-await-in-loop -- bounded slot retries; each reread follows a lost race */
 import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import {
@@ -35,8 +36,8 @@ export async function insertOwnedHousehold(
   const { householdsPerUser } = getHouseholdLimits()
   const attempts = householdLimitsMaxValues.max_households_per_user + 1
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each retry follows a lost slot race and must reread.
-    const { rows } = await write<HouseholdRow>(
+    // no-mistakes-disable-next-line query-reached-per-item: each retry follows a lost slot race and must reread.
+    const { rows } = await write<HouseholdRow>( // oxlint-disable-line no-await-in-loop -- each retry follows a lost slot race and must reread.
       sql`/* insertOwnedHousehold */
         INSERT INTO households (owner_user_id, owner_slot)
         SELECT ${userId}::uuid, slot
@@ -56,7 +57,7 @@ export async function insertOwnedHousehold(
       options,
     )
     if (rows[0]) return rows[0]
-    // oxlint-disable-next-line no-await-in-loop -- a zero-row insert is full or a lost race; reread to tell.
+    // no-mistakes-disable-next-line query-reached-per-item: a zero-row insert is full or a lost race; reread to tell.
     const owned = await countCapped(
       sql`/* insertOwnedHousehold:count */
         SELECT count(*)::int AS count FROM (
@@ -149,7 +150,7 @@ export async function insertHouseholdMember(
   }
   const attempts = householdLimitsMaxValues.max_members_per_household + 1
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each retry follows a lost slot race and must reread.
+    // no-mistakes-disable-next-line query-reached-per-item: each retry follows a lost slot race and must reread.
     const { rowCount } = await write(
       sql`/* insertHouseholdMember */
         INSERT INTO household_members (household_id, individual_id, relationship, member_slot)
@@ -170,8 +171,8 @@ export async function insertHouseholdMember(
       options,
     )
     if (rowCount) return true
-    // oxlint-disable-next-line no-await-in-loop -- a zero-row insert is full, a duplicate, or a lost race.
-    const { rows } = await write<{ existing: boolean; member_count: number }>(
+    // no-mistakes-disable-next-line query-reached-per-item: a zero-row insert is full, a duplicate, or a lost race.
+    const { rows } = await write<{ existing: boolean; member_count: number }>( // oxlint-disable-line no-await-in-loop -- a zero-row insert is full, a duplicate, or a lost race.
       sql`/* insertHouseholdMember:count */
         SELECT
           EXISTS (
