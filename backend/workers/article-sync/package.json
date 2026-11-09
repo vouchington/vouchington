@@ -23,7 +23,7 @@
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.1162.0",
+    "@aws-sdk/client-s3": "^3.1164.0",
     "@valkey/valkey-glide": "^2.5.3"
   }
 }
