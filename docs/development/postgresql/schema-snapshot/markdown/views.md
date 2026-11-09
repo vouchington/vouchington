@@ -375,6 +375,38 @@ Rolling feed scores for day, week and month, refreshed on the PostgreSQL materia
   WHERE ((follows.feed_id IS NOT NULL) OR (items.feed_id IS NOT NULL));
 ```
 
+## `mv_trending_topics` (materialized)
+
+Rolling day, week and month topic tag scores from positively voted post and RSS item tags, refreshed on the PostgreSQL materialized-view schedule.
+
+```sql
+ WITH windows AS (
+         SELECT value.window_name,
+            value.cutoff_id
+           FROM ( VALUES ('day'::text,fn_min_uuidv7((CURRENT_TIMESTAMP - '1 day'::interval))), ('week'::text,fn_min_uuidv7((CURRENT_TIMESTAMP - '7 days'::interval))), ('month'::text,fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval)))) value(window_name, cutoff_id)
+        ), recent_tags AS (
+         SELECT relation.id,
+            relation.object_id AS topic_id,
+            true AS is_post_tag
+           FROM relation__post__category__topic relation
+          WHERE ((relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision) AND (relation.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))))
+        UNION ALL
+         SELECT relation.id,
+            relation.object_id AS topic_id,
+            false AS is_post_tag
+           FROM relation__rss_feed_item__category__topic relation
+          WHERE ((relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision) AND (relation.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))))
+        )
+ SELECT windows.window_name,
+    tag.topic_id AS id,
+    (((count(*) FILTER (WHERE tag.is_post_tag) * 5) + count(*) FILTER (WHERE (NOT tag.is_post_tag))))::double precision AS trending_score,
+    (count(*) FILTER (WHERE tag.is_post_tag))::integer AS post_tag_count,
+    (count(*) FILTER (WHERE (NOT tag.is_post_tag)))::integer AS rss_item_tag_count
+   FROM (windows
+     JOIN recent_tags tag ON ((tag.id >= windows.cutoff_id)))
+  GROUP BY windows.window_name, tag.topic_id;
+```
+
 ## `view_community_list_items`
 
 Community list content projection; callers enforce list visibility and row access.

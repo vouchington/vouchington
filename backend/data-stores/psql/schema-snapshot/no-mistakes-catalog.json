@@ -171044,6 +171044,86 @@
       },
       "materialized": true
     },
+    "mv_trending_topics": {
+      "comment": "Rolling day, week and month topic tag scores from positively voted post and RSS item tags, refreshed on the PostgreSQL materialized-view schedule.",
+      "definition": " WITH windows AS (\n         SELECT value.window_name,\n            value.cutoff_id\n           FROM ( VALUES ('day'::text,fn_min_uuidv7(CURRENT_TIMESTAMP - '1 day'::interval)), ('week'::text,fn_min_uuidv7(CURRENT_TIMESTAMP - '7 days'::interval)), ('month'::text,fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval))) value(window_name, cutoff_id)\n        ), recent_tags AS (\n         SELECT relation.id,\n            relation.object_id AS topic_id,\n            true AS is_post_tag\n           FROM relation__post__category__topic relation\n          WHERE relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision AND relation.id >= fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval)\n        UNION ALL\n         SELECT relation.id,\n            relation.object_id AS topic_id,\n            false AS is_post_tag\n           FROM relation__rss_feed_item__category__topic relation\n          WHERE relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision AND relation.id >= fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval)\n        )\n SELECT windows.window_name,\n    tag.topic_id AS id,\n    (count(*) FILTER (WHERE tag.is_post_tag) * 5 + count(*) FILTER (WHERE NOT tag.is_post_tag))::double precision AS trending_score,\n    count(*) FILTER (WHERE tag.is_post_tag)::integer AS post_tag_count,\n    count(*) FILTER (WHERE NOT tag.is_post_tag)::integer AS rss_item_tag_count\n   FROM windows\n     JOIN recent_tags tag ON tag.id >= windows.cutoff_id\n  GROUP BY windows.window_name, tag.topic_id;",
+      "indexes": {
+        "idx_mv_trending_topics__ranking": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mv_trending_topics__ranking ON public.mv_trending_topics USING btree (window_name, trending_score DESC, id DESC)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "window_name",
+              "descending": false,
+              "expression": "window_name",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "trending_score",
+              "descending": true,
+              "expression": "trending_score",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.float8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_mv_trending_topics__window_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_mv_trending_topics__window_id ON public.mv_trending_topics USING btree (window_name, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "window_name",
+              "descending": false,
+              "expression": "window_name",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "materialized": true
+    },
     "view_community_list_items": {
       "comment": "Community list content projection; callers enforce list visibility and row access.",
       "definition": " SELECT community_list_topics.id,\n    community_list_topics.community_id,\n    'topic'::community_list_item_types AS item_type,\n    community_list_topics.topic_id AS entity_id,\n    community_list_topics.order_index,\n    community_list_topics.added_by_id,\n    community_list_topics.created_at\n   FROM community_list_topics\n  WHERE community_list_topics.removed_at IS NULL\nUNION ALL\n SELECT community_list_rss_feeds.id,\n    community_list_rss_feeds.community_id,\n    'rss_feed'::community_list_item_types AS item_type,\n    community_list_rss_feeds.rss_feed_id AS entity_id,\n    community_list_rss_feeds.order_index,\n    community_list_rss_feeds.added_by_id,\n    community_list_rss_feeds.created_at\n   FROM community_list_rss_feeds\n  WHERE community_list_rss_feeds.removed_at IS NULL\nUNION ALL\n SELECT community_list_posts.id,\n    community_list_posts.community_id,\n    'post'::community_list_item_types AS item_type,\n    community_list_posts.post_id AS entity_id,\n    community_list_posts.order_index,\n    community_list_posts.added_by_id,\n    community_list_posts.created_at\n   FROM community_list_posts\n  WHERE community_list_posts.removed_at IS NULL\nUNION ALL\n SELECT community_list_url_hostnames.id,\n    community_list_url_hostnames.community_id,\n    'url_hostname'::community_list_item_types AS item_type,\n    community_list_url_hostnames.url_hostname_id AS entity_id,\n    community_list_url_hostnames.order_index,\n    community_list_url_hostnames.added_by_id,\n    community_list_url_hostnames.created_at\n   FROM community_list_url_hostnames\n  WHERE community_list_url_hostnames.removed_at IS NULL\nUNION ALL\n SELECT community_list_urls.id,\n    community_list_urls.community_id,\n    'url'::community_list_item_types AS item_type,\n    community_list_urls.url_id AS entity_id,\n    community_list_urls.order_index,\n    community_list_urls.added_by_id,\n    community_list_urls.created_at\n   FROM community_list_urls\n  WHERE community_list_urls.removed_at IS NULL;",
