@@ -79,8 +79,8 @@ _none_
 
 **Triggers:**
 
-- `trigger_moderation_report_clusters_insert_delete`: `CREATE TRIGGER trigger_moderation_report_clusters_insert_delete AFTER INSERT OR DELETE ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_sync_moderation_report_cluster()`
-- `trigger_moderation_report_clusters_update`: `CREATE TRIGGER trigger_moderation_report_clusters_update AFTER UPDATE OF id, reviewed_at, resolution_action, post_id, reported_user_id, hostname_id, rss_feed_item_id ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_sync_moderation_report_cluster()`
+- `trigger_moderation_report_clusters_insert_delete`: `CREATE TRIGGER trigger_moderation_report_clusters_insert_delete AFTER INSERT OR DELETE ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_update_moderation_report_cluster()`
+- `trigger_moderation_report_clusters_update`: `CREATE TRIGGER trigger_moderation_report_clusters_update AFTER UPDATE OF id, reviewed_at, resolution_action, post_id, reported_user_id, hostname_id, rss_feed_item_id ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_update_moderation_report_cluster()`
 - `trigger_moderation_reports_content_provenance_immutable`: `CREATE TRIGGER trigger_moderation_reports_content_provenance_immutable AFTER UPDATE ON public.moderation_reports FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_moderation_transparency_reports_delete_rollup`: `CREATE TRIGGER trigger_moderation_transparency_reports_delete_rollup AFTER DELETE ON public.moderation_reports REFERENCING OLD TABLE AS deleted_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_reports', 'original_reason', 'reports')`
 - `trigger_moderation_transparency_reports_original_reason_guard`: `CREATE TRIGGER trigger_moderation_transparency_reports_original_reason_guard BEFORE UPDATE OF original_reason ON public.moderation_reports FOR EACH ROW WHEN ((old.original_reason IS DISTINCT FROM new.original_reason)) EXECUTE FUNCTION fn_reject_mutation()`

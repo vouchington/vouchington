@@ -1621,14 +1621,6 @@ CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind
  LANGUAGE plpgsql
 ```
 
-## `fn_sync_moderation_report_cluster`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_moderation_report_cluster()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_text_to_timestamptz(text_value text)`
 
 ```sql
@@ -1850,6 +1842,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_membership_operation_work()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_membership_renewal_notice_end()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_moderation_report_cluster`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_cluster()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
