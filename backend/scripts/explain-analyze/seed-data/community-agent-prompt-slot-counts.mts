@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { deleteSlotNoiseUsers } from './community-agent-prompt-slot-count-deletes.mts'
 import { seedUuid } from './common.mts'
 
 export const COMMUNITY_AGENT_PROMPT_SLOT_COUNT_NOISE_CREATORS = 1000
@@ -102,16 +103,7 @@ export async function cleanupCommunityAgentPromptSlotCountNoise(): Promise<void>
       AND individual_id IS NOT NULL`,
     [systemUserIds, creatorIds],
   )
-  await query(
-    `/* cleanupCommunityAgentPromptSlotCountNoise:systemUsers */
-    DELETE FROM users WHERE id = ANY($1::uuid[])`,
-    [systemUserIds],
-  )
-  await query(
-    `/* cleanupCommunityAgentPromptSlotCountNoise:creators */
-    DELETE FROM users WHERE id = ANY($1::uuid[])`,
-    [creatorIds],
-  )
+  await deleteSlotNoiseUsers(query, systemUserIds, creatorIds)
   await query.commit()
 
   // User deletion's deferred quota cleanup has completed before retiring these owned roots.
