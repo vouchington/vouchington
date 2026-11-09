@@ -24,7 +24,9 @@ export async function seedRecommendedTopicsVoteHistory(): Promise<void> {
   const insert = `/* seedExplainData */ INSERT INTO post_votes (post_id, user_id, score)
     SELECT post_id, $2::uuid, $3::smallint FROM unnest($1::uuid[]) AS input(post_id)`
   await transaction(insert, [postIds, VOTE_HISTORY_USER_ID, 1])
-  // The re-votes are newer than the first pass, so the latest vote per post flips these to downvotes.
-  await transaction(insert, [postIds.slice(0, VOTE_HISTORY_REVOTE_COUNT), VOTE_HISTORY_USER_ID, -1])
+  // The re-votes are newer than the first pass, so the latest vote per post flips these to
+  // downvotes. Post 0 is the shared trending fixture's only positively voted post: keep it upvoted.
+  const revoted = postIds.slice(1, VOTE_HISTORY_REVOTE_COUNT + 1)
+  await transaction(insert, [revoted, VOTE_HISTORY_USER_ID, -1])
   await transaction.commit()
 }
