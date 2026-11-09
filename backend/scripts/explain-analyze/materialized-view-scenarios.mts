@@ -9,3 +9,8 @@ export const MATERIALIZED_VIEW_SCENARIOS = [
   ['mv-revenue-memberships-refresh', 'mv_revenue_memberships'],
   ['mv-revenue-changes-refresh', 'mv_revenue_changes'],
 ] as const
+
+/** Views whose defining query is explained by a dedicated runner with its own seed counts. */
+export const DEDICATED_MATERIALIZED_VIEW_SCENARIOS = [
+  ['mv-referral-program-link-counts-refresh', 'mv_referral_program_link_counts'],
+] as const
