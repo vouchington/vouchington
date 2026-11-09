@@ -39,7 +39,8 @@ export async function getCommunityAiCostTotals(
     ? decodeUuidCursor(options.after, isCommunityAiCostTotalCursor, 'Invalid AI cost totals cursor')
     : null
   // Totals are materialized, so they lag the ledger by up to one refresh. The ranking index walks
-  // (cost DESC, community_id DESC); the join to communities applies live eligibility per page row.
+  // (cost DESC, community_id DESC); the lateral probe applies live eligibility per walked row. The
+  // LIMIT 1 keeps the planner on that ranking walk instead of sorting the whole view for a merge join.
   const query = sql`/* getCommunityAiCostTotals */
     SELECT
       c.id AS community_id,
@@ -50,7 +51,12 @@ export async function getCommunityAiCostTotals(
       totals.unpriced_request_count::text AS unpriced_request_count,
       totals.cost_microunits::text AS total_cost_microunits
     FROM mv_ai_usage_community_totals totals
-    JOIN communities c ON c.id = totals.community_id AND c.deleted_at IS NULL
+    CROSS JOIN LATERAL (
+      SELECT c.id, c.slug
+      FROM communities c
+      WHERE c.id = totals.community_id AND c.deleted_at IS NULL
+      LIMIT 1
+    ) c
   `
   if (cursor) {
     query.append(sql`

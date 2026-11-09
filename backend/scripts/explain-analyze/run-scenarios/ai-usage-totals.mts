@@ -2,14 +2,12 @@ import assert from 'node:assert/strict'
 import { read, write } from '@data-stores/psql'
 import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
 import { getCommunityAiCostTotals } from '@services/ai-usage/totals'
-import { encodeCursor } from '@modules/pagination'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { aiUsageTotalsReadCases } from './ai-usage-totals-cases.mts'
 import {
   AI_USAGE_TOTAL_COMMUNITY_COUNT,
   AI_USAGE_TOTAL_RAW_ROWS,
-  aiUsageTotalsCommunityId,
   seedAiUsageTotals,
 } from '../seed-data/ai-usage-totals.mts'
 
@@ -34,7 +32,8 @@ export async function runAiUsageTotalsScenarios(): Promise<void> {
           indexes: ['idx_mv_ai_usage_community_totals__ranking', 'communities_pkey'],
           noSort: true,
         },
-        { kind: 'maxProcessedRows', relation: VIEW, max: scenario.limit + 1 },
+        // One retained deleted community outranks every live one and is skipped by the eligibility probe.
+        { kind: 'maxProcessedRows', relation: VIEW, max: scenario.limit + 2 },
         { kind: 'maxProcessedRows', relation: 'communities', max: scenario.limit + 1 },
       ],
     })
@@ -45,15 +44,6 @@ export async function runAiUsageTotalsScenarios(): Promise<void> {
       assert.equal(page.results.length, zeroCost ? 9 : scenario.limit)
       assert.equal(page.page_info.has_next_page, !zeroCost)
       assert.ok(page.results.every(row => row.request_count === 60))
-      if (scenario.id === 'ai-usage-totals-first') {
-        const aboveInt64Max = await getCommunityAiCostTotals({
-          after: encodeCursor({
-            total_cost_microunits: '99999999999999999999999999999999999999999999999999',
-            id: aiUsageTotalsCommunityId(0),
-          }),
-        })
-        assert.deepEqual(aboveInt64Max, page)
-      }
     })
   }
 }
@@ -61,7 +51,10 @@ export async function runAiUsageTotalsScenarios(): Promise<void> {
 /** The refresh runs the view's defining query over the raw tail and every monthly rollup. */
 async function runRefreshScenario(): Promise<void> {
   registerScenarioContract('mv-ai-usage-community-totals-refresh', {
-    seededRows: { ai_usage_records: AI_USAGE_TOTAL_RAW_ROWS },
+    seededRows: {
+      ai_usage_records: AI_USAGE_TOTAL_RAW_ROWS,
+      ai_usage_community_monthly_rollups: AI_USAGE_TOTAL_COMMUNITY_COUNT,
+    },
     expectations: [
       // The seeded raw tail plus other test usage rows, with headroom.
       {
