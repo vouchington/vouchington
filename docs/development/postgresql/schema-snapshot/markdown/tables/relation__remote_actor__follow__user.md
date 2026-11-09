@@ -35,6 +35,8 @@ _none_
 **Indexes:**
 
 - `idx_relation__remote_actor__follow__user__active_reverse`: `CREATE INDEX idx_relation__remote_actor__follow__user__active_reverse ON public.relation__remote_actor__follow__user USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)`
+- `idx_relation__remote_actor__follow__user__created_by_id`: `CREATE INDEX idx_relation__remote_actor__follow__user__created_by_id ON public.relation__remote_actor__follow__user USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
+- `idx_relation__remote_actor__follow__user__deleted_by_id`: `CREATE INDEX idx_relation__remote_actor__follow__user__deleted_by_id ON public.relation__remote_actor__follow__user USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_relation__remote_actor__follow__user__reverse_index`: `CREATE INDEX idx_relation__remote_actor__follow__user__reverse_index ON public.relation__remote_actor__follow__user USING btree (object_id, subject_id)`
 - `idx_relation__remote_actor__follow__user__subject__newest`: `CREATE INDEX idx_relation__remote_actor__follow__user__subject__newest ON public.relation__remote_actor__follow__user USING btree (subject_id, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `relation__remote_actor__follow__user_pkey`: `CREATE UNIQUE INDEX relation__remote_actor__follow__user_pkey ON public.relation__remote_actor__follow__user USING btree (subject_id, object_id)`

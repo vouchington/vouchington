@@ -33,6 +33,8 @@ _none_
 **Indexes:**
 
 - `idx_relati__user__subscr_rss_feed_items__topic__subject__newest`: `CREATE INDEX idx_relati__user__subscr_rss_feed_items__topic__subject__newest ON public.relation__user__subscribe_rss_feed_items__topic USING btree (subject_id, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
+- `idx_relatio__user__subscri_rss_feed_items__topic__created_by_id`: `CREATE INDEX idx_relatio__user__subscri_rss_feed_items__topic__created_by_id ON public.relation__user__subscribe_rss_feed_items__topic USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
+- `idx_relatio__user__subscri_rss_feed_items__topic__deleted_by_id`: `CREATE INDEX idx_relatio__user__subscri_rss_feed_items__topic__deleted_by_id ON public.relation__user__subscribe_rss_feed_items__topic USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_relatio__user__subscri_rss_feed_items__topic__reverse_index`: `CREATE INDEX idx_relatio__user__subscri_rss_feed_items__topic__reverse_index ON public.relation__user__subscribe_rss_feed_items__topic USING btree (object_id, subject_id)`
 - `relation__user__subscribe_rss_feed_items__topic_pkey`: `CREATE UNIQUE INDEX relation__user__subscribe_rss_feed_items__topic_pkey ON public.relation__user__subscribe_rss_feed_items__topic USING btree (subject_id, object_id)`
 

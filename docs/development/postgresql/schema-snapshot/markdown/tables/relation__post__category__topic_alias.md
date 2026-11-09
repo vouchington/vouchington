@@ -50,6 +50,8 @@ RANGE partitioned on `subject_id` (children: default, no retention owner, access
 
 **Indexes:**
 
+- `idx_relation__post__category__topic_alias__created_by_id`: `CREATE INDEX idx_relation__post__category__topic_alias__created_by_id ON ONLY public.relation__post__category__topic_alias USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
+- `idx_relation__post__category__topic_alias__deleted_by_id`: `CREATE INDEX idx_relation__post__category__topic_alias__deleted_by_id ON ONLY public.relation__post__category__topic_alias USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_relation__post__category__topic_alias__id`: `CREATE INDEX idx_relation__post__category__topic_alias__id ON ONLY public.relation__post__category__topic_alias USING btree (id)`
 - `idx_relation__post__category__topic_alias__positive_object`:
 

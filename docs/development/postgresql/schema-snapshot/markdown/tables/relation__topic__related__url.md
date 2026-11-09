@@ -51,6 +51,8 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_relation__topic__related__url__active_reverse`: `CREATE INDEX idx_relation__topic__related__url__active_reverse ON public.relation__topic__related__url USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)`
+- `idx_relation__topic__related__url__created_by_id`: `CREATE INDEX idx_relation__topic__related__url__created_by_id ON public.relation__topic__related__url USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
+- `idx_relation__topic__related__url__deleted_by_id`: `CREATE INDEX idx_relation__topic__related__url__deleted_by_id ON public.relation__topic__related__url USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_relation__topic__related__url__id`: `CREATE INDEX idx_relation__topic__related__url__id ON public.relation__topic__related__url USING btree (id)`
 - `idx_relation__topic__related__url__positive_score__id`: `CREATE INDEX idx_relation__topic__related__url__positive_score__id ON public.relation__topic__related__url USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
 - `idx_relation__topic__related__url__reverse_index`: `CREATE INDEX idx_relation__topic__related__url__reverse_index ON public.relation__topic__related__url USING btree (object_id, subject_id)`
