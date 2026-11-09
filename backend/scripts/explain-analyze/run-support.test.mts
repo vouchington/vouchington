@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { executeCapturedStatement } from '@voucha/test-helpers/query-capture'
-import { assertScenarioManifest, getResults, runAndCapture } from './run-support.mts'
+import { getResults, runAndCapture } from './run-support.mts'
+import { assertScenarioManifest } from './scenario-manifest-check.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 
 function recordedScenarioError(run: () => Promise<void>): Promise<void> {

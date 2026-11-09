@@ -6,6 +6,7 @@ export function loadLatestPairedResults(outputDir: string): {
   filePath: string
   results: ExplainResult[]
   repeatedResults: ExplainResult[]
+  completedScenarioIds: string[]
 } {
   let files: string[]
   try {
@@ -32,5 +33,10 @@ export function loadLatestPairedResults(outputDir: string): {
   }
   if (JSON.stringify(first.completedScenarioIds) !== JSON.stringify(repeated.completedScenarioIds))
     throw new Error('Repeated EXPLAIN capture changed its scenario manifest')
-  return { filePath, results: first.results, repeatedResults: repeated.results }
+  return {
+    filePath,
+    results: first.results,
+    repeatedResults: repeated.results,
+    completedScenarioIds: first.completedScenarioIds,
+  }
 }

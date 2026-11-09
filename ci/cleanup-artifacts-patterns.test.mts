@@ -43,6 +43,7 @@ const DELETE_NAMES = [
   'web-test-report-debug',
   'backend-postgres-123456789',
   'explain-analyze-results',
+  'explain-analyze-results-partition',
   'gitleaks-report',
   'trivy-backend-abc123',
   'codex-debug',

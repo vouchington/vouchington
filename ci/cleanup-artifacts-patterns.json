@@ -40,6 +40,7 @@
     "web-test-report-*",
     "backend-postgres-*",
     "explain-analyze-results",
+    "explain-analyze-results-*",
     "gitleaks-report",
     "trivy-*",
     "codex-debug",
