@@ -24,7 +24,7 @@ const writeHouseholds = (user: McpContractCaller, option: string, args: Record<s
   callStructuredMcpTool(user, 'manage_my_households', optionArgs(option, args), WRITE)
 
 describe('manage_my_households REST twins — real DB', () => {
-  it('creates, adds its owner, removes that membership, and deletes the household', async () => {
+  it('creates, updates its owner membership, refuses to remove it, and deletes the household', async () => {
     const owner = await createTestUser()
     const request = createRequest()
     await request.authenticateAs(owner)
@@ -47,12 +47,13 @@ describe('manage_my_households REST twins — real DB', () => {
       (await request.get(`/api/v1/households/${household_id}/memberships`).expect(200)).body
         .results,
     ).toContainEqual(membership)
-    expect(
-      await writeHouseholds(plus(owner), 'remove_member', {
-        household_id,
-        membership_id: membership.id,
-      }),
-    ).toEqual({ success: true })
+    const refusal = await callRejectedMcpTool(
+      plus(owner),
+      'manage_my_households',
+      optionArgs('remove_member', { household_id, membership_id: membership.id }),
+      WRITE,
+    )
+    expect(JSON.parse(refusal)).toMatchObject({ error: { status: 409 } })
     const category = await insertTestSpendingCategory({ createdById: owner.id })
     await insertTestHouseholdSpendingEntry({
       householdId: household_id,

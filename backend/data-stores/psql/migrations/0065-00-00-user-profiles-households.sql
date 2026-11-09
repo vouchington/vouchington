@@ -68,6 +68,11 @@ CREATE TABLE IF NOT EXISTS household_members (
   -- max_members_per_household (householdLimitsMaxValues), and the app enforces the configured value
   member_slot SMALLINT NOT NULL CHECK (member_slot BETWEEN 1 AND 25),
 
+  -- one of the individual's bounded slots; the CHECK bound is the hard maximum of
+  -- max_households_per_individual, and the app enforces the configured value. Every owned
+  -- household gives its owner a membership row, so this also caps owned plus joined households.
+  individual_slot SMALLINT NOT NULL CHECK (individual_slot BETWEEN 1 AND 5),
+
   relationship TEXT CHECK (relationship IS NULL OR char_length(relationship) <= 64), -- e.g. husband, wife, child, etc.
 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -79,7 +84,11 @@ CREATE TABLE IF NOT EXISTS household_members (
 
   -- Caps members per household: a concurrent insert of the same slot hits this key, not a lock.
   CONSTRAINT uniq_household_members__household_id_member_slot
-    UNIQUE (household_id, member_slot)
+    UNIQUE (household_id, member_slot),
+
+  -- Caps households per individual: a concurrent insert of the same slot hits this key, not a lock.
+  CONSTRAINT uniq_household_members__individual_id_individual_slot
+    UNIQUE (individual_id, individual_slot)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -102,6 +111,7 @@ COMMENT ON TABLE household_members IS 'Join table linking individuals to househo
 COMMENT ON COLUMN household_members.household_id IS 'The household this membership belongs to.';
 COMMENT ON COLUMN household_members.individual_id IS 'The individual who is a member of the household.';
 COMMENT ON COLUMN household_members.member_slot IS 'Bounded per-household slot (1 to the max_members_per_household hard maximum); the unique key caps members and deleting the row frees the slot.';
+COMMENT ON COLUMN household_members.individual_slot IS 'Bounded per-individual slot (1 to the max_households_per_individual hard maximum); the unique key caps households per individual and deleting the row frees the slot.';
 COMMENT ON COLUMN household_members.relationship IS 'Relationship to the household owner (e.g. husband, wife, child).';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -278,8 +288,8 @@ BEGIN
   RETURNING id INTO new_household_id;
 
   -- Create membership linking individual to household
-  INSERT INTO household_members (household_id, individual_id, member_slot)
-  VALUES (new_household_id, new_individual_id, 1);
+  INSERT INTO household_members (household_id, individual_id, member_slot, individual_slot)
+  VALUES (new_household_id, new_individual_id, 1, 1);
 
   RETURN NEW;
 END;

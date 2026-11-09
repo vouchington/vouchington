@@ -87,7 +87,8 @@ describe('Households API Routes', () => {
 
     it('returns accurate membership page info and rejects malformed cursors', async () => {
       const owner = await createTestUser()
-      const members = await Promise.all([createTestUser(), createTestUser()])
+      // The owner's own membership plus this one make two rows.
+      const members = [await createTestUser()]
       const request = createRequest()
       await request.authenticateAs(owner)
       const createResponse = await request.post('/api/v1/households').send({}).expect(201)
@@ -188,9 +189,10 @@ describe('Households API Routes', () => {
       const hidden = await strangerRequest.get(`/api/v1/households/${householdId}`).expect(404)
       expect(hidden.body.message).toBe('Household not found')
 
+      // The owner's membership holds the owner's individual slot, so it cannot be removed.
       await ownerRequest
         .delete(`/api/v1/households/${householdId}/memberships/${membershipId}`)
-        .expect(204)
+        .expect(409)
     })
   })
 })

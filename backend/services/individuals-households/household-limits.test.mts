@@ -5,6 +5,8 @@ import {
   createTestUserDirect,
   createTestUsersDirect,
   insertTestHousehold,
+  insertTestHouseholdMembership,
+  countOwnedHouseholdsForTestUser,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers'
 import { householdLimitsConfig } from './household-limits-config.mts'
@@ -75,18 +77,18 @@ describe('household admission limits', () => {
     )
   })
 
-  it('counts owned households toward the future representative cap before binding', async () => {
+  it('refuses a created household when the owner individual cap is full and keeps no row', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(householdLimitsConfig, {
         max_households_per_individual: 1,
       }),
     )
     const user = await createTestUserDirect()
-    await deleteTestIndividual(user.individual_id!)
     await expect(createHousehold(user)).rejects.toMatchObject({
       status: 409,
       code: 'INDIVIDUAL_HOUSEHOLD_LIMIT_REACHED',
     })
+    expect(await countOwnedHouseholdsForTestUser(user.id)).toBe(1)
   })
 
   it('concurrent missing-identity fallbacks reuse the same representative', async () => {
@@ -119,10 +121,43 @@ describe('household admission limits', () => {
     )
     const admitted = results.filter(result => result.status === 'fulfilled')
     const refused = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
-    expect(admitted).toHaveLength(3)
-    expect(refused).toHaveLength(2)
+    // The owner's own membership holds one of the three slots.
+    expect(admitted).toHaveLength(2)
+    expect(refused).toHaveLength(3)
     for (const error of refused) {
       expect(error).toMatchObject({ status: 409, code: 'HOUSEHOLD_MEMBER_LIMIT_REACHED' })
     }
+  })
+
+  it('admits one of two concurrent joins when one individual slot is left', async () => {
+    const owners = await createTestUsersDirect(5)
+    const joiner = await createTestUserDirect()
+    // Signup holds slot 1; three more memberships leave exactly one of the five slots free.
+    for (const owner of owners.slice(0, 3)) {
+      const household = await insertTestHousehold(owner.id)
+      await insertTestHouseholdMembership({
+        householdId: household.id,
+        individualId: joiner.individual_id!,
+      })
+    }
+    const targets = await Promise.all([
+      insertTestHousehold(owners[3]!.id),
+      insertTestHousehold(owners[4]!.id),
+    ])
+    const results = await Promise.allSettled(
+      targets.map(async target => {
+        await using transaction = await beginTransaction()
+        const inserted = await insertHouseholdMember(
+          { householdId: target.id, individualId: joiner.individual_id!, relationship: null },
+          { query: transaction },
+        )
+        await transaction.commit()
+        return inserted
+      }),
+    )
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
+    const refused = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
+    expect(refused).toHaveLength(1)
+    expect(refused[0]).toMatchObject({ status: 409, code: 'INDIVIDUAL_HOUSEHOLD_LIMIT_REACHED' })
   })
 })

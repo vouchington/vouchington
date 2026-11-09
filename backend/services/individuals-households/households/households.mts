@@ -3,11 +3,8 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { validateUUID } from '@modules/utils/ids'
 import type { PrivateUser } from '@services/users/types'
-import {
-  assertIndividualHouseholdRoom,
-  insertHouseholdMember,
-  insertOwnedHousehold,
-} from '../household-limits.mts'
+import { insertHouseholdMember, insertOwnedHousehold } from '../household-limits.mts'
+import { getOrCreateIndividual } from '../individuals/individuals.mts'
 import type { HouseholdMembershipRow, HouseholdRow } from '../types.mts'
 import { readHouseholdMemberManageAccess } from '../authorization.mts'
 import {
@@ -20,7 +17,13 @@ export async function createHousehold(currentUser: PrivateUser | null) {
   await using transaction = await beginTransaction()
   const options = { query: transaction }
   const household = await insertOwnedHousehold(currentUser.id, options)
-  await assertIndividualHouseholdRoom(currentUser.id, options)
+  // Every owned household gives its owner a membership; its individual slot caps owned plus joined.
+  const individual = await getOrCreateIndividual(currentUser, options)
+  assert(individual, 500, 'Household owner has no individual')
+  await insertHouseholdMember(
+    { householdId: household.id, individualId: individual.id, relationship: null },
+    options,
+  )
   await transaction.commit()
   return household
 }
@@ -131,9 +134,22 @@ export async function removeHouseholdMembership(
   assert(access !== 'hidden', 404, 'Household not found')
   assert(access === 'allowed', 403, 'Only household owner can remove members')
 
+  // The owner's membership holds the owner's individual slot, so it stays while the household exists.
   const { rowCount } = await write(sql`/* removeHouseholdMembership */
-    DELETE FROM household_members WHERE household_id = ${householdId} AND id = ${membershipId}
+    DELETE FROM household_members hm
+    WHERE hm.household_id = ${householdId} AND hm.id = ${membershipId}
+      AND NOT EXISTS (
+        SELECT 1 FROM households h JOIN users u ON u.id = h.owner_user_id
+        WHERE h.id = hm.household_id AND u.individual_id = hm.individual_id
+      )
   `)
-
+  if (!rowCount) {
+    const { rows: ownerRows } = await read(sql`/* removeHouseholdMembership:owner */
+      SELECT 1 FROM household_members hm
+      JOIN households h ON h.id = hm.household_id
+      JOIN users u ON u.id = h.owner_user_id AND u.individual_id = hm.individual_id
+      WHERE hm.household_id = ${householdId} AND hm.id = ${membershipId}`)
+    assert(ownerRows.length === 0, 409, 'Household owner cannot be removed')
+  }
   assert(rowCount && rowCount > 0, 404, 'Membership not found')
 }

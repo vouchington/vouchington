@@ -44,12 +44,14 @@ export async function seedSpendingCategories(
     for (let owner = 0; owner < ownerCount; owner++) {
       membershipValues.push(seedUuid(owner, '20'), seedUuid(owner, '1b'))
       const base = membershipValues.length - 1
-      membershipRows.push(`($${base}, $${base + 1}, 1)`)
+      // Individual slot 1 is the signup membership.
+      membershipRows.push(`($${base}, $${base + 1}, 1, 2)`)
     }
     membershipValues.push(seedUuid(1, '20'), seedUuid(0, '1b'))
-    membershipRows.push(`($${membershipValues.length - 1}, $${membershipValues.length}, 2)`)
+    membershipRows.push(`($${membershipValues.length - 1}, $${membershipValues.length}, 2, 3)`)
     await query(
-      `/* seedExplainData */ INSERT INTO household_members (household_id, individual_id, member_slot)
+      `/* seedExplainData */ INSERT INTO household_members
+         (household_id, individual_id, member_slot, individual_slot)
        VALUES ${membershipRows.join(', ')}
        ON CONFLICT DO NOTHING`,
       membershipValues,

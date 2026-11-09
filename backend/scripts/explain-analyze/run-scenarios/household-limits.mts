@@ -2,7 +2,6 @@ import { getOrCreateIndividual } from '@services/individuals-households/individu
 import assert from 'node:assert/strict'
 import { beginTransaction } from '@data-stores/psql'
 import {
-  assertIndividualHouseholdRoom,
   insertHouseholdMember,
   insertOwnedHousehold,
 } from '@services/individuals-households/household-limits'
@@ -11,7 +10,6 @@ import { seedUuid } from '../seed-data/common.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 
 const ownerInsertQuery = '/* insertOwnedHousehold */'
-const individualRoomQuery = '/* assertIndividualHouseholdRoom */'
 const memberInsertQuery = '/* insertHouseholdMember */'
 
 export async function runHouseholdLimitScenarios(): Promise<void> {
@@ -52,14 +50,6 @@ export async function runHouseholdLimitScenarios(): Promise<void> {
         indexes: ['uniq_households__owner_user_id_owner_slot'],
         queryContains: ownerInsertQuery,
       },
-      {
-        kind: 'usesIndexes',
-        indexes: [
-          'uniq_households__owner_user_id_owner_slot',
-          'idx_household_members__individual_household',
-        ],
-        queryContains: individualRoomQuery,
-      },
       { kind: 'maxProcessedRows', relation: 'households', max: 16 },
       { kind: 'maxProcessedRows', relation: 'household_members', max: 8 },
       { kind: 'maxProcessedRows', relation: 'users', max: 4 },
@@ -74,11 +64,10 @@ export async function runHouseholdLimitScenarios(): Promise<void> {
       await assert.rejects(() => insertOwnedHousehold(seedUser.id, { query: transaction }), {
         code: 'HOUSEHOLD_LIMIT_REACHED',
       })
-      await assertIndividualHouseholdRoom(seedUser.id, { query: transaction })
       await transaction.rollback()
     },
     undefined,
-    ['insertOwnedHousehold', 'insertOwnedHousehold:count', 'assertIndividualHouseholdRoom'],
+    ['insertOwnedHousehold', 'insertOwnedHousehold:count'],
   )
 
   registerScenarioContract('household-member-capacity', {
@@ -87,7 +76,10 @@ export async function runHouseholdLimitScenarios(): Promise<void> {
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['uniq_household_members__household_id_member_slot'],
+        indexes: [
+          'uniq_household_members__household_id_member_slot',
+          'uniq_household_members__individual_id_individual_slot',
+        ],
         queryContains: memberInsertQuery,
       },
       { kind: 'maxProcessedRows', relation: 'households', max: 8 },

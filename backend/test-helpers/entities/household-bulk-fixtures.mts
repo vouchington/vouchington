@@ -34,12 +34,21 @@ export async function insertTestHouseholdsForOwner(
   return rows
 }
 
+/** Adds one individual to several households; the schema caps an individual at 5. */
 export async function insertTestHouseholdMemberships(options: {
   householdIds: string[]
   individualId: string
 }): Promise<void> {
   await write(sql`/* insertTestHouseholdMemberships */
-    INSERT INTO household_members (household_id, individual_id, member_slot)
+    WITH free AS (
+      SELECT slot, row_number() OVER (ORDER BY slot) AS ordinal
+      FROM generate_series(1, 5) slot
+      WHERE NOT EXISTS (
+        SELECT 1 FROM household_members
+        WHERE individual_id = ${options.individualId} AND individual_slot = slot
+      )
+    )
+    INSERT INTO household_members (household_id, individual_id, member_slot, individual_slot)
     SELECT households.household_id, ${options.individualId}, (
       SELECT slot FROM generate_series(1, 25) slot
       WHERE NOT EXISTS (
@@ -47,12 +56,14 @@ export async function insertTestHouseholdMemberships(options: {
         WHERE hm.household_id = households.household_id AND hm.member_slot = slot
       )
       ORDER BY slot LIMIT 1
-    )
-    FROM unnest(${options.householdIds}::uuid[]) households(household_id)
+    ), free.slot
+    FROM unnest(${options.householdIds}::uuid[]) WITH ORDINALITY households(household_id, ordinal)
+    JOIN free ON free.ordinal = households.ordinal
     ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING
   `)
 }
 
+/** Adds several individuals to one household; each takes its own lowest free individual slot. */
 export async function insertTestHouseholdMembers(options: {
   householdId: string
   individualIds: string[]
@@ -65,9 +76,16 @@ export async function insertTestHouseholdMembers(options: {
         SELECT 1 FROM household_members WHERE household_id = ${options.householdId} AND member_slot = slot
       )
     )
-    INSERT INTO household_members (household_id, individual_id, member_slot, updated_at)
-    SELECT ${options.householdId}, members.individual_id, free.slot,
-      CURRENT_TIMESTAMP - members.ordinal * INTERVAL '1 microsecond'
+    INSERT INTO household_members
+      (household_id, individual_id, member_slot, individual_slot, updated_at)
+    SELECT ${options.householdId}, members.individual_id, free.slot, (
+      SELECT slot FROM generate_series(1, 5) slot
+      WHERE NOT EXISTS (
+        SELECT 1 FROM household_members hm
+        WHERE hm.individual_id = members.individual_id AND hm.individual_slot = slot
+      )
+      ORDER BY slot LIMIT 1
+    ), CURRENT_TIMESTAMP - members.ordinal * INTERVAL '1 microsecond'
     FROM unnest(${options.individualIds}::uuid[]) WITH ORDINALITY members(individual_id, ordinal)
     JOIN free ON free.ordinal = members.ordinal
     ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING

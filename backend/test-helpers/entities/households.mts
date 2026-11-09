@@ -73,6 +73,13 @@ export async function deleteOwnedHouseholdsForTestUser(userId: string): Promise<
   return rows.length
 }
 
+export async function countOwnedHouseholdsForTestUser(userId: string): Promise<number> {
+  const { rows } = await write<{ count: number }>(sql`/* countOwnedHouseholdsForTestUser */
+    SELECT count(*)::int AS count FROM households WHERE owner_user_id = ${userId}
+  `)
+  return rows[0]!.count
+}
+
 export async function deleteTestHouseholdById(householdId: string): Promise<void> {
   await write(sql`/* deleteTestHouseholdById */
     DELETE FROM households WHERE id = ${householdId}
@@ -110,11 +117,18 @@ export async function insertTestHouseholdMembership(options: {
 }): Promise<TestHouseholdMembership> {
   const { householdId, individualId, relationship = null, updatedAt = new Date() } = options
   const { rows } = await write<TestHouseholdMembership>(sql`/* insertTestHouseholdMembership */
-    INSERT INTO household_members (household_id, individual_id, member_slot, relationship, updated_at)
+    INSERT INTO household_members
+      (household_id, individual_id, member_slot, individual_slot, relationship, updated_at)
     VALUES (${householdId}, ${individualId}, (
       SELECT slot FROM generate_series(1, 25) slot
       WHERE NOT EXISTS (
         SELECT 1 FROM household_members WHERE household_id = ${householdId} AND member_slot = slot
+      )
+      ORDER BY slot LIMIT 1
+    ), (
+      SELECT slot FROM generate_series(1, 5) slot
+      WHERE NOT EXISTS (
+        SELECT 1 FROM household_members WHERE individual_id = ${individualId} AND individual_slot = slot
       )
       ORDER BY slot LIMIT 1
     ), ${relationship}, ${updatedAt})
