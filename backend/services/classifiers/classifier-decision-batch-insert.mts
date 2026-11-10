@@ -18,8 +18,6 @@ export async function insertClassifierDecisionBatch(
   if (!isClassifierBatchWithinRetention(input.batchId) && !activeRunId) {
     assertClassifierBatchWithinRetention(input.batchId)
   }
-  // ON CONFLICT (id) misses a concurrent duplicate on a composite unique index. Hash
-  // canonical uuid text so mixed-case spellings of one batch take that same lock.
   if (!isClassifierBatchWithinRetention(input.batchId)) {
     await assertRetainedActiveDecisionReservation(query, activeRunId!, input.batchId)
     return false

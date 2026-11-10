@@ -11,9 +11,10 @@ import { withActiveAccountSession } from '@services/mfa/active-account-session'
 import { revokeAllAuthenticatedSessions } from '@services/jwt-session/user-session-revocation'
 import { connectBlueskyAccountToUser } from './connect.mts'
 
-// First attachment takes the real user FK lock before it can write a session cutoff.
+// The account change holds the session rows its revocation update writes. Attachment reaches
+// that same revocation update and waits there, then the initiating session stays revoked.
 describe('Bluesky attachment and account-change ordering', () => {
-  it('waits before the cutoff and preserves denial of the revoked initiating session', async () => {
+  it('waits on the account-change session rows and preserves denial of the initiating session', async () => {
     const user = await createTestUser()
     await revokeAllAuthenticatedSessions(user.id)
     const accountActor = await createTestAccountChangeActor(user.id)
@@ -48,7 +49,7 @@ describe('Bluesky attachment and account-change ordering', () => {
         pool: 'write',
         holderProcessId,
         lock: { kind: 'transaction' },
-        queryMarker: '/* connectBlueskyAccountToUser */',
+        queryMarker: '/* revokeOtherAuthenticatedSessions */',
         releaseHolder: async () => {
           release.resolve()
           await accountChange
