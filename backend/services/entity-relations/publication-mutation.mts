@@ -19,7 +19,6 @@ export async function runRelationPublicationMutation<
   options: PublicationMutationOptions | undefined,
   relationTable: string,
   mutationKind: 'activate' | 'delete',
-  subjectIds: readonly string[],
   objectIds: readonly string[],
   activeUserSubjectIds: readonly string[],
   mutation: (query: TransactionQuery) => Promise<T[]>,

@@ -42,7 +42,6 @@ export async function writeEntityRelations(
     options,
     relation.table_name,
     'activate',
-    pairs.map(pair => pair.subject.id),
     pairs.map(pair => pair.object.id),
     relation.subject_type === 'user' ? pairs.map(pair => pair.subject.id) : [],
     async transactionQuery => {

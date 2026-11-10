@@ -63,7 +63,6 @@ export const softDeleteEntityRelation = async (
       options,
       relation.table_name,
       'delete',
-      [subject.id],
       objects.map(object => object.id),
       relation.subject_type === 'user' ? [subject.id] : [],
       async transactionQuery => {
@@ -143,7 +142,6 @@ export const softDeleteEntityRelationsForSubjects = async (
       options,
       relation.table_name,
       'delete',
-      subjects.map(subject => subject.id),
       [object.id],
       relation.subject_type === 'user' ? subjects.map(subject => subject.id) : [],
       async transactionQuery => {
