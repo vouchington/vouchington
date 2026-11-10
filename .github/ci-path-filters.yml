@@ -42,6 +42,7 @@ backend:
   - 'backend/scripts/consolidate-seed-rss-feeds.mts'
   - 'backend/scripts/explain-analyze/**'
   - 'backend/scripts/fix-bullmq-sourcemaps.sh'
+  - 'backend/scripts/prepare-husky*.mts'
   - 'backend/scripts/package.json'
   - 'backend/scripts/recalculate-vote-weights.mts'
   - 'backend/scripts/seed/**'

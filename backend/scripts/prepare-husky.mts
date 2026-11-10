@@ -1,3 +1,5 @@
+import { readHuskyDecision } from './prepare-husky-worktree.mts'
+
 async function loadHusky() {
   try {
     return await import('husky')
@@ -16,8 +18,13 @@ async function loadHusky() {
 
 const husky = await loadHusky()
 if (husky) {
-  const message = husky.default()
-  if (message) process.stdout.write(`${message}\n`)
+  const decision = readHuskyDecision()
+  if (decision.run) {
+    const message = husky.default()
+    if (message) process.stdout.write(`${message}\n`)
+  } else {
+    console.log(decision.message)
+  }
 } else {
   console.log('prepare: skipping husky (not installed)')
 }
