@@ -26,8 +26,8 @@ describe('household pagination query plans', () => {
     fixtureOwnerIds.push(user.id)
     const otherOwner = await createTestUserDirect()
     fixtureOwnerIds.push(otherOwner.id)
-    // Contract caps keep one owner at 2 households, one household at 25 members and one
-    // individual at 5 households, so table-scale noise comes from many owners instead.
+    // One owner has two households, one household has many members, and one individual is in
+    // several households. Table-scale noise comes from many owners.
     await insertTestHouseholdsForOwner(user.id, 1)
     const sharedOwners = await createTestUsersDirect(4)
     fixtureOwnerIds.push(...sharedOwners.map(owner => owner.id))
@@ -85,11 +85,11 @@ describe('household pagination query plans', () => {
       )
       const byName = Object.fromEntries(plans)
 
-      expect(planIndexNames(byName.owned)).toContain('uniq_households__owner_user_id_owner_slot')
+      expect(planIndexNames(byName.owned)).toContain('idx_households__owner_user_id')
       expect(planIndexNames(byName.member)).toContain('idx_household_members__individual_household')
       expect(planIndexNames(byName.all)).toEqual(
         expect.arrayContaining([
-          'uniq_households__owner_user_id_owner_slot',
+          'idx_households__owner_user_id',
           'idx_household_members__individual_household',
         ]),
       )

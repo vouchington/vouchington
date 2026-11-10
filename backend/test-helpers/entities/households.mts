@@ -98,12 +98,8 @@ export async function insertTestHousehold(
   updatedAt = new Date(),
 ): Promise<TestHousehold> {
   const { rows } = await write<TestHousehold>(sql`/* insertTestHousehold */
-    INSERT INTO households (owner_user_id, owner_slot, updated_at)
-    VALUES (${ownerId}, (
-      SELECT slot FROM generate_series(1, 2) slot
-      WHERE NOT EXISTS (SELECT 1 FROM households WHERE owner_user_id = ${ownerId} AND owner_slot = slot)
-      ORDER BY slot LIMIT 1
-    ), ${updatedAt})
+    INSERT INTO households (owner_user_id, updated_at)
+    VALUES (${ownerId}, ${updatedAt})
     RETURNING id, owner_user_id
   `)
   return rows[0]!
@@ -117,21 +113,8 @@ export async function insertTestHouseholdMembership(options: {
 }): Promise<TestHouseholdMembership> {
   const { householdId, individualId, relationship = null, updatedAt = new Date() } = options
   const { rows } = await write<TestHouseholdMembership>(sql`/* insertTestHouseholdMembership */
-    INSERT INTO household_members
-      (household_id, individual_id, member_slot, individual_slot, relationship, updated_at)
-    VALUES (${householdId}, ${individualId}, (
-      SELECT slot FROM generate_series(1, 25) slot
-      WHERE NOT EXISTS (
-        SELECT 1 FROM household_members WHERE household_id = ${householdId} AND member_slot = slot
-      )
-      ORDER BY slot LIMIT 1
-    ), (
-      SELECT slot FROM generate_series(1, 5) slot
-      WHERE NOT EXISTS (
-        SELECT 1 FROM household_members WHERE individual_id = ${individualId} AND individual_slot = slot
-      )
-      ORDER BY slot LIMIT 1
-    ), ${relationship}, ${updatedAt})
+    INSERT INTO household_members (household_id, individual_id, relationship, updated_at)
+    VALUES (${householdId}, ${individualId}, ${relationship}, ${updatedAt})
     RETURNING id, household_id
   `)
   return rows[0]!

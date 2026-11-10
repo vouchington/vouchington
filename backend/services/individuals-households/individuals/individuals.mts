@@ -51,15 +51,12 @@ export async function getOrCreateIndividual(
 
   const bind = async (query: TransactionQuery) => {
     const transactionOptions = { query }
-    // Lock the users row this binder writes; the initial read can use a replica, so recheck on the primary.
-    await write(
-      sql`/* getOrCreateIndividual:lock-user */
-        SELECT id FROM users WHERE id = ${currentUser.id} FOR UPDATE`,
-      transactionOptions,
-    )
+    // The first read can use a replica. Recheck the primary before inserting.
+    const linked = await getIndividual(currentUser, transactionOptions, true)
+    if (linked) return linked
     return (
-      (await getIndividual(currentUser, transactionOptions, true)) ??
-      (await createRepresentativeIndividual(currentUser.id, transactionOptions))
+      (await createRepresentativeIndividual(currentUser.id, transactionOptions)) ??
+      (await getIndividual(currentUser, transactionOptions, true))
     )
   }
   if (options.query || options.client) return withTransactionOptions(options, bind)
@@ -81,7 +78,7 @@ async function createRepresentativeIndividual(userId: string, options: QueryOpti
     UPDATE users
     SET individual_id = new_individual.id
     FROM new_individual
-    WHERE users.id = ${userId}
+    WHERE users.id = ${userId} AND users.individual_id IS NULL
     RETURNING new_individual.id, new_individual.updated_at
   `,
     options,

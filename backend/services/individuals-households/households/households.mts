@@ -17,7 +17,7 @@ export async function createHousehold(currentUser: PrivateUser | null) {
   await using transaction = await beginTransaction()
   const options = { query: transaction }
   const household = await insertOwnedHousehold(currentUser.id, options)
-  // Every owned household gives its owner a membership; its individual slot caps owned plus joined.
+  // Every owned household gives its owner a membership, which counts toward the individual cap.
   const individual = await getOrCreateIndividual(currentUser, options)
   assert(individual, 500, 'Household owner has no individual')
   await insertHouseholdMember(

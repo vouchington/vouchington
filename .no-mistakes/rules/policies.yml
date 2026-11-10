@@ -2612,10 +2612,18 @@
         { reason: 'a rule set has a few rules' }
       hostname_path_boilerplate_removal_urls.hostname_path_boilerplate_removal_id:
         { reason: 'the sole writer stores the at most 3 sampled candidate urls per removal' }
-      households.owner_user_id: { reason: 'a user owns at most 2 households' }
-      household_members.household_id: { reason: 'a household has at most 25 members' }
+      households.owner_user_id:
+        {
+          reason: 'create counts at most 2 owned households (LIMIT 3) before insert; a race may overshoot and the schema has no maximum',
+        }
+      household_members.household_id:
+        {
+          reason: 'membership create counts at most 25 members (LIMIT 26) before insert; a race may overshoot and the schema has no maximum',
+        }
       household_members.individual_id:
-        { reason: 'an individual belongs to at most 5 households, owned or joined' }
+        {
+          reason: 'membership create counts at most 5 households per individual (LIMIT 6) before insert; a race may overshoot and the schema has no maximum',
+        }
 
 - name: counter columns have nonnegative checks
   rule: postgres-column-check-constraints

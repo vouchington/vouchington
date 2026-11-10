@@ -1,4 +1,3 @@
-/* oxlint-disable no-await-in-loop -- bounded slot retries; each reread follows a lost race */
 import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import {
@@ -8,17 +7,13 @@ import {
 } from '@modules/on-error/error-codes'
 import { createCodedError } from '@vouchington/sentry'
 import sql from 'sql-template-strings'
-import { getHouseholdLimits, householdLimitsMaxValues } from './household-limits-config.mts'
+import { getHouseholdLimits } from './household-limits-config.mts'
 import type { HouseholdRow } from './types.mts'
 
 /**
- * Owned-household and member caps are database guarantees on the written row: each row takes a
- * bounded slot, and `UNIQUE (owner_user_id, owner_slot)` / `UNIQUE (household_id, member_slot)`
- * with a CHECK at the config hard maximum reject an over-cap insert. No advisory or parent locks.
- * The CHECK bound is the hard maximum; the configured value is enforced by the insert's count guard.
+ * Owned-household and member caps are best effort. Count with `LIMIT cap + 1`, then write.
+ * A real race may admit one more than the cap.
  * See docs/development/postgresql/reference-transactions.md#lock-scope.
- * `ON CONFLICT DO NOTHING` keeps a lost slot race from aborting the caller's transaction; the loser
- * rereads and retries, bounded by the hard maximum.
  */
 async function countCapped(
   sqlText: ReturnType<typeof sql>,
@@ -28,46 +23,32 @@ async function countCapped(
   return rows[0]?.count ?? 0
 }
 
-/** Insert an owned household in the lowest free slot, or refuse with the existing cap error. */
+/** Insert an owned household, or refuse when the capped count already sees the cap. */
 export async function insertOwnedHousehold(
   userId: string,
   options: QueryOptions,
 ): Promise<HouseholdRow> {
   const { householdsPerUser } = getHouseholdLimits()
-  const attempts = householdLimitsMaxValues.max_households_per_user + 1
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    // no-mistakes-disable-next-line query-reached-per-item: each retry follows a lost slot race and must reread.
-    const { rows } = await write<HouseholdRow>( // oxlint-disable-line no-await-in-loop -- each retry follows a lost slot race and must reread.
-      sql`/* insertOwnedHousehold */
-        INSERT INTO households (owner_user_id, owner_slot)
-        SELECT ${userId}::uuid, slot
-        FROM generate_series(1, ${householdLimitsMaxValues.max_households_per_user}) AS slot
-        WHERE NOT EXISTS (
-          SELECT 1 FROM households WHERE owner_user_id = ${userId} AND owner_slot = slot
-        )
-          AND (
-            SELECT count(*) FROM (
-              SELECT 1 FROM households WHERE owner_user_id = ${userId} LIMIT ${householdsPerUser}
-            ) owned
-          ) < ${householdsPerUser}
-        ORDER BY slot
-        LIMIT 1
-        ON CONFLICT DO NOTHING
-        RETURNING id, owner_user_id, updated_at`,
-      options,
-    )
-    if (rows[0]) return rows[0]
-    // no-mistakes-disable-next-line query-reached-per-item: a zero-row insert is full or a lost race; reread to tell.
-    const owned = await countCapped(
-      sql`/* insertOwnedHousehold:count */
-        SELECT count(*)::int AS count FROM (
-          SELECT 1 FROM households WHERE owner_user_id = ${userId} LIMIT ${householdsPerUser}
-        ) owned`,
-      options,
-    )
-    if (owned >= householdsPerUser) break
+  const owned = await countCapped(
+    sql`/* insertOwnedHousehold:count */
+      SELECT count(*)::int AS count FROM (
+        SELECT 1 FROM households WHERE owner_user_id = ${userId} LIMIT ${householdsPerUser + 1}
+      ) owned`,
+    options,
+  )
+  if (owned >= householdsPerUser) {
+    throw createCodedError(409, 'Household limit reached', HOUSEHOLD_LIMIT_REACHED)
   }
-  throw createCodedError(409, 'Household limit reached', HOUSEHOLD_LIMIT_REACHED)
+  const { rows } = await write<HouseholdRow>(
+    sql`/* insertOwnedHousehold */
+      INSERT INTO households (owner_user_id)
+      VALUES (${userId})
+      RETURNING id, owner_user_id, updated_at`,
+    options,
+  )
+  const household = rows[0]
+  if (!household) throw createCodedError(409, 'Household limit reached', HOUSEHOLD_LIMIT_REACHED)
+  return household
 }
 
 export type HouseholdMemberInsert = {
@@ -77,10 +58,10 @@ export type HouseholdMemberInsert = {
 }
 
 /**
- * Add a membership in the lowest free household slot and the lowest free individual slot. Every
- * owned household also gives its owner a membership, so the individual slot caps owned plus joined
- * households. Returns false when the individual is already a member (the caller decides whether to
- * update it); throws the existing cap errors otherwise.
+ * Add a membership. Returns false when the individual is already a member (the caller decides
+ * whether to update it). Throws the cap errors when the capped count already sees that cap.
+ * Every owned household also gives its owner a membership, so the individual count includes
+ * owned and joined households.
  */
 export async function insertHouseholdMember(
   input: HouseholdMemberInsert,
@@ -88,78 +69,40 @@ export async function insertHouseholdMember(
 ): Promise<boolean> {
   const { householdId, individualId, relationship } = input
   const { membersPerHousehold, householdsPerIndividual } = getHouseholdLimits()
-  const attempts =
-    householdLimitsMaxValues.max_members_per_household +
-    householdLimitsMaxValues.max_households_per_individual +
-    1
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    // no-mistakes-disable-next-line query-reached-per-item: each retry follows a lost slot race and must reread.
-    const { rowCount } = await write(
-      sql`/* insertHouseholdMember */
-        INSERT INTO household_members
-          (household_id, individual_id, relationship, member_slot, individual_slot)
-        SELECT ${householdId}::uuid, ${individualId}::uuid, ${relationship}::text,
-          member_free.slot, individual_free.slot
-        FROM (
-          SELECT slot FROM generate_series(1, ${householdLimitsMaxValues.max_members_per_household}) AS slot
-          WHERE NOT EXISTS (
-            SELECT 1 FROM household_members WHERE household_id = ${householdId} AND member_slot = slot
-          )
-          ORDER BY slot
-          LIMIT 1
-        ) member_free,
-        (
-          SELECT slot FROM generate_series(1, ${householdLimitsMaxValues.max_households_per_individual}) AS slot
-          WHERE NOT EXISTS (
-            SELECT 1 FROM household_members WHERE individual_id = ${individualId} AND individual_slot = slot
-          )
-          ORDER BY slot
-          LIMIT 1
-        ) individual_free
-        WHERE (
-          SELECT count(*) FROM (
-            SELECT 1 FROM household_members
-            WHERE household_id = ${householdId} LIMIT ${membersPerHousehold}
-          ) members
-        ) < ${membersPerHousehold}
-          AND (
-            SELECT count(*) FROM (
-              SELECT 1 FROM household_members
-              WHERE individual_id = ${individualId} LIMIT ${householdsPerIndividual}
-            ) joined
-          ) < ${householdsPerIndividual}
-        LIMIT 1
-        ON CONFLICT DO NOTHING`,
-      options,
+  const { rows } = await write<{ existing: boolean; member_count: number; joined_count: number }>(
+    sql`/* insertHouseholdMember:count */
+      SELECT
+        EXISTS (
+          SELECT 1 FROM household_members
+          WHERE household_id = ${householdId} AND individual_id = ${individualId}
+        ) AS existing,
+        (SELECT count(*)::int FROM (
+          SELECT 1 FROM household_members
+          WHERE household_id = ${householdId} LIMIT ${membersPerHousehold + 1}
+        ) members) AS member_count,
+        (SELECT count(*)::int FROM (
+          SELECT 1 FROM household_members
+          WHERE individual_id = ${individualId} LIMIT ${householdsPerIndividual + 1}
+        ) joined) AS joined_count`,
+    options,
+  )
+  if (rows[0]?.existing) return false
+  if ((rows[0]?.joined_count ?? 0) >= householdsPerIndividual) {
+    throw createCodedError(
+      409,
+      'Individual household limit reached',
+      INDIVIDUAL_HOUSEHOLD_LIMIT_REACHED,
     )
-    if (rowCount) return true
-    // no-mistakes-disable-next-line query-reached-per-item: a zero-row insert is full, a duplicate, or a lost race.
-    const { rows } = await write<{ existing: boolean; member_count: number; joined_count: number }>( // oxlint-disable-line no-await-in-loop -- a zero-row insert is full, a duplicate, or a lost race.
-      sql`/* insertHouseholdMember:count */
-        SELECT
-          EXISTS (
-            SELECT 1 FROM household_members
-            WHERE household_id = ${householdId} AND individual_id = ${individualId}
-          ) AS existing,
-          (SELECT count(*)::int FROM (
-            SELECT 1 FROM household_members
-            WHERE household_id = ${householdId} LIMIT ${membersPerHousehold}
-          ) members) AS member_count,
-          (SELECT count(*)::int FROM (
-            SELECT 1 FROM household_members
-            WHERE individual_id = ${individualId} LIMIT ${householdsPerIndividual}
-          ) joined) AS joined_count`,
-      options,
-    )
-    if (rows[0]?.existing) return false
-    if ((rows[0]?.joined_count ?? 0) >= householdsPerIndividual) {
-      throw createCodedError(
-        409,
-        'Individual household limit reached',
-        INDIVIDUAL_HOUSEHOLD_LIMIT_REACHED,
-      )
-    }
-    if ((rows[0]?.member_count ?? 0) >= membersPerHousehold) break
   }
-  throw createCodedError(409, 'Household member limit reached', HOUSEHOLD_MEMBER_LIMIT_REACHED)
+  if ((rows[0]?.member_count ?? 0) >= membersPerHousehold) {
+    throw createCodedError(409, 'Household member limit reached', HOUSEHOLD_MEMBER_LIMIT_REACHED)
+  }
+  const { rowCount } = await write(
+    sql`/* insertHouseholdMember */
+      INSERT INTO household_members (household_id, individual_id, relationship)
+      VALUES (${householdId}::uuid, ${individualId}::uuid, ${relationship}::text)
+      ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING`,
+    options,
+  )
+  return Boolean(rowCount)
 }

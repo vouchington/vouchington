@@ -267,17 +267,20 @@ describe('households', () => {
     )
   })
 
-  it('admits one more owned household and refuses concurrent creates past the cap', async () => {
+  it('refuses another owned household once the capped count sees the cap', async () => {
     const user = await createTestUserDirect()
+    const created = await createHousehold(user)
+    await expect(createHousehold(user)).rejects.toMatchObject({
+      status: 409,
+      code: 'HOUSEHOLD_LIMIT_REACHED',
+    })
     const results = await Promise.allSettled(Array.from({ length: 4 }, () => createHousehold(user)))
-    const created = results.flatMap(result => (result.status === 'fulfilled' ? [result.value] : []))
-    const refused = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
-
-    expect(created).toHaveLength(1)
-    expect(new Set(created.map(household => household.id)).size).toBe(1)
-    expect(refused).toHaveLength(3)
-    for (const error of refused) {
-      expect(error).toMatchObject({ status: 409, code: 'HOUSEHOLD_LIMIT_REACHED' })
+    expect(created.id).toEqual(expect.any(String))
+    for (const result of results) {
+      expect(result).toMatchObject({
+        status: 'rejected',
+        reason: { status: 409, code: 'HOUSEHOLD_LIMIT_REACHED' },
+      })
     }
   })
 })

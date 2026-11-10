@@ -31,15 +31,8 @@ CREATE TABLE IF NOT EXISTS households (
   -- the person who owns this household
   owner_user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
 
-  -- one of the owner's bounded slots; the CHECK bound is the hard maximum of max_households_per_user
-  -- (householdLimitsMaxValues), and the app enforces the configured value at or below it
-  owner_slot SMALLINT NOT NULL CHECK (owner_slot BETWEEN 1 AND 2),
-
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-  -- Caps owned households per user: a concurrent insert of the same slot hits this key, not a lock.
-  CONSTRAINT uniq_households__owner_user_id_owner_slot UNIQUE (owner_user_id, owner_slot)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -48,11 +41,13 @@ CREATE OR REPLACE TRIGGER trigger_households_fn_update_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
--- Owned-household reads walk uniq_households__owner_user_id_owner_slot; an owner holds at most two rows.
+-- Owned-household reads and the best-effort cap count walk owner_user_id.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_households__owner_user_id
+ON households (owner_user_id);
 
 COMMENT ON TABLE households IS 'A household owned by a user, grouping individuals for shared finance tracking.';
 COMMENT ON COLUMN households.owner_user_id IS 'The user who owns and manages this household.';
-COMMENT ON COLUMN households.owner_slot IS 'Bounded per-owner slot (1 to the max_households_per_user hard maximum); the unique key caps owned households and deleting the row frees the slot.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS household_members (
@@ -64,31 +59,14 @@ CREATE TABLE IF NOT EXISTS household_members (
   -- the individual that is a member of the household
   individual_id UUID NOT NULL REFERENCES individuals ON DELETE CASCADE,
 
-  -- one of the household's bounded slots; the CHECK bound is the hard maximum of
-  -- max_members_per_household (householdLimitsMaxValues), and the app enforces the configured value
-  member_slot SMALLINT NOT NULL CHECK (member_slot BETWEEN 1 AND 25),
-
-  -- one of the individual's bounded slots; the CHECK bound is the hard maximum of
-  -- max_households_per_individual, and the app enforces the configured value. Every owned
-  -- household gives its owner a membership row, so this also caps owned plus joined households.
-  individual_slot SMALLINT NOT NULL CHECK (individual_slot BETWEEN 1 AND 5),
-
   relationship TEXT CHECK (relationship IS NULL OR char_length(relationship) <= 64), -- e.g. husband, wife, child, etc.
 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  -- Unique constraint to prevent duplicate memberships
+  -- One membership per individual in a household. This is identity, not a size cap.
   CONSTRAINT uniq_household_members__household_id_individual_id
-    UNIQUE (household_id, individual_id),
-
-  -- Caps members per household: a concurrent insert of the same slot hits this key, not a lock.
-  CONSTRAINT uniq_household_members__household_id_member_slot
-    UNIQUE (household_id, member_slot),
-
-  -- Caps households per individual: a concurrent insert of the same slot hits this key, not a lock.
-  CONSTRAINT uniq_household_members__individual_id_individual_slot
-    UNIQUE (individual_id, individual_slot)
+    UNIQUE (household_id, individual_id)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -110,8 +88,6 @@ ON household_members (individual_id, household_id);
 COMMENT ON TABLE household_members IS 'Join table linking individuals to households with a relationship descriptor.';
 COMMENT ON COLUMN household_members.household_id IS 'The household this membership belongs to.';
 COMMENT ON COLUMN household_members.individual_id IS 'The individual who is a member of the household.';
-COMMENT ON COLUMN household_members.member_slot IS 'Bounded per-household slot (1 to the max_members_per_household hard maximum); the unique key caps members and deleting the row frees the slot.';
-COMMENT ON COLUMN household_members.individual_slot IS 'Bounded per-individual slot (1 to the max_households_per_individual hard maximum); the unique key caps households per individual and deleting the row frees the slot.';
 COMMENT ON COLUMN household_members.relationship IS 'Relationship to the household owner (e.g. husband, wife, child).';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -283,13 +259,13 @@ BEGIN
   WHERE id = NEW.id;
 
   -- Create household owned by user
-  INSERT INTO households (owner_user_id, owner_slot)
-  VALUES (NEW.id, 1)
+  INSERT INTO households (owner_user_id)
+  VALUES (NEW.id)
   RETURNING id INTO new_household_id;
 
   -- Create membership linking individual to household
-  INSERT INTO household_members (household_id, individual_id, member_slot, individual_slot)
-  VALUES (new_household_id, new_individual_id, 1, 1);
+  INSERT INTO household_members (household_id, individual_id)
+  VALUES (new_household_id, new_individual_id);
 
   RETURN NEW;
 END;

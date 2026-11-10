@@ -14,16 +14,6 @@ import {
 import { insertHouseholdMember } from '../household-limits.mts'
 import { getOrCreateIndividual } from '../individuals/individuals.mts'
 
-async function getOrCreateLockedInviteeIndividual(currentUser: PrivateUser, options: QueryOptions) {
-  // Locks the invitee's own users row, which getOrCreateIndividual may write.
-  await write(
-    sql`/* decideHouseholdInvitation:lock-invitee */
-      SELECT id FROM users WHERE id = ${currentUser.id} FOR UPDATE`,
-    options,
-  )
-  return getOrCreateIndividual(currentUser, options)
-}
-
 export async function decideHouseholdInvitation(
   currentUser: PrivateUser,
   invitationId: string,
@@ -76,7 +66,7 @@ export async function decideHouseholdInvitation(
     await transaction.commit()
     return
   }
-  const individual = await getOrCreateLockedInviteeIndividual(currentUser, options)
+  const individual = await getOrCreateIndividual(currentUser, options)
   await insertHouseholdMember(
     {
       householdId: changed[0].household_id,
