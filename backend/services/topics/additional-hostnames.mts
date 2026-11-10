@@ -11,10 +11,6 @@ import { normalizeHostname } from '@ts-shared/utils/urls'
 import { invalidate } from '@services/entity-cache'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
-import {
-  lockTopicRssFeedAttachmentLifecycle,
-  lockTopicRssFeedAttachmentLifecycles,
-} from '@services/post-publication/lock'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 
@@ -89,14 +85,6 @@ async function addAdditionalHostnameInTransaction(
   )
   const hostnameId = hostnameMap.values().next().value as string | undefined
   assert(hostnameId, 500, 'Failed to resolve hostname')
-  const { rows: previousOwners } = await options.query<{ topic_id: string | null }>(
-    sql`/* addAdditionalHostname:previousOwner */
-      SELECT topic_id FROM url_hostnames WHERE id = ${hostnameId}`,
-  )
-  await lockTopicRssFeedAttachmentLifecycles(
-    options.query,
-    [topicId, previousOwners[0]?.topic_id].filter((id): id is string => Boolean(id)),
-  )
   await upsertUrlHostnames(userId, [normalizedHostname!], options)
 
   // Conflict check, update, and hostname fetch in one query.
@@ -164,8 +152,6 @@ async function removeAdditionalHostnameInTransaction(
   hostnameId: string,
   options: { query: TransactionQuery },
 ): Promise<void> {
-  await lockTopicRssFeedAttachmentLifecycle(options.query, topicId)
-
   const { rows } = await write(
     // no-mistakes-disable-next-line postgres-required-predicates: the UPDATE matches this hostname id and topic id, and skips the topic's primary hostname pointer
     sql`/* removeAdditionalHostname */ UPDATE url_hostnames SET topic_id = NULL WHERE id = ${hostnameId} AND topic_id = ${topicId} AND id IS DISTINCT FROM (SELECT hostname_id FROM topics WHERE id = ${topicId}) RETURNING id`,

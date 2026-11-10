@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
 import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
-import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
+
 import { getRssFeedsWorkLimit } from './work-limits.mts'
 import {
   readTopicTextCategoryRawPage,
@@ -60,7 +60,6 @@ export async function backfillTopicTextFeedPage(
   await selection.commit()
   if (page.rows.length === 0) return { updated: 0, hasMore: page.hasMore, cursor: page.cursor }
   await using transaction = await beginTransaction()
-  await lockTopicRssFeedAttachmentLifecycle(transaction, topicId)
   const { rows: locked } = await transaction<{ rss_feed_id: string }>(
     `/* backfillTopicTextFeedPage lockCategories */
      SELECT category.rss_feed_id

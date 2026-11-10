@@ -8,7 +8,6 @@ import { enqueueCapturedPublicationChangeAfterCommit } from '@services/post-publ
 import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import type { RssFeedHardDeleteChildPhase } from '@queues/rss-feed-maintenance/types'
 import { lockHardDeleteRssFeedChildRows } from './hard-delete-child-rows.mts'
-import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 // Closed allowlist: no table or column name comes from queue data.
 const CHILD_TABLES: Record<
@@ -93,16 +92,6 @@ export async function hardDeleteRssFeedChildPage(
           )
         ).rows
       : null
-  if (categoryFootprint) {
-    await withTopicReferenceAttachmentFences(
-      [
-        ...parentFootprint.map(row => row.topic_id),
-        ...categoryFootprint.flatMap(row => (row.topic_id ? [row.topic_id] : [])),
-      ],
-      { query },
-      async () => {},
-    )
-  }
   const feed = await query<{ id: string; topic_id: string }>(
     `/* hardDeleteRssFeedChildPage:feed */
     SELECT id, topic_id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL FOR UPDATE`,

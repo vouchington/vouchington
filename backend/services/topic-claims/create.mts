@@ -1,9 +1,8 @@
-import { write, read } from '@data-stores/psql'
+import { beginTransaction, write, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
 import type { CreateTopicClaimInput } from './parse.mts'
-import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
 import { getTopicClaimById } from './get.mts'
 
 export async function createTopicClaim(
@@ -13,18 +12,18 @@ export async function createTopicClaim(
   const topic = await resolveClaimTopic(input.topicId)
   assert(topic, 404, 'Topic not found')
 
-  const { rows } = await withTopicReferenceAttachmentFences([topic.id], {}, async query => {
-    const { rows: currentTopics } = await read<ClaimTopic>(
-      sql`/* createTopicClaim:activeTopic */
+  await using query = await beginTransaction()
+  const { rows: currentTopics } = await read<ClaimTopic>(
+    sql`/* createTopicClaim:activeTopic */
         SELECT id, hostname_id FROM topics
         WHERE id = ${topic.id} AND deleted_at IS NULL AND merged_into_topic_id IS NULL`,
-      undefined,
-      { query },
-    )
-    const currentTopic = currentTopics[0]
-    assert(currentTopic, 409, 'Topic changed while creating claim')
-    return write<TopicClaim & { inserted: boolean }>(
-      sql`/* createTopicClaim */
+    undefined,
+    { query },
+  )
+  const currentTopic = currentTopics[0]
+  assert(currentTopic, 409, 'Topic changed while creating claim')
+  const { rows } = await write<TopicClaim & { inserted: boolean }>(
+    sql`/* createTopicClaim */
     WITH upsert AS (
       INSERT INTO topic_claims (
         topic_id,
@@ -83,9 +82,9 @@ export async function createTopicClaim(
       AND (verified_at IS NOT NULL OR submitted_at IS NOT NULL)
     LIMIT 1
   `,
-      { query },
-    )
-  })
+    { query },
+  )
+  await query.commit()
 
   const result = rows[0]
   assert(result, 500, 'Failed to create topic claim')

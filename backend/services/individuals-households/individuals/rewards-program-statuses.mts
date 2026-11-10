@@ -6,13 +6,12 @@ import {
 export { getIndividualRewardsProgramStatuses } from './rewards-program-statuses-list.mts'
 import { currentUserCanAccessUser } from '@services/users/authorization'
 import { assertNotSuspended } from '@services/users/suspension'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import { parseUtcDay } from '@modules/utils'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
-import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 type UpdateIndividualRewardsProgramStatusData = {
   started_on?: string | null
@@ -57,12 +56,12 @@ export async function createIndividualRewardsProgramStatus(
   const individual = await getOrCreateIndividual(user)
   let rows: { id: string }[]
   try {
-    ;({ rows } = await withTopicReferenceAttachmentFences([rewardsProgramStatusId], {}, query =>
-      write<{ id: string }>(
-        sql`/* createIndividualRewardsProgramStatus */ INSERT INTO individual_rewards_program_statuses (individual_id, rewards_program_status_topic_id) VALUES (${individual.id}, ${rewardsProgramStatusId}) RETURNING id`,
-        { query },
-      ),
+    await using query = await beginTransaction()
+    ;({ rows } = await write<{ id: string }>(
+      sql`/* createIndividualRewardsProgramStatus */ INSERT INTO individual_rewards_program_statuses (individual_id, rewards_program_status_topic_id) VALUES (${individual.id}, ${rewardsProgramStatusId}) RETURNING id`,
+      { query },
     ))
+    await query.commit()
   } catch (err) {
     const pgError = err as { code?: string; constraint?: string }
     if (

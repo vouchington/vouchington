@@ -4,10 +4,7 @@ import { enqueueBulkTopicAliasesUpdate } from '@queues/rss-feed-maintenance/enqu
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { createTopicRevision } from '@services/topic-revisions'
-import {
-  lockTopicAliasPublicationScopes,
-  lockTopicRssFeedAttachmentLifecycle,
-} from '@services/post-publication'
+import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import assert from 'http-assert'
 import type { TopicAlias, TopicAliasOptions } from './alias-types.mts'
@@ -23,7 +20,6 @@ export async function linkTopicAlias(
   let previousTopicId: string | null = null
   const run = async (query: TransactionQuery) => {
     await lockTopicAliasPublicationScopes(query, [aliasId])
-    await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     const { rows: topicRows } = await query<{ id: string; merged_into_topic_id: string | null }>(
       `/* linkTopicAlias lockTopic */
       SELECT id, merged_into_topic_id

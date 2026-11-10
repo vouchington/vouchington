@@ -1,20 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
 
 type CategoryKey = { rss_feed_item_id: string; category_identity_id: string }
-
-/** Preserve the attachment → item → category lock order before the fresh owner check. */
-export async function lockCategoryBackfillPage(
-  query: TransactionQuery,
-  topicId: string,
-  oldTopicIds: string[],
-  candidateItemIds: string[],
-  categoryKeys: CategoryKey[],
-): Promise<void> {
-  await lockTopicRssFeedAttachmentLifecycles(query, [topicId, ...oldTopicIds])
-  await lockCategoryItemsAndRows(query, candidateItemIds, categoryKeys)
-}
 
 export async function lockCategoryItemsAndRows(
   query: TransactionQuery,

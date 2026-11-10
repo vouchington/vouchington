@@ -4,13 +4,10 @@ import { lockBidirectionalRelationPairs } from '../services/entity-relations/bid
 
 /** Hold only authorization/reference contexts, never the relation pair the callback writes. */
 export async function withHeldRelationReadContextForTest<T>(
-  contexts: { postIds?: readonly string[]; topicIds?: readonly string[] },
+  contexts: { postIds?: readonly string[] },
   action: () => Promise<T>,
 ): Promise<T> {
-  const keys = [
-    ...(contexts.postIds ?? []).map(id => `post:${id.toLowerCase()}`),
-    ...(contexts.topicIds ?? []).map(id => `topic-rss-feed-attachment:${id.toLowerCase()}`),
-  ]
+  const keys = (contexts.postIds ?? []).map(id => `post:${id.toLowerCase()}`)
   await using holder = await beginTransaction()
   await holder(
     `/* withHeldRelationReadContextForTest */

@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
@@ -11,7 +11,6 @@ import { clearPrioritizedLinksCache } from './prioritized-links-cache.mts'
 import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
 import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
-import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
 
 export async function createUserReferralLink(
   currentUser: PrivateUser | null,
@@ -65,9 +64,9 @@ export async function createUserReferralLink(
 
   let rows: UserReferralLink[]
   try {
-    ;({ rows } = await withTopicReferenceAttachmentFences([data.referral_program_id], {}, query =>
-      write<UserReferralLink>(
-        sql`/* createUserReferralLink */
+    await using query = await beginTransaction()
+    ;({ rows } = await write<UserReferralLink>(
+      sql`/* createUserReferralLink */
       INSERT INTO user_referral_program_links (
         user_id,
         referral_program_topic_id,
@@ -93,9 +92,9 @@ export async function createUserReferralLink(
         activated_at = CURRENT_TIMESTAMP,
         deactivated_at = NULL
       RETURNING `.append(userReferralLinkColumns()),
-        { query },
-      ),
+      { query },
     ))
+    await query.commit()
   } catch (err) {
     const pgError = err as { code?: string; constraint?: string }
     if (

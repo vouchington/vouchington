@@ -8,7 +8,6 @@ import { getCrawlerById } from './get.mts'
 import assert from 'http-assert'
 import type { CreateCrawlerUpdates, Crawler } from './types.mts'
 import sql from 'sql-template-strings'
-import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 export const createCrawler = async (
   creator: PrivateUser | null,
@@ -33,12 +32,8 @@ async function createCrawlerInTransaction(
   )
 
   const hostnameId = resolveHostnameId(creator, updates)
-  const { rows } = await withTopicReferenceAttachmentFences(
-    updates.referral_program_id ? [updates.referral_program_id] : [],
-    options,
-    query =>
-      write<{ id: string }>(
-        sql`/* createCrawler */
+  const { rows } = await write<{ id: string }>(
+    sql`/* createCrawler */
     INSERT INTO hostname_crawler_configurations (
       hostname_id,
       description,
@@ -65,8 +60,7 @@ async function createCrawlerInTransaction(
     )
     RETURNING id
   `,
-        { query },
-      ),
+    options,
   )
 
   const crawler = (await getCrawlerById(rows[0].id, options))!

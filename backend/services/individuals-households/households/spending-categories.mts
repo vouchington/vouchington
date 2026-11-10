@@ -8,12 +8,11 @@ import {
   getHouseholdSpendingCategoryById,
   getSpendingEntryOwnership,
 } from './spending-categories-get.mts'
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { isMoney, type Money } from '@ts-shared/money'
 import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
-import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 type SpendingCategoryData = {
   amount: Money
   spending_frequency?: 'monthly' | 'annually'
@@ -79,19 +78,19 @@ export async function createHouseholdSpendingCategory(
   }
   let rows: { id: string }[]
   try {
-    ;({ rows } = await withTopicReferenceAttachmentFences([spendingCategoryId], {}, query =>
-      write<{ id: string }>(
-        `/* createHouseholdSpendingCategory */
+    await using query = await beginTransaction()
+    ;({ rows } = await write<{ id: string }>(
+      `/* createHouseholdSpendingCategory */
       -- Dynamic optional columns still produce exactly one spending-entry VALUES row.
       /* no-mistakes: deadlock-safe */
       INSERT INTO spending_entries (${fields.join(', ')})
       VALUES (${values.map((_value, index) => `$${index + 1}`).join(', ')})
       RETURNING id
     `,
-        values,
-        { query },
-      ),
+      values,
+      { query },
     ))
+    await query.commit()
   } catch (err) {
     const pgError = err as { code?: string; constraint?: string }
     if (pgError.code === '23503') {

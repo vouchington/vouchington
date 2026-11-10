@@ -1,9 +1,8 @@
-import { write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import { withTransactionOptions, write } from '@data-stores/psql'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
 
 export async function markTopicRecommendationApproved(
   currentUser: PrivateUser,
@@ -11,7 +10,7 @@ export async function markTopicRecommendationApproved(
   topicId: string,
   options: QueryOptions,
 ): Promise<void> {
-  const updateResult = await withTopicReferenceAttachmentFences([topicId], options, query =>
+  const run = (query: TransactionQuery) =>
     write(
       sql`/* markTopicRecommendationApproved */
       UPDATE post_topic_recommendations
@@ -24,7 +23,7 @@ export async function markTopicRecommendationApproved(
         AND reviewed_at IS NULL
     `,
       { query },
-    ),
-  )
+    )
+  const updateResult = await withTransactionOptions(options, run)
   assert(updateResult.rowCount === 1, 422, 'Recommendation is already reviewed')
 }

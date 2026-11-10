@@ -7,7 +7,6 @@ import {
   getUrlHostnameTopicId,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TopicRecommendationPost } from './types.mts'
 import { prepareTopicRecommendation } from './create-topic-recommendation.mts'
@@ -172,12 +171,10 @@ describe('hostname ownership serialization against approval', () => {
     },
   )
 
-  it('deletes a committed landing page while its topic attachment context is held', async () => {
+  it('deletes a committed landing page', async () => {
     await writeEntityRelations(landing, admin, [{ subject: otherTopic, object: { id: urlId } }], {
       vote: false,
     })
-    await using holder = await beginTransaction()
-    await lockTopicRssFeedAttachmentLifecycle(holder, otherTopic.id)
     await softDeleteEntityRelation(admin, landing, otherTopic, [{ id: urlId }])
     const relations = await getEntityRelations('topic', otherTopic.id, 'landing_page', 'url', {
       viewer: { kind: 'anonymous' },

@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-/** Fence retained projection work before its rating lock so a merge can clear source metrics. */
+/** Confirms the topic is still active, then locks its rating refresh. */
 export async function lockActiveTopicForRatingStatsRefresh(
   query: TransactionQuery,
   topicId: string,

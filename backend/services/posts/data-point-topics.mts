@@ -1,6 +1,5 @@
 import { write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 /**
  * Insert rows into post_data_point_topics for a data_point post.
@@ -13,16 +12,14 @@ export async function insertPostDataPointTopics(
   topicIds: string[],
   options: QueryOptions,
 ): Promise<void> {
-  await withTopicReferenceAttachmentFences(topicIds, options, query =>
-    write(
-      sql`/* insertPostDataPointTopics */
+  await write(
+    sql`/* insertPostDataPointTopics */
       INSERT INTO post_data_point_topics (post_id, topic_id, order_index)
       SELECT ${postId}, topic_id, order_index
       FROM UNNEST(
         ${topicIds}::uuid[],
         ${topicIds.map((_, i) => i)}::int[]
       ) AS t(topic_id, order_index)`,
-      { query },
-    ),
+    options,
   )
 }

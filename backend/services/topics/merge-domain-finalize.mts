@@ -11,9 +11,8 @@ export async function finalizeTopicMergeDomain(
   query: TransactionQuery,
   operation: TopicMergeOperationRow,
 ): Promise<boolean> {
-  // A canonical refresh can commit after a bounded metric page. Serialize with it
-  // before any finalizer mutation, then rebuild scratch if its reconciliation moved.
-  await lockTopicMergeRatingStats(query, operation)
+  // A canonical refresh can commit after a bounded metric page. Rebuild scratch
+  // if its reconciliation moved.
   if (operation.metric_rating_revision === null)
     throw new Error('Topic merge rating revision was not captured')
   const { rows } = await query<{ revision: string }>(
@@ -91,29 +90,6 @@ async function writeTopicMergeRatingsAndSource(
     [operation.destination_topic_id, ...statsKeys.map(key => stats[key as keyof typeof stats])],
   )
   await finalizeTopicMergeSource(query, operation)
-}
-
-async function lockTopicMergeRatingStats(
-  query: TransactionQuery,
-  operation: TopicMergeOperationRow,
-): Promise<void> {
-  // Rating refreshers use these same advisory keys after their attachment fences.
-  const firstRatingTopicId =
-    operation.source_topic_id < operation.destination_topic_id
-      ? operation.source_topic_id
-      : operation.destination_topic_id
-  const secondRatingTopicId =
-    operation.source_topic_id < operation.destination_topic_id
-      ? operation.destination_topic_id
-      : operation.source_topic_id
-  await query(
-    `/* lockTopicMergeFirstRatingStats */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-    [`topic-rating:${firstRatingTopicId}`],
-  )
-  await query(
-    `/* lockTopicMergeSecondRatingStats */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-    [`topic-rating:${secondRatingTopicId}`],
-  )
 }
 
 async function finalizeTopicMergeSource(

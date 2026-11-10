@@ -14,8 +14,6 @@ import {
   softDeleteTopic,
   mergeTopicForTest,
   WEB_PROVENANCE,
-  withCapturedTestQueries,
-  countCapturedQueriesByAnnotation,
 } from '@voucha/test-helpers'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
@@ -39,13 +37,7 @@ describe('createInstanceFromHostname', () => {
     const suffix = randomSuffix()
     const hostname = `fedi-create-${suffix}.example.com`
 
-    const { result, queries } = await withCapturedTestQueries(() =>
-      createInstanceFromHostname(user, WEB_PROVENANCE, hostname),
-    )
-
-    expect(countCapturedQueriesByAnnotation(queries, 'lockTopicRssFeedAttachmentLifecycles')).toBe(
-      1,
-    )
+    const result = await createInstanceFromHostname(user, WEB_PROVENANCE, hostname)
 
     expect(result.status).toBe('created')
     expect(result.topic_slug).toBe(`fedi-create-${suffix}-example-com`)

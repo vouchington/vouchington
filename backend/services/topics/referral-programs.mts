@@ -11,7 +11,6 @@ import {
 } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
 import { upsertTopicAttributes } from './upsert-attributes.mts'
-import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 
 type ReferralProgramAttributes = {
   company_topic_id?: string | null
@@ -63,7 +62,6 @@ export async function linkValidationToReferralProgram(
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
   await assertReferralProgramAndLinkValidationExist(referralProgramId, validationId, options)
   await withTransactionOptions(options ?? {}, async query => {
-    await lockTopicRssFeedAttachmentLifecycle(query, referralProgramId)
     await query(sql`/* linkValidationToReferralProgram */
         INSERT INTO referral_program_topic_link_validation_rule_sets (referral_program_topic_id, referral_program_link_validation_rule_set_id)
         VALUES (${referralProgramId}, ${validationId})

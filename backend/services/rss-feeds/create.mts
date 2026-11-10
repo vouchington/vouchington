@@ -12,7 +12,6 @@ import { enqueueEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintena
 import { assertRssFeedUrlExists } from './validate.mts'
 import { createInitialRssFeedStateChanges } from './discoverability.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication'
 
 export type CreateRssFeedInput = {
   provenance: ContentProvenance
@@ -88,16 +87,8 @@ async function createRssFeedInTransaction(
   feedType: 'article' | 'podcast' | 'video' | 'mixed',
   query: TransactionQuery,
 ) {
-  await lockAndAssertRssFeedAttachmentTopic(query, options.topic_id)
+  await assertTopicHasHostname(options.topic_id, { query })
   return insertRssFeedAndInitialState(options, rssFeedUrlId, feedType, query)
-}
-
-async function lockAndAssertRssFeedAttachmentTopic(
-  query: TransactionQuery,
-  topicId: string,
-): Promise<void> {
-  await lockTopicRssFeedAttachmentLifecycle(query, topicId)
-  await assertTopicHasHostname(topicId, { query })
 }
 
 async function insertRssFeedAndInitialState(

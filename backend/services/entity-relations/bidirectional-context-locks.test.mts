@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createTestTopic, createTestUser, getEntityRelation } from '@voucha/test-helpers'
-import { withHeldRelationReadContextForTest } from '@voucha/test-helpers/relation-read-context'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { upsertEntityRelation } from './upsert.mts'
 import { softDeleteEntityRelation, softDeleteEntityRelationsForSubjects } from './delete.mts'
 
 describe('bidirectional relation written-row scope', () => {
-  it('writes and deletes a symmetric topic pair while topic attachment context is held', async () => {
+  it('writes and deletes a symmetric topic pair', async () => {
     const creator = await createTestUser()
     const first = await createTestTopic({ user: creator })
     const second = await createTestTopic({ user: creator })
@@ -15,7 +14,7 @@ describe('bidirectional relation written-row scope', () => {
       predicate: 'related',
       objectType: 'topic',
     })
-    await withHeldRelationReadContextForTest({ topicIds: [first.id, second.id] }, async () => {
+    {
       const created = await upsertEntityRelation(creator, relation, first, [second], {
         vote: false,
       })
@@ -58,6 +57,6 @@ describe('bidirectional relation written-row scope', () => {
           deleted_at: expect.any(Date),
         }),
       ])
-    })
+    }
   })
 })

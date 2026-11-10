@@ -254,44 +254,4 @@ describe('update.generated (state)', () => {
       ),
     ).resolves.toMatchObject({ code: '55P03' })
   })
-  it('takes the destination attachment lifecycle before waiting on the feed row', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const source = await createTestTopic({
-      user: sharedUser,
-      hostname: `attachment-source-${random}.example.com`,
-    })
-    const destination = await createTestTopic({
-      user: sharedUser,
-      hostname: `attachment-destination-${random}.example.com`,
-    })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/attachment-${random}.xml`,
-      topic_id: source.id,
-      title: `Attachment lifecycle ${random}`,
-    })
-    const lockAttachments = publicationLock.lockTopicRssFeedAttachmentLifecycles
-    const attachmentHeld = Promise.withResolvers<void>()
-    const attachmentSpy = vi
-      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycles')
-      .mockImplementation(async (query, topicIds) => {
-        await lockAttachments(query, topicIds)
-        attachmentHeld.resolve()
-      })
-    await expect(
-      whileFeedRowHeld(
-        feed.id,
-        attachmentHeld.promise,
-        () => updateRssFeedById(feed.id, { topic_id: destination.id }),
-        async () => {
-          await using query = await beginTransaction()
-          await query(`/* testUpdate */ SET LOCAL lock_timeout = '50ms'`)
-          await lockAttachments(query, [destination.id])
-          await query.commit()
-        },
-        () => attachmentSpy.mockRestore(),
-      ),
-    ).resolves.toMatchObject({ code: '55P03' })
-  })
 })

@@ -12,10 +12,7 @@ import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { buildRssFeedUpdateFields } from './update-fields.mts'
 import { recordRssFeedDiscoverabilityPublicationChange } from './publication-change.mts'
 import { assertTopicHasHostname } from '@services/topics/hostname-link'
-import {
-  lockPostPublicationScope,
-  lockTopicRssFeedAttachmentLifecycles,
-} from '@services/post-publication/lock'
+import { lockPostPublicationScope } from '@services/post-publication/lock'
 
 import type { UpdateRssFeedChanges, UpdateRssFeedOptions } from './update-types.mts'
 export type { UpdateRssFeedChanges, UpdateRssFeedOptions } from './update-types.mts'
@@ -45,10 +42,6 @@ export const updateRssFeedById = async (
         sql`/* updateRssFeedById:priorTopic */ SELECT topic_id FROM rss_feeds WHERE id = ${id}`,
       )
       priorTopicId = prior.rows[0]?.topic_id ?? null
-      await lockTopicRssFeedAttachmentLifecycles(
-        query,
-        [priorTopicId, changes.topic_id].filter((topicId): topicId is string => topicId !== null),
-      )
       await assertTopicHasHostname(changes.topic_id, { query })
     }
     await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId: id })
