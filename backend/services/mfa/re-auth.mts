@@ -4,6 +4,10 @@ import { hashToken } from '@modules/token-secrets'
 import { createCodedError } from '@vouchington/sentry'
 import { MFA_REAUTH_REQUIRED } from '@modules/on-error/error-codes'
 import { isUUID } from '@ts-shared/utils/validation-core'
+import {
+  assertActiveDeviceAuthority,
+  readSessionDeviceAuthority,
+} from '@services/jwt-session/device-authority'
 import type { AccountChangeSession } from './active-account-session.mts'
 
 export const REAUTH_TTL_SECONDS = 300
@@ -54,9 +58,10 @@ export async function assertFreshReAuth(
   query: TransactionQuery,
 ): Promise<void> {
   assertAccountChangeProofFormat(token)
-  if (!(await verifyAndDeleteReAuthToken(currentUserId, session, token, query))) {
-    throw freshAuthenticationRequired()
-  }
+  if (await verifyAndDeleteReAuthToken(currentUserId, session, token, query)) return
+  const authority = await readSessionDeviceAuthority(session.sid, query)
+  assertActiveDeviceAuthority(authority, { uid: currentUserId, did: session.did })
+  throw freshAuthenticationRequired()
 }
 
 /** Reject an absent proof before expensive provider verification; consumption stays transactional. */

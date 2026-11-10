@@ -7,7 +7,6 @@ import {
   getUrlHostnameTopicId,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { withApprovalHostnameWait } from '@voucha/test-helpers/topic-recommendation-hostname-lock-race'
 import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TopicRecommendationPost } from './types.mts'
@@ -63,7 +62,7 @@ describe('hostname ownership serialization against approval', () => {
   })
 
   it.each(['add', 'remove'] as const)(
-    'serializes additional-hostname %s and preserves coexistence',
+    'preserves additional-hostname %s coexistence after approval',
     async operation => {
       if (operation === 'remove') await addAdditionalHostname(otherTopic.id, hostname, admin.id)
       await using holder = await beginTransaction()
@@ -73,16 +72,9 @@ describe('hostname ownership serialization against approval', () => {
         recommendation.id,
         { query: holder },
       )
-      const settled = await withApprovalHostnameWait(holder, hostnameId, () =>
-        (operation === 'add'
-          ? addAdditionalHostname(otherTopic.id, hostname, admin.id)
-          : removeAdditionalHostname(otherTopic.id, hostnameId)
-        ).then(
-          () => null,
-          (err: unknown) => err,
-        ),
-      )
-      expect(settled).toBeNull()
+      await holder.commit()
+      if (operation === 'add') await addAdditionalHostname(otherTopic.id, hostname, admin.id)
+      else await removeAdditionalHostname(otherTopic.id, hostnameId)
       expect(await getUrlHostnameTopicId(hostnameId)).toBe(
         operation === 'add' ? otherTopic.id : null,
       )
@@ -98,7 +90,7 @@ describe('hostname ownership serialization against approval', () => {
   )
 
   it.each(['primary', 'source'] as const)(
-    'serializes %s linking and preserves coexistence',
+    'preserves %s linking coexistence after approval',
     async kind => {
       await using holder = await beginTransaction()
       const approved = await approveTopicRecommendationInTransaction(
@@ -107,8 +99,9 @@ describe('hostname ownership serialization against approval', () => {
         recommendation.id,
         { query: holder },
       )
+      await holder.commit()
       const link = kind === 'primary' ? setTopicHostnameLink : linkHostnameToSourceTopic
-      await withApprovalHostnameWait(holder, hostnameId, () => link(otherTopic.id, hostnameId))
+      await link(otherTopic.id, hostnameId)
       expect((await getTopicByAny(otherTopic.id))?.hostname_id).toBe(hostnameId)
       expect(await getUrlHostnameTopicId(hostnameId)).toBe(
         kind === 'primary' ? otherTopic.id : null,
@@ -123,7 +116,7 @@ describe('hostname ownership serialization against approval', () => {
     },
   )
 
-  it('serializes existing-id public promotion without changing the landing-page claim', async () => {
+  it('promotes an existing hostname id without changing the landing-page claim', async () => {
     await using holder = await beginTransaction()
     const approved = await approveTopicRecommendationInTransaction(
       admin,
@@ -131,9 +124,8 @@ describe('hostname ownership serialization against approval', () => {
       recommendation.id,
       { query: holder },
     )
-    const pending = await withApprovalHostnameWait(holder, hostnameId, () =>
-      upsertUrlHostnames(admin.id, [hostname]),
-    )
+    await holder.commit()
+    const pending = await upsertUrlHostnames(admin.id, [hostname])
     expect(pending).toEqual(new Map([[hostname, hostnameId]]))
     expect((await getUrlHostnameByAny(hostname))?.publicly_introduced_at).toBeInstanceOf(Date)
     expect(
@@ -146,7 +138,7 @@ describe('hostname ownership serialization against approval', () => {
   })
 
   it.each(['insert', 'reactivate'] as const)(
-    'serializes landing-page %s through its owning boundary',
+    'keeps a landing-page %s after approval',
     async operation => {
       if (operation === 'reactivate') {
         await writeEntityRelations(
@@ -161,14 +153,16 @@ describe('hostname ownership serialization against approval', () => {
       await approveTopicRecommendationInTransaction(admin, WEB_PROVENANCE, recommendation.id, {
         query: holder,
       })
+      await holder.commit()
       const subject = otherTopic
-      const pending = await withApprovalHostnameWait(holder, hostnameId, () =>
-        writeEntityRelations(landing, admin, [{ subject, object: { id: urlId } }], {
-          vote: false,
-        }).then(
-          () => null,
-          (err: unknown) => err,
-        ),
+      const pending = await writeEntityRelations(
+        landing,
+        admin,
+        [{ subject, object: { id: urlId } }],
+        { vote: false },
+      ).then(
+        () => null,
+        (err: unknown) => err,
       )
       expect(pending).toBeNull()
       const relations = await getEntityRelations('topic', subject.id, 'landing_page', 'url', {

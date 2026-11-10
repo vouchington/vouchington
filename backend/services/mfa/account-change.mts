@@ -1,10 +1,6 @@
 import { revokeOtherAuthenticatedSessions } from '@services/jwt-session/user-session-revocation'
 import { sessionLimitsMaxValues } from '@services/jwt-session/session-limits-config'
 import {
-  assertActiveDeviceAuthority,
-  readSessionDeviceAuthority,
-} from '@services/jwt-session/device-authority'
-import {
   read,
   registerPostCommitAction,
   type QueryOptions,
@@ -24,8 +20,6 @@ export async function withReauthenticatedAccountChange<T>(
 ): Promise<T> {
   return withActiveAccountSession(currentUserId, session, async query => {
     await lockSessionsAccountChangeWillWrite(query, currentUserId, session.sid)
-    const authority = await readSessionDeviceAuthority(session.sid, query)
-    assertActiveDeviceAuthority(authority, { uid: currentUserId, did: session.did })
     const oldEmail = await authorizeAccountChange(currentUserId, session, reAuthToken, query)
     const result = await applyAccountChange(currentUserId, session.sid, change, query)
     registerPostCommitAction(query, () => notifyAccountSecurityChange(oldEmail))
@@ -50,7 +44,10 @@ export async function notifyAccountSecurityChange(oldEmail: string | undefined):
   if (oldEmail) await enqueueSendAccountSecurityEmail({ emailAddress: oldEmail }, {})
 }
 
-/** Locks the actor session and the sessions revocation will update, in `id` order. */
+/**
+ * Locks the actor session the proof update writes and the sessions the revocation update writes,
+ * in `id` order. The inner limit is the same active-session candidate set revocation uses.
+ */
 async function lockSessionsAccountChangeWillWrite(
   query: TransactionQuery,
   currentUserId: string,
@@ -72,7 +69,6 @@ async function lockSessionsAccountChangeWillWrite(
            WHERE user_id = $1
              AND revoked_at IS NULL
              AND expires_at > CURRENT_TIMESTAMP
-             AND id <> $2
            ORDER BY expires_at, id
            LIMIT $3
          )

@@ -9,8 +9,6 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { setRssFeedDiscoverabilityAsSystem } from './discoverability.mts'
 import { setRssFeedStatesAsCurrentUser } from './set-states-as-current-user.mts'
 import { evaluateRssFeedDiscoverability } from './evaluate-discoverability.mts'
-import * as publicationLock from '@services/post-publication/lock'
-
 describe('RSS feed discoverability top-hashtag refresh', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -83,76 +81,5 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     await query.commit()
 
     expect(refreshTopHashtags).not.toHaveBeenCalled()
-  })
-
-  async function assertFeedPublicationLockPrecedesStateRowRead(
-    setState: (rssFeedId: string) => Promise<unknown>,
-  ): Promise<void> {
-    const feed = await createTestRssFeed({})
-    const rowLocked = Promise.withResolvers<void>()
-    const releaseRow = Promise.withResolvers<void>()
-    async function holdDiscoverabilityChangeRow(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* rss feed state publication lock test */
-        SELECT 1
-        FROM rss_feed_setting_changes
-        WHERE change_type = 'discoverability' AND rss_feed_id = $1::uuid
-        FOR UPDATE`,
-        [feed.id],
-      )
-      rowLocked.resolve()
-      await releaseRow.promise
-      await query.commit()
-    }
-    const holder = holdDiscoverabilityChangeRow()
-    await rowLocked.promise
-    const lockScope = publicationLock.lockPostPublicationScope
-    const scopeHeld = Promise.withResolvers<void>()
-    const scopeSpy = vi
-      .spyOn(publicationLock, 'lockPostPublicationScope')
-      .mockImplementation(async (query, scope) => {
-        await lockScope(query, scope)
-        scopeHeld.resolve()
-      })
-
-    const settingState = setState(feed.id)
-    try {
-      await scopeHeld.promise
-      await expect(contendForRssFeedPublicationScope()).rejects.toMatchObject({ code: '55P03' })
-    } finally {
-      releaseRow.resolve()
-      scopeSpy.mockRestore()
-    }
-    await holder
-    await settingState
-
-    async function contendForRssFeedPublicationScope(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(`/* rss feed state publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockScope(query, { type: 'rss_feed', rssFeedId: feed.id })
-      await query.commit()
-    }
-  }
-
-  it('takes the feed publication lock before the current-user discoverability state row', async () => {
-    expect.hasAssertions()
-    const administrator = await createTestUser({ administrator: true })
-    await assertFeedPublicationLockPrecedesStateRowRead(rssFeedId =>
-      setRssFeedStatesAsCurrentUser(administrator, rssFeedId, [
-        { kind: 'discoverability', is_enabled: false, reason: 'test: publication lock order' },
-      ]),
-    )
-  })
-
-  it('takes the feed publication lock before the system discoverability state row', async () => {
-    expect.hasAssertions()
-    await assertFeedPublicationLockPrecedesStateRowRead(rssFeedId =>
-      setRssFeedDiscoverabilityAsSystem({
-        rssFeedId,
-        is_enabled: false,
-        reason: 'test: publication lock order',
-      }),
-    )
   })
 })

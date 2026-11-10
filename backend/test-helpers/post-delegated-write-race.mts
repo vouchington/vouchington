@@ -43,22 +43,15 @@ export function withConcurrentActorSuspensionForTest<T>(
   )
 }
 
-/** Commit deletion only after a delegated create waits on the active-user mutation fence. */
+/** Writers no longer take the active-user advisory, so the deletion commits before the write. */
 export function withConcurrentActorDeletionForTest<T>(
   userId: string,
   operation: () => Promise<T>,
 ): Promise<T> {
-  return withConcurrentDelegatedWriteChangeForTest(
-    operation,
-    'lockActiveUserSubjectsForMutation',
-    { kind: 'advisory', key: userId.toLowerCase() },
-    async query => {
-      await query(sql`/* withConcurrentActorDeletionForTest.fence */
-        SELECT pg_advisory_xact_lock(hashtextextended(${userId.toLowerCase()}, 0))`)
-      await query(sql`/* withConcurrentActorDeletionForTest */
+  return commitDelegatedWriteChangeThenRun(async query => {
+    await query(sql`/* withConcurrentActorDeletionForTest */
         UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${userId}`)
-    },
-  )
+  }, operation)
 }
 /** Revoke membership only after the write waits on its active membership row. */
 export function withConcurrentCommunityMembershipRemovalForTest<T>(

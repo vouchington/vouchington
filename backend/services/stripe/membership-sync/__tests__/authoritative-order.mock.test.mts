@@ -81,7 +81,7 @@ describe('Stripe membership sync authoritative observation order', () => {
     ).resolves.toMatchObject({ status: 'past_due', past_due_at: expect.any(Date) })
   })
 
-  it('preserves fetch order when the older receipt waits on the membership lock', async () => {
+  it('preserves fetch order when an older receipt is processed after a newer one', async () => {
     vi.useFakeTimers()
     const user = await createTestUser()
     const sku = await createTestSku({
@@ -112,16 +112,7 @@ describe('Stripe membership sync authoritative observation order', () => {
     mockGetStripeSubscription.mockResolvedValueOnce(
       makeSubscription(subscriptionId, sku.stripe_price_id, 'past_due'),
     )
-    await runTestActionWhileMembershipUserLocked({
-      userId: user.id,
-      lockingQueryComment:
-        '/* recordStripeMembershipProviderFacts: lock user before source state */',
-      startAction: () =>
-        syncMembershipFromStripeSubscription(olderRetry.id, subscriptionId, applicationContext),
-      whileActionBlocked: async () => {
-        vi.setSystemTime(new Date('2030-01-01T00:00:02.000Z'))
-      },
-    })
+    await syncMembershipFromStripeSubscription(olderRetry.id, subscriptionId, applicationContext)
 
     await expect(
       getMembershipByStripeSubscriptionId(

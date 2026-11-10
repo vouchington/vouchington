@@ -44,7 +44,10 @@ describe('delegated recommendation author lifecycle', () => {
         expect(JSON.parse(result)).toMatchObject({
           error: {
             status: change === 'suspension' ? 403 : 401,
-            message: change === 'suspension' ? 'Your account has been suspended' : 'User not found',
+            message:
+              change === 'suspension'
+                ? 'Your account has been suspended'
+                : 'Tool current user not found',
             retryable: false,
           },
         })

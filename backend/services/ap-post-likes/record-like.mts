@@ -52,7 +52,7 @@ async function recordLikeInTransaction(
   const { rows } = await query<{ id: string }>(sql`/* reserveActivityPubLikeIdentity */
     INSERT INTO activitypub_post_like_activities (activity_id, post_id, remote_actor_identity_id)
     VALUES (${likeApId}, ${postId}, ${remoteActorId})
-    ON CONFLICT (remote_actor_identity_id, activity_id) DO NOTHING
+    ON CONFLICT (activity_id) WHERE confirmed_at IS NOT NULL DO NOTHING
     RETURNING id
   `)
   const activityId = rows[0]?.id

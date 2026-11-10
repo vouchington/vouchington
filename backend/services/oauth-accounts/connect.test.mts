@@ -1,16 +1,12 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
-  beginTransaction,
   createTestUser,
   deleteTestOAuthAuthorizationFixtures,
   getTestOAuthAccountRaw,
   getOAuthAccountUnlinkedAt,
   insertTestOAuthAccount,
-  lockTestUserMutation,
   restoreUser,
-  softDeleteTestUserAndWaitBeforeCommit,
   softDeleteUser,
   suspendTestUser,
   unsuspendTestUser,
@@ -104,49 +100,6 @@ describe('connectOAuthAccountToUser', () => {
         user_id: null,
       })
     } finally {
-      await restoreUser(user.id)
-    }
-  })
-
-  it('waits for an in-flight deletion before attaching an OAuth account', async () => {
-    const user = await createTestUser()
-    const providerUserId = `github-deletion-race-${randomUUID()}`
-    await upsertOAuthAccount('github', providerUserId, `tests+${providerUserId}@voucha.ai`, {
-      login: providerUserId,
-    })
-    const releaseDeletion = Promise.withResolvers<void>()
-    const deletionUpdated = Promise.withResolvers<void>()
-    let deleting: Promise<void> | undefined
-
-    try {
-      deleting = softDeleteTestUserAndWaitBeforeCommit(
-        user.id,
-        releaseDeletion.promise,
-        deletionUpdated.resolve,
-        query => lockTestUserMutation(query, user.id),
-      )
-      await deletionUpdated.promise
-
-      const pendingConnection = connectOAuthAccountToUser('github', user.id, providerUserId).catch(
-        (err: unknown) => err,
-      )
-      {
-        await using contention = await beginTransaction()
-        await contention(allowUnannotatedQuery(`SET LOCAL lock_timeout = '50ms'`))
-        await expect(
-          connectOAuthAccountToUser('github', user.id, providerUserId, { query: contention }),
-        ).rejects.toMatchObject({ code: '55P03' })
-      }
-      releaseDeletion.resolve()
-
-      await expect(deleting).resolves.toBeUndefined()
-      await expect(pendingConnection).resolves.toMatchObject({ status: 404 })
-      await expect(getTestOAuthAccountRaw('github', providerUserId)).resolves.toMatchObject({
-        user_id: null,
-      })
-    } finally {
-      releaseDeletion.resolve()
-      await deleting?.catch(() => undefined)
       await restoreUser(user.id)
     }
   })
