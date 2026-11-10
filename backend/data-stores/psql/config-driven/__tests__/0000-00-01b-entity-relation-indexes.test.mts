@@ -90,6 +90,20 @@ describe('0000-00-01b-entity-relation-indexes', () => {
     )
   })
 
+  it('keeps RSS follow time-window counts from skip-scanning one feed', () => {
+    const sql = idempotent()
+
+    // object_id stays in the index for the trending aggregate's index-only scan, but not as a
+    // key. A (created_at, object_id) key lets PostgreSQL 18 skip-scan object equality and then
+    // read every follower before LIMIT.
+    expect(sql).toContain(
+      'CREATE INDEX IF NOT EXISTS idx_relation__user__follow__rss_feed__created_at\nON relation__user__follow__rss_feed (created_at) INCLUDE (object_id)\nWHERE deleted_at IS NULL;',
+    )
+    expect(sql).not.toContain(
+      'ON relation__user__follow__rss_feed (created_at, object_id)\nWHERE deleted_at IS NULL;',
+    )
+  })
+
   it('generates active reverse indexes for bounded URL relation cleanup pages', () => {
     const sql = idempotent()
 
