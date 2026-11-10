@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import sql from 'sql-template-strings'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { read } from '@data-stores/psql'
 import { buildPostSearchTimeRangeFilter } from '@services/posts/search/hacker-news-hot-options'
 import { buildStablePostHotRankExpression } from '@services/posts/search/stable-hot-rank'
@@ -34,8 +35,10 @@ export async function hackerNewsScalePages(
   assert.equal(rows.length, 1001)
   const common = { has_hacker_news_references: true, time_range: timeRange, limit: 26 }
   const options: PostSearchOptions = { ...common, sort }
-  const lower = buildPostSearchTimeRangeFilter(options, 'posts.id', fixture.decisionInstant)
+  // Hot binds a timestamp so the plan cannot use an id index. Expected pages use that same instant.
+  const bound = buildPostSearchTimeRangeFilter(options, 'posts.id', fixture.decisionInstant)
     ?.values[0]
+  const lower = bound instanceof Date ? timestampToUuidv7LowerBound(bound.getTime()) : bound
   assert(lower === undefined || typeof lower === 'string')
   const matches = new Set(fixture.matchingPostIds)
   const expected =
