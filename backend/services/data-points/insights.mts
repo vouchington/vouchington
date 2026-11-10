@@ -1,8 +1,14 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import type { CurrencyCode, Money } from '@ts-shared/money'
 import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
+import {
+  getTopicDataPointInsightsRowCap,
+  getTopicDataPointInsightsWindowYears,
+  topicDataPointInsightsConfig,
+} from './insights-config.mts'
 
 export type CreditScoreDistribution = Record<string, number>
 
@@ -16,22 +22,44 @@ export type TopicDataPointInsights = {
   credit_score_distribution: CreditScoreDistribution
 }
 
-function buildTopicDataPointInsightsQuery(topicIds: string[], options?: { vertical?: string }) {
+function insightsWindowStart(windowYears: number): Date {
+  const start = new Date()
+  start.setUTCFullYear(start.getUTCFullYear() - windowYears)
+  return start
+}
+
+function buildTopicDataPointInsightsQuery(
+  topicIds: string[],
+  bounds: { minId: string; rowCap: number },
+  options?: { vertical?: string },
+) {
   // Keep the requested UUID spelling in result keys; compare only UUID-typed ids in SQL.
+  // The year window bounds post_data_point_topics.post_id so the (topic_id, post_id)
+  // scan can stop. posts.id equals that post_id, so it does not need the same predicate.
   const query = sql`/* getTopicDataPointInsights */
-    WITH base AS (
+    WITH sample AS (
       SELECT
-        pdpt.topic_id,
-        posts.structured_data->>'result' AS result,
-        posts.structured_data->>'credit_score_range' AS credit_score_range,
-        (posts.structured_data #>> '{credit_limit,amount}')::bigint AS credit_limit_minor_units,
-        posts.structured_data #>> '{credit_limit,currency}' AS credit_limit_currency
-      -- no-mistakes-disable-next-line postgres-bounded-statements: the live data-point aggregate over every public data_point post of the requested topics is deferred by the user's decision of 2026-11-07, recorded at #4795 (comment 6711829151); the planned fix is a cached result, and anonymous responses are already CDN-cached.
-      FROM posts
-      JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
-      JOIN post_data_point_topics pdpt ON pdpt.post_id = posts.id AND pdpt.topic_id = ANY(${topicIds}::uuid[])
-      WHERE posts.post_type = 'data_point'
-        AND `
+        requested.topic_id,
+        point.post_id,
+        point.result,
+        point.credit_score_range,
+        point.credit_limit_minor_units,
+        point.credit_limit_currency
+      FROM UNNEST(${topicIds}::text[]) AS requested(topic_id)
+      LEFT JOIN LATERAL (
+        SELECT
+          pdpt.post_id,
+          posts.structured_data->>'result' AS result,
+          posts.structured_data->>'credit_score_range' AS credit_score_range,
+          (posts.structured_data #>> '{credit_limit,amount}')::bigint AS credit_limit_minor_units,
+          posts.structured_data #>> '{credit_limit,currency}' AS credit_limit_currency
+        FROM post_data_point_topics pdpt
+        JOIN posts ON posts.id = pdpt.post_id
+        JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
+        WHERE pdpt.topic_id = requested.topic_id::uuid
+          AND pdpt.post_id >= ${bounds.minId}
+          AND posts.post_type = 'data_point'
+          AND `
   query.append(buildPublicPostEligibilityFilter('posts', 'root_post'))
 
   if (options?.vertical) {
@@ -39,10 +67,17 @@ function buildTopicDataPointInsightsQuery(topicIds: string[], options?: { vertic
   }
 
   query.append(sql`
+        ORDER BY pdpt.post_id DESC
+        LIMIT `)
+  // A bound LIMIT is invisible to a generic plan. The cap is already a
+  // validated DynamicConfig integer, so it is written as a SQL literal.
+  query.append(String(bounds.rowCap))
+  query.append(sql`
+      ) point ON TRUE
     ),
     dist AS (
       SELECT topic_id, credit_score_range, COUNT(*)::int AS cnt
-      FROM base
+      FROM sample
       WHERE credit_score_range IS NOT NULL
       GROUP BY topic_id, credit_score_range
     ),
@@ -53,16 +88,16 @@ function buildTopicDataPointInsightsQuery(topicIds: string[], options?: { vertic
         PERCENTILE_DISC(0.5) WITHIN GROUP (
           ORDER BY credit_limit_minor_units
         )::text AS amount
-      FROM base
+      FROM sample
       WHERE credit_limit_minor_units IS NOT NULL
         AND credit_limit_currency IS NOT NULL
       GROUP BY topic_id, credit_limit_currency
     )
-    SELECT requested.topic_id,
-      COUNT(base.topic_id)::int AS total_count,
-      COUNT(*) FILTER (WHERE result = 'approved')::int AS approved_count,
-      COUNT(*) FILTER (WHERE result = 'denied')::int AS denied_count,
-      COUNT(*) FILTER (WHERE result = 'pending')::int AS pending_count,
+    SELECT sample.topic_id,
+      COUNT(sample.post_id)::int AS total_count,
+      COUNT(*) FILTER (WHERE sample.result = 'approved')::int AS approved_count,
+      COUNT(*) FILTER (WHERE sample.result = 'denied')::int AS denied_count,
+      COUNT(*) FILTER (WHERE sample.result = 'pending')::int AS pending_count,
       (
         SELECT COALESCE(
           JSONB_AGG(
@@ -71,13 +106,14 @@ function buildTopicDataPointInsightsQuery(topicIds: string[], options?: { vertic
           ),
           '[]'
         )
-        FROM medians WHERE medians.topic_id = requested.topic_id::uuid
+        FROM medians WHERE medians.topic_id = sample.topic_id
       ) AS median_credit_limits,
-      (SELECT COALESCE(JSONB_OBJECT_AGG(credit_score_range, cnt), '{}') FROM dist WHERE dist.topic_id = requested.topic_id::uuid)
-        AS credit_score_distribution
-    FROM UNNEST(${topicIds}::text[]) AS requested(topic_id)
-    LEFT JOIN base ON base.topic_id = requested.topic_id::uuid
-    GROUP BY requested.topic_id
+      (
+        SELECT COALESCE(JSONB_OBJECT_AGG(credit_score_range, cnt), '{}')
+        FROM dist WHERE dist.topic_id = sample.topic_id
+      ) AS credit_score_distribution
+    FROM sample
+    GROUP BY sample.topic_id
   `)
   return query
 }
@@ -95,7 +131,15 @@ export async function getTopicDataPointInsightsBatch(
 ): Promise<Map<string, TopicDataPointInsights>> {
   const uniqueIds = [...new Set(topicIds)]
   if (uniqueIds.length === 0) return new Map()
-  const query = buildTopicDataPointInsightsQuery(uniqueIds, options)
+  await topicDataPointInsightsConfig.waitForInitialization()
+  const query = buildTopicDataPointInsightsQuery(
+    uniqueIds,
+    {
+      minId: getMinUUIDv7ForDate(insightsWindowStart(getTopicDataPointInsightsWindowYears())),
+      rowCap: getTopicDataPointInsightsRowCap(),
+    },
+    options,
+  )
   const { rows } = await read(query.text, query.values)
   return new Map(rows.map(row => [row.topic_id as string, mapTopicDataPointInsights(row)]))
 }

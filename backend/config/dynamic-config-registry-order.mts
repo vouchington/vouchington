@@ -19,6 +19,7 @@ export const REGISTRY_ORDER = [
   'post-related-url-display-config',
   'story-related-items-config',
   'web-search-config',
+  'topic-data-point-insights-config',
   'rate-limit-thresholds',
   'route-rate-limit-config',
   'contribution-rate-limits',

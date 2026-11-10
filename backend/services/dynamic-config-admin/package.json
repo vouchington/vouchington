@@ -58,6 +58,7 @@
     "@services/crawler-referral-links": "workspace:^",
     "@services/crawlers": "workspace:^",
     "@services/crawls": "workspace:^",
+    "@services/data-points": "workspace:^",
     "@services/data-retention": "workspace:^",
     "@services/dynamic-config-audit": "workspace:^",
     "@services/elections-votes": "workspace:^",

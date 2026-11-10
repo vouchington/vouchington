@@ -3130,7 +3130,7 @@
           "tool": {
             "name": "read_topic",
             "title": "Read Topic",
-            "description": "compare: Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"\ndetails: Get a topic's full description, aliases and type-specific details such as a card's annual fee, issuer and brand, a rewards program's parent company, or a referral program's company and enabled or disabled time. Set hierarchy for parents or children; children are paged. Use children_page_info.end_cursor as children_after for the next page.\nmetrics: Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.",
+            "description": "compare: Compare the latest public data points inside the configured year window, capped per topic, for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"\ndetails: Get a topic's full description, aliases and type-specific details such as a card's annual fee, issuer and brand, a rewards program's parent company, or a referral program's company and enabled or disabled time. Set hierarchy for parents or children; children are paged. Use children_page_info.end_cursor as children_after for the next page.\nmetrics: Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -7157,7 +7157,7 @@
           "tool": {
             "name": "read_data_points",
             "title": "Read Data Points",
-            "description": "topic_insights: Get aggregate data point statistics for a topic (card, bank account, etc.). Returns approval rate, median credit limit, and credit score distribution.\nsearch: Search data point posts by topic or JSONB fields across ages. The cursor is opaque; pass page_info.end_cursor while has_next_page is true and stop when it is false.",
+            "description": "topic_insights: Get aggregate statistics for a topic from its latest public data points inside the configured year window, capped per topic. Returns approval rate, median credit limit, and credit score distribution.\nsearch: Search data point posts by topic or JSONB fields across ages. The cursor is opaque; pass page_info.end_cursor while has_next_page is true and stop when it is false.",
             "inputSchema": {
               "type": "object",
               "oneOf": [

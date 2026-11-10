@@ -1,8 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { captureScopedTestQueries } from '@voucha/test-helpers/query-capture'
 import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { getTopicDataPointInsights, getTopicDataPointInsightsBatch } from './insights.mts'
+import { topicDataPointInsightsConfig } from './insights-config.mts'
 import type { PrivateUser } from '@services/users/types'
 import { MAX_MONEY_AMOUNT } from '@ts-shared/money'
 
@@ -214,6 +217,47 @@ describe('getTopicDataPointInsights', () => {
     expect(insights.credit_score_distribution['670-739']).toBeGreaterThanOrEqual(2)
     // '580-669' appears twice (denied 1 and 2)
     expect(insights.credit_score_distribution['580-669']).toBeGreaterThanOrEqual(2)
+  })
+
+  it('aggregates only the newest public points up to the configured row cap', async () => {
+    const cappedTopicId = await insertTestTopic({
+      name: `Capped Insights Topic ${suffix}`,
+      slug: `capped-insights-topic-${suffix}`,
+      createdById: user.id,
+      topicType: 'card',
+    })
+    await Promise.all(
+      [1, 2, 3].map(index =>
+        insertTestDataPoint({
+          title: `Capped Insights ${index} ${suffix}`,
+          slug: `capped-insights-${index}-${suffix}`,
+          createdById: user.id,
+          vertical: 'credit_card',
+          topicId: cappedTopicId,
+          result: 'approved',
+          creditLimit: { amount: index * 100, currency: 'usd' },
+        }),
+      ),
+    )
+    await topicDataPointInsightsConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(topicDataPointInsightsConfig, {
+      row_cap: 2,
+    })
+    try {
+      let insights: Awaited<ReturnType<typeof getTopicDataPointInsights>> | undefined
+      const queries = await captureScopedTestQueries(async () => {
+        insights = await getTopicDataPointInsights(cappedTopicId)
+      })
+      const insightsQuery = queries.find(query =>
+        query.text.includes('/* getTopicDataPointInsights */'),
+      )
+      expect(insightsQuery?.text).toMatch(/ORDER BY pdpt\.post_id DESC\s+LIMIT 2\b/)
+      expect(insightsQuery?.values).not.toContain(2)
+      expect(insights?.total_count).toBe(2)
+      expect(insights?.approved_count).toBe(2)
+    } finally {
+      restore()
+    }
   })
 
   it('filters by vertical when provided', async () => {

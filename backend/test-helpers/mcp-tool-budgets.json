@@ -65,8 +65,8 @@
       },
       "read_topic": {
         "measured": {
-          "list": 7407,
-          "core": 2526
+          "list": 7455,
+          "core": 2574
         },
         "max": {
           "list": 8000,
@@ -155,8 +155,8 @@
       },
       "read_data_points": {
         "measured": {
-          "list": 3820,
-          "core": 1588
+          "list": 3869,
+          "core": 1637
         },
         "max": {
           "list": 4000,
