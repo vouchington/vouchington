@@ -130,6 +130,5 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   relation__user__follow__post: 5_000,
   stories: 10_000,
   topic_classifier_results: 1_000,
-  user_metrics: 20_000,
   ...ANCILLARY_SEEDED_ROWS_BY_RELATION,
 }

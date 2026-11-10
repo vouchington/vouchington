@@ -123,9 +123,9 @@ async function getUserMetricsRowByAny(
   const { rows } = isId
     ? await read(
         `/* getUserMetricsRowByAny */
-        SELECT vum.*
-        FROM view_user_metrics vum
-        WHERE vum.id = $1
+        SELECT id
+        FROM users
+        WHERE id = $1
         LIMIT 1
         `,
         [idOrUsername],
@@ -133,16 +133,10 @@ async function getUserMetricsRowByAny(
       )
     : await read(
         `/* getUserMetricsRowByAny */
-        WITH user_id AS (
-          SELECT id
-          FROM users
-          WHERE LOWER(username) = LOWER($1)
-            AND deleted_at IS NULL
-          LIMIT 1
-        )
-        SELECT vum.*
-        FROM view_user_metrics vum
-        INNER JOIN user_id u ON vum.id = u.id
+        SELECT id
+        FROM users
+        WHERE LOWER(username) = LOWER($1)
+          AND deleted_at IS NULL
         LIMIT 1
         `,
         [idOrUsername],

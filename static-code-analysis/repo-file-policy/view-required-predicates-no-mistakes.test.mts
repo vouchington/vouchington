@@ -94,7 +94,6 @@ describe('view lookup predicate configuration', () => {
       { table: 'view_url_hostnames', requireColumns: ['id'] },
       { table: 'view_urls', requireColumns: ['id'] },
       { table: 'view_user_list_items', requireColumns: ['list_id'] },
-      { table: 'view_user_metrics', requireColumns: ['id'] },
       { table: 'view_users_private', requireColumns: ['id'] },
       { table: 'view_users_public', requireColumns: ['id'] },
     ])

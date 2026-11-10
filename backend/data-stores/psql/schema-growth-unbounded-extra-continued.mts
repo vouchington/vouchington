@@ -58,7 +58,6 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'user_landing_page_items',
   'user_landing_pages',
   'user_legal_preservation_holds',
-  'user_metrics',
   'user_passkeys',
   'user_permissions',
   'user_phone_numbers',

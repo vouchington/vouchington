@@ -3152,9 +3152,6 @@
       - table: view_user_list_items
         requireColumns:
           - list_id
-      - table: view_user_metrics
-        requireColumns:
-          - id
       - table: view_users_private
         requireColumns:
           - id
