@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import sql from 'sql-template-strings'
 import { read } from '@data-stores/psql'
 import { buildPostSearchTimeRangeFilter } from '@services/posts/search/hacker-news-hot-options'
-import { buildHotScoreExpression } from '@services/posts/search/query-builder-utils'
+import { buildStablePostHotRankExpression } from '@services/posts/search/stable-hot-rank'
 import type { PostSearchOptions } from '@services/posts/search/types'
 import type { HackerNewsScaleFixture } from '../seed-data/hacker-news-scale-fixture.mts'
 import type { HackerNewsScaleShape } from '../seed-data/hacker-news-scale-shapes.mts'
@@ -23,7 +23,7 @@ export async function hackerNewsScalePages(
 ): Promise<HackerNewsScalePage[]> {
   const query = sql`/* hackerNewsScaleExpectedRanks */
     SELECT posts.id, posts.votes_score_sort AS vote_score, `
-    .append(buildHotScoreExpression())
+    .append(buildStablePostHotRankExpression())
     .append(
       sql` AS hot_score FROM posts WHERE posts.id = ANY(${[
         ...fixture.matchingPostIds,
