@@ -400,16 +400,6 @@
           file: backend/services/openai-moderation/delete-flagged.mts,
           callee: 'deleteFlaggedImage',
         }
-      # Ordered lock loops advance POST_PUBLICATION_CAPTURE_BATCH_SIZE feed ids per iteration (capture-rss-feeds.mts:23,52), one unnest ORDER BY statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
-      - {
-          file: backend/services/post-publication/capture-rss-feeds.mts,
-          callee: 'lockPostPublicationRssFeedScopes',
-        }
-      # Ordered lock loop advances POST_PUBLICATION_CAPTURE_BATCH_SIZE alias ids per iteration (capture-topic-alias.mts:16), one unnest ORDER BY statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
-      - {
-          file: backend/services/post-publication/capture-topic-alias.mts,
-          callee: 'lockTopicAliasPublicationScopes',
-        }
       # Chunk loops over orderedCategoryChunks (categories-chunks.mts:41,115), one statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - {
           file: backend/services/rss-feed-items/categories-chunks.mts,
@@ -530,53 +520,15 @@
           callee: 'write',
           line: 47,
         }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: the loop advances chunks of alias_resolution_batch_size (getEntityRelationsWorkLimit) alias ids.
-      - {
-          file: backend/services/entity-relations/post-topic-publication.mts,
-          callee: 'query',
-          line: 139,
-        }
       # no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed: Promise.all over claim-token groups of one claim call; each group completes its whole id batch with one UPDATE.
       - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query', line: 90 }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loops advance chunks of capture_batch_size (getPostPublicationWorkLimit), one unnest ORDER BY statement per chunk.
       - { file: backend/services/post-publication/capture-posts.mts, callee: 'query', line: 73 }
-      - { file: backend/services/post-publication/capture-rss-feeds.mts, callee: 'query', line: 83 }
-      - {
-          file: backend/services/post-publication/capture-topic-alias.mts,
-          callee: 'query',
-          line: 42,
-        }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loop advances chunks of story_lifecycle_lock_batch_size (getPostPublicationWorkLimit), one unnest ORDER BY statement per chunk.
       - {
           file: backend/services/post-publication/story-lifecycle-lock.mts,
           callee: 'query',
           line: 17,
-        }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: discovery and lock loops advance chunks of story_category_item_batch_size or story_category_change_batch_size (getRssFeedItemsWorkLimit), each statement takes an ANY($ids) batch.
-      - {
-          file: backend/services/rss-feed-items/story-publication-change.mts,
-          callee: 'query',
-          line: 27,
-        }
-      - {
-          file: backend/services/rss-feed-items/story-publication-change.mts,
-          callee: 'query',
-          line: 39,
-        }
-      - {
-          file: backend/services/rss-feed-items/story-publication-change.mts,
-          callee: 'query',
-          line: 69,
-        }
-      - {
-          file: backend/services/rss-feed-items/story-publication-change.mts,
-          callee: 'query',
-          line: 83,
-        }
-      - {
-          file: backend/services/rss-feed-items/story-publication-change.mts,
-          callee: 'query',
-          line: 123,
         }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: Promise.all over chunkArray chunks of sql_batch_size (getRssFeedItemsWorkLimit) guids, one SELECT per chunk.
       - { file: backend/services/rss-feed-items/upsert-existing.mts, callee: 'read', line: 16 }

@@ -11,6 +11,7 @@ export async function loadGeneratedConfigDrivenSql(
     .toSorted()
   return Promise.all(
     generatorFiles.map(async file => {
+      // no-mistakes-disable-next-line production-exports-only-used-by-tests -- runtime-resolved import boundary: loads every config-driven *.mts generator in the given directory so an unregistered SQL generator fails this check
       const mod = (await import(pathToFileURL(join(configDrivenDir, file)).href)) as {
         default?: unknown
       }
