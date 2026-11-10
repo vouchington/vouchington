@@ -14,7 +14,7 @@ export async function getNetworkEffects(
     read(sql`/* getNetworkEffects */
       WITH referral_summary AS (
         SELECT
-          COUNT(*)::INT AS attributions,
+          COUNT(DISTINCT (session_id, referrer_user_id))::INT AS attributions,
           COUNT(DISTINCT referrer_user_id)::INT AS unique_links
         FROM session_referral_attributions
         WHERE id > ${periodStartUuid} AND referrer_user_id IS NOT NULL

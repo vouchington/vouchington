@@ -40,9 +40,6 @@ export async function createSessionReferralAttribution({
   // would read as "the click happened after the signup it caused" in the click log and
   // the GDPR export.
   await using query = await beginTransaction()
-  await query(sql`/* createSessionReferralAttribution: lock pair */
-    SELECT pg_advisory_xact_lock(hashtextextended(${sessionReferralAttributionPairKey(sessionId, referrerId)}, 0))
-  `)
   const { rows: priorRows } = await query<{ user_id: string | null }>(
     sql`/* createSessionReferralAttribution: read prior candidate owners */
       SELECT user_id FROM session_referral_attributions
@@ -126,8 +123,4 @@ async function getReferrerId(referrer: string): Promise<string | null> {
     return rows[0]?.id ?? null
   }
   return null
-}
-
-function sessionReferralAttributionPairKey(sessionId: string, referrerId: string): string {
-  return `session-referral-attribution:${sessionId}:${referrerId}`
 }
