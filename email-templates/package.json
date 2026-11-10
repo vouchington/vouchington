@@ -32,7 +32,7 @@
     "@react-email/render": "^2.2.0",
     "@react-email/ui": "^6.11.8",
     "@ts-shared/languages": "workspace:^",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19",
     "@vouchington/email": "^0.2.1",
