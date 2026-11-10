@@ -1,7 +1,8 @@
 import { encodeCursor } from '@modules/pagination'
 import { describe, expect, it } from 'vitest'
 
-import { decodePostSearchCursor, postSearchCursorScope } from './get-ids-page-info.mts'
+import { postSearchCursorScope } from './get-ids-cursor.mts'
+import { decodePostSearchCursor } from './get-ids-page-info.mts'
 
 const postId = '00000000-0000-4000-8000-000000000001'
 const asOfMs = 1_700_000_000_000

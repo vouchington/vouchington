@@ -4,8 +4,7 @@ import type { PostSearchRow } from './get-ids-types.mts'
 import { decodePostSearchCursor, postSearchCursorScope } from './get-ids-cursor.mts'
 import { encodePostSearchCursor } from './get-ids-cursor-row.mts'
 
-export type { PostSearchCursorValues } from './get-ids-cursor.mts'
-export { decodePostSearchCursor, postSearchCursorScope }
+export { decodePostSearchCursor }
 
 type CursorScope = { timeRange?: TimeRange; asOfMs?: number }
 

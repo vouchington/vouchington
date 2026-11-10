@@ -6,7 +6,7 @@ import type { TimeRange } from '@voucha/types/feed'
 import type { PostSearchOptions } from './types.mts'
 import { cursorGuard, cursorValues } from './get-ids-cursor-row.mts'
 
-export type PostSearchCursorValues = {
+type PostSearchCursorValues = {
   id_lt?: string
   vote_score_lt?: number
   ranking_lt?: number
