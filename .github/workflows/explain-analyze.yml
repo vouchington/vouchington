@@ -135,12 +135,9 @@ jobs:
         run: source "$GITHUB_WORKSPACE/.github/workflows/explain-analyze-seed-with-resource-samples.sh"
       - name: Dump seeded PostgreSQL database
         timeout-minutes: 3
-        run: |
-          mkdir -p "$RUNNER_TEMP/explain-seeded"
-          docker run --rm --network host -v "$RUNNER_TEMP/explain-seeded:/dump" \
-            ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
-            pg_dump --format=custom --no-owner --no-privileges --file=/dump/explain-seeded.dump \
-            "$DATABASE_URL"
+        env:
+          PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        run: .github/workflows/explain-analyze-restore-seeded.sh dump
       - name: Upload seeded PostgreSQL database
         timeout-minutes: 2
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -281,16 +278,14 @@ jobs:
           PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
         run: .github/workflows/explain-analyze-restore-seeded.sh data
       - name: Settle restored statistics and visibility
-        # A restore carries neither the visibility map nor the planner statistics the seed's
-        # VACUUM (ANALYZE) left, and index-only scan costs depend on both. Rebuild them before
-        # autovacuum can choose the first captured plan.
+        # The dump carries the seed's planner statistics. Index-only scan costs also depend on the
+        # visibility map, which a restore does not carry, so vacuum the tables the seed analyzed.
         timeout-minutes: 3
-        run: |
-          docker run --rm --network host \
-            ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
-            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'VACUUM (ANALYZE)'
+        env:
+          PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        run: .github/workflows/explain-analyze-restore-seeded.sh settle
       - name: Refresh restored materialized views
-        # Runs in dump order, now that the statistics step has analyzed every source table.
+        # Runs in dump order, once every source table carries the seed's statistics.
         timeout-minutes: 2
         env:
           PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
