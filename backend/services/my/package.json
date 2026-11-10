@@ -39,7 +39,6 @@
     "@services/media-delivery-safety": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@services/pagination": "workspace:^",
-    "@services/post-publication": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/users": "workspace:^",
     "@vouchington/sentry": "^0.6.0",
