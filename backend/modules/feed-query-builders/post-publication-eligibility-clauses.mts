@@ -174,10 +174,10 @@ export function buildRootDiscoveryAudienceAccessClause(
 }
 
 export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
-  const visibleItem = sql`SELECT story_item.id FROM rss_feed_items story_item
-        WHERE story_item.story_id = publication_story.id
-          AND story_item.deleted_at IS NULL
-          AND `
+  const visibleItem = sql`SELECT story_item.id
+        -- no-mistakes-disable-next-line postgres-required-predicates: one discoverable item is enough; story_id is known and the item id is not
+        FROM rss_feed_items story_item
+        WHERE story_item.story_id = publication_story.id AND story_item.deleted_at IS NULL AND `
   visibleItem.append(itemHasDiscoverableSourceSql('story_item.id')).append(sql` LIMIT 1`)
   const existsOpen = ` OR EXISTS (
       SELECT 1
