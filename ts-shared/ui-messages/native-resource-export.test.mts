@@ -35,14 +35,19 @@ function initializeFixtureRepository(root: string): void {
 
 describe('native resource export', () => {
   it('requires an explicit consumer root when generating resources', async () => {
-    await expect(
-      writeNativeResourceFiles({
-        outputRoot: '/unused-native-output',
-        check: true,
-        manifest,
-        catalogs,
-      }),
-    ).rejects.toThrow('Native localization consumer root is required')
+    const outputRoot = await mkdtemp(join(tmpdir(), 'voucha-native-localization-'))
+    try {
+      await expect(
+        writeNativeResourceFiles({
+          outputRoot,
+          check: true,
+          manifest,
+          catalogs,
+        }),
+      ).rejects.toThrow('Native localization consumer root is required')
+    } finally {
+      await rm(outputRoot, { recursive: true, force: true })
+    }
   })
 
   it('generates and checks resources from a tiny external consumer fixture', async () => {

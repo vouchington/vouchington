@@ -42,6 +42,7 @@ type ScheduleDefinition = {
 }
 
 async function importSpecifier<T>(specifier: string): Promise<T> {
+  // no-mistakes-disable-next-line production-exports-only-used-by-tests -- runtime-resolved import boundary: loads every glob-matched schedule module so a missing manifest fails this check; a literal import would skip an unregistered file and pull the backend graph into the root script tsconfig
   return (await import(specifier)) as T
 }
 

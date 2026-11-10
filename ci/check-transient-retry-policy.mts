@@ -57,7 +57,10 @@ export async function checkTransientRetryPolicy(root: string): Promise<string[]>
   const modules = await Promise.all(
     sources.flatMap(path =>
       path.endsWith('-rules.mts')
-        ? [import(pathToFileURL(join(root, path)).href) as Promise<Record<string, unknown>>]
+        ? [
+            // no-mistakes-disable-next-line production-exports-only-used-by-tests -- runtime-resolved import boundary: loads every ci/transient-retry/*-rules.mts so an unregistered rule module fails this check; a literal registry would hide the file this check exists to find
+            import(pathToFileURL(join(root, path)).href) as Promise<Record<string, unknown>>,
+          ]
         : [],
     ),
   )
