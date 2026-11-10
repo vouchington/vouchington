@@ -258,6 +258,24 @@ describe('RSS feed import batches', () => {
     })
   })
 
+  it('records one failure when two deliveries process one invalid row', async () => {
+    const created = await submitAndDispatchRssFeedImport(user, WEB_PROVENANCE, ['not-a-feed-url'])
+    const rowId = await getFirstRssFeedImportRowId(created.import.id)
+
+    await Promise.all([
+      processRssFeedImportRow(created.import.id, rowId),
+      processRssFeedImportRow(created.import.id, rowId),
+    ])
+    await processRssFeedImportRow(created.import.id, rowId)
+
+    const status = await getRssFeedImport(user.id, created.import.id)
+    expect(status?.import).toMatchObject({
+      completed_rows: 0,
+      failed_rows: 1,
+      pending_rows: 0,
+    })
+  })
+
   it('does not let stale successes overwrite terminal failures', async () => {
     const rssFeed = await insertTestRssFeedDirect({})
     const created = await submitAndDispatchRssFeedImport(user, WEB_PROVENANCE, [

@@ -21,7 +21,6 @@ import { validateRssFeedUrl } from './validate-rss-feed-url.mts'
 import { RssFeedDiscoveryPendingError } from '@services/rss-feeds/discovery-pending'
 import { getUserActivePlan } from '@services/memberships'
 import { assertWithinRssFeedImportDailyLimit } from '@services/contribution-gating/rss-feed-import-limit'
-import { withRssFeedImportRowLock } from './rss-feed-import-row-lock.mts'
 type CompletedImportRssFeedStatus = Exclude<ImportRssFeedStatus, 'error'>
 
 export {
@@ -92,19 +91,6 @@ export async function processRssFeedImportRow(
     /** The feed's time budget; defaults to `rss_feed_import_budget_ms`. */
     budgetMs?: number
   } & Pick<ImportSingleRssFeedOptions, 'crawlerRssOptions'> = {},
-): Promise<void> {
-  return withRssFeedImportRowLock(rowId, () =>
-    processLockedRssFeedImportRow(importId, rowId, options),
-  )
-}
-
-async function processLockedRssFeedImportRow(
-  importId: string,
-  rowId: string,
-  options: {
-    isFinalAttempt?: boolean
-    budgetMs?: number
-  } & Pick<ImportSingleRssFeedOptions, 'crawlerRssOptions'>,
 ): Promise<void> {
   const { isFinalAttempt = true } = options
   const rowWithBatch = await getRssFeedImportRowWithBatch(rowId)
