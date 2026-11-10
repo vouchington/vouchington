@@ -21,7 +21,8 @@ export type CommunityPostsPage = {
 /**
  * One page of a community's approved posts, as `GET /communities/:idOrSlug/posts` serves it.
  *
- * Without `time_range` the page reads the same default window as post search, for every sort.
+ * Without `time_range` the page keeps the community default age bound, for every sort.
+ * Post search does not apply that bound when its own range is omitted.
  * `q` may carry hashtags, which narrow the page to those topics or aliases. Pinned posts are
  * listed apart from the page: they are left out of every unfiltered page and named in
  * `pinned_post_ids` on its first page only. A filtered or later page names none.
@@ -32,7 +33,7 @@ export async function getCommunityPostsPage(
     currentUser: BasicUser | null
     q?: unknown
     sort?: CommunityPostSort
-    /** Defaults to the window post search uses; pass `all` for the full history. */
+    /** Community default age bound when omitted; pass `all` for the full history. */
     time_range?: TimeRange
     limit?: number
     after?: string

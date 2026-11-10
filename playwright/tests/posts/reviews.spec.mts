@@ -9,7 +9,12 @@ import {
 } from 'vouchington-tooling/playwright'
 import {
   CONTRIBUTING_USER_AGE_MS,
+  createRandomString,
+  createTestTopic,
+  createTestUserDirect,
   createTestUserWithAge,
+  insertTestPost,
+  insertTestPostReview,
 } from '../../../backend/test-helpers/index.mts'
 
 // Seeded multi-topic review: Chase Sapphire Preferred (5★) vs American Express Gold (3★)
@@ -44,6 +49,21 @@ test.describe('Reviews Page', () => {
 
     // URL should update with sort parameter
     await expect(page).toHaveURL(/.*sort=new/)
+  })
+
+  test('sets an explicit month and returns to the default time range', async ({ page }) => {
+    await navigateTo(page, '/reviews?sort=new')
+    await waitForBelowFoldHydration(page)
+
+    await page.getByTestId('post-time-range-trigger').press(' ')
+    await page.getByTestId('post-time-range-option-1m').click()
+    await expect(page).toHaveURL(/[?&]time_range=1m(?:&|$)/)
+
+    await page.getByTestId('post-time-range-trigger').press(' ')
+    await expect(page.getByTestId('post-time-range-option-default')).toContainText('Default')
+    await page.getByTestId('post-time-range-option-default').click()
+    await expect(page).not.toHaveURL(/[?&]time_range=/)
+    await expect(page).toHaveURL(/[?&]sort=new(?:&|$)/)
   })
 
   test('should search for posts', async ({ page }) => {
@@ -86,56 +106,88 @@ test.describe('Reviews Page', () => {
     expect(apiRequests).toHaveLength(0)
   })
 
-  test('scroll-triggered pagination request has clean params', async ({ page }) => {
-    // Force the page taller than the viewport before hydration so InfiniteScroll's
-    // short-page escape hatch cannot auto-load the next page on its own — this test
-    // must exercise the scroll-gated path, not the escape hatch.
-    await forceMainScrollableBeforeHydration(page)
-    await navigateTo(page, '/reviews?sort=new&time_range=all')
+  test.describe('scoped review pagination', () => {
+    let scrollAuthorId: string
 
-    await expect(page.getByTestId('infinite-scroll-sentinel')).toBeVisible()
+    test.beforeAll(async () => {
+      protectPlaywrightHookTimeouts(test.info())
+      const author = await createTestUserDirect()
+      if (!author) throw new Error('Failed to create review scroll author')
+      scrollAuthorId = author.id
+      const nonce = createRandomString(10)
+      const topic = await createTestTopic({ user: author })
+      const anchor = Date.now() - 60_000
+      await Promise.all(
+        Array.from({ length: 30 }, async (_, index) => {
+          const postId = await insertTestPost({
+            createdAt: new Date(anchor - index * 1000),
+            title: `scroll-review-${index}-${nonce}`,
+            slug: `scroll-review-${index}-${nonce}`,
+            markdown: `Review ${index} for scroll pagination ${nonce}`,
+            createdById: author.id,
+            postType: 'review',
+            privacy: 'public',
+            clearanceStatus: 'approved',
+          })
+          await insertTestPostReview(postId, topic.id, 5)
+        }),
+      )
+    })
 
-    // Set up waitForRequest BEFORE scrolling so the promise captures the request
-    // regardless of whether it fires before or after networkidle.
-    // (Using page.on + networkidle is flaky: networkidle can resolve before the
-    // IntersectionObserver triggers the pagination fetch.)
-    const paginationRequestPromise = page.waitForRequest(
-      req => req.url().includes('/api/v1/posts') && req.url().includes('after='),
-    )
-    await scrollToLoadMore(page)
-    const paginationRequest = await paginationRequestPromise
+    test('scroll-triggered pagination request has clean params', async ({ page }) => {
+      // Force the page taller than the viewport before hydration so InfiniteScroll's
+      // short-page escape hatch cannot auto-load the next page on its own — this test
+      // must exercise the scroll-gated path, not the escape hatch.
+      await forceMainScrollableBeforeHydration(page)
+      await navigateTo(page, `/user/${scrollAuthorId}/reviews?time_range=1m`)
 
-    const url = paginationRequest.url()
-    expect(url).not.toMatch(/[?&]\w+=undefined/)
-    expect(url).toContain('after=')
-    expect(url).toContain('sort=new')
-  })
+      await expect(page.getByTestId('infinite-scroll-sentinel')).toBeVisible()
+      await expect(page.getByTestId('post-card-root')).toHaveCount(25)
 
-  test('should keep existing posts visible after scrolling to bottom', async ({ page }) => {
-    await forceMainScrollableBeforeHydration(page)
-    await navigateTo(page, '/reviews?sort=new&time_range=all')
+      // Set up waitForRequest BEFORE scrolling so the promise captures the request
+      // regardless of whether it fires before or after networkidle.
+      // (Using page.on + networkidle is flaky: networkidle can resolve before the
+      // IntersectionObserver triggers the pagination fetch.)
+      const paginationRequestPromise = page.waitForRequest(
+        req => req.url().includes('/api/v1/posts') && req.url().includes('after='),
+      )
+      await scrollToLoadMore(page)
+      const paginationRequest = await paginationRequestPromise
 
-    await expect(page.getByTestId('infinite-scroll-sentinel')).toBeVisible()
+      const url = paginationRequest.url()
+      expect(url).not.toMatch(/[?&]\w+=undefined/)
+      expect(url).toContain('after=')
+      expect(url).toContain('sort=new')
+      expect(url).toContain(`creator=${scrollAuthorId}`)
+    })
 
-    // Capture the initial post count
-    const cards = page.getByTestId('post-card-root')
-    const initialCards = await cards.count()
+    test('should keep existing posts visible after scrolling to bottom', async ({ page }) => {
+      await forceMainScrollableBeforeHydration(page)
+      await navigateTo(page, `/user/${scrollAuthorId}/reviews?time_range=1m`)
 
-    const nextPageResponse = page.waitForResponse(
-      response =>
-        response.url().includes('/api/v1/posts') &&
-        response.status() === 200 &&
-        new URL(response.url()).searchParams.has('after'),
-    )
+      await expect(page.getByTestId('infinite-scroll-sentinel')).toBeVisible()
+      await expect(page.getByTestId('post-card-root')).toHaveCount(25)
 
-    // Scroll to the bottom to trigger infinite scroll
-    await scrollToLoadMore(page)
-    await nextPageResponse
+      // Capture the initial post count
+      const cards = page.getByTestId('post-card-root')
+      const initialCards = await cards.count()
 
-    // Posts that were visible before should still be visible (not replaced) — the
-    // falsifiable form of the regression this guards: if page 2 replaced page 1
-    // instead of appending, the next card would never attach.
-    await expect(cards.nth(initialCards)).toBeVisible()
+      const nextPageResponse = page.waitForResponse(
+        response =>
+          response.url().includes('/api/v1/posts') &&
+          response.status() === 200 &&
+          new URL(response.url()).searchParams.has('after'),
+      )
+
+      // Scroll to the bottom to trigger infinite scroll
+      await scrollToLoadMore(page)
+      await nextPageResponse
+
+      // Posts that were visible before should still be visible (not replaced) — the
+      // falsifiable form of the regression this guards: if page 2 replaced page 1
+      // instead of appending, the next card would never attach.
+      await expect(cards.nth(initialCards)).toBeVisible()
+    })
   })
 })
 

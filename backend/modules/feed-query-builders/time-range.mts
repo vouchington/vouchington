@@ -2,7 +2,7 @@ import type { TimeRange } from '@voucha/types/feed'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
-/** Window post lists read when the caller sends no time range, for every sort. */
+/** Age bound a caller applies by passing this code. Post search does not add it when the range is omitted. */
 export const DEFAULT_POST_SEARCH_TIME_RANGE: TimeRange = '1m'
 
 /**

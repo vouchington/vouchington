@@ -37,7 +37,7 @@ type PostSearchFilterOptions = {
   has_hacker_news_references?: boolean // Posts whose URL is seen or mentioned on Hacker News (true) or not (false)
   include_topic_recommendations?: boolean // Internal opt-in for dedicated recommendation flows
   drafts?: boolean // Show unpublished posts
-  time_range?: TimeRange // Time range filter (post search defaults to '1m'; 'all' is explicit)
+  time_range?: TimeRange // Omitted post search has no age filter. An explicit code is strict.
   exclude_for_user_id?: string // Exclude muted/blocked hostnames, topics, and users for this user
   // Judge every candidate as a signed-out reader would, whoever `currentUser` is, so private data
   // stays out of the results even for its owner or an administrator. Only MCP `read_posts(search)` sets it:
@@ -104,6 +104,8 @@ type PostSearchQueryOptions = {
   semanticSearchEmbedding?: number[]
   // Data-point search returns title, vertical, and structured_data from this read.
   hydrateDataPointPage?: boolean
+  // First-page instant for an explicit finite time_range. Omitted and `all` leave this unset.
+  time_range_as_of?: Date
   // Internal cursor parameters (decoded from 'after', used by query builder)
   id_lt?: string
   vote_score_lt?: number

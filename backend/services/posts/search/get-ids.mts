@@ -12,7 +12,6 @@ import {
 import { buildPostRankingScoreExpression } from './query-builder-utils.mts'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
-import { DEFAULT_POST_SEARCH_TIME_RANGE } from '@modules/feed-query-builders'
 import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-info.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
 import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
@@ -44,22 +43,19 @@ export async function getPostIds(
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
   const hasRankingScore =
     buildPostRankingScoreExpression({ hasTextSearch, hasSemanticSearch }) !== null
-  // Post search is always time-bounded; callers needing the full history pass 'all'. Only an
-  // author's own drafts listing (their user id plus drafts) keeps that full history.
-  const effectiveTimeRange =
-    options.time_range ??
-    (isOwnDraftsListing(currentUser, options) ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
-  const { id_lt, vote_score_lt, ranking_lt, hot_score_lt } = decodePostSearchCursor(
+  // An omitted range has no age filter. An explicit finite code keeps the first page's bound.
+  const { id_lt, vote_score_lt, ranking_lt, hot_score_lt, as_of_ms } = decodePostSearchCursor(
     options,
     sort,
     hasRankingScore,
   )
-  // Build query - pass decoded cursor values and use limit + 1
+  const finiteTimeRange = options.time_range !== undefined && options.time_range !== 'all'
+  const asOfMs = finiteTimeRange ? (as_of_ms ?? Date.now()) : undefined
   const queryOptions: PostSearchOptions = {
     ...options,
-    time_range: effectiveTimeRange,
     semanticSearchEmbedding,
     limit: limit + 1,
+    ...(asOfMs === undefined ? {} : { time_range_as_of: new Date(asOfMs) }),
   }
   if (id_lt !== undefined) queryOptions.id_lt = id_lt
   if (vote_score_lt !== undefined) queryOptions.vote_score_lt = vote_score_lt
@@ -84,15 +80,9 @@ export async function getPostIds(
   }))
   return {
     results,
-    page_info: buildPostSearchPageInfo(resultRows, hasNextPage, sort, hasRankingScore),
+    page_info: buildPostSearchPageInfo(resultRows, hasNextPage, sort, hasRankingScore, {
+      timeRange: options.time_range,
+      asOfMs,
+    }),
   }
-}
-
-function isOwnDraftsListing(
-  currentUser: BasicUser | undefined,
-  options: PostSearchOptions,
-): boolean {
-  return (
-    options.drafts === true && currentUser?.id !== undefined && currentUser.id === options.user_id
-  )
 }

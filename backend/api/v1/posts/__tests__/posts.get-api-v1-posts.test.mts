@@ -193,7 +193,7 @@ describe('posts', () => {
         expect(secondResponse.body.results[0].id).toBe(firstPostId)
       })
 
-      it('should support pagination with after cursor for drafts', async () => {
+      it('rejects an unscoped after cursor for drafts', async () => {
         const postId = await insertTestPost({
           title: 'Draft Post for ID cursor',
           slug: uniqueSlug('draft-post-id-cursor'),
@@ -203,11 +203,7 @@ describe('posts', () => {
         const cursor = encodeCursor({ id: postId })
 
         const request = createRequest()
-        const response = await request.get(`/api/v1/posts?drafts=true&after=${cursor}`).expect(200)
-
-        // Should not include the post with the given ID (cursor is exclusive)
-        const foundPost = response.body.results.find((p: { id: string }) => p.id === postId)
-        expect(foundPost).toBeUndefined()
+        await request.get(`/api/v1/posts?drafts=true&after=${cursor}`).expect(400)
       })
 
       it('should always return objects for posts and posts_metrics', async () => {
