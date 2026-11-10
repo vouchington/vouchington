@@ -64,7 +64,7 @@ export async function runRouteLocalizationCommand(args: string[]) {
       catalog: { type: 'string' },
       selectors: { type: 'string' },
       labels: { type: 'string' },
-      'expected-routes': { type: 'string', default: '400' },
+      'expected-routes': { type: 'string', default: '401' },
     },
     strict: true,
     allowPositionals: false,
