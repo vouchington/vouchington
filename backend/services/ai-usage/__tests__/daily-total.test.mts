@@ -21,6 +21,9 @@ describe('getDailyAiCostTotalMicrounits', () => {
   beforeEach(async () => {
     user = await createTestUser()
     vi.useFakeTimers({ toFake: ['Date'] })
+    // The cache holds one day. Park it elsewhere so a recycled reserved day cannot serve an
+    // earlier test's total at this file's repeated fake noon.
+    await getDailyAiCostTotalMicrounits('1970-01-02')
   })
 
   afterEach(() => {

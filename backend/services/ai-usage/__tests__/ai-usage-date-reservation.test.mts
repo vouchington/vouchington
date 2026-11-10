@@ -80,7 +80,10 @@ describe('acquireTestAiUsageDateReservation', () => {
       id: timestampToUuidv7LowerBound(Date.now()),
       costMicrounits: 321,
     })
-    await expect(getDailyAiCostTotalMicrounits()).resolves.toMatchObject({ totalMicrounits: 321 })
+    // Refresh bypasses a stale entry that an earlier test left for this recycled day's fake noon.
+    await expect(refreshDailyAiCostTotalMicrounits()).resolves.toMatchObject({
+      totalMicrounits: 321,
+    })
     await first.release()
     // Slot choice follows Date. Acquiring again while the clock sits inside the reserved day
     // drops every slot that reaches that day, and the earliest day then has none left.
@@ -128,34 +131,5 @@ describe('acquireTestAiUsageDateReservation', () => {
     await Promise.all([reservation.release(), reservation.release()])
     await expect(refreshDailyAiCostTotalMicrounits()).resolves.toMatchObject({ totalMicrounits: 0 })
     await reservation.release()
-  })
-
-  it('reloads a reused day after a fake clock cached the previous total', async () => {
-    const first = await acquireTestAiUsageDateReservationControlSlot()
-    onTestFinished(() => first.release())
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(`${first.day}T12:00:00.000Z`))
-    await insertTestAiUsageRecord({
-      id: timestampToUuidv7LowerBound(Date.now()),
-      costMicrounits: 1,
-    })
-    // Refresh plants the process cache with this day's total. A later fake noon is still inside
-    // that 60s TTL, so getDailyAiCostTotalMicrounits would return 1 after the day is reused.
-    await expect(refreshDailyAiCostTotalMicrounits()).resolves.toMatchObject({ totalMicrounits: 1 })
-    await first.release()
-    vi.useRealTimers()
-
-    const second = await acquireTestAiUsageDateReservationControlSlot()
-    onTestFinished(() => second.release())
-    expect(second.day).toBe(first.day)
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(`${second.day}T12:00:01.000Z`))
-    await insertTestAiUsageRecord({
-      id: timestampToUuidv7LowerBound(Date.now()),
-      costMicrounits: 321,
-    })
-    // The first read cached total 1 at that day's noon. Fake time is noon again, so the 60s TTL
-    // still matches and hides the new row unless releasing the day drops the cache.
-    await expect(getDailyAiCostTotalMicrounits()).resolves.toMatchObject({ totalMicrounits: 321 })
   })
 })

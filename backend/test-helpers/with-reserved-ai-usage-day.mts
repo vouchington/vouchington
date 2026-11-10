@@ -26,7 +26,7 @@ export async function withReservedAiUsageDay<T>(
   }
   onTestFinished(release)
   vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date(`${reservation.day}T12:00:00.000Z`))
+  vi.setSystemTime(new Date(`${reservation.day}T11:58:00.000Z`))
   // Zero cap allows an empty day. These zero-cap fixtures assert a breach, so record known spend.
   if (dailyCapMicrounits === 0) {
     await insertTestAiUsageRecord({
@@ -34,6 +34,11 @@ export async function withReservedAiUsageDay<T>(
       costMicrounits: 1,
     })
   }
+  // A recycled day may still hold its previous occupant's total in the process cache. Replant it
+  // with the true total at 11:58; the frozen clock then moves to noon, past the entry's 60s TTL,
+  // so `fn` neither sees the stale total nor a planted one that would never expire.
+  await refreshDailyAiCostTotalMicrounits()
+  vi.setSystemTime(new Date(`${reservation.day}T12:00:00.000Z`))
   const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
     enabled: true,
     daily_cap_microunits: dailyCapMicrounits,
