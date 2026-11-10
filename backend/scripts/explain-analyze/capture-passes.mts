@@ -28,11 +28,11 @@ export type Capture = {
   text: string
   values: readonly unknown[]
   scenarioId: string
+  beforeExplain?: BeforeExplain
   captureIndex: number
   planCacheMode: ExplainPlanCacheMode
   localSettings?: Readonly<Record<string, string>>
   setupSql?: string
-  beforeExplain?: BeforeExplain
 }
 
 const repeatedResults: ExplainResult[] = []

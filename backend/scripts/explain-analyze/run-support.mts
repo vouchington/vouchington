@@ -96,9 +96,9 @@ async function captureScenario(
     localSettings?: Readonly<Record<string, string>>
     afterCapture?: () => Promise<void>
     exactCapturedNames?: readonly string[]
-    useWallClock?: boolean
     decisionInstant?: Date
     beforeExplain?: BeforeExplain
+    useWallClock?: boolean
     setupQueryNames?: readonly string[]
     expectedSetupQueryCount?: number
     captureRawPoolQueryNames?: readonly string[]
@@ -158,9 +158,9 @@ async function captureScenario(
         scenarioId: label,
         captureIndex,
         planCacheMode,
+        beforeExplain: explainOptions.beforeExplain,
         localSettings: explainOptions.localSettings,
         setupSql,
-        beforeExplain: explainOptions.beforeExplain,
       }
     })
   })

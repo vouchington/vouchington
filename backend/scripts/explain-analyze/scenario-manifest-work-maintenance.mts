@@ -1,4 +1,5 @@
 import { DISPATCH_AND_CRAWL_SCENARIO_IDS } from './dispatch-and-crawl-scenario-ids.mts'
+import { HACKER_NEWS_SCALE_SCENARIO_IDS } from './hacker-news-scale-scenario-ids.mts'
 import { HACKER_NEWS_WORK_SCENARIO_IDS } from './hacker-news-work-scenario-ids.mts'
 import { COPYRIGHT_CASE_PURGE_SCENARIO_IDS } from './copyright-case-purge-scenario-ids.mts'
 import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
@@ -24,6 +25,7 @@ export const MAINTENANCE_WORK_SCENARIOS = [
   'import-retention-child-continuation',
   'request-attempt-retention-continuation',
   'request-attempt-retention-delete',
+  ...HACKER_NEWS_SCALE_SCENARIO_IDS,
   ...HACKER_NEWS_WORK_SCENARIO_IDS,
   'request-range-retirement-recent',
   ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
