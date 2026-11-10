@@ -30,6 +30,7 @@ export async function seedSpendingCategories(
     for (let owner = 0; owner < ownerCount; owner++) {
       householdValues.push(seedUuid(owner, '20'), seedUuid(owner, '01'))
       const base = householdValues.length - 1
+      // The signup trigger already inserted this owner's first household.
       householdRows.push(`($${base}, $${base + 1})`)
     }
     await query(
@@ -50,7 +51,7 @@ export async function seedSpendingCategories(
     await query(
       `/* seedExplainData */ INSERT INTO household_members (household_id, individual_id)
        VALUES ${membershipRows.join(', ')}
-       ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING`,
+       ON CONFLICT DO NOTHING`,
       membershipValues,
     )
 

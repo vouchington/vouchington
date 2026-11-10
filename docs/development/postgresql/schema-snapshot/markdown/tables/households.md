@@ -28,7 +28,7 @@ _none_
 **Indexes:**
 
 - `households_pkey`: `CREATE UNIQUE INDEX households_pkey ON public.households USING btree (id)`
-- `idx_households__owner_updated_id`: `CREATE INDEX idx_households__owner_updated_id ON public.households USING btree (owner_user_id, updated_at DESC, id DESC)`
+- `idx_households__owner_user_id`: `CREATE INDEX idx_households__owner_user_id ON public.households USING btree (owner_user_id)`
 
 **Triggers:**
 

@@ -1,3 +1,4 @@
+import { householdLimitsRegistryEntry } from './registry-household-limits-entry.mts'
 import { relationLimitsRegistryEntry } from './registry-relation-limits-entry.mts'
 import { profileCountRegistryEntry } from './registry-profile-count-entry.mts'
 import { webSearchRegistryEntry } from './registry-web-search-entry.mts'
@@ -38,6 +39,7 @@ import { orderDynamicConfigRegistryEntries } from './registry-order.mts'
 const unorderedRegistryEntries = [
   sessionLimitsRegistryEntry,
   relationLimitsRegistryEntry,
+  householdLimitsRegistryEntry,
   profileCountRegistryEntry,
   webSearchRegistryEntry,
   topicDataPointInsightsRegistryEntry,

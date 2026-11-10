@@ -73,6 +73,13 @@ export async function deleteOwnedHouseholdsForTestUser(userId: string): Promise<
   return rows.length
 }
 
+export async function countOwnedHouseholdsForTestUser(userId: string): Promise<number> {
+  const { rows } = await write<{ count: number }>(sql`/* countOwnedHouseholdsForTestUser */
+    SELECT count(*)::int AS count FROM households WHERE owner_user_id = ${userId}
+  `)
+  return rows[0]!.count
+}
+
 export async function deleteTestHouseholdById(householdId: string): Promise<void> {
   await write(sql`/* deleteTestHouseholdById */
     DELETE FROM households WHERE id = ${householdId}
@@ -120,44 +127,6 @@ export async function deleteTestHouseholdMembership(membershipId: string): Promi
   `)
 }
 
-export async function insertTestHouseholdsForOwner(
-  ownerId: string,
-  count: number,
-): Promise<TestHousehold[]> {
-  const { rows } = await write<TestHousehold>(sql`/* insertTestHouseholdsForOwner */
-    INSERT INTO households (owner_user_id, updated_at)
-    SELECT ${ownerId}, CURRENT_TIMESTAMP - ordinal * INTERVAL '1 microsecond'
-    FROM generate_series(1, ${count}) ordinal
-    RETURNING id, owner_user_id
-  `)
-  return rows
-}
-
-export async function insertTestHouseholdMemberships(options: {
-  householdIds: string[]
-  individualId: string
-}): Promise<void> {
-  await write(sql`/* insertTestHouseholdMemberships */
-    INSERT INTO household_members (household_id, individual_id)
-    SELECT household_id, ${options.individualId}
-    FROM unnest(${options.householdIds}::uuid[]) household_id
-    ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING
-  `)
-}
-
-export async function insertTestHouseholdMembers(options: {
-  householdId: string
-  individualIds: string[]
-}): Promise<void> {
-  await write(sql`/* insertTestHouseholdMembers */
-    INSERT INTO household_members (household_id, individual_id, updated_at)
-    SELECT ${options.householdId}, individual_id,
-      CURRENT_TIMESTAMP - ordinal * INTERVAL '1 microsecond'
-    FROM unnest(${options.individualIds}::uuid[]) WITH ORDINALITY members(individual_id, ordinal)
-    ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING
-  `)
-}
-
 // households, household_members are this test's own fixtures; individuals, users are also joined
 // by getHouseholdMemberships (household-lists.mts) but are seeded broadly by dev-seed, so this
 // covers every relation in the plan rather than just the driving table (see #9042: an uncovered
@@ -169,17 +138,3 @@ export const analyzeHouseholdTablesForTest: PlanStatisticsRefresh = definePlanSt
     )
   },
 )
-
-export async function insertTestHouseholdsAtPreciseTimestamps(
-  ownerId: string,
-  timestamps: string[],
-): Promise<TestHousehold[]> {
-  const { rows } = await write<TestHousehold>(sql`/* insertTestHouseholdsAtPreciseTimestamps */
-    INSERT INTO households (owner_user_id, updated_at)
-    SELECT ${ownerId}, timestamp::timestamptz
-    FROM unnest(${timestamps}::text[]) timestamp
-    RETURNING id, owner_user_id,
-      to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS updated_at
-  `)
-  return rows
-}

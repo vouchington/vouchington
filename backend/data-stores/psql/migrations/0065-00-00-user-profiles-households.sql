@@ -41,10 +41,10 @@ CREATE OR REPLACE TRIGGER trigger_households_fn_update_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
--- Supports deterministic owned-household selection and cursor pagination.
+-- Owned-household reads and the best-effort cap count walk owner_user_id.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_households__owner_updated_id
-ON households (owner_user_id, updated_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_households__owner_user_id
+ON households (owner_user_id);
 
 COMMENT ON TABLE households IS 'A household owned by a user, grouping individuals for shared finance tracking.';
 COMMENT ON COLUMN households.owner_user_id IS 'The user who owns and manages this household.';
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS household_members (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  -- Unique constraint to prevent duplicate memberships
+  -- One membership per individual in a household. This is identity, not a size cap.
   CONSTRAINT uniq_household_members__household_id_individual_id
     UNIQUE (household_id, individual_id)
 );

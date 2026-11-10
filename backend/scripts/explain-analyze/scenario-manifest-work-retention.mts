@@ -8,6 +8,7 @@ import { COMMUNITY_AGENT_PROMPT_SCENARIO_IDS } from './community-agent-prompt-pa
 import { CATEGORY_PROJECTION_SCENARIO_IDS } from './category-projection-scenario-ids.mts'
 import { EXISTENCE_FILTER_SCENARIO_IDS } from './existence-filter-scenario-ids.mts'
 import { MODERATION_RERUN_SCENARIO_IDS } from './moderation-rerun-scenario-ids.mts'
+import { HOUSEHOLD_LIMIT_SCENARIO_IDS } from './household-limit-scenario-ids.mts'
 
 export const RETENTION_WORK_SCENARIOS = [
   ...EXISTENCE_FILTER_SCENARIO_IDS,
@@ -30,6 +31,7 @@ export const RETENTION_WORK_SCENARIOS = [
   'fk-actor-agent-moderations-deleted-by-no-match',
   'fk-actor-moderation-cases-resolved-by-no-match',
   'community-membership-capacity',
+  ...HOUSEHOLD_LIMIT_SCENARIO_IDS,
   'community-moderator-capacity',
   'community-membership-cache-user-miss',
   'community-membership-auth-target',

@@ -1,8 +1,10 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { validateUUID } from '@modules/utils/ids'
 import type { PrivateUser } from '@services/users/types'
+import { insertHouseholdMember, insertOwnedHousehold } from '../household-limits.mts'
+import { getOrCreateIndividual } from '../individuals/individuals.mts'
 import type { HouseholdMembershipRow, HouseholdRow } from '../types.mts'
 import { readHouseholdMemberManageAccess } from '../authorization.mts'
 import {
@@ -12,12 +14,18 @@ import {
 
 export async function createHousehold(currentUser: PrivateUser | null) {
   assert(currentUser, 401, 'User not logged in')
-  const { rows } = await write<HouseholdRow>(sql`/* createHousehold */
-    INSERT INTO households (owner_user_id)
-    VALUES (${currentUser.id})
-    RETURNING id, owner_user_id, updated_at
-  `)
-  return rows[0]
+  await using transaction = await beginTransaction()
+  const options = { query: transaction }
+  const household = await insertOwnedHousehold(currentUser.id, options)
+  // Every owned household gives its owner a membership, which counts toward the individual cap.
+  const individual = await getOrCreateIndividual(currentUser, options)
+  assert(individual, 500, 'Household owner has no individual')
+  await insertHouseholdMember(
+    { householdId: household.id, individualId: individual.id, relationship: null },
+    options,
+  )
+  await transaction.commit()
+  return household
 }
 export async function getHousehold(currentUser: PrivateUser | null, householdId: string) {
   assert(currentUser, 401, 'User not logged in')
@@ -80,28 +88,38 @@ export async function addHouseholdMembership(
   )
   assert(individualExists, 404, 'Individual not found')
 
-  const query = sql`/* addHouseholdMembership */
-    WITH inserted AS (
-      INSERT INTO household_members (household_id, individual_id, relationship)
-      VALUES (${householdId}, ${individualId}, ${relationship || null})
-      ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO UPDATE
-      SET relationship = COALESCE(EXCLUDED.relationship, household_members.relationship)
-      RETURNING id, household_id, individual_id, relationship, updated_at
+  await using transaction = await beginTransaction()
+  const options = { query: transaction }
+  const inserted = await insertHouseholdMember(
+    { householdId, individualId, relationship: relationship || null },
+    options,
+  )
+  if (!inserted) {
+    await write(
+      sql`/* addHouseholdMembership:update */
+        UPDATE household_members
+        SET relationship = COALESCE(${relationship || null}, relationship)
+        WHERE household_id = ${householdId} AND individual_id = ${individualId}`,
+      options,
     )
+  }
+  const query = sql`/* addHouseholdMembership */
     SELECT
-      inserted.id,
-      inserted.household_id,
-      inserted.relationship, `
-  query.append(membershipUpdatedAtSql('inserted'))
+      hm.id,
+      hm.household_id,
+      hm.relationship, `
+  query.append(membershipUpdatedAtSql('hm'))
   query.append(sql` AS updated_at, `)
   query.append(membershipIndividualSql('i', 'u'))
   query.append(sql` AS individual
-    FROM inserted
-    LEFT JOIN individuals i ON i.id = inserted.individual_id
-    LEFT JOIN users u ON u.individual_id = i.id`)
-  const { rows } = await write<HouseholdMembershipRow>(query)
+    FROM household_members hm
+    LEFT JOIN individuals i ON i.id = hm.individual_id
+    LEFT JOIN users u ON u.individual_id = i.id
+    WHERE hm.household_id = ${householdId} AND hm.individual_id = ${individualId}`)
+  const { rows } = await write<HouseholdMembershipRow>(query, options)
   const membership = rows[0]
   assert(membership, 500, 'Household membership was not saved')
+  await transaction.commit()
   return membership
 }
 export async function removeHouseholdMembership(
@@ -116,9 +134,22 @@ export async function removeHouseholdMembership(
   assert(access !== 'hidden', 404, 'Household not found')
   assert(access === 'allowed', 403, 'Only household owner can remove members')
 
+  // The owner's membership holds the owner's individual slot, so it stays while the household exists.
   const { rowCount } = await write(sql`/* removeHouseholdMembership */
-    DELETE FROM household_members WHERE household_id = ${householdId} AND id = ${membershipId}
+    DELETE FROM household_members hm
+    WHERE hm.household_id = ${householdId} AND hm.id = ${membershipId}
+      AND NOT EXISTS (
+        SELECT 1 FROM households h JOIN users u ON u.id = h.owner_user_id
+        WHERE h.id = hm.household_id AND u.individual_id = hm.individual_id
+      )
   `)
-
+  if (!rowCount) {
+    const { rows: ownerRows } = await read(sql`/* removeHouseholdMembership:owner */
+      SELECT 1 FROM household_members hm
+      JOIN households h ON h.id = hm.household_id
+      JOIN users u ON u.id = h.owner_user_id AND u.individual_id = hm.individual_id
+      WHERE hm.household_id = ${householdId} AND hm.id = ${membershipId}`)
+    assert(ownerRows.length === 0, 409, 'Household owner cannot be removed')
+  }
   assert(rowCount && rowCount > 0, 404, 'Membership not found')
 }

@@ -8,9 +8,14 @@ const malformedId = 'not-a-uuid'
 
 describe('household routes - request contract validation', () => {
   let owner: PrivateUser
+  let householdId: string
 
   beforeAll(async () => {
     owner = await createTestUser()
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    householdId = (await request.post('/api/v1/households').send({}).expect(201)).body.household
+      .id as string
   }, 5_000)
 
   describe('anonymous callers', () => {
@@ -55,7 +60,6 @@ describe('household routes - request contract validation', () => {
     ])('rejects %s on household create without side effects', async (_name, body) => {
       const request = createRequest()
       await request.authenticateAs(owner)
-      await request.post('/api/v1/households').send({}).expect(201)
       const before = await request.get('/api/v1/households').query({ access: 'owned' }).expect(200)
 
       await request.post('/api/v1/households').send(body).expect(422)
@@ -67,9 +71,8 @@ describe('household routes - request contract validation', () => {
     it('rejects a relationship longer than 64 characters and accepts 64', async () => {
       const request = createRequest()
       await request.authenticateAs(owner)
-      const created = await request.post('/api/v1/households').send({}).expect(201)
       const individual = await request.get('/api/v1/me/individual').expect(200)
-      const path = `/api/v1/households/${created.body.household.id}/memberships`
+      const path = `/api/v1/households/${householdId}/memberships`
       await request
         .post(path)
         .send({ individual_id: individual.body.individual.id, relationship: 'a'.repeat(65) })
@@ -88,11 +91,7 @@ describe('household routes - request contract validation', () => {
     ])('returns 422 for %s on membership create', async (_name, body) => {
       const request = createRequest()
       await request.authenticateAs(owner)
-      const created = await request.post('/api/v1/households').send({}).expect(201)
-      await request
-        .post(`/api/v1/households/${created.body.household.id}/memberships`)
-        .send(body)
-        .expect(422)
+      await request.post(`/api/v1/households/${householdId}/memberships`).send(body).expect(422)
     })
   })
 })

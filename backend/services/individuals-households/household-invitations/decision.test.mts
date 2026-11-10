@@ -21,7 +21,7 @@ describe('household invitation acceptance transaction', () => {
     })
 
     const { error } = await withPostgresQueryFailureForTest(
-      '/* decideHouseholdInvitation:insert-membership */',
+      '/* insertHouseholdMember */',
       () =>
         expect(decideHouseholdInvitation(invitee, invitation.id, 'accept')).rejects.toMatchObject({
           code: '25P02',

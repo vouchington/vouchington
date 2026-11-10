@@ -81,7 +81,6 @@ describe('household invitation actions', () => {
     expect(rows[1]!.textContent).not.toContain("'s household")
     expect(document.body.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)
   })
-
   it('identifies sent invitations by invitee with a null-username fallback', () => {
     const first = makeHouseholdInvitation()
     const second = makeHouseholdInvitation({
@@ -100,7 +99,6 @@ describe('household invitation actions', () => {
     expect(screen.getByRole('link', { name: '@alex' })).toBeTruthy()
     expect(document.body.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)
   })
-
   it('sends a selected user once while pending, and keeps duplicate responses as one row', async () => {
     const invitation = makeHouseholdInvitation()
     const request = deferred<Awaited<ReturnType<typeof api.createHouseholdInvitation>>>()
@@ -174,10 +172,11 @@ describe('household invitation actions', () => {
     const invitation = makeHouseholdInvitation()
     vi.mocked(api.createHouseholdInvitation).mockResolvedValueOnce({ invitation })
     const props = { kind: 'sent', householdId: invitation.household_id } as const
+    const emptyPage = () => makeHouseholdInvitationPage([])
     const { rerender } = render(
       <HouseholdInvitations
         {...props}
-        initialPage={makeHouseholdInvitationPage([])}
+        initialPage={emptyPage()}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Select alex' }))
@@ -186,7 +185,7 @@ describe('household invitation actions', () => {
     rerender(
       <HouseholdInvitations
         {...props}
-        initialPage={makeHouseholdInvitationPage([])}
+        initialPage={emptyPage()}
       />,
     )
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)
@@ -231,13 +230,14 @@ describe('household invitation actions', () => {
     await act(async () =>
       fireEvent.click(screen.getByRole('button', { name: 'Revoke invitation' })),
     )
-    expect(api.revokeHouseholdInvitation).toHaveBeenCalledExactlyOnceWith(
-      invitation.household_id,
-      invitation.id,
-    )
+    const { household_id, id } = invitation
+    expect(api.revokeHouseholdInvitation).toHaveBeenCalledExactlyOnceWith(household_id, id)
     expect(document.querySelectorAll('[data-pw="household-invitation-row"]')).toHaveLength(1)
     expect(onError).toHaveBeenCalledWith(error, {
       fallback: 'The invitation could not be updated.',
+      displayMessageByCode: expect.objectContaining({
+        INDIVIDUAL_HOUSEHOLD_LIMIT_REACHED: "You can't join another household.",
+      }),
     })
     expect(nav.refresh).not.toHaveBeenCalled()
   })

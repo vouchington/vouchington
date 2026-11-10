@@ -53,28 +53,23 @@ export async function createHouseholdInvitation(
   )
   await using transaction = await beginTransaction()
   const options = { query: transaction }
-  const { rows: lockedHouseholds } = await write<{ id: string; owner_user_id: string }>(
-    sql`/* createHouseholdInvitation:lock-household */
-      SELECT id, owner_user_id FROM households WHERE id = ${householdId} FOR UPDATE`,
-    options,
-  )
-  assert(lockedHouseholds[0], 404, 'Household not found')
-  assertManageAccess(await readHouseholdMemberManageAccess(currentUser, householdId, null, options))
+  // Read the household. This transaction writes household_invitations, so it does not lock
+  // the household row. See docs/development/postgresql/reference-transactions.md#lock-scope.
+  const access = await readHouseholdMemberManageAccess(currentUser, householdId, null, options)
+  assertManageAccess(access)
+  const ownerUserId = access.ownerUserId
+  assert(ownerUserId, 404, 'Household not found')
   const invitedUser = await getPublicUserByAny(input.user, { ...options, readOnly: false })
   assert(invitedUser, 404, 'User not found')
   // The inviter and, for an administrator managing another owner's household, that owner.
   const blocked = await getUserIdsBlockedOrMutedEitherWay(
     invitedUser.id,
-    [currentUser.id, lockedHouseholds[0].owner_user_id],
+    [currentUser.id, ownerUserId],
     options,
   )
   assert(blocked.size === 0, 404, 'User not found')
   assert(invitedUser.id !== currentUser.id, 422, 'You cannot invite yourself')
-  assert(
-    lockedHouseholds[0].owner_user_id !== invitedUser.id,
-    409,
-    'User is already a household member',
-  )
+  assert(ownerUserId !== invitedUser.id, 409, 'User is already a household member')
   const { rows: existingMembers } = await write<{ exists: boolean }>(
     sql`/* createHouseholdInvitation:member */
       SELECT EXISTS (

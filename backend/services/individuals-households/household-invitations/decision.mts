@@ -1,7 +1,6 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { beginTransaction, write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
 import { validateUUID } from '@modules/utils/ids'
 import { assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
@@ -11,16 +10,8 @@ import {
   membershipIndividualSql,
   membershipUpdatedAtSql,
 } from '../households/household-membership-page-row.mts'
+import { insertHouseholdMember } from '../household-limits.mts'
 import { getOrCreateIndividual } from '../individuals/individuals.mts'
-
-async function getOrCreateLockedInviteeIndividual(currentUser: PrivateUser, options: QueryOptions) {
-  await write(
-    sql`/* decideHouseholdInvitation:lock-invitee */
-      SELECT id FROM users WHERE id = ${currentUser.id} FOR UPDATE`,
-    options,
-  )
-  return getOrCreateIndividual(currentUser, options)
-}
 
 export async function decideHouseholdInvitation(
   currentUser: PrivateUser,
@@ -36,12 +27,11 @@ export async function decideHouseholdInvitation(
     owner_user_id: string
     invited_by_id: string
   }>(
-    sql`/* decideHouseholdInvitation:lock-household */
+    sql`/* decideHouseholdInvitation:read-household */
       SELECT h.id, h.owner_user_id, hi.invited_by_id
       FROM households h
       JOIN household_invitations hi ON hi.household_id = h.id
-      WHERE hi.id = ${invitationId} AND hi.invited_user_id = ${currentUser.id}
-      FOR UPDATE OF h`,
+      WHERE hi.id = ${invitationId} AND hi.invited_user_id = ${currentUser.id}`,
     options,
   )
   const household = households[0]
@@ -75,12 +65,13 @@ export async function decideHouseholdInvitation(
     await transaction.commit()
     return
   }
-  const individual = await getOrCreateLockedInviteeIndividual(currentUser, options)
-  await write(
-    sql`/* decideHouseholdInvitation:insert-membership */
-      INSERT INTO household_members (household_id, individual_id, relationship)
-      VALUES (${changed[0].household_id}, ${individual.id}, ${changed[0].relationship})
-      ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING`,
+  const individual = await getOrCreateIndividual(currentUser, options)
+  await insertHouseholdMember(
+    {
+      householdId: changed[0].household_id,
+      individualId: individual.id,
+      relationship: changed[0].relationship,
+    },
     options,
   )
   const membershipQuery = sql`/* decideHouseholdInvitation:membership */

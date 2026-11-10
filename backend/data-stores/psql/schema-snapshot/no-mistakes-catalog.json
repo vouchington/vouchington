@@ -58314,10 +58314,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_households__owner_updated_id": {
+        "idx_households__owner_user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_households__owner_updated_id ON public.households USING btree (owner_user_id, updated_at DESC, id DESC)",
+          "definition": "CREATE INDEX idx_households__owner_user_id ON public.households USING btree (owner_user_id)",
           "immediate": true,
           "keys": [
             {
@@ -58326,24 +58326,6 @@
               "descending": false,
               "expression": "owner_user_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "updated_at",
-              "descending": true,
-              "expression": "updated_at",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }

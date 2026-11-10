@@ -448,6 +448,15 @@ Invitations require the invitee's decision before another user's individual join
 provides owner and invitee actions on the household page and opens that page from invitation
 notifications. Household MCP tools share the REST authority and invitation lifecycle. Swift and
 .NET household management remains partial until these actions and notifications are adopted.
+Creating a household, adding a member, and accepting an invitation can return 409 when the
+counted admission limit is already reached. Two creates at the same moment can both pass, so
+the household can end up with one more than the limit. The error `code` is the contract:
+`HOUSEHOLD_LIMIT_REACHED`,
+`HOUSEHOLD_MEMBER_LIMIT_REACHED`, or `INDIVIDUAL_HOUSEHOLD_LIMIT_REACHED`. Web toasts code-specific
+copy on household create and invitation accept. Native clients should do the same when they adopt
+these actions
+([clients#470](https://github.com/vouchington/vouchington-clients/issues/470)).
+
 Invitation responses now include the invitee, inviter, and household owner's nullable usernames
 alongside their IDs. Web uses those response facts for every page of invitation rows, including
 loaded pages, so it never needs to display a household UUID or fetch profiles for each row. Native

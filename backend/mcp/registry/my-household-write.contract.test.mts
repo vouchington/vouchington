@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { householdLimitsConfig } from '@services/individuals-households/household-limits-config'
 import {
   countTestHouseholdSpendingEntries,
   createTestUser,
@@ -22,11 +24,13 @@ const writeHouseholds = (user: McpContractCaller, option: string, args: Record<s
   callStructuredMcpTool(user, 'manage_my_households', optionArgs(option, args), WRITE)
 
 describe('manage_my_households REST twins — real DB', () => {
-  it('creates, adds its owner, removes that membership, and deletes the household', async () => {
+  it('creates, updates its owner membership, refuses to remove it, and deletes the household', async () => {
     const owner = await createTestUser()
     const request = createRequest()
     await request.authenticateAs(owner)
     const rest = await request.post('/api/v1/households').send({}).expect(201)
+    // Signup plus this household fills the owned cap, so REST must release it before MCP creates.
+    await request.delete(`/api/v1/households/${rest.body.household.id}`).expect(204)
     const tool = await writeHouseholds(plus(owner), 'create', {})
     expect(tool.household).toMatchObject({ owner_user_id: rest.body.household.owner_user_id })
     const household_id = (tool.household as { id: string }).id
@@ -43,12 +47,13 @@ describe('manage_my_households REST twins — real DB', () => {
       (await request.get(`/api/v1/households/${household_id}/memberships`).expect(200)).body
         .results,
     ).toContainEqual(membership)
-    expect(
-      await writeHouseholds(plus(owner), 'remove_member', {
-        household_id,
-        membership_id: membership.id,
-      }),
-    ).toEqual({ success: true })
+    const refusal = await callRejectedMcpTool(
+      plus(owner),
+      'manage_my_households',
+      optionArgs('remove_member', { household_id, membership_id: membership.id }),
+      WRITE,
+    )
+    expect(JSON.parse(refusal)).toMatchObject({ error: { status: 409 } })
     const category = await insertTestSpendingCategory({ createdById: owner.id })
     await insertTestHouseholdSpendingEntry({
       householdId: household_id,
@@ -60,6 +65,27 @@ describe('manage_my_households REST twins — real DB', () => {
     })
     expect(await countTestHouseholdSpendingEntries(household_id)).toBe(0)
     await request.get(`/api/v1/households/${household_id}`).expect(404)
+  })
+
+  it('returns the owned-household limit code on REST and MCP', async () => {
+    const owner = await createTestUser()
+    await householdLimitsConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(householdLimitsConfig, { max_households_per_user: 1 }),
+    )
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    const rest = await request.post('/api/v1/households').send({}).expect(409)
+    expect(rest.body.code).toBe('HOUSEHOLD_LIMIT_REACHED')
+    const mcp = await callRejectedMcpTool(
+      plus(owner),
+      'manage_my_households',
+      optionArgs('create', {}),
+      WRITE,
+    )
+    expect(JSON.parse(mcp)).toMatchObject({
+      error: { status: 409, code: 'HOUSEHOLD_LIMIT_REACHED' },
+    })
   })
 
   it('denies a visible nonowner and adding another user without an invitation', async () => {

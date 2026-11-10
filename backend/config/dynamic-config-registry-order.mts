@@ -63,6 +63,7 @@ export const REGISTRY_ORDER = [
   'media-delivery-safety-work-config',
   'entity-relations-work-config',
   'relation-limits-config',
+  'household-limits-config',
   'profile-count-config',
   'session-limits-config',
   'elections-votes-work-config',

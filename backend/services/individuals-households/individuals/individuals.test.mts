@@ -24,7 +24,7 @@ describe('getOrCreateIndividual', () => {
     expect(created?.id).not.toBe(user.individual_id)
   })
 
-  it('creates an additional individual when a representative is assigned during lookup', async () => {
+  it('returns the representative assigned during lookup', async () => {
     const user = await createTestUser()
     const originalIndividualId = user.individual_id
     expect(originalIndividualId).toEqual(expect.any(String))
@@ -46,7 +46,7 @@ describe('getOrCreateIndividual', () => {
 
     expect(assigned).toBe(true)
     expect(result).toEqual({ id: expect.any(String), updated_at: expect.any(Date) })
-    expect(result.id).not.toBe(representative.id)
+    expect(result.id).toBe(representative.id)
     const updatedUser = await getTestPrivateUserById(user.id)
     expect(updatedUser?.individual_id).toBe(representative.id)
   })
