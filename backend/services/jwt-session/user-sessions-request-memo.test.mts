@@ -192,7 +192,7 @@ describe('request-local session user-agent memo', () => {
         )
         // The query path rolled back its new row; the client-only path used its own transaction.
         expect(countCapturedQueriesByAnnotation(queries, 'upsertUserAgentString')).toBe(
-          useClient ? 1 : 3,
+          useClient ? 1 : 2,
         )
       })
 

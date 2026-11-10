@@ -58,6 +58,14 @@
     "routes": ["POST /api/v1/my/import/topics"]
   },
   {
+    "annotation": "claimContributionAdmission.liveClaim",
+    "maxCount": null,
+    "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:85)",
+    "permanent": true,
+    "code": "backend/services/user-import-export/import-topics.mts:78-92",
+    "routes": ["POST /api/v1/my/import/topics"]
+  },
+  {
     "annotation": "claimContributionAdmission.reservation",
     "maxCount": null,
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:48)",
@@ -131,6 +139,14 @@
       "POST /api/v1/auth/email-address/login",
       "POST /api/v1/auth/native/email-address/login"
     ]
+  },
+  {
+    "annotation": "extendContributionAdmissionReplay",
+    "maxCount": null,
+    "reason": "Each imported topic replays its own committed reservation under that reservation row lock, in per-item order (import-topics.mts:78-92, admission-reservations.mts:80)",
+    "permanent": true,
+    "code": "backend/services/user-import-export/import-topics.mts:78-92",
+    "routes": ["POST /api/v1/my/import/topics"]
   },
   {
     "annotation": "fetchElectionVoteRowsByUser",

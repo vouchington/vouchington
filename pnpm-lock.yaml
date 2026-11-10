@@ -3704,9 +3704,6 @@ importers:
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../services/account-data-requests
-      '@services/activitypub-delivery':
-        specifier: workspace:^
-        version: link:../services/activitypub-delivery
       '@services/admin-imports':
         specifier: workspace:^
         version: link:../services/admin-imports
