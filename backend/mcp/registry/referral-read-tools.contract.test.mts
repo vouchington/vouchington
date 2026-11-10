@@ -55,7 +55,6 @@ describe('read_topic.details referral program — real DB', () => {
     switchedOff = (await createReferralProgramFixture({ createdById: caller.id })).referralProgramId
     await disableReferralProgramByTopicId(switchedOff)
   })
-
   it('returns the company and enabled state REST returns, by topic id or by slug', async () => {
     const rest = await createRequest()
       .get(`/api/v1/topics/${program.referralProgramId}`)
@@ -72,7 +71,6 @@ describe('read_topic.details referral program — real DB', () => {
       })
     }
   })
-
   it('shows when a program was switched off', async () => {
     expect(await read(switchedOff)).toMatchObject({
       success: true,
@@ -82,7 +80,6 @@ describe('read_topic.details referral program — real DB', () => {
       disabled_at: expect.any(String),
     })
   })
-
   it('omits program fields on other topic types and returns nulls when the extension row is missing', async () => {
     const plain = await createTestTopic()
     const stateless = await createTestTopic({ topic_type: 'referral_program' })
@@ -90,11 +87,7 @@ describe('read_topic.details referral program — real DB', () => {
       success: false,
       error: 'Topic not found',
     })
-    expect(await read(plain.id)).toMatchObject({
-      success: true,
-      id: plain.id,
-      topic_type: 'topic',
-    })
+    expect(await read(plain.id)).toMatchObject({ success: true, id: plain.id, topic_type: 'topic' })
     expect(await read(plain.id)).not.toHaveProperty('company_topic_id')
     expect(await read(stateless.id)).toMatchObject({
       success: true,
@@ -108,7 +101,6 @@ describe('read_topic.details referral program — real DB', () => {
     expect(statelessRest.body.referral_program_attributes).toBeNull()
   })
 })
-
 describe('get_referral_links — real DB', () => {
   let owner: Caller
   let other: Caller
@@ -136,7 +128,6 @@ describe('get_referral_links — real DB', () => {
     })
     return link.id
   }
-
   beforeAll(async () => {
     owner = asCaller(await createTestUser())
     other = asCaller(await createTestUser())
