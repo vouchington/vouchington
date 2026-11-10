@@ -9,12 +9,7 @@ export function buildLandingPagesQuery(options?: {
   const query = sql`/* buildSitemapLandingPagesQuery */
     SELECT landing_page.id,
       CASE
-        WHEN landing_page.id = COALESCE(
-          (SELECT preferred.id FROM user_landing_pages preferred
-           WHERE preferred.user_id = u.id AND preferred.is_default LIMIT 1),
-          (SELECT first_page.id FROM user_landing_pages first_page
-           WHERE first_page.user_id = u.id ORDER BY first_page.id LIMIT 1)
-        ) THEN CONCAT('/@', u.username)
+        WHEN landing_page.is_default THEN CONCAT('/@', u.username)
         ELSE CONCAT('/@', u.username, '/', landing_page.slug)
       END AS path,
       GREATEST(

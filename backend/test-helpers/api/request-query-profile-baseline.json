@@ -212,7 +212,7 @@
   {
     "annotation": "getLandingPageRowForUser",
     "maxCount": null,
-    "reason": "Default and item writes recheck the owned page inside their transaction; the keyed read projects the effective explicit-or-oldest default without an advisory fence.",
+    "reason": "Default and item writes recheck the owned page inside their transaction; the keyed read returns the stored is_default flag without an advisory fence.",
     "permanent": true,
     "code": "backend/services/my/landing-pages/reads.mts:14",
     "routes": [

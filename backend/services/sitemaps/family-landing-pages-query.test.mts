@@ -28,8 +28,7 @@ describe('landing-pages sitemap review eligibility', () => {
         const topic = await createTestTopic({ user })
         await createTestLandingPageGroupedReviewItem(page.landingPageId, topic.id, review.id)
       }
-      // The user's only page is their effective default even when no row is flagged.
-      const path = `/@${user.username}`
+      const path = `/@${user.username}/${page.slug}`
 
       expect(await hasLandingPage(path, page.landingPageId)).toBe(true)
       await setTestPostClearanceStatus(review.id, 'pending', user.id)
