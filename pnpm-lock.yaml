@@ -14720,6 +14720,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../../services/communities
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices

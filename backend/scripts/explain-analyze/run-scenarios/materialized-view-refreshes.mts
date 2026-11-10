@@ -6,6 +6,7 @@ import { seedUuid } from '../seed-data/common.mts'
 import assert from 'node:assert/strict'
 import { RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT } from '../seed-data/rss-feed-weekly-proxy.mts'
 import { MATERIALIZED_VIEW_SCENARIOS } from '../materialized-view-scenarios.mts'
+import { captureTrendingCommunitiesBlindRefresh } from '../trending-communities-blind-plan.mts'
 
 const PROXY_TOPIC_ROW_BOUND = Math.ceil(RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT * 1.2)
 
@@ -36,6 +37,7 @@ export async function runMaterializedViewRefreshScenarios(): Promise<void> {
       }
     })
   }
+  await captureTrendingCommunitiesBlindRefresh(runAndCapture)
   const { rows: tierRows } = await read<{ crawl_tier: number }>(
     `/* explainRssDispatchTier */ SELECT crawl_tier FROM mv_rss_feed_crawl_tiers
      WHERE crawl_tier < 5 ORDER BY crawl_tier, rss_feed_id LIMIT 1`,

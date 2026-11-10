@@ -36,7 +36,9 @@ import {
   getDataRetentionLimits,
 } from '@services/data-retention/config'
 import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
+import { TRENDING_COMMUNITIES_VIEW } from '@queues/psql/config'
 import { AI_RETENTION_FAMILIES, type PsqlJobs, type PsqlJobPayloads } from '@queues/psql/types'
+import { syncTrendingCommunityMemberCountCap } from '@services/communities/trending-member-count-cap'
 import {
   processCopyrightRetentionContinuation,
   type CopyrightRetentionScope,
@@ -157,6 +159,9 @@ export default async function processPsql(
     case 'refreshMaterializedView': {
       if (!data?.viewName) {
         throw new Error('refreshMaterializedView job requires data.viewName')
+      }
+      if (data.viewName === TRENDING_COMMUNITIES_VIEW) {
+        await syncTrendingCommunityMemberCountCap()
       }
       return (dependencies?.refreshMaterializedView ?? refreshMaterializedView)(data.viewName)
     }

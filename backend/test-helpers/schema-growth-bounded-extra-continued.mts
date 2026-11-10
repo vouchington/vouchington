@@ -1,5 +1,9 @@
 export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
   [
+    'trending_community_member_count_caps',
+    'A checked singleton stores the member-count cap the trending refresh probes with LIMIT cap+1.',
+  ],
+  [
     'boilerplate_removal_hostname_cursors',
     'A checked singleton bounds the scheduled boilerplate removal hostname sweep to one row.',
   ],

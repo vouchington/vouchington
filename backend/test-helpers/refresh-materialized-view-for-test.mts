@@ -16,7 +16,11 @@ const REFRESHABLE_MATERIALIZED_VIEWS = new Set([
 ])
 
 /** Wait on the shared refresh key, then refresh one allowlisted view. */
-export async function refreshMaterializedViewForTest(viewName: string): Promise<void> {
+export async function refreshMaterializedViewForTest(
+  viewName: string,
+  afterRefresh?: (client: PoolClient) => Promise<void>,
+  beforeRefresh?: () => Promise<void>,
+): Promise<void> {
   const quotedView = quoteAllowedView(viewName)
   const client = await writePool.connect()
   let locked = false
@@ -28,9 +32,11 @@ export async function refreshMaterializedViewForTest(viewName: string): Promise<
       [REFRESH_ADVISORY_LOCK_NAME],
     )
     locked = true
+    if (beforeRefresh) await beforeRefresh()
     await client.query(
       `/* refreshMaterializedViewForTest.refresh */ REFRESH MATERIALIZED VIEW CONCURRENTLY ${quotedView}`,
     )
+    if (afterRefresh) await afterRefresh(client)
   } catch (err) {
     refreshError = toError(err)
   } finally {

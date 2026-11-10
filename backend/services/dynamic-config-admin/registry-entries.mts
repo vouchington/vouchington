@@ -1,5 +1,6 @@
 import { relationLimitsRegistryEntry } from './registry-relation-limits-entry.mts'
 import { profileCountRegistryEntry } from './registry-profile-count-entry.mts'
+import { trendingCommunitiesRegistryEntry } from './registry-trending-communities-entry.mts'
 import { webSearchRegistryEntry } from './registry-web-search-entry.mts'
 import { sessionLimitsRegistryEntry } from './registry-session-limits-entry.mts'
 import { landingPageLimitsRegistryEntry } from './registry-landing-page-limits.mts'
@@ -38,6 +39,7 @@ const unorderedRegistryEntries = [
   sessionLimitsRegistryEntry,
   relationLimitsRegistryEntry,
   profileCountRegistryEntry,
+  trendingCommunitiesRegistryEntry,
   webSearchRegistryEntry,
   landingPageLimitsRegistryEntry,
   ...hackerNewsRegistryEntries,
