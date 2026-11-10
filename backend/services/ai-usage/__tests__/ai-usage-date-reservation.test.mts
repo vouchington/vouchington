@@ -80,7 +80,11 @@ describe('acquireTestAiUsageDateReservation', () => {
       id: timestampToUuidv7LowerBound(Date.now()),
       costMicrounits: 321,
     })
-    await expect(getDailyAiCostTotalMicrounits()).resolves.toMatchObject({ totalMicrounits: 321 })
+    // Refresh skips the process cache: an earlier test in this worker can cache a total for this
+    // reused day at the same fake noon, which the 60s TTL still treats as fresh.
+    await expect(refreshDailyAiCostTotalMicrounits()).resolves.toMatchObject({
+      totalMicrounits: 321,
+    })
     await first.release()
     // Slot choice follows Date. Acquiring again while the clock sits inside the reserved day
     // drops every slot that reaches that day, and the earliest day then has none left.
