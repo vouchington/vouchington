@@ -24,7 +24,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@atproto/oauth-client-node": "^0.5.12",
+    "@atproto/oauth-client-node": "^0.5.16",
     "@modules/api-egress-proxy": "workspace:^",
     "@modules/utils": "workspace:^",
     "@vouchington/oauth-client": "^0.1.0"
