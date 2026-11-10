@@ -8,7 +8,6 @@ import { appendCommunityTextProbe } from './text-filter.mts'
  * cursor inside this CTE, so the ranking index on mv_trending_communities serves the page.
  */
 export function startTrendingCommunityCandidates(
-  hasListItems: boolean,
   search?: string,
   memberUserId?: string,
 ): SQLStatement {
@@ -19,12 +18,11 @@ export function startTrendingCommunityCandidates(
       WHERE user_id = ${memberUserId} AND removed_at IS NULL
     ), `)
   query.append(sql`candidate_communities AS MATERIALIZED (
-      SELECT c.id, c.name, trending.trending_score
+      SELECT c.id, c.name, trending.trending_score, counts.list_item_count
       FROM mv_trending_communities trending
-      JOIN communities c ON c.id = trending.id`)
+      JOIN communities c ON c.id = trending.id
+      JOIN community_search_counts counts ON counts.community_id = c.id`)
   if (memberUserId) query.append(sql` JOIN member_matches member_match ON member_match.id = c.id`)
-  if (hasListItems)
-    query.append(sql` JOIN community_search_counts counts ON counts.community_id = c.id`)
   if (search) appendCommunityTextProbe(query, search)
   return query.append(sql` WHERE c.deleted_at IS NULL`)
 }
