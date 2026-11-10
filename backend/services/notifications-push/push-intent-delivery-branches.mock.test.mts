@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import webpush, { type SendResult } from 'web-push'
+import * as webpush from 'web-push'
+import type { SendResult } from 'web-push'
 import {
   createTestSubscriptionPostNotification,
   createTestPost,
@@ -20,7 +21,7 @@ vi.mock<typeof import('web-push')>(import('web-push'), async importActual => {
     sendNotification: vi.fn<typeof actual.sendNotification>(),
     setVapidDetails: vi.fn<typeof actual.setVapidDetails>(),
   }
-  return { ...mockedModule, default: mockedModule }
+  return mockedModule
 })
 
 describe('deliverClaimedNotificationPushIntent lease and configuration branches', () => {

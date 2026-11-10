@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import webpush, { type SendResult } from 'web-push'
+import * as webpush from 'web-push'
+import type { SendResult } from 'web-push'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { getIntentState, getLeaseExpiry } from '@voucha/test-helpers/notification-push-fixtures'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
@@ -13,7 +14,7 @@ vi.mock<typeof import('web-push')>(import('web-push'), async importActual => {
     sendNotification: vi.fn<typeof actual.sendNotification>(),
     setVapidDetails: vi.fn<typeof actual.setVapidDetails>(),
   }
-  return { ...mockedModule, default: mockedModule }
+  return mockedModule
 })
 
 describe('notification push delivery concurrency', () => {

@@ -5,7 +5,7 @@ import {
 } from '@modules/feed-query-builders'
 import { itemHasDiscoverableSourceSql } from '@modules/feed-query-builders/discoverability-sql'
 import sql from 'sql-template-strings'
-import webpush from 'web-push'
+import * as webpush from 'web-push'
 import type { PushPayloadNotification } from './push-payload.mts'
 import {
   notificationPushDeliveryPolicy,

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import webpush, { type SendResult } from 'web-push'
+import * as webpush from 'web-push'
+import type { SendResult } from 'web-push'
 import {
   createTestUserDirect,
   deleteTestHouseholdById,
@@ -21,7 +22,7 @@ vi.mock<typeof import('web-push')>(import('web-push'), async importActual => {
     sendNotification: vi.fn<typeof actual.sendNotification>(),
     setVapidDetails: vi.fn<typeof actual.setVapidDetails>(),
   }
-  return { ...mocked, default: mocked }
+  return mocked
 })
 
 describe('household invitation push delivery', () => {
