@@ -49,6 +49,10 @@ changed files.
   store directly, without a cache restore path. `actions/setup-node` package-manager caching is also
   disabled. Playwright browsers and shared web test runtime output may use SHA-pinned
   `actions/cache` under the [GitHub Actions checklist](../checklists/github-actions.md).
+- Toolchains downloaded from GitHub Releases at job start (Node via `actions/setup-node`, gitleaks,
+  mise tools) fail whole jobs when Releases is slow, and a merge-group failure ejects an unrelated
+  entry. A job that runs only dependency-free scripts on `ubuntu-slim` uses the image's built-in Node
+  (above `engines`) and has no `setup-node` step; keep it that way.
 - `lingua-rs` downloads a native binary from GitHub releases in its postinstall, which made installs
   slow and flaky. Jobs that never load language detection skip that download; every job that runs
   backend code keeps the binary, cached by [setup-backend](../../.github/actions/setup-backend/action.yml)
