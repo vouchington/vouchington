@@ -42,11 +42,14 @@ export async function createProfileLink(
   // HAVING COUNT(*) < MAX_PROFILE_LINKS prevents insert when at the limit.
   await using transaction = await beginTransaction()
   const imageIds = input.image_id ? [input.image_id] : []
-  await assertImagesReadyForSurface(imageIds, transaction)
-  await admitImagePlacements(
-    transaction,
-    imageIds.map(imageId => ({ imageId })),
-  )
+  await runSequentially([
+    () => assertImagesReadyForSurface(imageIds, transaction),
+    () =>
+      admitImagePlacements(
+        transaction,
+        imageIds.map(imageId => ({ imageId })),
+      ),
+  ])
   const { rows } = await transaction(sql`/* createProfileLink */
     INSERT INTO user_profile_links (user_id, link_type, sort_order, url_id, handle, name, image_id)
     SELECT
