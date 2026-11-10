@@ -47,7 +47,7 @@ export async function getVerifiedProviderObservation(
     INNER JOIN membership_products product ON product.id = observation.membership_product_id
     WHERE observation.id = ${options.membershipProviderObservationId}
       AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL
-    FOR KEY SHARE OF observation, evidence, lineage`)
+`)
   const row = rows[0] as ObservationRow | undefined
   if (!row || (row.source_kind !== 'direct' && row.source_kind !== 'family'))
     throw new Error('Verified provider observation was not found')
@@ -96,7 +96,7 @@ export async function getLatestProviderSourceProjection(
     WHERE membership.membership_source_id = ${membershipSourceId}
     ORDER BY membership.id DESC
     LIMIT 1
-    FOR UPDATE OF membership`)
+`)
   return rows[0] as PriorMembership | undefined
 }
 
@@ -113,7 +113,7 @@ export async function getCurrentProviderProjection(
     INNER JOIN membership_sources source ON source.id = membership.membership_source_id
     INNER JOIN membership_products product ON product.id = membership.membership_product_id
     WHERE membership.user_id = ${userId} AND membership.projection_ended_at IS NULL
-    FOR UPDATE OF membership`)
+`)
   return rows[0] as
     | (PriorMembership & {
         source_kind: 'admin_grant' | 'direct' | 'family'

@@ -128,8 +128,7 @@ async function admitLogoutCleanup(
     SELECT s.id FROM user_sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ${sessionId} AND s.user_id = ${revocationOptions.userId}
       AND s.revoked_at IS NULL AND s.expires_at > CURRENT_TIMESTAMP
-      AND s.device_token_digest IS NOT NULL AND u.deleted_at IS NULL
-    FOR UPDATE OF s`)
+      AND s.device_token_digest IS NOT NULL AND u.deleted_at IS NULL`)
   if (rows.length === 0) return false
   const result = await sessionValkeyClient.invokeScript(admitLogoutCleanupScript, {
     keys: [
@@ -151,17 +150,12 @@ async function admitLogoutCleanup(
   return true
 }
 
-/** Keep the established user-before-SID lock order without requiring a still-live account. */
+/** Retained call site. Logout cleanup admission no longer locks the session row. */
 async function lockLogoutCleanupAdmission(
-  query: TransactionQuery,
-  userId: string,
-  sessionId: string,
-): Promise<void> {
-  await query(sql`/* admitLogoutCleanup:userFence */
-    SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))`)
-  await query(sql`/* admitLogoutCleanup:sessionFence */
-    SELECT pg_advisory_xact_lock(hashtextextended(${sessionId}, 1))`)
-}
+  _query: TransactionQuery,
+  _userId: string,
+  _sessionId: string,
+): Promise<void> {}
 
 async function commitLogoutRevocation(
   sessionId: string,

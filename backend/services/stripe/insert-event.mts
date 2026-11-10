@@ -105,7 +105,7 @@ async function findStripeEventForReplay(
       LEFT JOIN stripe_event_processing_work_items work ON work.stripe_event_id = event.id
       JOIN stripe_event_types event_type ON event_type.id = event.stripe_event_type_id
       WHERE event.stripe_event_id = ${stripeEventId}
-      FOR KEY SHARE OF event
+
     `),
   )
   return (existing.rows[0] as StripeEventRow | undefined) ?? null

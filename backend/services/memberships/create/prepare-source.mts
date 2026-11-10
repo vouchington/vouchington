@@ -45,7 +45,7 @@ export async function getFamilyMembershipSourceProjectionAdmission(
       AND membership.cancelled_at IS NULL
       AND membership.expired_at IS NULL
       AND membership.paused_at IS NULL
-    FOR UPDATE OF membership`)
+`)
   const current = rows[0] as
     | {
         id: string
@@ -119,7 +119,7 @@ async function lockPriorProjectionAndCreateSource(
       INNER JOIN membership_sources source ON source.id = membership.membership_source_id
       INNER JOIN membership_products product ON product.id = membership.membership_product_id
       WHERE membership.user_id = ${options.userId}
-        AND membership.projection_ended_at IS NULL FOR UPDATE OF membership`,
+        AND membership.projection_ended_at IS NULL`,
   )
   const source = await createSource(options, productId, query)
   const retainedSourceRows =
@@ -142,7 +142,7 @@ async function lockRetainedDirectSourceProjection(sourceId: string, query: Query
         AND membership.projection_ended_at IS NOT NULL
       ORDER BY membership.projection_ended_at DESC, membership.id DESC
       LIMIT 1
-      FOR UPDATE OF membership`,
+`,
   )
   return rows
 }

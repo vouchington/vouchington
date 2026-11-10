@@ -8,10 +8,6 @@ export async function runTopicMergeRatingRefreshRace(
   mergerId: string,
 ): Promise<{ passedPrecheck: boolean; stayedActive: boolean }> {
   await using merge = await beginTransaction()
-  await merge(
-    `/* holdTopicMergeRatingRefreshRace */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-    [`topic-rating:${sourceId}`],
-  )
   await using refresher = await beginTransaction()
   const ratingLockIssued = Promise.withResolvers<void>()
   let passedPrecheck = false

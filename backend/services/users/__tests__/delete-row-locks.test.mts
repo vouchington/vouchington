@@ -12,7 +12,7 @@ async function holdDeletionRowLocks(targetUserId: string, requestedById: string)
 }
 
 describe('lockUserDeletionRows', () => {
-  it('locks the target for update and the actor only against key changes', async () => {
+  it('locks the deletion target for no key update and does not lock the actor', async () => {
     const [target, actor] = await Promise.all([
       createTestUser({ administrator: true }),
       createTestUser({ administrator: true }),
@@ -20,17 +20,14 @@ describe('lockUserDeletionRows', () => {
     const held = await holdDeletionRowLocks(target.id, actor.id)
     try {
       expect(await isTestUserRowLocked(target.id, 'no-key-update')).toBe(true)
-      // The actor is held FOR KEY SHARE: it blocks FOR UPDATE but not FOR NO KEY UPDATE, so a
-      // reciprocal deletion can still take its own target row without waiting on this one.
-      expect(await isTestUserRowLocked(actor.id, 'update')).toBe(true)
-      expect(await isTestUserRowLocked(actor.id, 'no-key-update')).toBe(false)
+      expect(await isTestUserRowLocked(actor.id, 'update')).toBe(false)
     } finally {
       held.release()
       await held.completed
     }
   })
 
-  it('locks a single row for update when a user deletes their own account', async () => {
+  it('locks a single row for no key update when a user deletes their own account', async () => {
     const user = await createTestUser()
     const held = await holdDeletionRowLocks(user.id, user.id)
     try {

@@ -22,7 +22,7 @@ export async function lockCommunityRestrictionWrites(
       query(sql`/* lockCommunityRestrictionWrites.membership */
     SELECT id FROM community_members
     WHERE community_id = ${communityId} AND user_id = ${actorId} AND removed_at IS NULL
-    FOR NO KEY UPDATE`),
+`),
   ])
   const actor = await getPrivateUserByAny(actorId, { query })
   assert(actor, 401, 'User not found')

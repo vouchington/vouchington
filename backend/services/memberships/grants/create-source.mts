@@ -29,7 +29,7 @@ export async function createGrantSource(
   const issuerSnapshot = await getGrantIssuerSnapshot(options.grantedById, query)
   const { rows } = await query(sql`/* createMembership: serialize and persist grant FIFO */
     WITH locked_user AS (
-      SELECT id FROM users WHERE id = ${options.userId} FOR UPDATE
+      SELECT id FROM users WHERE id = ${options.userId}
     ), open_direct_term AS (
       SELECT 1
       FROM memberships membership

@@ -93,7 +93,7 @@ export async function isCurrentReviewDisputeDraftRequest(
     SELECT ai_draft_request_token, approved_at, sent_at, resolved_at
     FROM review_disputes
     WHERE id = ${disputeId}
-    FOR UPDATE
+
   `)
   const dispute = rows[0]
   return (

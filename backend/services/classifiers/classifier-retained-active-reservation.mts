@@ -16,7 +16,7 @@ export async function assertRetainedActiveDecisionReservation(
       AND run.completed_at IS NULL AND run.superseded_at IS NULL
       AND run.terminal_failed_at IS NULL
       AND run.lease_token IS NOT NULL AND run.lease_expires_at > clock_timestamp()
-    FOR SHARE OF batch, run
+
   `)
   if (!rows[0]) throw new RangeError('Classifier decision batch is outside the retention window')
 }

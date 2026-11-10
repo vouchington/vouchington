@@ -52,8 +52,6 @@ export async function reserveIdentityVerificationAttempt(
             )
           ORDER BY entitlement.id
           LIMIT 1
-          /* deadlock-safe: SKIP LOCKED plus ORDER BY id */
-          FOR UPDATE SKIP LOCKED
         )
         INSERT INTO identity_verification_attempts (user_id, source, grant_entitlement_attempt_id)
         SELECT user_id, 'support_grant', id FROM candidate

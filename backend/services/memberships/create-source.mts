@@ -32,7 +32,7 @@ export async function getMembershipProductIdForCreation(
 ): Promise<string> {
   if (!options.stripeSubscriptionId) {
     const { rows } = await query(
-      sql`/* getActiveMembershipProduct */ SELECT id FROM membership_products WHERE id = ${options.skuId} AND plan = ${options.plan} AND retired_at IS NULL FOR SHARE`,
+      sql`/* getActiveMembershipProduct */ SELECT id FROM membership_products WHERE id = ${options.skuId} AND plan = ${options.plan} AND retired_at IS NULL`,
     )
     if (rows[0]) return (rows[0] as { id: string }).id
     throw new InvalidMembershipGrantSkuError()
@@ -60,7 +60,7 @@ async function getMembershipProductIdForProviderSourceCreation(
   query: QueryExecutor,
 ): Promise<string> {
   const { rows } = await query(
-    sql`/* getActiveMembershipProduct */ SELECT id FROM membership_products WHERE id = ${options.skuId} AND plan = ${options.plan} AND retired_at IS NULL FOR SHARE`,
+    sql`/* getActiveMembershipProduct */ SELECT id FROM membership_products WHERE id = ${options.skuId} AND plan = ${options.plan} AND retired_at IS NULL`,
   )
   if (rows[0]) return (rows[0] as { id: string }).id
   const { rows: retainedRows } = await query(sql`/* getRetainedMembershipProduct */
@@ -80,7 +80,7 @@ async function getMembershipProductIdForProviderSourceCreation(
       AND context.environment = ${options.sourceIdentity.environment}
       AND context.application_id = ${options.sourceIdentity.applicationId}
       AND lineage.provider_lineage_id = ${options.sourceIdentity.providerLineageId}
-    FOR SHARE OF product`)
+`)
   if (!retainedRows[0]) throw new InvalidMembershipGrantSkuError()
   return (retainedRows[0] as { id: string }).id
 }

@@ -11,14 +11,18 @@ export function withConcurrentCommunityArchiveForTest<T>(
   operation: () => Promise<T>,
   queryMarker: string,
 ): Promise<T> {
+  const stageArchive = async (query: QueryExecutor) => {
+    await query(sql`/* withConcurrentCommunityArchiveForTest */
+      UPDATE communities SET archived_at = CURRENT_TIMESTAMP WHERE id = ${communityId}`)
+  }
+  if (queryMarker === 'lockCommunityRestrictionWrites') {
+    return commitDelegatedWriteChangeThenRun(stageArchive, operation)
+  }
   return withConcurrentDelegatedWriteChangeForTest(
     operation,
     queryMarker,
     { kind: 'transaction' },
-    async query => {
-      await query(sql`/* withConcurrentCommunityArchiveForTest */
-        UPDATE communities SET archived_at = CURRENT_TIMESTAMP WHERE id = ${communityId}`)
-    },
+    stageArchive,
   )
 }
 /** Commit suspension after a delegated write reaches the canonical author lifecycle fence. */
@@ -63,17 +67,32 @@ export function withConcurrentCommunityMembershipRemovalForTest<T>(
   operation: () => Promise<T>,
   queryMarker: string,
 ): Promise<T> {
+  const stageRemoval = async (query: QueryExecutor) => {
+    await query(sql`/* withConcurrentCommunityMembershipRemovalForTest */
+        UPDATE community_members SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${userId}
+        WHERE community_id = ${communityId} AND user_id = ${userId} AND removed_at IS NULL`)
+  }
+  if (queryMarker === 'lockCommunityRestrictionWrites.membership') {
+    return commitDelegatedWriteChangeThenRun(stageRemoval, operation)
+  }
   return withConcurrentDelegatedWriteChangeForTest(
     operation,
     queryMarker,
     { kind: 'transaction' },
-    async query => {
-      await query(sql`/* withConcurrentCommunityMembershipRemovalForTest */
-          UPDATE community_members SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${userId}
-          WHERE community_id = ${communityId} AND user_id = ${userId} AND removed_at IS NULL`)
-    },
+    stageRemoval,
     true,
   )
+}
+
+/** Commits the staged row, then runs the writer. Used when that writer no longer locks the row. */
+async function commitDelegatedWriteChangeThenRun<T>(
+  stageChange: (query: QueryExecutor) => Promise<void>,
+  operation: () => Promise<T>,
+): Promise<T> {
+  await using query = await beginTransaction()
+  await stageChange(query)
+  await query.commit()
+  return await operation()
 }
 /** Commit the staged change only after the mutation is blocked on the exact writer fence. */
 async function withConcurrentDelegatedWriteChangeForTest<T>(

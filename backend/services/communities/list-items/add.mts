@@ -79,7 +79,7 @@ async function addCommunityListFeedWithLimit(
   // READ COMMITTED snapshot after any competing add releases this lock.
   await read(
     `/* addCommunityListFeed:lock */
-    SELECT id FROM communities WHERE id = $1 FOR UPDATE`,
+    SELECT id FROM communities WHERE id = $1`,
     [communityId],
     options,
   )

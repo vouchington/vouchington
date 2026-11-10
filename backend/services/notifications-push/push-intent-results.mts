@@ -34,7 +34,6 @@ export async function listPendingActivePushSubscriptions(
         AND notification_id = ${intent.notification_id}
         AND lease_token = ${intent.lease_token}
         AND lease_expires_at > CURRENT_TIMESTAMP
-      FOR UPDATE
     ), expired_owner AS (
       DELETE FROM web_push_endpoint_owners owner
       USING web_push_subscriptions subscription, active_claim
@@ -97,7 +96,6 @@ export async function persistClaimedNotificationPushOutcome(
         AND notification_id = ${intent.notification_id}
         AND lease_token = ${intent.lease_token}
         AND lease_expires_at > CURRENT_TIMESTAMP
-      FOR UPDATE
     ), owned_subscription AS MATERIALIZED (
       SELECT subscription.id
       FROM web_push_subscriptions subscription

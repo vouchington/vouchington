@@ -6,13 +6,8 @@ import assert from 'http-assert'
 type MergeRow = Pick<Topic, 'id' | 'slug' | 'topic_type'> &
   Record<'is_deleted' | 'is_merged' | 'has_pending_slug_alias', boolean>
 
-/** Serialize identity assignment so admission_position orders committed reservations. */
-export async function lockTopicMergeAdmission(query: TransactionQuery): Promise<void> {
-  await query(
-    `/* lockTopicMergeAdmission */
-      SELECT pg_advisory_xact_lock(hashtextextended('topic-merge-admission', 0))`,
-  )
-}
+/** Retained call site. Merge admission no longer takes a lock. */
+export async function lockTopicMergeAdmission(_query: TransactionQuery): Promise<void> {}
 
 /** Lock both participants before reservation and retain precise inactive-topic errors. */
 export async function lockAndAssertMergeParticipants(
@@ -37,17 +32,11 @@ export async function lockAndAssertMergeParticipants(
   return sourceRow
 }
 
+/** Retained call site. Merge lifecycles no longer take a lock. */
 export async function lockTopicMergeLifecycles(
-  query: TransactionQuery,
-  topicIds: readonly string[],
-): Promise<void> {
-  await query(
-    `/* lockTopicMergeLifecycles */
-      SELECT pg_advisory_xact_lock(hashtextextended('topic-merge-lifecycle:' || id::text, 0))
-      FROM (SELECT DISTINCT unnest($1::uuid[]) AS id ORDER BY id) ordered_ids`,
-    [topicIds],
-  )
-}
+  _query: TransactionQuery,
+  _topicIds: readonly string[],
+): Promise<void> {}
 
 /** Reject an active merge without locking the topic read context. */
 export async function assertNoActiveTopicMerges(

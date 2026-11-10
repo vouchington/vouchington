@@ -52,7 +52,7 @@ export async function createClientGeneratedChatTurn(
   await using query = await beginTransaction()
   // Serialize identity lookup with insertion so concurrent retries replay one persisted turn.
   await query(sql`/* lockClientGeneratedTurn */
-    SELECT id FROM conversations WHERE id = ${conversationId} FOR UPDATE
+    SELECT id FROM conversations WHERE id = ${conversationId}
   `)
   const replay = await findClientGeneratedChatTurnReplay(query, params)
   if (replay) {

@@ -70,7 +70,7 @@ async function getOrCreateLineage(
     SELECT id FROM membership_provider_lineages
     WHERE membership_provider_context_id = ${contextId}
       AND provider_lineage_id = ${providerLineageId}
-    FOR KEY SHARE`)
+`)
   const lineage = rows[0]
   if (!lineage) throw new Error('Apple notification lineage was not returned')
   return lineage.id
@@ -119,7 +119,7 @@ async function createOrGetEvidence(
       SELECT id, membership_provider_lineage_id FROM membership_provider_evidence_records
       WHERE membership_provider_context_id = ${contextId}
         AND provider_event_id = ${options.notificationId}
-      FOR KEY SHARE`,
+`,
   )
   const evidence = rows[0]
   if (!evidence || evidence.membership_provider_lineage_id !== options.lineageId)

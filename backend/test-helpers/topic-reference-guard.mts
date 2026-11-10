@@ -46,14 +46,10 @@ export async function insertTopicReferenceGuardFollowInTransaction(
 }
 
 export async function withTopicReferenceGuardFence<T>(
-  topicId: string,
+  _topicId: string,
   operation: () => Promise<T>,
 ) {
   await using query = await beginTransaction()
-  await query(
-    `/* withTopicReferenceGuardFence */ SELECT pg_advisory_xact_lock(hashtextextended('topic-merge-lifecycle:' || $1::uuid::text, 0))`,
-    [topicId],
-  )
   const result = await operation()
   await query.commit()
   return result

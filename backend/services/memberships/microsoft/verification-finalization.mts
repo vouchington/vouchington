@@ -39,7 +39,7 @@ export async function acceptObservation(
     ON CONFLICT (membership_provider_lineage_id, provider_revision, provider_order) DO NOTHING RETURNING id`)
   if (rows[0]) return rows[0].id
   const { rows: existing } = await query<{ id: string }>(
-    sql`/* findMicrosoftStoreVerificationObservation */ SELECT id FROM membership_provider_observations WHERE membership_provider_lineage_id = ${lineageId} AND provider_revision = ${observation.providerRevision} AND provider_order = ${observation.providerOrder} FOR KEY SHARE`,
+    sql`/* findMicrosoftStoreVerificationObservation */ SELECT id FROM membership_provider_observations WHERE membership_provider_lineage_id = ${lineageId} AND provider_revision = ${observation.providerRevision} AND provider_order = ${observation.providerOrder}`,
   )
   if (!existing[0]) throw new Error('Microsoft Store observation was not returned')
   return existing[0].id

@@ -17,19 +17,8 @@ export async function lockActiveUserSubjectsForMutation(
   `)
 }
 
-/** Acquires the deletion writer fence without raising for an already-inactive subject. */
+/** Retained call site. Subject mutation fences no longer take an advisory lock. */
 export async function lockUserSubjectMutationFences(
-  query: TransactionQuery,
-  userIds: readonly string[],
-): Promise<void> {
-  const distinctUserIds = [...new Set(userIds)].toSorted((left, right) => left.localeCompare(right))
-  if (distinctUserIds.length === 0) return
-
-  await query(sql`/* lockUserSubjectMutationFences */
-    SELECT pg_advisory_xact_lock(hashtextextended(ordered.user_id::text, 0))
-    FROM (
-      SELECT unnest(${distinctUserIds}::uuid[]) AS user_id
-      ORDER BY user_id
-    ) ordered
-  `)
-}
+  _query: TransactionQuery,
+  _userIds: readonly string[],
+): Promise<void> {}

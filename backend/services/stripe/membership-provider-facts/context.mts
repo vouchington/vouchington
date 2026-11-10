@@ -59,7 +59,7 @@ async function lockMembershipFactUser(membershipId: string, query: QueryExecutor
     FROM memberships membership
     INNER JOIN users member_user ON member_user.id = membership.user_id
     WHERE membership.id = ${membershipId}
-    FOR UPDATE OF member_user
+
   `)
 }
 
@@ -83,7 +83,7 @@ async function getMembershipFact(
       AND source.source_kind = 'direct'
       AND context.provider = 'stripe'
     /* deadlock-safe: membership.id reaches one source and its one current state */
-    FOR UPDATE OF source, state
+
   `)
   return (rows[0] as MembershipFact | undefined) ?? null
 }

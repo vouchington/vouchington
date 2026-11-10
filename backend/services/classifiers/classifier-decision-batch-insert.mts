@@ -20,9 +20,6 @@ export async function insertClassifierDecisionBatch(
   }
   // ON CONFLICT (id) misses a concurrent duplicate on a composite unique index. Hash
   // canonical uuid text so mixed-case spellings of one batch take that same lock.
-  await query(sql`/* insertClassifierDecisionBatch:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended('classifier-decision-batch:' || ${input.batchId}::uuid::text, 0))
-  `)
   if (!isClassifierBatchWithinRetention(input.batchId)) {
     await assertRetainedActiveDecisionReservation(query, activeRunId!, input.batchId)
     return false

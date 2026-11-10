@@ -119,25 +119,19 @@ export async function hasExistingAutomodFeedback(input: {
   return rows.length > 0
 }
 
+/** Retained call site. Automod feedback no longer locks the source row. */
 export async function lockAutomodFeedbackSource(
-  communityId: string,
-  sourceKey: string,
-  query: QueryExecutor,
-): Promise<void> {
-  await query(sql`/* lockAutomodFeedbackSource */
-    SELECT pg_advisory_xact_lock(hashtextextended(${communityId} || ':' || ${sourceKey}, 0))
-  `)
-}
+  _communityId: string,
+  _sourceKey: string,
+  _query: QueryExecutor,
+): Promise<void> {}
 
+/** Retained call site. Automod feedback no longer locks the post row up front. */
 export async function lockAutomodFeedbackPost(
-  communityId: string,
-  postId: string,
-  query: QueryExecutor,
-): Promise<void> {
-  await query(sql`/* lockAutomodFeedbackPost */
-    SELECT pg_advisory_xact_lock(hashtextextended(${communityId} || ':' || ${postId}, 0))
-  `)
-}
+  _communityId: string,
+  _postId: string,
+  _query: QueryExecutor,
+): Promise<void> {}
 
 export async function lockAutomodFeedbackPostRow(
   postId: string,
@@ -148,7 +142,7 @@ export async function lockAutomodFeedbackPostRow(
     FROM posts
     WHERE id = ${postId}
       AND deleted_at IS NULL
-    FOR UPDATE
+
   `)
   return (result.rowCount ?? 0) > 0
 }

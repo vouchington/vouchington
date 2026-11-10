@@ -5,11 +5,7 @@ import sql from 'sql-template-strings'
 
 type LockedActiveCommunityMember = { role: CommunityMemberRole }
 
-/**
- * Locks the authorization row through the caller's prompt mutation. `FOR SHARE`
- * conflicts with every membership revocation or role update, including writers
- * that do not participate in an application-level locking protocol.
- */
+/** Reads the caller's current community membership. The row is not locked. */
 export async function getLockedActiveCommunityMember(
   communityId: string,
   userId: string,
@@ -22,7 +18,7 @@ export async function getLockedActiveCommunityMember(
       WHERE community_id = ${communityId}
         AND user_id = ${userId}
         AND removed_at IS NULL
-      FOR SHARE
+
     `,
     options,
   )

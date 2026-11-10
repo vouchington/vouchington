@@ -31,9 +31,6 @@ export async function createSavedReply(
   const { title, body } = options
   await using query = await beginTransaction()
   // Advisory lock serializes concurrent order_index allocation for the same community.
-  await query(
-    sql`/* createSavedReply:lock */ SELECT pg_advisory_xact_lock(hashtext(${communityId})::bigint)`,
-  )
   const { rows } = await query<CommunitySavedReply>(sql`/* createSavedReply */
     INSERT INTO community_saved_replies (community_id, title, body, order_index, created_by_id)
     VALUES (

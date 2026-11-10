@@ -18,7 +18,7 @@ export async function resumeGrantAfterDirectAccessSuspensionInTransaction(
   retainsPaidAccess: boolean
 }> {
   await query(sql`/* resumeGrantAfterDirectTermination: lock user */
-    SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
+    SELECT id FROM users WHERE id = ${userId}`)
   const { rows } = await query(sql`/* resumeGrantAfterDirectTermination: source */
     SELECT membership.membership_source_id, membership.membership_product_id,
       COALESCE(source_state.cancelled_at, source_state.expired_at, source_state.paused_at)
@@ -34,7 +34,7 @@ export async function resumeGrantAfterDirectAccessSuspensionInTransaction(
         OR source_state.expired_at IS NOT NULL
         OR source_state.paused_at IS NOT NULL
       )
-    FOR UPDATE`)
+`)
   const direct = rows[0] as
     | { membership_product_id: string; membership_source_id: string; access_suspended_at: Date }
     | undefined

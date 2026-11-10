@@ -3,7 +3,6 @@ import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/up
 import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
 import { getMembershipByUserId } from '@services/memberships'
 import { hasPlusTier } from '@modules/membership-helpers'
@@ -21,12 +20,11 @@ import { getAmexCardSlugCatalog, constructChildUrls } from './construct-amex-chi
 import { clearPrioritizedLinksCache } from '@services/user-referral-program-links/prioritized-links-cache'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
-/** Serializes concurrent unfurls of the same parent so their reconcile passes can't race. */
-async function lockParentForUnfurl(parentLinkId: string, query: TransactionQuery): Promise<void> {
-  await query(sql`/* lockParentForUnfurl */
-    SELECT pg_advisory_xact_lock(hashtextextended(${parentLinkId}, 0))
-  `)
-}
+/** Retained call site. Parent unfurls no longer take an advisory lock. */
+async function lockParentForUnfurl(
+  _parentLinkId: string,
+  _query: TransactionQuery,
+): Promise<void> {}
 
 /**
  * Idempotent unfurl processor body (queue-authoring rule: every retry must be safe). Re-crawls

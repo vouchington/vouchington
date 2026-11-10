@@ -69,7 +69,7 @@ export const setCanonicalRssFeed = async (
       `/* setCanonicalRssFeed:lockTarget */
       SELECT id FROM rss_feeds
       WHERE id = $1::uuid AND hard_delete_requested_at IS NULL
-      FOR SHARE`,
+`,
       [finalCanonicalId],
     )
     assert(targets.length > 0, 409, 'Canonical RSS feed is pending deletion')

@@ -24,7 +24,7 @@ export async function moveRenewalPriceIncreaseNotificationState(
       WHERE membership.membership_source_id = ${membershipSourceId}
         AND membership.projection_ended_at IS NOT NULL
       ORDER BY membership.projection_ended_at DESC, membership.id DESC LIMIT 1
-      FOR UPDATE
+
     )
     DELETE FROM membership_renewal_price_increase_notification_work_items work
     USING previous WHERE work.membership_id = previous.id

@@ -1,4 +1,3 @@
-/* oxlint-disable no-await-in-loop -- Sequential bounded batches preserve lock order and cap query inputs. */
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { impactPublicationKeys } from './captured-keys.mts'
@@ -6,7 +5,6 @@ import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mt
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 
 const RSS_FEED_PUBLICATION_REASON = 'rss_feed_discoverability_changed' as const
-const rssFeedScopesLockedInQuery = new WeakMap<TransactionQuery, Set<string>>()
 
 type RssFeedTopicPublicationChange = {
   rssFeedId: string
@@ -61,28 +59,8 @@ export async function recordRssFeedTopicPublicationChanges(
   }
 }
 
-/** Pre-locks RSS-feed scopes in one global order before capturing post-commit effects. */
+/** Retained call site. RSS feed publication scopes no longer take an advisory lock. */
 export async function lockPostPublicationRssFeedScopes(
-  query: TransactionQuery,
-  rssFeedIds: readonly string[],
-): Promise<void> {
-  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
-  const held = rssFeedScopesLockedInQuery.get(query) ?? new Set<string>()
-  // This query already holds these advisory locks until commit.
-  // Feeds found after an item-row wait are still locked below.
-  const ids = normalizePostPublicationIdentifiers(rssFeedIds).filter(id => !held.has(id))
-  if (ids.length === 0) return
-  rssFeedScopesLockedInQuery.set(query, held)
-  for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
-    const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
-    // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.
-    await query(
-      `/* lockPostPublicationRssFeedScopes */
-      SELECT pg_advisory_xact_lock(hashtextextended('rss_feed:' || rss_feed_id::text, 0))
-      FROM unnest($1::uuid[]) AS input(rss_feed_id)
-      ORDER BY rss_feed_id`,
-      [batch],
-    )
-    for (const id of batch) held.add(id)
-  }
-}
+  _query: TransactionQuery,
+  _rssFeedIds: readonly string[],
+): Promise<void> {}

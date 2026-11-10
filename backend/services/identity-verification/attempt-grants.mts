@@ -26,7 +26,7 @@ export async function grantIdentityVerificationAttempt(
         AND deleted_at IS NULL
         AND verification_status IN ('unverified', 'failed')
       ORDER BY id
-      FOR UPDATE
+
     `)
   let rowCount = 0
   if (targetRows.length === 1) {

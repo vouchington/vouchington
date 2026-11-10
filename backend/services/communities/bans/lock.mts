@@ -1,85 +1,30 @@
-import { write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
 import { assertNotBanned } from './get.mts'
 
-// Serializes ban issuance against membership/post creation for the same (community, user) pair.
-// Every transaction that either issues a ban or grants membership / creates community content for
-// a user takes this transaction-scoped advisory lock first, so a ban and a concurrent join/redeem/
-// approval/post can no longer interleave their check-then-write and leave a banned user active.
-// Must be called inside a transaction (pass the transaction's `options`); the lock releases on
-// commit/rollback.
+/** Retained call site. Community user fences no longer take a lock. */
 export async function lockCommunityUser(
-  communityId: string,
-  userId: string,
-  options: QueryOptions,
-): Promise<void> {
-  await write(
-    sql`/* lockCommunityUser */
-    SELECT pg_advisory_xact_lock(hashtextextended(${communityId} || ':' || ${userId}, 0))
-    `,
-    options,
-  )
-}
+  _communityId: string,
+  _userId: string,
+  _options: QueryOptions,
+): Promise<void> {}
 
 export async function lockCommunityUsers(
-  communityId: string,
-  userIds: string[],
-  options: QueryOptions,
-): Promise<void> {
-  const sortedUserIds = [...new Set(userIds)].toSorted()
-  if (sortedUserIds.length === 0) return
-  await write(
-    sql`/* lockCommunityUsers */
-      WITH ordered_users AS MATERIALIZED (
-        SELECT user_id
-        FROM unnest(${sortedUserIds}::uuid[]) AS input(user_id)
-        ORDER BY user_id
-      )
-      SELECT pg_advisory_xact_lock(hashtextextended(${communityId} || ':' || user_id, 0))
-      FROM ordered_users
-      ORDER BY user_id
-    `,
-    options,
-  )
-}
+  _communityId: string,
+  _userIds: string[],
+  _options: QueryOptions,
+): Promise<void> {}
 
-/** Fences many (community, user) pairs in one statement, ascending by user id then community id. */
+/** Retained call site. Pair fences no longer take a lock. */
 export async function lockCommunityUserPairs(
-  query: TransactionQuery,
-  pairs: readonly { communityId: string; userId: string }[],
-): Promise<void> {
-  if (pairs.length === 0) return
-  await query(
-    sql`/* lockCommunityUserPairs */
-      SELECT pg_advisory_xact_lock(hashtextextended(ordered.community_id::text || ':' || ordered.user_id::text, 0))
-      FROM (
-        SELECT DISTINCT community_id, user_id
-        FROM unnest(${pairs.map(pair => pair.communityId)}::uuid[], ${pairs.map(pair => pair.userId)}::uuid[])
-          AS input(community_id, user_id)
-        ORDER BY user_id, community_id
-      ) ordered
-    `,
-  )
-}
+  _query: TransactionQuery,
+  _pairs: readonly { communityId: string; userId: string }[],
+): Promise<void> {}
 
-/** Serializes membership role changes with purge succession decisions for each community. */
+/** Retained call site. Role fences no longer take a lock. */
 export async function lockCommunityMembershipRoles(
-  query: TransactionQuery,
-  communityIds: readonly string[],
-): Promise<void> {
-  const sortedCommunityIds = [...new Set(communityIds)].toSorted()
-  if (sortedCommunityIds.length === 0) return
-  await query(
-    sql`/* lockCommunityMembershipRoles */
-      SELECT pg_advisory_xact_lock(hashtextextended('community-membership-role:' || ordered.community_id::text, 0))
-      FROM (
-        SELECT unnest(${sortedCommunityIds}::uuid[]) AS community_id
-        ORDER BY community_id
-      ) ordered
-    `,
-  )
-}
+  _query: TransactionQuery,
+  _communityIds: readonly string[],
+): Promise<void> {}
 
 /** Applies the common role-fence then sorted member-fence order for interactive role writers. */
 export async function lockCommunityRoleMutation(

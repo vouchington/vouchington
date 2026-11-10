@@ -12,9 +12,6 @@ export async function claimAdministratorRefundRequest(
   request: AdministratorRefundRequest,
 ): Promise<{ id: string; completed: boolean }> {
   await using query = await beginTransaction()
-  await query(sql`/* serializeAdministratorRefundRequestClaim */
-    SELECT pg_advisory_xact_lock(hashtextextended(${request.idempotencyKey}, 1950614898))
-  `)
   const existingRequest = await getAdministratorRefundRequestForMembershipKey(
     request.idempotencyKey,
     request.membershipId,
@@ -111,7 +108,6 @@ async function getLockedAdministratorRefundOperation(
       AND operation.idempotency_key = ${idempotencyKey}
       AND source.membership_provider_lineage_id = lineage.id
       AND operation.membership_provider_lineage_id = lineage.id
-    FOR UPDATE OF operation
   `)
   return (rows[0] as AdministratorRefundOperation | undefined) ?? null
 }

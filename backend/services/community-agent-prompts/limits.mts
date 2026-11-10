@@ -10,11 +10,6 @@ export async function assertCommunityAgentPromptCapacity(
   communityId: string,
   query: TransactionQuery,
 ): Promise<void> {
-  await query(sql`/* assertCommunityAgentPromptCapacity:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended(
-      'community-agent-prompt-admission:' || ${communityId}::uuid::text || ':' || ${currentUserId}::uuid::text, 0
-    ))
-  `)
   const limit = getCommunityAgentPromptLimit()
   const { rows } = await query<{ count: number }>(sql`/* assertCommunityAgentPromptCapacity */
     SELECT count(*)::int AS count FROM (

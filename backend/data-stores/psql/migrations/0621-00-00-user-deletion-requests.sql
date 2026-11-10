@@ -5,7 +5,6 @@ RETURNS VOID
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  PERFORM pg_advisory_xact_lock(hashtextextended(target_user_id::TEXT, 0));
   IF NOT EXISTS (SELECT 1 FROM users WHERE id = target_user_id) THEN
     RAISE EXCEPTION 'user % does not exist', target_user_id
       USING ERRCODE = 'no_data_found';
@@ -17,7 +16,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION fn_lock_active_user_for_mutation(UUID) IS
-  'Serializes user-owned writes with account deletion and rejects writes after the privacy fence.';
+  'Rejects user-owned writes after the privacy fence.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_deletion_requests (

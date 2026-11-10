@@ -49,12 +49,6 @@ export async function assertCommunityMembershipCapacity(
   communityId: string,
   options: QueryOptions,
 ): Promise<void> {
-  await write(
-    sql`/* assertCommunityMembershipCapacity:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended('community-membership-admission:' || ${currentUserId}, 0))
-  `,
-    options,
-  )
   const limit = getCommunityMembershipLimits().communitiesPerUser
   const { rows } = await write<{ count: number; existing: boolean }>(
     sql`

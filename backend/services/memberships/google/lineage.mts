@@ -144,7 +144,7 @@ export async function persistGooglePlayTokenLineage(
     inserted[0]?.id ??
     (
       await query<{ id: string }>(sql`/* persistGooglePlayTokenLineage.existingLineage */
-    SELECT id FROM membership_provider_lineages WHERE membership_provider_context_id = ${contextId} AND provider_lineage_id = ${options.resolved.rootDigest} FOR UPDATE`)
+    SELECT id FROM membership_provider_lineages WHERE membership_provider_context_id = ${contextId} AND provider_lineage_id = ${options.resolved.rootDigest}`)
     ).rows[0]?.id
   if (!lineageId) throw new Error('Google Play canonical lineage was not returned')
   let submittedTokenFirstFetched = false

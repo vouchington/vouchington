@@ -33,11 +33,6 @@ async function recordLikeInTransaction(
   if (await lockActivityPubLikeIdentity(query, likeApId)) return
   // Serialize per actor/post even when no active row exists yet. An Undo of this exact id
   // races through the all-rows unique index and wins as a terminal tombstone retained beyond the replay horizon.
-  await query(sql`/* lockActivityPubLikePair */
-    SELECT pg_advisory_xact_lock(hashtextextended(
-      'activitypub-like:' || ${postId} || ':' || ${remoteActorId}, 0
-    ))
-  `)
   const { rows: existing } = await query<{
     id: string
     post_id: string

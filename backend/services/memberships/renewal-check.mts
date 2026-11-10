@@ -134,7 +134,7 @@ export async function claimRenewalPriceIncreaseNotification(
         AND work.completed_at IS NULL AND work.delivery_attempted_at IS NULL
         AND work.available_at <= clock_timestamp()
         AND (work.lease_token IS NULL OR work.lease_expires_at <= clock_timestamp())
-      FOR UPDATE OF m
+
     )
     UPDATE membership_renewal_price_increase_notification_work_items work
     SET lease_token = uuidv7(), leased_at = clock_timestamp(),

@@ -17,7 +17,7 @@ export async function lockApprovedPostClassifierInput(
   const { rows } = await query<{ input_sha256: Buffer; community_id: string | null }>(sql`
     /* lockApprovedPostClassifierInput */
     SELECT llm_moderation_content_sha256 AS input_sha256, community_id FROM posts
-    WHERE id = ${subject.postId} AND deleted_at IS NULL AND approved_at IS NOT NULL FOR UPDATE
+    WHERE id = ${subject.postId} AND deleted_at IS NULL AND approved_at IS NOT NULL
   `)
   const post = rows[0]
   return post ? { inputSha256: post.input_sha256, communityId: post.community_id } : null
@@ -34,7 +34,7 @@ export async function lockRssFeedItemClassifierInput(
     SELECT bedrock_nova_multimodal_v1_content_sha256 AS input_sha256 FROM rss_feed_items
     WHERE id = ${subject.rssFeedItemId} AND deleted_at IS NULL
       AND bedrock_nova_multimodal_v1_content_sha256 IS NOT NULL
-    FOR UPDATE
+
   `)
   const item = rows[0]
   return item ? { inputSha256: item.input_sha256, communityId: null } : null

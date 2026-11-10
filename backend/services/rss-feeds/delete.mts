@@ -57,10 +57,6 @@ export async function softDeleteRssFeedById(id: string): Promise<boolean> {
 export async function hardDeleteRssFeedById(id: string): Promise<boolean> {
   await using query = await beginTransaction()
   await lockPostPublicationRssFeedScopes(query, [id])
-  await query(
-    `/* hardDeleteRssFeedById:lockSources */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-    [id],
-  )
   const { rows: feedRows } = await query<{ id: string; topic_id: string }>(
     `/* hardDeleteRssFeedById:lockFeed */
     SELECT id, topic_id FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`,

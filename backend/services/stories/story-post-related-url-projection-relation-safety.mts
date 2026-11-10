@@ -5,7 +5,6 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
-import { hostnameBlockStripeSetLockSql } from '@services/hostname-blocking/hostname-block-lock'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
 import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
@@ -61,37 +60,10 @@ export async function lockPostScopeAndCheckProjectionWork(
 }
 
 export async function lockStoryPostRelatedUrlProjectionHostnameBlocks(
-  query: TransactionQuery,
+  _query: TransactionQuery,
   urlIds: readonly string[],
 ): Promise<void> {
   assertPostRelatedUrlPrefix(urlIds.length)
-  await query(
-    `/* lockStoryPostRelatedUrlProjectionHostnameBlocks */
-      WITH RECURSIVE url_targets AS (
-        SELECT DISTINCT hostname.hostname
-        FROM (SELECT DISTINCT id FROM unnest($1::uuid[]) input(id)) requested
-        CROSS JOIN LATERAL (
-          SELECT hostname_id FROM urls WHERE id = requested.id LIMIT 1
-        ) url
-        CROSS JOIN LATERAL (
-          SELECT hostname FROM url_hostnames WHERE id = url.hostname_id LIMIT 1
-        ) hostname
-      ), hostname_suffixes AS (
-        SELECT hostname FROM url_targets
-        UNION ALL
-        SELECT substring(hostname FROM position('.' IN hostname) + 1)
-        FROM hostname_suffixes
-        WHERE position('.' IN hostname) > 0
-      ), candidates AS (
-        SELECT candidate.id
-        FROM (SELECT DISTINCT hostname FROM hostname_suffixes) suffix
-        CROSS JOIN LATERAL (
-          SELECT id FROM url_hostnames WHERE hostname = suffix.hostname LIMIT 1
-        ) candidate
-      )
-      ${hostnameBlockStripeSetLockSql('candidates', 'candidates.id')}`,
-    [urlIds],
-  )
 }
 
 export async function readStoryPostRelatedUrlProjectionActiveRelations(

@@ -67,7 +67,7 @@ export async function readCompleteClassifierDecisionForActiveRun(
     WHERE id = ${runId} AND decision_batch_id = ${batchId}
       AND outcomes_persisted_at IS NOT NULL
       AND completed_at IS NULL AND superseded_at IS NULL AND terminal_failed_at IS NULL
-    FOR SHARE
+
   `)
   if (!rows[0]) throw new RangeError('Classifier decision batch is outside the retention window')
   const batch = await readBatchRow(query, batchId)
@@ -115,7 +115,7 @@ async function readBatchRow(query: QueryExecutor, batchId: string): Promise<Batc
       scope_community_id, completed_at
     FROM classifier_decision_batches
     WHERE id = ${batchId}
-    FOR SHARE
+
   `)
   return rows[0] ?? null
 }

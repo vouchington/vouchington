@@ -34,7 +34,7 @@ export async function createSyntheticClassifier() {
       const { rows } = await query<{ input_sha256: Buffer; community_id: string | null }>(sql`
         /* lockSyntheticClassifierInput */
         SELECT llm_moderation_content_sha256 AS input_sha256, community_id FROM posts
-        WHERE id = ${subject.postId} AND deleted_at IS NULL AND approved_at IS NOT NULL FOR UPDATE
+        WHERE id = ${subject.postId} AND deleted_at IS NULL AND approved_at IS NOT NULL
       `)
       const post = rows[0]
       return post ? { inputSha256: post.input_sha256, communityId: post.community_id } : null

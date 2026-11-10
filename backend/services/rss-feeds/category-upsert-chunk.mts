@@ -23,7 +23,7 @@ export async function upsertRssFeedCategoriesChunk(
       const { rows: feeds } = await query<{ id: string }>(
         `/* upsertRssFeedCategories:lockFeed */
         SELECT id FROM rss_feeds WHERE id = $1::uuid
-          AND hard_delete_requested_at IS NULL FOR SHARE`,
+          AND hard_delete_requested_at IS NULL`,
         [rssFeedId],
       )
       if (feeds.length === 0) throw createHttpError(409, 'RSS feed is being deleted')

@@ -78,7 +78,7 @@ export function buildGetExistingCapturedStripeSourceQuery(options: {
       AND source.source_kind = 'direct' AND source.user_id = ${options.userId}
       AND binding.source_kind = 'direct' AND binding.user_id = ${options.userId}
       AND binding.released_at IS NULL
-    LIMIT 1 FOR KEY SHARE OF source, lineage, binding
+    LIMIT 1
   `
 }
 
@@ -102,13 +102,13 @@ export function buildGetWinningMembershipForStripePurchaseQuery(
       AND (membership.expires_at IS NULL OR membership.expires_at > ${periodStartedAt})
       AND (source.source_kind = 'family'
         OR (source.source_kind = 'direct' AND context.provider IN ('apple_app_store', 'google_play', 'microsoft_store')))
-    LIMIT 1 FOR SHARE OF membership, source
+    LIMIT 1
   `
 }
 
 export function buildLockStripePurchaseOwnerForCollisionQuery(userId: string) {
   return sql`/* detectIneligibleStripePurchaseFromInvoicePayment:lockUser */
-    SELECT id FROM users WHERE id = ${userId} FOR UPDATE`
+    SELECT id FROM users WHERE id = ${userId}`
 }
 
 export function buildGetBoundStripeSubscriptionOwnerForCollisionQuery(

@@ -138,7 +138,7 @@ export async function assertDirectMembershipSourceAdmission(
   query: QueryExecutor,
 ): Promise<void> {
   await query(sql`/* assertDirectMembershipSourceAdmission:lockUser */
-    SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
+    SELECT id FROM users WHERE id = ${userId}`)
   const admission = await getDirectMembershipSourceAdmission(
     userId,
     candidatePlan,

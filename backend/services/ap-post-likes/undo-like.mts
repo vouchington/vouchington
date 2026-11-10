@@ -17,11 +17,6 @@ export async function undoLike(
     const owner = await lockActivityPubLikeIdentity(run, likeApId)
     if (owner && (owner.post_id !== postId || owner.remote_actor_identity_id !== remoteActorId))
       return
-    await run(sql`/* lockActivityPubLikePairForUndo */
-      SELECT pg_advisory_xact_lock(hashtextextended(
-        'activitypub-like:' || ${postId} || ':' || ${remoteActorId}, 0
-      ))
-    `)
     await run(sql`/* undoLike */
     WITH cycle AS (
       INSERT INTO activitypub_post_like_activities

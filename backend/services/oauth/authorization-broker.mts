@@ -147,12 +147,6 @@ async function supersedeWebAuthentication(
   query: TransactionQuery,
 ): Promise<void> {
   await query(
-    `/* supersedeWebAuthentication */ SELECT pg_advisory_xact_lock(
-       hashtextextended($1, 0)
-     )`,
-    [`oauth-web-authentication:${deviceId}:${sessionId}`],
-  )
-  await query(
     `/* supersedeWebAuthentication */ UPDATE oauth_authorizations
      SET rejected_at = COALESCE(rejected_at, clock_timestamp()),
          callback_error = 'authorization_superseded',

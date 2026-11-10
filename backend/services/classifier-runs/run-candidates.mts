@@ -14,7 +14,7 @@ export async function insertClassifierRunCandidates(
     FROM unnest(${[...topicIds]}::uuid[]) WITH ORDINALITY AS candidate (topic_id, ordinal)
     JOIN topics topic ON topic.id = candidate.topic_id
       AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
-    ORDER BY topic.id, candidate.ordinal FOR SHARE OF topic
+    ORDER BY topic.id, candidate.ordinal
   `)
 }
 

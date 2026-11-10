@@ -55,7 +55,7 @@ describe('community purge restriction lock order', () => {
     )
     const purgeQuery = withQueryBarrier(
       purgeTransaction,
-      '/* lockUserSubjectMutationFences */',
+      '/* lockActiveUserSubjectsForMutation */',
       () => purgeAtSuccessorFence.resolve(),
     )
     const restriction = runRestriction()

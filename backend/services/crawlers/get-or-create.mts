@@ -44,16 +44,6 @@ async function getOrCreateCrawlersForHostnamesInTransaction(
   hostnameIds: string[],
   options: QueryOptions,
 ): Promise<Map<string, Crawler>> {
-  // Lock in stable order. The second statement gets a fresh snapshot after any
-  // lock wait, so it sees a crawler committed by the transaction we waited on.
-  await write(
-    sql`/* getOrCreateCrawlersForHostnames:lock */
-      SELECT pg_advisory_xact_lock(hashtext(input.hostname_id::text))
-      FROM unnest(${hostnameIds}::uuid[]) AS input(hostname_id)
-      ORDER BY input.hostname_id`,
-    options,
-  )
-
   const { rows } = await write(
     sql`/* getOrCreateCrawlersForHostnames */
       WITH existing AS MATERIALIZED (

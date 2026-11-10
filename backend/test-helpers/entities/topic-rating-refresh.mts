@@ -2,15 +2,11 @@ import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function holdTopicRatingRefreshLock(
-  topicId: string,
+  _topicId: string,
   onAcquired: () => Promise<void>,
 ): Promise<void> {
   {
     await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
-      sql`/* holdTopicRatingRefreshLock */ SELECT pg_advisory_xact_lock(hashtextextended(${`topic-rating:${topicId}`}, 0))`,
-    )
     await onAcquired()
     await transaction.commit()
   }

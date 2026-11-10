@@ -16,10 +16,9 @@ export async function lockLoginCredentialAdmission(
     '/* lockLoginCredentialAdmission:userFence */ SELECT fn_lock_active_user_for_mutation($1)',
     [currentUserId],
   )
-  await query(
-    '/* lockLoginCredentialAdmission:userRow */ SELECT id FROM users WHERE id = $1 FOR UPDATE',
-    [currentUserId],
-  )
+  await query('/* lockLoginCredentialAdmission:userRow */ SELECT id FROM users WHERE id = $1', [
+    currentUserId,
+  ])
   const result =
     proof.type === 'email'
       ? await query(
