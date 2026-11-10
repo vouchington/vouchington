@@ -21,9 +21,9 @@ export type RetentionCase = {
  */
 export async function createRetentionParsedEmail(
   label: string,
-  options: { reply?: boolean; messageId?: string } = {},
+  options: { reply?: boolean; messageId?: string; sesMessageId?: string } = {},
 ) {
-  const sesMessageId = `ses-${label}-${randomUUID()}`
+  const sesMessageId = options.sesMessageId ?? `ses-${label}-${randomUUID()}`
   const { intake } = await createCopyrightEmailIntake({
     sesMessageId,
     receivedAt: new Date(),

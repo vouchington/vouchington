@@ -141,7 +141,11 @@ describe('retained copyright email intake lookup', () => {
   it('keeps linked case IDs and sender matches when a purge leaves the raw pointer NULL', async () => {
     const scene = await createRetentionMinimalCase()
     const address = `claimant-${crypto.randomUUID()}@example.test`
-    const linked = await createParsedCopyrightEmailIntake(new Date(), address)
+    const linked = await createParsedCopyrightEmailIntake(
+      new Date(),
+      address,
+      scene.initialEmailSesMessageId,
+    )
     const parsedNoRaw = await createParsedCopyrightEmailIntake(new Date(), address)
     const senderless = await createUnparsedCopyrightEmailIntake()
     await linkCopyrightEmailIntakeToNotice({

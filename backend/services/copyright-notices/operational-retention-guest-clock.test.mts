@@ -21,7 +21,9 @@ describe('copyright guest capability retention clock', () => {
   useCopyrightOperationalCursorReservation()
   it('keeps the original expiry activity after unused auth material is pruned', async () => {
     const notice = await createRetentionMinimalCase()
-    const intake = await createRetentionParsedEmail('guest-clock-thread')
+    const intake = await createRetentionParsedEmail('guest-clock-thread', {
+      sesMessageId: notice.initialEmailSesMessageId,
+    })
     await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
     const before = await readCopyrightThreadReferenceState(intake.id)
     expect(before.referenceCount).toBeGreaterThan(0)

@@ -1,10 +1,14 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { initialEmailClaimantContactCiphertext } from '../../copyright-email-contact.mts'
 import type { CopyrightNoticeSchemaFixture } from './copyright-notice-schema-types.mts'
 export type { CopyrightNoticeSchemaFixture } from './copyright-notice-schema-types.mts'
 
-export async function createCopyrightNoticeSchemaFixture(): Promise<CopyrightNoticeSchemaFixture> {
+export async function createCopyrightNoticeSchemaFixture(
+  options: { initialEmailSesMessageId?: string } = {},
+): Promise<CopyrightNoticeSchemaFixture> {
+  const contactCiphertext = initialEmailClaimantContactCiphertext(options.initialEmailSesMessageId)
   const { rows: userRows } = await write<{ id: string }>(
     '/* createCopyrightSchemaTestUser */ INSERT INTO users DEFAULT VALUES RETURNING id',
   )
@@ -33,7 +37,7 @@ export async function createCopyrightNoticeSchemaFixture(): Promise<CopyrightNot
       RETURNING placement_id, image_id
     ), notice AS (
       INSERT INTO copyright_notices (jurisdiction, legal_basis, received_at, accepted_at, claimant_contact_ciphertext, work_description, policy_version)
-      VALUES ('us_dmca', 'copyright', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ${`v1:test-contact:${randomUUID()}`}, ${`Test work ${randomUUID()}`}, 'test-v1')
+      VALUES ('us_dmca', 'copyright', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ${contactCiphertext}, ${`Test work ${randomUUID()}`}, 'test-v1')
       RETURNING id
     ), target AS (
       INSERT INTO copyright_notice_targets (copyright_notice_id, placement_id, placement_revision, hosted_use_url)

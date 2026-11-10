@@ -8,8 +8,10 @@ import {
 } from '../services/copyright-notices/index.mts'
 
 // A received copyright email whose parse was never recorded, as when the SES worker keeps failing.
-export async function createUnparsedCopyrightEmailIntake(receivedAt = new Date()) {
-  const sesMessageId = `ses-email-${crypto.randomUUID()}`
+export async function createUnparsedCopyrightEmailIntake(
+  receivedAt = new Date(),
+  sesMessageId = `ses-email-${crypto.randomUUID()}`,
+) {
   const { intake } = await createCopyrightEmailIntake({
     sesMessageId,
     receivedAt,
@@ -26,8 +28,9 @@ export async function createUnparsedCopyrightEmailIntake(receivedAt = new Date()
 export async function createParsedCopyrightEmailIntake(
   receivedAt = new Date(),
   fromEmail = `claimant-${crypto.randomUUID()}@example.test`,
+  sesMessageId?: string,
 ) {
-  const intake = await createUnparsedCopyrightEmailIntake(receivedAt)
+  const intake = await createUnparsedCopyrightEmailIntake(receivedAt, sesMessageId)
   await recordCopyrightEmailParse(intake, {
     status: 'succeeded',
     fromEmail,
