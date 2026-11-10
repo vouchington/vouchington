@@ -1,4 +1,4 @@
-import type { TransactionQuery } from '@data-stores/psql'
+import { write, type TransactionQuery } from '@data-stores/psql'
 import { v7 } from 'uuid'
 
 export async function insertModerationJudgementForRetentionTest(
@@ -39,6 +39,24 @@ export async function releaseJudgementAccountHoldForRetentionTest(
       SET released_at = CURRENT_TIMESTAMP, released_by_id = $1::uuid
       WHERE account_user_id = $1::uuid AND released_at IS NULL`,
     [accountUserId],
+  )
+}
+
+export async function deleteModerationJudgementRetentionFixturesForTest(
+  judgementIds: readonly string[],
+  accountUserIds: readonly string[],
+): Promise<void> {
+  await write(
+    `/* releaseModerationJudgementRetentionHoldsForTest */
+     UPDATE user_legal_preservation_holds
+     SET released_at = CURRENT_TIMESTAMP, released_by_id = account_user_id
+     WHERE account_user_id = ANY($1::uuid[]) AND released_at IS NULL`,
+    [accountUserIds],
+  )
+  await write(
+    `/* deleteModerationJudgementRetentionFixturesForTest */
+     DELETE FROM moderation_report_judgements WHERE id = ANY($1::uuid[])`,
+    [judgementIds],
   )
 }
 
