@@ -90,14 +90,6 @@ export async function seedMediaDeliveryLockFixture(): Promise<void> {
     ON CONFLICT (placement_id) DO NOTHING`,
     [surfaceIds, surfaceIds.map((_, i) => noiseImage(NOISE_PER_FAMILY + i)), owners],
   )
-  await query(
-    `/* seedDeliveryLock:surfaceOwnerProjection */
-    UPDATE users owner SET profile_image_id = binding.image_id
-    FROM image_surface_placements binding
-    WHERE binding.placement_id = ANY($1::uuid[]) AND owner.id = binding.user_id
-      AND owner.profile_image_id IS DISTINCT FROM binding.image_id`,
-    [surfaceIds],
-  )
   const recordIds = placementIds.map((_, i) => seedUuid(500_000 + TARGET_COUNT + i, 'ea'))
   await query(
     `/* seedDeliveryLock:registry */
@@ -106,6 +98,14 @@ export async function seedMediaDeliveryLockFixture(): Promise<void> {
     FROM unnest($1::uuid[], $2::uuid[], $3::uuid[]) seed(record_id,placement_id,image_id)
     ON CONFLICT (id) DO NOTHING`,
     [recordIds, placementIds, imageIds],
+  )
+  await query(
+    `/* seedDeliveryLock:surfaceOwnerProjection */
+    UPDATE users owner SET profile_image_id = binding.image_id
+    FROM image_surface_placements binding
+    WHERE binding.placement_id = ANY($1::uuid[]) AND owner.id = binding.user_id
+      AND owner.profile_image_id IS DISTINCT FROM binding.image_id`,
+    [surfaceIds],
   )
   await query(
     `/* seedDeliveryLock:noiseMarkers */
