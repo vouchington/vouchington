@@ -118,9 +118,8 @@ function appendOrphanedQueuedGrantFilters(
 async function repairOrphanedQueuedGrantUsers(userIds: readonly string[]): Promise<number> {
   let repaired = 0
   for (const userId of userIds) {
-    // Each user commits alone so a lost race leaves the earlier repairs in place.
-    // eslint-disable-next-line no-await-in-loop
-    if (await repairOrphanedQueuedGrantUser(userId)) repaired += 1
+    // no-mistakes-disable-next-line query-reached-per-item: one transaction per user in this capped page; a unique-index race must not undo earlier repairs
+    if (await repairOrphanedQueuedGrantUser(userId)) repaired += 1 // oxlint-disable-line no-await-in-loop -- each user commits alone
   }
   if (repaired > 0) await enqueueDeliverMembershipEntitlementEffectsBestEffort()
   return repaired
