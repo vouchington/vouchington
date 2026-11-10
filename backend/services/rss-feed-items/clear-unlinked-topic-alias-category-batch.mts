@@ -95,7 +95,10 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
   }
   const { rows: currentCandidates } = await query(candidateSql, rawParameters)
   if (JSON.stringify(currentCandidates) !== JSON.stringify(candidateItems))
-    throw createHttpError(409, 'RSS item category mapping changed before the category write')
+    throw createHttpError(
+      409,
+      'RSS item category mapping changed while acquiring attachment fences',
+    )
   const replacementIds = [
     ...new Set(
       candidateItems.flatMap(row => (row.replacement_topic_id ? [row.replacement_topic_id] : [])),
@@ -109,7 +112,10 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
       [replacementIds],
     )
     if (active.length !== replacementIds.length)
-      throw createHttpError(409, 'RSS item category replacement changed before the category write')
+      throw createHttpError(
+        409,
+        'RSS item category replacement changed while acquiring attachment fences',
+      )
   }
   const { rows } = await query<ReResolvedCategoryTopicMapping>(
     `/* clearCategoriesForUnlinkedTopicAlias */

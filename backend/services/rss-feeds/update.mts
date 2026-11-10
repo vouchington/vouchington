@@ -55,7 +55,7 @@ export const updateRssFeedById = async (
       previousTopicId !== priorTopicId &&
       previousTopicId !== changes.topic_id
     )
-      throw createHttpError(409, 'RSS feed topic changed before the feed update')
+      throw createHttpError(409, 'RSS feed topic changed while acquiring attachment fences')
 
     const stateChange = stateChanges.find(({ kind }) => kind === 'enablement')
     if (stateChange) {

@@ -63,7 +63,7 @@ export const updateCrawler = async (
       previous.referral_program_id !== updates.referral_program_id &&
       previous.referral_program_id !== null
     )
-      throw createError(409, 'Crawler referral program changed before the row update')
+      throw createError(409, 'Crawler referral program changed while acquiring attachment fences')
     const query = sql`/* updateCrawler */ UPDATE hostname_crawler_configurations SET updated_by_id = ${updater.id}`
     if (hostnameId !== undefined) query.append(sql`, hostname_id = ${hostnameId}`)
     if (updates.description !== undefined) query.append(sql`, description = ${updates.description}`)

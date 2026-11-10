@@ -139,7 +139,10 @@ async function upsertRssFeedItemCategorySnapshots(
       currentCategoryData.push(...(await readCategoryDataChunk(batch, query)))
     }
     if (categorySnapshotKey(currentCategoryData) !== categorySnapshotKey(categoryData))
-      throw createHttpError(409, 'RSS item category topics changed before the category write')
+      throw createHttpError(
+        409,
+        'RSS item category topics changed while acquiring attachment fences',
+      )
     await lockRssFeedItemsForStoryPublicationChanges(query, [
       ...toInsert.map(category => category.rss_feed_item_id),
       ...toUpdate.map(category => category.rss_feed_item_id),

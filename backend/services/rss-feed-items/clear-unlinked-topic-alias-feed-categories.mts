@@ -81,7 +81,7 @@ export async function clearUnlinkedTopicAliasFeedPage(
     candidateParameters,
   )
   if (JSON.stringify(currentCandidates) !== JSON.stringify(candidates))
-    throw createHttpError(409, 'RSS feed category mapping changed before the category write')
+    throw createHttpError(409, 'RSS feed category mapping changed while acquiring topic fences')
   const replacementIds = [
     ...new Set(
       candidates.flatMap(row => (row.replacement_topic_id ? [row.replacement_topic_id] : [])),

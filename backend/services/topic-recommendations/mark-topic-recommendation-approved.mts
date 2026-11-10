@@ -1,4 +1,4 @@
-import { beginTransaction, withTransactionOptions, write } from '@data-stores/psql'
+import { withTransactionOptions, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import assert from 'http-assert'
@@ -24,14 +24,6 @@ export async function markTopicRecommendationApproved(
     `,
       { query },
     )
-  const updateResult =
-    options.query || options.client
-      ? await withTransactionOptions(options, run)
-      : await (async () => {
-          await using query = await beginTransaction()
-          const result = await run(query)
-          await query.commit()
-          return result
-        })()
+  const updateResult = await withTransactionOptions(options, run)
   assert(updateResult.rowCount === 1, 422, 'Recommendation is already reviewed')
 }

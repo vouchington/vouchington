@@ -1,4 +1,4 @@
-import { beginTransaction, withTransactionOptions, write } from '@data-stores/psql'
+import { withTransactionOptions, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import type { CreatePostUpdates } from './types.mts'
 import sql from 'sql-template-strings'
@@ -25,10 +25,7 @@ export async function syncPostExplicitTopicCategoriesInTransaction(
       { query },
     )
   }
-  if (options.query || options.client) return withTransactionOptions(options, run)
-  await using query = await beginTransaction()
-  await run(query)
-  await query.commit()
+  return withTransactionOptions(options, run)
 }
 
 function getExplicitTopicCategoryIds(
