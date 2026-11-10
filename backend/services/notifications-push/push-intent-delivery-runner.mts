@@ -1,6 +1,6 @@
 import { Agent } from 'node:https'
 import pMap from 'p-map'
-import webpush from 'web-push'
+import * as webpush from 'web-push'
 import type { NotificationPushDeliveryPolicy } from './push-intent-delivery-policy.mts'
 import { createNotificationPushIntentLeaseKeeper } from './push-intent-lease-keeper.mts'
 import {
