@@ -10,22 +10,6 @@ import { enqueueRecordedMembershipPauseCollectionBestEffort } from '@services/me
 import { recordMembershipPauseCollectionWork } from '@services/memberships/pause-collection/record'
 import { recordPostPublicationChange } from '@services/post-publication'
 
-export async function lockSuspensionAppealAuthorLifecycle(
-  query: TransactionQuery,
-  appealId: string,
-): Promise<void> {
-  const { rows } = await query<{ user_id: string }>(sql`/* lockSuspensionAppealAuthorLifecycle */
-    SELECT user_suspensions.user_id
-    FROM moderation_appeals
-    JOIN user_suspensions ON user_suspensions.id = moderation_appeals.user_suspension_id
-    WHERE moderation_appeals.id = ${appealId}
-      AND moderation_appeals.sent_at IS NOT NULL
-      AND moderation_appeals.resolved_at IS NULL
-    LIMIT 1
-  `)
-  const suspension = rows[0]
-}
-
 // Appeal-level authorization permits lifting the target ban without a community-role check.
 export async function liftCommunityBanById(
   staffUserId: string,

@@ -19,13 +19,7 @@ export async function deleteStaleCategoriesAndRetractVotes(
     snapshot.categories.map(() => snapshot.rss_feed_item_id),
   )
   const categoryTexts = snapshots.flatMap(snapshot => snapshot.categories)
-  // ast-grep-ignore: no-three-sequential-awaits -- Discovered alias ids select publication-scope locks, which must precede RSS-item row locks before stale category deletion.
-  const staleTopicAliasIds = await getStaleCategoryTopicAliasIds(
-    query,
-    itemIds,
-    categoryItemIds,
-    categoryTexts,
-  )
+  // ast-grep-ignore: no-three-sequential-awaits -- lock the rss_feed_items rows this writer updates before deleting stale categories, then retract votes those categories no longer support
   await lockRssFeedItemsForStoryPublicationChanges(query, itemIds)
   const { rows: staleCategories } = await query<StaleCategory>(
     `/* reconcileRssFeedItemCategorySnapshots */
@@ -60,33 +54,4 @@ export async function deleteStaleCategoriesAndRetractVotes(
     staleCategories.flatMap(category => (category.topic_alias_id ? [category.topic_alias_id] : [])),
   )
   return { staleCategories }
-}
-
-/** Discovers alias scopes before the item lock so category writers share alias → item ordering. */
-async function getStaleCategoryTopicAliasIds(
-  query: TransactionQuery,
-  itemIds: readonly string[],
-  categoryItemIds: readonly string[],
-  categoryTexts: readonly string[],
-): Promise<string[]> {
-  const { rows } = await query<{ topic_alias_id: string }>(
-    `/* reconcileRssFeedItemCategorySnapshots staleAliasScopes */
-      WITH snapshot_items AS (SELECT unnest($1::uuid[]) AS rss_feed_item_id),
-      desired_categories AS (
-        SELECT DISTINCT input.rss_feed_item_id, identity.id AS category_identity_id
-        FROM unnest($2::uuid[], $3::text[]) AS input(rss_feed_item_id, category_text)
-        JOIN rss_category_identities identity
-          ON identity.category_text = LOWER(TRIM(input.category_text))
-      )
-      SELECT DISTINCT category.topic_alias_id
-      FROM rss_feed_item_categories category
-      JOIN snapshot_items snapshot ON category.rss_feed_item_id = snapshot.rss_feed_item_id
-      WHERE category.topic_alias_id IS NOT NULL
-        AND NOT EXISTS (SELECT 1 FROM desired_categories desired
-          WHERE desired.rss_feed_item_id = category.rss_feed_item_id
-            AND desired.category_identity_id = category.category_identity_id)
-      ORDER BY category.topic_alias_id`,
-    [itemIds, categoryItemIds, categoryTexts],
-  )
-  return rows.map(row => row.topic_alias_id)
 }

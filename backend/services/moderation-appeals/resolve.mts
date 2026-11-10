@@ -20,11 +20,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { getModerationAppealAfterMutation } from './get.mts'
 import { rejectUnresolvableAppeal } from './assert-delivered.mts'
 import type { ModerationAppealResponse } from './types.mts'
-import {
-  liftCommunityBanById,
-  liftUserSuspensionById,
-  lockSuspensionAppealAuthorLifecycle,
-} from './lift-sanctions.mts'
+import { liftCommunityBanById, liftUserSuspensionById } from './lift-sanctions.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordPostPublicationChange } from '@services/post-publication'
 
@@ -38,7 +34,6 @@ export async function resolveModerationAppealAccept(
   const now = new Date()
   let afterCommit: (() => Promise<void>) | undefined
   const response = await runWithTransaction(undefined, async (query: TransactionQuery) => {
-    await lockSuspensionAppealAuthorLifecycle(query, appealId)
     const { rows } = await query<ModerationAppeal>(
       sql`/* resolveModerationAppealAccept */
       UPDATE moderation_appeals
