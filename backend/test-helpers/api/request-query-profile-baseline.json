@@ -407,20 +407,12 @@
     "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
-    "annotation": "lockCopyrightRepeatInfringerNoticeAccounts",
-    "maxCount": null,
-    "reason": "Recording a disposition syncs incidents after the insert, and that sync reads notice-owner accounts before opening a review for accounts that still have two operative incidents.",
-    "permanent": true,
-    "code": "backend/services/copyright-notices/repeat-infringer-incidents.mts:138",
-    "routes": ["POST /api/v1/copyright-repeat-infringer-incidents/:id/dispositions"]
-  },
-  {
     "annotation": "lockExistingTopicAliasPublicationScopes",
     "maxCount": null,
     "reason": "Alias claim reads existing alias ids before the alias row is updated, so a concurrent insert is visible to the conflict check.",
     "permanent": true,
     "code": "backend/services/topics/alias-publication-locks.mts:10",
-    "routes": ["POST /api/v1/topic-recommendations/:id/approvals", "POST /api/v1/topics"]
+    "routes": ["POST /api/v1/topic-recommendations/:id/approvals"]
   },
   {
     "annotation": "lockSessionDeviceAuthority:userFence",
