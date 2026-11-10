@@ -29,12 +29,12 @@ describe('semantic candidate window', () => {
     )
     expect(candidateSql).toContain('AND posts.id = semantic_vector_post.id')
     expect(candidateSql).toContain('AND semantic_vector_post.created_by_id =')
-    expect(candidateSql).toContain('LIMIT 1\n    ) semantic_eligible_post')
-    expect(candidateSql.slice(0, candidateSql.indexOf('LIMIT 1'))).toContain('posts.id >=')
+    const eligibleStop = candidateSql.indexOf('LIMIT 1\n    ) semantic_eligible_post')
+    expect(eligibleStop).toBeGreaterThan(-1)
+    // Story eligibility has its own item LIMIT inside the same WHERE, before this stop.
+    expect(candidateSql.slice(0, eligibleStop)).toContain('posts.id >=')
     expect(candidateSql).not.toContain('semantic_vector_post.id >=')
-    expect(candidateSql.indexOf('posts.search_vector @@')).toBeLessThan(
-      candidateSql.indexOf('LIMIT 1'),
-    )
+    expect(candidateSql.indexOf('posts.search_vector @@')).toBeLessThan(eligibleStop)
     expect(candidateSql).not.toContain(', posts.id DESC')
     expect(query.sql).toContain('semantic_search_embedding AS NOT MATERIALIZED')
     expect(query.sql).toContain('text_search_tsquery AS NOT MATERIALIZED')
@@ -56,7 +56,9 @@ describe('semantic candidate window', () => {
       omitLimit: true,
       omitOrderBy: true,
     })
-    expect(query.sql.match(/LIMIT/g)).toHaveLength(3)
+    // Four story-item probes, the eligible lookup, the id lookup, and the candidate cap.
+    expect(query.sql.match(/LIMIT/g)).toHaveLength(7)
+    expect(query.sql).not.toContain('LIMIT 100')
     expect(query.sql).toContain(`LIMIT ${SEMANTIC_POST_CANDIDATE_LIMIT}`)
   })
 
