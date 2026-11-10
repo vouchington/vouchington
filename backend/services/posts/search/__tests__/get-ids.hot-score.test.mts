@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { decodeUuidCursor, isScoreCursor } from '@modules/pagination'
 import {
   createRandomString,
   createTestUserDirect,
@@ -8,6 +7,7 @@ import {
   setPostVotesScoreUp,
 } from '@voucha/test-helpers'
 import { getPostIds } from '../get-ids.mts'
+import { decodePostSearchCursor } from '../get-ids-page-info.mts'
 import type { PostSearchOptions } from '../types.mts'
 
 describe('getPostIds hot-score pagination', () => {
@@ -52,14 +52,14 @@ describe('getPostIds hot-score pagination', () => {
       expect(page1.results.map(result => result.id)).toEqual([futurePostId])
       expect(page1.page_info.has_next_page).toBe(true)
       expect(page1.page_info.end_cursor).toEqual(expect.any(String))
-      const cursor = decodeUuidCursor(
-        page1.page_info.end_cursor!,
-        isScoreCursor,
-        'Expected a hot-score cursor',
+      const cursor = decodePostSearchCursor(
+        { after: page1.page_info.end_cursor!, time_range: 'all' },
+        'hot',
+        false,
       )
-      expect(cursor.score).toBeGreaterThan(0)
-      expect(cursor.score).toBeLessThan(1)
-      expect(Number.isFinite(cursor.score)).toBe(true)
+      expect(cursor.hot_score_lt).toBeGreaterThan(0)
+      expect(cursor.hot_score_lt).toBeLessThan(1)
+      expect(Number.isFinite(cursor.hot_score_lt)).toBe(true)
 
       const page2 = await getPostIds(undefined, {
         ...options,

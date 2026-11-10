@@ -8,9 +8,9 @@ import {
 } from '@voucha/test-helpers'
 import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { decodeUuidCursor, isScoreCursor } from '@modules/pagination'
 import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
 import { getPostIds } from '../get-ids.mts'
+import { decodePostSearchCursor } from '../get-ids-page-info.mts'
 import { buildPostSearchQuery } from '../query-builder.mts'
 import { postsWorkConfig } from '../../work-limits.mts'
 import {
@@ -67,12 +67,12 @@ describe('Hacker News hot search bounds', () => {
       for (const time_range of ['1m', '1y', 'all'] as const) {
         const bounded = await getPostIds(user, { ...options, time_range })
         expect(bounded.results.map(row => row.id)).toEqual([ids[0]])
-        const cursor = decodeUuidCursor(
-          bounded.page_info.end_cursor!,
-          isScoreCursor,
-          'Expected hot cursor',
+        const cursor = decodePostSearchCursor(
+          { after: bounded.page_info.end_cursor!, time_range },
+          'hot',
+          false,
         )
-        expect(Number.isFinite(cursor.score)).toBe(true)
+        expect(Number.isFinite(cursor.hot_score_lt)).toBe(true)
         const next = await getPostIds(user, {
           ...options,
           time_range,

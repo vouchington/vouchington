@@ -19,7 +19,11 @@ export function buildPostSearchQuery(
   currentUser?: BasicUser,
   options: PostSearchOptions = {},
 ): SQLStatement {
-  const decisionInstant = new Date()
+  const pinnedDecisionInstant = options.time_range_as_of
+  const decisionInstant =
+    pinnedDecisionInstant instanceof Date && !Number.isNaN(pinnedDecisionInstant.getTime())
+      ? pinnedDecisionInstant
+      : new Date()
   const { limit, omitLimit = false, omitOrderBy = false, semanticSearchEmbedding } = options
   const hasTextSearch = hasTextSearchFn(options)
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined

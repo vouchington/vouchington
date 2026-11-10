@@ -24,6 +24,16 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## Post-list continuation
+
+Post search and community post lists page with opaque `page_info` cursors. Clients append the
+returned order and stop when `has_next_page` is false. A cursor is valid only for the same sort and
+the same `time_range` choice, including the difference between omitting the range and sending
+`all`. A cursor from another sort or range is rejected. Swift and .NET continuation and ordering
+adoption is tracked in
+[vouchington-clients#567](https://github.com/vouchington/vouchington-clients/issues/567), a dependent
+follow-up that does not gate the producer change.
+
 ## Shared image placement capacity
 
 An image may be attached to posts and profile, topic, or community surfaces. If the API rejects a
@@ -560,14 +570,15 @@ contract.
 ## Post time range
 
 `GET /api/v1/posts` and `GET /api/v1/communities/:idOrSlug/posts` (MCP post search and
-`read_community` option `posts`) accept a `time_range` code. Omitted, both return the last 30 days instead of
-full history; `all` restores it. On post search, a drafts listing defaults to full history only when
-the signed-in author filters to their own posts. Every other drafts request keeps the 30-day window
-unless `time_range` is set. Community post lists do not treat drafts as a time-range opt-out; they
-keep the same default window. Swift and .NET must send the
-code from a time dropdown, reusing the web options, and must page with the returned cursor under
-the same range. Client work is dependent (vouchington-clients#537) and does not gate this
-repository.
+`read_community` option `posts`) accept a `time_range` code. On post search, omitting the range
+leaves the age filter off. An explicit finite code, including `1m`, is a strict age filter, and
+continuation keeps that first-page bound. Explicit `all` is also unfiltered, and its cursors are
+not interchangeable with an omitted range. Community post lists keep their own default age bound
+and do not treat drafts as an opt-out.
+For post search, Swift and .NET must offer a Default choice that omits `time_range`, alongside
+the explicit web range options, and send a code only for an explicit choice. They must page with
+the returned cursor under the same range. Client work is dependent (vouchington-clients#537) and
+does not gate this repository.
 
 ## Comment descendant head pagination
 

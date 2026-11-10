@@ -1819,7 +1819,7 @@
                         "time_range": {
                           "type": "string",
                           "enum": ["1d", "1w", "1m", "1y", "all"],
-                          "description": "Only posts from this window. Defaults to 1m (30 days); pass all for the full history."
+                          "description": "Post search: omit for no age filter. An explicit code, including 1m, is strict. Community lists default to 1m."
                         },
                         "limit": {
                           "type": "integer",
@@ -6246,7 +6246,7 @@
                         "time_range": {
                           "type": "string",
                           "enum": ["1d", "1w", "1m", "1y", "all"],
-                          "description": "Only posts from this window. Defaults to 1m (30 days); pass all for the full history."
+                          "description": "Post search: omit for no age filter. An explicit code, including 1m, is strict. Community lists default to 1m."
                         },
                         "topic": {
                           "$ref": "#/$defs/S1"
@@ -7157,7 +7157,7 @@
           "tool": {
             "name": "read_data_points",
             "title": "Read Data Points",
-            "description": "topic_insights: Get aggregate data point statistics for a topic (card, bank account, etc.). Returns approval rate, median credit limit, and credit score distribution.\nsearch: Search for data point posts from the last 30 days with optional JSONB filters. has_next_page covers only matches within that window. Use this to find approval rates, credit limits, and application outcomes for a specific card or topic.",
+            "description": "topic_insights: Get aggregate data point statistics for a topic (card, bank account, etc.). Returns approval rate, median credit limit, and credit score distribution.\nsearch: Search data point posts by topic or JSONB fields across ages. The cursor is opaque; pass page_info.end_cursor while has_next_page is true and stop when it is false.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -7221,7 +7221,7 @@
                         },
                         "after": {
                           "type": "string",
-                          "description": "Opaque cursor. Pass page_info.end_cursor from the previous response with the same filters while has_next_page is true. Stop when has_next_page is false. has_next_page covers only matches within the last 30 days."
+                          "description": "Opaque cursor for the same filters; pass page_info.end_cursor while has_next_page is true."
                         }
                       },
                       "required": [],

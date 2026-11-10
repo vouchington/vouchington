@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createRandomString,
   createTestUserDirect,
@@ -12,7 +12,7 @@ import type { PostSearchOptions } from '../types.mts'
 const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('getPostIds default time range', () => {
-  it('bounds a request without time_range to 30 days for every sort and honors an explicit range', async () => {
+  it('leaves an omitted time_range unfiltered and honors an explicit range', async () => {
     const user = await createTestUserDirect()
     if (!user) throw new Error('Failed to create time-range test user')
     const suffix = createRandomString(10)
@@ -39,17 +39,45 @@ describe('getPostIds default time range', () => {
       const both = [oldId, recentId].toSorted()
 
       for (const sort of ['new', 'best', 'hot'] as const) {
-        expect(await ids({ ...base, sort })).toEqual([recentId])
+        expect(await ids({ ...base, sort })).toEqual(both)
       }
       expect(await ids({ ...base, sort: 'new', time_range: '1w' })).toEqual([recentId])
       expect(await ids({ ...base, sort: 'new', time_range: '1y' })).toEqual(both)
       expect(await ids({ ...base, sort: 'new', time_range: 'all' })).toEqual(both)
+
+      const page = await getPostIds(undefined, { ...base, sort: 'new' })
+      const cursor = page.page_info.start_cursor
+      expect(cursor).toBeTruthy()
+      expect(
+        (
+          await getPostIds(undefined, { ...base, sort: 'new', after: cursor ?? undefined })
+        ).results.map(result => result.id),
+      ).toEqual([oldId])
+      await expect(
+        getPostIds(undefined, {
+          ...base,
+          sort: 'new',
+          time_range: '1w',
+          after: cursor ?? undefined,
+        }),
+      ).rejects.toMatchObject({ status: 400, message: 'Invalid cursor for sort=new' })
+      await expect(
+        getPostIds(undefined, { ...base, sort: 'best', after: cursor ?? undefined }),
+      ).rejects.toMatchObject({ status: 400, message: 'Invalid cursor for sort=best' })
+      await expect(
+        getPostIds(undefined, {
+          ...base,
+          sort: 'new',
+          time_range: 'all',
+          after: cursor ?? undefined,
+        }),
+      ).rejects.toMatchObject({ status: 400, message: 'Invalid cursor for sort=new' })
     } finally {
       await Promise.all([deleteTestPost(recentId), deleteTestPost(oldId)])
     }
   })
 
-  it('keeps the full history for a user listing their own drafts without time_range', async () => {
+  it('does not treat an author drafts listing as an age opt-out', async () => {
     const user = await createTestUserDirect()
     if (!user) throw new Error('Failed to create time-range test user')
     const suffix = createRandomString(10)
@@ -72,48 +100,52 @@ describe('getPostIds default time range', () => {
         (await getPostIds(user, options)).results.map(result => result.id)
 
       expect(await ids({ ...base, drafts: true })).toEqual([oldId])
-      expect(await ids(base)).toEqual([])
+      expect(await ids(base)).toEqual([oldId])
+      expect(await ids({ ...base, drafts: true, time_range: '1w' })).toEqual([])
     } finally {
       await deleteTestPost(oldId)
     }
   })
 
-  it('keeps the 30-day bound when drafts is not the author listing their own posts', async () => {
-    const author = await createTestUserDirect()
-    const other = await createTestUserDirect()
-    if (!author || !other) throw new Error('Failed to create time-range test users')
+  it('keeps an explicit finite range on the first page decision time', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    const start = new Date('2026-06-15T12:00:00.000Z')
+    vi.setSystemTime(start)
+    const user = await createTestUserDirect()
+    if (!user) throw new Error('Failed to create time-range test user')
     const suffix = createRandomString(10)
     const insert = (label: string, ageDays: number) =>
       insertTestPost({
-        createdAt: new Date(Date.now() - ageDays * DAY_MS),
+        createdAt: new Date(start.getTime() - ageDays * DAY_MS),
         title: `${label} ${suffix}`,
         slug: `${label}-${suffix}`,
-        createdById: author.id,
+        createdById: user.id,
         markdown: `${label} ${suffix}`,
         postType: 'topic_recommendation',
       })
-    const [recentId, oldId] = await Promise.all([
-      insert('recent-drafts', 2),
-      insert('old-drafts', 40),
-    ])
+    const newerId = await insert('newer-bound', 6.5)
+    const olderId = await insert('older-bound', 6.9)
     try {
       const base = {
-        user_id: author.id,
+        user_id: user.id,
         include_topic_recommendations: true,
         post_types: ['topic_recommendation' as const],
-        drafts: true,
-        limit: 10,
+        sort: 'new' as const,
+        time_range: '1w' as const,
+        limit: 1,
       }
-      const ids = async (viewer: typeof author | undefined, options: PostSearchOptions = base) =>
-        (await getPostIds(viewer, options)).results.map(result => result.id).toSorted()
-      const both = [oldId, recentId].toSorted()
-
-      expect(await ids(undefined)).toEqual([recentId])
-      expect(await ids(other)).toEqual([recentId])
-      expect(await ids(author)).toEqual(both)
-      expect(await ids(undefined, { ...base, time_range: 'all' })).toEqual(both)
+      const first = await getPostIds(undefined, base)
+      expect(first.results.map(result => result.id)).toEqual([newerId])
+      expect(first.page_info.end_cursor).toBeTruthy()
+      vi.setSystemTime(start.getTime() + 2 * DAY_MS)
+      const second = await getPostIds(undefined, {
+        ...base,
+        after: first.page_info.end_cursor ?? undefined,
+      })
+      expect(second.results.map(result => result.id)).toEqual([olderId])
     } finally {
-      await Promise.all([deleteTestPost(recentId), deleteTestPost(oldId)])
+      vi.useRealTimers()
+      await Promise.all([deleteTestPost(newerId), deleteTestPost(olderId)])
     }
   })
 })

@@ -1,6 +1,6 @@
 /**
  * Time ranges a post list offers. Values are the API's `time_range` codes; labels live in the
- * select component. The API searches 30 days when a client sends none.
+ * select component. Omitting the range leaves the age filter off; an explicit code, including 1m, is a strict age filter.
  */
 export const POST_TIME_RANGES = ['1w', '1m', '1y', 'all'] as const
 

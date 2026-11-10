@@ -56,11 +56,16 @@ function PostTimeRangeSelectContent({
   const requested = value ?? searchParams.get('time_range')
   const current = isPostTimeRange(requested) && options.includes(requested) ? requested : undefined
   const selected =
-    current ?? (options.includes(DEFAULT_POST_TIME_RANGE) ? DEFAULT_POST_TIME_RANGE : options[0])
+    current ??
+    (preserveDefault
+      ? options.includes(DEFAULT_POST_TIME_RANGE)
+        ? DEFAULT_POST_TIME_RANGE
+        : options[0]
+      : 'default')
 
-  function select(range: PostTimeRange) {
+  function select(range: PostTimeRange | 'default') {
     const params = new URLSearchParams(searchParams.toString())
-    if (range === DEFAULT_POST_TIME_RANGE && !preserveDefault) params.delete('time_range')
+    if (range === 'default') params.delete('time_range')
     else params.set('time_range', range)
     params.delete('after')
     push(`?${params.toString()}`, { scroll: false })
@@ -69,7 +74,7 @@ function PostTimeRangeSelectContent({
   return (
     <Select
       value={selected}
-      onValueChange={range => select(range as PostTimeRange)}
+      onValueChange={range => select(range as PostTimeRange | 'default')}
     >
       <SelectTrigger
         aria-label={t('extracted.posts.postTimeRangeSelect.label')}
@@ -79,6 +84,14 @@ function PostTimeRangeSelectContent({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
+        {!preserveDefault && (
+          <SelectItem
+            value='default'
+            data-pw='post-time-range-option-default'
+          >
+            {t('extracted.landingPagesManager.pageList.default_21b111cb')}
+          </SelectItem>
+        )}
         {options.map(range => (
           <SelectItem
             key={range}

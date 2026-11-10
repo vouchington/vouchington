@@ -10,12 +10,12 @@ export const POST_SORTS = [
   'following_new',
 ] as const satisfies readonly PostSearchSort[]
 
-/** The `time_range` option of every post list tool; omitted means the 30-day default. */
+/** The `time_range` option shared by general post search and community post listing tools. */
 export const postTimeRangeSchema = {
   type: 'string',
   enum: ['1d', '1w', '1m', '1y', 'all'],
   description:
-    'Only posts from this window. Defaults to 1m (30 days); pass all for the full history.',
+    'Post search: omit for no age filter. An explicit code, including 1m, is strict. Community lists default to 1m.',
 } as const
 
 /** Public REST post search filters, plus the existing singular post-type convenience. */

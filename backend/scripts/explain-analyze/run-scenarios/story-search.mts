@@ -48,12 +48,6 @@ function storySearchExpectations(sort: 'new' | 'best' | 'hot'): PlanExpectation[
     { kind: 'maxProcessedRows', relation: 'stories', max: PROBE_MAX },
     { kind: 'maxProcessedRows', relation: 'story_posts', max: PROBE_MAX },
   ]
-  if (sort === 'hot') {
-    expectations.push({
-      kind: 'usesIndexes',
-      indexes: ['posts__default_post_type_id_idx', 'idx_posts__post_type__id'],
-      anyOf: true,
-    })
-  }
+  if (sort === 'hot') expectations.push({ kind: 'noSeqScan', relation: 'posts' })
   return expectations
 }

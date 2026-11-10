@@ -46,11 +46,12 @@ describe('PostTimeRangeSelect', () => {
     mockNav.reset()
   })
 
-  it('defaults to 30 days and offers every range', () => {
+  it('offers the default and every explicit range', () => {
     render(<PostTimeRangeSelect />)
     const select = screen.getByLabelText<HTMLSelectElement>('Time range')
-    expect(select.value).toBe('1m')
+    expect(select.value).toBe('default')
     expect(Array.from(select.options).map(option => option.value)).toEqual([
+      'default',
       '1w',
       '1m',
       '1y',
@@ -71,11 +72,32 @@ describe('PostTimeRangeSelect', () => {
     expect(mockNav.push).toHaveBeenCalledWith('?q=card&time_range=all', { scroll: false })
   })
 
-  it('removes the param when the default is chosen', () => {
+  it('writes the explicit month when it is chosen', () => {
     mockNav.setSearchParams('time_range=1y')
     render(<PostTimeRangeSelect />)
     fireEvent.change(screen.getByLabelText('Time range'), { target: { value: '1m' } })
+    expect(mockNav.push).toHaveBeenCalledWith('?time_range=1m', { scroll: false })
+  })
+
+  it('removes the param when default is chosen', () => {
+    mockNav.setSearchParams('time_range=1m&after=abc')
+    render(<PostTimeRangeSelect />)
+    fireEvent.change(screen.getByLabelText('Time range'), { target: { value: 'default' } })
     expect(mockNav.push).toHaveBeenCalledWith('?', { scroll: false })
+  })
+
+  it('keeps the fixed-range controls for Hacker News', () => {
+    render(
+      <PostTimeRangeSelect
+        preserveDefault
+        options={['1w', '1m', '1y']}
+      />,
+    )
+    const select = screen.getByLabelText<HTMLSelectElement>('Time range')
+    expect(select.value).toBe('1m')
+    expect(Array.from(select.options).map(option => option.value)).toEqual(['1w', '1m', '1y'])
+    fireEvent.change(select, { target: { value: '1w' } })
+    expect(mockNav.push).toHaveBeenCalledWith('?time_range=1w', { scroll: false })
   })
 
   it('offers only the given options and honors an explicit value', () => {
@@ -87,13 +109,18 @@ describe('PostTimeRangeSelect', () => {
       />,
     )
     const select = screen.getByLabelText<HTMLSelectElement>('Time range')
-    expect(Array.from(select.options).map(option => option.value)).toEqual(['1w', '1m', '1y'])
+    expect(Array.from(select.options).map(option => option.value)).toEqual([
+      'default',
+      '1w',
+      '1m',
+      '1y',
+    ])
     expect(select.value).toBe('1y')
   })
 
-  it('falls back when the URL range is not offered', () => {
+  it('falls back to default when the URL range is not offered', () => {
     mockNav.setSearchParams('time_range=all')
     render(<PostTimeRangeSelect options={['1w', '1y']} />)
-    expect(screen.getByLabelText<HTMLSelectElement>('Time range').value).toBe('1w')
+    expect(screen.getByLabelText<HTMLSelectElement>('Time range').value).toBe('default')
   })
 })
