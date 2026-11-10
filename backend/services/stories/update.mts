@@ -1,6 +1,6 @@
 import { recordModeratorAction } from '@services/moderator-actions'
 import { runWithTransaction, write } from '@data-stores/psql'
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PostStory, Story } from './types.mts'
 import { invalidateStories } from './cache-invalidation.mts'
@@ -52,7 +52,6 @@ export async function adminSetStoryOfficialItem(
   officialItemId: string,
 ): Promise<Story | null> {
   const story = await runWithTransaction(undefined, async query => {
-    await lockOfficialItemMembership(query, officialItemId)
     const { rows } = await write(
       sql`/* adminSetStoryOfficialItem */
     UPDATE stories
@@ -89,15 +88,6 @@ export async function adminSetStoryOfficialItem(
   })
   if (story) await invalidateStories(story.id)
   return story
-}
-
-async function lockOfficialItemMembership(
-  query: TransactionQuery,
-  officialItemId: string,
-): Promise<void> {
-  await query(
-    sql`/* adminSetStoryOfficialItem:lockItem */ SELECT id FROM rss_feed_items WHERE id = ${officialItemId} AND deleted_at IS NULL FOR UPDATE`,
-  )
 }
 
 export async function createPostStory(
