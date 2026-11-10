@@ -224,6 +224,10 @@ describe('composite build infrastructure shell scripts', () => {
     writeExecutable(join(bin, 'docker'), [
       'printf "<%s>" "$@" >> "$DOCKER_ARGV_LOG"',
       'printf "\\n" >> "$DOCKER_ARGV_LOG"',
+      'if [[ "${1-}" == "logs" ]]; then',
+      '  echo "# <search> [warning], tid: 1, /vmsdk/src/info.cc:205: Defined Info Field: agg_apply_records Flags:6"',
+      '  echo "# Failed to bind port" >&2',
+      'fi',
     ])
     writeExecutable(join(bin, 'timeout'), [
       'printf "<%s>" "$@" >> "$TIMEOUT_ARGV_LOG"',
@@ -245,6 +249,8 @@ describe('composite build infrastructure shell scripts', () => {
 
     expect(result.status).toBe(1)
     expect(result.stdout).toContain('::error::Valkey did not answer PING within 60s\n')
+    expect(result.stdout).toContain('# Failed to bind port\n')
+    expect(result.stdout).not.toContain('Defined Info Field')
     expect(readFileSync(dockerLog, 'utf8')).toContain('<logs><voucha-valkey-test>')
     expect(readFileSync(dockerLog, 'utf8')).not.toContain('<port>')
   })

@@ -29,7 +29,9 @@ images from ejected or failed merge groups after a seven day grace period.
 Log volume is a cost too, so noise with no reader is suppressed at the source: Valkey runs as a step
 container (a service container dumps its full `docker logs` at teardown on every run), pnpm installs
 use `--loglevel=warn`, Docker build steps disable buildx provenance metadata, Trivy tables go to
-artifacts with only nonzero findings printed, and Storybook's repeated bundler warning prints once.
+artifacts with only nonzero findings printed, Storybook's repeated bundler warning prints once,
+backend query-profile lines reach only the hit collector's file unless diagnostics are on, and
+failure-only Valkey logs drop the search module's per-field startup warnings.
 Each is enforced by a workflow test, so do not undo one to chase a different symptom.
 
 The tooling fork-leak preflight reaches a real backend command client through its shared setup,

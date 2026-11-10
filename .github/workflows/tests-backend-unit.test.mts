@@ -186,6 +186,8 @@ describe('backend uncredentialed Docker test workflow', () => {
     const preserveStep = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(step =>
       step.name?.startsWith('Preserve full backend-shard-'),
     )
+    // A failed shard writes no coverage; a second missing-LCOV error would only repeat the failure.
+    expect(preserveStep?.if).toContain("steps.backend-tests.outcome == 'success'")
     expect(workflowStepScript(preserveStep?.run)).toContain('if [ ! -s coverage/lcov.info ]; then')
     expect(workflowStepScript(preserveStep?.run)).toContain(
       'cp coverage/lcov.info coverage-merge-input/parent/lcov.info',
