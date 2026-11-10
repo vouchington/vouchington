@@ -311,43 +311,57 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
 Rolling 30-day community scores, refreshed on the PostgreSQL materialized-view schedule.
 
 ```sql
- WITH recent_posts AS (
-         SELECT p.community_id,
+ WITH cap AS (
+         SELECT COALESCE(( SELECT stored.member_count_cap
+                   FROM trending_community_member_count_caps stored
+                  WHERE stored.is_singleton), 1000) AS member_count_cap
+        ), recent_posts AS (
+         SELECT candidate.community_id,
             (count(*))::integer AS post_count
-           FROM ((posts p
-             JOIN community_post_reviews review ON (((review.post_id = p.id) AND (review.community_id = p.community_id) AND (review.approved_at IS NOT NULL) AND (review.unpublished_at IS NULL) AND (review.rejected_at IS NULL))))
-             JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = p.id)))
-          WHERE ((p.community_id IS NOT NULL) AND (p.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))))
-          GROUP BY p.community_id
-        ), members AS (
-         SELECT member.community_id,
-            (count(*))::integer AS member_count
-           FROM (recent_posts recent_posts_1
-             JOIN community_members member ON ((member.community_id = recent_posts_1.community_id)))
-          WHERE (member.removed_at IS NULL)
-          GROUP BY member.community_id
-        ), recent_follows AS (
-         SELECT relation.object_id AS community_id,
-            (count(*))::integer AS follow_count
-           FROM (relation__user__proxy_follow__community relation
-             JOIN recent_posts recent_posts_1 ON ((recent_posts_1.community_id = relation.object_id)))
-          WHERE ((relation.deleted_at IS NULL) AND (relation.created_at >= (CURRENT_TIMESTAMP - '30 days'::interval)))
-          GROUP BY relation.object_id
-        ), recent_mutes AS (
-         SELECT relation.object_id AS community_id,
-            (count(*))::integer AS mute_count
-           FROM (relation__user__proxy_mute__community relation
-             JOIN recent_posts recent_posts_1 ON ((recent_posts_1.community_id = relation.object_id)))
-          WHERE ((relation.deleted_at IS NULL) AND (relation.created_at >= (CURRENT_TIMESTAMP - '30 days'::interval)))
-          GROUP BY relation.object_id
+           FROM posts candidate
+          WHERE ((candidate.community_id IS NOT NULL) AND (candidate.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (candidate.deleted_at IS NULL) AND (candidate.approved_at IS NOT NULL) AND (candidate.archived_at IS NULL) AND (NOT (EXISTS ( SELECT 1
+                   FROM user_suspensions candidate_suspension
+                  WHERE ((candidate_suspension.user_id = candidate.created_by_id) AND (candidate_suspension.lifted_at IS NULL))))) AND (EXISTS ( SELECT 1
+                   FROM posts root_post
+                  WHERE ((root_post.id = COALESCE(candidate.root_post_id, candidate.id)) AND (root_post.deleted_at IS NULL) AND (root_post.approved_at IS NOT NULL) AND (root_post.archived_at IS NULL) AND (root_post.privacy = 'public'::privacy_types) AND (root_post.broadcast = 'everyone'::broadcast_types) AND (NOT (EXISTS ( SELECT 1
+                           FROM user_suspensions root_suspension
+                          WHERE ((root_suspension.user_id = root_post.created_by_id) AND (root_suspension.lifted_at IS NULL))))) AND ((root_post.community_id IS NULL) OR (EXISTS ( SELECT 1
+                           FROM (communities publication_community
+                             JOIN community_post_reviews publication_review ON (((publication_review.community_id = publication_community.id) AND (publication_review.post_id = root_post.id) AND (publication_review.approved_at IS NOT NULL) AND (publication_review.rejected_at IS NULL) AND (publication_review.unpublished_at IS NULL))))
+                          WHERE ((publication_community.id = root_post.community_id) AND (publication_community.deleted_at IS NULL) AND (publication_community.archived_at IS NULL) AND (publication_community.visibility = 'public'::privacy_types))))) AND ((root_post.post_type <> 'story'::post_types) OR (EXISTS ( SELECT 1
+                           FROM ((story_posts post_story
+                             JOIN stories publication_story ON (((publication_story.id = post_story.story_id) AND (publication_story.deleted_at IS NULL))))
+                             JOIN rss_feed_items story_item ON (((story_item.story_id = publication_story.id) AND (story_item.deleted_at IS NULL))))
+                          WHERE ((post_story.post_id = root_post.id) AND (EXISTS ( SELECT 1
+                                   FROM (rss_feed_item_sources story_source
+                                     JOIN rss_feeds story_feed ON ((story_feed.id = story_source.rss_feed_id)))
+                                  WHERE ((story_source.rss_feed_item_id = story_item.id) AND (story_feed.deleted_at IS NULL) AND (story_feed.is_enabled = true) AND (story_feed.is_discoverable = true))))))))))) AND (EXISTS ( SELECT 1
+                   FROM community_post_reviews review
+                  WHERE ((review.community_id = candidate.community_id) AND (review.post_id = candidate.id) AND (review.approved_at IS NOT NULL) AND (review.unpublished_at IS NULL) AND (review.rejected_at IS NULL)))))
+          GROUP BY candidate.community_id
         )
  SELECT community.id,
-    ((((COALESCE(members.member_count, 0) + recent_posts.post_count) + COALESCE(recent_follows.follow_count, 0)) + COALESCE(recent_mutes.mute_count, 0)))::double precision AS trending_score
-   FROM ((((recent_posts
+    ((((
+        CASE
+            WHEN (member_probe.probed > cap.member_count_cap) THEN cap.member_count_cap
+            ELSE member_probe.probed
+        END + recent_posts.post_count) + follow_probe.follow_count) + mute_probe.mute_count))::double precision AS trending_score,
+    (member_probe.probed > cap.member_count_cap) AS members_capped
+   FROM (((((recent_posts
+     CROSS JOIN cap)
      JOIN communities community ON ((community.id = recent_posts.community_id)))
-     LEFT JOIN members ON ((members.community_id = community.id)))
-     LEFT JOIN recent_follows ON ((recent_follows.community_id = community.id)))
-     LEFT JOIN recent_mutes ON ((recent_mutes.community_id = community.id)))
+     CROSS JOIN LATERAL ( SELECT (count(*))::integer AS probed
+           FROM ( SELECT 1 AS "?column?"
+                   FROM community_members member
+                  WHERE ((member.community_id = recent_posts.community_id) AND (member.removed_at IS NULL))
+                 LIMIT (( SELECT probe_cap.member_count_cap
+                           FROM cap probe_cap) + 1)) limited) member_probe)
+     CROSS JOIN LATERAL ( SELECT (count(*))::integer AS follow_count
+           FROM relation__user__proxy_follow__community relation
+          WHERE ((relation.object_id = recent_posts.community_id) AND (relation.deleted_at IS NULL) AND (relation.created_at >= (CURRENT_TIMESTAMP - '30 days'::interval)))) follow_probe)
+     CROSS JOIN LATERAL ( SELECT (count(*))::integer AS mute_count
+           FROM relation__user__proxy_mute__community relation
+          WHERE ((relation.object_id = recent_posts.community_id) AND (relation.deleted_at IS NULL) AND (relation.created_at >= (CURRENT_TIMESTAMP - '30 days'::interval)))) mute_probe)
   WHERE ((community.deleted_at IS NULL) AND (community.visibility = 'public'::privacy_types));
 ```
 
