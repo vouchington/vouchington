@@ -67,8 +67,7 @@ describe('getPostImages edge enforcement modes', () => {
     await markImageModerationFlagged(imageId)
     expect(await getPostImages(first)).toEqual([])
     await setImageOpenAIModerationResults(imageId, [], false)
-    // Clearing the flag does not replace the denial this flag already published.
-    expect(await getPostImages(first)).toEqual([])
+    expect((await getPostImages(first)).map(image => image.image_id)).toEqual([imageId])
 
     const placement = await getTestPostImagePlacement(first, imageId)
     expect(placement).not.toBeNull()

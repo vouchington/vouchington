@@ -7,7 +7,6 @@ import {
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
 import { markImageQuarantinePending } from '@voucha/test-helpers/entities/image-safety'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 
 describe('surface delivery provider boundary', () => {
   afterEach(() => {
@@ -15,7 +14,7 @@ describe('surface delivery provider boundary', () => {
     vi.unstubAllEnvs()
   })
 
-  it('denies an active surface tuple during a safety transition', async () => {
+  it('does not push an edge denial when quarantine starts', async () => {
     const user = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
     await setTestUserProfileImage(user.id, imageId)
@@ -34,18 +33,7 @@ describe('surface delivery provider boundary', () => {
 
     await markImageQuarantinePending(imageId)
 
-    expect(put).toHaveBeenCalledWith(
-      expect.objectContaining({
-        deliveryKey: getImagePlacementDeliveryKey({
-          placementId: placement!.placement_id,
-          revision: placement!.placement_revision,
-          imageId,
-        }),
-        state: 'withheld',
-      }),
-    )
-    expect(invalidate).toHaveBeenCalledWith(
-      `/images/placements/${placement!.placement_id}/${placement!.placement_revision}/${imageId}`,
-    )
+    expect(put).not.toHaveBeenCalled()
+    expect(invalidate).not.toHaveBeenCalled()
   })
 })

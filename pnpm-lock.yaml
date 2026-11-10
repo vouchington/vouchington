@@ -9440,9 +9440,6 @@ importers:
       '@services/images':
         specifier: workspace:^
         version: link:../images
-      '@services/media-delivery-safety':
-        specifier: workspace:^
-        version: link:../media-delivery-safety
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
