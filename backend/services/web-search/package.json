@@ -24,13 +24,15 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/pagination": "workspace:^",
     "@services/urls": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

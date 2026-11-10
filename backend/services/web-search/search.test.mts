@@ -14,7 +14,7 @@ function sha256hex(): string {
 
 describe('searchWeb', () => {
   it('returns content match with snippet containing sentinel markers', async () => {
-    const token = randomUUID().replace(/-/g, '')
+    const token = searchToken()
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-${randomUUID()}.com`,
       is_crawlable: true,
@@ -47,7 +47,7 @@ describe('searchWeb', () => {
   })
 
   it('returns url-only match with snippet null and match_type url', async () => {
-    const token = randomUUID().replace(/-/g, '')
+    const token = searchToken()
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-url-${randomUUID()}.com`,
       is_crawlable: true,
@@ -66,7 +66,7 @@ describe('searchWeb', () => {
   })
 
   it('content results rank before url-string results', async () => {
-    const token = randomUUID().replace(/-/g, '')
+    const token = searchToken()
     const contentHostnameId = await insertTestUrlHostname({
       hostname: `web-search-rank-content-${randomUUID()}.com`,
       is_crawlable: true,
@@ -110,7 +110,7 @@ describe('searchWeb', () => {
   })
 
   it('blocked hostname is excluded from content and url branches', async () => {
-    const token = randomUUID().replace(/-/g, '')
+    const token = searchToken()
     const blockedHostnameId = await insertTestUrlHostname({
       hostname: `web-search-blocked-${randomUUID()}.com`,
       is_crawlable: true,
@@ -141,7 +141,7 @@ describe('searchWeb', () => {
   })
 
   it('excludes crawl for non-crawlable hostname from content results', async () => {
-    const token = randomUUID().replace(/-/g, '')
+    const token = searchToken()
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-nocrawl-${randomUUID()}.com`,
       is_crawlable: false,
@@ -172,7 +172,7 @@ describe('searchWeb', () => {
   })
 
   it('dedup: url matching both branches appears once with the snippet', async () => {
-    const token = randomUUID().replace(/-/g, '')
+    const token = searchToken()
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-dedup-${randomUUID()}.com`,
       is_crawlable: true,
@@ -215,8 +215,8 @@ describe('searchWeb', () => {
     expect(result.results).toHaveLength(0)
   })
 
-  it('page_info.has_next_page is always false', async () => {
-    const token = randomUUID().replace(/-/g, '')
+  it('page_info.has_next_page is false when the matches fit one page', async () => {
+    const token = searchToken()
     const hostnameId = await insertTestUrlHostname({
       hostname: `web-search-pageinfo-${randomUUID()}.com`,
       is_crawlable: true,
@@ -231,3 +231,11 @@ describe('searchWeb', () => {
     expect(result.page_info.has_next_page).toBe(false)
   })
 })
+
+// Letters only: a hex token containing digits can parse into several lexemes (for example an
+// exponent-like run), which makes ts_rank order repeat counts unpredictably.
+function searchToken(): string {
+  return randomUUID()
+    .replace(/-/g, '')
+    .replace(/\d/g, d => 'ghijklmnop'[Number(d)]!)
+}

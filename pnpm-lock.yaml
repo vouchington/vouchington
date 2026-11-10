@@ -3939,6 +3939,9 @@ importers:
       '@services/vote-weight':
         specifier: workspace:^
         version: link:../services/vote-weight
+      '@services/web-search':
+        specifier: workspace:^
+        version: link:../services/web-search
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../ts-shared/utils
@@ -6579,6 +6582,9 @@ importers:
       '@services/web-risk':
         specifier: workspace:^
         version: link:../web-risk
+      '@services/web-search':
+        specifier: workspace:^
+        version: link:../web-search
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
@@ -12678,6 +12684,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -12699,6 +12708,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^

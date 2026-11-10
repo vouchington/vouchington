@@ -1274,7 +1274,7 @@
     "I099": [["after", "limit", "time_range"]],
     "I100": [["after", "limit", "q"]],
     "I101": [["user_id"]],
-    "I102": [["limit", "query"]],
+    "I102": [["after", "limit", "query"]],
     "I103": [["description", "list_id", "name", "visibility"]],
     "I104": [
       [

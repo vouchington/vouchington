@@ -153,6 +153,41 @@ describe('GET /api/v1/web-search', () => {
     ).toBeUndefined()
   })
 
+  it('after: follows end_cursor to the next page; invalid cursor is 400', async () => {
+    const token = randomUUID().replace(/-/g, '')
+    const urlIds: string[] = []
+    for (const repeats of [3, 1]) {
+      const hostnameId = await insertTestUrlHostname({
+        hostname: `api-ws-after-${randomUUID()}.com`,
+        is_crawlable: true,
+      })
+      const urlId = await insertTestUrl({
+        url: `https://api-ws-after-${randomUUID()}.com/page`,
+        hostnameId,
+      })
+      const markdown = `${Array.from({ length: repeats }, () => token).join(' ')} body`
+      const { id: crawlId } = await insertTestCrawl({ urlId, statusCode: 200, markdown })
+      await insertTestCrawlChunksBulk([
+        { urlId, crawlId, orderIndex: 0, markdown, contentSha256: sha256hex() },
+      ])
+      urlIds.push(urlId)
+    }
+
+    const request = createRequest()
+    const first = await request.get(`/api/v1/web-search?query=${token}&limit=1`).expect(200)
+    expect(first.body.results.map((r: { url: { id: string } }) => r.url.id)).toEqual([urlIds[0]])
+    expect(first.body.page_info.has_next_page).toBe(true)
+
+    const cursor = encodeURIComponent(first.body.page_info.end_cursor)
+    const second = await request
+      .get(`/api/v1/web-search?query=${token}&limit=1&after=${cursor}`)
+      .expect(200)
+    expect(second.body.results.map((r: { url: { id: string } }) => r.url.id)).toEqual([urlIds[1]])
+    expect(second.body.page_info.has_next_page).toBe(false)
+
+    await request.get(`/api/v1/web-search?query=${token}&after=garbage`).expect(400)
+  })
+
   it('page_info.has_next_page is false', async () => {
     const token = randomUUID().replace(/-/g, '')
     const hostnameId = await insertTestUrlHostname({
