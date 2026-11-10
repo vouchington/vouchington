@@ -9,7 +9,11 @@ import {
   overrideDynamicConfigFieldsForTest,
   removeTestCommunityMember,
 } from '@voucha/test-helpers'
-import { refreshMaterializedViewForTest } from '../../../test-helpers/refresh-materialized-view-for-test.mts'
+import {
+  readTrendingCommunityMemberCountCapForTest,
+  readTrendingCommunityScoresForTest,
+  refreshMaterializedViewForTest,
+} from '../../../test-helpers/refresh-materialized-view-for-test.mts'
 import { describe, expect, it } from 'vitest'
 import {
   syncTrendingCommunityMemberCountCap,
@@ -122,7 +126,15 @@ describe('trending community member count cap', () => {
         broadcast: 'everyone',
       })
 
-      const rows = await refreshAndReadScores([under.id, over.id, privateOnly.id, unreviewed.id])
+      await syncTrendingCommunityMemberCountCap()
+      expect(await readTrendingCommunityMemberCountCapForTest()).toBe(cap)
+      await refreshMaterializedViewForTest('mv_trending_communities')
+      const rows = await readTrendingCommunityScoresForTest([
+        under.id,
+        over.id,
+        privateOnly.id,
+        unreviewed.id,
+      ])
       const byId = new Map(rows.map(row => [row.id, row]))
       const underRow = byId.get(under.id)
       const overRow = byId.get(over.id)
@@ -135,36 +147,13 @@ describe('trending community member count cap', () => {
       expect(byId.has(unreviewed.id)).toBe(false)
     } finally {
       restore()
-      await refreshMaterializedViewForTest('mv_trending_communities', undefined, () =>
-        syncTrendingCommunityMemberCountCap(),
+      await syncTrendingCommunityMemberCountCap()
+      expect(await readTrendingCommunityMemberCountCapForTest()).toBe(
+        TRENDING_COMMUNITY_MEMBER_COUNT_CAP_DEFAULT,
       )
     }
   })
 })
-
-async function refreshAndReadScores(
-  ids: readonly string[],
-): Promise<{ id: string; trending_score: number; members_capped: boolean }[]> {
-  let rows: { id: string; trending_score: number; members_capped: boolean }[] = []
-  await refreshMaterializedViewForTest(
-    'mv_trending_communities',
-    async client => {
-      const result = await client.query<{
-        id: string
-        trending_score: number
-        members_capped: boolean
-      }>(
-        `/* refreshAndReadScores */ SELECT id, trending_score, members_capped
-       FROM mv_trending_communities
-       WHERE id = ANY($1::uuid[])`,
-        [ids],
-      )
-      rows = result.rows
-    },
-    () => syncTrendingCommunityMemberCountCap(),
-  )
-  return rows
-}
 
 async function reviewedPost(communityId: string, userId: string, label: string): Promise<void> {
   const postId = await insertTestPost({

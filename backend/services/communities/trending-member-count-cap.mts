@@ -26,6 +26,8 @@ export async function syncTrendingCommunityMemberCountCap(): Promise<void> {
   await write(sql`/* syncTrendingCommunityMemberCountCap */
     INSERT INTO trending_community_member_count_caps (is_singleton, member_count_cap)
     VALUES (TRUE, ${cap})
-    ON CONFLICT (is_singleton) DO UPDATE SET member_count_cap = EXCLUDED.member_count_cap
+    ON CONFLICT (is_singleton) DO UPDATE
+    SET member_count_cap = EXCLUDED.member_count_cap
+    WHERE trending_community_member_count_caps.member_count_cap IS DISTINCT FROM EXCLUDED.member_count_cap
   `)
 }
