@@ -55,9 +55,9 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(prep).toContain('runs-on: ubuntu-latest')
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
     expect(prep).toContain('node ci/vitest/shard-total.mts test-backend-unit')
-    // The registry owns the shard size (#2111); no repository variable overrides it.
-    expect(prep).not.toContain('FILES_PER_SHARD_OVERRIDE')
-    expect(prep).not.toContain('TEST_BACKEND_UNIT_FILES_PER_SHARD')
+    expect(prep).toContain(
+      'FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_BACKEND_UNIT_FILES_PER_SHARD }}',
+    )
     expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')

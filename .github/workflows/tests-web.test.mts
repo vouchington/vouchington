@@ -33,14 +33,14 @@ describe('Web Tests workflow', () => {
     })
   })
 
-  it('prepares a registry-sized web test shard matrix on the same ARM64 runner as the shards', () => {
+  it('prepares a configurable web test shard matrix on the same ARM64 runner as the shards', () => {
     const prep = jobSection('prep')
 
     expect(armLabel).toBeDefined()
     expect(prep).toContain(`runs-on: ${armLabel}\n`)
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
     expect(prep).toContain('node ci/vitest/shard-total.mts test-web')
-    expect(prep).not.toContain('FILES_PER_SHARD_OVERRIDE')
+    expect(prep).toContain('FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_WEB_FILES_PER_SHARD }}')
     expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
