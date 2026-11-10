@@ -56,6 +56,7 @@ export const RETENTION_WORK_SCENARIOS = [
   'copyright-review-target-breaches',
   'membership-grant-expiry-candidates',
   'membership-orphaned-queued-grant-candidates',
+  'membership-orphaned-queued-grant-nil-cursor',
   'membership-orphaned-queued-grant-activation',
   'membership-pause-collection-due',
   'membership-apple-notification-recovery',

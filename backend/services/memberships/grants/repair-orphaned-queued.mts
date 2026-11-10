@@ -7,6 +7,14 @@ import { activateOrphanedQueuedGrant } from './repair-orphaned-queued-activate.m
 
 export { activateOrphanedQueuedGrant } from './repair-orphaned-queued-activate.mts'
 
+// Below every uuidv7, so a null cursor is still `user_id > $bound` and can use the user index.
+const NIL_USER_ID = '00000000-0000-0000-0000-000000000000'
+
+type InspectedGrantRow = {
+  matched: boolean
+  user_id: string
+}
+
 export async function repairOrphanedQueuedGrantsBatch(
   cursor: string | null,
   batchSize = getMembershipWorkLimits().batchSize,
@@ -15,12 +23,13 @@ export async function repairOrphanedQueuedGrantsBatch(
   if (!Number.isInteger(batchSize) || batchSize < 1)
     throw new RangeError('Membership orphan repair batch size must be a positive integer')
   if (userIds && userIds.length === 0) return { repaired: 0, hasMore: false, nextCursor: cursor }
-  const selected = await readOrphanedQueuedGrantUserPage(cursor, batchSize, userIds)
-  const repaired = await repairOrphanedQueuedGrantUsers(selected)
+  const inspected = await readOrphanedQueuedGrantUserPage(cursor, batchSize, userIds)
+  const repaired = await repairOrphanedQueuedGrantUsers(matchingUserIds(inspected))
+  // The cap counts grant rows read, not matches. The next page starts after the last inspected user.
   return {
     repaired,
-    hasMore: selected.length === batchSize,
-    nextCursor: selected.at(-1) ?? null,
+    hasMore: inspected.length === batchSize,
+    nextCursor: inspected.at(-1)?.user_id ?? null,
   }
 }
 
@@ -28,11 +37,11 @@ async function readOrphanedQueuedGrantUserPage(
   cursor: string | null,
   batchSize: number,
   userIds?: readonly string[],
-): Promise<string[]> {
+): Promise<InspectedGrantRow[]> {
   await using query = await beginTransaction()
-  const selected = await readOrphanedQueuedGrantUserIds(cursor, batchSize, query, userIds)
+  const inspected = await readOrphanedQueuedGrantRows(cursor, batchSize, query, userIds)
   await query.commit()
-  return selected
+  return inspected
 }
 
 export async function readOrphanedQueuedGrantUserIds(
@@ -41,78 +50,67 @@ export async function readOrphanedQueuedGrantUserIds(
   query: QueryExecutor,
   userIds?: readonly string[],
 ): Promise<string[]> {
-  // One matching user per step, probed from the user index. A cancelled-state tail past
-  // the page is not read. The lookups stay LATERAL so they cannot become the driving scan.
-  const statement = sql`/* repairOrphanedQueuedGrantsBatch: candidates */
-    WITH RECURSIVE found AS (
-      (
-        SELECT grant_row.user_id, 1 AS step
-        FROM membership_grants grant_row`
-  appendOrphanedQueuedGrantLookups(statement)
-  statement.append(sql`
-        WHERE (${cursor}::uuid IS NULL OR grant_row.user_id > ${cursor}::uuid)`)
-  appendOrphanedQueuedGrantFilters(statement, userIds)
-  statement.append(sql`
-        ORDER BY grant_row.user_id
-        LIMIT 1
-      )
-      UNION ALL
-      SELECT next_row.user_id, found.step + 1
-      FROM found
-      CROSS JOIN LATERAL (
-        SELECT grant_row.user_id
-        FROM membership_grants grant_row`)
-  appendOrphanedQueuedGrantLookups(statement)
-  statement.append(sql`
-        WHERE grant_row.user_id > found.user_id`)
-  appendOrphanedQueuedGrantFilters(statement, userIds)
-  statement.append(sql`
-        ORDER BY grant_row.user_id
-        LIMIT 1
-      ) next_row
-      WHERE found.step < ${batchSize}
-    )
-    SELECT found.user_id FROM found ORDER BY found.user_id`)
-  const { rows } = await query<{ user_id: string }>(statement)
-  return rows.map(row => row.user_id)
+  const inspected = await readOrphanedQueuedGrantRows(cursor, batchSize, query, userIds)
+  return matchingUserIds(inspected)
 }
 
-function appendOrphanedQueuedGrantLookups(statement: ReturnType<typeof sql>): void {
-  statement.append(sql`
-    CROSS JOIN LATERAL (
-      SELECT 1 FROM memberships membership
-      WHERE membership.user_id = grant_row.user_id
-        AND membership.projection_ended_at IS NULL
-        AND (membership.cancelled_at IS NOT NULL OR membership.expired_at IS NOT NULL)
-      LIMIT 1
-    ) orphan_membership
-    CROSS JOIN LATERAL (
-      SELECT 1 FROM membership_source_states source_state
-      WHERE source_state.membership_source_id = grant_row.membership_source_id
-        AND source_state.cancelled_at IS NULL
-        AND source_state.expired_at IS NULL
-        AND source_state.paused_at IS NULL
-      LIMIT 1
-    ) open_state
-    CROSS JOIN LATERAL (
-      SELECT 1
-      WHERE NOT EXISTS (
-        SELECT 1 FROM membership_grant_activation_periods activation
-        WHERE activation.membership_grant_id = grant_row.id
-          AND activation.user_id = grant_row.user_id
-          AND activation.ended_at IS NULL
-      )
-    ) no_open_activation`)
+function matchingUserIds(rows: readonly InspectedGrantRow[]): string[] {
+  const seen = new Set<string>()
+  const matches: string[] = []
+  for (const row of rows) {
+    if (!row.matched || seen.has(row.user_id)) continue
+    seen.add(row.user_id)
+    matches.push(row.user_id)
+  }
+  return matches
 }
 
-function appendOrphanedQueuedGrantFilters(
-  statement: ReturnType<typeof sql>,
+async function readOrphanedQueuedGrantRows(
+  cursor: string | null,
+  batchSize: number,
+  query: QueryExecutor,
   userIds?: readonly string[],
-): void {
-  statement.append(sql`
-      AND grant_row.revoked_at IS NULL
-      AND fn_membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'`)
+): Promise<InspectedGrantRow[]> {
+  const bound = cursor ?? NIL_USER_ID
+  // One user can hold many grants, so this walk is not one row per user. DISTINCT ON would
+  // keep reading until it filled the cap with users. The limit below is the rows inspected.
+  const statement = sql`/* repairOrphanedQueuedGrantsBatch: candidates */
+    SELECT inspected.user_id,
+           (
+             inspected.revoked_at IS NULL
+             AND EXISTS (
+               SELECT 1 FROM memberships membership
+               WHERE membership.user_id = inspected.user_id
+                 AND membership.projection_ended_at IS NULL
+                 AND (membership.cancelled_at IS NOT NULL OR membership.expired_at IS NOT NULL)
+             )
+             AND EXISTS (
+               SELECT 1 FROM membership_source_states source_state
+               WHERE source_state.membership_source_id = inspected.membership_source_id
+                 AND source_state.cancelled_at IS NULL
+                 AND source_state.expired_at IS NULL
+                 AND source_state.paused_at IS NULL
+             )
+             AND NOT EXISTS (
+               SELECT 1 FROM membership_grant_activation_periods activation
+               WHERE activation.membership_grant_id = inspected.id
+                 AND activation.user_id = inspected.user_id
+                 AND activation.ended_at IS NULL
+             )
+             AND fn_membership_grant_remaining_duration(inspected.id) >= INTERVAL '1 millisecond'
+           ) AS matched
+    FROM (
+      SELECT grant_row.id, grant_row.user_id, grant_row.membership_source_id, grant_row.revoked_at
+      FROM membership_grants grant_row
+      WHERE grant_row.user_id > ${bound}::uuid`
   if (userIds) statement.append(sql` AND grant_row.user_id = ANY(${[...userIds]}::uuid[])`)
+  statement.append(sql`
+      ORDER BY grant_row.user_id, grant_row.id
+      LIMIT ${batchSize}
+    ) inspected
+    ORDER BY inspected.user_id, inspected.id`)
+  const { rows } = await query<InspectedGrantRow>(statement)
+  return rows
 }
 
 async function repairOrphanedQueuedGrantUsers(userIds: readonly string[]): Promise<number> {

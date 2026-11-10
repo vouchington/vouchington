@@ -98,7 +98,8 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
     const higherGrantId = await createOrphanedQueuedGrant(admin.id, higher.id)
     await createOrphanedQueuedGrant(admin.id, lower.id)
 
-    const page = await repairOrphanedQueuedGrantsBatch(null, 1, [lower.id, higher.id])
+    // Each user has a revoked covering grant and a later queued grant. The page has to include both.
+    const page = await repairOrphanedQueuedGrantsBatch(null, 2, [lower.id, higher.id])
 
     expect(page).toEqual({ repaired: 1, hasMore: true, nextCursor: lower.id })
     await expect(getMembershipByUserId(lower.id)).resolves.toMatchObject({ status: 'active' })
@@ -106,9 +107,35 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
       activation_started_at: null,
     })
     await expect(
-      repairOrphanedQueuedGrantsBatch(page.nextCursor, 1, [lower.id, higher.id]),
+      repairOrphanedQueuedGrantsBatch(page.nextCursor, 2, [lower.id, higher.id]),
     ).resolves.toMatchObject({ repaired: 1, nextCursor: higher.id })
     await expect(getMembershipByUserId(higher.id)).resolves.toMatchObject({ status: 'active' })
+  })
+
+  it('advances past a full page of grant rows when none of them is an orphan', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const first = await createTestUser()
+    const second = await createTestUser()
+    const [lower, higher] = [first, second].toSorted((left, right) => (left.id < right.id ? -1 : 1))
+    const higherGrantId = await createOrphanedQueuedGrant(admin.id, higher.id)
+    const lowerGrantId = await createOrphanedQueuedGrant(admin.id, lower.id)
+
+    const page = await repairOrphanedQueuedGrantsBatch(null, 1, [lower.id, higher.id])
+
+    expect(page).toEqual({ repaired: 0, hasMore: true, nextCursor: lower.id })
+    await expect(getTestMembershipGrant(lowerGrantId)).resolves.toMatchObject({
+      activation_started_at: null,
+    })
+    await expect(
+      repairOrphanedQueuedGrantsBatch(page.nextCursor, 2, [lower.id, higher.id]),
+    ).resolves.toMatchObject({ repaired: 1, nextCursor: higher.id })
+    await expect(getMembershipByUserId(higher.id)).resolves.toMatchObject({ status: 'active' })
+    await expect(getTestMembershipGrant(lowerGrantId)).resolves.toMatchObject({
+      activation_started_at: null,
+    })
+    await expect(getTestMembershipGrant(higherGrantId)).resolves.toMatchObject({
+      activation_started_at: expect.any(Date),
+    })
   })
 })
 

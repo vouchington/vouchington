@@ -56,17 +56,17 @@ export async function runMembershipOrphanedQueuedGrantScenarios(): Promise<void>
           'idx_membership_grant_activation_periods__open_grant',
         ],
       },
-      // The custom plan counts the index probe and the duration filter for each of the 10 users.
-      { kind: 'maxProcessedRows', relation: 'membership_grants', max: 20 },
-      // The generic plan reads one extra current-membership index probe beyond the page of 10.
-      { kind: 'maxProcessedRows', relation: 'memberships', max: 11 },
-      { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 10 },
-      { kind: 'maxProcessedRows', relation: 'membership_grant_activation_periods', max: 10 },
+      // The user index stops after this many inspected grant rows.
+      { kind: 'maxProcessedRows', relation: 'membership_grants', max: PAGE_SIZE },
+      // The generic plan reads one extra current-membership index probe beyond the page.
+      { kind: 'maxProcessedRows', relation: 'memberships', max: PAGE_SIZE + 1 },
+      { kind: 'maxProcessedRows', relation: 'membership_source_states', max: PAGE_SIZE },
+      { kind: 'maxProcessedRows', relation: 'membership_grant_activation_periods', max: PAGE_SIZE },
       {
         kind: 'maxFunctionCalls',
         function: 'fn_membership_grant_remaining_duration',
-        // Same custom-plan double count: one call per probed grant row, two per user.
-        max: 20,
+        // The custom plan can count the duration check twice for each inspected grant row.
+        max: PAGE_SIZE * 2,
       },
     ],
   })
@@ -75,6 +75,46 @@ export async function runMembershipOrphanedQueuedGrantScenarios(): Promise<void>
     async () => {
       await using transaction = await beginTransaction()
       await readOrphanedQueuedGrantUserIds(cursor, PAGE_SIZE, transaction)
+    },
+    undefined,
+    'repairOrphanedQueuedGrantsBatch: candidates',
+  )
+  registerScenarioContract('membership-orphaned-queued-grant-nil-cursor', {
+    forbidSequentialScans: [
+      'membership_grants',
+      'membership_source_states',
+      'memberships',
+      'membership_grant_activation_periods',
+    ],
+    seededRows,
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_membership_grants__user_id'] },
+      { kind: 'usesIndexes', indexes: ['idx_memberships__effective_user'] },
+      { kind: 'usesIndexes', indexes: ['membership_source_states_pkey'] },
+      {
+        kind: 'usesIndexes',
+        anyOf: true,
+        indexes: [
+          'idx_membership_grant_activation_periods__open_user',
+          'idx_membership_grant_activation_periods__open_grant',
+        ],
+      },
+      { kind: 'maxProcessedRows', relation: 'membership_grants', max: PAGE_SIZE },
+      { kind: 'maxProcessedRows', relation: 'memberships', max: PAGE_SIZE + 1 },
+      { kind: 'maxProcessedRows', relation: 'membership_source_states', max: PAGE_SIZE },
+      { kind: 'maxProcessedRows', relation: 'membership_grant_activation_periods', max: PAGE_SIZE },
+      {
+        kind: 'maxFunctionCalls',
+        function: 'fn_membership_grant_remaining_duration',
+        max: PAGE_SIZE * 2,
+      },
+    ],
+  })
+  await runAndCapture(
+    'membership-orphaned-queued-grant-nil-cursor',
+    async () => {
+      await using transaction = await beginTransaction()
+      await readOrphanedQueuedGrantUserIds(null, PAGE_SIZE, transaction)
     },
     undefined,
     'repairOrphanedQueuedGrantsBatch: candidates',
