@@ -108,13 +108,23 @@ describe('reviewed token and audit snapshot identifiers', () => {
         snapshot('moderation_report_judgements', { run_id: column('uuid') }),
         noFreshness,
       ),
-    ).toEqual([])
+    ).toEqual([
+      expect.stringContaining(
+        'moderation_report_judgements.run_id: UUID reference without a target foreign key',
+      ),
+    ])
     expect(
       checkRelationalStorage(
         snapshot('rss_feed_item_category_snapshot_reconciliations', { change_id: column('uuid') }),
         noFreshness,
       ),
     ).toEqual([])
+  })
+
+  it('accepts report judgement run_id as a foreign-key relationship', () => {
+    const value = snapshot('moderation_report_judgements', { run_id: column('uuid') })
+    value.tables.moderation_report_judgements!.foreignKeys.run_id_fk = foreignKey('run_id')
+    expect(checkRelationalStorage(value, noFreshness)).toEqual([])
   })
 
   it('reviews exact columns only, so the same names on a new table are still rejected', () => {
@@ -194,7 +204,6 @@ describe('reviewed token and audit snapshot identifiers', () => {
     ['oauth_native_session_token_mints', 'grant_id', 'audit snapshot identifier'],
     ['oauth_native_session_token_mints', 'session_id', 'audit snapshot identifier'],
     ['oauth_native_session_token_mints', 'access_token_id', 'audit snapshot identifier'],
-    ['moderation_report_judgements', 'run_id', 'token, cursor or protocol identifier'],
     [
       'rss_feed_item_category_snapshot_reconciliations',
       'change_id',

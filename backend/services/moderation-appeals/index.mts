@@ -13,6 +13,12 @@ export { approveModerationAppeal } from './approve-appeal.mts'
 export { sendApprovedModerationAppealResolution } from './send-appeal-resolution.mts'
 export { rerunModerationAppealResolutionDraft } from './rerun-resolution-draft.mts'
 export {
+  claimAppealResolutionRun,
+  getAppealResolutionRunStatus,
+  getAppealResolutionRunOutcome,
+  markAppealResolutionRunExpired,
+} from './rerun-outcomes.mts'
+export {
   resolveModerationAppealAccept,
   resolveModerationAppealReduce,
   dismissModerationAppeal,

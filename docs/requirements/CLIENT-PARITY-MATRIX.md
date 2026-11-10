@@ -393,27 +393,33 @@ for both. Native clients need the same descriptions before requesting household 
 
 An accepted AI review request confirms that work was queued. Client and staff presentation paths
 keep the item pending and read the authorized resource until the saved recommendation or draft is
-visible; the enqueue response itself carries no model result. Staff report judgement reruns receive
-an opaque UUIDv7 run ID at admission and poll that exact run's authorized result. Another automatic
-or staff judgement on the same entity does not complete the admitted run. Web implements
-this separation for moderation appeals, disputes, reports, copyright review, and copyright email
-intake. Staff appeal and dispute reruns use opaque request-derived run IDs that remain unique across
-queue restarts. Each staff resource exposes the current requested run and the run that saved its draft;
-clients continue polling within the original deadline until those IDs match, even when another
-staff request supersedes theirs. A prior job cannot overwrite the newer request's draft. Staff
-dispute reconciliation and report lists read the primary. Report rerun result reads use the report
-ID and run ID together, and the worker reuses a saved exact result on retry. After completion,
-clients read the originating report directly instead of chasing collection pages. This lean detail
-returns persisted report fields and the current judgement identity or null; matching text never
-substitutes for a persisted judgement ID. REST and MCP share moderator/admin access. Native
-adoption remains in clients #373. Staff report lists
+visible; the enqueue response itself carries no model result. Web implements this separation for
+moderation appeals, disputes, reports, copyright review, and copyright email intake.
+
+Staff report judgement and appeal reruns receive opaque exact run IDs. Authorized staff reads of
+the parent and run return a durable `active`, `succeeded`, `failed`, or `expired` outcome independent
+of queue-job cleanup; the report result includes its actual judgement ID on success. Appeal
+exact-run result reads are a new staff-only contract. The report result contract uses `run_id` and
+`status` in place of `completed`. A different judgement, a prior
+run's late response, or a transiently missing run cannot complete or release the current pending
+admission. Definitive failure or expiry releases its controls so staff can retry; a missing run
+remains inconclusive, including after finite retention. A client polling deadline shows a refresh
+prompt while keeping the exact admission locked; it does not establish a terminal outcome. Appeal
+owners still receive their redacted
+appeal view without internal run outcomes. Staff dispute reconciliation and report lists read the
+primary. After completion, clients read the originating report directly instead of chasing
+collection pages. This lean detail returns persisted report fields and the current judgement
+identity or null; matching text never substitutes for a persisted judgement ID. REST and MCP share
+moderator/admin access. Native adoption remains in clients #373. Staff report lists
 expose `automatic_judgement_enabled` for each report, based on the current community AI setting and
 target. The community moderation queue exposes it only to site staff. Clients poll an ordinary
 pending report automatically only when this is true; an explicitly admitted staff rerun still polls
 when it is false. Member report lists omit the field. Copyright queues refresh every loaded page, and
 staff polling stops after a bounded wait with a visible refresh prompt. Native adoption is tracked
 as dependent client work under
-[clients #373](https://github.com/vouchington/vouchington-clients/issues/373); the producer lands first.
+[clients #373](https://github.com/vouchington/vouchington-clients/issues/373) for reports and
+[clients #375](https://github.com/vouchington/vouchington-clients/issues/375) for appeals; the
+producer lands first.
 
 ## Household membership create
 

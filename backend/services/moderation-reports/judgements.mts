@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
   type ModerationReportEntityType,
@@ -51,6 +51,8 @@ export type InsertReportJudgementInput = {
 export async function insertReportJudgement(
   input: InsertReportJudgementInput,
 ): Promise<ModerationReportJudgement> {
+  if (input.runId && !input.triggeringReportId)
+    throw new Error('A manual judgement run requires its triggering report')
   let resolvedCaseId = input.caseId
   if (!resolvedCaseId && input.triggeringReportId) {
     const { rows: reportRows } = await read<{ case_id: string | null }>(
@@ -77,7 +79,23 @@ export async function insertReportJudgement(
     sql` AS entity_id, ${input.entityType}::moderation_report_entity_types AS entity_type`,
   )
 
-  const { rows } = await write<ModerationReportJudgement>(query)
+  if (!input.runId) {
+    const { rows } = await write<ModerationReportJudgement>(query)
+    return rows[0]
+  }
+
+  // The saved judgement and its run outcome become visible in one commit.
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction<ModerationReportJudgement>(query)
+  const completion = await transaction(sql`/* insertReportJudgement:completeRun */
+    UPDATE moderation_report_judgement_runs
+    SET completed_at = now()
+    WHERE id = ${input.runId}::uuid
+      AND moderation_report_id = ${input.triggeringReportId ?? null}::uuid
+    RETURNING id
+  `)
+  if (completion.rowCount !== 1) throw new Error('Judgement run disappeared before completion')
+  await transaction.commit()
   return rows[0]
 }
 

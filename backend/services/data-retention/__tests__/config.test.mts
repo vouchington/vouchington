@@ -10,6 +10,7 @@ import {
   getDataRetentionLimits,
   getPartitionStatusProbeLimit,
   getSesBounceRetentionDays,
+  readDataRetentionField,
 } from '../config.mts'
 
 describe('getDataRetentionLimits', () => {
@@ -78,6 +79,7 @@ describe('getDataRetentionLimits', () => {
     for (const field of [
       'batch_size',
       'ai_usage_raw_retention_days',
+      'ai_rerun_retention_days',
       'classifier_retention_days',
       'max_batches_per_run',
       'ses_bounce_retention_days',
@@ -106,5 +108,13 @@ describe('getDataRetentionLimits', () => {
       ai_retention_max_pages_per_run: 3,
     })
     expect(getAIRetentionPageLimits()).toEqual({ batchSize: 7, maxBatches: 3 })
+  })
+
+  it('bounds durable AI rerun outcome retention to the configured window', () => {
+    expect(readDataRetentionField('ai_rerun_retention_days')).toBe(90)
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, { ai_rerun_retention_days: 180 })
+    expect(readDataRetentionField('ai_rerun_retention_days')).toBe(180)
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, { ai_rerun_retention_days: 366 })
+    expect(readDataRetentionField('ai_rerun_retention_days')).toBe(90)
   })
 })

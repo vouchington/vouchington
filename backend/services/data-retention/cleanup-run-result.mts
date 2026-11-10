@@ -63,6 +63,8 @@ export type DataRetentionCleanupResult = {
   webPushSubscriptionTombstones: AuthSessionCleanupResult
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
+  reportJudgementRuns: CleanupResult
+  appealResolutionRuns: CleanupResult
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
   postModerationLedger: PostModerationLedgerCleanupResult
   agentModerations: AgentModerationCleanupResult

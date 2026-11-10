@@ -50,6 +50,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/activitypub-outbound-follows-recovery',
   'background/activitypub-outbound-votes-recovery',
   'ai_agents/reconcileAutoDispatchJudgements',
+  'ai_agents/reconcileAIAgentFailures',
   'ai_agents/reconcileCopyrightAgentDispatches',
   'ai_agents/reconcileClassifierRuns',
   'background/email-digests-api-key-expiry',
@@ -184,6 +185,15 @@ describe('scheduled job manifest catalog', () => {
       description: 'Publish class-aggregated GlideMQ depth and staleness to CloudWatch',
       trigger: enqueueGlideMqStats,
     })
+    expect(SCHEDULED_JOBS_REGISTRY).toContainEqual(
+      expect.objectContaining({
+        id: 'reconcileAIAgentFailures',
+        queue_name: 'ai_agents',
+        job_name: 'reconcile-ai-agent-failures',
+        schedule: '*/5 * * * *',
+        trigger: expect.any(Function),
+      }),
+    )
     expect(SCHEDULED_JOBS_REGISTRY).toContainEqual(
       expect.objectContaining({
         id: 'reconcileClassifierRuns',

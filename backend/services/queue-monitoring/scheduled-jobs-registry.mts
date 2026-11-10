@@ -66,6 +66,7 @@ const SCHEDULED_JOB_API_ORDER = [
   'recoverRssFeedHardDeletes',
   'reconcileStoryPostRelatedUrlProjections',
   'reconcileAutoDispatchJudgements',
+  'reconcileAIAgentFailures',
   'reconcileCopyrightAgentDispatches',
   'reconcileClassifierRuns',
   'bedrock-embeddings:poll-dispatcher',

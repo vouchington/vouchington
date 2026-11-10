@@ -18,6 +18,7 @@ import { processAutoDispatchJudgement } from './processors/process-auto-dispatch
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
 import { processReconcileCopyrightAgentDispatches } from './processors/process-reconcile-copyright-agent-dispatches.mts'
 import { processReconcileClassifierRuns } from './processors/process-reconcile-classifier-runs.mts'
+import { processReconcileAIAgentFailures } from './processors/reconcile-ai-agent-failures.mts'
 
 type AIAgentJob = NamedQueueJob<AIAgentJobPayloads>
 
@@ -41,6 +42,7 @@ const processors = {
     throw new Error('Response recovery must settle before processor dispatch')
   },
   'reconcile-copyright-agent-dispatches': job => processReconcileCopyrightAgentDispatches(job.data),
+  'reconcile-ai-agent-failures': () => processReconcileAIAgentFailures(),
 } satisfies {
   [TName in keyof AIAgentJobPayloads]: (
     job: Extract<AIAgentJob, { name: TName }>,

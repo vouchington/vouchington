@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ModerationReportJudgement } from './judgements.mts'
+import type { ReportJudgementRunStatus } from './rerun-outcomes.mts'
 
 export async function getJudgementById(
   judgementId: string,
@@ -61,11 +62,21 @@ export async function hasAutomaticJudgementForReport(reportId: string): Promise<
 export async function getReportJudgementRunResult(
   reportId: string,
   runId: string,
-): Promise<{ completed: boolean; judgement_id: string | null }> {
-  const { rows } = await read<{ id: string }>(sql`/* getReportJudgementRunResult */
-    SELECT id FROM moderation_report_judgements
-    WHERE run_id = ${runId}::uuid AND triggering_report_id = ${reportId}::uuid
-    LIMIT 1
+): Promise<{
+  run_id: string
+  status: ReportJudgementRunStatus
+  judgement_id: string | null
+} | null> {
+  const { rows } = await read<{
+    run_id: string
+    status: ReportJudgementRunStatus
+    judgement_id: string | null
+  }>(sql`/* getReportJudgementRunResult */
+    SELECT run.id AS run_id, run.status, judgement.id AS judgement_id
+    FROM moderation_report_judgement_runs run
+    LEFT JOIN moderation_report_judgements judgement
+      ON judgement.run_id = run.id AND judgement.triggering_report_id = run.moderation_report_id
+    WHERE run.id = ${runId}::uuid AND run.moderation_report_id = ${reportId}::uuid
   `)
-  return { completed: rows.length > 0, judgement_id: rows[0]?.id ?? null }
+  return rows[0] ?? null
 }

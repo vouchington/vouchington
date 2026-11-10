@@ -15,9 +15,11 @@ import { CRITICAL_ALERT_SCENARIO_IDS } from './critical-alert-scenario-ids.mts'
 import { CATEGORY_PROJECTION_SCENARIO_IDS } from './category-projection-scenario-ids.mts'
 import { EXISTENCE_FILTER_SCENARIO_IDS } from './existence-filter-scenario-ids.mts'
 import { BLUESKY_FOLLOWER_SCENARIO_IDS } from './bluesky-follower-scenario-ids.mts'
+import { MODERATION_RERUN_SCENARIO_IDS } from './moderation-rerun-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
   ...EXISTENCE_FILTER_SCENARIO_IDS,
+  ...MODERATION_RERUN_SCENARIO_IDS,
   'ai-usage-month-attached',
   'ai-usage-tier-existing',
   ...CATEGORY_PROJECTION_SCENARIO_IDS,

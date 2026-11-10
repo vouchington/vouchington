@@ -171,6 +171,9 @@ importers:
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:data-stores/graceful-shutdown
+      '@services/moderation-appeals':
+        specifier: workspace:^
+        version: link:services/moderation-appeals
       '@services/referral-program-link-validations':
         specifier: workspace:^
         version: link:services/referral-program-link-validations
@@ -13211,6 +13214,9 @@ importers:
       '@services/moderation-ai-config':
         specifier: workspace:^
         version: link:../../services/moderation-ai-config
+      '@services/moderation-appeals':
+        specifier: workspace:^
+        version: link:../../services/moderation-appeals
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../../services/moderation-reports

@@ -48,6 +48,11 @@ describe('processAIAgent routing', () => {
     expect(result).toBeUndefined()
   })
 
+  it('routes reconcile-ai-agent-failures to the bounded failure reconciler', async () => {
+    const result = await runProcessAIAgent({ name: 'reconcile-ai-agent-failures', data: {} })
+    expect(result).toMatchObject({ scanned: expect.any(Number), hasMore: expect.any(Boolean) })
+  })
+
   it.each(['chat', 'reconcile-chat-runtime-generations'])(
     'rejects the removed hosted-chat job name %s through the unknown-job path',
     name => {

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { Queue, QueueEvents, type Job, type JobOptions } from 'glide-mq'
+import { Queue, QueueEvents, type Job, type JobOptions, type WorkerOptions } from 'glide-mq'
 import { onTestFinished, vi, type MockInstance } from 'vitest'
 import {
   workerQueueConnection,
@@ -23,11 +23,13 @@ export type AIAgentWorkerOutcome = ObservedJob & {
 }
 
 /** The registered production worker on this file's private native queue namespace. */
-export async function startAIAgentWorkerForTest() {
+export async function startAIAgentWorkerForTest(
+  scheduling: Pick<WorkerOptions, 'blockTimeout' | 'promotionInterval'> = {},
+) {
   const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
   const queue = new Queue<AIAgentJobData>(AI_AGENTS_QUEUE_NAME, connection)
   const events = new QueueEvents(AI_AGENTS_QUEUE_NAME, { ...connection, lastEventId: '0' })
-  const worker = createAIAgentsWorker()
+  const worker = createAIAgentsWorker(scheduling)
   const observed = new Map<string, ObservedJob>()
   const waiting = new Map<string, PromiseWithResolvers<AIAgentWorkerOutcome>>()
   worker.on('active', (job: Job<AIAgentJobData>) => {

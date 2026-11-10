@@ -6140,19 +6140,6 @@
         }
       ]
     },
-    "GET:/api/v1/reports/:id/judgements/:runId": {
-      "additionalProperties": false,
-      "properties": {
-        "completed": {
-          "type": "boolean"
-        },
-        "judgement_id": {
-          "type": ["string", "null"]
-        }
-      },
-      "required": ["completed", "judgement_id"],
-      "type": "object"
-    },
     "GET:/api/v1/rss-feed-categories": {
       "additionalProperties": false,
       "properties": {
@@ -41360,6 +41347,10 @@
         "target_user_id"
       ],
       "type": "object"
+    },
+    "ModerationAiRerunStatus": {
+      "type": "string",
+      "enum": ["active", "succeeded", "failed", "expired"]
     }
   },
   "operations": {
@@ -52601,6 +52592,20 @@
         "required": ["id"],
         "type": "object"
       }
+    },
+    "GET:/api/v1/appeals/:id/resolution-drafts/:runId": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "runId"],
+        "type": "object"
+      }
     }
   },
   "responses": {
@@ -53350,6 +53355,42 @@
       },
       "required": ["report", "judgement"],
       "type": "object"
+    },
+    "GET:/api/v1/reports/:id/judgements/:runId": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "$ref": "#/components/schemas/ModerationAiRerunStatus"
+        },
+        "judgement_id": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["run_id", "status", "judgement_id"]
+    },
+    "GET:/api/v1/appeals/:id/resolution-drafts/:runId": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/components/schemas/ModerationAiRerunStatus"
+        },
+        "ai_drafted_at": {
+          "type": ["string", "null"]
+        },
+        "latest_lifecycle_change_id": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["run_id", "status", "ai_drafted_at", "latest_lifecycle_change_id"]
     }
   },
   "source": "checked-in-request-contracts",

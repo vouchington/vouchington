@@ -5,6 +5,7 @@ import {
   getReportJudgementContextForEntity,
   insertReportJudgement,
   getJudgementByRunId,
+  getReportJudgementRunStatus,
   hasAutomaticJudgementForReport,
   shouldRefreshReportJudgementForEntity,
   type ModerationReportEntityType,
@@ -52,6 +53,11 @@ export async function runReportJudgementAgent(
         throw new Error('Judgement run identity belongs to another request')
       return { judgement: existing, communityId: null, authorId: null }
     }
+    // Removed or terminal generations cannot start another paid model call.
+    const status = await withPrimaryReads(() =>
+      getReportJudgementRunStatus(triggeringReportId, runId),
+    )
+    if (status !== 'active') return null
   }
 
   // Cheap start-of-job check on the primary: this report's automatic judgement is already stored,

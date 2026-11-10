@@ -72,7 +72,7 @@ describe('reports client api helpers', () => {
   })
 
   it('GETs the exact judgement run result', async () => {
-    const response = { completed: false, judgement_id: null }
+    const response = { run_id: 'report_judgement_opaque-id', status: 'active', judgement_id: null }
     mockGet.mockResolvedValueOnce(response)
 
     const result = await getReportJudgementRun('report-1', 'report_judgement_opaque-id')

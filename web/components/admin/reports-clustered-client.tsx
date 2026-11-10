@@ -46,8 +46,14 @@ export function ClusteredReportsClient({
     [data.duplicate_clusters, removedClusterKeys],
   )
   const visibleReports = clusters.flatMap(cluster => cluster.reports)
-  const { pendingRerunEntities, pollingTimedOut, rerunTimedOut, clearRerunTimeout, markRerun } =
-    useReportsAiPolling(visibleReports, true)
+  const {
+    pendingRerunEntities,
+    pollingTimedOut,
+    rerunTimedOut,
+    rerunFailed,
+    clearRerunTimeout,
+    markRerun,
+  } = useReportsAiPolling(visibleReports, true)
   const isPendingFilter = !statusFilter || statusFilter === 'pending'
   const actions = useClusteredReportActions({
     canBulkRemove,
@@ -82,6 +88,11 @@ export function ClusteredReportsClient({
       {(pollingTimedOut || rerunTimedOut) && (
         <output className='block text-sm text-muted-foreground'>
           AI judgement is taking longer than expected. Refresh this page to check again.
+        </output>
+      )}
+      {rerunFailed && (
+        <output className='block text-sm text-muted-foreground'>
+          AI judgement could not be completed. You can re-run it.
         </output>
       )}
       <DuplicateClusterList

@@ -12,12 +12,14 @@ import {
   approveModerationAppeal,
   sendApprovedModerationAppealResolution,
   rerunModerationAppealResolutionDraft,
+  getAppealResolutionRunOutcome,
   resolveModerationAppealAccept,
   resolveModerationAppealReduce,
   dismissModerationAppeal,
   type ModerationAppealAction,
 } from '@services/moderation-appeals'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { withPrimaryReads } from '@data-stores/psql'
 
 type UpdateAppealDraftRequest = { public_response?: string; internal_notes?: string }
 type ResolveAppealRequest = { action: ModerationAppealAction }
@@ -114,4 +116,20 @@ app.route('/api/v1/appeals/:id/resolution-drafts').post(async (ctx: Context) => 
       run_id: runId,
     }),
   )
+})
+
+app.route('/api/v1/appeals/:id/resolution-drafts/:runId').get(async (ctx: Context) => {
+  await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanResolveModerationAppeal,
+    'GET:/api/v1/appeals/:id/resolution-drafts/:runId',
+  )
+  const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'GET:/api/v1/appeals/:id/resolution-drafts/:runId', {
+    path: ctx.params,
+  })
+
+  const outcome = await withPrimaryReads(() => getAppealResolutionRunOutcome(id, ctx.params.runId!))
+  ctx.assert(outcome, 404, 'Appeal resolution run not found')
+  ctx.json(apiResponse('GET:/api/v1/appeals/:id/resolution-drafts/:runId#staff', outcome))
 })

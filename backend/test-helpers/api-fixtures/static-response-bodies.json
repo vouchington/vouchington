@@ -2236,7 +2236,8 @@
     "run_id": "00000000-0000-7000-8000-000000000303"
   },
   "native.moderation.report-judgement-run.pending": {
-    "completed": false,
+    "run_id": "00000000-0000-7000-8000-000000000303",
+    "status": "active",
     "judgement_id": null
   },
   "native.moderation.appeals.default": {

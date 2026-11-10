@@ -40,14 +40,11 @@ describe('runAppealResolutionAgent terminal lifecycle', () => {
     await updateModerationAppealDraft(staff.id, appeal.id, {
       publicResponse: 'Approved human response.',
     })
+    const runInput = await appealResolutionRunInputForTest(appeal.id, staff.id)
     await approveModerationAppeal(staff.id, appeal.id)
     const callModel = vi.fn<AgentModelCaller<never>>()
 
-    await runAppealResolutionAgent(
-      await appealResolutionRunInputForTest(appeal.id, staff.id),
-      TEST_MODEL_SELECTION,
-      callModel,
-    )
+    await runAppealResolutionAgent(runInput, TEST_MODEL_SELECTION, callModel)
 
     expect(callModel).not.toHaveBeenCalled()
   })

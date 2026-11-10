@@ -146,5 +146,7 @@ app.route('/api/v1/reports/:id/judgements/:runId').get(async (ctx: Context) => {
   validateRequestContract(ctx, 'GET:/api/v1/reports/:id/judgements/:runId', { path: ctx.params })
   const report = await getModerationReportById(id, { primary: true })
   ctx.assert(report, 404, 'Report not found')
-  ctx.json(await withPrimaryReads(() => getReportJudgementRunResult(id, runId)))
+  const result = await withPrimaryReads(() => getReportJudgementRunResult(id, runId))
+  ctx.assert(result, 404, 'Run not found')
+  ctx.json(result)
 })

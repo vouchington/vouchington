@@ -3922,8 +3922,6 @@
         reason: 'Decision 13 capability-bearing Web Push endpoint ownership key.'
       - object: column:web_push_subscriptions.endpoint
         reason: 'Decision 13 capability-bearing Web Push endpoint from the browser protocol.'
-      - object: column:moderation_report_judgements.run_id
-        reason: 'GlideMQ report-judgement run identity; queue jobs live outside PostgreSQL, while this unique correlation key supports exact result polling and retry replay.'
       - object: column:rss_feed_item_category_snapshot_reconciliations.change_id
         reason: 'Opaque notification enqueue identity with no owning entity row; stable across exact snapshot replay and fresh after each edit or acknowledged-row recreation.'
       - object: column:rss_feed_item_category_projection_results.change_id
