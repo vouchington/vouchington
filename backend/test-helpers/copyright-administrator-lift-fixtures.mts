@@ -76,8 +76,6 @@ export async function createTestLiftNotice(
   }
 }
 
-export { reactivateTestCommunityImageWithoutBinder } from './copyright-community-image-reactivation.mts'
-
 /** Seeds the same durable receipt shape the claimant-decision email reader consults. */
 export async function createTestLiftClaimantReceipt(
   noticeId: string,

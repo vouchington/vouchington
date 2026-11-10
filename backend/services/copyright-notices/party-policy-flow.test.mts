@@ -1,3 +1,4 @@
+import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-community-image-reactivation'
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import { insertTestCommunityMember } from '@voucha/test-helpers/entities/community-members'
@@ -7,7 +8,6 @@ import {
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import {
   createTestLiftNotice,
-  reactivateTestCommunityImageWithoutBinder,
   readTestLiftDeliveryIntents,
 } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'

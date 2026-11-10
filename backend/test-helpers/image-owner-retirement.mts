@@ -8,6 +8,7 @@ import {
   imageSurfaceMutationChange,
   imageSurfaceMutationPreimage,
 } from '../services/media-delivery-safety/surface-mutation-bindings.mts'
+import { retireTestPairedImageOwners } from './image-paired-owner-retirement.mts'
 
 export { writeTestImageOwnerRetirement } from './image-owner-retirement-write.mts'
 
@@ -61,79 +62,16 @@ export async function retireTestCommunityImageOwners(
   setClause: ReturnType<typeof sql>,
   annotation = 'retireTestCommunityImageOwners',
 ): Promise<ImageSurfaceMutationWrite<void>> {
-  const statement = imageSurfaceMutationPreimage(references, annotation)
-  statement.append(sql`, retired AS (UPDATE communities SET `).append(setClause)
-  statement.append(sql` FROM (SELECT DISTINCT community_id FROM surface_preimage) owner_preimage
-    WHERE communities.id = owner_preimage.community_id
-      AND communities.profile_image_id IS NOT DISTINCT FROM (
-        SELECT current_image_id FROM surface_preimage preimage
-        WHERE preimage.community_id = communities.id AND preimage.surface_kind = 'community-profile-image'
-      )
-      AND communities.banner_image_id IS NOT DISTINCT FROM (
-        SELECT current_image_id FROM surface_preimage preimage
-        WHERE preimage.community_id = communities.id AND preimage.surface_kind = 'community-banner-image'
-      )
-    RETURNING WITH (OLD AS prior, NEW AS current)
-      prior.id AS community_id, prior.profile_image_id AS previous_profile_image_id,
-      prior.banner_image_id AS previous_banner_image_id,
-      CASE WHEN current.deleted_at IS NULL THEN current.profile_image_id END AS current_profile_image_id,
-      CASE WHEN current.deleted_at IS NULL THEN current.banner_image_id END AS current_banner_image_id,
-      (SELECT placement_id FROM surface_preimage preimage WHERE preimage.community_id = prior.id
-        AND preimage.surface_kind = 'community-profile-image') AS previous_profile_placement_id,
-      (SELECT placement_revision FROM surface_preimage preimage WHERE preimage.community_id = prior.id
-        AND preimage.surface_kind = 'community-profile-image') AS previous_profile_placement_revision,
-      (SELECT activation_revision FROM surface_preimage preimage WHERE preimage.community_id = prior.id
-        AND preimage.surface_kind = 'community-profile-image') AS previous_profile_activation_revision,
-      (SELECT placement_id FROM surface_preimage preimage WHERE preimage.community_id = prior.id
-        AND preimage.surface_kind = 'community-banner-image') AS previous_banner_placement_id,
-      (SELECT placement_revision FROM surface_preimage preimage WHERE preimage.community_id = prior.id
-        AND preimage.surface_kind = 'community-banner-image') AS previous_banner_placement_revision,
-      (SELECT activation_revision FROM surface_preimage preimage WHERE preimage.community_id = prior.id
-        AND preimage.surface_kind = 'community-banner-image') AS previous_banner_activation_revision
-  ) SELECT * FROM retired`)
-  const { rows } = await query<{
-    community_id: string
-    previous_profile_image_id: string | null
-    previous_banner_image_id: string | null
-    current_profile_image_id: string | null
-    current_banner_image_id: string | null
-    previous_profile_placement_id: string | null
-    previous_profile_placement_revision: number | null
-    previous_profile_activation_revision: number | null
-    previous_banner_placement_id: string | null
-    previous_banner_placement_revision: number | null
-    previous_banner_activation_revision: number | null
-  }>(statement)
-  const byCommunityId = new Map(rows.map(row => [row.community_id, row]))
-  if (
-    byCommunityId.size !==
-    new Set(references.map(reference => ('communityId' in reference ? reference.communityId : '')))
-      .size
-  )
-    throw new Error('Test community image owner changed')
-  return {
-    result: undefined,
-    changes: references.map((reference, index) => {
-      const row = byCommunityId.get('communityId' in reference ? reference.communityId : '')!
-      return imageSurfaceMutationChange(
-        reference.surfaceKind === 'community-profile-image'
-          ? {
-              ordinality: index + 1,
-              previousImageId: row.previous_profile_image_id,
-              currentImageId: row.current_profile_image_id,
-              previousPlacementId: row.previous_profile_placement_id,
-              previousPlacementRevision: row.previous_profile_placement_revision,
-              previousActivationRevision: row.previous_profile_activation_revision,
-            }
-          : {
-              ordinality: index + 1,
-              previousImageId: row.previous_banner_image_id,
-              currentImageId: row.current_banner_image_id,
-              previousPlacementId: row.previous_banner_placement_id,
-              previousPlacementRevision: row.previous_banner_placement_revision,
-              previousActivationRevision: row.previous_banner_activation_revision,
-            },
-      )
-    }),
-  }
+  return retireTestPairedImageOwners(references, query, setClause, {
+    annotation,
+    table: 'communities',
+    ownerIdColumn: 'community_id',
+    surfaces: [
+      { surfaceKind: 'community-profile-image', imageColumn: 'profile_image_id' },
+      { surfaceKind: 'community-banner-image', imageColumn: 'banner_image_id' },
+    ],
+    requireUnmerged: false,
+    ownerIdOf: reference => ('communityId' in reference ? reference.communityId : ''),
+    changedError: 'Test community image owner changed',
+  })
 }

@@ -1,10 +1,10 @@
+import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-community-image-reactivation'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUserDirect, insertTestCommunityMember } from '@voucha/test-helpers'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import {
   createTestLiftNotice,
-  reactivateTestCommunityImageWithoutBinder,
   readTestLiftDeliveryIntents,
 } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
