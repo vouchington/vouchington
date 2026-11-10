@@ -7719,7 +7719,7 @@ importers:
         version: 0.0.4
       '@vouchington/sentry':
         specifier: ^0.6.0
-        version: 0.6.0(@sentry/browser@11.10.0)(@sentry/core@11.10.0)(@sentry/node@11.10.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
+        version: 0.6.0(@sentry/browser@11.11.0)(@sentry/core@11.11.0)(@sentry/node@11.11.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.12.0
         version: 0.12.0
