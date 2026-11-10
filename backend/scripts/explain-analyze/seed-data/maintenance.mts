@@ -143,5 +143,7 @@ export async function runAnalyze(): Promise<void> {
   // PostgreSQL includes default children when vacuuming partitioned parents.
   for (const table of ANALYZE_TARGETS)
     await write(`/* seedExplainData */ VACUUM (ANALYZE) "${table}"`)
+  // Experiment: analyze every remaining relation (tables, partitions, materialized views).
+  await write('/* seedExplainData */ VACUUM (ANALYZE)')
   await printPlanDiagnostics(ANALYZE_TARGETS)
 }
