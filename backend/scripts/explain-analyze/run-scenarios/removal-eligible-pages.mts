@@ -53,8 +53,12 @@ export async function runRemovalEligiblePageScenarios(): Promise<void> {
     ON CONFLICT DO NOTHING`,
     [communityId, userId, postIds, removedAt(0)],
   )
+  // Plain ANALYZE leaves relallvisible at 0 on the rows just inserted. The ordered index-only
+  // scan of idx_posts__created_by_rejected_at_id then loses a close cost comparison to a bitmap
+  // heap scan plus Sort (merge group 42706544470 read the whole later-page tail). VACUUM marks
+  // those pages all-visible so the index-only plan stays cheaper than the bitmap.
   await write(
-    '/* analyzeRemovalEligiblePages */ ANALYZE users, communities, posts, community_post_reviews',
+    '/* vacuumRemovalEligiblePages */ VACUUM (ANALYZE) users, communities, posts, community_post_reviews',
   )
   try {
     for (const includePlatform of [false, true]) {
