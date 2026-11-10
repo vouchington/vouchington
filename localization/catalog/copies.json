@@ -5388,6 +5388,8 @@
 {"descriptor":null,"id":"copy.native.swift.moderationReports.actionUnavailable"},
 {"descriptor":null,"id":"copy.native.swift.moderationReports.actioned"},
 {"descriptor":null,"id":"copy.native.swift.moderationReports.aiJudgement"},
+{"descriptor":null,"id":"copy.native.swift.moderationReports.aiJudgementRunExpired"},
+{"descriptor":null,"id":"copy.native.swift.moderationReports.aiJudgementRunFailed"},
 {"descriptor":null,"id":"copy.native.swift.moderationReports.aiJudgementUnavailable"},
 {"descriptor":null,"id":"copy.native.swift.moderationReports.banEvasionSignal"},
 {"descriptor":null,"id":"copy.native.swift.moderationReports.characterLimit"},

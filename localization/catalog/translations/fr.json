@@ -5388,6 +5388,8 @@
 {"id":"copy.native.swift.moderationReports.actionUnavailable","value":"Cette action n’est pas disponible pour ce signalement."},
 {"id":"copy.native.swift.moderationReports.actioned","value":"Traité"},
 {"id":"copy.native.swift.moderationReports.aiJudgement","value":"Avis de l’IA : {action}"},
+{"id":"copy.native.swift.moderationReports.aiJudgementRunExpired","value":"L’avis de l’IA prend plus de temps que prévu. Revenez vérifier plus tard."},
+{"id":"copy.native.swift.moderationReports.aiJudgementRunFailed","value":"L’avis de l’IA n’a pas pu être finalisé. Vous pouvez le relancer."},
 {"id":"copy.native.swift.moderationReports.aiJudgementUnavailable","value":"Avis de l’IA indisponible"},
 {"id":"copy.native.swift.moderationReports.banEvasionSignal","value":"Signal de contournement de bannissement"},
 {"id":"copy.native.swift.moderationReports.characterLimit","value":"{count}/{limit}"},
