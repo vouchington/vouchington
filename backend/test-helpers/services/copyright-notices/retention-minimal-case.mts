@@ -8,6 +8,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '../../entities/index.mts'
+import { initialEmailClaimantContactCiphertext } from '../../copyright-email-contact.mts'
 import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
 import type { RetentionCase } from './retention-parsed-email.mts'
@@ -32,6 +33,8 @@ export type MinimalRetentionCase = RetentionCase & {
   submissionId: string
   /** The signed-in claimant, when the case was created with one. */
   claimantId: string | null
+  /** The SES message id the case's initial email intake must use, so its contact stays readable. */
+  initialEmailSesMessageId: string
 }
 
 /**
@@ -59,12 +62,13 @@ export async function createRetentionMinimalCase(
   await insertTestPostImage({ postId, imageId })
   const placement = await getTestPostImagePlacement(postId, imageId)
   if (!placement) throw new Error('fixture image placement disappeared')
+  const initialEmailSesMessageId = `ses-initial-${randomUUID()}`
   const notice = await createCopyrightNoticeAggregate({
     jurisdiction: 'us_dmca',
     receivedAt: new Date(),
     claimantUserId: claimant?.id ?? null,
     claimantDisplayName: 'Claimant Name',
-    claimantContactCiphertext: `ciphertext-${randomUUID()}`,
+    claimantContactCiphertext: initialEmailClaimantContactCiphertext(initialEmailSesMessageId),
     workDescription: `Original photograph ${randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: {
@@ -99,5 +103,6 @@ export async function createRetentionMinimalCase(
     targetId,
     submissionId,
     claimantId: claimant?.id ?? null,
+    initialEmailSesMessageId,
   }
 }

@@ -136,9 +136,11 @@ describe('copyright operational email intake retention', () => {
   })
 
   it('keeps a linked intake and retains legal delivery after unlinked source erasure', async () => {
-    const linked = await createRetentionParsedEmail('linked')
-    const legal = await createRetentionParsedEmail('legal')
     const notice = await createRetentionMinimalCase()
+    const linked = await createRetentionParsedEmail('linked', {
+      sesMessageId: notice.initialEmailSesMessageId,
+    })
+    const legal = await createRetentionParsedEmail('legal')
     await linkTestCopyrightEmailIntake(linked.id, notice.noticeId)
     const deliveryId = await seedCopyrightIntakeLegalDelivery(legal.id)
     const legalDelivery = await readCopyrightIntakeLegalDelivery(deliveryId)
@@ -177,7 +179,9 @@ describe('copyright operational email intake retention', () => {
 
   it('erases an unlinked intake while keeping both directions of linked-case ancestry', async () => {
     const notice = await createRetentionMinimalCase()
-    const linked = await createRetentionParsedEmail('linked-ancestry')
+    const linked = await createRetentionParsedEmail('linked-ancestry', {
+      sesMessageId: notice.initialEmailSesMessageId,
+    })
     const unlinked = await createRetentionParsedEmail('unlinked-ancestry')
     const other = await createRetentionParsedEmail('other-ancestry')
     await linkTestCopyrightEmailIntake(linked.id, notice.noticeId)

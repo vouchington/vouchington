@@ -34,7 +34,9 @@ describe('copyright operational thread retention', () => {
   useCopyrightOperationalCursorReservation()
   it('removes exclusive closed-case tokens, references and ancestor edges after the reply window', async () => {
     const notice = await createRetentionMinimalCase()
-    const ancestor = await createRetentionParsedEmail('thread-ancestor')
+    const ancestor = await createRetentionParsedEmail('thread-ancestor', {
+      sesMessageId: notice.initialEmailSesMessageId,
+    })
     const reply = await createRetentionParsedEmail('thread-reply', { reply: true })
     await linkTestCopyrightEmailIntake(ancestor.id, notice.noticeId)
     await linkTestCopyrightEmailIntake(reply.id, notice.noticeId, 'thread', notice.moderator.id)
@@ -109,7 +111,9 @@ describe('copyright operational thread retention', () => {
 
   it('stops later cleanup pages when a linked intake receives a fresh staff review', async () => {
     const notice = await createRetentionMinimalCase()
-    const first = await createRetentionParsedEmail('thread-reviewed-first')
+    const first = await createRetentionParsedEmail('thread-reviewed-first', {
+      sesMessageId: notice.initialEmailSesMessageId,
+    })
     const second = await createRetentionParsedEmail('thread-reviewed-second')
     await linkTestCopyrightEmailIntake(first.id, notice.noticeId)
     await linkTestCopyrightEmailIntake(second.id, notice.noticeId, 'thread', notice.moderator.id)
@@ -136,7 +140,9 @@ describe('copyright operational thread retention', () => {
 
   it('restarts legal proof when a hold is placed and released between pages', async () => {
     const notice = await createRetentionMinimalCase({ claimant: true })
-    const intake = await createRetentionParsedEmail('thread-hold-release')
+    const intake = await createRetentionParsedEmail('thread-hold-release', {
+      sesMessageId: notice.initialEmailSesMessageId,
+    })
     await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
     const before = await readCopyrightThreadReferenceState(intake.id)
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
@@ -147,7 +153,9 @@ describe('copyright operational thread retention', () => {
     await releasePreservationHoldAtForTest(holdId, notice.moderator.id, future(181))
     await sweepCopyrightCaseThreads({ ...options, maxBatches: 100 })
     const sibling = await createRetentionMinimalCase()
-    const siblingIntake = await createRetentionParsedEmail('thread-hold-release-sibling')
+    const siblingIntake = await createRetentionParsedEmail('thread-hold-release-sibling', {
+      sesMessageId: sibling.initialEmailSesMessageId,
+    })
     await linkTestCopyrightEmailIntake(siblingIntake.id, sibling.noticeId)
     await positionCopyrightOperationalCursor('email_thread_references', sibling.noticeId)
     await sweepCopyrightCaseThreads({ ...options, maxBatches: 100 })
@@ -157,7 +165,9 @@ describe('copyright operational thread retention', () => {
 
   it('restarts legal proof for a newly introduced held party after its submission page', async () => {
     const notice = await createRetentionMinimalCase()
-    const intake = await createRetentionParsedEmail('thread-new-held-party')
+    const intake = await createRetentionParsedEmail('thread-new-held-party', {
+      sesMessageId: notice.initialEmailSesMessageId,
+    })
     await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
     const before = await readCopyrightThreadReferenceState(intake.id)
     const party = await createTestUserDirect()
@@ -169,7 +179,9 @@ describe('copyright operational thread retention', () => {
     await seedCopyrightThreadPartySubmission(notice.noticeId, party.id)
     await sweepCopyrightCaseThreads({ ...options, maxBatches: 100 })
     const sibling = await createRetentionMinimalCase()
-    const siblingIntake = await createRetentionParsedEmail('thread-new-party-sibling')
+    const siblingIntake = await createRetentionParsedEmail('thread-new-party-sibling', {
+      sesMessageId: sibling.initialEmailSesMessageId,
+    })
     await linkTestCopyrightEmailIntake(siblingIntake.id, sibling.noticeId)
     await positionCopyrightOperationalCursor('email_thread_references', sibling.noticeId)
     await sweepCopyrightCaseThreads({ ...options, maxBatches: 100 })
@@ -178,8 +190,11 @@ describe('copyright operational thread retention', () => {
   })
 
   it('keeps thread references while the case has an active restriction', async () => {
-    const fixture = await createCopyrightNoticeSchemaFixture()
-    const intake = await createRetentionParsedEmail('blocked-thread')
+    const initialEmailSesMessageId = `ses-blocked-thread-${randomUUID()}`
+    const fixture = await createCopyrightNoticeSchemaFixture({ initialEmailSesMessageId })
+    const intake = await createRetentionParsedEmail('blocked-thread', {
+      sesMessageId: initialEmailSesMessageId,
+    })
     await linkTestCopyrightEmailIntake(intake.id, fixture.noticeId)
     const before = await readCopyrightThreadReferenceState(intake.id)
     expect(before.referenceCount).toBeGreaterThan(0)
@@ -196,10 +211,19 @@ describe('copyright operational thread retention', () => {
 
   it('retains a shared token and edge owned by an active case', async () => {
     const expired = await createRetentionMinimalCase()
-    const active = await createCopyrightNoticeSchemaFixture()
+    const activeSesMessageId = `ses-shared-active-${randomUUID()}`
+    const active = await createCopyrightNoticeSchemaFixture({
+      initialEmailSesMessageId: activeSesMessageId,
+    })
     const messageId = `<shared-retention-${randomUUID()}@example.test>`
-    const expiredIntake = await createRetentionParsedEmail('shared-expired', { messageId })
-    const activeIntake = await createRetentionParsedEmail('shared-active', { messageId })
+    const expiredIntake = await createRetentionParsedEmail('shared-expired', {
+      messageId,
+      sesMessageId: expired.initialEmailSesMessageId,
+    })
+    const activeIntake = await createRetentionParsedEmail('shared-active', {
+      messageId,
+      sesMessageId: activeSesMessageId,
+    })
     await linkTestCopyrightEmailIntake(expiredIntake.id, expired.noticeId)
     await linkTestCopyrightEmailIntake(activeIntake.id, active.noticeId)
     await seedTestCopyrightAncestorEdge(expiredIntake.id, activeIntake.id)
