@@ -1,13 +1,7 @@
-import { it, expect, describe, vi } from 'vitest'
+import { it, expect, describe } from 'vitest'
 import { createRssFeed } from '../create.mts'
 import { getRssFeedById } from '../get.mts'
-import {
-  beginTransaction,
-  createTestTopic,
-  createTestUser,
-  WEB_PROVENANCE,
-} from '@voucha/test-helpers'
-import * as publicationLock from '@services/post-publication/lock'
+import { createTestTopic, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { getTopicByAny } from '@services/topics/get'
 import { settleTopicMergeOperationForTest } from '@voucha/test-helpers/merge-topics'
 import { createTopicMergeOperation } from '@services/topics/merge-operations'
@@ -113,49 +107,6 @@ describe('create.generated', () => {
     expect(retrieved).toBeDefined()
     expect(retrieved!.id).toBe(feed.id)
     expect(retrieved!.title).toBe(`Test Feed ${random}`)
-  })
-
-  it('takes the topic attachment lifecycle before waiting on the topic row', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTestTopic({ hostname: `attachment-create-${random}.example.com` })
-    const locked = Promise.withResolvers<void>()
-    const release = Promise.withResolvers<void>()
-    const holder = (async () => {
-      await using query = await beginTransaction()
-      await query(`/* testCreate */ SELECT 1 FROM topics WHERE id = $1::uuid FOR UPDATE`, [
-        topic.id,
-      ])
-      locked.resolve()
-      await release.promise
-      await query.commit()
-    })()
-    await locked.promise
-    const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
-    const held = Promise.withResolvers<void>()
-    const spy = vi
-      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycle')
-      .mockImplementation(async (query, topicId) => {
-        await lockAttachment(query, topicId)
-        held.resolve()
-      })
-    const creating = createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/attachment-create-${random}.xml`,
-      topic_id: topic.id,
-      title: `Attachment lifecycle ${random}`,
-    })
-    try {
-      await held.promise
-      await using probe = await beginTransaction()
-      await probe(`/* testCreate */ SET LOCAL lock_timeout = '50ms'`)
-      await expect(lockAttachment(probe, topic.id)).rejects.toMatchObject({ code: '55P03' })
-    } finally {
-      release.resolve()
-      spy.mockRestore()
-    }
-    await holder
-    await creating
   })
 
   it('rejects an attachment during merge reservation and after source redirect', async () => {

@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
@@ -11,7 +11,6 @@ import { currentUserCanManageOfficialReferralLink } from './authorization.mts'
 import type { OfficialReferralLink } from './types.mts'
 import { officialReferralLinkColumns } from './columns.mts'
 import { clearPrioritizedLinksCache } from '@services/user-referral-program-links/prioritized-links-cache'
-import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
 
 export async function createOfficialReferralLink(
   currentUser: PrivateUser | null,
@@ -53,9 +52,9 @@ export async function createOfficialReferralLink(
   const vouchaUser = await getPrivateUserByAny('voucha')
   assert(vouchaUser, 500, 'Voucha system user not found')
 
-  const { rows } = await withTopicReferenceAttachmentFences([data.referral_program_id], {}, query =>
-    write<Omit<OfficialReferralLink, 'url'>>(
-      sql`/* createOfficialReferralLink */
+  await using query = await beginTransaction()
+  const { rows } = await write<Omit<OfficialReferralLink, 'url'>>(
+    sql`/* createOfficialReferralLink */
     INSERT INTO user_referral_program_links (
       user_id,
       referral_program_topic_id,
@@ -79,9 +78,9 @@ export async function createOfficialReferralLink(
     ON CONFLICT (user_id, referral_program_topic_id, url_id) WHERE deleted_at IS NULL
     DO NOTHING
     RETURNING `.append(officialReferralLinkColumns()),
-      { query },
-    ),
+    { query },
   )
+  await query.commit()
 
   assert(rows.length > 0, 409, 'An active official link for this URL already exists')
 

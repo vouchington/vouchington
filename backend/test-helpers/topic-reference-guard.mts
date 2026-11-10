@@ -1,5 +1,4 @@
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
-import { lockTopicRssFeedAttachmentLifecycle } from '../services/post-publication/lock.mts'
 
 export async function insertTopicReferenceGuardFollow(topicId: string, userId: string) {
   await write(
@@ -96,12 +95,4 @@ export async function getActiveTopicReferenceGuardFollows(topicIds: string[], us
     [userId, topicIds],
   )
   return rows
-}
-
-export async function withTopicAttachmentFence<T>(topicId: string, operation: () => Promise<T>) {
-  await using query = await beginTransaction()
-  await lockTopicRssFeedAttachmentLifecycle(query, topicId)
-  const result = await operation()
-  await query.commit()
-  return result
 }

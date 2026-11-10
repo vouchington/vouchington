@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
+
 import createHttpError from 'http-errors'
 
 type LinkedAliasFeedCandidate = {
@@ -9,7 +9,7 @@ type LinkedAliasFeedCandidate = {
   previous_topic_id: string | null
 }
 
-/** Applies one raw feed page after topic fences and category row locks. */
+/** Applies one raw feed page after category row locks. */
 export async function backfillLinkedAliasFeedPage(
   aliasId: string,
   alias: string,
@@ -43,10 +43,10 @@ export async function backfillLinkedAliasFeedPage(
     await transaction.commit()
     return 0
   }
-  await lockLinkedAliasFeedCategoryPage(transaction, topicId, candidates)
+  await lockLinkedAliasFeedCategoryPage(transaction, candidates)
   const { rows: currentCandidates } = await transaction(candidateSql, candidateParameters)
   if (JSON.stringify(currentCandidates) !== JSON.stringify(candidates))
-    throw createHttpError(409, 'RSS feed category mapping changed while acquiring topic fences')
+    throw createHttpError(409, 'RSS feed category mapping changed before the category write')
   const { rows: owner } = await transaction<{ id: string }>(
     `/* backfillLinkedAliasFeedPage currentOwner */
      SELECT id FROM topic_aliases
@@ -80,16 +80,10 @@ export async function backfillLinkedAliasFeedPage(
   return rowCount ?? 0
 }
 
-/** Topic attachment fences precede category row locks for the entire selected page. */
 async function lockLinkedAliasFeedCategoryPage(
   query: TransactionQuery,
-  topicId: string,
   candidates: readonly LinkedAliasFeedCandidate[],
 ): Promise<void> {
-  await lockTopicRssFeedAttachmentLifecycles(query, [
-    topicId,
-    ...candidates.flatMap(row => (row.previous_topic_id ? [row.previous_topic_id] : [])),
-  ])
   await query(
     `/* backfillLinkedAliasFeedPage lockCategories */
      SELECT category.rss_feed_id

@@ -8,7 +8,6 @@ import assert from 'http-assert'
 import createError from 'http-errors'
 import type { UpdateCrawlerUpdates, Crawler } from './types.mts'
 import sql from 'sql-template-strings'
-import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 import { validateCrawlerUpdates } from './update-crawler-validation.mts'
 
 export { updateCrawlerCssSelectorsByHostname } from './update-crawler-css-selectors.mts'
@@ -50,12 +49,6 @@ export const updateCrawler = async (
       if (prior.rows.length === 0) throw createError(404, `Crawler not found: ${crawlerId}`)
       await validateCrawlerUpdates(updates, transaction)
       priorReferralProgramId = prior.rows[0]?.referral_program_topic_id ?? null
-      await lockTopicRssFeedAttachmentLifecycles(
-        transaction,
-        [priorReferralProgramId, updates.referral_program_id].filter(
-          (topicId): topicId is string => topicId !== null,
-        ),
-      )
     }
     await transaction(
       sql`/* updateCrawler:lock */ SELECT id FROM hostname_crawler_configurations WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
@@ -70,7 +63,7 @@ export const updateCrawler = async (
       previous.referral_program_id !== updates.referral_program_id &&
       previous.referral_program_id !== null
     )
-      throw createError(409, 'Crawler referral program changed while acquiring attachment fences')
+      throw createError(409, 'Crawler referral program changed before the row update')
     const query = sql`/* updateCrawler */ UPDATE hostname_crawler_configurations SET updated_by_id = ${updater.id}`
     if (hostnameId !== undefined) query.append(sql`, hostname_id = ${hostnameId}`)
     if (updates.description !== undefined) query.append(sql`, description = ${updates.description}`)

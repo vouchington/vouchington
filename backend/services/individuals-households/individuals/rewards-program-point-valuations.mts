@@ -5,14 +5,20 @@ import {
 } from './rewards-program-point-valuations-row.mts'
 export { getIndividualRewardsProgramPointValuations } from './rewards-program-point-valuations-list.mts'
 import { currentUserCanAccessUser } from '@services/users/authorization'
-import { read, write, type QueryOptions } from '@data-stores/psql'
+import {
+  beginTransaction,
+  read,
+  withTransactionOptions,
+  write,
+  type QueryOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import type { IndividualRewardsProgramPointValuation } from './rewards-program-point-valuations-types.mts'
 import { isScaledMoney, MAX_POINT_VALUE_MICROUNITS, type ScaledMoney } from '@ts-shared/money'
 import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
-import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 const duplicatePointValuationConstraintNames = new Set([
   'uq_ind_rp_point_valuations__individual_rewards_program',
@@ -86,28 +92,22 @@ export const createIndividualRewardsProgramPointValuation = async (
   const individual = await getOrCreateIndividual(user, options)
   let rows: { id: string }[]
   try {
-    ;({ rows } = await withTopicReferenceAttachmentFences([rewardsProgramId], options, query =>
+    const run = (query: TransactionQuery) =>
       write<{ id: string }>(
         sql`/* createIndividualRewardsProgramPointValuation */
-      INSERT INTO individual_rewards_program_point_valuations (
-        individual_id,
-        rewards_program_topic_id,
-        value_microunits_per_point,
-        currency_code,
-        note
-      )
-      VALUES (
-        ${individual.id},
-        ${rewardsProgramId},
-        ${data.value_per_point.amount},
-        ${data.value_per_point.currency},
-        ${data.note ?? null}
-      )
-      RETURNING id
-    `,
+          INSERT INTO individual_rewards_program_point_valuations (
+            individual_id, rewards_program_topic_id, value_microunits_per_point, currency_code, note
+          ) VALUES (
+            ${individual.id}, ${rewardsProgramId}, ${data.value_per_point.amount},
+            ${data.value_per_point.currency}, ${data.note ?? null}) RETURNING id`,
         { query },
-      ),
-    ))
+      )
+    if (options.query || options.client) ({ rows } = await withTransactionOptions(options, run))
+    else {
+      await using query = await beginTransaction()
+      ;({ rows } = await run(query))
+      await query.commit()
+    }
   } catch (err) {
     const pgError = err as { code?: string; constraint?: string }
     if (

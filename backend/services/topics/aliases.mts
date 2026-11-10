@@ -1,6 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { createTopicRevision } from '@services/topic-revisions'
-import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication'
 import assert from 'http-assert'
 import { prepareTopicAliasInput } from './alias-preflight.mts'
 import type { TopicAlias, CreateTopicAliasOptions } from './alias-types.mts'
@@ -37,7 +36,6 @@ export async function createTopicAliases(
     const existingAliasIds =
       preparedPublicationScopes?.aliasIds ??
       (await lockExistingTopicAliasPublicationScopes(query, aliasArray))
-    await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     const { rows: topicRows } = await query<{ id: string; merged_into_topic_id: string | null }>(
       `/* createTopicAliases lockTopic */
       SELECT id, merged_into_topic_id

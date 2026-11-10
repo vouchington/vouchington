@@ -3,10 +3,7 @@ import assert from 'node:assert/strict'
 import { createTestUser } from '@voucha/test-helpers'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { getTestCountryId } from '@voucha/test-helpers/entities/retailers'
-import {
-  withCapturedTestQueries,
-  countCapturedQueriesByAnnotation,
-} from '@voucha/test-helpers/query-capture'
+
 import {
   getRetailerAttributes,
   updateRetailerAttributes,
@@ -128,15 +125,12 @@ describe('retailers', () => {
       topic_type: 'topic' as const,
     } as unknown as Topic
 
-    const { result: countries, queries } = await withCapturedTestQueries(() =>
-      updateRetailerCountries(adminUser, topic, [COUNTRY_ID_US, COUNTRY_ID_CA]),
-    )
+    const countries = await updateRetailerCountries(adminUser, topic, [
+      COUNTRY_ID_US,
+      COUNTRY_ID_CA,
+    ])
 
     assert.equal(countries.length, 2)
-    assert.equal(
-      countCapturedQueriesByAnnotation(queries, 'lockTopicRssFeedAttachmentLifecycles'),
-      1,
-    )
     const ids = countries.map(c => c.id)
     assert.ok(ids.includes(COUNTRY_ID_US))
     assert.ok(ids.includes(COUNTRY_ID_CA))

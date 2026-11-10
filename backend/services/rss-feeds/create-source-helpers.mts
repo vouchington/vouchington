@@ -17,7 +17,6 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { generateSourceDetails } from './generate-source-details.mts'
 import { createInitialRssFeedStateChanges } from './discoverability.mts'
-import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication'
 
 export const followRssFeedRelation = getEntityRelationMetadataOrThrow({
   subjectType: 'user',
@@ -73,8 +72,6 @@ async function createSourceInTransaction(
       options,
     )
     const topicId = topicRows[0].id as string
-    // This new topic is private to this transaction; both parallel guarded writers inherit its fence.
-    await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     const [claimedAlias] = await Promise.all([
       claimTopicAlias(topicId, slug, options),
       linkHostnameToSourceTopic(topicId, hostnameId, options),

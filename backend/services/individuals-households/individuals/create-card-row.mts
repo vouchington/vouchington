@@ -1,7 +1,6 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 type IndividualCardCreationRow = {
   card_id: string | null
@@ -15,9 +14,9 @@ export async function createIndividualCardRow(
 ): Promise<IndividualCardCreationRow> {
   let rows: IndividualCardCreationRow[]
   try {
-    ;({ rows } = await withTopicReferenceAttachmentFences([cardId], {}, query =>
-      write<IndividualCardCreationRow>(
-        sql`/* createIndividualCard */
+    await using query = await beginTransaction()
+    ;({ rows } = await write<IndividualCardCreationRow>(
+      sql`/* createIndividualCard */
       WITH valid_topic AS MATERIALIZED (
         SELECT id
         FROM topics
@@ -66,9 +65,9 @@ export async function createIndividualCardRow(
         (SELECT id FROM individual LIMIT 1) AS individual_id,
         EXISTS (SELECT 1 FROM valid_topic) AS topic_exists
     `,
-        { query },
-      ),
+      { query },
     ))
+    await query.commit()
   } catch (err) {
     const pgError = err as { code?: string; constraint?: string }
     if (pgError.code === '23503' && pgError.constraint === 'individual_cards_card_topic_id_fkey') {

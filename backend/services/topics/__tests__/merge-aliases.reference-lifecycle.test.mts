@@ -18,7 +18,6 @@ import {
   reenableTopicReferenceGuardProgram,
   updateTopicReferenceGuardFollow,
   withTopicReferenceGuardFence,
-  withTopicAttachmentFence,
 } from '@voucha/test-helpers/topic-reference-guard'
 import { getTopicMergeRelations } from '@voucha/test-helpers/topic-merge-references'
 import {
@@ -56,17 +55,6 @@ describe('topic merge reference lifecycle', () => {
     ).rejects.toMatchObject({
       code: '23503',
     })
-  })
-
-  it('allows ordinary references while stats or feed updates hold the attachment fence', async () => {
-    const user = await createTestUser()
-    const topic = await createTestTopic({ user })
-    await withTopicAttachmentFence(topic.id, () =>
-      insertTopicReferenceGuardFollow(topic.id, user.id),
-    )
-    await expect(getActiveTopicReferenceGuardFollows([topic.id], user.id)).resolves.toEqual([
-      { object_id: topic.id },
-    ])
   })
 
   it('accepts a new reference without a lifecycle advisory fence', async () => {

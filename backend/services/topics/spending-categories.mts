@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
@@ -6,7 +6,6 @@ import type { Topic } from './types.mts'
 import { validateOptionalBoolean } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
 import { upsertTopicAttributes } from './upsert-attributes.mts'
-import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 type SpendingCategoryAttributes = {
   is_foreign_transaction?: boolean
@@ -87,9 +86,9 @@ export async function replaceSpendingCategoryAttributes(
     'default_spending_frequency must be monthly or annually',
   )
 
-  const { rows } = await withTopicReferenceAttachmentFences([topic.id], {}, query =>
-    write(
-      sql`/* replaceSpendingCategoryAttributes */
+  await using query = await beginTransaction()
+  const { rows } = await write(
+    sql`/* replaceSpendingCategoryAttributes */
     INSERT INTO spending_category_topics (
       topic_id,
       is_foreign_transaction,
@@ -106,8 +105,8 @@ export async function replaceSpendingCategoryAttributes(
       default_spending_frequency = ${attributes.default_spending_frequency ?? 'monthly'}
     RETURNING is_foreign_transaction, default_spending_frequency
   `,
-      { query },
-    ),
+    { query },
   )
+  await query.commit()
   return rows[0] ?? null
 }

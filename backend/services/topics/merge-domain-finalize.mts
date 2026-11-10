@@ -97,7 +97,7 @@ async function lockTopicMergeRatingStats(
   query: TransactionQuery,
   operation: TopicMergeOperationRow,
 ): Promise<void> {
-  // Rating refreshers use these same advisory keys after their attachment fences.
+  // Rating refreshers use these same topic-rating advisory keys.
   const firstRatingTopicId =
     operation.source_topic_id < operation.destination_topic_id
       ? operation.source_topic_id

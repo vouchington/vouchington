@@ -1,5 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 import { assertNoActiveTopicMerges } from '@services/topics/merge-preflight'
 import createHttpError from 'http-errors'
 
@@ -59,7 +58,7 @@ export async function clearUnlinkedTopicAliasFeedPage(
       (topicId): topicId is string => topicId !== null,
     ),
   )
-  await lockFeedCategoryTopics(query, topicIds)
+  await assertNoActiveTopicMerges(query, topicIds)
   await query(
     `/* clearUnlinkedTopicAliasFeedPage lockCategories */
      SELECT category.rss_feed_id
@@ -82,7 +81,7 @@ export async function clearUnlinkedTopicAliasFeedPage(
     candidateParameters,
   )
   if (JSON.stringify(currentCandidates) !== JSON.stringify(candidates))
-    throw createHttpError(409, 'RSS feed category mapping changed while acquiring topic fences')
+    throw createHttpError(409, 'RSS feed category mapping changed before the category write')
   const replacementIds = [
     ...new Set(
       candidates.flatMap(row => (row.replacement_topic_id ? [row.replacement_topic_id] : [])),
@@ -124,9 +123,4 @@ export async function clearUnlinkedTopicAliasFeedPage(
   if (rowCount !== candidates.length)
     throw createHttpError(409, 'RSS feed category mapping changed before update')
   return rowCount
-}
-
-async function lockFeedCategoryTopics(query: TransactionQuery, topicIds: string[]): Promise<void> {
-  await assertNoActiveTopicMerges(query, topicIds)
-  await lockTopicRssFeedAttachmentLifecycles(query, topicIds)
 }

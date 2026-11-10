@@ -9,7 +9,6 @@ import { queryRssFeedBaseState } from '@voucha/test-helpers/data-stores/psql/vie
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { getEntityRelations } from '@services/entity-relations/query'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
-import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 import { disableAndHideSource } from '../rss-feeds/disable-and-hide-source.mts'
 import { getTopicByAny } from './get.mts'
 import { getPublisherTypeTopics } from './publisher-type-topics.mts'
@@ -39,7 +38,6 @@ describe('topic merge ownership and lifecycle ordering', () => {
     })
 
     await using writer = await beginTransaction()
-    await lockTopicRssFeedAttachmentLifecycles(writer, [destination.id])
     await writeEntityRelations(
       publisherType,
       admin,

@@ -15,7 +15,7 @@ import {
   stillOwnsCategoryBackfill,
   type CategoryBackfillMatch,
 } from './category-backfill-owner.mts'
-import { lockCategoryBackfillPage } from './category-backfill-locks.mts'
+import { lockCategoryItemsAndRows } from './category-backfill-locks.mts'
 
 export type CategoryBackfillRawPage = {
   rows: Array<{ rss_feed_item_id: string; category_identity_id: string }>
@@ -85,10 +85,7 @@ async function backfillCategoryBatch(
     const candidateItemIds = [...new Set(candidateItems.map(row => row.rss_feed_item_id))]
     if (candidateItemIds.length === 0)
       return { rows: [], changedItemIds: [], statTargets: [], hasMore }
-    const oldTopicIds = candidateItems.flatMap(row =>
-      row.previous_topic_id ? [row.previous_topic_id] : [],
-    )
-    await lockCategoryBackfillPage(query, topicId, oldTopicIds, candidateItemIds, candidateItems)
+    await lockCategoryItemsAndRows(query, candidateItemIds, candidateItems)
     if (!(await stillOwnsCategoryBackfill(query, topicId, rawPage.match)))
       return { rows: [], changedItemIds: [], statTargets: [], hasMore }
     const { rows } = await query<{

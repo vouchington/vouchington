@@ -28,7 +28,7 @@ import {
 } from './category-projection-result.mts'
 import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
 import { lockTopicAliasPublicationScopes } from '@services/post-publication'
-import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
+
 // Keeps per-call Valkey work below the client in-flight ceiling during large category imports.
 // Canonical definition lives in @voucha/types/entities/rss-feed-item (avoids a
 // @queues/rss-feed-maintenance <-> @services/rss-feed-items workspace cycle:
@@ -133,24 +133,13 @@ async function upsertRssFeedItemCategorySnapshots(
         ...toUpdate.map(category => category.topicAliasId),
       ].filter((id): id is string => id !== null && id !== undefined),
     )
-    await lockTopicRssFeedAttachmentLifecycles(
-      query,
-      [
-        ...categoryData.map(row => row.existing_topic_id),
-        ...toInsert.map(row => row.topicId),
-        ...toUpdate.map(row => row.topicId),
-      ].filter((id): id is string => typeof id === 'string'),
-    )
     const currentCategoryData: CategoryDataRow[] = []
     for (const batch of categorySqlBatches) {
-      // oxlint-disable-next-line no-await-in-loop -- bounded chunks are rechecked in the fenced transaction.
+      // oxlint-disable-next-line no-await-in-loop -- bounded chunks are rechecked before the category write.
       currentCategoryData.push(...(await readCategoryDataChunk(batch, query)))
     }
     if (categorySnapshotKey(currentCategoryData) !== categorySnapshotKey(categoryData))
-      throw createHttpError(
-        409,
-        'RSS item category topics changed while acquiring attachment fences',
-      )
+      throw createHttpError(409, 'RSS item category topics changed before the category write')
     await lockRssFeedItemsForStoryPublicationChanges(query, [
       ...toInsert.map(category => category.rss_feed_item_id),
       ...toUpdate.map(category => category.rss_feed_item_id),
