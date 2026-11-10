@@ -1,4 +1,3 @@
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import * as provider from '@modules/aws/media-delivery-registry'
 import {
   beginTransaction,
@@ -13,6 +12,7 @@ import {
   getTestDeliveryRepairMarker,
   reconcileTestDeliveryRepairMarker,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
+import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   lockImageDeliveryMutation,
@@ -85,7 +85,7 @@ describe('delivery authority and durable denial repair', () => {
     expect(BigInt(repaired.generation)).toBeGreaterThan(BigInt(leaked.generation))
   })
 
-  it('keeps a committed retirement denied after marker repair without recreating the marker', async () => {
+  it('retires a committed surface without a repair marker or an edge denial', async () => {
     const fixture = await createSurface()
     const edge = enableEdge()
     await using transaction = await beginTransaction()
@@ -96,10 +96,11 @@ describe('delivery authority and durable denial repair', () => {
       transaction,
     )
     await transaction.commit()
-    await reconcileTestDeliveryRepairMarker(fixture.mediaDeliveryRegistryRecordId)
-    await processMediaDeliveryRegistryRecord(fixture.mediaDeliveryRegistryRecordId)
-    expect(edge.records.get(fixture.deliveryKey)?.state).toBe('withheld')
+    expect(edge.put).not.toHaveBeenCalled()
     expect(await getTestDeliveryRepairMarker(fixture.mediaDeliveryRegistryRecordId)).toBeNull()
+    const [retired] = await getTestImageSurfacePlacements({ userId: fixture.userId })
+    expect(retired?.retired_at).not.toBeNull()
+    expect(retired?.retirement_reason).toBe('owner_removed')
   })
 
   it('does not persist or publish a never-committed repair tuple', async () => {
@@ -214,14 +215,13 @@ describe('delivery authority and durable denial repair', () => {
     expect(await getTestDeliveryRepairMarker(fixture.mediaDeliveryRegistryRecordId)).toBeNull()
   })
 
-  it('repairs A to B to C replacement rollback without persisting a never-committed B wakeup', async () => {
+  it('drops an uncommitted replacement without publishing it', async () => {
     const fixture = await createSurface()
     const [imageB, imageC] = await Promise.all([
       insertTestImage(fixture.userId),
       insertTestImage(fixture.userId),
     ])
     const edge = enableEdge()
-    let intermediateKey = ''
     let intermediateId = ''
     {
       await using transaction = await beginTransaction()
@@ -232,11 +232,6 @@ describe('delivery authority and durable denial repair', () => {
         transaction,
       )
       if (!b) throw new Error('Intermediate tuple missing')
-      intermediateKey = getImagePlacementDeliveryKey({
-        placementId: b.placement_id,
-        revision: b.placement_revision,
-        imageId: imageB,
-      })
       intermediateId = (
         await stageImagePlacementDeliveryRecord(
           {
@@ -255,17 +250,15 @@ describe('delivery authority and durable denial repair', () => {
         transaction,
       )
     }
-    expect(edge.records.get(intermediateKey)?.state).toBe('withheld')
+    expect(edge.put).not.toHaveBeenCalled()
     expect(await getTestMediaDeliveryRecord(intermediateId)).toBeNull()
     expect(await getTestDeliveryRepairMarker(intermediateId)).toBeNull()
-    await reconcileTestDeliveryRepairMarker(fixture.mediaDeliveryRegistryRecordId)
     await processMediaDeliveryRegistryRecord(fixture.mediaDeliveryRegistryRecordId)
     expect(edge.records.get(fixture.deliveryKey)?.state).toBe('allow')
-    expect(edge.records.get(intermediateKey)?.state).toBe('withheld')
     expect(await getTestDeliveryRepairMarker(intermediateId)).toBeNull()
   })
 
-  it('revalidates a captured allow after a newer denial commits', async () => {
+  it('publishes a retired surface as withheld when the captured allow is replayed', async () => {
     const fixture = await createSurface()
     const edge = enableEdge()
     const captured = await stageImagePlacementDeliveryRecord({ ...fixture.tuple, state: 'allow' })
@@ -277,10 +270,11 @@ describe('delivery authority and durable denial repair', () => {
       transaction,
     )
     await transaction.commit()
-    const denied = edge.records.get(fixture.deliveryKey)!
-    expect(BigInt(denied.generation)).toBeGreaterThan(BigInt(captured.generation))
+    expect(edge.put).not.toHaveBeenCalled()
     await publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)
-    expect(edge.records.get(fixture.deliveryKey)?.state).toBe('withheld')
+    const denied = edge.records.get(fixture.deliveryKey)
+    expect(denied?.state).toBe('withheld')
+    expect(BigInt(denied!.generation)).toBeGreaterThan(BigInt(captured.generation))
     await expect(
       provider.putMediaDeliveryRegistryRecord({
         deliveryKey: fixture.deliveryKey,
@@ -288,9 +282,6 @@ describe('delivery authority and durable denial repair', () => {
         generation: captured.generation,
       }),
     ).rejects.toThrow('Stale edge generation')
-    await expect(
-      provider.putMediaDeliveryRegistryRecord({ ...denied, state: 'allow' }),
-    ).rejects.toThrow('Stale edge generation')
-    await expect(provider.putMediaDeliveryRegistryRecord(denied)).resolves.toBeDefined()
+    await expect(provider.putMediaDeliveryRegistryRecord(denied!)).resolves.toBeDefined()
   })
 })

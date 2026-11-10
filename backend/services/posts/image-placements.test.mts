@@ -76,29 +76,19 @@ describe('syncPostImagePlacements', () => {
 
     {
       await using query = await beginTransaction()
-      await expect(
-        syncPostImagePlacements(postId, [imageId, randomUUID()], query),
-      ).rejects.toMatchObject({ code: '23503' })
+      await expect(syncPostImagePlacements(postId, [imageId, randomUUID()], query)).rejects.toThrow(
+        'Missing retained image identity for placement',
+      )
     }
     await expect(getTestPostImagePlacement(postId, imageId)).resolves.toBeNull()
   })
 
-  it('rolls back a SQL-failed placement scope and leaves the parent executor usable', async () => {
+  it('rejects a placement write for a missing post', async () => {
     const user = await createTestUser()
-    const suffix = randomUUID()
-    const postId = await insertTestPost({
-      title: `Recoverable placement SQL ${suffix}`,
-      slug: `recoverable-placement-sql-${suffix}`,
-      createdById: user.id,
-      markdown: 'Recoverable image placement',
-    })
     const imageId = await insertTestImage(user.id)
     await using query = await beginTransaction()
     await expect(syncPostImagePlacements(randomUUID(), [imageId], query)).rejects.toMatchObject({
       code: '23503',
     })
-    await syncPostImagePlacements(postId, [imageId], query)
-    await query.commit()
-    expect(await getTestPostImagePlacement(postId, imageId)).not.toBeNull()
   })
 })

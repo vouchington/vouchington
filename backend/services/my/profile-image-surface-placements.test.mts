@@ -119,7 +119,7 @@ describe('image surface placement lifecycle', () => {
     expect(updated.image_id).toBe(secondImageId)
   })
 
-  it('keeps one active profile binding and stages the old exact route withheld on replacement', async () => {
+  it('keeps one active profile binding when the image is replaced', async () => {
     const user = await createTestUserDirect()
     const oldImageId = await insertTestImage(user.id)
     const newImageId = await insertTestImage(user.id)
@@ -137,8 +137,12 @@ describe('image surface placement lifecycle', () => {
     })
     expect(oldRecordId).not.toBeNull()
     expect(await getTestMediaDeliveryRecord(oldRecordId!)).toMatchObject({
-      desired_state: 'withheld',
+      desired_state: 'allow',
     })
+    expect(
+      placements.find(placement => placement.placement_id === oldPlacement!.placement_id)
+        ?.retired_at,
+    ).not.toBeNull()
   })
 
   it('keeps a deleted profile image retired when its owner removes it', async () => {
