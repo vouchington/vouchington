@@ -57,21 +57,23 @@ export async function buildRecommendationQuery(
         pr.object_id AS topic_id,
         3.0 AS score,
         'from_upvoted_posts' AS reason
-      FROM (
-        SELECT post_id, score
-        FROM post_vote_states
-        WHERE user_id = ${userId}
-        ORDER BY id DESC
-        LIMIT ${VOTE_HISTORY_WINDOW}
-      ) ev
-      INNER JOIN posts p
-        ON p.id = ev.post_id
-        AND p.deleted_at IS NULL
-      INNER JOIN `)
+      FROM `)
     .append(POST_TOPIC_CATEGORY_RELATION_TABLE).append(sql` pr
-        ON pr.subject_id = p.id
-        AND pr.deleted_at IS NULL
-      WHERE ev.score > 0
+      WHERE pr.deleted_at IS NULL
+        AND pr.subject_id IN (
+          SELECT ev.post_id
+          FROM (
+            SELECT post_id, score
+            FROM post_vote_states
+            WHERE user_id = ${userId}
+            ORDER BY id DESC
+            LIMIT ${VOTE_HISTORY_WINDOW}
+          ) ev
+          INNER JOIN posts p
+            ON p.id = ev.post_id
+            AND p.deleted_at IS NULL
+          WHERE ev.score > 0
+        )
       LIMIT ${WORK_PAGE_SIZE}
     ),
 
