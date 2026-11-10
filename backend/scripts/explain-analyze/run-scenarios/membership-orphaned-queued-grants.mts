@@ -58,7 +58,8 @@ export async function runMembershipOrphanedQueuedGrantScenarios(): Promise<void>
       },
       // The custom plan counts the index probe and the duration filter for each of the 10 users.
       { kind: 'maxProcessedRows', relation: 'membership_grants', max: 20 },
-      { kind: 'maxProcessedRows', relation: 'memberships', max: 10 },
+      // The generic plan reads one extra current-membership index probe beyond the page of 10.
+      { kind: 'maxProcessedRows', relation: 'memberships', max: 11 },
       { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 10 },
       { kind: 'maxProcessedRows', relation: 'membership_grant_activation_periods', max: 10 },
       {
