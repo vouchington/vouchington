@@ -13,9 +13,6 @@ export async function revokeAuthenticatedSession(
   sessionId: string,
 ): Promise<boolean> {
   await using query = await beginTransaction()
-  await query(
-    sql`/* revokeAuthenticatedSession:userFence */ SELECT fn_lock_active_user_for_mutation(${currentUserId})`,
-  )
   const result = await query(sql`/* revokeAuthenticatedSession */
       UPDATE user_sessions
       SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP),
@@ -45,9 +42,6 @@ export async function revokeAllAuthenticatedSessionsInTransaction(
   currentUserId: string,
   query: TransactionQuery,
 ): Promise<string[]> {
-  await query(
-    sql`/* revokeAllAuthenticatedSessions */ SELECT fn_lock_active_user_for_mutation(${currentUserId})`,
-  )
   const result = await query(sql`/* revokeAllAuthenticatedSessions */
       WITH active AS MATERIALIZED (
         SELECT id
@@ -108,7 +102,7 @@ async function updateSessionRevocationRegistry(
   await query.commit()
 }
 
-/** Caller holds the live user and preserved actor fences in this same transaction. */
+/** Bounded best-effort revocation of the user's other active sessions in the caller's transaction. */
 export async function revokeOtherAuthenticatedSessions(
   currentUserId: string,
   actorSessionId: string,

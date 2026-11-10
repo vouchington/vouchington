@@ -1,20 +1,13 @@
+import { startPausedTestUserSoftDeletion } from '@voucha/test-helpers/entities/user-deletion'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import {
-  beginTransaction,
-  lockTestUserMutation,
-  restoreUser,
-  softDeleteUser,
-  softDeleteTestUserAndWaitBeforeCommit,
-} from '@voucha/test-helpers'
+import { beginTransaction, softDeleteUser } from '@voucha/test-helpers'
 import {
   createFederatedUser,
   createRemoteActorFixture,
 } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
 import { readTerminalActivityIdentitiesForTest } from '@voucha/test-helpers/activitypub-terminal-identities'
-import { getActorUri } from '@modules/activitypub-uris'
 import { terminalizePurgedUserRemoteFollows } from '../data-retention/cleanup-federation-purge-identities.mts'
-import { dispatchInboundActivity } from './dispatch-activity.mts'
 import { markRemoteFollowUndone, reserveRemoteFollowCycle } from './follow-cycles.mts'
 
 const activityId = () => `https://remote.example/activities/${randomUUID()}`
@@ -71,65 +64,26 @@ describe('remote Follow identity at user purge', () => {
     await query.commit()
   })
 
-  it('submits an inbound Follow fence before deletion commits and then rejects the Follow', async () => {
+  it('does not fence a pending deletion and refuses a Follow after deletion commits', async () => {
     const actor = await createRemoteActorFixture()
     const target = await createFederatedUser()
     const id = activityId()
-    const releaseDeletion = Promise.withResolvers<void>()
-    const deletionHoldsUserFence = Promise.withResolvers<void>()
-    const inboundFenceSubmitted = Promise.withResolvers<void>()
-    await using inboundTransaction = await beginTransaction()
-    const observedQuery = new Proxy(inboundTransaction, {
-      apply(proxyTarget, thisArg, args: Parameters<typeof inboundTransaction>) {
-        const [input] = args
-        const pending = Reflect.apply(proxyTarget, thisArg, args)
-        if (
-          (typeof input === 'string' ? input : input.text).includes(
-            'lockActiveUserSubjectsForMutation',
-          )
-        )
-          inboundFenceSubmitted.resolve()
-        return pending
-      },
-    })
-    let deleting: Promise<void> | undefined
-    let incoming: Promise<unknown> | undefined
-
+    const deletion = await startPausedTestUserSoftDeletion(target.id)
     try {
-      deleting = softDeleteTestUserAndWaitBeforeCommit(
-        target.id,
-        releaseDeletion.promise,
-        deletionHoldsUserFence.resolve,
-        async query => {
-          await lockTestUserMutation(query, target.id)
-        },
-      )
-      await deletionHoldsUserFence.promise
-      incoming = dispatchInboundActivity(
-        actor,
-        {
-          id,
-          type: 'Follow',
-          actor: actor.actor_uri,
-          object: getActorUri(target.id),
-        },
-        { query: observedQuery },
-      ).catch((err: unknown) => err)
-      await inboundFenceSubmitted.promise
-      releaseDeletion.resolve()
-
-      await expect(deleting).resolves.toBeUndefined()
-      await expect(incoming).resolves.toMatchObject({
-        message: expect.stringMatching(/cannot own new data after deletion/),
+      await expect(reserveRemoteFollowCycle(id, actor.id, target.id, {})).resolves.toMatchObject({
+        isNew: true,
       })
+      deletion.release()
+      await deletion.completed
+      const retiredId = activityId()
+      await expect(reserveRemoteFollowCycle(retiredId, actor.id, target.id, {})).rejects.toThrow(
+        'ActivityPub Follow id belongs to another actor or target',
+      )
       await using query = await beginTransaction()
-      expect(await readTerminalActivityIdentitiesForTest(query, 'follow', [id])).toEqual([])
+      expect(await readTerminalActivityIdentitiesForTest(query, 'follow', [retiredId])).toEqual([])
     } finally {
-      releaseDeletion.resolve()
-      await deleting?.catch(() => undefined)
-      await incoming
-      await inboundTransaction.rollback()
-      await restoreUser(target.id)
+      deletion.release()
+      await deletion.completed
     }
   })
 })

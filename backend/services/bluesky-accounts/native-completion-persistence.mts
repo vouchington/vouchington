@@ -3,7 +3,7 @@ import { beginTransaction, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
-import { lockBlueskyAuthorizationOwner } from './session-generation.mts'
+import { lockAuthorization } from './session-generation.mts'
 import {
   assertActiveNativeLinkUserState,
   getActiveNativeLinkUserState,
@@ -23,7 +23,7 @@ async function lockAndReadNativePersistenceState(
   input: { flowId: string; userId: string; did: string },
   query: TransactionQuery,
 ): Promise<NativePersistenceState | undefined> {
-  await lockBlueskyAuthorizationOwner(input.userId, input.did, input.flowId, query)
+  await lockAuthorization(input.flowId, input.userId, query)
   return readNativePersistenceState(input, query)
 }
 
@@ -98,6 +98,15 @@ export async function persistNativeBlueskyLinkCompletion(input: {
           AND link_auth.status = 'callback_claimed'
           AND link_auth.claimed_did = ${input.did}
           AND link_auth.expires_at > CURRENT_TIMESTAMP
+          AND EXISTS (
+            SELECT 1 FROM users owner
+            JOIN user_sessions actor ON actor.user_id = owner.id AND actor.id = link_auth.initiating_session_id
+            WHERE owner.id = ${input.userId} AND owner.deleted_at IS NULL
+              AND actor.revoked_at IS NULL AND actor.expires_at > CURRENT_TIMESTAMP
+              AND actor.device_token_digest IS NOT NULL AND actor.device_token_encrypted IS NOT NULL
+              AND actor.device_token_issued_at IS NOT NULL AND actor.device_token_binding IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM user_suspensions WHERE user_id = owner.id AND lifted_at IS NULL)
+          )
           AND EXISTS (
             SELECT 1 FROM bluesky_linked_accounts account
             WHERE account.bluesky_did = ${input.did}

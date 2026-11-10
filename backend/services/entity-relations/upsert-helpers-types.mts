@@ -34,6 +34,8 @@ export type UpsertEntityRelationsOptions = QueryOptions & {
   // must pass 'remote' so outbound-destined side effects (follow notifications, crawl enqueues,
   // discoverability enqueues) are not re-triggered by a remote-caused write.
   origin?: EntityRelationOrigin
+  /** Inbound remote Follow compare-and-set; valid for one remote actor/user pair only. */
+  remoteFollowCycle?: { expectedId: string | null; nextId: string }
   // Round-9 review fix: makes buildInsertQuery's ON CONFLICT DO UPDATE conditional on the row not
   // currently being soft-deleted. A separate read-then-write can't close a concurrent-delete race
   // (the read's result is stale by the time the write runs); this guard is evaluated by Postgres

@@ -11,7 +11,7 @@ export async function persistGithubFriendPage(
   const sortedFriendIds = [...new Set(friendIds)].toSorted()
   for (let offset = 0; offset < sortedFriendIds.length; offset += FRIEND_MUTATION_BATCH_SIZE) {
     const batch = sortedFriendIds.slice(offset, offset + FRIEND_MUTATION_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- every bounded chunk commits under a separately reacquired deletion fence.
+    // oxlint-disable-next-line no-await-in-loop -- each bounded chunk commits before the next.
     const persisted = await persistGithubFriendBatch(githubAccountId, userId, batch, syncStartTime)
     if (!persisted) return false
   }
@@ -32,7 +32,6 @@ export async function finalizeGithubFriendSync(
   const maxBatches = getOauthGithubWorkLimit('max_finalize_batches_per_run')
   let lastFinalizedKey = options?.after ?? ''
   for (let batch = 0; batch < maxBatches; batch += 1) {
-    // Candidate discovery does not hold the deletion fence; only the bounded mutation page does.
     // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
     const staleFriendIds = await getStaleGithubFriendIds(
       githubAccountId,
@@ -46,7 +45,7 @@ export async function finalizeGithubFriendSync(
       await markGithubFriendSyncComplete(githubAccountId, userId, syncStartTime)
       return null
     }
-    // oxlint-disable-next-line no-await-in-loop -- each page reacquires the deletion fence.
+    // oxlint-disable-next-line no-await-in-loop -- each page commits before the next.
     const deleted = await deleteGithubFriendBatch(
       githubAccountId,
       userId,
@@ -66,23 +65,24 @@ async function persistGithubFriendBatch(
   syncStartTime: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  await lockGithubFriendImport(transaction, userId, friendIds)
   if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId, syncStartTime)))
     return false
 
-  // Lock an existing unlinked target too, so reconnect cannot clear resolution work before this insert.
   await transaction(
     `/* persistGithubFriendBatch */ INSERT INTO github_friends (github_account_id, github_friend_id, friend_github_account_id, last_observed_at)
      SELECT $1::uuid, friend_id,
        (SELECT CASE WHEN user_id IS NOT NULL THEN id END FROM github_accounts
-        WHERE github_user_id = friend_id FOR SHARE), $3::timestamptz
+        WHERE github_user_id = friend_id), $3::timestamptz
      FROM UNNEST($2::text[]) AS friend_id
+     WHERE EXISTS (SELECT 1 FROM github_accounts owner JOIN users ON users.id = owner.user_id
+       WHERE owner.id = $1::uuid AND owner.user_id = $4::uuid AND users.deleted_at IS NULL
+         AND (owner.friend_edges_invalidated_at IS NULL OR owner.friend_edges_invalidated_at < $3::timestamptz))
      ORDER BY $1, friend_id
      ON CONFLICT (github_account_id, github_friend_id) DO UPDATE SET
        friend_github_account_id = EXCLUDED.friend_github_account_id,
        last_observed_at = EXCLUDED.last_observed_at
      WHERE github_friends.last_observed_at <= EXCLUDED.last_observed_at`,
-    [githubAccountId, friendIds, syncStartTime],
+    [githubAccountId, friendIds, syncStartTime, userId],
   )
   await transaction.commit()
   return true
@@ -112,7 +112,6 @@ async function deleteGithubFriendBatch(
   friendIds: string[],
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  await lockActiveGithubSyncOwner(transaction, userId)
   if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId, syncStartTime)))
     return false
 
@@ -120,8 +119,11 @@ async function deleteGithubFriendBatch(
     `/* deleteGithubFriendBatch */ DELETE FROM github_friends
      WHERE github_account_id = $1
        AND github_friend_id = ANY($2::text[])
-       AND last_observed_at < $3::timestamptz`,
-    [githubAccountId, friendIds, syncStartTime],
+       AND last_observed_at < $3::timestamptz
+       AND EXISTS (SELECT 1 FROM github_accounts owner JOIN users ON users.id = owner.user_id
+         WHERE owner.id = $1::uuid AND owner.user_id = $4::uuid AND users.deleted_at IS NULL
+           AND (owner.friend_edges_invalidated_at IS NULL OR owner.friend_edges_invalidated_at < $3::timestamptz))`,
+    [githubAccountId, friendIds, syncStartTime, userId],
   )
   await transaction.commit()
   return true
@@ -133,39 +135,19 @@ async function markGithubFriendSyncComplete(
   syncStartTime: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  await lockActiveGithubSyncOwner(transaction, userId)
   if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId, syncStartTime)))
     return false
 
   await transaction(
     `/* markGithubFriendSyncComplete */ UPDATE github_accounts
      SET friends_synced_at = CURRENT_TIMESTAMP
-     WHERE id = $1 AND user_id = $2`,
-    [githubAccountId, userId],
+     WHERE id = $1 AND user_id = $2
+       AND (friend_edges_invalidated_at IS NULL OR friend_edges_invalidated_at < $3::timestamptz)
+       AND EXISTS (SELECT 1 FROM users WHERE id = $2::uuid AND deleted_at IS NULL)`,
+    [githubAccountId, userId, syncStartTime],
   )
   await transaction.commit()
   return true
-}
-
-async function lockActiveGithubSyncOwner(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  userId: string,
-): Promise<void> {
-  await query(`/* lockActiveGithubSyncOwner */ SELECT fn_lock_active_user_for_mutation($1::uuid)`, [
-    userId,
-  ])
-}
-
-async function lockGithubFriendImport(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  userId: string,
-  friendIds: string[],
-): Promise<void> {
-  await lockActiveGithubSyncOwner(query, userId)
-  await query(
-    `/* lockGithubFriendTargets */ SELECT fn_lock_oauth_friend_targets('github', $1::text[], FALSE)`,
-    [friendIds],
-  )
 }
 
 async function githubSyncOwnerExists(
@@ -177,8 +159,9 @@ async function githubSyncOwnerExists(
   const { rows } = await query(
     `/* githubSyncOwnerExists */ SELECT 1 FROM github_accounts
      WHERE id = $1 AND user_id = $2
+       AND EXISTS (SELECT 1 FROM users WHERE id = $2::uuid AND deleted_at IS NULL)
        AND (friend_edges_invalidated_at IS NULL OR friend_edges_invalidated_at < $3::timestamptz)
-     FOR SHARE`,
+`,
     [githubAccountId, userId, syncStartTime],
   )
   return rows.length > 0

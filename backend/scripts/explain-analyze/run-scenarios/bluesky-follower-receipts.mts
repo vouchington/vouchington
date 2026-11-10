@@ -187,7 +187,7 @@ async function captureGetAndSave(pending: boolean): Promise<void> {
         if (
           !pending ||
           !(err instanceof Error) ||
-          err.message !== 'Exact Bluesky account generation is missing'
+          err.message !== 'Exact Bluesky account generation is missing or user is inactive'
         )
           throw err
       } finally {

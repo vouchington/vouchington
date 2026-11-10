@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { countTestUserAgentStrings } from '../../test-helpers/entities/user-sessions.mts'
 import { runTestActionsAcrossUserAgentConflict } from '@voucha/test-helpers/user-agent-conflict'
+import { observeTestPostgresQueryPools } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { upsertUserAgentString } from './upsert-user-agent-string.mts'
 
 describe('user-agent string lookup', () => {
@@ -17,7 +18,15 @@ describe('user-agent string lookup', () => {
   it('creates a missing row once and returns the existing row on later lookups', async () => {
     const userAgent = `user-agent-new-${crypto.randomUUID()}`
     await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(0)
-    const createdId = await upsertUserAgentString(userAgent)
+    let queryCount = 0
+    const { result: createdId } = await observeTestPostgresQueryPools(
+      '/* upsertUserAgentString */',
+      () => upsertUserAgentString(userAgent),
+      () => {
+        queryCount += 1
+      },
+    )
+    expect(queryCount).toBe(2)
     expect(createdId).toBeTruthy()
     await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(1)
     await expect(upsertUserAgentString(userAgent)).resolves.toBe(createdId)

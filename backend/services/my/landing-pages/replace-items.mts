@@ -5,7 +5,7 @@ import { getSelectedLandingPageCandidates } from './selected-candidates.mts'
 import { assertLandingPageItemLimit } from './limits.mts'
 import { resolveLandingPageWithItems } from './resolve-items.mts'
 import { assertNoDuplicateSelection } from './shared.mts'
-import { getLandingPageRowForUser, getLockedLandingPageRowForUser } from './reads.mts'
+import { getLandingPageRowForUser } from './reads.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import type { LandingPage, LandingPageItemInput, LandingPageWithItems } from './types.mts'
 import { buildLandingPageInsertRows } from './replace-item-rows.mts'
@@ -122,7 +122,7 @@ export async function replaceMyLandingPageItems(
     }
   }
   await using query = await beginTransaction()
-  const page = await getLockedLandingPageRowForUser(userId, pageId, query)
+  const page = await getLandingPageRowForUser(userId, pageId, { query })
   const urls = await registerLandingPageLinkUrls(userId, items, query)
   const { groupMemberRows, itemRows } = buildLandingPageInsertRows(items, urls.idsByInput)
   await replaceLandingPageItemRows(query, pageId, itemRows, groupMemberRows)

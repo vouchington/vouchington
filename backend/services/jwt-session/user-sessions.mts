@@ -43,10 +43,6 @@ async function writeAuthenticatedSession(
   options: AuthenticatedSessionOptions,
   memoizedUserAgentId?: string,
 ): Promise<{ session: UserSessionRow | null; userAgentId: string | null }> {
-  await query(
-    sql`/* upsertAuthenticatedSession */
-        SELECT pg_advisory_xact_lock(hashtextextended(${currentUserId}, 0))`,
-  )
   const existingActiveSession = await query<{ id: string }>(sql`/* hasAuthenticatedSession */
     SELECT id FROM user_sessions
     WHERE id = ${options.sid} AND user_id = ${currentUserId}

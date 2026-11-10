@@ -1,14 +1,14 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
-import { assertOAuthAccountConnectionUserActive } from '@services/oauth-accounts'
+import type { AccountChangeSession } from '@services/mfa/active-account-session'
+import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
+import { createCodedError } from '@vouchington/sentry'
 import {
-  lockActiveAccountSession,
-  type AccountChangeSession,
-} from '@services/mfa/active-account-session'
-import {
+  assertActiveDeviceAuthority,
   readSessionDeviceAuthority,
   sessionReloginRequired,
+  type SessionDeviceAuthorityRow,
 } from '@services/jwt-session/device-authority'
 
 type InitiatingAuthorization = {
@@ -23,7 +23,6 @@ export async function lockBlueskyInitiatingSession(
   authorizationId: string,
   query: TransactionQuery,
 ): Promise<string | null> {
-  await assertOAuthAccountConnectionUserActive(query, currentUserId)
   const authorization = await getBlueskyInitiatingAuthorization(
     currentUserId,
     authorizationId,
@@ -33,13 +32,13 @@ export async function lockBlueskyInitiatingSession(
   if (authorization.attached) return null
   if (!authorization.initiating_session_id || !authorization.unexpired)
     throw sessionReloginRequired()
-  const authority = await readSessionDeviceAuthority(authorization.initiating_session_id, query)
-  if (!authority || authority.user_id !== currentUserId) throw sessionReloginRequired()
-  await lockActiveAccountSession(
+  const authority = await readBlueskySessionAuthority(
     currentUserId,
-    { sid: authority.id, did: authority.device_id },
+    authorization.initiating_session_id,
     query,
   )
+  if (!authority || authority.user_id !== currentUserId) throw sessionReloginRequired()
+  assertBlueskySessionAuthority(currentUserId, authority.device_id, authority)
   return authority.id
 }
 
@@ -50,17 +49,17 @@ export async function lockCurrentBlueskyInitiatingSession(
   authorizationId: string,
   query: TransactionQuery,
 ): Promise<string> {
-  await lockActiveAccountSession(currentUserId, currentSession, query)
   const authorization = await getBlueskyInitiatingAuthorization(
     currentUserId,
     authorizationId,
     query,
   )
+  await assertBlueskySession(currentUserId, currentSession, query)
   if (!authorization?.unexpired || authorization.initiating_session_id !== currentSession.sid) {
     throw sessionReloginRequired()
   }
   if (authorization.attached) {
-    // A competing consumer can finish while we wait for the same live actor's locks.
+    // A competing consumer can finish between our authority snapshots.
     // Only its consumed, exact completion becomes 404; attached flows never authorize a retry.
     const { rows } = await query(sql`/* lockCurrentBlueskyInitiatingSession:completion */
       SELECT account_link_authorization_id FROM bluesky_link_completions
@@ -72,16 +71,75 @@ export async function lockCurrentBlueskyInitiatingSession(
   return currentSession.sid
 }
 
+function assertActiveBlueskyUser(state: { suspended: boolean } | undefined): void {
+  if (!state) throw createHttpError(404, 'User not found')
+  if (state.suspended)
+    throw createCodedError(403, 'Your account has been suspended', ACCOUNT_SUSPENDED)
+}
+
+async function assertBlueskySession(
+  userId: string,
+  session: AccountChangeSession,
+  query: TransactionQuery,
+): Promise<void> {
+  const authority = await readBlueskySessionAuthority(userId, session.sid, query)
+  assertBlueskySessionAuthority(userId, session.did, authority)
+}
+
+async function readBlueskySessionAuthority(
+  userId: string,
+  sessionId: string,
+  query: TransactionQuery,
+): Promise<SessionDeviceAuthorityRow | null> {
+  const authority = await readSessionDeviceAuthority(sessionId, query)
+  if (!authority) {
+    // A deletion between the actor snapshot and the session read remains a missing-user error.
+    const { rows } = await query<{ suspended: boolean }>(sql`/* readBlueskyMissingSessionUser */
+      SELECT EXISTS (SELECT 1 FROM user_suspensions WHERE user_id = ${userId} AND lifted_at IS NULL) AS suspended
+      FROM users WHERE id = ${userId} AND deleted_at IS NULL`)
+    assertActiveBlueskyUser(rows[0])
+  }
+  return authority
+}
+
+function assertBlueskySessionAuthority(
+  userId: string,
+  did: string,
+  authority: SessionDeviceAuthorityRow | null,
+): void {
+  assertActiveDeviceAuthority(authority, { uid: userId, did })
+  if (
+    !authority.device_token_digest ||
+    !authority.device_token_encrypted ||
+    !authority.device_token_issued_at ||
+    !authority.device_token_binding
+  )
+    throw sessionReloginRequired()
+}
+
 async function getBlueskyInitiatingAuthorization(
   currentUserId: string,
   authorizationId: string,
   query: TransactionQuery,
 ): Promise<InitiatingAuthorization | undefined> {
-  const { rows } = await query<InitiatingAuthorization>(
-    `/* lockBlueskyInitiatingSession */ SELECT initiating_session_id,
-       attached_at IS NOT NULL AS attached, expires_at > clock_timestamp() AS unexpired
-     FROM bluesky_link_authorizations WHERE id = $1 AND user_id = $2`,
+  const { rows } = await query<
+    InitiatingAuthorization & {
+      authorization_id: string | null
+      suspended: boolean
+    }
+  >(
+    `/* lockBlueskyInitiatingSession */ SELECT link.id AS authorization_id,
+       link.initiating_session_id, link.attached_at IS NOT NULL AS attached,
+       link.expires_at > clock_timestamp() AS unexpired,
+       EXISTS (SELECT 1 FROM user_suspensions
+         WHERE user_id = actor.id AND lifted_at IS NULL) AS suspended
+     FROM users AS actor
+     LEFT JOIN bluesky_link_authorizations AS link
+       ON link.id = $1 AND link.user_id = actor.id
+     WHERE actor.id = $2 AND actor.deleted_at IS NULL`,
     [authorizationId, currentUserId],
   )
-  return rows[0]
+  const row = rows[0]
+  assertActiveBlueskyUser(row)
+  return row?.authorization_id ? row : undefined
 }

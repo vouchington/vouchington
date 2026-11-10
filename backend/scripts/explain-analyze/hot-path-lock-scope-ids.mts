@@ -1,0 +1,40 @@
+import { MEDIA_DELIVERY_LOCK_SCENARIOS } from './media-delivery-lock-scenario-ids.mts'
+
+export const OAUTH_AUTHORITY_SCENARIO_IDS = [
+  'oauth-authority-request',
+  'oauth-authority-consent',
+  'oauth-authority-code',
+  'oauth-authority-refresh',
+  'oauth-authority-access',
+  'oauth-authority-revoke',
+  'oauth-authority-native',
+] as const
+
+export const HOT_PATH_LOCK_SCOPE_SCENARIOS = [
+  ...MEDIA_DELIVERY_LOCK_SCENARIOS,
+  ...OAUTH_AUTHORITY_SCENARIO_IDS,
+  'image-upload-owner-snapshot',
+  'image-claim-owner-snapshot',
+  'image-promotion-owner-snapshot',
+  'image-source-written-rows',
+  'story-post-author-snapshot',
+  'story-post-parent-snapshot',
+  'activitypub-follow-cas-insert',
+  'activitypub-follow-cas-replace',
+  'activitypub-follow-confirm-tombstone',
+  'activitypub-receipt-floor-snapshot',
+  'activitypub-follow-identity-constraints',
+  'election-vote-lifecycle-snapshot',
+  'api-key-active-owner-role',
+  'api-key-create-owner-snapshot',
+  'api-key-rotate-owner-snapshot',
+  'api-key-revoke-owner-snapshot',
+  'facebook-friend-owner-snapshot',
+  'github-friend-owner-snapshot',
+  'x-friend-owner-snapshot',
+  'x-refresh-active-owner',
+  'bluesky-live-receipt-write',
+  'bluesky-live-receipt-read',
+  'bluesky-initiating-authority-snapshot',
+  'bluesky-missing-session-actor-snapshot',
+] as const

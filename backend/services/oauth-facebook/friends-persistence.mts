@@ -11,7 +11,7 @@ export async function persistFacebookFriendPage(
   const sortedFriendIds = [...new Set(friendIds)].toSorted()
   for (let offset = 0; offset < sortedFriendIds.length; offset += FRIEND_MUTATION_BATCH_SIZE) {
     const batch = sortedFriendIds.slice(offset, offset + FRIEND_MUTATION_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- every bounded chunk commits under a separately reacquired deletion fence.
+    // oxlint-disable-next-line no-await-in-loop -- each bounded chunk commits before the next.
     const persisted = await persistFacebookFriendBatch(
       facebookAccountId,
       userId,
@@ -37,7 +37,6 @@ export async function finalizeFacebookFriendSync(
   const maxBatches = getOauthFacebookWorkLimit('max_finalize_batches_per_run')
   let lastFinalizedKey = after
   for (let batch = 0; batch < maxBatches; batch += 1) {
-    // Candidate discovery does not hold the deletion fence; only the bounded mutation page does.
     // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
     const staleFriendIds = await getStaleFacebookFriendIds(
       facebookAccountId,
@@ -50,7 +49,7 @@ export async function finalizeFacebookFriendSync(
       await markFacebookFriendSyncComplete(facebookAccountId, userId, syncStartTime)
       return null
     }
-    // oxlint-disable-next-line no-await-in-loop -- each page reacquires the deletion fence.
+    // oxlint-disable-next-line no-await-in-loop -- each page commits before the next.
     const deleted = await deleteFacebookFriendBatch(
       facebookAccountId,
       userId,
@@ -70,23 +69,24 @@ async function persistFacebookFriendBatch(
   syncStartTime: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  await lockFacebookFriendImport(transaction, userId, friendIds)
   const owner = await facebookSyncOwnerExists(transaction, facebookAccountId, userId, syncStartTime)
   if (!owner) return false
 
-  // Lock an existing unlinked target too, so reconnect cannot clear resolution work before this insert.
   await transaction(
     `/* persistFacebookFriendBatch */ INSERT INTO facebook_friends (facebook_account_id, facebook_friend_id, friend_facebook_account_id, last_observed_at)
      SELECT $1::uuid, friend_id,
        (SELECT CASE WHEN user_id IS NOT NULL THEN id END FROM facebook_accounts
-        WHERE facebook_user_id = friend_id FOR SHARE), $3::timestamptz
+        WHERE facebook_user_id = friend_id), $3::timestamptz
      FROM UNNEST($2::text[]) AS friend_id
+     WHERE EXISTS (SELECT 1 FROM facebook_accounts owner JOIN users ON users.id = owner.user_id
+       WHERE owner.id = $1::uuid AND owner.user_id = $4::uuid AND users.deleted_at IS NULL
+         AND (owner.friend_edges_invalidated_at IS NULL OR owner.friend_edges_invalidated_at < $3::timestamptz))
      ORDER BY $1, friend_id
      ON CONFLICT (facebook_account_id, facebook_friend_id) DO UPDATE SET
        friend_facebook_account_id = EXCLUDED.friend_facebook_account_id,
        last_observed_at = EXCLUDED.last_observed_at
      WHERE facebook_friends.last_observed_at <= EXCLUDED.last_observed_at`,
-    [facebookAccountId, friendIds, syncStartTime],
+    [facebookAccountId, friendIds, syncStartTime, userId],
   )
   await transaction.commit()
   return true
@@ -116,7 +116,6 @@ async function deleteFacebookFriendBatch(
   friendIds: string[],
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  await lockActiveFacebookSyncOwner(transaction, userId)
   const owner = await facebookSyncOwnerExists(transaction, facebookAccountId, userId, syncStartTime)
   if (!owner) return false
 
@@ -124,8 +123,11 @@ async function deleteFacebookFriendBatch(
     `/* deleteFacebookFriendBatch */ DELETE FROM facebook_friends
      WHERE facebook_account_id = $1
        AND facebook_friend_id = ANY($2::text[])
-       AND last_observed_at < $3::timestamptz`,
-    [facebookAccountId, friendIds, syncStartTime],
+       AND last_observed_at < $3::timestamptz
+       AND EXISTS (SELECT 1 FROM facebook_accounts owner JOIN users ON users.id = owner.user_id
+         WHERE owner.id = $1::uuid AND owner.user_id = $4::uuid AND users.deleted_at IS NULL
+           AND (owner.friend_edges_invalidated_at IS NULL OR owner.friend_edges_invalidated_at < $3::timestamptz))`,
+    [facebookAccountId, friendIds, syncStartTime, userId],
   )
   await transaction.commit()
   return true
@@ -137,40 +139,19 @@ async function markFacebookFriendSyncComplete(
   syncStartTime: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  await lockActiveFacebookSyncOwner(transaction, userId)
   const owner = await facebookSyncOwnerExists(transaction, facebookAccountId, userId, syncStartTime)
   if (!owner) return false
 
   await transaction(
     `/* markFacebookFriendSyncComplete */ UPDATE facebook_accounts
      SET friends_synced_at = CURRENT_TIMESTAMP
-     WHERE id = $1 AND user_id = $2`,
-    [facebookAccountId, userId],
+     WHERE id = $1 AND user_id = $2
+       AND (friend_edges_invalidated_at IS NULL OR friend_edges_invalidated_at < $3::timestamptz)
+       AND EXISTS (SELECT 1 FROM users WHERE id = $2::uuid AND deleted_at IS NULL)`,
+    [facebookAccountId, userId, syncStartTime],
   )
   await transaction.commit()
   return true
-}
-
-async function lockActiveFacebookSyncOwner(
-  query: Parameters<typeof facebookSyncOwnerExists>[0],
-  userId: string,
-): Promise<void> {
-  await query(
-    `/* lockActiveFacebookSyncOwner */ SELECT fn_lock_active_user_for_mutation($1::uuid)`,
-    [userId],
-  )
-}
-
-async function lockFacebookFriendImport(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  userId: string,
-  friendIds: string[],
-): Promise<void> {
-  await lockActiveFacebookSyncOwner(query, userId)
-  await query(
-    `/* lockFacebookFriendTargets */ SELECT fn_lock_oauth_friend_targets('facebook', $1::text[], FALSE)`,
-    [friendIds],
-  )
 }
 
 async function facebookSyncOwnerExists(
@@ -182,8 +163,9 @@ async function facebookSyncOwnerExists(
   const { rows } = await query(
     `/* facebookSyncOwnerExists */ SELECT 1 FROM facebook_accounts
      WHERE id = $1 AND user_id = $2
+       AND EXISTS (SELECT 1 FROM users WHERE id = $2::uuid AND deleted_at IS NULL)
        AND (friend_edges_invalidated_at IS NULL OR friend_edges_invalidated_at < $3::timestamptz)
-     FOR SHARE`,
+`,
     [facebookAccountId, userId, syncStartTime],
   )
   return rows.length > 0

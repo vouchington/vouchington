@@ -41,6 +41,27 @@ function addSource(
 }
 
 describe('post-publication writer inventory regressions', () => {
+  it('recognizes story topic capture only from its owning module', () => {
+    const accepted: string[] = []
+    checkPostPublicationWriterInventory(
+      context(
+        "import { recordStoryTopicPublicationChanges } from '@services/post-publication/capture-story-topics'\nUPDATE posts SET title = $1\nrecordStoryTopicPublicationChanges(query, changes)",
+      ),
+      accepted,
+    )
+    expect(accepted).toEqual([])
+    const rejected: string[] = []
+    checkPostPublicationWriterInventory(
+      context(
+        "import { recordStoryTopicPublicationChanges } from './untrusted.mts'\nUPDATE posts SET title = $1\nrecordStoryTopicPublicationChanges(query, changes)",
+      ),
+      rejected,
+    )
+    expect(rejected).toContain(
+      `${inventoryPath}: captured writer ${writerPath} must call an approved publication capture helper`,
+    )
+  })
+
   it('rejects a capture call without an approved imported binding', () => {
     const errors: string[] = []
     checkPostPublicationWriterInventory(

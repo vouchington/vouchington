@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getLockedLandingPageRowForUser } from './reads.mts'
+import { getLandingPageRowForUser } from './reads.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import type { LandingPage } from './types.mts'
 
@@ -23,7 +23,7 @@ async function updateLandingPageDefault(
   userId: string,
   pageId: string,
 ): Promise<LandingPage> {
-  await getLockedLandingPageRowForUser(userId, pageId, query)
+  await getLandingPageRowForUser(userId, pageId, { query })
   return replaceLandingPageDefault(query, userId, pageId)
 }
 

@@ -1,11 +1,9 @@
-import { read, withTransactionOptions, write, type QueryOptions } from '@data-stores/psql'
-import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
+import { read, write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 
 // Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
 export const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
-
 // CRUD on bluesky_follow_records (see migrations/0571-00-00-bluesky-follow-records.sql). A row is
 // Voucha's durable receipt that a live app.bsky.graph.follow record currently exists on Bluesky for
 // this pair — not a cache of Bluesky state, the source of truth for "does it exist." Bluesky's PDS
@@ -35,6 +33,8 @@ export async function getBlueskyFollowReceipt(
       FROM bluesky_follow_records receipt
       JOIN bluesky_linked_accounts account
         ON account.link_authorization_id = receipt.follower_account_link_authorization_id
+      JOIN users follower ON follower.id = receipt.follower_user_id AND follower.deleted_at IS NULL
+      JOIN users followee ON followee.id = receipt.followee_user_id AND followee.deleted_at IS NULL
       WHERE receipt.follower_user_id = ${followerUserId}
         AND receipt.followee_user_id = ${followeeUserId}
         AND account.bluesky_did = ${followerBlueskyDid}
@@ -54,9 +54,8 @@ export async function saveBlueskyFollowReceipt(
   recordUri: string,
   options: QueryOptions = {},
 ): Promise<void> {
-  await withTransactionOptions(options, async query => {
-    await lockActiveUserSubjectsForMutation(query, [followerUserId, followeeUserId])
-    const { rowCount } = await query(sql`/* saveBlueskyFollowReceipt */
+  const { rowCount } = await write(
+    sql`/* saveBlueskyFollowReceipt */
       INSERT INTO bluesky_follow_records (
         follower_user_id, followee_user_id, follower_account_link_authorization_id, record_uri
       )
@@ -66,12 +65,16 @@ export async function saveBlueskyFollowReceipt(
         AND account.bluesky_did = ${followerBlueskyDid}
         AND account.user_id = ${followerUserId}
         AND account.disconnect_requested_at IS NULL
+        AND EXISTS (SELECT 1 FROM users WHERE id = ${followerUserId} AND deleted_at IS NULL)
+        AND EXISTS (SELECT 1 FROM users WHERE id = ${followeeUserId} AND deleted_at IS NULL)
       ON CONFLICT (follower_user_id, followee_user_id)
         DO UPDATE SET
           follower_account_link_authorization_id = EXCLUDED.follower_account_link_authorization_id,
-          record_uri = EXCLUDED.record_uri`)
-    if (rowCount !== 1) throw new Error('Exact Bluesky account generation is missing')
-  })
+          record_uri = EXCLUDED.record_uri`,
+    options,
+  )
+  if (rowCount !== 1)
+    throw new Error('Exact Bluesky account generation is missing or user is inactive')
 }
 
 export async function deleteBlueskyFollowReceipt(
@@ -142,6 +145,8 @@ export async function listBlueskyFollowReceiptsForFollower(
       FROM bluesky_follow_records receipt
       JOIN bluesky_linked_accounts account
         ON account.link_authorization_id = receipt.follower_account_link_authorization_id
+      JOIN users follower ON follower.id = receipt.follower_user_id AND follower.deleted_at IS NULL
+      JOIN users followee ON followee.id = receipt.followee_user_id AND followee.deleted_at IS NULL
       WHERE receipt.follower_user_id = ${followerUserId}
         AND account.bluesky_did = ${followerBlueskyDid}
         AND account.user_id = ${followerUserId}

@@ -11,8 +11,8 @@ export async function revokeSessionsAboveLimit(
 ): Promise<void> {
   const limit = getActiveUserSessionLimit()
   const hardMaximum = sessionLimitsMaxValues.active_sessions_per_user
-  // A previous runtime value can be higher than today's limit. The hard maximum
-  // bounds the entire set before this insert, so one bounded read finds all excess.
+  // The admission cap is best effort: concurrent admissions can overshoot it. One bounded read
+  // evicts the oldest excess; any remainder beyond the page drains on the next admission.
   const { rows } = await query<{ id: string }>(sql`/* findActiveSessionsForLimit */
     WITH active AS MATERIALIZED (
       SELECT id
@@ -23,9 +23,6 @@ export async function revokeSessionsAboveLimit(
       ORDER BY expires_at, id LIMIT ${hardMaximum + 2}
     )
     SELECT id FROM active ORDER BY id DESC`)
-  if (rows.length > hardMaximum + 1) {
-    throw new Error('Active user sessions exceed the configured hard maximum')
-  }
   // A SID can be minted during an anonymous handshake before newer sessions.
   // Admission keeps the just-created session and the newest other sessions.
   const oldestSessionIds = rows

@@ -101,6 +101,10 @@
       "reason": "builds the bounded update statement executed by the captured transactional writer"
     },
     {
+      "path": "backend/services/entity-relations/remote-follow-cycle-query.mts",
+      "reason": "builds the remote actor Follow relation statement executed by the captured entity-relation upsert; it does not itself execute a publication write"
+    },
+    {
       "path": "backend/services/entity-relations/build-bidirectional-insert-query.mts",
       "reason": "builds the bidirectional relation insert executed by the captured entity-relation upsert"
     },

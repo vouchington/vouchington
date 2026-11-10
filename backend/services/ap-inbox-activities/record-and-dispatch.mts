@@ -8,7 +8,7 @@ import {
 import type { RemoteActorRow } from '@services/remote-actors'
 import type { InboundActivity } from './parse-activity.mts'
 import { getMaximumActivityAgeDays } from './config.mts'
-import { lockActivityPubReplayFloor } from './replay-floor.mts'
+import { readActivityPubReplayFloor } from './replay-floor.mts'
 import createHttpError from 'http-errors'
 
 export type InboxActivityResult = {
@@ -44,12 +44,13 @@ export async function recordAndDispatchInboundActivityInTransaction(
   remoteActor: RemoteActorRow,
   activity: InboundActivity & { signedAt: Date },
 ) {
-  const rejectionFloor = await lockActivityPubReplayFloor(query)
+  const rejectionFloor = await readActivityPubReplayFloor(query)
   if (rejectionFloor && activity.signedAt <= rejectionFloor) {
     throw createHttpError(401, 'Activity signature date is retired')
   }
   const firstSeen = await recordInboxActivity(activity.id, activity.type, activity.actor, {
     query,
+    signedAt: activity.signedAt,
   })
   if (!firstSeen) {
     const postCommitAction =

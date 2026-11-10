@@ -36,5 +36,4 @@ _none_
 - `idx_bluesky_follow_records__followee_follower`: `CREATE INDEX idx_bluesky_follow_records__followee_follower ON public.bluesky_follow_records USING btree (followee_user_id, follower_user_id)`
 
 **Triggers:**
-
-- `trigger_bluesky_follow_records_active_users`: `CREATE TRIGGER trigger_bluesky_follow_records_active_users BEFORE INSERT OR UPDATE OF follower_user_id, followee_user_id ON public.bluesky_follow_records FOR EACH ROW EXECUTE FUNCTION fn_lock_bluesky_follow_receipt_active_users()`
+_none_

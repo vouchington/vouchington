@@ -55,7 +55,7 @@ describe('syncGithubFriends batching', () => {
     expect(await getTestOAuthAccountFriendsSyncedAt('github', providerUserId)).toBeNull()
   })
 
-  it('commits a completed provider page before the next page reacquires the deletion fence', async () => {
+  it('keeps a committed page and discards the next page after owner deletion', async () => {
     const { providerUserId, userId } = await createGithubSyncAccount()
     const firstFriendId = randomGithubId(2_000_000)
     const secondFriendId = randomGithubId(3_000_000)
@@ -70,14 +70,15 @@ describe('syncGithubFriends batching', () => {
         ok: true,
         headers: new Headers(),
         json: async () => {
+          await expect(
+            getTestFriend('github', providerUserId, String(firstFriendId)),
+          ).resolves.toHaveLength(1)
           await softDeleteUser(userId)
           return [{ id: secondFriendId, login: 'second-friend' }]
         },
       })
 
-    await expect(syncGithubFriends(providerUserId)).rejects.toThrow(
-      'cannot own new data after deletion',
-    )
+    await expect(syncGithubFriends(providerUserId)).resolves.toBeNull()
     await expect(
       getTestFriend('github', providerUserId, String(firstFriendId)),
     ).resolves.toHaveLength(1)

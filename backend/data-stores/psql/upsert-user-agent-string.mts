@@ -18,13 +18,17 @@ export async function upsertUserAgentString(
   )
   const existingId = (existing.rows[0] as { id: string } | undefined)?.id
   if (existingId !== undefined) return existingId
-  await write(
+  const inserted = await write(
     sql`/* upsertUserAgentString */
       INSERT INTO user_agent_strings (user_agent)
       VALUES (${normalized})
-      ON CONFLICT (user_agent) DO NOTHING`,
+      ON CONFLICT (user_agent) DO NOTHING
+      RETURNING id`,
     options,
   )
+  const insertedId = (inserted.rows[0] as { id: string } | undefined)?.id
+  // A caller-owned insert already protects its new row while the FK is stored.
+  if (insertedId !== undefined) return insertedId
   // A separate statement sees a concurrent inserter after ON CONFLICT waits for it. Do not merge
   // the insert and read into one statement: its snapshot would miss that concurrently committed row.
   const { rows } = await write(

@@ -21,8 +21,37 @@ import {
   persistGithubFriendPage,
 } from '../../oauth-github/friends-persistence.mts'
 import { getFriendRecommendations } from '../get-recommendations.mts'
+import { softDeleteUser } from '@voucha/test-helpers/entities/users-lifecycle'
 
 describe('friend recommendation relink boundary', () => {
+  it.each(['viewer', 'friend'] as const)(
+    'hides the recommendation immediately when the %s is deleted',
+    async deleted => {
+      const viewer = await createTestUser()
+      const friend = await createTestUser()
+      const viewerProviderId = `github-delete-viewer-${viewer.id}`
+      const friendProviderId = `github-delete-friend-${friend.id}`
+      const viewerAccount = await insertTestOAuthAccount('github', viewerProviderId)
+      if (!viewerAccount.account_id) throw new Error('GitHub account id missing')
+      await insertTestOAuthAccount('github', friendProviderId)
+      await connectTestOAuthAccount('github', viewer.id, viewerProviderId)
+      await connectTestOAuthAccount('github', friend.id, friendProviderId)
+      await persistGithubFriendPage(
+        viewerAccount.account_id,
+        viewer.id,
+        [friendProviderId],
+        await getTestFriendSyncStartTime(),
+      )
+      expect((await getFriendRecommendations(viewer)).results.map(row => row.id)).toContain(
+        friend.id,
+      )
+      await softDeleteUser(deleted === 'viewer' ? viewer.id : friend.id)
+      expect((await getFriendRecommendations(viewer)).results.map(row => row.id)).not.toContain(
+        friend.id,
+      )
+    },
+  )
+
   it('rejects a source sync fetched before unlink even after relinking the same user', async () => {
     const viewer = await createTestUser()
     const friend = await createTestUser()

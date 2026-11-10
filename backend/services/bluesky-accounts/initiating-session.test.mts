@@ -10,6 +10,8 @@ import {
   invalidateTestUserSession,
 } from '@voucha/test-helpers/entities/user-sessions'
 import { getTestBlueskyLinkAuthorizationRow } from '@voucha/test-helpers/entities/bluesky-link-authorizations'
+import { clearTestDeviceAuthority } from '@voucha/test-helpers/entities/device-authority'
+import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { isSessionRevoked } from '@services/jwt-session'
 import { connectBlueskyAccountToUser } from './connect.mts'
 
@@ -39,7 +41,7 @@ describe('Bluesky account-change session admission', () => {
     await expect(isSessionRevoked(later.session.sid, { userId: user.id })).resolves.toBe(false)
   })
 
-  it.each(['revoked', 'expired', 'deleted'] as const)(
+  it.each(['revoked', 'expired', 'deleted', 'uncredentialed'] as const)(
     'rejects first attachment after its initiating session is %s',
     async invalid => {
       const user = await createTestUser()
@@ -50,6 +52,8 @@ describe('Bluesky account-change session admission', () => {
         initiatingSessionId: actor.session.sid,
       })
       if (invalid === 'deleted') await deleteTestUserSession(actor.session.sid)
+      else if (invalid === 'uncredentialed')
+        await clearTestDeviceAuthority(user.id, actor.session.sid)
       else await invalidateTestUserSession(actor.session.sid, invalid)
       await expect(
         connectBlueskyAccountToUser(user.id, linked.bluesky_did, 'owned.bsky.social', {
@@ -61,4 +65,32 @@ describe('Bluesky account-change session admission', () => {
       ).resolves.toMatchObject({ status: 'callback_claimed' })
     },
   )
+  it('rejects attachment if its initiating session disappears after authorization admission', async () => {
+    const user = await createTestUser()
+    const actor = await createTestAccountChangeActor(user.id)
+    const linked = await insertTestBlueskyLinkedAccount({
+      userId: null,
+      linkingUserId: user.id,
+      initiatingSessionId: actor.session.sid,
+    })
+    let deleted = false
+    await observeTestPostgresClientQueries(
+      () =>
+        expect(
+          connectBlueskyAccountToUser(user.id, linked.bluesky_did, 'owned.bsky.social', {
+            linkAuthorizationId: linked.link_authorization_id,
+          }),
+        ).rejects.toMatchObject({ status: 401, code: 'SESSION_RELOGIN_REQUIRED' }),
+      async query => {
+        if (!deleted && query.text.includes('/* lockBlueskyInitiatingSession */')) {
+          deleted = true
+          await deleteTestUserSession(actor.session.sid)
+        }
+      },
+    )
+    expect(deleted).toBe(true)
+    await expect(
+      getTestBlueskyLinkAuthorizationRow(linked.link_authorization_id),
+    ).resolves.toMatchObject({ status: 'callback_claimed' })
+  })
 })

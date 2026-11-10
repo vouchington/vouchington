@@ -1560,9 +1560,6 @@
     "fn_lock_agent_moderation_transparency_prompt": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_agent_moderation_transparency_prompt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE v_agent_id uuid;\nBEGIN\n  SELECT agent_id INTO v_agent_id FROM agent_prompts WHERE id = OLD.id;\n  PERFORM fn_lock_moderation_transparency_projection('agent', v_agent_id);\n  PERFORM fn_lock_moderation_transparency_projection('prompt', OLD.id);\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND $function$\n"
     },
-    "fn_lock_bluesky_follow_receipt_active_users": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_bluesky_follow_receipt_active_users()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.follower_user_id <= NEW.followee_user_id THEN\n    PERFORM fn_lock_active_user_for_mutation(NEW.follower_user_id);\n    IF NEW.followee_user_id <> NEW.follower_user_id THEN\n      PERFORM fn_lock_active_user_for_mutation(NEW.followee_user_id);\n    END IF;\n  ELSE\n    PERFORM fn_lock_active_user_for_mutation(NEW.followee_user_id);\n    PERFORM fn_lock_active_user_for_mutation(NEW.follower_user_id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
     "fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  SELECT pg_advisory_xact_lock(hashtextextended(p_domain || ':' || p_id::text, 0))\n$function$\n"
     },
@@ -10096,9 +10093,7 @@
         "definition": "PRIMARY KEY (follower_user_id, followee_user_id)"
       },
       "relationKind": "table",
-      "triggers": {
-        "trigger_bluesky_follow_records_active_users": "CREATE TRIGGER trigger_bluesky_follow_records_active_users BEFORE INSERT OR UPDATE OF follower_user_id, followee_user_id ON public.bluesky_follow_records FOR EACH ROW EXECUTE FUNCTION fn_lock_bluesky_follow_receipt_active_users()"
-      },
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "bluesky_link_authorizations": {

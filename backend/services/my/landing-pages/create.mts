@@ -5,7 +5,6 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import {
   getUsernameForLandingPages,
   MAX_LANDING_PAGES,
-  lockUserLandingPages,
   validateLandingPageSlug,
   validateSubtitle,
   validateTitle,
@@ -21,12 +20,12 @@ export async function createMyLandingPage(
   const slug = validateLandingPageSlug(input.slug)
 
   await using query = await beginTransaction()
-  await lockLandingPageCreation(query, userId)
+  await getUsernameForLandingPages(userId, { query })
 
   let landingPage: LandingPage
   try {
     const { rows } = await query(sql`/* createMyLandingPage */
-      WITH page_count AS MATERIALIZED (
+      WITH page_count AS (
         SELECT COUNT(*)::int AS count
         FROM user_landing_pages
         WHERE user_id = ${userId}
@@ -67,12 +66,4 @@ export async function createMyLandingPage(
   await query.commit()
   await invalidate.users(userId)
   return landingPage
-}
-
-async function lockLandingPageCreation(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  userId: string,
-): Promise<void> {
-  await lockUserLandingPages(query, userId)
-  await getUsernameForLandingPages(userId, { query })
 }

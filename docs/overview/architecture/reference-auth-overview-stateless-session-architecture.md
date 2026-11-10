@@ -83,7 +83,8 @@ An active-session cap bounds each user's unrevoked, unexpired sessions independe
 lifetime. Creating a new session revokes the oldest excess sessions in the same database transaction,
 while preserving the new session. Renewing or replaying an existing session does not consume another
 slot. Lowering the configured cap leaves current sessions valid until the next new session is created;
-revocation work remains bounded by the hard maximum during that interval. The
+revocation work remains bounded by the hard maximum during that interval. The cap is best effort:
+concurrent admissions may briefly exceed it, and the next admission evicts the excess. The
 [session limits configuration](../../../backend/services/jwt-session/session-limits-config.mts)
 owns the default and hard maximum. Eviction retains session rows and their replay receipts, and
 publishes the existing Valkey revocation markers after commit.

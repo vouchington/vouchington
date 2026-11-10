@@ -1,16 +1,8 @@
 [
   {
-    "annotation": "assertOAuthAccountConnectionUserActive",
-    "maxCount": 4,
-    "reason": "The callback writes the provider session and then attaches it in separate transactions. Each checks active ownership before reading the authorization and again after locking the initiating session; suspension can commit between those transactions.",
-    "permanent": true,
-    "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
-    "routes": ["GET /api/v1/auth/bluesky/callback"]
-  },
-  {
     "annotation": "assertContributionAdmissionCapacity.count",
     "maxCount": null,
-    "reason": "A preflight check before beforeCommit and execute, then a re-check after the actor row lock must see consumption committed before that lock (admission.mts:70 and :87)",
+    "reason": "A preflight check before beforeCommit and execute, then a re-check inside the mutation transaction; the per-user admission claim keeps same-user admissions from interleaving between them, so the re-check sees all prior consumption without an actor row lock (admission.mts:70 and :85)",
     "permanent": true,
     "code": "backend/services/contribution-gating/admission.mts:70",
     "routes": [
@@ -220,7 +212,7 @@
   {
     "annotation": "getLandingPageRowForUser",
     "maxCount": null,
-    "reason": "PATCH is_default rereads the owned page after acquiring the per-user landing-page advisory lock, so a concurrent deletion or ownership change is rejected before default writes (backend/services/my/landing-pages/reads.mts:14-15, backend/services/my/landing-pages/set-default.mts:26)",
+    "reason": "Default and item writes recheck the owned page inside their transaction; the keyed read returns the stored is_default flag without an advisory fence.",
     "permanent": true,
     "code": "backend/services/my/landing-pages/reads.mts:14",
     "routes": [
@@ -399,14 +391,6 @@
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
-    "annotation": "lockApiKeyOwner",
-    "maxCount": null,
-    "reason": "Read administrator roles after fn_lock_active_user_for_mutation to observe role changes that completed while acquiring the owner lock",
-    "permanent": true,
-    "code": "backend/services/api-keys/lifetime.mts:8",
-    "routes": ["POST /api/v1/my/api-keys", "POST /api/v1/my/api-keys/:id/rotate"]
-  },
-  {
     "annotation": "lockAssessmentForm",
     "maxCount": null,
     "reason": "The assessment is appended in its own transaction and each owed target is restricted in its own later transaction, and each takes the form review fence for its own transaction",
@@ -419,23 +403,7 @@
     "maxCount": 2,
     "reason": "SDK session persistence and final account attachment commit separately, so each transaction rechecks the initiating authorization and current actor session.",
     "permanent": true,
-    "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
-    "routes": ["GET /api/v1/auth/bluesky/callback"]
-  },
-  {
-    "annotation": "lockBlueskySessionOwner:did",
-    "maxCount": null,
-    "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
-    "permanent": true,
-    "code": "backend/services/bluesky-accounts/session-generation.mts:lockBlueskySessionOwner",
-    "routes": ["GET /api/v1/auth/bluesky/callback"]
-  },
-  {
-    "annotation": "lockBlueskySessionOwner:user",
-    "maxCount": null,
-    "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
-    "permanent": true,
-    "code": "backend/services/bluesky-accounts/session-generation.mts:lockBlueskySessionOwner",
+    "code": "backend/services/bluesky-accounts/initiating-session.mts:getBlueskyInitiatingAuthorization",
     "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
@@ -471,22 +439,6 @@
     "routes": ["POST /api/v1/fediverse/instances"]
   },
   {
-    "annotation": "lockOAuthAccountConnectionUser",
-    "maxCount": 4,
-    "reason": "Each of the two callback transactions admits the active account before authorization lookup and again with the initiating SID and device authority; both checks take the deletion fence.",
-    "permanent": true,
-    "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
-    "routes": ["GET /api/v1/auth/bluesky/callback"]
-  },
-  {
-    "annotation": "lockOAuthAccountConnectionUserRow",
-    "maxCount": 4,
-    "reason": "Each active-account admission locks the user row after the deletion fence, twice in provider persistence and twice in final attachment.",
-    "permanent": true,
-    "code": "backend/services/oauth-accounts/connect.mts:99",
-    "routes": ["GET /api/v1/auth/bluesky/callback"]
-  },
-  {
     "annotation": "lockPostPublicationScope",
     "maxCount": null,
     "reason": "Distinct scope families take separate advisory locks, and a nested author or feed change re-locks its own scope as its entry point.",
@@ -499,14 +451,6 @@
       "POST /api/v1/rss-feed-items/:id/discussions",
       "POST /api/v1/stories/:storyId/discussions"
     ]
-  },
-  {
-    "annotation": "lockSessionDeviceAuthority:sessionFence",
-    "routes": ["GET /api/v1/auth/bluesky/callback"],
-    "maxCount": 2,
-    "reason": "Provider session persistence and final attachment separately lock and verify the original initiating SID against revocation.",
-    "permanent": true,
-    "code": "backend/services/mfa/active-account-session.mts:56"
   },
   {
     "annotation": "lockSessionDeviceAuthority:sessionFence",
@@ -539,14 +483,6 @@
     "reason": "Completed broker replay checks the original issued SID for preserved assurance, then canonical mint reacquires its reentrant SID fence before checking the stored device credential and issuing the response.",
     "permanent": true,
     "code": "backend/services/jwt-session/assurance.mts:41"
-  },
-  {
-    "annotation": "lockSessionDeviceAuthority:userFence",
-    "routes": ["GET /api/v1/auth/bluesky/callback"],
-    "maxCount": 2,
-    "reason": "Provider session persistence and final attachment separately lock and verify the original account and SID against deletion and revocation.",
-    "permanent": true,
-    "code": "backend/services/mfa/active-account-session.mts:56"
   },
   {
     "annotation": "lockSessionDeviceAuthority:userFence",
@@ -652,10 +588,10 @@
   {
     "annotation": "readSessionDeviceAuthority",
     "routes": ["GET /api/v1/auth/bluesky/callback"],
-    "maxCount": 4,
-    "reason": "Each of the two independently committed callback stages reads the original SID to derive its device and rereads under the SID lock before accepting that stage.",
+    "maxCount": 2,
+    "reason": "SDK credential persistence and final attachment commit independently; each stage reads its initiating session authority once without a read-set lock.",
     "permanent": true,
-    "code": "backend/services/bluesky-accounts/initiating-session.mts:34"
+    "code": "backend/services/bluesky-accounts/initiating-session.mts:readBlueskySessionAuthority"
   },
   {
     "annotation": "readSessionDeviceAuthority",
@@ -782,7 +718,7 @@
   {
     "annotation": "renewContributionAdmissionLease",
     "maxCount": null,
-    "reason": "Lease fences run after the claim, after beforeCapacity and as the commit fence returning the database-clock committed_at inside the final transaction (admission.mts:49-51, :64 and :93)",
+    "reason": "Lease fences run after the claim, after beforeCapacity and as the commit fence returning the database-clock committed_at inside the final transaction (admission.mts:49-51, :64 and :91)",
     "permanent": true,
     "code": "backend/services/contribution-gating/admission.mts:49-51",
     "routes": [
@@ -816,22 +752,6 @@
       "POST /api/v1/mcp tools/call withdraw_entity_relation_vote",
       "PUT /api/v1/entity-relations/:id/vote"
     ]
-  },
-  {
-    "annotation": "revokeAllAuthenticatedSessions",
-    "maxCount": null,
-    "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
-    "permanent": true,
-    "code": "backend/services/jwt-session/user-session-revocation.mts:37",
-    "routes": ["POST /api/v1/auth/sessions/revocations"]
-  },
-  {
-    "annotation": "revokeApiKey",
-    "maxCount": null,
-    "reason": "The key update runs after fn_lock_active_user_for_mutation to serialize revocation with key rotation and account deletion",
-    "permanent": true,
-    "code": "backend/services/api-keys/revoke.mts:8",
-    "routes": ["DELETE /api/v1/my/api-keys/:id"]
   },
   {
     "annotation": "rotateApiKey",
@@ -888,40 +808,6 @@
     "permanent": true,
     "code": "backend/api/v1/sessions-authentication/session.mts:104-109",
     "routes": ["DELETE /api/v1/session"]
-  },
-  {
-    "annotation": "upsertAuthenticatedSession",
-    "maxCount": 2,
-    "reason": "A single refresh registration takes the user advisory lock and then writes the durable session row; both statements use this annotation in one transaction.",
-    "permanent": true,
-    "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
-    "routes": ["PATCH /api/v1/session"]
-  },
-  {
-    "annotation": "upsertAuthenticatedSession",
-    "maxCount": 2,
-    "reason": "One device-bound registration or refresh writes the authenticated session once; its user advisory lock and session-row upsert carry the same annotation in two SQL statements.",
-    "permanent": true,
-    "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
-    "routes": [
-      "POST /api/v1/auth/device-bound-sessions",
-      "POST /api/v1/auth/device-bound-sessions/refreshes"
-    ]
-  },
-  {
-    "annotation": "upsertAuthenticatedSession",
-    "maxCount": null,
-    "reason": "The session upsert runs after the user advisory lock and user-agent persistence, seeing any revocation or deletion that won the lock",
-    "permanent": true,
-    "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
-    "routes": [
-      "POST /api/v1/app-attestation/attest",
-      "POST /api/v1/auth/email-address/login",
-      "POST /api/v1/auth/mfa/totp/verification",
-      "POST /api/v1/auth/oauth/:provider/continue",
-      "POST /api/v1/auth/oauth/authorizations/:flowId/complete",
-      "POST /api/v1/auth/native/email-address/login"
-    ]
   },
   {
     "annotation": "upsertUserAgentString",

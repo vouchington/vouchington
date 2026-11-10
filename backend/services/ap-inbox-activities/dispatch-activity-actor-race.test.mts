@@ -8,7 +8,7 @@ import {
   createUndoActorTargetForTest,
   deleteUndoActorRaceFactsForTest,
   hasActiveUndoActorEdgeForTest,
-  observeUndoActorUriLockForTest,
+  observeUndoActorIdentityAttemptForTest,
   readUndoActorIdentityFactsForTest,
 } from '@voucha/test-helpers/activitypub-undo-actor-identities'
 import { dispatchInboundActivity } from './dispatch-activity.mts'
@@ -44,14 +44,19 @@ describe('concurrent original ActivityPub identity ownership', () => {
               otherActor,
               { id, type, actor: otherActor.actor_uri, object: otherTarget.uri },
               {
-                query: observeUndoActorUriLockForTest(contender, type, id, attempted.resolve),
+                query: observeUndoActorIdentityAttemptForTest(
+                  contender,
+                  type,
+                  id,
+                  attempted.resolve,
+                ),
               },
             )
             contenderOutcome = Promise.allSettled([competing]).then(results => results[0]!)
             await Promise.race([
               attempted.promise,
               contenderOutcome.then(() => {
-                throw new Error('Contending original finished before its identity fence')
+                throw new Error('Contending original finished before its identity claim')
               }),
             ])
             await winner.commit()

@@ -4,15 +4,19 @@ import createError from 'http-errors'
 
 export type ApiKeyLifetimeDays = 30 | 90 | 365 | null
 
-export async function lockApiKeyOwner(query: TransactionQuery, userId: string): Promise<boolean> {
-  await query(sql`/* lockApiKeyOwner */ SELECT fn_lock_active_user_for_mutation(${userId})`)
-  const { rows } = await query(sql`/* lockApiKeyOwner */
+export async function getActiveApiKeyOwnerRole(
+  query: TransactionQuery,
+  userId: string,
+): Promise<boolean> {
+  const { rows } = await query(sql`/* getActiveApiKeyOwnerRole */
     SELECT EXISTS (
       SELECT 1 FROM user_roles
       JOIN user_role_types ON user_role_types.id = user_roles.role_type_id
       WHERE user_roles.user_id = ${userId}::uuid AND user_role_types.slug = 'administrator'
     ) AS is_administrator
+    FROM users WHERE id = ${userId}::uuid AND deleted_at IS NULL
   `)
+  if (!rows[0]) throw createError(404, 'User not found')
   return rows[0]!.is_administrator as boolean
 }
 
@@ -34,6 +38,7 @@ export function apiKeyIsValidSql() {
   return sql`
     api_keys.revoked_at IS NULL
     AND (api_keys.expires_at IS NULL OR api_keys.expires_at > NOW())
+    AND EXISTS (SELECT 1 FROM users WHERE id = api_keys.user_id AND deleted_at IS NULL)
     AND NOT EXISTS (
       SELECT 1 FROM user_roles
       JOIN user_role_types ON user_role_types.id = user_roles.role_type_id

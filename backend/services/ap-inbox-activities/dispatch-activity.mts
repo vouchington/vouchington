@@ -19,7 +19,8 @@ import {
   isCurrentRemoteFollowCycle,
   markRemoteFollowUndone,
   reserveRemoteFollowCycle,
-  setCurrentRemoteFollowCycle,
+  readRemoteFollowCyclePointer,
+  retireRemoteFollowCycle,
 } from './follow-cycles.mts'
 
 export type InboundPostCommitAction = {
@@ -93,14 +94,20 @@ export async function recoverDuplicateFollow(
       ? { type: 'send-follow-accept', remoteActor, activity, targetUserId }
       : undefined
   }
-  await upsertEntityRelation(
+  const previousCycleId = await readRemoteFollowCyclePointer(remoteActor.id, targetUserId, options)
+  if (previousCycleId) await retireRemoteFollowCycle(previousCycleId, options)
+  const installed = await upsertEntityRelation(
     null,
     getEntityRelationMetadataOrThrow(FOLLOW_RELATION),
     { id: remoteActor.id },
     [{ id: targetUserId }],
-    { origin: 'remote', ...options },
+    {
+      origin: 'remote',
+      ...options,
+      remoteFollowCycle: { expectedId: previousCycleId, nextId: cycle.id },
+    },
   )
-  await setCurrentRemoteFollowCycle(remoteActor.id, targetUserId, cycle.id, options)
+  if (!installed.length) await retireRemoteFollowCycle(cycle.id, options)
   return { type: 'send-follow-accept', remoteActor, activity, targetUserId }
 }
 

@@ -35,7 +35,6 @@
     "@services/posts": "workspace:^",
     "@services/remote-actors": "workspace:^",
     "@services/route-rate-limits": "workspace:^",
-    "@services/user-deletions": "workspace:^",
     "@services/users": "workspace:^",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",

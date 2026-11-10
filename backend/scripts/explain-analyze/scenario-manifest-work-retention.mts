@@ -1,4 +1,4 @@
-import { MEDIA_DELIVERY_LOCK_SCENARIOS } from './media-delivery-lock-scenario-ids.mts'
+import { HOT_PATH_LOCK_SCOPE_SCENARIOS } from './hot-path-lock-scope-ids.mts'
 import { MEMBERSHIP_COLLISION_REVIEW_SCENARIO_IDS } from './membership-collision-review-scenario-ids.mts'
 import { ELIGIBLE_LIST_SCENARIO_IDS } from './eligible-list-scenario-ids.mts'
 import { REFERRAL_VALIDATION_SCENARIO_IDS } from './referral-validation-scenario-ids.mts'
@@ -14,7 +14,7 @@ export const RETENTION_WORK_SCENARIOS = [
   'ai-usage-month-attached',
   'ai-usage-tier-existing',
   ...CATEGORY_PROJECTION_SCENARIO_IDS,
-  ...MEDIA_DELIVERY_LOCK_SCENARIOS,
+  ...HOT_PATH_LOCK_SCOPE_SCENARIOS,
   ...COMMUNITY_BAN_SCENARIO_IDS,
   ...ELIGIBLE_LIST_SCENARIO_IDS,
   ...COMMUNITY_AGENT_PROMPT_SCENARIO_IDS,

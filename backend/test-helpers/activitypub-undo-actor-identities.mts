@@ -89,15 +89,14 @@ export async function createUndoActorTargetForTest(
   return { id: post.id, uri: getUri(post.id) }
 }
 
-/** Observe the real contender's URI fence without replacing the query or its result. */
-export function observeUndoActorUriLockForTest(
+/** Observe the contender's Follow identity insert or existing Like identity claim. */
+export function observeUndoActorIdentityAttemptForTest(
   query: TransactionQuery,
   kind: UndoActorActivityKind,
   activityUri: string,
   attempted: () => void,
 ): TransactionQuery {
-  const marker =
-    kind === 'Follow' ? 'lockRemoteFollowActivityIdentity' : 'lockActivityPubLikeIdentity'
+  const marker = kind === 'Follow' ? 'reserveRemoteFollowCycle' : 'lockActivityPubLikeIdentity'
   return new Proxy(query, {
     apply(target, thisArgument, args: Parameters<TransactionQuery>) {
       const [statement, values] = args
