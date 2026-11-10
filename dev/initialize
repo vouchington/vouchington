@@ -844,7 +844,7 @@ export API_BASE_URL=http://localhost:$BACKEND_PORT
 # Lightpanda runs as a cloud SaaS (no local binary/port); LIGHTPANDA_TOKEN is left
 # unset here by default — set it yourself (e.g. via ~/voucha.env) to exercise real
 # crawls locally. crawl_browser jobs throw a clear error if run without a token.
-export LIGHTPANDA_CDP_URL=wss://uswest.cloud.lightpanda.io/ws
+export LIGHTPANDA_CDP_URL=wss://euwest.cloud.lightpanda.io/ws
 export IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT
 export NEXT_PORT=$NEXT_PORT
 export STORYBOOK_PORT=$STORYBOOK_PORT
