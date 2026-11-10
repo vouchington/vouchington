@@ -28,6 +28,14 @@ function insightsWindowStart(windowYears: number): Date {
   return start
 }
 
+/** A bound LIMIT is invisible to a generic plan, so the cap is a literal. */
+function topicInsightsRowCapLiteral(rowCap: number): string {
+  if (!Number.isSafeInteger(rowCap) || rowCap < 1) {
+    throw new Error('Topic insight row cap must be a positive integer')
+  }
+  return String(rowCap)
+}
+
 function buildTopicDataPointInsightsQuery(
   topicIds: string[],
   bounds: { minId: string; rowCap: number },
@@ -68,7 +76,9 @@ function buildTopicDataPointInsightsQuery(
 
   query.append(sql`
         ORDER BY pdpt.post_id DESC
-        LIMIT ${bounds.rowCap}
+        LIMIT `)
+  query.append(topicInsightsRowCapLiteral(bounds.rowCap))
+  query.append(sql`
       ) point ON TRUE
     ),
     dist AS (

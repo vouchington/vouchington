@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { captureScopedTestQueries } from '@voucha/test-helpers/query-capture'
 import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { getTopicDataPointInsights, getTopicDataPointInsightsBatch } from './insights.mts'
@@ -243,9 +244,17 @@ describe('getTopicDataPointInsights', () => {
       row_cap: 2,
     })
     try {
-      const insights = await getTopicDataPointInsights(cappedTopicId)
-      expect(insights.total_count).toBe(2)
-      expect(insights.approved_count).toBe(2)
+      let insights: Awaited<ReturnType<typeof getTopicDataPointInsights>> | undefined
+      const queries = await captureScopedTestQueries(async () => {
+        insights = await getTopicDataPointInsights(cappedTopicId)
+      })
+      const insightsQuery = queries.find(query =>
+        query.text.includes('/* getTopicDataPointInsights */'),
+      )
+      expect(insightsQuery?.text).toMatch(/ORDER BY pdpt\.post_id DESC\s+LIMIT 2\b/)
+      expect(insightsQuery?.values).not.toContain(2)
+      expect(insights?.total_count).toBe(2)
+      expect(insights?.approved_count).toBe(2)
     } finally {
       restore()
     }
