@@ -5,6 +5,7 @@ import { runMembershipOrphanedQueuedGrantScenarios } from './run-scenarios/membe
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
 import { runAiUsageLookupScenarios } from './run-scenarios/ai-usage-lookups.mts'
 import { runMembershipScenarios } from './run-scenarios/memberships.mts'
+import { runAiUsageTotalsScenarios } from './run-scenarios/ai-usage-totals.mts'
 import { continueAfterFailure as runStep } from './scenario-failures.mts'
 import { runEarlyScenarios } from './run-ordered-scenarios-early.mts'
 import { runLateScenarios } from './run-ordered-scenarios-late.mts'
@@ -30,4 +31,6 @@ export async function runScenariosAfterPartition(): Promise<void> {
   )
   // These fixtures change crawler-table statistics; keep them after every existing plan.
   await runStep(runAggregateExistenceScenarios.name, runAggregateExistenceScenarios)
+  // Keep the extra communities out of ordinary search and ranking plan captures.
+  await runStep(runAiUsageTotalsScenarios.name, runAiUsageTotalsScenarios)
 }

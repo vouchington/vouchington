@@ -47,7 +47,7 @@ export async function getCommunityAiCostTotals(
         SUM(output_tokens)::numeric AS total_output_tokens,
         COUNT(*) FILTER (WHERE pricing_status = 'unpriced')::numeric AS unpriced_request_count,
         COALESCE(SUM(cost_microunits), 0)::numeric AS total_cost_microunits
-      -- no-mistakes-disable-next-line postgres-required-predicates: FIX: tracked in vouchington/vouchington#5309; ranking all live communities requires the retained raw tail
+      -- no-mistakes-disable-next-line postgres-required-predicates: the staff ranking sums the retention-bounded raw tail; LIMIT applies after that aggregate
       FROM ai_usage_records
       WHERE community_id IS NOT NULL
       GROUP BY community_id
