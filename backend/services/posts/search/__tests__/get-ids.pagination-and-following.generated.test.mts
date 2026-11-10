@@ -6,6 +6,7 @@ import {
   createTestPost,
   createTestTopic,
   createTestUser,
+  followUser,
   insertTestPost,
   insertTestReview,
 } from '@voucha/test-helpers'
@@ -232,5 +233,40 @@ describe('get-ids.pagination-and-following.generated', () => {
     expect(olderIndex).toBeGreaterThanOrEqual(0)
     expect(newerIndex).toBeGreaterThanOrEqual(0)
     expect(newerIndex).toBeLessThan(olderIndex)
+  })
+
+  it('getPostIds pages followed authors before others inside a topic', async () => {
+    const viewer = await createTestUser()
+    const followed = await createTestUser()
+    const other = await createTestUser()
+    await followUser(viewer!, followed!)
+    const topic = await createTestTopic()
+    const now = Date.now()
+    const ids: string[] = []
+    for (const [index, author] of [other, followed, followed].entries()) {
+      ids.push(
+        await insertTestReview({
+          userId: author!.id,
+          topicRatings: [{ topicId: topic.id, rating: 5 }],
+          title: `Topic phase ${randomUUID()}`,
+          markdown: 'topic phase review',
+          createdAt: new Date(now - index * 1_000),
+        }),
+      )
+    }
+    const options = {
+      universal_topic_ids: [topic.id],
+      sort: 'following_new' as const,
+      limit: 1,
+    }
+    const seen: string[] = []
+    let after: string | undefined
+    for (let page = 0; page < 5; page++) {
+      const result = await getPostIds(viewer!, { ...options, after })
+      seen.push(...result.results.map(row => row.id))
+      if (!result.page_info.has_next_page) break
+      after = result.page_info.end_cursor ?? undefined
+    }
+    expect(seen).toEqual([ids[1], ids[2], ids[0]])
   })
 })

@@ -84,7 +84,8 @@ export function buildPostSearchQuery(
     limit,
     omitLimit,
     omitOrderBy,
-    sort,
+    // A phase walk has a constant rank, so its order is the id key alone.
+    sort: options.following_phase === undefined ? sort : 'new',
   })
   if (options.community_id !== undefined) {
     appendCommunityCandidatePage(query, {
