@@ -113,6 +113,10 @@ GET /api/v1/communities/:idOrSlug/news?limit=25&after=<cursor>
   [EXPLAIN gates](../../development/postgresql/explain-analyze/README.md) bound target probes and
   reject delivery joins that repeatedly rescan the eligible-target spool.
 - RSS feed pagination uses the `LIMIT + 1` pattern instead of a full-window row count so `has_next_page` does not require counting the full candidate set.
+- Descendant-topic RSS feed search deduplicates matching topic keys before probing live feeds by
+  topic. The keyed lookup avoids prepared plans that scan enabled feeds to test a descendant
+  set. It adds a small lookup cost when PostgreSQL would already choose the topic index; searches
+  requiring every topic retain separate membership checks.
 
 ## Story Clustering
 

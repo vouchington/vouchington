@@ -73,6 +73,11 @@ Hot and trending post search use a fixed-epoch rank so unchanged scores keep the
 requests. Future timestamps participate in that rank. See the
 [pagination contract](pagination.md) for near ties and cohort boundaries.
 
+The scalar rank boundary is retained alongside the exact tuple cursor because tuple-only
+continuations can make the planner bitmap-read and sort the tail before applying the page cap.
+The redundant boundary preserves ties while keeping the measured walk on the ordered index
+([comparison](https://github.com/vouchington/vouchington/pull/5372)).
+
 ## Time bound
 
 Post search is always bounded by time, so a request reads a recent window of the newest-first id index rather than the whole table, and callers opt into longer history explicitly. The personal Feed is a separate default. Exact lookups and counts (RSS XML, pickers, facets, URL-id lookups) must not lose rows, so they opt out of the default instead of inheriting it. A drafts listing keeps the full history only when the author is viewing their own posts; the drafts flag does not widen any other search, including anonymous and cached ones.
@@ -119,8 +124,8 @@ surface:
 - **Topics list** (`parse-topics.mts`) → direct linked topic match; standalone aliases produce an empty result because they do not identify a topic.
 - **RSS feeds list** (`parse-rss-feeds.mts`) → `topic_ids` — feeds where `rss_feeds.topic_id` matches the resolved ID.
 
-RSS descendant searches resolve the topic set before matching feeds so generic prepared plans can
-use the feed's topic index. All-of searches test each root independently; a shared descendant can
+RSS descendant searches probe live feeds by matching topic keys so generic prepared plans cannot
+turn topic membership into a scan of enabled feeds. All-of searches test each root independently; a shared descendant can
 satisfy several roots without counting duplicate relation rows. The indexed form is retained for
 its measured plan stability ([comparison](https://github.com/vouchington/vouchington/pull/5372)).
 

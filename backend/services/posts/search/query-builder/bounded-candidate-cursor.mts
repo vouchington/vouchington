@@ -28,7 +28,11 @@ export function appendCandidateCursor(
     options.id_lt
   ) {
     query
-      .append(sql` AND (`)
+      // The implied scalar bound helps the planner choose the ordered rank index before LIMIT;
+      // the tuple still preserves the exact ID boundary for equal ranks.
+      .append(sql` AND `)
+      .append(buildStablePostHotRankExpression())
+      .append(sql` <= ${options.hot_score_lt} AND (`)
       .append(buildStablePostHotRankExpression())
       .append(sql`, posts.id) < (${options.hot_score_lt}, ${options.id_lt})`)
   }
