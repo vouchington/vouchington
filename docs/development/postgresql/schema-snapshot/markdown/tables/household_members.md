@@ -6,29 +6,23 @@ Join table linking individuals to households with a relationship descriptor.
 
 Not partitioned — growth: unbounded.
 
-| Column            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                               |
-| ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                       |
-| `household_id`    | `uuid`                     | no       |                              |          |           |           | The household this membership belongs to.                                                                                                                             |
-| `individual_id`   | `uuid`                     | no       |                              |          |           |           | The individual who is a member of the household.                                                                                                                      |
-| `member_slot`     | `smallint`                 | no       |                              |          |           |           | Bounded per-household slot (1 to the max_members_per_household hard maximum); the unique key caps members and deleting the row frees the slot.                        |
-| `individual_slot` | `smallint`                 | no       |                              |          |           |           | Bounded per-individual slot (1 to the max_households_per_individual hard maximum); the unique key caps households per individual and deleting the row frees the slot. |
-| `relationship`    | `text`                     | yes      |                              |          |           |           | Relationship to the household owner (e.g. husband, wife, child).                                                                                                      |
-| `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                       |
-| `updated_at`      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                       |
+| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                          |
+| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------- |
+| `id`            | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                  |
+| `household_id`  | `uuid`                     | no       |                              |          |           |           | The household this membership belongs to.                        |
+| `individual_id` | `uuid`                     | no       |                              |          |           |           | The individual who is a member of the household.                 |
+| `relationship`  | `text`                     | yes      |                              |          |           |           | Relationship to the household owner (e.g. husband, wife, child). |
+| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                  |
+| `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                  |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
 - `uniq_household_members__household_id_individual_id`: `UNIQUE (household_id, individual_id)`
-- `uniq_household_members__household_id_member_slot`: `UNIQUE (household_id, member_slot)`
-- `uniq_household_members__individual_id_individual_slot`: `UNIQUE (individual_id, individual_slot)`
 
 **Check constraints:**
 
-- `household_members_individual_slot_check`: `CHECK (((individual_slot >= 1) AND (individual_slot <= 5)))`
-- `household_members_member_slot_check`: `CHECK (((member_slot >= 1) AND (member_slot <= 25)))`
 - `household_members_relationship_check`: `CHECK (((relationship IS NULL) OR (char_length(relationship) <= 64)))`
 
 **Foreign keys:**
@@ -42,8 +36,6 @@ Not partitioned — growth: unbounded.
 - `idx_household_members__household_updated_id`: `CREATE INDEX idx_household_members__household_updated_id ON public.household_members USING btree (household_id, updated_at DESC, id DESC)`
 - `idx_household_members__individual_household`: `CREATE INDEX idx_household_members__individual_household ON public.household_members USING btree (individual_id, household_id)`
 - `uniq_household_members__household_id_individual_id`: `CREATE UNIQUE INDEX uniq_household_members__household_id_individual_id ON public.household_members USING btree (household_id, individual_id)`
-- `uniq_household_members__household_id_member_slot`: `CREATE UNIQUE INDEX uniq_household_members__household_id_member_slot ON public.household_members USING btree (household_id, member_slot)`
-- `uniq_household_members__individual_id_individual_slot`: `CREATE UNIQUE INDEX uniq_household_members__individual_id_individual_slot ON public.household_members USING btree (individual_id, individual_slot)`
 
 **Triggers:**
 

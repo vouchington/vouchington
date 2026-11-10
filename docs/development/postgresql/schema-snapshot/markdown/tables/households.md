@@ -6,23 +6,20 @@ A household owned by a user, grouping individuals for shared finance tracking.
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                           |
-| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`            | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                   |
-| `owner_user_id` | `uuid`                     | no       |                              |          |           |           | The user who owns and manages this household.                                                                                                     |
-| `owner_slot`    | `smallint`                 | no       |                              |          |           |           | Bounded per-owner slot (1 to the max_households_per_user hard maximum); the unique key caps owned households and deleting the row frees the slot. |
-| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                   |
-| `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                   |
+| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                       |
+| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------- |
+| `id`            | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                               |
+| `owner_user_id` | `uuid`                     | no       |                              |          |           |           | The user who owns and manages this household. |
+| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                               |
+| `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-
-- `uniq_households__owner_user_id_owner_slot`: `UNIQUE (owner_user_id, owner_slot)`
+_none_
 
 **Check constraints:**
-
-- `households_owner_slot_check`: `CHECK (((owner_slot >= 1) AND (owner_slot <= 2)))`
+_none_
 
 **Foreign keys:**
 
@@ -31,7 +28,7 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `households_pkey`: `CREATE UNIQUE INDEX households_pkey ON public.households USING btree (id)`
-- `uniq_households__owner_user_id_owner_slot`: `CREATE UNIQUE INDEX uniq_households__owner_user_id_owner_slot ON public.households USING btree (owner_user_id, owner_slot)`
+- `idx_households__owner_user_id`: `CREATE INDEX idx_households__owner_user_id ON public.households USING btree (owner_user_id)`
 
 **Triggers:**
 

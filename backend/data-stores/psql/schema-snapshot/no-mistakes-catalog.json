@@ -1519,7 +1519,7 @@
       "returnsSet": false
     },
     "fn_create_user_individual_household()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id, owner_slot)\n  VALUES (NEW.id, 1)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id, member_slot, individual_slot)\n  VALUES (new_household_id, new_individual_id, 1, 1);\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  new_individual_id UUID;\n  new_household_id UUID;\nBEGIN\n  -- Create individual\n  INSERT INTO individuals DEFAULT VALUES\n  RETURNING id INTO new_individual_id;\n\n  -- Link individual to user\n  UPDATE users\n  SET individual_id = new_individual_id\n  WHERE id = NEW.id;\n\n  -- Create household owned by user\n  INSERT INTO households (owner_user_id)\n  VALUES (NEW.id)\n  RETURNING id INTO new_household_id;\n\n  -- Create membership linking individual to household\n  INSERT INTO household_members (household_id, individual_id)\n  VALUES (new_household_id, new_individual_id);\n\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)": {
@@ -58003,14 +58003,6 @@
     },
     "household_members": {
       "checkConstraints": {
-        "household_members_individual_slot_check": {
-          "definition": "CHECK (((individual_slot >= 1) AND (individual_slot <= 5)))",
-          "validated": true
-        },
-        "household_members_member_slot_check": {
-          "definition": "CHECK (((member_slot >= 1) AND (member_slot <= 25)))",
-          "validated": true
-        },
         "household_members_relationship_check": {
           "definition": "CHECK (((relationship IS NULL) OR (char_length(relationship) <= 64)))",
           "validated": true
@@ -58025,7 +58017,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 5
         },
         "household_id": {
           "comment": "The household this membership belongs to.",
@@ -58057,26 +58049,6 @@
           "nullable": false,
           "ordinalPosition": 3
         },
-        "individual_slot": {
-          "comment": "Bounded per-individual slot (1 to the max_households_per_individual hard maximum); the unique key caps households per individual and deleting the row frees the slot.",
-          "dataType": "smallint",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5
-        },
-        "member_slot": {
-          "comment": "Bounded per-household slot (1 to the max_members_per_household hard maximum); the unique key caps members and deleting the row frees the slot.",
-          "dataType": "smallint",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        },
         "relationship": {
           "comment": "Relationship to the household owner (e.g. husband, wife, child).",
           "dataType": "text",
@@ -58085,7 +58057,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 4
         },
         "updated_at": {
           "comment": null,
@@ -58095,7 +58067,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 6
         }
       },
       "comment": "Join table linking individuals to households with a relationship descriptor.",
@@ -58245,70 +58217,6 @@
           "ready": true,
           "unique": true,
           "valid": true
-        },
-        "uniq_household_members__household_id_member_slot": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uniq_household_members__household_id_member_slot ON public.household_members USING btree (household_id, member_slot)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "household_id",
-              "descending": false,
-              "expression": "household_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "member_slot",
-              "descending": false,
-              "expression": "member_slot",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.int2_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uniq_household_members__individual_id_individual_slot": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uniq_household_members__individual_id_individual_slot ON public.household_members USING btree (individual_id, individual_slot)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "individual_id",
-              "descending": false,
-              "expression": "individual_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "individual_slot",
-              "descending": false,
-              "expression": "individual_slot",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.int2_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
         }
       },
       "physicalPartition": null,
@@ -58324,22 +58232,11 @@
       "uniqueConstraints": {
         "uniq_household_members__household_id_individual_id": {
           "columns": ["household_id", "individual_id"]
-        },
-        "uniq_household_members__household_id_member_slot": {
-          "columns": ["household_id", "member_slot"]
-        },
-        "uniq_household_members__individual_id_individual_slot": {
-          "columns": ["individual_id", "individual_slot"]
         }
       }
     },
     "households": {
-      "checkConstraints": {
-        "households_owner_slot_check": {
-          "definition": "CHECK (((owner_slot >= 1) AND (owner_slot <= 2)))",
-          "validated": true
-        }
-      },
+      "checkConstraints": {},
       "columns": {
         "created_at": {
           "comment": null,
@@ -58349,7 +58246,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 3
         },
         "id": {
           "comment": null,
@@ -58360,16 +58257,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1
-        },
-        "owner_slot": {
-          "comment": "Bounded per-owner slot (1 to the max_households_per_user hard maximum); the unique key caps owned households and deleting the row frees the slot.",
-          "dataType": "smallint",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
         },
         "owner_user_id": {
           "comment": "The user who owns and manages this household.",
@@ -58389,7 +58276,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 4
         }
       },
       "comment": "A household owned by a user, grouping individuals for shared finance tracking.",
@@ -58427,10 +58314,10 @@
           "unique": true,
           "valid": true
         },
-        "uniq_households__owner_user_id_owner_slot": {
+        "idx_households__owner_user_id": {
           "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uniq_households__owner_user_id_owner_slot ON public.households USING btree (owner_user_id, owner_slot)",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_households__owner_user_id ON public.households USING btree (owner_user_id)",
           "immediate": true,
           "keys": [
             {
@@ -58441,22 +58328,13 @@
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "owner_slot",
-              "descending": false,
-              "expression": "owner_slot",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.int2_ops",
-              "orderingSupported": true
             }
           ],
           "live": true,
           "predicate": null,
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         }
       },
@@ -58470,11 +58348,7 @@
           "definition": "CREATE TRIGGER trigger_households_fn_update_updated_at BEFORE UPDATE ON public.households FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
-      "uniqueConstraints": {
-        "uniq_households__owner_user_id_owner_slot": {
-          "columns": ["owner_user_id", "owner_slot"]
-        }
-      }
+      "uniqueConstraints": {}
     },
     "identity_verification_attempts": {
       "checkConstraints": {
