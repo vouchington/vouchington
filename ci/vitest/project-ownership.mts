@@ -68,7 +68,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     sharding: {
       mode: 'file-count',
       reportPrefix: 'backend-shard',
-      filesPerShard: 400,
+      filesPerShard: 350,
     },
     invocation: 'literal',
     projects: noCredential([
