@@ -9,11 +9,11 @@ export async function upsertUserAgentString(
 ): Promise<string | null> {
   if (userAgent === null || userAgent === undefined) return null
   const normalized = userAgent.trim().slice(0, 1024).trim()
-  // A session or ballot insert must hold the row against orphan cleanup until its FK is stored.
   // The read uses the caller's transaction so it sees rows that transaction already inserted.
+  // The session or ballot insert key-share-locks the row through its foreign key.
   const existing = await write(
     sql`/* upsertUserAgentString */
-      SELECT id FROM user_agent_strings WHERE user_agent = ${normalized} FOR KEY SHARE`,
+      SELECT id FROM user_agent_strings WHERE user_agent = ${normalized}`,
     options,
   )
   const existingId = (existing.rows[0] as { id: string } | undefined)?.id
@@ -33,7 +33,7 @@ export async function upsertUserAgentString(
   // the insert and read into one statement: its snapshot would miss that concurrently committed row.
   const { rows } = await write(
     sql`/* upsertUserAgentString */
-      SELECT id FROM user_agent_strings WHERE user_agent = ${normalized} FOR KEY SHARE`,
+      SELECT id FROM user_agent_strings WHERE user_agent = ${normalized}`,
     options,
   )
   return (rows[0] as { id: string } | undefined)?.id ?? null

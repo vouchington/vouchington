@@ -52,12 +52,11 @@ async function writeAuthenticatedSession(
   const userAgent = normalizeText(options.userAgent, 1024)
   const ipAddress = normalizeIpAddress(options.ipAddress)
   const refreshMetadata = options.refreshMetadata !== false
-  // Re-lock a request memo inside this transaction; orphan cleanup may have deleted its row.
+  // A memoized id is only a hint. The session insert's foreign key keeps the agent row.
   const memoizedRow = memoizedUserAgentId
-    ? await query<{ id: string }>(sql`/* lockMemoizedUserAgentString */
+    ? await query<{ id: string }>(sql`/* readMemoizedUserAgentString */
         SELECT id FROM user_agent_strings
-        WHERE id = ${memoizedUserAgentId} AND user_agent = ${userAgent}
-        FOR KEY SHARE`)
+        WHERE id = ${memoizedUserAgentId} AND user_agent = ${userAgent}`)
     : null
   const userAgentId =
     memoizedRow?.rows[0]?.id ?? (await upsertUserAgentString(userAgent, { query }))
