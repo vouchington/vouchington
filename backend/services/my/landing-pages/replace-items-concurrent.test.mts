@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { insertTestReview, insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import {
   runTestLandingPageReplacementRace,
   getTestLandingPageGroupMemberCount,
+  rejectTestLandingPageTopicGroupReplacement,
   retireTestTopicForLandingPage,
 } from '@voucha/test-helpers/landing-page-replacement-race'
 import { buildLandingPageInsertRows } from './replace-item-rows.mts'
@@ -145,15 +145,9 @@ describe('landing page atomic item replacement', () => {
       slug: `landing-source-${crypto.randomUUID()}`,
     })
     await retireTestTopicForLandingPage(sourceId)
-    const rows = buildLandingPageInsertRows(
-      [{ type: 'topic_group', topic_id: sourceId, entries: [] }],
-      new Map(),
-    )
-    await using query = await beginTransaction()
-    await expect(
-      replaceLandingPageItemRows(query, page.id, rows.itemRows, rows.groupMemberRows),
-    ).rejects.toMatchObject({ status: 409 })
-    await query.rollback()
+    expect(await rejectTestLandingPageTopicGroupReplacement(page.id, sourceId)).toMatchObject({
+      status: 409,
+    })
     expect((await getMyLandingPage(user.id, page.id)).items).toEqual([])
   })
 })

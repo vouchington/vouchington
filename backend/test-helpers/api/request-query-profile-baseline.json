@@ -432,7 +432,8 @@
       "POST /api/v1/communities/:idOrSlug/posts",
       "POST /api/v1/mcp",
       "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-items/:id/discussions"
+      "POST /api/v1/rss-feed-items/:id/discussions",
+      "POST /api/v1/stories/:storyId/discussions"
     ]
   },
   {

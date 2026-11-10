@@ -1,4 +1,6 @@
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import { buildLandingPageInsertRows } from '../services/my/landing-pages/replace-item-rows.mts'
+import { replaceLandingPageItemRows } from '../services/my/landing-pages/replace-item-writes.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 
@@ -54,4 +56,24 @@ export async function retireTestTopicForLandingPage(topicId: string): Promise<vo
   await write('/* retireLandingTestTopic */ UPDATE topics SET deleted_at = now() WHERE id = $1', [
     topicId,
   ])
+}
+
+/** Replace a page's items with one topic group in a rolled-back transaction; returns the rejection. */
+export async function rejectTestLandingPageTopicGroupReplacement(
+  pageId: string,
+  topicId: string,
+): Promise<unknown> {
+  const rows = buildLandingPageInsertRows(
+    [{ type: 'topic_group', topic_id: topicId, entries: [] }],
+    new Map(),
+  )
+  await using query = await beginTransaction()
+  try {
+    await replaceLandingPageItemRows(query, pageId, rows.itemRows, rows.groupMemberRows)
+    return undefined
+  } catch (err) {
+    return err
+  } finally {
+    await query.rollback()
+  }
 }
