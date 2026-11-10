@@ -17,6 +17,13 @@ import {
 import { revokeMembershipGrant } from './revoke.mts'
 
 describe('repairOrphanedQueuedGrantsBatch', () => {
+  it('rejects a batch size that is not a positive integer', async () => {
+    await expect(repairOrphanedQueuedGrantsBatch(null, 0)).rejects.toThrow(
+      'Membership orphan repair batch size must be a positive integer',
+    )
+    await expect(repairOrphanedQueuedGrantsBatch(null, 1.5)).rejects.toThrow(RangeError)
+  })
+
   it('activates a queued grant that committed after its covering grant was revoked', async () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
