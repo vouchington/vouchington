@@ -18,16 +18,13 @@ type CollaborativeTopicLimits = {
 
 type TopicFollowerRow = { topic_id: string }
 
-// Lazy-cached mapper context; resolved once per process lifetime. The collaborative voter is
-// distinct from the RSS category mapper so unlinking an alias can retract only alias-derived
-// support while retaining independently-derived collaborative support on the shared relation.
-let mapperContext: { mapper: BasicUser; relation: EntityRelationMetadata } | null = null
-
+// The collaborative voter is distinct from the RSS category mapper so unlinking an alias can
+// retract only alias-derived support while retaining independently-derived collaborative support
+// on the shared relation. It is an authorization actor, so its persisted roles are read per call.
 async function getMapperContext(): Promise<{
   mapper: BasicUser
   relation: EntityRelationMetadata
 } | null> {
-  if (mapperContext) return mapperContext
   const mapper = await getSystemUserForAuthorization(RSS_FEED_COLLABORATIVE_CATEGORIZER_USERNAME)
   if (!mapper) return null
   const relation = getEntityRelationMetadataOrThrow({
@@ -35,8 +32,7 @@ async function getMapperContext(): Promise<{
     objectType: 'topic',
     predicate: 'category',
   })
-  mapperContext = { mapper, relation }
-  return mapperContext
+  return { mapper, relation }
 }
 
 /**

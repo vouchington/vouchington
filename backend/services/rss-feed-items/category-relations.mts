@@ -12,19 +12,13 @@ import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from '@services
 import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
 
-// Lazy-cached mapper context; resolved once per process lifetime.
-let mapperContext: {
-  mapper: BasicUser
-  topicRelation: EntityRelationMetadata
-  hashtagRelation: EntityRelationMetadata
-} | null = null
-
+// The mapper is an authorization actor, so its persisted roles are read on every call; a
+// process-lifetime copy would keep acting with roles an admin has since changed.
 async function getMapperContext(): Promise<{
   mapper: BasicUser
   topicRelation: EntityRelationMetadata
   hashtagRelation: EntityRelationMetadata
 } | null> {
-  if (mapperContext) return mapperContext
   const mapper = await getSystemUserForAuthorization(RSS_FEED_CATEGORIZER_USERNAME)
   if (!mapper) return null
   const topicRelation = getEntityRelationMetadataOrThrow({
@@ -37,8 +31,7 @@ async function getMapperContext(): Promise<{
     objectType: 'topic_alias',
     predicate: 'category',
   })
-  mapperContext = { mapper, topicRelation, hashtagRelation }
-  return mapperContext
+  return { mapper, topicRelation, hashtagRelation }
 }
 
 /**
