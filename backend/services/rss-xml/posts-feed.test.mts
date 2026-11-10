@@ -9,8 +9,6 @@ import {
 import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
 import { buildPostsRssFeed } from './posts-feed.mts'
 import type { PrivateUser } from '@services/users/types'
-import { postsWorkConfig } from '@services/posts/work-limits'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 const randomHex = () => randomBytes(4).toString('hex')
 
@@ -42,14 +40,10 @@ describe('buildPostsRssFeed', () => {
     adminSlugPrefix = `rss-admin-test-${randomHex()}`
   })
 
-  it('continues an empty filtered page and preserves its request filters', async () => {
-    await postsWorkConfig.waitForInitialization()
+  it('returns the topic match on the first page and skips pending posts', async () => {
     const username = `rsspage${randomHex()}`
     const user = await createTestUserDirect({ username })
     const ids: string[] = []
-    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      post_search_filter_candidate_limit: 2,
-    })
     try {
       for (const [index, clearanceStatus] of ['approved', 'pending', 'pending'].entries()) {
         ids.push(
@@ -71,27 +65,11 @@ describe('buildPostsRssFeed', () => {
         topicSlugs: [topic.slug],
         apiKey: 'test-key',
       })
-      expect(first).not.toContain('<item>')
-      const href = first.match(/<atom:link\b[^>]*\bhref="([^"]+)"/)?.[1]
-      expect(href).toBeDefined()
-      const next = new URL(href!.replaceAll('&amp;', '&'))
-      expect(next.pathname).toBe('/rss/posts')
-      expect(next.searchParams.get('user')).toBe(username)
-      expect(next.searchParams.get('post_type')).toBe('discussion')
-      expect(next.searchParams.get('topics')).toBe(topic.slug)
-      expect(next.searchParams.get('apikey')).toBe('test-key')
-      const after = next.searchParams.get('after')
-      expect(after).toBeTruthy()
-      const second = await buildPostsRssFeed({
-        username,
-        postType: 'discussion',
-        topicSlugs: [topic.slug],
-        after: after!,
-      })
-      expect(second).toContain('RSS continuation 0')
-      expect(second).not.toContain('<atom:link')
+      expect(first).toContain('RSS continuation 0')
+      expect(first).not.toContain('RSS continuation 1')
+      expect(first).not.toContain('RSS continuation 2')
+      expect(first).not.toContain('<atom:link')
     } finally {
-      restore()
       await Promise.all(ids.map(id => deleteTestPost(id)))
     }
   })

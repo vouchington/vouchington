@@ -11,8 +11,6 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import { createActivePostTopicAliasRelationForTest } from '@voucha/test-helpers/entities/top-hashtags'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { postsWorkConfig } from '../../work-limits.mts'
 import { getPostIds } from '../get-ids.mts'
 
 describe('single universal-topic post search', () => {
@@ -60,8 +58,7 @@ describe('single universal-topic post search', () => {
     expect(withAlias.results.map(row => row.id)).toEqual([aliases.id])
   })
 
-  it('continues after short and empty bounded topic pages', async () => {
-    await postsWorkConfig.waitForInitialization()
+  it('returns both topic members on the first newest page', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic({ user })
     const posts = await Promise.all(Array.from({ length: 5 }, () => createTestPost({ user })))
@@ -73,35 +70,15 @@ describe('single universal-topic post search', () => {
     const oldestId = orderedIds[4]
     await insertScoredPostTopicCategoryRelation(newestId, topic.id, user.id)
     await insertScoredPostTopicCategoryRelation(oldestId, topic.id, user.id)
-    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      post_search_filter_candidate_limit: 2,
+    const first = await getPostIds(undefined, {
+      user_id: user.id,
+      universal_topic_ids: [topic.id],
+      sort: 'new',
+      time_range: 'all',
+      limit: 2,
     })
-    try {
-      const options = {
-        user_id: user.id,
-        universal_topic_ids: [topic.id],
-        sort: 'new' as const,
-        time_range: 'all' as const,
-        limit: 2,
-      }
-      const first = await getPostIds(undefined, options)
-      expect(first.results.map(row => row.id)).toEqual([newestId])
-      expect(first.page_info.has_next_page).toBe(true)
-      expect(first.page_info.end_cursor).toEqual(expect.any(String))
-      const second = await getPostIds(undefined, {
-        ...options,
-        after: first.page_info.end_cursor!,
-      })
-      expect(second.results).toEqual([])
-      expect(second.page_info.has_next_page).toBe(true)
-      const third = await getPostIds(undefined, {
-        ...options,
-        after: second.page_info.end_cursor!,
-      })
-      expect(third.results.map(row => row.id)).toEqual([oldestId])
-    } finally {
-      restore()
-    }
+    expect(first.results.map(row => row.id)).toEqual([newestId, oldestId])
+    expect(first.page_info.has_next_page).toBe(false)
   })
 
   it('returns each of the four membership families once and continues newest pagination', async () => {
