@@ -106,9 +106,15 @@ describe('vote-weight dispatcher admission', () => {
   it.each(dispatchers)(
     '$name throttles operator roots but admits continuations',
     async dispatcher => {
-      const deduplicationId = `backfill:${dispatcher.backfillId}:${randomUUID()}`
-      const root = await readEnqueuedJob(voteAggregation, await dispatcher.root(deduplicationId))
+      const release = holdBackgroundDomain('vote-aggregation')
+      const admittedJobs: Array<{ remove: () => Promise<unknown> }> = []
       try {
+        const deduplicationId = `backfill:${dispatcher.backfillId}:${randomUUID()}`
+        const root = await readEnqueuedJob(
+          voteAggregation,
+          await withoutFlush(() => dispatcher.root(deduplicationId)),
+        )
+        admittedJobs.push(root)
         expect(root.data).toMatchObject(dispatcher.rootData)
         expect(root.opts.deduplication).toEqual({
           id: deduplicationId,
@@ -116,17 +122,23 @@ describe('vote-weight dispatcher admission', () => {
           ttl: 3_600_000,
         })
 
-        expect(isDeduplicatedEnqueue(await dispatcher.root(deduplicationId))).toBe(true)
+        expect(
+          isDeduplicatedEnqueue(await withoutFlush(() => dispatcher.root(deduplicationId))),
+        ).toBe(true)
 
-        const continuation = await readEnqueuedJob(voteAggregation, await dispatcher.continuation())
-        try {
-          expect(continuation.data).toMatchObject(dispatcher.continuationData)
-          expect(continuation.opts.deduplication).toBeUndefined()
-        } finally {
-          await continuation.remove()
-        }
+        const continuation = await readEnqueuedJob(
+          voteAggregation,
+          await withoutFlush(dispatcher.continuation),
+        )
+        admittedJobs.push(continuation)
+        expect(continuation.data).toMatchObject(dispatcher.continuationData)
+        expect(continuation.opts.deduplication).toBeUndefined()
       } finally {
-        await root.remove()
+        try {
+          await Promise.all(admittedJobs.map(job => job.remove()))
+        } finally {
+          await release()
+        }
       }
     },
   )
