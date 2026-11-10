@@ -21,12 +21,8 @@ CREATE TABLE image_surface_placements (
   topic_id uuid REFERENCES topics(id) ON DELETE RESTRICT,
   community_id uuid REFERENCES communities(id) ON DELETE RESTRICT,
   user_profile_link_id uuid REFERENCES user_profile_links(id) ON DELETE RESTRICT,
-  has_live_owner boolean GENERATED ALWAYS AS (
-    user_id IS NOT NULL OR topic_id IS NOT NULL OR community_id IS NOT NULL OR user_profile_link_id IS NOT NULL
-  ) STORED,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (placement_id, surface_kind),
-  UNIQUE (placement_id, has_live_owner),
   CHECK (
     (surface_kind = 'user-profile-image'
       AND topic_id IS NULL AND community_id IS NULL AND user_profile_link_id IS NULL)
@@ -295,11 +291,6 @@ CREATE OR REPLACE FUNCTION fn_project_handoff_deleted_user_image_surfaces()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);
-  DELETE FROM image_placement_capacity_reservations reservation
-  USING image_surface_placements surface
-  WHERE surface.placement_id = reservation.surface_placement_id
-    AND surface.surface_kind = 'user-profile-image' AND surface.user_id = OLD.id
-    AND surface.image_id = OLD.profile_image_id;
   UPDATE image_surface_placements
   SET user_id = NULL
   WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;
@@ -380,11 +371,6 @@ CREATE OR REPLACE FUNCTION fn_project_retire_deleted_profile_link_image_surfaces
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM fn_sync_image_surface_placement('user-profile-link-image', NULL, NULL, NULL, NULL, OLD.id);
-  DELETE FROM image_placement_capacity_reservations reservation
-  USING image_surface_placements surface
-  WHERE surface.placement_id = reservation.surface_placement_id
-    AND surface.surface_kind = 'user-profile-link-image' AND surface.user_profile_link_id = OLD.id
-    AND surface.image_id = OLD.image_id;
   UPDATE image_surface_placements SET user_profile_link_id = NULL
   WHERE surface_kind = 'user-profile-link-image' AND user_profile_link_id = OLD.id;
   RETURN OLD;
@@ -406,4 +392,3 @@ COMMENT ON COLUMN image_surface_placements.community_id IS 'Community owner for 
 COMMENT ON COLUMN image_surface_placements.user_profile_link_id IS 'Concrete live profile-link owner; cleared only after terminal owner-removal retirement on deletion.';
 COMMENT ON COLUMN images.id IS 'Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.';
 
-COMMENT ON COLUMN image_surface_placements.has_live_owner IS 'Generated availability of its concrete owner relationship; an active capacity reservation requires this exact surface to retain an owner at commit.';

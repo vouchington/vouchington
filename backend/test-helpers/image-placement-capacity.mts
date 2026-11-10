@@ -1,20 +1,17 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { mediaDeliverySafetyWorkMaxValues } from '../services/media-delivery-safety/work-limits.mts'
 
-/** Move one owned concrete slot without changing its placement or activation. */
-export async function moveTestImageCapacitySlot(
-  placementId: string,
-  slotNumber: number,
-): Promise<void> {
-  const result = await write(sql`/* moveTestImageCapacitySlot */
-    UPDATE image_placement_capacity_reservations SET slot_number = ${slotNumber}
-    WHERE placement_id = ${placementId}`)
-  if (result.rowCount !== 1) throw new Error('Missing owned capacity reservation')
-}
-
-export async function readTestImageCapacitySlots(imageId: string): Promise<number[]> {
-  const { rows } = await read<{ slot_number: number }>(sql`/* readTestImageCapacitySlots */
-    SELECT slot_number FROM image_placement_capacity_reservations WHERE image_id = ${imageId}
-    ORDER BY slot_number`)
-  return rows.map(row => row.slot_number)
+/** Active placements for one image, capped at the hard maximum plus one. */
+export async function readTestActiveImagePlacementCount(imageId: string): Promise<number> {
+  const cap = mediaDeliverySafetyWorkMaxValues.max_placements_per_image
+  const { rows } = await read<{ placement_id: string }>(sql`/* readTestActiveImagePlacementCount */
+    SELECT binding.placement_id
+    FROM retained_image_placement_bindings binding
+    JOIN media_placements placement ON placement.id = binding.placement_id
+    WHERE binding.image_id = ${imageId}
+      AND placement.retired_at IS NULL
+    ORDER BY binding.placement_id
+    LIMIT ${cap + 1}`)
+  return rows.length
 }

@@ -2,13 +2,11 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTestUser, insertTestImage, insertTestPost } from '@voucha/test-helpers'
 import {
   commitTestImageCapacityBatch,
-  conflictTestImageCapacityBatch,
   readTestCapacityBatch,
   failTestImageCapacitySettlement,
   replayTestImageCapacityBatch,
   refuseTestImageCapacityReplacement,
 } from '@voucha/test-helpers/image-capacity-batch'
-import { moveTestImageCapacitySlot } from '@voucha/test-helpers/image-placement-capacity'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { mediaDeliverySafetyWorkConfig } from './work-limits.mts'
 
@@ -28,7 +26,7 @@ async function fixture() {
 }
 
 describe('multi-image capacity claims', () => {
-  it('allocates each image independently through sparse slots in one atomic batch', async () => {
+  it('admits each image independently and replays live activations under a lower cap', async () => {
     await mediaDeliverySafetyWorkConfig.waitForInitialization()
     onTestFinished(
       overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
@@ -37,7 +35,6 @@ describe('multi-image capacity claims', () => {
     )
     const { imageIds, post } = await fixture()
     const original = await commitTestImageCapacityBatch(await post(), imageIds)
-    await Promise.all(original.map(row => moveTestImageCapacitySlot(row.placementId, 2)))
     await commitTestImageCapacityBatch(await post(), imageIds.toReversed())
     const restoreLower = overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
       max_placements_per_image: 1,
@@ -48,14 +45,11 @@ describe('multi-image capacity claims', () => {
       restoreLower()
     }
     expect(await readTestCapacityBatch(imageIds)).toEqual(
-      imageIds.flatMap(imageId => [
-        { image_id: imageId, slot_number: 1 },
-        { image_id: imageId, slot_number: 2 },
-      ]),
+      imageIds.map(imageId => ({ image_id: imageId, occupied: 2 })),
     )
   })
 
-  it('restores an outgoing image slot when another incoming image is already full', async () => {
+  it('leaves the outgoing placement active when another incoming image is already full', async () => {
     await mediaDeliverySafetyWorkConfig.waitForInitialization()
     onTestFinished(
       overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
@@ -70,9 +64,9 @@ describe('multi-image capacity claims', () => {
       imageIds[1]!,
     )
     expect(result.error).toMatchObject({ status: 409, code: 'IMAGE_PLACEMENT_LIMIT_REACHED' })
-    expect(result.slots).toEqual([1])
+    expect(result.active).toBe(true)
     expect(await readTestCapacityBatch(imageIds)).toEqual(
-      imageIds.map(imageId => ({ image_id: imageId, slot_number: 1 })),
+      imageIds.map(imageId => ({ image_id: imageId, occupied: 1 })),
     )
   })
 
@@ -85,19 +79,5 @@ describe('multi-image capacity claims', () => {
     expect(outcome.settlements).toBe(1)
     expect(outcome.restored).toBe(outcome.before)
     expect(outcome.committed).toBe(`${outcome.before}-caller`)
-  })
-
-  it('rolls back every image when a concurrent winner consumes one image final slot', async () => {
-    await mediaDeliverySafetyWorkConfig.waitForInitialization()
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
-        max_placements_per_image: 1,
-      }),
-    )
-    const { imageIds, post } = await fixture()
-    const outcome = await conflictTestImageCapacityBatch(await post(), await post(), imageIds)
-    expect(outcome.error).toMatchObject({ status: 409, code: 'IMAGE_PLACEMENT_LIMIT_REACHED' })
-    expect(outcome.rows).toEqual([{ image_id: imageIds[1], slot_number: 1 }])
-    expect(await readTestCapacityBatch(imageIds)).toEqual(outcome.rows)
   })
 })

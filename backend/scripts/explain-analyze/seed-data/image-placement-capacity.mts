@@ -1,21 +1,21 @@
 import { beginTransaction } from '@data-stores/psql'
 import { mediaDeliverySafetyWorkMaxValues } from '@services/media-delivery-safety/work-limits'
-import type { ImagePlacementCapacityReservation } from '@services/media-delivery-safety/placement-capacity-reservations'
 import { seedUuid } from './common.mts'
 const cap = mediaDeliverySafetyWorkMaxValues.max_placements_per_image
-// A few thousand analyzed rows make `id = ANY(cap ids)` a sequential scan of media_placements.
+// A few thousand analyzed rows make a placement primary-key lookup lose to a sequential scan.
 // Production tables are much larger, and this corpus makes the primary key the cheaper plan.
-const POLICY_PLACEMENT_CORPUS = 80_000
+export const IMAGE_PLACEMENT_CAPACITY_CORPUS = 80_000
 
 /** Each cohort owns at most the hard cap plus one retired candidate. */
 export async function seedImagePlacementCapacityCohort(
   index: number,
   active: number,
   family: 'post' | 'surface' | 'mixed',
+  withCandidate = true,
 ) {
   const imageId = seedUuid(900_000 + index, 'b7')
   const actorId = seedUuid(900_000 + index, 'b8')
-  const ids = Array.from({ length: active + 1 }, (_, ordinal) =>
+  const ids = Array.from({ length: active + (withCandidate ? 1 : 0) }, (_, ordinal) =>
     seedUuid(900_000 + index * (cap + 1) + ordinal, 'b9'),
   )
   const owners = ids.map((_, ordinal) => seedUuid(900_000 + index * (cap + 1) + ordinal, 'ba'))
@@ -80,35 +80,38 @@ export async function seedImagePlacementCapacityCohort(
       AND owner.id = binding.user_id AND owner.profile_image_id IS DISTINCT FROM binding.image_id`,
     [ids],
   )
-  await query(
-    `/* seedCapacityReservations */ INSERT INTO image_placement_capacity_reservations
-    (placement_id, image_id, binding_family, activation_revision, slot_number, post_placement_id, surface_placement_id, post_id, is_current_image_delivery_eligible)
-    SELECT id, $4::uuid, family::image_binding_families, 0, ordinal::integer,
-      CASE WHEN family = 'post' THEN id END, CASE WHEN family = 'surface' THEN id END,
-      CASE WHEN family = 'post' THEN owner_id END, false
-    FROM unnest($1::uuid[], $2::uuid[], $3::text[]) WITH ORDINALITY seed(id, owner_id, family, ordinal)
-    WHERE ordinal <= $5 ON CONFLICT (placement_id) DO NOTHING`,
-    [ids, owners, families, imageId, active],
-  )
   await query.commit()
-  const reservation = (ordinal: number): ImagePlacementCapacityReservation => ({
+  const row = (ordinal: number) => ({
     placementId: ids[ordinal]!,
     imageId,
-    bindingFamily: families[ordinal] === 'post' ? 'post' : 'surface',
-    activationRevision: ordinal < active ? 0 : 1,
-    ...(families[ordinal] === 'post' ? { postId: owners[ordinal]! } : {}),
+    bindingFamily: families[ordinal] === 'post' ? ('post' as const) : ('surface' as const),
   })
   return {
     imageId,
     placementIds: ids.slice(0, active),
-    current: reservation(0),
-    candidate: reservation(active),
+    current: row(0),
+    candidate: row(withCandidate ? active : 0),
   }
 }
 
-/** Retired placements outside every capacity id list. A second run stops at the corpus size. */
-export async function seedImagePlacementCapacityPolicyCorpus(imageId: string): Promise<void> {
+/**
+ * Retired rows on a different image keep media_placements large.
+ * The measured policy image has exactly the hard cap of active bindings.
+ */
+export async function seedImagePlacementCapacityPolicyCorpus(): Promise<string> {
+  const imageId = seedUuid(910_000, 'b7')
+  const actorId = seedUuid(910_000, 'b8')
   await using query = await beginTransaction()
+  await query(
+    `/* seedCapacityActor */ INSERT INTO users (id, username)
+    VALUES ($1::uuid, 'explain-capacity-noise-' || replace(($1::uuid)::text, '-', '')) ON CONFLICT (id) DO NOTHING`,
+    [actorId],
+  )
+  await query(
+    `/* seedCapacityImage */ INSERT INTO images (id, created_by_id, data, sha_256, s3_key)
+    VALUES ($1::uuid, $2::uuid, '{}'::jsonb, decode(md5(($1::uuid)::text) || md5(($1::uuid)::text), 'hex'), md5(($1::uuid)::text) || md5(($1::uuid)::text)) ON CONFLICT (id) DO NOTHING`,
+    [imageId, actorId],
+  )
   await query(
     `/* seedCapacityPolicyCorpus */
     WITH noise AS (
@@ -125,7 +128,9 @@ export async function seedImagePlacementCapacityPolicyCorpus(imageId: string): P
     INSERT INTO media_placements (id, retired_at, retirement_reason)
     SELECT placement_id, CURRENT_TIMESTAMP, 'owner_removed'::media_placement_retirement_reasons
     FROM bindings`,
-    [imageId, POLICY_PLACEMENT_CORPUS],
+    [imageId, IMAGE_PLACEMENT_CAPACITY_CORPUS],
   )
   await query.commit()
+  const policy = await seedImagePlacementCapacityCohort(20, cap, 'post', false)
+  return policy.imageId
 }

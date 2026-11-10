@@ -49,20 +49,6 @@ export async function runMediaDeliveryPopularImageScenario(): Promise<void> {
     ON CONFLICT (placement_id) DO NOTHING`,
     [placementIds, postIds, imageId],
   )
-  await query(
-    `/* seedExplainPopularImage:capacity */
-    INSERT INTO image_placement_capacity_reservations
-      (placement_id, image_id, binding_family, activation_revision, slot_number,
-       post_placement_id, post_id, is_current_image_delivery_eligible)
-    SELECT binding.placement_id, binding.image_id, 'post', placement.activation_revision,
-      row_number() OVER (ORDER BY binding.placement_id)::integer,
-      binding.placement_id, binding.post_id, image.is_delivery_eligible
-    FROM image_placements binding JOIN media_placements placement ON placement.id = binding.placement_id
-    JOIN images image ON image.id = binding.image_id
-    WHERE binding.placement_id = ANY($1::uuid[]) AND placement.retired_at IS NULL
-    ON CONFLICT DO NOTHING`,
-    [placementIds],
-  )
   await query.commit()
   await write(`/* seedExplainPopularImage:analyze */
     ANALYZE image_placements, image_surface_placements, media_placements,

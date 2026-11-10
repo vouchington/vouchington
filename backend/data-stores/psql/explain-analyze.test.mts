@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { createTestDeferredCapacityPolicyFixture } from '@voucha/test-helpers/explain-deferred-constraints'
 import {
   createTestUserDirect,
   createTestUsername,
@@ -17,26 +16,6 @@ function rootPlan(result: Awaited<ReturnType<typeof explainAnalyze>>): Record<st
 }
 
 describe('explainAnalyze', () => {
-  it('defers only opted-in constraints and rolls back the explained policy change', async () => {
-    const fixture = await createTestDeferredCapacityPolicyFixture()
-    await expect(
-      explainAnalyze('immediate-policy', fixture.text, fixture.values),
-    ).rejects.toMatchObject({ code: '23503' })
-    await expect(
-      explainAnalyze('other-deferred-policy', fixture.text, fixture.values, {
-        deferredConstraints: ['fk_image_placement_capacity__live_image'],
-      }),
-    ).rejects.toMatchObject({ code: '23503' })
-    const result = await explainAnalyze('deferred-policy', fixture.text, fixture.values, {
-      deferredConstraints: ['fk_image_placement_capacity__image_policy'],
-    })
-    expect(rootPlan(result)['Actual Rows']).toBe(1)
-    await expect(fixture.readPolicy()).resolves.toBe(true)
-    await expect(
-      explainAnalyze('still-immediate-policy', fixture.text, fixture.values),
-    ).rejects.toMatchObject({ code: '23503' })
-  })
-
   it('excludes setup-time calls and orders equal-call functions by name', () => {
     expect(
       functionCallsSince(

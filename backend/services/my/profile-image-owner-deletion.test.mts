@@ -79,7 +79,7 @@ describe('terminal image surface owner deletion', () => {
       'image surface placement bindings are immutable',
     )
   })
-  it('rejects reactivation commit when owner clearing commits after its old owner snapshot', async () => {
+  it('leaves delivery unauthorized when owner clearing commits during reactivation', async () => {
     const { placement } = await createSurface()
     {
       await using retiring = await beginTransaction()
@@ -90,22 +90,23 @@ describe('terminal image surface owner deletion', () => {
       await using reactivating = await beginTransaction()
       await reactivateTestImageSurfaceInTransaction(reactivating, placement.placement_id)
       await using clearing = await beginTransaction()
-      // Reactivation has already read the old owner and inserted its deferred reservation.
-      // Clearing can still read the committed retired placement, but only one may commit.
       await clearTestImageSurfaceOwnerInTransaction(clearing, placement.placement_id)
       await clearing.commit()
-      await expect(reactivating.commit()).rejects.toMatchObject({
-        code: '23503',
-        constraint: 'fk_image_placement_capacity__surface_owner',
-      })
-      // Failed owned COMMIT discards its connection, rolling back the active placement and slot.
+      await reactivating.commit()
     }
-    await expect(readTestImageSurfaceOwner(placement.placement_id)).resolves.toMatchObject({
+    const owner = await readTestImageSurfaceOwner(placement.placement_id)
+    expect(owner).toMatchObject({
       user_profile_link_id: null,
-      retired_at: expect.any(Date),
-      retirement_reason: 'owner_removed',
+      retired_at: null,
+      retirement_reason: null,
     })
-    await expect(testImageSurfaceDeliveryIsAuthorized(placement)).resolves.toBe(false)
+    await expect(
+      testImageSurfaceDeliveryIsAuthorized({
+        placement_id: placement.placement_id,
+        placement_revision: owner!.revision,
+        image_id: owner!.image_id,
+      }),
+    ).resolves.toBe(false)
   })
 
   it('keeps the active concrete owner when reactivation commits before clearing', async () => {

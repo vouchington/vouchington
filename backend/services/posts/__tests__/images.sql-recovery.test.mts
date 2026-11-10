@@ -25,12 +25,12 @@ describe('image transaction SQL failure recovery', () => {
     vi.unstubAllEnvs()
   })
 
-  it('propagates an actual capacity SQL error and restores all owner and slot writes before any edge denial', async () => {
+  it('propagates an actual capacity SQL error and restores the owner write before any edge denial', async () => {
     const fixture = await createTestPostDeliveryFixture()
     const before = await getPostImages(fixture.postId)
     const replacement = await insertTestImage(fixture.user.id)
     const { result, error } = await withPostgresQueryFailureForTest(
-      '/* reserveImagePlacementChanges:projectPolicy */',
+      '/* projectImagePlacementPolicy */',
       () =>
         setPostImages(fixture.user, fixture.post, [
           { image_id: replacement, order_index: 0 },

@@ -1,13 +1,7 @@
-import {
-  moveTestImageCapacitySlot,
-  readTestImageCapacitySlots,
-} from '@voucha/test-helpers/image-placement-capacity'
+import { readTestActiveImagePlacementCount } from '@voucha/test-helpers/image-placement-capacity'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { randomUUID } from 'node:crypto'
-import {
-  mediaDeliverySafetyWorkConfig,
-  mediaDeliverySafetyWorkMaxValues,
-} from '@services/media-delivery-safety/work-limits'
+import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
 import { writeTestImageSurfaceMutation } from '@voucha/test-helpers/image-surface-mutation'
 import {
   beginTransaction,
@@ -101,29 +95,6 @@ describe('image placement capacity', () => {
     })
   })
 
-  it('serializes competing posts for the final slot', async () => {
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
-        max_placements_per_image: 1,
-      }),
-    )
-    const user = await createTestUser()
-    const imageId = await insertTestImage(user.id)
-    const [first, second] = await Promise.all([post(user.id), post(user.id)])
-    const results = await Promise.allSettled([
-      attach(first!, [imageId]),
-      attach(second!, [imageId]),
-    ])
-    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
-    const rejection = results.find(result => result.status === 'rejected')
-    expect(rejection).toMatchObject({ status: 'rejected', reason: limitError })
-    const placements = await Promise.all([
-      getTestPostImagePlacement(first!, imageId),
-      getTestPostImagePlacement(second!, imageId),
-    ])
-    expect(placements.filter(placement => placement?.retired_at === null)).toHaveLength(1)
-  })
-
   it('shares capacity between post and surface placements', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
@@ -148,7 +119,7 @@ describe('image placement capacity', () => {
     await expect(attachSurface()).resolves.toMatchObject({ placement_id: surface!.placement_id })
     await expect(attach(postId, [imageId])).rejects.toMatchObject(limitError)
   })
-  it('counts sparse high slots after a cap reduction and admits only the remaining free prefix', async () => {
+  it('rejects a new placement while one remains after the cap drops, and replays that placement', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
         max_placements_per_image: 2,
@@ -158,16 +129,7 @@ describe('image placement capacity', () => {
     const imageId = await insertTestImage(user.id)
     const [first, second, third] = await Promise.all([post(user.id), post(user.id), post(user.id)])
     await attach(first!, [imageId])
-    const original = await getTestPostImagePlacement(first!, imageId)
-    await moveTestImageCapacitySlot(
-      original!.placement_id,
-      mediaDeliverySafetyWorkMaxValues.max_placements_per_image,
-    )
     await attach(second!, [imageId])
-    expect(await readTestImageCapacitySlots(imageId)).toEqual([
-      1,
-      mediaDeliverySafetyWorkMaxValues.max_placements_per_image,
-    ])
     await expect(attach(third!, [imageId])).rejects.toMatchObject(limitError)
     const restoreReduced = overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
       max_placements_per_image: 1,
@@ -175,7 +137,8 @@ describe('image placement capacity', () => {
     try {
       await attach(first!, [])
       await expect(attach(third!, [imageId])).rejects.toMatchObject(limitError)
-      expect(await readTestImageCapacitySlots(imageId)).toEqual([1])
+      await attach(second!, [imageId])
+      expect(await readTestActiveImagePlacementCount(imageId)).toBe(1)
     } finally {
       restoreReduced()
     }

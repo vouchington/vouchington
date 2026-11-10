@@ -1,8 +1,8 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
-  reserveImagePlacementChanges,
-  releaseImagePlacementReservations,
+  admitImagePlacements,
+  projectImagePlacementPolicy,
 } from '../../services/media-delivery-safety/placement-capacity-reservations.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { imageDeliveryIsAuthorized } from '../../services/media-delivery-safety/delivery-authority.mts'
@@ -28,7 +28,6 @@ export async function retireTestImageSurfaceOwner(
 ): Promise<void> {
   await query(sql`/* retireTestImageSurfaceOwner */ UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP,
     retirement_reason = 'owner_removed', revision = revision + 1 WHERE id = ${placementId}`)
-  await releaseImagePlacementReservations(query, [placementId])
 }
 
 export async function clearTestImageSurfaceOwnerInTransaction(
@@ -44,27 +43,23 @@ export async function reactivateTestImageSurfaceInTransaction(
   query: TransactionQuery,
   placementId: string,
 ): Promise<void> {
+  const { rows: before } = await query<{ image_id: string; retired_at: Date | null }>(sql`
+    /* reactivateTestImageSurfaceCapacity */
+    SELECT surface.image_id, placement.retired_at
+    FROM image_surface_placements surface
+    JOIN media_placements placement ON placement.id = surface.placement_id
+    WHERE surface.placement_id = ${placementId}`)
+  if (!before[0]) throw new Error('Missing surface fixture')
+  await admitImagePlacements(query, [
+    {
+      imageId: before[0].image_id,
+      placementId,
+      alreadyActive: before[0].retired_at == null,
+    },
+  ])
   await query(sql`/* reactivateTestImageSurfaceInTransaction */ UPDATE media_placements SET retired_at = NULL,
     retirement_reason = NULL, revision = revision + 1 WHERE id = ${placementId}`)
-  const { rows } = await query<{
-    image_id: string
-    activation_revision: number
-  }>(sql`/* reactivateTestImageSurfaceCapacity */
-    SELECT surface.image_id, placement.activation_revision FROM image_surface_placements surface
-    JOIN media_placements placement ON placement.id = surface.placement_id WHERE surface.placement_id = ${placementId}`)
-  if (!rows[0]) throw new Error('Missing surface fixture')
-  await reserveImagePlacementChanges(
-    query,
-    [],
-    [
-      {
-        placementId,
-        imageId: rows[0].image_id,
-        activationRevision: rows[0].activation_revision,
-        bindingFamily: 'surface',
-      },
-    ],
-  )
+  await projectImagePlacementPolicy(query, [placementId])
 }
 
 export async function changeTestOwnerlessImageSurfaceRetirementReason(
@@ -77,12 +72,15 @@ export async function changeTestOwnerlessImageSurfaceRetirementReason(
 
 export async function readTestImageSurfaceOwner(placementId: string) {
   const { rows } = await read<{
+    image_id: string
     user_id: string | null
     user_profile_link_id: string | null
+    revision: number
     retired_at: Date | null
     retirement_reason: string | null
   }>(sql`/* readTestImageSurfaceOwner */
-    SELECT surface.user_id, surface.user_profile_link_id, placement.retired_at, placement.retirement_reason
+    SELECT surface.image_id, surface.user_id, surface.user_profile_link_id, placement.revision,
+      placement.retired_at, placement.retirement_reason
     FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
     WHERE surface.placement_id = ${placementId}
   `)

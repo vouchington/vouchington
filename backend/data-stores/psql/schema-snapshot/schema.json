@@ -1621,7 +1621,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_domain_blocklist_hostname_block_lifts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE url_hostname_blocks block\n  SET lifted_at = CURRENT_TIMESTAMP\n  FROM deleted_domains deleted\n  WHERE block.url_hostname_id = deleted.url_hostname_id\n    AND block.domain_blocklist_source_id = deleted.source_id\n    AND block.lifted_at IS NULL;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_project_handoff_deleted_user_image_surfaces": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_handoff_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);\n  DELETE FROM image_placement_capacity_reservations reservation\n  USING image_surface_placements surface\n  WHERE surface.placement_id = reservation.surface_placement_id\n    AND surface.surface_kind = 'user-profile-image' AND surface.user_id = OLD.id\n    AND surface.image_id = OLD.profile_image_id;\n  UPDATE image_surface_placements\n  SET user_id = NULL\n  WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_handoff_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);\n  UPDATE image_surface_placements\n  SET user_id = NULL\n  WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
     },
     "fn_project_latest_change": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_latest_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  target_id UUID := (to_jsonb(NEW) ->> TG_ARGV[2])::uuid;\n  change_filter TEXT := CASE WHEN TG_NARGS = 7 THEN format(' AND %I = %L', TG_ARGV[5], TG_ARGV[6]) ELSE '' END;\nBEGIN\n  -- Serialize on the target before re-reading the latest committed log entry.\n  EXECUTE format('SELECT %I FROM %I.%I WHERE %I = $1 FOR UPDATE',\n    TG_ARGV[1], TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[1]) USING target_id;\n  EXECUTE format(\n    'UPDATE %I.%I target SET %I = latest.value FROM\n     (SELECT %I AS value FROM %I.%I WHERE %I = $1%s ORDER BY id DESC LIMIT 1) latest\n     WHERE target.%I = $1 AND target.%I IS DISTINCT FROM latest.value',\n    TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[3], TG_ARGV[4], TG_TABLE_SCHEMA,\n    TG_TABLE_NAME, TG_ARGV[2], change_filter, TG_ARGV[1], TG_ARGV[3]) USING target_id;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1666,7 +1666,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_refresh_rss_feed_item_unmapped_category_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  current_item_count BIGINT;\nBEGIN\n  IF TG_OP != 'INSERT' AND OLD.topic_id IS NULL THEN\n    SELECT item_count INTO current_item_count\n    FROM rss_feed_item_unmapped_category_counts\n    WHERE category_identity_id = OLD.category_identity_id\n    FOR UPDATE;\n\n    IF current_item_count = 1 THEN\n      DELETE FROM rss_feed_item_unmapped_category_counts\n      WHERE category_identity_id = OLD.category_identity_id;\n    ELSIF current_item_count > 1 THEN\n      UPDATE rss_feed_item_unmapped_category_counts\n      SET item_count = item_count - 1\n      WHERE category_identity_id = OLD.category_identity_id;\n    END IF;\n  END IF;\n\n  IF TG_OP != 'DELETE' AND NEW.topic_id IS NULL THEN\n    INSERT INTO rss_feed_item_unmapped_category_counts (category_identity_id, item_count)\n    VALUES (NEW.category_identity_id, 1)\n    ON CONFLICT (category_identity_id) DO UPDATE\n    SET item_count = rss_feed_item_unmapped_category_counts.item_count + 1;\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_project_retire_deleted_profile_link_image_surfaces": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_retire_deleted_profile_link_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-link-image', NULL, NULL, NULL, NULL, OLD.id);\n  DELETE FROM image_placement_capacity_reservations reservation\n  USING image_surface_placements surface\n  WHERE surface.placement_id = reservation.surface_placement_id\n    AND surface.surface_kind = 'user-profile-link-image' AND surface.user_profile_link_id = OLD.id\n    AND surface.image_id = OLD.image_id;\n  UPDATE image_surface_placements SET user_profile_link_id = NULL\n  WHERE surface_kind = 'user-profile-link-image' AND user_profile_link_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_retire_deleted_profile_link_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-link-image', NULL, NULL, NULL, NULL, OLD.id);\n  UPDATE image_surface_placements SET user_profile_link_id = NULL\n  WHERE surface_kind = 'user-profile-link-image' AND user_profile_link_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
     },
     "fn_project_retire_deleted_user_image_surfaces": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_retire_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, NEW.id, NULL, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1903,7 +1903,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_delivery_registry_change_retention()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cutoff_id uuid; cutoff_at timestamptz;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    cutoff_id := NULLIF(current_setting('app.media_delivery_retention_cutoff_id', TRUE), '')::uuid;\n    cutoff_at := NULLIF(current_setting('app.media_delivery_retention_cutoff_at', TRUE), '')::timestamptz;\n    IF cutoff_id IS NOT NULL AND OLD.id < cutoff_id\n      AND cutoff_at IS NOT NULL\n      AND (OLD.completed_at IS NULL OR OLD.completed_at < cutoff_at)\n      AND NOT (OLD.change_type = 'completed' AND OLD.desired_state = 'withheld')\n      AND NOT EXISTS (SELECT 1 FROM media_delivery_registry_records record\n        WHERE record.latest_change_id = OLD.id)\n      AND NOT EXISTS (SELECT 1 FROM media_delivery_registry_projection_work_items work\n        WHERE work.failed_change_id = OLD.id) THEN\n      RETURN OLD;\n    END IF;\n  END IF;\n  RAISE EXCEPTION 'media delivery registry changes are immutable outside eligible retention';\nEND;\n$function$\n"
     },
     "fn_reject_media_placement": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (to_jsonb(NEW) - ARRAY['active_capacity_reservation_placement_id', 'is_current_image_delivery_eligible', 'updated_at'])\n      = (to_jsonb(OLD) - ARRAY['active_capacity_reservation_placement_id', 'is_current_image_delivery_eligible', 'updated_at'])\n    AND NEW.is_current_image_delivery_eligible IS DISTINCT FROM OLD.is_current_image_delivery_eligible THEN\n    RETURN NEW;\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.retired_at IS NOT NULL AND NEW.retired_at IS NULL THEN\n    NEW.activation_revision := NEW.revision;\n  ELSIF NEW.activation_revision IS DISTINCT FROM OLD.activation_revision THEN\n    RAISE EXCEPTION 'media placement activation revision is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (to_jsonb(NEW) - ARRAY['is_current_image_delivery_eligible', 'updated_at'])\n      = (to_jsonb(OLD) - ARRAY['is_current_image_delivery_eligible', 'updated_at'])\n    AND NEW.is_current_image_delivery_eligible IS DISTINCT FROM OLD.is_current_image_delivery_eligible THEN\n    RETURN NEW;\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.retired_at IS NOT NULL AND NEW.retired_at IS NULL THEN\n    NEW.activation_revision := NEW.revision;\n  ELSIF NEW.activation_revision IS DISTINCT FROM OLD.activation_revision THEN\n    RAISE EXCEPTION 'media placement activation revision is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_membership_administrator_refund_request_context": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_context()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE valid_context BOOLEAN;\nBEGIN\n  SELECT operation.operation_kind = 'administrator_refund' AND operation.remaining_refundable_minor_units = NEW.amount_minor_units AND operation.currency_code = NEW.currency_code INTO valid_context FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;\n  IF valid_context IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'administrator refund request does not match its operation context' USING ERRCODE = '23514'; END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -55680,425 +55680,6 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
-    "image_placement_capacity_reservations": {
-      "checkConstraints": {
-        "image_placement_capacity_reservations_activation_revision_check": "CHECK ((activation_revision >= 0))",
-        "image_placement_capacity_reservations_binding_family_check": "CHECK ((binding_family = ANY (ARRAY['post'::image_binding_families, 'surface'::image_binding_families])))",
-        "image_placement_capacity_reservations_check": "CHECK ((((binding_family = 'post'::image_binding_families) AND (post_placement_id = placement_id) AND (post_placement_id IS NOT NULL) AND (post_id IS NOT NULL) AND (surface_placement_id IS NULL)) OR ((binding_family = 'surface'::image_binding_families) AND (surface_placement_id = placement_id) AND (surface_placement_id IS NOT NULL) AND (post_placement_id IS NULL) AND (post_id IS NULL))))",
-        "image_placement_capacity_reservations_slot_number_check": "CHECK (((slot_number >= 1) AND (slot_number <= 1000)))"
-      },
-      "columns": {
-        "activation_revision": {
-          "collation": null,
-          "comment": "Current activation generation, stable across copyright and publication metadata changes.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "integer"
-        },
-        "binding_family": {
-          "collation": null,
-          "comment": "Concrete post or surface child family required at commit.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "image_binding_families"
-        },
-        "has_surface_owner": {
-          "collation": null,
-          "comment": "Generated concrete surface-owner requirement, null for post reservations; deferred validation permits owner-first removal followed by same-transaction reservation release, while rejecting an ownerless active surface.",
-          "defaultExpression": null,
-          "generated": "stored",
-          "generatedExpression": "\nCASE\n    WHEN (surface_placement_id IS NOT NULL) THEN true\n    ELSE NULL::boolean\nEND",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11,
-          "type": "boolean"
-        },
-        "image_capacity_admissible_image_id": {
-          "collation": null,
-          "comment": "Generated projection of the concrete binding image id, referencing the live image capacity authority independently of its retained binding and policy relations.",
-          "defaultExpression": null,
-          "generated": "stored",
-          "generatedExpression": "image_id",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "image_id": {
-          "collation": null,
-          "comment": "Immutable image identity from the retained placement binding.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "is_current_image_delivery_eligible": {
-          "collation": null,
-          "comment": "Current parent image policy, constrained before edge effects; policy mutation updates the concrete active write set.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "boolean"
-        },
-        "placement_id": {
-          "collation": null,
-          "comment": "Exact retained image placement identity consuming the slot.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "post_id": {
-          "collation": null,
-          "comment": "Exact hosting post from the concrete child; indexes only the current active placement set, excluding historical bindings.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "uuid"
-        },
-        "post_placement_id": {
-          "collation": null,
-          "comment": "Concrete eventual post child; equals placement_id exactly for post reservations.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "uuid"
-        },
-        "slot_number": {
-          "collation": null,
-          "comment": "Sparse unique slot; admission claims from the available prefix budget across the hard slot range.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "integer"
-        },
-        "surface_placement_id": {
-          "collation": null,
-          "comment": "Concrete eventual surface child; equals placement_id exactly for surface reservations.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "uuid"
-        }
-      },
-      "comment": "Concrete active post or surface activation owning one immediately unique image slot; acquisition precedes edge denial and rolls back with the owner mutation.",
-      "foreignKeys": {
-        "fk_image_placement_capacity__active_generation": {
-          "columns": ["placement_id", "activation_revision"],
-          "definition": "FOREIGN KEY (placement_id, activation_revision) REFERENCES media_placements(active_capacity_reservation_placement_id, activation_revision) DEFERRABLE INITIALLY DEFERRED",
-          "onDelete": "no action",
-          "onUpdate": "no action",
-          "referencedColumns": ["active_capacity_reservation_placement_id", "activation_revision"],
-          "referencedTable": "media_placements",
-          "validated": true
-        },
-        "fk_image_placement_capacity__image_policy": {
-          "columns": ["image_id", "is_current_image_delivery_eligible"],
-          "definition": "FOREIGN KEY (image_id, is_current_image_delivery_eligible) REFERENCES images(id, is_delivery_eligible) DEFERRABLE",
-          "onDelete": "no action",
-          "onUpdate": "no action",
-          "referencedColumns": ["id", "is_delivery_eligible"],
-          "referencedTable": "images",
-          "validated": true
-        },
-        "fk_image_placement_capacity__live_image": {
-          "columns": ["image_capacity_admissible_image_id"],
-          "definition": "FOREIGN KEY (image_capacity_admissible_image_id) REFERENCES images(capacity_admissible_image_id) DEFERRABLE",
-          "onDelete": "no action",
-          "onUpdate": "no action",
-          "referencedColumns": ["capacity_admissible_image_id"],
-          "referencedTable": "images",
-          "validated": true
-        },
-        "fk_image_placement_capacity__surface_owner": {
-          "columns": ["surface_placement_id", "has_surface_owner"],
-          "definition": "FOREIGN KEY (surface_placement_id, has_surface_owner) REFERENCES image_surface_placements(placement_id, has_live_owner) DEFERRABLE INITIALLY DEFERRED",
-          "onDelete": "no action",
-          "onUpdate": "no action",
-          "referencedColumns": ["placement_id", "has_live_owner"],
-          "referencedTable": "image_surface_placements",
-          "validated": true
-        },
-        "image_placement_capacity_rese_placement_id_image_id_bindin_fkey": {
-          "columns": ["placement_id", "image_id", "binding_family"],
-          "definition": "FOREIGN KEY (placement_id, image_id, binding_family) REFERENCES retained_image_placement_bindings(placement_id, image_id, binding_family) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["placement_id", "image_id", "binding_family"],
-          "referencedTable": "retained_image_placement_bindings",
-          "validated": true
-        },
-        "image_placement_capacity_reserva_post_placement_id_post_id_fkey": {
-          "columns": ["post_placement_id", "post_id"],
-          "definition": "FOREIGN KEY (post_placement_id, post_id) REFERENCES image_placements(placement_id, post_id) DEFERRABLE INITIALLY DEFERRED",
-          "onDelete": "no action",
-          "onUpdate": "no action",
-          "referencedColumns": ["placement_id", "post_id"],
-          "referencedTable": "image_placements",
-          "validated": true
-        },
-        "image_placement_capacity_reservations_post_placement_id_fkey": {
-          "columns": ["post_placement_id"],
-          "definition": "FOREIGN KEY (post_placement_id) REFERENCES image_placements(placement_id) DEFERRABLE INITIALLY DEFERRED",
-          "onDelete": "no action",
-          "onUpdate": "no action",
-          "referencedColumns": ["placement_id"],
-          "referencedTable": "image_placements",
-          "validated": true
-        },
-        "image_placement_capacity_reservations_surface_placement_id_fkey": {
-          "columns": ["surface_placement_id"],
-          "definition": "FOREIGN KEY (surface_placement_id) REFERENCES image_surface_placements(placement_id) DEFERRABLE INITIALLY DEFERRED",
-          "onDelete": "no action",
-          "onUpdate": "no action",
-          "referencedColumns": ["placement_id"],
-          "referencedTable": "image_surface_placements",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "idx_image_placement_capacity_reservations__admissible_image": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_image_placement_capacity_reservations__admissible_image ON public.image_placement_capacity_reservations USING btree (image_capacity_admissible_image_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "image_capacity_admissible_image_id",
-              "descending": false,
-              "expression": "image_capacity_admissible_image_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_image_placement_capacity_reservations__post": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_image_placement_capacity_reservations__post ON public.image_placement_capacity_reservations USING btree (post_id, placement_id) WHERE (post_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "placement_id",
-              "descending": false,
-              "expression": "placement_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(post_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_image_placement_capacity_reservations__post_placement_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_image_placement_capacity_reservations__post_placement_id ON public.image_placement_capacity_reservations USING btree (post_placement_id) WHERE (post_placement_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_placement_id",
-              "descending": false,
-              "expression": "post_placement_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(post_placement_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_image_placement_capacity_reservations__surface_placement_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_image_placement_capacity_reservations__surface_placement_id ON public.image_placement_capacity_reservations USING btree (surface_placement_id) WHERE (surface_placement_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "surface_placement_id",
-              "descending": false,
-              "expression": "surface_placement_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(surface_placement_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "image_placement_capacity_rese_image_id_slot_number_placemen_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX image_placement_capacity_rese_image_id_slot_number_placemen_key ON public.image_placement_capacity_reservations USING btree (image_id, slot_number) INCLUDE (placement_id)",
-          "includedColumns": ["placement_id"],
-          "keys": [
-            {
-              "column": "image_id",
-              "descending": false,
-              "expression": "image_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "slot_number",
-              "descending": false,
-              "expression": "slot_number",
-              "nullsFirst": false,
-              "opclass": "int4_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "image_placement_capacity_rese_placement_id_activation_revis_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX image_placement_capacity_rese_placement_id_activation_revis_key ON public.image_placement_capacity_reservations USING btree (placement_id, activation_revision)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "placement_id",
-              "descending": false,
-              "expression": "placement_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "activation_revision",
-              "descending": false,
-              "expression": "activation_revision",
-              "nullsFirst": false,
-              "opclass": "int4_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "image_placement_capacity_rese_placement_id_is_current_image_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX image_placement_capacity_rese_placement_id_is_current_image_key ON public.image_placement_capacity_reservations USING btree (placement_id, is_current_image_delivery_eligible)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "placement_id",
-              "descending": false,
-              "expression": "placement_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "is_current_image_delivery_eligible",
-              "descending": false,
-              "expression": "is_current_image_delivery_eligible",
-              "nullsFirst": false,
-              "opclass": "bool_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "image_placement_capacity_reservations_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX image_placement_capacity_reservations_pkey ON public.image_placement_capacity_reservations USING btree (placement_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "placement_id",
-              "descending": false,
-              "expression": "placement_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["placement_id"],
-        "definition": "PRIMARY KEY (placement_id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {
-        "image_placement_capacity_rese_image_id_slot_number_placemen_key": {
-          "columns": ["image_id", "slot_number"],
-          "definition": "UNIQUE (image_id, slot_number) INCLUDE (placement_id)"
-        },
-        "image_placement_capacity_rese_placement_id_activation_revis_key": {
-          "columns": ["placement_id", "activation_revision"],
-          "definition": "UNIQUE (placement_id, activation_revision)"
-        },
-        "image_placement_capacity_rese_placement_id_is_current_image_key": {
-          "columns": ["placement_id", "is_current_image_delivery_eligible"],
-          "definition": "UNIQUE (placement_id, is_current_image_delivery_eligible)"
-        }
-      }
-    },
     "image_placements": {
       "checkConstraints": {
         "image_placements_binding_family_check": "CHECK ((binding_family = 'post'::image_binding_families))"
@@ -56530,17 +56111,6 @@
           "ordinalPosition": 7,
           "type": "uuid"
         },
-        "has_live_owner": {
-          "collation": null,
-          "comment": "Generated availability of its concrete owner relationship; an active capacity reservation requires this exact surface to retain an owner at commit.",
-          "defaultExpression": null,
-          "generated": "stored",
-          "generatedExpression": "((user_id IS NOT NULL) OR (topic_id IS NOT NULL) OR (community_id IS NOT NULL) OR (user_profile_link_id IS NOT NULL))",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "boolean"
-        },
         "image_id": {
           "collation": null,
           "comment": "Immutable byte asset bound to this surface placement.",
@@ -56593,7 +56163,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -56967,33 +56537,6 @@
           "unique": true,
           "valid": true
         },
-        "image_surface_placements_placement_id_has_live_owner_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX image_surface_placements_placement_id_has_live_owner_key ON public.image_surface_placements USING btree (placement_id, has_live_owner)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "placement_id",
-              "descending": false,
-              "expression": "placement_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "has_live_owner",
-              "descending": false,
-              "expression": "has_live_owner",
-              "nullsFirst": false,
-              "opclass": "bool_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "image_surface_placements_placement_id_surface_kind_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -57034,10 +56577,6 @@
         "trigger_image_surface_placements_updated_at": "CREATE TRIGGER trigger_image_surface_placements_updated_at BEFORE UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
-        "image_surface_placements_placement_id_has_live_owner_key": {
-          "columns": ["placement_id", "has_live_owner"],
-          "definition": "UNIQUE (placement_id, has_live_owner)"
-        },
         "image_surface_placements_placement_id_surface_kind_key": {
           "columns": ["placement_id", "surface_kind"],
           "definition": "UNIQUE (placement_id, surface_kind)"
@@ -57059,7 +56598,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 24,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -57070,19 +56609,8 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
-        },
-        "capacity_admissible_image_id": {
-          "collation": null,
-          "comment": "Live image identity accepted by concrete placement reservations; deletion removes admission through the foreign key.",
-          "defaultExpression": null,
-          "generated": "stored",
-          "generatedExpression": "\nCASE\n    WHEN (deleted_at IS NULL) THEN id\n    ELSE NULL::uuid\nEND",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "uuid"
         },
         "created_at": {
           "collation": null,
@@ -57114,7 +56642,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "jsonb"
         },
         "deleted_at": {
@@ -57136,7 +56664,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "deletion_post_cursor": {
@@ -57147,7 +56675,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "deletion_posts_completed_at": {
@@ -57158,7 +56686,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -57174,13 +56702,13 @@
         },
         "is_delivery_eligible": {
           "collation": null,
-          "comment": "Current upload, moderation and quarantine eligibility copied by concrete active reservations and publication authority.",
+          "comment": "Current upload, moderation and quarantine eligibility copied onto active placement publication authority.",
           "defaultExpression": null,
           "generated": "stored",
           "generatedExpression": "((deleted_at IS NULL) AND (upload_completed_at IS NOT NULL) AND (quarantine_pending_at IS NULL) AND (is_flagged_by_openai_omni_moderation IS FALSE) AND (openai_omni_moderation_results IS NOT NULL) AND (openai_omni_moderation_created_at IS NOT NULL))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 26,
           "type": "boolean"
         },
         "is_flagged_by_openai_omni_moderation": {
@@ -57191,7 +56719,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 19,
           "type": "boolean"
         },
         "openai_omni_moderation_created_at": {
@@ -57202,7 +56730,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "openai_omni_moderation_results": {
@@ -57213,7 +56741,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 18,
           "type": "jsonb"
         },
         "quarantine_pending_at": {
@@ -57224,7 +56752,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "quarantine_s3_key": {
@@ -57235,7 +56763,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 23,
           "type": "text"
         },
         "quarantined_at": {
@@ -57246,7 +56774,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "s3_key": {
@@ -57257,7 +56785,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "sha_256": {
@@ -57268,7 +56796,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "bytea"
         },
         "updated_at": {
@@ -57290,7 +56818,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "upload_error": {
@@ -57301,7 +56829,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "upload_failed_at": {
@@ -57312,7 +56840,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "upload_source_deleted_at": {
@@ -57323,7 +56851,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "upload_staged_at": {
@@ -57334,7 +56862,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "upload_started_at": {
@@ -57345,7 +56873,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         }
       },
@@ -57616,26 +57144,6 @@
           "unique": false,
           "valid": true
         },
-        "images_capacity_admissible_image_id_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX images_capacity_admissible_image_id_key ON public.images USING btree (capacity_admissible_image_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "capacity_admissible_image_id",
-              "descending": false,
-              "expression": "capacity_admissible_image_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "images_id_is_delivery_eligible_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -57718,10 +57226,6 @@
         "trigger_register_retained_image_identity": "CREATE TRIGGER trigger_register_retained_image_identity BEFORE INSERT ON public.images FOR EACH ROW EXECUTE FUNCTION fn_register_retained_image_identity()"
       },
       "uniqueConstraints": {
-        "images_capacity_admissible_image_id_key": {
-          "columns": ["capacity_admissible_image_id"],
-          "definition": "UNIQUE (capacity_admissible_image_id)"
-        },
         "images_id_is_delivery_eligible_key": {
           "columns": ["id", "is_delivery_eligible"],
           "definition": "UNIQUE (id, is_delivery_eligible)"
@@ -60739,17 +60243,6 @@
           "ordinalPosition": 3,
           "type": "integer"
         },
-        "active_capacity_reservation_placement_id": {
-          "collation": null,
-          "comment": "Active placement identity requiring its exact activation reservation; retirement clears this generated foreign key.",
-          "defaultExpression": null,
-          "generated": "stored",
-          "generatedExpression": "\nCASE\n    WHEN (retired_at IS NULL) THEN id\n    ELSE NULL::uuid\nEND",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
         "copyright_withheld_at": {
           "collation": null,
           "comment": "Placement-specific copyright withholding state; shared source assets remain recoverable.",
@@ -60758,7 +60251,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -60769,7 +60262,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -60791,7 +60284,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 4,
           "type": "boolean"
         },
         "retired_at": {
@@ -60802,7 +60295,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "retirement_reason": {
@@ -60813,7 +60306,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "media_placement_retirement_reasons"
         },
         "revision": {
@@ -60835,33 +60328,12 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         }
       },
       "comment": "Durable image-use placements; exact binding and revision authority governs public delivery.",
       "foreignKeys": {
-        "fk_media_placements__active_capacity_reservation": {
-          "columns": ["active_capacity_reservation_placement_id", "activation_revision"],
-          "definition": "FOREIGN KEY (active_capacity_reservation_placement_id, activation_revision) REFERENCES image_placement_capacity_reservations(placement_id, activation_revision) DEFERRABLE INITIALLY DEFERRED",
-          "onDelete": "no action",
-          "onUpdate": "no action",
-          "referencedColumns": ["placement_id", "activation_revision"],
-          "referencedTable": "image_placement_capacity_reservations",
-          "validated": true
-        },
-        "fk_media_placements__current_image_policy": {
-          "columns": [
-            "active_capacity_reservation_placement_id",
-            "is_current_image_delivery_eligible"
-          ],
-          "definition": "FOREIGN KEY (active_capacity_reservation_placement_id, is_current_image_delivery_eligible) REFERENCES image_placement_capacity_reservations(placement_id, is_current_image_delivery_eligible) DEFERRABLE INITIALLY DEFERRED",
-          "onDelete": "no action",
-          "onUpdate": "no action",
-          "referencedColumns": ["placement_id", "is_current_image_delivery_eligible"],
-          "referencedTable": "image_placement_capacity_reservations",
-          "validated": true
-        },
         "fk_media_placements__retained_image_binding": {
           "columns": ["id"],
           "definition": "FOREIGN KEY (id) REFERENCES retained_image_placement_bindings(placement_id) ON DELETE RESTRICT",
@@ -60874,33 +60346,6 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "media_placements_active_capacity_reservation_placement_id_a_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX media_placements_active_capacity_reservation_placement_id_a_key ON public.media_placements USING btree (active_capacity_reservation_placement_id, activation_revision)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "active_capacity_reservation_placement_id",
-              "descending": false,
-              "expression": "active_capacity_reservation_placement_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "activation_revision",
-              "descending": false,
-              "expression": "activation_revision",
-              "nullsFirst": false,
-              "opclass": "int4_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "media_placements_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -60934,12 +60379,7 @@
         "trigger_media_placement_guard": "CREATE TRIGGER trigger_media_placement_guard BEFORE DELETE OR UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_reject_media_placement()",
         "trigger_media_placements_updated_at": "CREATE TRIGGER trigger_media_placements_updated_at BEFORE UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {
-        "media_placements_active_capacity_reservation_placement_id_a_key": {
-          "columns": ["active_capacity_reservation_placement_id", "activation_revision"],
-          "definition": "UNIQUE (active_capacity_reservation_placement_id, activation_revision)"
-        }
-      }
+      "uniqueConstraints": {}
     },
     "media_types": {
       "checkConstraints": {

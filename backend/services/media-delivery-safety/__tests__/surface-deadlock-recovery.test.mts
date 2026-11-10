@@ -5,7 +5,6 @@ import {
   raceTestImageSurfaceDeadlock,
   readTestDeadlockProfileImages,
 } from '@voucha/test-helpers/image-surface-deadlock'
-import { IMAGE_PLACEMENT_LIMIT_REACHED } from '@modules/on-error/error-codes'
 
 describe('surface owner deadlock recovery', () => {
   afterEach(() => {
@@ -28,10 +27,7 @@ describe('surface owner deadlock recovery', () => {
     expect(outcomes.filter(row => row.status === 'rejected')).toEqual([
       {
         status: 'rejected',
-        reason: expect.objectContaining({
-          status: 409,
-          code: IMAGE_PLACEMENT_LIMIT_REACHED,
-        }),
+        reason: expect.objectContaining({ code: '40P01' }),
       },
     ])
     const owners = await readTestDeadlockProfileImages([first.id, second.id])

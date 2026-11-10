@@ -13,8 +13,6 @@ CREATE TABLE IF NOT EXISTS images (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at TIMESTAMPTZ,
-  capacity_admissible_image_id uuid GENERATED ALWAYS AS
-    (CASE WHEN deleted_at IS NULL THEN id ELSE NULL END) STORED UNIQUE,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
   deletion_post_cursor UUID,
   deletion_posts_completed_at TIMESTAMPTZ,
@@ -61,8 +59,7 @@ CREATE TABLE IF NOT EXISTS images (
 CREATE INDEX IF NOT EXISTS idx_images__deleted_by_id
   ON images (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
 
-COMMENT ON COLUMN images.capacity_admissible_image_id IS 'Live image identity accepted by concrete placement reservations; deletion removes admission through the foreign key.';
-COMMENT ON COLUMN images.is_delivery_eligible IS 'Current upload, moderation and quarantine eligibility copied by concrete active reservations and publication authority.';
+COMMENT ON COLUMN images.is_delivery_eligible IS 'Current upload, moderation and quarantine eligibility copied onto active placement publication authority.';
 
 ALTER TABLE images
 ADD CONSTRAINT fk_images__retained_image_identity

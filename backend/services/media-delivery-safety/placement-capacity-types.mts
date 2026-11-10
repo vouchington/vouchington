@@ -1,21 +1,7 @@
-import { IMAGE_PLACEMENT_LIMIT_REACHED } from '@modules/on-error/error-codes'
-
-export type ImagePlacementCapacityReservation = {
-  placementId: string
+export type ImagePlacementAdmission = {
   imageId: string
-  bindingFamily: 'post' | 'surface'
-  activationRevision: number
-  postId?: string
-}
-
-export type ImagePlacementCapacityClaimResult = 'complete' | 'capacity_exceeded' | 'conflict'
-
-/** A concrete reservation changed before its conditional mutation could settle. */
-export class ImagePlacementCapacityConflictError extends Error {
-  readonly status = 409
-  readonly code = IMAGE_PLACEMENT_LIMIT_REACHED
-
-  constructor() {
-    super('Concurrent image placement change')
-  }
+  /** Already-written placement to leave out of the occupancy read. */
+  placementId?: string
+  /** An activation that is already live. A lower cap does not reject it. */
+  alreadyActive?: boolean
 }

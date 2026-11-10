@@ -1,7 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import type { QueryExecutor, QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { releaseImagePlacementReservations } from '@services/media-delivery-safety/placement-capacity-reservations'
 import { mediaDeliverySafetyWorkMaxValues } from '@services/media-delivery-safety/work-limits'
 import { copyrightPlacementHostIsLiveSql } from './placement-copyright-host-sql.mts'
 import { buildCopyrightPlacementsMutationSql } from './placement-copyright-mutation-sql.mts'
@@ -30,11 +29,13 @@ export async function retireImagePlacementsForDeletedImage(
 ): Promise<{ placementId: string; revision: number; imageId: string }[]> {
   const { rows: current } = await query<{ placement_id: string; revision: number }>(sql`
     /* retireImagePlacementsForDeletedImage:current */
-    SELECT reservation.placement_id, placement.revision
-    FROM image_placement_capacity_reservations reservation
-    JOIN media_placements placement ON placement.id = reservation.placement_id
-    WHERE reservation.image_id = ${imageId}
-    ORDER BY reservation.slot_number LIMIT ${mediaDeliverySafetyWorkMaxValues.max_placements_per_image}`)
+    SELECT binding.placement_id, placement.revision
+    FROM retained_image_placement_bindings binding
+    JOIN media_placements placement ON placement.id = binding.placement_id
+    WHERE binding.image_id = ${imageId}
+      AND placement.retired_at IS NULL
+    ORDER BY binding.placement_id
+    LIMIT ${mediaDeliverySafetyWorkMaxValues.max_placements_per_image}`)
   const { rows: retired } = await query<{ placement_id: string; revision: number }>(
     sql`/* retireImagePlacementsForDeletedImage */
       UPDATE media_placements placement
@@ -45,10 +46,6 @@ export async function retireImagePlacementsForDeletedImage(
         AND placement.retired_at IS NULL
       RETURNING WITH (OLD AS prior) placement.id AS placement_id, prior.revision
     `,
-  )
-  await releaseImagePlacementReservations(
-    query,
-    current.map(row => row.placement_id),
   )
   return retired.map(row => ({ placementId: row.placement_id, revision: row.revision, imageId }))
 }

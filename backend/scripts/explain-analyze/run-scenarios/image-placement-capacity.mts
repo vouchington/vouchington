@@ -5,21 +5,27 @@ import {
   mediaDeliverySafetyWorkConfig,
   mediaDeliverySafetyWorkMaxValues,
 } from '@services/media-delivery-safety/work-limits'
-import {
-  reserveImagePlacementChanges,
-  type ImagePlacementCapacityReservation,
-} from '@services/media-delivery-safety/placement-capacity-reservations'
+import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity-reservations'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import {
+  IMAGE_PLACEMENT_CAPACITY_CORPUS,
   seedImagePlacementCapacityCohort,
   seedImagePlacementCapacityPolicyCorpus,
 } from '../seed-data/image-placement-capacity.mts'
 import { runAndCapture } from '../run-support.mts'
 
 const cap = mediaDeliverySafetyWorkMaxValues.max_placements_per_image
-const relation = 'image_placement_capacity_reservations'
-const queries = ['claimImagePlacementReservations']
+const bindings = 'retained_image_placement_bindings'
+const placements = 'media_placements'
+const queries = ['countImagePlacementOccupancy']
+
+type CapacityRow = {
+  placementId: string
+  imageId: string
+  bindingFamily: 'post' | 'surface'
+}
+
 export async function runImagePlacementCapacityScenarios(): Promise<void> {
   await mediaDeliverySafetyWorkConfig.waitForInitialization()
   const restore = overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
@@ -32,16 +38,11 @@ export async function runImagePlacementCapacityScenarios(): Promise<void> {
     const mixed = await seedImagePlacementCapacityCohort(3, cap, 'mixed')
     const sparse = await seedImagePlacementCapacityCohort(4, 1, 'post')
     const retired = await seedImagePlacementCapacityCohort(5, 0, 'surface')
+    const policyImageId = await seedImagePlacementCapacityPolicyCorpus()
     await write(
-      `/* seedCapacitySparseSlot */ UPDATE image_placement_capacity_reservations SET slot_number = $2 WHERE placement_id = $1`,
-      [sparse.current.placementId, cap],
+      '/* analyzeCapacity */ VACUUM (ANALYZE) retained_image_placement_bindings, media_placements',
     )
-    // Plain ANALYZE leaves relallvisible at 0 after these inserts. The occupied-slot lookup
-    // then sorts a sequential scan of every reservation and reads past the per-image cap.
-    await write('/* analyzeCapacity */ VACUUM (ANALYZE) image_placement_capacity_reservations')
     await write('/* analyzeCapacityImages */ ANALYZE images')
-    await seedImagePlacementCapacityPolicyCorpus(full.imageId)
-    await write('/* analyzeCapacityPlacements */ VACUUM (ANALYZE) media_placements')
     await capture('image-placement-capacity-at-cap', full.candidate, true)
     await capture('image-placement-capacity-empty', empty.candidate, false)
     await capture('image-placement-capacity-surface', surface.candidate, true)
@@ -57,69 +58,72 @@ export async function runImagePlacementCapacityScenarios(): Promise<void> {
     }
     await capture('image-placement-activation-new', sparse.candidate, false)
     await capture('image-placement-activation-retired', retired.candidate, false)
-    await runImageCapacityConditionalWrites(full.imageId, full.placementIds)
+    await runImageCapacityConditionalWrites(policyImageId)
   } finally {
     restore()
   }
 }
 
-async function capture(
-  id: string,
-  reservation: ImagePlacementCapacityReservation,
-  refused: boolean,
-  existing = false,
-) {
+async function capture(id: string, row: CapacityRow, refused: boolean, existing = false) {
   registerScenarioContract(id, {
     allowEmptyResult: true,
     expectations: [
-      { kind: 'maxProcessedRows', relation, max: cap + 1 },
-      { kind: 'maxProcessedRows', relation: 'images', max: 1 },
+      { kind: 'maxProcessedRows', relation: bindings, max: cap + 1 },
+      { kind: 'maxProcessedRows', relation: placements, max: cap + 1 },
     ],
-    forbidSequentialScans: [relation],
-    seededRows: { [relation]: 3 * cap + 1 },
+    forbidSequentialScans: [bindings, placements],
+    seededRows: {
+      [bindings]: IMAGE_PLACEMENT_CAPACITY_CORPUS,
+      [placements]: IMAGE_PLACEMENT_CAPACITY_CORPUS,
+    },
   })
   await using query = await beginTransaction()
   await runAndCapture(
     id,
     async () => {
-      if (!existing && reservation.bindingFamily === 'surface')
+      if (!existing && row.bindingFamily === 'surface')
         await query(
           `/* activateCapacitySurfaceOwner */
           UPDATE users owner SET profile_image_id = binding.image_id
           FROM image_surface_placements binding
           WHERE binding.placement_id = $1::uuid AND owner.id = binding.user_id
             AND owner.profile_image_id IS NULL`,
-          [reservation.placementId],
+          [row.placementId],
         )
       else if (!existing)
         await query(
           `/* activateCapacityCandidate */ UPDATE media_placements SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1 WHERE id = $1`,
-          [reservation.placementId],
+          [row.placementId],
         )
-      const claim = () => reserveImagePlacementChanges(query, [], [reservation])
-      if (refused) await assert.rejects(claim, { code: 'IMAGE_PLACEMENT_LIMIT_REACHED' })
-      else await claim()
+      const admit = () =>
+        admitImagePlacements(query, [
+          { imageId: row.imageId, placementId: row.placementId, alreadyActive: existing },
+        ])
+      if (refused) await assert.rejects(admit, { code: 'IMAGE_PLACEMENT_LIMIT_REACHED' })
+      else await admit()
     },
     undefined,
     queries,
     {
-      // Roll back actual capture writes before both plan modes and repeated INSERT EXPLAINs.
       afterCapture: () => query.rollback(),
     },
   )
 }
 
-/** A two-image request must perform one claim, bounded independently by each image cap. */
-async function captureFullBatch(reservations: readonly ImagePlacementCapacityReservation[]) {
+/** One count for every image in the batch, bounded independently by each image cap. */
+async function captureFullBatch(rows: readonly CapacityRow[]) {
   const id = 'image-placement-capacity-batch-at-cap'
   registerScenarioContract(id, {
     allowEmptyResult: true,
     expectations: [
-      { kind: 'maxProcessedRows', relation, max: reservations.length * (cap + 1) },
-      { kind: 'maxProcessedRows', relation: 'images', max: reservations.length },
+      { kind: 'maxProcessedRows', relation: bindings, max: rows.length * (cap + 1) },
+      { kind: 'maxProcessedRows', relation: placements, max: rows.length * (cap + 1) },
     ],
-    forbidSequentialScans: [relation],
-    seededRows: { [relation]: 3 * cap + 1 },
+    forbidSequentialScans: [bindings, placements],
+    seededRows: {
+      [bindings]: IMAGE_PLACEMENT_CAPACITY_CORPUS,
+      [placements]: IMAGE_PLACEMENT_CAPACITY_CORPUS,
+    },
   })
   await using query = await beginTransaction()
   await runAndCapture(
@@ -129,11 +133,16 @@ async function captureFullBatch(reservations: readonly ImagePlacementCapacityRes
         `/* activateCapacityBatchCandidates */
       UPDATE media_placements SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1
       WHERE id = ANY($1::uuid[])`,
-        [reservations.map(row => row.placementId)],
+        [rows.map(row => row.placementId)],
       )
-      await assert.rejects(() => reserveImagePlacementChanges(query, [], reservations), {
-        code: 'IMAGE_PLACEMENT_LIMIT_REACHED',
-      })
+      await assert.rejects(
+        () =>
+          admitImagePlacements(
+            query,
+            rows.map(row => ({ imageId: row.imageId, placementId: row.placementId })),
+          ),
+        { code: 'IMAGE_PLACEMENT_LIMIT_REACHED' },
+      )
     },
     undefined,
     queries,

@@ -1,6 +1,9 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { reserveImagePlacementChanges } from '../../services/media-delivery-safety/placement-capacity-reservations.mts'
+import {
+  admitImagePlacements,
+  projectImagePlacementPolicy,
+} from '../../services/media-delivery-safety/placement-capacity-reservations.mts'
 
 export type TestImageSurfacePlacementActivation = {
   placement_id: string
@@ -36,6 +39,7 @@ export async function reactivateTestUserProfileImageThroughDatabaseTrigger(
   await transaction(sql`/* reactivateTestUserProfileImageThroughDatabaseTrigger:retire */
     UPDATE users SET profile_image_id = NULL WHERE id = ${userId}
   `)
+  await admitImagePlacements(transaction, [{ imageId }])
   await transaction(sql`/* reactivateTestUserProfileImageThroughDatabaseTrigger:reactivate */
     UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}
   `)
@@ -47,18 +51,7 @@ export async function reactivateTestUserProfileImageThroughDatabaseTrigger(
     FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
     WHERE surface.user_id = ${userId} AND surface.surface_kind = 'user-profile-image' AND surface.image_id = ${imageId}`)
   if (!rows[0]) throw new Error('Missing owned reactivated surface')
-  await reserveImagePlacementChanges(
-    transaction,
-    [rows[0].placement_id],
-    [
-      {
-        placementId: rows[0].placement_id,
-        imageId,
-        activationRevision: rows[0].activation_revision,
-        bindingFamily: 'surface',
-      },
-    ],
-  )
+  await projectImagePlacementPolicy(transaction, [rows[0].placement_id])
   await transaction.commit()
 }
 

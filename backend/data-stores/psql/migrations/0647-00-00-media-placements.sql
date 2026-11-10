@@ -3,10 +3,7 @@ CREATE TABLE media_placements (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   revision integer NOT NULL DEFAULT 0 CHECK (revision >= 0),
   activation_revision integer NOT NULL DEFAULT 0 CHECK (activation_revision >= 0 AND activation_revision <= revision),
-  active_capacity_reservation_placement_id uuid GENERATED ALWAYS AS
-    (CASE WHEN retired_at IS NULL THEN id ELSE NULL END) STORED,
   is_current_image_delivery_eligible boolean NOT NULL DEFAULT false,
-  UNIQUE (active_capacity_reservation_placement_id, activation_revision),
   retired_at timestamptz,
   retirement_reason media_placement_retirement_reasons CHECK (retirement_reason IN ('asset_deleted', 'owner_removed')),
   copyright_withheld_at timestamptz,
@@ -49,8 +46,8 @@ BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';
   END IF;
-  IF (to_jsonb(NEW) - ARRAY['active_capacity_reservation_placement_id', 'is_current_image_delivery_eligible', 'updated_at'])
-      = (to_jsonb(OLD) - ARRAY['active_capacity_reservation_placement_id', 'is_current_image_delivery_eligible', 'updated_at'])
+  IF (to_jsonb(NEW) - ARRAY['is_current_image_delivery_eligible', 'updated_at'])
+      = (to_jsonb(OLD) - ARRAY['is_current_image_delivery_eligible', 'updated_at'])
     AND NEW.is_current_image_delivery_eligible IS DISTINCT FROM OLD.is_current_image_delivery_eligible THEN
     RETURN NEW;
   END IF;
@@ -95,5 +92,4 @@ COMMENT ON COLUMN image_placements.post_id IS 'Hosting post for this immutable i
 COMMENT ON COLUMN image_placements.image_id IS 'Immutable byte asset bound to this post placement; an asset can have multiple separately authorized placements.';
 COMMENT ON COLUMN image_placements.binding_family IS 'Literal post family checked by the retained image placement triple foreign key.';
 
-COMMENT ON COLUMN media_placements.active_capacity_reservation_placement_id IS 'Active placement identity requiring its exact activation reservation; retirement clears this generated foreign key.';
 COMMENT ON COLUMN media_placements.is_current_image_delivery_eligible IS 'Current image policy projected onto actual placement publication authority; policy changes do not advance availability revision.';

@@ -98,20 +98,6 @@ export async function seedMediaDeliveryLockFixture(): Promise<void> {
       AND owner.profile_image_id IS DISTINCT FROM binding.image_id`,
     [surfaceIds],
   )
-  await query(
-    `/* seedDeliveryLock:capacity */
-    INSERT INTO image_placement_capacity_reservations
-      (placement_id, image_id, binding_family, activation_revision, slot_number,
-       post_placement_id, surface_placement_id, post_id, is_current_image_delivery_eligible)
-    SELECT retained.placement_id, retained.image_id, retained.binding_family, 0, 1,
-      post.placement_id, surface.placement_id, post.post_id, false
-    FROM retained_image_placement_bindings retained
-    LEFT JOIN image_placements post ON post.placement_id = retained.placement_id
-    LEFT JOIN image_surface_placements surface ON surface.placement_id = retained.placement_id
-    WHERE retained.placement_id = ANY($1::uuid[])
-    ON CONFLICT DO NOTHING`,
-    [placementIds],
-  )
   const recordIds = placementIds.map((_, i) => seedUuid(500_000 + TARGET_COUNT + i, 'ea'))
   await query(
     `/* seedDeliveryLock:registry */

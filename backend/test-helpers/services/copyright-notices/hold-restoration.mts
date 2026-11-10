@@ -1,4 +1,3 @@
-import { releaseImagePlacementReservations } from '../../../services/media-delivery-safety/placement-capacity-reservations.mts'
 import { writeImageDeliveryPolicyMutation } from '../../../services/media-delivery-safety/image-policy-mutation.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -99,7 +98,6 @@ export async function retireTestCopyrightRestorationPlacement(placementId: strin
   await query(sql`/* retireTestCopyrightRestorationPlacement */
     UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP,
       retirement_reason = 'owner_removed', revision = revision + 1 WHERE id = ${placementId}`)
-  await releaseImagePlacementReservations(query, [placementId])
   await query.commit()
 }
 

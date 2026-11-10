@@ -20,7 +20,6 @@ export const MEMBERSHIP_WORK_SCENARIOS = [
   'image-placement-activation-existing',
   'image-placement-activation-new',
   'image-placement-activation-retired',
-  'image-placement-capacity-release',
   'image-placement-capacity-policy-reads',
   'image-placement-capacity-policy-writes',
   'image-placement-rollback-owner',

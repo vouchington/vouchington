@@ -1,4 +1,4 @@
-import { readTestImageCapacitySlots } from '@voucha/test-helpers/image-placement-capacity'
+import { readTestActiveImagePlacementCount } from '@voucha/test-helpers/image-placement-capacity'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { describe, expect, it } from 'vitest'
 import {
@@ -27,7 +27,7 @@ const landing = getEntityRelationMetadataOrThrow({
 })
 
 describe('source hide releases all hostname ownership', () => {
-  it('retires both source images and releases their concrete reservations before commit', async () => {
+  it('retires both source images before commit', async () => {
     const admin = await createTestUser({ administrator: true })
     const topic = await createTestTopic({ user: admin, topic_type: 'rss_feed' })
     const feed = await insertTestRssFeedDirect({ topicId: topic.id })
@@ -38,7 +38,7 @@ describe('source hide releases all hostname ownership', () => {
     const edge = installTestMediaDeliveryEdge()
     await disableAndHideSource(feed.id)
     expect(await getTopicByAny(topic.id)).toBeNull()
-    expect(await readTestImageCapacitySlots(imageId)).toEqual([])
+    expect(await readTestActiveImagePlacementCount(imageId)).toBe(0)
     const retired = await getTestImageSurfacePlacements({ topicId: topic.id })
     expect(
       retired.every(row => row.retired_at !== null && row.retirement_reason === 'owner_removed'),

@@ -1,34 +1,14 @@
 import assert from 'node:assert/strict'
 import { beginTransaction, write } from '@data-stores/psql'
-import { releaseImagePlacementReservations } from '@services/media-delivery-safety/placement-capacity-reservations'
 import { mediaDeliverySafetyWorkMaxValues } from '@services/media-delivery-safety/work-limits'
 import { writeImageDeliveryPolicyMutation } from '@services/media-delivery-safety/image-policy-mutation'
 import { rollbackPostImages } from '@services/posts/images-rollback'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+import { IMAGE_PLACEMENT_CAPACITY_CORPUS } from '../seed-data/image-placement-capacity.mts'
 import { seedUuid } from '../seed-data/common.mts'
 
-export async function runImageCapacityConditionalWrites(
-  imageId: string,
-  placementIds: readonly string[],
-): Promise<void> {
-  const cap = mediaDeliverySafetyWorkMaxValues.max_placements_per_image
-  const relation = 'image_placement_capacity_reservations'
-  registerScenarioContract('image-placement-capacity-release', {
-    allowEmptyResult: true,
-    // Snapshot discovery, target scan and ModifyTable each account for at most cap records.
-    expectations: [{ kind: 'maxProcessedRows', relation, max: 3 * cap }],
-    forbidSequentialScans: [relation],
-    seededRows: { [relation]: 3 * cap + 1 },
-  })
-  await using query = await beginTransaction()
-  await runAndCapture(
-    'image-placement-capacity-release',
-    () => releaseImagePlacementReservations(query, placementIds),
-    undefined,
-    'releaseImagePlacementReservations',
-    { afterCapture: () => query.rollback() },
-  )
+export async function runImageCapacityConditionalWrites(imageId: string): Promise<void> {
   await capturePolicy(imageId, false)
   await capturePolicy(imageId, true)
   await captureRollbackOwner()
@@ -81,7 +61,7 @@ async function captureRollbackOwner(): Promise<void> {
 
 async function capturePolicy(imageId: string, writes: boolean): Promise<void> {
   const cap = mediaDeliverySafetyWorkMaxValues.max_placements_per_image
-  const reservations = 'image_placement_capacity_reservations'
+  const bindings = 'retained_image_placement_bindings'
   const placements = 'media_placements'
   const id = writes
     ? 'image-placement-capacity-policy-writes'
@@ -91,12 +71,15 @@ async function capturePolicy(imageId: string, writes: boolean): Promise<void> {
   registerScenarioContract(id, {
     allowEmptyResult: true,
     expectations: [
-      { kind: 'maxProcessedRows', relation: reservations, max: bound },
+      { kind: 'maxProcessedRows', relation: bindings, max: bound },
       { kind: 'maxProcessedRows', relation: placements, max: bound },
       { kind: 'maxProcessedRows', relation: 'images', max: 1 },
     ],
-    forbidSequentialScans: [reservations, placements, 'images'],
-    seededRows: { [reservations]: 3 * cap + 1 },
+    forbidSequentialScans: [bindings, placements, 'images'],
+    seededRows: {
+      [bindings]: IMAGE_PLACEMENT_CAPACITY_CORPUS,
+      [placements]: IMAGE_PLACEMENT_CAPACITY_CORPUS,
+    },
   })
   await using query = await beginTransaction()
   await runAndCapture(
@@ -115,20 +98,8 @@ async function capturePolicy(imageId: string, writes: boolean): Promise<void> {
       ),
     undefined,
     writes
-      ? ['writeImagePolicy:reservations', 'writeImagePolicy:placements']
-      : [
-          'writeImagePolicy:capture',
-          'writeImagePolicy:current',
-          'writeImagePolicy:writeSet',
-          'writeImagePolicy:denials',
-        ],
-    {
-      afterCapture: () => query.rollback(),
-      // Mirror the real policy phase: each isolated write is rolled back before deferred checks.
-      deferredConstraints: [
-        'fk_image_placement_capacity__live_image',
-        'fk_image_placement_capacity__image_policy',
-      ],
-    },
+      ? ['writeImagePolicy:placements']
+      : ['writeImagePolicy:current', 'writeImagePolicy:denials'],
+    { afterCapture: () => query.rollback() },
   )
 }

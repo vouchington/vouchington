@@ -94,7 +94,6 @@ async function captureScenario(
   captureQueryName?: string | readonly string[],
   explainOptions: {
     localSettings?: Readonly<Record<string, string>>
-    deferredConstraints?: readonly string[]
     afterCapture?: () => Promise<void>
     exactCapturedNames?: readonly string[]
     decisionInstant?: Date
@@ -162,7 +161,6 @@ async function captureScenario(
         beforeExplain: explainOptions.beforeExplain,
         localSettings: explainOptions.localSettings,
         setupSql,
-        deferredConstraints: explainOptions.deferredConstraints,
       }
     })
   })

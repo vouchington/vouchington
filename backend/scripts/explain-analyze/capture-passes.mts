@@ -33,7 +33,6 @@ export type Capture = {
   planCacheMode: ExplainPlanCacheMode
   localSettings?: Readonly<Record<string, string>>
   setupSql?: string
-  deferredConstraints?: readonly string[]
 }
 
 const repeatedResults: ExplainResult[] = []
@@ -57,7 +56,6 @@ async function probeSeqScanAlternative(input: Capture, result: ProbedExplainResu
     localSettings: { ...input.localSettings, enable_seqscan: 'off' },
     setupSql: input.setupSql,
     planCacheMode: input.planCacheMode,
-    deferredConstraints: input.deferredConstraints,
     planOnly: true,
   })
   result.no_seq_scan_total_cost = costWithoutSeqScan(probe.plan, scannedRelations)
@@ -84,7 +82,6 @@ async function probeBaselinedScans(
     },
     setupSql: input.setupSql,
     planCacheMode: input.planCacheMode,
-    deferredConstraints: input.deferredConstraints,
     planOnly: true,
   })
   const scans = Object.fromEntries(
@@ -107,7 +104,6 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
         name: input.name,
         captureIndex: input.captureIndex,
         planCacheMode: input.planCacheMode,
-        deferredConstraints: input.deferredConstraints,
         pass,
         sqlSha256: sha256(input.text),
         valuesSha256: sha256(
@@ -128,7 +124,6 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
     localSettings: input.localSettings,
     setupSql: input.setupSql,
     planCacheMode: input.planCacheMode,
-    deferredConstraints: input.deferredConstraints,
   })
   if (contract.expectations.some(expectation => expectation.kind === 'maxFunctionCalls')) {
     // Keep the plan capture and its shape gates on the caller's settings. PostgreSQL's
@@ -137,7 +132,6 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
       localSettings: { ...input.localSettings, max_parallel_workers_per_gather: '0' },
       setupSql: input.setupSql,
       planCacheMode: input.planCacheMode,
-      deferredConstraints: input.deferredConstraints,
     })
     if (hasLaunchedParallelWorkers(serial.plan))
       throw new Error(`${input.name} launched parallel workers during serial function-call capture`)
