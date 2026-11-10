@@ -25,6 +25,16 @@ let dailyAiCostTotalCache: DailyAiCostTotalCacheEntry | null = null
 let dailyAiCostTotalRefresh: Pick<DailyAiCostTotalCacheEntry, 'day' | 'promise'> | null = null
 
 /**
+ * Drops one day's in-process total. A test date reservation calls this on acquire and release:
+ * the TTL is compared with `Date.now()`, and a fake clock set back to that day's noon is still
+ * inside a cache entry stored at that same noon.
+ */
+export function forgetDailyAiCostTotalCache(day: string): void {
+  if (dailyAiCostTotalCache?.day === day) dailyAiCostTotalCache = null
+  if (dailyAiCostTotalRefresh?.day === day) dailyAiCostTotalRefresh = null
+}
+
+/**
  * Sums `cost_microunits` across every agent for the current UTC day. Unlike
  * `getCommunityAiCostTotals` (totals.mts), this has no `communities` join -- so NULL-community_id
  * agents (chat, autotagger, ...) are included -- and is windowed to today, not
