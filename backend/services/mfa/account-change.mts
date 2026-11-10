@@ -1,4 +1,9 @@
 import { revokeOtherAuthenticatedSessions } from '@services/jwt-session/user-session-revocation'
+import { sessionLimitsMaxValues } from '@services/jwt-session/session-limits-config'
+import {
+  assertActiveDeviceAuthority,
+  readSessionDeviceAuthority,
+} from '@services/jwt-session/device-authority'
 import {
   read,
   registerPostCommitAction,
@@ -18,6 +23,9 @@ export async function withReauthenticatedAccountChange<T>(
   change: (query: TransactionQuery) => Promise<T>,
 ): Promise<T> {
   return withActiveAccountSession(currentUserId, session, async query => {
+    await lockSessionsAccountChangeWillWrite(query, currentUserId, session.sid)
+    const authority = await readSessionDeviceAuthority(session.sid, query)
+    assertActiveDeviceAuthority(authority, { uid: currentUserId, did: session.did })
     const oldEmail = await authorizeAccountChange(currentUserId, session, reAuthToken, query)
     const result = await applyAccountChange(currentUserId, session.sid, change, query)
     registerPostCommitAction(query, () => notifyAccountSecurityChange(oldEmail))
@@ -40,6 +48,39 @@ export async function captureAccountSecurityAddress(
 
 export async function notifyAccountSecurityChange(oldEmail: string | undefined): Promise<void> {
   if (oldEmail) await enqueueSendAccountSecurityEmail({ emailAddress: oldEmail }, {})
+}
+
+/** Locks the actor session and the sessions revocation will update, in `id` order. */
+async function lockSessionsAccountChangeWillWrite(
+  query: TransactionQuery,
+  currentUserId: string,
+  actorSessionId: string,
+): Promise<void> {
+  await query(
+    `/* lockSessionsAccountChangeWillWrite */
+     SELECT id
+     FROM user_sessions
+     WHERE user_id = $1
+       AND revoked_at IS NULL
+       AND expires_at > CURRENT_TIMESTAMP
+       AND (
+         id = $2
+         OR id IN (
+           SELECT id
+           -- no-mistakes-disable-next-line postgres-required-predicates: a SID may be minted before its owning user, so every session-ID partition can hold an active session for this user
+           FROM user_sessions
+           WHERE user_id = $1
+             AND revoked_at IS NULL
+             AND expires_at > CURRENT_TIMESTAMP
+             AND id <> $2
+           ORDER BY expires_at, id
+           LIMIT $3
+         )
+       )
+     ORDER BY id ASC NULLS LAST
+     FOR NO KEY UPDATE`,
+    [currentUserId, actorSessionId, sessionLimitsMaxValues.active_sessions_per_user],
+  )
 }
 
 async function authorizeAccountChange(

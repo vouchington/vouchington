@@ -79,7 +79,6 @@ describe('resumable RSS feed child removal', () => {
       'hardDeleteRssFeedChildPage:parentTopicFootprint',
       'hardDeleteRssFeedChildPage:categoryFootprint',
       'lockTopicRssFeedAttachmentLifecycles',
-      'lockPostPublicationRssFeedScopes',
       'hardDeleteRssFeedChildPage:feed',
     ])
     expect(await getTestRssFeedCategories(feed.id)).toEqual([])
@@ -117,7 +116,6 @@ describe('resumable RSS feed child removal', () => {
       'hardDeleteRssFeedChildPage:parentTopicFootprint',
       'hardDeleteRssFeedChildPage:categoryFootprint',
       'lockTopicRssFeedAttachmentLifecycles',
-      'lockPostPublicationRssFeedScopes',
       'hardDeleteRssFeedChildPage:feed',
     ])
     await expect(updateTestFeedSettingChangeReason(changeId)).rejects.toMatchObject({
@@ -237,7 +235,6 @@ describe('resumable RSS feed child removal', () => {
     expectQueryOrder(final.queries, [
       'finalizeHardDeleteRssFeed:topicFootprint',
       'lockTopicRssFeedAttachmentLifecycles',
-      'lockPostPublicationRssFeedScopes',
       'finalizeHardDeleteRssFeed:feed',
     ])
     expect(await countTestFeedRows(feed.id)).toBe(0)

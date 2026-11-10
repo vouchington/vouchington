@@ -53,8 +53,7 @@ export async function lockSessionDeviceAuthority(
   uid: string,
   _sid: string,
 ): Promise<void> {
-  // The user fence is shared with deletion and user-wide revocation; the SID fence also
-  // serializes revocation before an initial session row exists.
+  // Rejects a missing or deleted user. The statement that writes a session locks that row.
   await query(sql`/* lockSessionDeviceAuthority:userFence */
     SELECT fn_lock_active_user_for_mutation(${uid})`)
 }
