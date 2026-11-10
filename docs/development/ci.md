@@ -26,6 +26,12 @@ once in [ci/cleanup-artifacts-patterns.json](../../ci/cleanup-artifacts-patterns
 [GHCR cleanup](../../.github/workflows/ghcr-cleanup.yml) keeps images main still reaches and deletes
 images from ejected or failed merge groups after a seven day grace period.
 
+Merge-group GHCR publication and provenance attestation are advisory: a registry outage must not
+eject unrelated queued PRs, so those steps warn instead of failing the group. Everything that
+validates the image (build, smoke, Trivy) still gates. The cost moves to main, where the resolver
+treats an image that is absent or lacks verifiable provenance as missing and rebuilds and attests it
+before the `Main CI` success that releases deploys. A pushed but unattested image is never reused.
+
 Log volume is a cost too, so noise with no reader is suppressed at the source: Valkey runs as a step
 container (a service container dumps its full `docker logs` at teardown on every run), pnpm installs
 use `--loglevel=warn`, Docker build steps disable buildx provenance metadata, Trivy tables go to
