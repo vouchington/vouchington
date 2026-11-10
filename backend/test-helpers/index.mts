@@ -146,7 +146,6 @@ export {
 export {
   markModerationReportReviewedForTest,
   setPostModerationFlaggedForTest,
-  countPostReviewTopicRatingsForTest,
   getModeratorActionRowsForTest,
 } from './sql-moderation.mts'
 export {
