@@ -161,18 +161,16 @@ describe('get_referral_links — real DB', () => {
     expect(String(page.results[1]!['label'])).not.toContain('previous instructions')
   })
 
-  it('reads the caller when user_id is their own id, and forbids another user the way REST does', async () => {
+  it('reads the caller when user_id is their own id, and another user the way REST does', async () => {
     expect(ids(await mine({ user_id: owner.id }))).toEqual(ids(await mine()))
     const request = createRequest()
     await request.authenticateAs(owner)
-    const rest = await request.get(`/api/v1/referral-links?user_id=${other.id}`)
-    expect(rest.status).toBe(403)
-    const rejected = await callRejectedMcpTool(owner, 'get_referral_links', { user_id: other.id }, [
-      'referral-links:read',
-    ])
-    expect(JSON.parse(rejected)).toMatchObject({
-      error: { status: rest.status, code: 'FORBIDDEN', message: rest.body.message },
-    })
+    const rest = await request.get(`/api/v1/referral-links?user_id=${other.id}`).expect(200)
+    const page = await mine({ user_id: other.id })
+    expect(page.results).toEqual(rest.body.results)
+    expect(page.page_info).toEqual(rest.body.page_info)
+    expect(ids(page)).toEqual([othersLink])
+    expect(page.results[0]).not.toHaveProperty('label')
   })
 
   it('keeps only the links under one program and sanitizes the labels', async () => {

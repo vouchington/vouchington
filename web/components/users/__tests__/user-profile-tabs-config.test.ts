@@ -36,6 +36,11 @@ describe('getTopLevelTabHref', () => {
     const tab = getVisibleTopLevelTabs().find(t => t.name === 'communities')!
     expect(getTopLevelTabHref(tab, 'alice')).toBe('/user/alice/communities/member')
   })
+
+  it('returns /referral-links for the referral links tab', () => {
+    const tab = getVisibleTopLevelTabs().find(t => t.name === 'referral-links')!
+    expect(getTopLevelTabHref(tab, 'alice')).toBe('/user/alice/referral-links')
+  })
 })
 
 describe('getActiveTopLevelTab', () => {
@@ -50,6 +55,7 @@ describe('getActiveTopLevelTab', () => {
     ['/user/alice/users/followers', 'alice', 'friends'],
     ['/user/alice/rss-feeds/following', 'alice', 'sources'],
     ['/user/alice/communities/member', 'alice', 'communities'],
+    ['/user/alice/referral-links', 'alice', 'referral-links'],
   ] as const)('%s → %s', (pathname, id, expected) => {
     expect(getActiveTopLevelTab(pathname, id)).toBe(expected)
   })
@@ -64,8 +70,16 @@ describe('getActiveTopLevelTab', () => {
 })
 
 describe('getVisibleTopLevelTabs', () => {
-  it('returns all 6 public tabs', () => {
+  it('returns all 7 public tabs', () => {
     const tabNames = getVisibleTopLevelTabs().map(t => t.name)
-    expect(tabNames).toEqual(['about', 'posts', 'topics', 'friends', 'sources', 'communities'])
+    expect(tabNames).toEqual([
+      'about',
+      'posts',
+      'topics',
+      'friends',
+      'sources',
+      'communities',
+      'referral-links',
+    ])
   })
 })

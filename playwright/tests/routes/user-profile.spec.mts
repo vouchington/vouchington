@@ -87,16 +87,16 @@ test.describe('User profile page', () => {
     expect(canonical).toContain('/user/')
   })
 
-  test('shows all six public profile tabs to anonymous users', async ({ page }) => {
+  test('shows all public profile tabs to anonymous users', async ({ page }) => {
     await navigateTo(page, `/user/${TEST_USER_USERNAME}`)
 
-    // All 6 tabs are public — no management gate
     await expect(page.getByTestId('user-profile-tab-about')).toBeVisible()
     await expect(page.getByTestId('user-profile-tab-posts')).toBeVisible()
     await expect(page.getByTestId('user-profile-tab-topics')).toBeVisible()
     await expect(page.getByTestId('user-profile-tab-friends')).toBeVisible()
     await expect(page.getByTestId('user-profile-tab-sources')).toBeVisible()
     await expect(page.getByTestId('user-profile-tab-communities')).toBeVisible()
+    await expect(page.getByTestId('user-profile-tab-referral-links')).toBeVisible()
   })
 
   test('Posts tab dropdown shows sub-navigation and supports navigation', async ({ page }) => {

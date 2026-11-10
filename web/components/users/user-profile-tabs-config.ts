@@ -2,7 +2,14 @@ import type { MessageKey } from '@ts-shared/ui-messages'
 import { createUserPathname } from '@/lib/links/entity-href'
 import { isActivePath } from '@/lib/utils/path'
 
-export type TopLevelTabName = 'about' | 'posts' | 'topics' | 'friends' | 'sources' | 'communities'
+export type TopLevelTabName =
+  | 'about'
+  | 'posts'
+  | 'topics'
+  | 'friends'
+  | 'sources'
+  | 'communities'
+  | 'referral-links'
 
 interface TopLevelTabConfig {
   name: TopLevelTabName
@@ -51,6 +58,12 @@ const TOP_LEVEL_TABS: TopLevelTabConfig[] = [
     label: 'extracted.users.userProfileTabsConfig.communities_c864f329',
     firstHref: id => createUserPathname(id, '/communities/member'),
     routePrefixes: id => [createUserPathname(id, '/communities')],
+  },
+  {
+    name: 'referral-links',
+    label: 'extracted.landingPagesManager.itemPickerFields.referralLinks_fcbca63d',
+    firstHref: id => createUserPathname(id, '/referral-links'),
+    routePrefixes: id => [createUserPathname(id, '/referral-links')],
   },
 ]
 

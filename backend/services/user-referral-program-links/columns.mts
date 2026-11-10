@@ -24,17 +24,46 @@ const userReferralLinkColumnNames = Object.keys({
   unfurl_last_error: true,
 } satisfies Record<keyof UserReferralLink, true>)
 
+/** Management fields omitted from every non-owner list read. */
+export const userReferralLinkPrivateFieldNames = [
+  'label',
+  'activated_at',
+  'deactivated_at',
+  'consecutive_crawl_failures',
+  'last_crawl_failure_at',
+  'last_crawl_success_at',
+  'last_crawl_id',
+  'unfurl_requested_at',
+  'unfurl_completed_at',
+  'unfurl_failed_at',
+  'unfurl_last_error',
+] as const satisfies readonly (keyof UserReferralLink)[]
+
+const privateFieldNames = new Set<string>(userReferralLinkPrivateFieldNames)
+
+function formatUserReferralLinkColumn(prefix: string, column: string): string {
+  return column === 'referral_program_id'
+    ? `${prefix}referral_program_topic_id AS referral_program_id`
+    : `${prefix}${column}`
+}
+
+function joinUserReferralLinkColumns(columns: readonly string[], alias?: string): string {
+  const prefix = alias ? `${alias}.` : ''
+  return columns.map(column => formatUserReferralLinkColumn(prefix, column)).join(', ')
+}
+
 /**
  * Response-facing `user_referral_program_links` columns. Pass `alias` when the statement joins
  * other tables; omit it for single-table SELECT and RETURNING.
  */
 export function userReferralLinkColumns(alias?: string): string {
-  const prefix = alias ? `${alias}.` : ''
-  return userReferralLinkColumnNames
-    .map(column =>
-      column === 'referral_program_id'
-        ? `${prefix}referral_program_topic_id AS referral_program_id`
-        : `${prefix}${column}`,
-    )
-    .join(', ')
+  return joinUserReferralLinkColumns(userReferralLinkColumnNames, alias)
+}
+
+/** Owner lists include management columns. Every other list read gets the public columns only. */
+export function userReferralLinkListColumns(alias: string, includePrivate: boolean): string {
+  const columns = includePrivate
+    ? userReferralLinkColumnNames
+    : userReferralLinkColumnNames.filter(column => !privateFieldNames.has(column))
+  return joinUserReferralLinkColumns(columns, alias)
 }

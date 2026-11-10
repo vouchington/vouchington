@@ -15,7 +15,12 @@ export function buildUserProfileDropdownItems(
   uiLocale: BuildUserDetailTabsOptions['uiLocale'],
   currentFeedType?: string,
 ): UserDetailTab[] | null {
-  if (tabName === 'about' || tabName === 'topics' || tabName === 'communities') {
+  if (
+    tabName === 'about' ||
+    tabName === 'topics' ||
+    tabName === 'communities' ||
+    tabName === 'referral-links'
+  ) {
     return null
   }
 

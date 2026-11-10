@@ -12,6 +12,7 @@ describe('catalog-derived user profile config', () => {
       '/user/alice/users/following',
       '/user/alice/rss-feeds/following',
       '/user/alice/communities/member',
+      '/user/alice/referral-links',
     ])
   })
 
