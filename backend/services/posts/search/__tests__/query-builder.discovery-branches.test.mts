@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { getPostIds } from '../get-ids.mts'
 import { buildPostSearchQuery } from '../query-builder.mts'
@@ -62,7 +61,7 @@ describe('discovery search branches', () => {
   })
 
   it('orders following_new by the rank alias and rejects a cursor with one bound', () => {
-    const missingRank = sql``
+    const missingRank = buildPostSearchQuery(undefined, { sort: 'new' })
     expect(() =>
       appendPostSearchOrderAndLimit(missingRank, {
         followingRankExpression: null,
