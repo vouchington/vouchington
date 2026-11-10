@@ -46,8 +46,7 @@ async function hideSource(rssFeedId: string, query: TransactionQuery): Promise<v
       FROM rss_feeds feed JOIN topics topic ON topic.id = feed.topic_id AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL WHERE feed.id = $1::uuid`,
     [rssFeedId],
   )
-  const topicIds = sourceRows.map(row => row.topic_id)
-  // ast-grep-ignore: no-three-sequential-awaits -- Enablement, publication capture, and discoverability record one hide; the topic soft-delete uses the topic ids read above.
+  // ast-grep-ignore: no-three-sequential-awaits -- Enablement, publication capture, and discoverability record one hide; retirement uses the source rows read above.
   await query(
     `/* disableAndHideSource:rss_feed */
        INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, changed_by_id, reason)
