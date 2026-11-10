@@ -63,6 +63,8 @@ export async function activateOrphanedQueuedGrant(
       FROM activated
       INNER JOIN candidate ON candidate.id = activated.membership_grant_id
       WHERE source_state.membership_source_id = candidate.membership_source_id
+        AND source_state.cancelled_at IS NULL AND source_state.expired_at IS NULL
+        AND source_state.paused_at IS NULL
       RETURNING source_state.membership_source_id
     ), inserted AS (
       INSERT INTO memberships (
