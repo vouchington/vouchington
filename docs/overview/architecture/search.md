@@ -73,9 +73,10 @@ Hot and trending post search use a fixed-epoch rank so unchanged scores keep the
 requests. Future timestamps participate in that rank. See the
 [pagination contract](pagination.md) for near ties and cohort boundaries.
 
-The scalar rank boundary is retained alongside the exact tuple cursor because tuple-only
-continuations can make the planner bitmap-read and sort the tail before applying the page cap.
-The redundant boundary preserves ties while keeping the measured walk on the ordered index
+Rank walks without a post-type prefix retain a scalar boundary alongside the exact tuple cursor
+to avoid bitmap-reading and sorting the tail before the page cap. Type-prefixed walks keep the
+tuple alone: combining both bounds there compounds selectivity estimates and can cause the same
+tail scan. Both forms preserve ties while keeping the measured walk on the ordered index
 ([comparison](https://github.com/vouchington/vouchington/pull/5372)).
 
 ## Time bound
