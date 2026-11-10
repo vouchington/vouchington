@@ -1,6 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildPostRankingScoreExpression } from '@services/posts/search/query-builder-utils'
-import { getPostsWorkLimit } from '@services/posts/work-limits'
 import type { PostSearchOptions } from '@services/posts/search/types'
 import { buildPostSearchCtes, appendCtes } from '@services/posts/search/query-builder/ctes'
 import { appendPostSearchOrderAndLimit } from '@services/posts/search/query-builder/order-and-limit'
@@ -10,8 +9,8 @@ import { buildPostSearchTimeRangeFilter } from '@services/posts/search/hacker-ne
 
 /**
  * Build the former canonical URL join predicate for EXPLAIN comparison only. This preserves the
- * predicate from 87b9b98c71 / b97f3a2b43 under the current search eligibility, cursor, and hot
- * candidate policies. It is not imported by application code and is not a legacy runtime path.
+ * predicate from 87b9b98c71 / b97f3a2b43 under the current search eligibility and cursor.
+ * It is not imported by application code and is not a legacy runtime path.
  */
 function buildHistoricalHackerNewsPredicate(): SQLStatement {
   const hasReferences = sql`(totals.story_count > 0 OR totals.comment_count > 0)`
@@ -100,66 +99,16 @@ export function buildHackerNewsScaleReference(
   })
   const query = sql`/* buildHackerNewsScaleJoinReference */\n`
 
-  if (sort === 'hot') {
-    const candidateOptions = {
-      ...noHackerNewsFlag,
-      after: undefined,
-      id_lt: undefined,
-      ranking_lt: undefined,
-      vote_score_lt: undefined,
-      hot_score_lt: undefined,
-    }
-    const candidate = sql`hacker_news_hot_candidates AS MATERIALIZED (`
-    const candidateContext = {
-      decisionInstant,
-      currentUser: undefined,
-      followingRankExpression: null,
-      hasSemanticSearch: hasSemantic,
-      hasTextSearch: hasText,
-      options: candidateOptions,
-      rankingScoreExpression,
-      sort: 'new' as const,
-    }
-    appendPostSearchSelectAndJoins(candidate, {
-      ...candidateContext,
-      includeHotCandidateColumns: true,
-      useSemanticCandidates: hasSemantic,
-    })
-    appendPostSearchWhereClause(candidate, candidateContext)
-    candidate.append(sql`\n      AND `).append(buildHistoricalHackerNewsPredicate())
-
-    // buildHackerNewsHotCandidates uses the caller's requested time range and the normal HN
-    // 30-day maximum. The candidate context omits the stored-flag selector, so add that same
-    // bounded window explicitly after the ordinary requested-window predicate.
-    const hotWindow = buildPostSearchTimeRangeFilter(options, 'posts.id', decisionInstant)
-    if (hotWindow) candidate.append(sql`\n      AND `).append(hotWindow)
-    appendPostSearchOrderAndLimit(candidate, {
-      followingRankExpression: null,
-      hasSemanticSearch: hasSemantic,
-      hasTextSearch: hasText,
-      limit: getPostsWorkLimit('hacker_news_hot_candidate_limit'),
-      omitLimit: false,
-      omitOrderBy: false,
-      sort: 'new',
-    })
-    candidate.append(sql`)`)
-    ctes.push(candidate)
-  }
-
   appendCtes(query, ctes)
-  const useHotCandidates = sort === 'hot'
   appendPostSearchSelectAndJoins(query, {
+    decisionInstant,
     currentUser: undefined,
     followingRankExpression: null,
     hasSemanticSearch: hasSemantic,
     hasTextSearch: hasText,
-    options,
-    rankingScoreExpression:
-      useHotCandidates && rankingScoreExpression
-        ? sql`posts.ranking_score`
-        : rankingScoreExpression,
+    options: noHackerNewsFlag,
+    rankingScoreExpression,
     sort,
-    useHackerNewsHotCandidates: useHotCandidates,
     useSemanticCandidates: hasSemantic,
   })
   appendPostSearchWhereClause(query, {
@@ -168,13 +117,16 @@ export function buildHackerNewsScaleReference(
     followingRankExpression: null,
     hasSemanticSearch: hasSemantic,
     hasTextSearch: hasText,
-    options: useHotCandidates ? options : noHackerNewsFlag,
-    paginationOnly: useHotCandidates,
+    options: noHackerNewsFlag,
     rankingScoreExpression,
     sort,
   })
-  if (!useHotCandidates) {
-    query.append(sql`\n      AND `).append(buildHistoricalHackerNewsPredicate())
+  query.append(sql`\n      AND `).append(buildHistoricalHackerNewsPredicate())
+  // The stored flag is omitted so this comparison is the historical join. Hot still uses the
+  // same thirty-day window as the current Hacker News hot walk.
+  if (sort === 'hot') {
+    const hotWindow = buildPostSearchTimeRangeFilter(options, 'posts.id', decisionInstant)
+    if (hotWindow) query.append(sql`\n      AND `).append(hotWindow)
   }
   appendPostSearchOrderAndLimit(query, {
     followingRankExpression: null,
