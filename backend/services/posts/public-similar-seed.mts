@@ -8,7 +8,7 @@ import { getPostsByAnyBatch } from './get-batch.mts'
  * A similar-post seed is usable only when a signed-out reader can read it. Private visibility,
  * pending clearance, and blocked types answer as a missing seed so their embedding ranks nothing.
  */
-export async function isPubliclyReadableSimilarSeed(idOrSlug: string): Promise<boolean> {
+async function isPubliclyReadableSimilarSeed(idOrSlug: string): Promise<boolean> {
   if (!isUUID(idOrSlug) && !isSlug(idOrSlug)) return false
   const [post] = await getPostsOrDeletedCommentStubs([idOrSlug])
   if (!post || BLOCKED_POST_TYPES.has(post.post_type)) return false

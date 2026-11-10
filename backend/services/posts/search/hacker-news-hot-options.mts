@@ -22,7 +22,7 @@ export function buildPostSearchTimeRangeFilter(
     .append(sql` >= ${timestampToUuidv7LowerBound(cutoff)}`)
 }
 
-export function usesHackerNewsHotCandidates(options: PostSearchOptions): boolean {
+function usesHackerNewsHotCandidates(options: PostSearchOptions): boolean {
   return (
     options.sort === 'hot' &&
     options.has_hacker_news_references === true &&

@@ -44,7 +44,7 @@ describe('getPostFeedIds (pagination)', () => {
       }),
     ).rejects.toMatchObject({
       status: 400,
-      message: 'Invalid cursor format for post feed',
+      message: 'Invalid cursor: id is not a valid UUID',
     })
   })
 
