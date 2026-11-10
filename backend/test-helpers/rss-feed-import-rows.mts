@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { randomUUID } from 'node:crypto'
 
@@ -37,6 +37,16 @@ export async function createRssFeedImportRowForTest(
   const rowId = rows[0]?.id
   if (!rowId) throw new Error('Could not create RSS import row fixture')
   return rowId
+}
+
+/** Hold the import row a completion update writes, so a lock observer can see that wait. */
+export async function lockRssFeedImportRowForTest(
+  query: TransactionQuery,
+  rowId: string,
+): Promise<void> {
+  await query(sql`/* lockRssFeedImportRowForTest */
+    SELECT id FROM user_rss_feed_import_rows WHERE id = ${rowId} FOR UPDATE
+  `)
 }
 
 export async function deleteOwnedRssFeedImportRowForTest(
