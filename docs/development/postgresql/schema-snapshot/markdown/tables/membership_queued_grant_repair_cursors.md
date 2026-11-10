@@ -6,12 +6,12 @@ Durable user keyset for the scheduled repair of queued grants behind a cancelled
 
 Not partitioned — growth: bounded.
 
-| Column           | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                |
-| ---------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `is_singleton`   | `boolean`                  | no       | `true`              |          |           |           | One repair cursor for the membership grant expiry job.                                                                 |
-| `cursor_user_id` | `uuid`                     | yes      |                     |          |           |           | Last inspected user id in the current pass. NULL starts at the first grant. It is not a reference to a surviving user. |
-| `created_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this cursor row was first inserted.                                                                               |
-| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this repair pass last checkpointed.                                                                               |
+| Column         | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                |
+| -------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `is_singleton` | `boolean`                  | no       | `true`              |          |           |           | One repair cursor for the membership grant expiry job.                                                                 |
+| `cursor_id`    | `uuid`                     | yes      |                     |          |           |           | Last inspected user id in the current pass. NULL starts at the first grant. It is not a reference to a surviving user. |
+| `created_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this cursor row was first inserted.                                                                               |
+| `updated_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this repair pass last checkpointed.                                                                               |
 
 **Primary key:** `PRIMARY KEY (is_singleton)`
 

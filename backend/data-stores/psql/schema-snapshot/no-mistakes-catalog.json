@@ -72470,7 +72470,7 @@
           "nullable": false,
           "ordinalPosition": 3
         },
-        "cursor_user_id": {
+        "cursor_id": {
           "comment": "Last inspected user id in the current pass. NULL starts at the first grant. It is not a reference to a surviving user.",
           "dataType": "uuid",
           "defaultExpression": null,

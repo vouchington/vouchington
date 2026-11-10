@@ -68394,7 +68394,7 @@
           "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
-        "cursor_user_id": {
+        "cursor_id": {
           "collation": null,
           "comment": "Last inspected user id in the current pass. NULL starts at the first grant. It is not a reference to a surviving user.",
           "defaultExpression": null,
