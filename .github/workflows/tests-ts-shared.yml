@@ -58,7 +58,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@6737be4e624b133e3c514cfc3bd83398f4301c9b # v0.87.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9430c3ba680eb5db4e051ad302e7e9c971ea6953 # v0.87.1
         with:
           suite: ts-shared
       - name: Upload full ts-shared LCOV to GitHub (attempt 2)
@@ -66,7 +66,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@6737be4e624b133e3c514cfc3bd83398f4301c9b # v0.87.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9430c3ba680eb5db4e051ad302e7e9c971ea6953 # v0.87.1
         with:
           suite: ts-shared
           name-suffix: -retry
