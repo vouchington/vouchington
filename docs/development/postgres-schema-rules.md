@@ -180,15 +180,25 @@ state from the latest history row.
   only when it carries a continuation cursor and a "load more" signal (see bounding below). Small
   viewer-scoped sets (follows, mutes, blocks, memberships) may be subqueries or semi-joins. Compare
   plans against that single walk.
-- **Default to straightforward SQL.** Use a plain walk with filters in WHERE, `EXISTS` / `NOT EXISTS`,
-  and joins only on keys that match one row. `GROUP BY` and `DISTINCT` are for real aggregates only:
-  never to dedupe rows our own `UNION` or join produced, to test existence, or over a unique key.
-  Any complex or non-obvious shape needs an
-  [explain-analyze scenario](postgresql/explain-analyze/README.md) and a benchmark in the PR showing
-  it beats the straightforward version. That covers `GROUP BY` dedupe, `UNION` candidate sets,
-  `HAVING COUNT(*) = n` all-of filters, `MATERIALIZED` CTEs, `LATERAL` tricks, and planner steering.
-  Why: PostgreSQL cannot stop early through a `GROUP BY` or `UNION` candidate pool, while a plain
-  `EXISTS` semi-join lets the planner choose its direction from its estimates. Unenforced.
+- **Use the simplest query that does the job.** The owner's principle (2026-11-09): "the basic
+  premise is to use the simplest query, and making it more complex requires explain analyze
+  plans." A plain walk has filters in WHERE, keyed joins, `EXISTS` / `NOT EXISTS` or subqueries,
+  `ORDER BY`, and `LIMIT`. A ranked sort (hot, best) is a join and an `ORDER BY` on the score under
+  the same principle. `GROUP BY` and `DISTINCT` are for real aggregates only: never to dedupe rows
+  our own `UNION` or join produced, to test existence, or over a unique key.
+  - **Added complexity needs plans in the PR.** CTEs over the listed entity, candidate pools,
+    `UNION` candidate sets, `GROUP BY` / `DISTINCT` dedupe, `HAVING COUNT(*) = n` filters,
+    `LATERAL` tricks, planner fences, multi-stage pipelines, and extra cursor state each need
+    [explain-analyze](postgresql/explain-analyze/README.md) plans and a benchmark comparing the
+    complex query with the simpler one. A comparison with old main does not count; main may be the
+    unbounded outlier, and beating it shows nothing about the simpler query.
+  - **A failed gate sends you to the simpler query first.** Check whether the simple query passes
+    before adding layers. Never widen a gate to fit a more complex shape.
+  - **Cite owner decisions verbatim.** In an issue or PR, quote and link the owner's words; never
+    restate an agent's paraphrase as an owner decision.
+    Why: PostgreSQL cannot stop early through a `GROUP BY` or `UNION` candidate pool, while a plain
+    `EXISTS` semi-join lets the planner choose its direction from its estimates, and each layer added
+    to pass a gate is one more thing to maintain. Unenforced.
 - **Bound at the inputs.** Cap the number of filter terms first (for example, a bounded count of
   `#slug` terms per query, ANDed, with the same validation error in REST and MCP). Then use a plain
   index walk with per-row `EXISTS` probes, a cap on inspected rows, and a continuation cursor. A
@@ -252,6 +262,14 @@ correctness, and the prohibition on periodic recount remain unenforced.
   programs by all-time active links is a materialized view of the counts, indexed by
   `(count DESC, id DESC)`, refreshed on a schedule, with live eligibility joined at read time. It is
   not a counter column.
+
+## No unnecessary locks; caps and guards are best effort
+
+Lock only to stop a concurrent write corrupting data the transaction writes: row locks on written
+rows only, no advisory locks. Per-user and per-entity caps and "last X" guards check a capped count
+and then write, with no lock, counter row, slot table, or admission-only constraint; overshoot under
+a true race is accepted. Removing a lock deletes it rather than swapping in another serializer. Why
+and owner words: [lock scope](postgresql/reference-transactions.md#lock-scope). Unenforced.
 
 ## No per-row queries while holding locks
 

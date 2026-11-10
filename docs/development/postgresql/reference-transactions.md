@@ -37,6 +37,18 @@ A transaction locks only the rows it writes. It never locks rows it only reads, 
 This applies to row locks (`FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`), advisory locks and
 lock helpers alike.
 
+**No unnecessary locks.** The owner's words (2026-11-09): "do we have a rule? no unnecessary locks",
+"seems like we have way too many locks for no reason", and "keep things simple". Add a lock only
+when a concurrent write would otherwise corrupt data the transaction writes. Advisory locks are not
+used.
+
+- **Caps and guards are best effort.** This covers per-user and per-entity caps and "don't remove
+  the last X" guards. Check with a capped count, then write: no lock, no counter row, no slot
+  table, and no constraint that exists only to serialize admission. Overshoot under a true race is
+  accepted.
+- **Removing a lock means deleting it**, not replacing it with another serialization mechanism such
+  as a counter table, projection row, or claim table.
+
 **Why:**
 
 - Locks on read context grow with the data. A reply that locks its ancestor chain takes one lock
