@@ -41,7 +41,6 @@ _none_
 **Indexes:**
 
 - `idx_user_vouch_votes__cleanup__id`: `CREATE INDEX idx_user_vouch_votes__cleanup__id ON ONLY public.user_vouch_votes USING btree (id)`
-- `idx_user_vouch_votes__target_user_id__id`: `CREATE INDEX idx_user_vouch_votes__target_user_id__id ON ONLY public.user_vouch_votes USING btree (target_user_id, id)`
 - `idx_user_vouch_votes__target_user_id__user_id__id`: `CREATE INDEX idx_user_vouch_votes__target_user_id__user_id__id ON ONLY public.user_vouch_votes USING btree (target_user_id, user_id, id DESC)`
 - `idx_user_vouch_votes__user_agent__id`: `CREATE INDEX idx_user_vouch_votes__user_agent__id ON ONLY public.user_vouch_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `idx_user_vouch_votes__user_id__target_user_id__id`: `CREATE INDEX idx_user_vouch_votes__user_id__target_user_id__id ON ONLY public.user_vouch_votes USING btree (user_id, target_user_id, id DESC)`

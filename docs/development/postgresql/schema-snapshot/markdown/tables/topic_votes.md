@@ -41,7 +41,6 @@ _none_
 **Indexes:**
 
 - `idx_topic_votes__cleanup__id`: `CREATE INDEX idx_topic_votes__cleanup__id ON ONLY public.topic_votes USING btree (id)`
-- `idx_topic_votes__topic_id__id`: `CREATE INDEX idx_topic_votes__topic_id__id ON ONLY public.topic_votes USING btree (topic_id, id)`
 - `idx_topic_votes__topic_id__user_id__id`: `CREATE INDEX idx_topic_votes__topic_id__user_id__id ON ONLY public.topic_votes USING btree (topic_id, user_id, id DESC)`
 - `idx_topic_votes__user_agent__id`: `CREATE INDEX idx_topic_votes__user_agent__id ON ONLY public.topic_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `idx_topic_votes__user_id__topic_id__id`: `CREATE INDEX idx_topic_votes__user_id__topic_id__id ON ONLY public.topic_votes USING btree (user_id, topic_id, id DESC)`

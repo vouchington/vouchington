@@ -59,7 +59,6 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_notice_action_work_items__available`: `CREATE INDEX idx_copyright_notice_action_work_items__available ON public.copyright_notice_action_work_items USING btree (available_at, id) WHERE ((lease_token IS NULL) AND (state = 'pending'::copyright_notice_action_intent_states))`
 - `idx_copyright_notice_action_work_items__deadline`: `CREATE INDEX idx_copyright_notice_action_work_items__deadline ON public.copyright_notice_action_work_items USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)`
 - `idx_copyright_notice_action_work_items__expired`: `CREATE INDEX idx_copyright_notice_action_work_items__expired ON public.copyright_notice_action_work_items USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)`
-- `idx_copyright_notice_action_work_items__notice_id`: `CREATE INDEX idx_copyright_notice_action_work_items__notice_id ON public.copyright_notice_action_work_items USING btree (copyright_notice_id, id)`
 - `idx_copyright_notice_action_work_items__pending`: `CREATE INDEX idx_copyright_notice_action_work_items__pending ON public.copyright_notice_action_work_items USING btree (id) WHERE (completed_at IS NULL)`
 - `uq_copyright_action_work__restriction_revision_action`: `CREATE UNIQUE INDEX uq_copyright_action_work__restriction_revision_action ON public.copyright_notice_action_work_items USING btree (copyright_restriction_id, expected_placement_revision, action)`
 

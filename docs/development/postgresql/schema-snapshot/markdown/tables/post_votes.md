@@ -46,7 +46,6 @@ _none_
 
 - `idx_post_votes__activitypub_pending`: `CREATE INDEX idx_post_votes__activitypub_pending ON ONLY public.post_votes USING btree (post_id, id) WHERE ((outbound_activitypub_distributed_at IS NULL) AND ((outbound_activitypub_like_activity_id = id) OR (outbound_activitypub_original_like_activity_id IS NOT NULL)))`
 - `idx_post_votes__cleanup__id`: `CREATE INDEX idx_post_votes__cleanup__id ON ONLY public.post_votes USING btree (id)`
-- `idx_post_votes__post_id__id`: `CREATE INDEX idx_post_votes__post_id__id ON ONLY public.post_votes USING btree (post_id, id)`
 - `idx_post_votes__post_id__user_id__id`: `CREATE INDEX idx_post_votes__post_id__user_id__id ON ONLY public.post_votes USING btree (post_id, user_id, id DESC)`
 - `idx_post_votes__retention_deferred_id`: `CREATE INDEX idx_post_votes__retention_deferred_id ON ONLY public.post_votes USING btree (id) WHERE (ballot_retention_deferred_at IS NOT NULL)`
 - `idx_post_votes__retention_delivered_id`: `CREATE INDEX idx_post_votes__retention_delivered_id ON ONLY public.post_votes USING btree (id) WHERE ((ballot_retention_deferred_at IS NOT NULL) AND (outbound_activitypub_distributed_at IS NOT NULL))`

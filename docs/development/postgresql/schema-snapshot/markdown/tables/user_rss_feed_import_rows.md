@@ -42,7 +42,6 @@ Not partitioned — growth: bounded.
 
 **Indexes:**
 
-- `idx_user_rss_feed_import_rows__batch_id__row_index`: `CREATE INDEX idx_user_rss_feed_import_rows__batch_id__row_index ON public.user_rss_feed_import_rows USING btree (batch_id, row_index)`
 - `idx_user_rss_feed_import_rows__rss_feed_id`: `CREATE INDEX idx_user_rss_feed_import_rows__rss_feed_id ON public.user_rss_feed_import_rows USING btree (rss_feed_id, id) WHERE (rss_feed_id IS NOT NULL)`
 - `user_rss_feed_import_rows__batch_id__id`: `CREATE UNIQUE INDEX user_rss_feed_import_rows__batch_id__id ON public.user_rss_feed_import_rows USING btree (batch_id, id)`
 - `user_rss_feed_import_rows__batch_row_index`: `CREATE UNIQUE INDEX user_rss_feed_import_rows__batch_row_index ON public.user_rss_feed_import_rows USING btree (batch_id, row_index)`
