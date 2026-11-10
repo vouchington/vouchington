@@ -235,14 +235,15 @@ describe('query-builder (basic)', () => {
     expect(discussion.sql).toContain("posts.post_type = 'discussion'::post_types")
     expect(discussion.values).not.toContain('discussion')
 
-    const unknown = buildPostSearchQuery(undefined, {
+    const recommendation = buildPostSearchQuery(undefined, {
       post_types: ['topic_recommendation'],
       data_point_vertical: 'mortgage',
       data_point_topic_ids: ['not-a-uuid'],
     })
-    expect(unknown.values).toContain('topic_recommendation')
-    expect(unknown.values).toContain('mortgage')
-    expect(unknown.values).toContain('not-a-uuid')
+    expect(recommendation.sql).toContain("posts.post_type = 'topic_recommendation'::post_types")
+    expect(recommendation.values).not.toContain('topic_recommendation')
+    expect(recommendation.values).toContain('mortgage')
+    expect(recommendation.values).toContain('not-a-uuid')
 
     for (const result of ['counter_offer', 'retention_offer', 'sign_up_bonus', 'offer']) {
       const query = buildPostSearchQuery(undefined, {
