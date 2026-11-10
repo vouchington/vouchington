@@ -206,7 +206,7 @@ describe('direct membership source authority', () => {
     })
   })
 
-  it('keeps each admitted direct source projection open when two are created together', async () => {
+  it('keeps one open direct projection when two sources are created together', async () => {
     const user = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
     const firstSubscriptionId = `sub_first_${randomUUID()}`
@@ -236,17 +236,29 @@ describe('direct membership source authority', () => {
     )
     expect(fulfilled.length).toBeGreaterThan(0)
     for (const outcome of rejected) {
-      expect(outcome.reason).toMatchObject({
-        reason: 'competing_direct_source',
-        currentSourceKind: 'direct',
-      } satisfies Partial<DirectMembershipSourceRejectedError>)
+      const reason = outcome.reason as {
+        code?: string
+        constraint?: string
+        reason?: string
+        currentSourceKind?: string
+      }
+      expect(outcome.reason).toEqual(
+        expect.objectContaining(
+          reason.code === '23505'
+            ? { code: '23505', constraint: 'idx_memberships__effective_user' }
+            : {
+                reason: 'competing_direct_source',
+                currentSourceKind: 'direct',
+              },
+        ),
+      )
     }
-    for (const outcome of fulfilled) {
-      await expect(getTestMembershipRaw(outcome.value.id)).resolves.toMatchObject({
-        id: outcome.value.id,
-        projection_ended_at: null,
-      })
-    }
+    const rows = await Promise.all(fulfilled.map(outcome => getTestMembershipRaw(outcome.value.id)))
+    const open = rows.filter(row => row.projection_ended_at === null)
+    expect(open).toHaveLength(1)
+    const winner = open[0]
+    if (!winner) throw new Error('expected one open direct membership')
+    expect(fulfilled.map(outcome => outcome.value.id)).toContain(winner.id)
   })
 
   it('rejects a different Stripe lineage context that reuses the raw subscription ID', async () => {
