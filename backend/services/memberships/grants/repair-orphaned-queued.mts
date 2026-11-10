@@ -131,7 +131,7 @@ async function repairOrphanedQueuedGrantUser(userId: string): Promise<boolean> {
     return await commitOrphanedQueuedGrant(userId)
   } catch (err) {
     if (isUniqueViolation(err)) return false
-    throw error
+    throw err
   }
 }
 
