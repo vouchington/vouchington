@@ -1,0 +1,47 @@
+name: Download run artifacts
+description: >
+  Downloads same-run artifacts through the REST API with curl, verifies each archive against the
+  SHA-256 digest GitHub recorded at upload, extracts it, and exits. It replaces
+  `actions/download-artifact`, whose Node process stays alive after logging success (#4328, #5453).
+  There is no retry and no forced exit: every request has a finite curl deadline and any failure,
+  missing digest or digest mismatch fails the step. Set `name` for one artifact (extracted into
+  `path`) or `pattern` for a glob of names (one subdirectory per artifact unless `merge-multiple`).
+inputs:
+  name:
+    description: Exact artifact name. Mutually exclusive with `pattern`.
+    required: false
+    default: ''
+  pattern:
+    description: Glob of artifact names, where `*` matches any characters. Mutually exclusive with `name`.
+    required: false
+    default: ''
+  path:
+    description: Destination directory.
+    required: true
+  merge-multiple:
+    description: Extract every matched artifact directly into `path` instead of one subdirectory each.
+    required: false
+    default: 'false'
+  github-token:
+    description: Token that can read the run (actions read access).
+    required: true
+  repository:
+    description: Repository that owns the run, as owner/name.
+    required: true
+  run-id:
+    description: Workflow run that produced the artifacts.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Download and verify artifacts
+      shell: bash
+      env:
+        ARTIFACT_NAME: ${{ inputs.name }}
+        ARTIFACT_PATTERN: ${{ inputs.pattern }}
+        ARTIFACT_PATH: ${{ inputs.path }}
+        ARTIFACT_MERGE_MULTIPLE: ${{ inputs.merge-multiple }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        ARTIFACT_REPOSITORY: ${{ inputs.repository }}
+        ARTIFACT_RUN_ID: ${{ inputs.run-id }}
+      run: bash "$GITHUB_ACTION_PATH/download-artifact.sh"

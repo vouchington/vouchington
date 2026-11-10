@@ -50,7 +50,7 @@ describe('workflow automation safety', () => {
           test: {
             steps: [
               {
-                uses: 'actions/download-artifact@synthetic',
+                uses: './.github/actions/download-artifact',
                 with: {
                   'github-token': '${{ github.token }}',
                   repository: '${{ github.repository }}',
@@ -64,13 +64,25 @@ describe('workflow automation safety', () => {
     ).toEqual([])
     expect(
       workflowSafetyViolations('fixture.yml', '', {
+        jobs: { test: { steps: [{ uses: './.github/actions/download-artifact' }] } },
+      }),
+    ).toEqual([
+      'fixture#test step 0: download-artifact must set github-token',
+      'fixture#test step 0: download-artifact must set repository',
+      'fixture#test step 0: download-artifact must set run-id',
+    ])
+    expect(
+      workflowSafetyViolations('fixture.yml', '', {
         jobs: { test: { steps: [{ uses: 'actions/download-artifact@synthetic' }] } },
       }),
     ).toEqual([
-      'fixture#test step 0: actions/download-artifact must set github-token',
-      'fixture#test step 0: actions/download-artifact must set repository',
-      'fixture#test step 0: actions/download-artifact must set run-id',
+      'fixture#test step 0: use ./.github/actions/download-artifact; the upstream action stays alive after success (#5453)',
     ])
+    expect(
+      workflowSafetyViolations('.github/workflows/ci-upload-codecov.yml', '', {
+        jobs: { test: { steps: [{ uses: 'actions/download-artifact@synthetic' }] } },
+      }),
+    ).toEqual([])
   })
 
   it('keeps startup settings repository-owned while allowing the null BASH_ENV', () => {

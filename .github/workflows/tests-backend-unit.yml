@@ -113,10 +113,10 @@ jobs:
           fetch-depth: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
-      # Bound the whole action, including a post-transfer hang before it returns (#4328).
+      # Repo-owned download exits once files are on disk; the upstream action hangs (#4328, #5453).
       - name: Download prepared PostgreSQL database
         id: download-postgres
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        uses: ./.github/actions/download-artifact
         timeout-minutes: 3
         with:
           name: backend-postgres-${{ github.run_id }}
@@ -253,7 +253,7 @@ jobs:
       # (24.x, above package.json engines). Downloading Node 26 from GitHub Releases here twice
       # exceeded the step deadline in merge groups, and slim has no caching benefit.
       - name: Download complete backend-unit query-profile hits
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        uses: ./.github/actions/download-artifact
         timeout-minutes: 3
         with:
           pattern: backend-query-profile-hits-shard-*
