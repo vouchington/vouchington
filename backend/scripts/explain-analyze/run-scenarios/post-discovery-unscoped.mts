@@ -3,10 +3,7 @@ import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { getPostIds } from '../run-services.mts'
-import {
-  registerNamedPostIndexGate,
-  registerPostDiscoveryGate,
-} from '../post-discovery-gates.mts'
+import { registerNamedPostIndexGate, registerPostDiscoveryGate } from '../post-discovery-gates.mts'
 import { runPostDiscoveryFiniteWindowScenario } from './post-discovery-finite-window.mts'
 
 const PAGE_SIZE = 25

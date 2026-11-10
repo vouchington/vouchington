@@ -21,11 +21,7 @@ async function prepareCursor<T extends RankedPage>(
 ): Promise<string> {
   const page = await loadFirstPage()
   const cursor = page.page_info.end_cursor
-  if (
-    !cursor ||
-    !page.page_info.has_next_page ||
-    page.results.length !== PAGE_SIZE
-  )
+  if (!cursor || !page.page_info.has_next_page || page.results.length !== PAGE_SIZE)
     throw new Error(`${label} hot-ranking fixture must stay bounded and return a continuation`)
   return cursor
 }
@@ -140,14 +136,16 @@ export function getVoteScorePostHotScenarios(
     {
       id: 'vote-score-post-feed-hot-after',
       run: () =>
-        requireContinuation('Post feed', () =>
-          getPostFeedIds(seedUser, {
-            sort: 'hot',
-            feed_type: 'any',
-            limit: PAGE_SIZE,
-            time_range: '1w',
-            after: cursors.feed,
-          }),
+        requireContinuation(
+          'Post feed',
+          () =>
+            getPostFeedIds(seedUser, {
+              sort: 'hot',
+              feed_type: 'any',
+              limit: PAGE_SIZE,
+              time_range: '1w',
+              after: cursors.feed,
+            }),
           cursors.feed,
         ),
     },

@@ -77,8 +77,7 @@ export async function runPostFeedShareScenarios(): Promise<void> {
     })
     await runAndCapture(`${scenarioId}-after`, async () => {
       const next = await getPostFeedIds(user, { ...options, after })
-      if (!next.results.length)
-        throw new Error(`${scenarioId} continuation must not be empty`)
+      if (!next.results.length) throw new Error(`${scenarioId} continuation must not be empty`)
       if (next.page_info.end_cursor === after)
         throw new Error(`${scenarioId} continuation did not advance its cursor`)
       const firstIds = new Set(firstPageIds)
