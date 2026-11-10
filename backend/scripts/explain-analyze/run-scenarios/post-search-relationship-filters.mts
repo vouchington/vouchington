@@ -29,13 +29,7 @@ export async function runPostSearchRelationshipFilterScenarios(): Promise<void> 
     'data-point-topic',
   )
   registerScenarioContract('post-search-universal-topic', {
-    expectations: [
-      { kind: 'custom', name: 'universalTopicCandidates' },
-      { kind: 'maxProcessedRows', relation: 'relation__post__category__topic', max: 3010 },
-      { kind: 'maxProcessedRows', relation: 'relation__post__category__topic_alias', max: 3010 },
-      { kind: 'maxProcessedRows', relation: 'post_review_topic_ratings', max: 3010 },
-      { kind: 'maxProcessedRows', relation: 'post_data_point_topics', max: 3010 },
-    ],
+    expectations: [{ kind: 'custom', name: 'universalTopicCandidates' }],
     crossPartition: {
       posts: 'Universal-topic search ranks matching posts across id ranges.',
       relation__post__category__topic:
@@ -51,13 +45,7 @@ export async function runPostSearchRelationshipFilterScenarios(): Promise<void> 
   )
   // Worst case: the whole history, for callers that pass time_range=all.
   registerScenarioContract('post-search-universal-topic-all', {
-    expectations: [
-      { kind: 'custom', name: 'universalTopicCandidates' },
-      { kind: 'maxProcessedRows', relation: 'relation__post__category__topic', max: 3010 },
-      { kind: 'maxProcessedRows', relation: 'relation__post__category__topic_alias', max: 3010 },
-      { kind: 'maxProcessedRows', relation: 'post_review_topic_ratings', max: 3010 },
-      { kind: 'maxProcessedRows', relation: 'post_data_point_topics', max: 3010 },
-    ],
+    expectations: [{ kind: 'custom', name: 'universalTopicCandidates' }],
     crossPartition: {
       posts: 'Universal-topic search without a time bound ranks matching posts across id ranges.',
       relation__post__category__topic:

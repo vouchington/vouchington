@@ -2,26 +2,31 @@ import type { ExplainResult } from '@data-stores/psql'
 import { collectPlanNodes, baseRelationName, processedRows } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
-const MAX_UNIVERSAL_TOPIC_POST_ROWS = 3010
-
 export function assertCorePlanCheck(name: string, result: ExplainResult): void {
   const nodes = collectPlanNodes(result.plan)
   switch (name) {
     case 'universalTopicCandidates': {
-      const posts = nodes.filter(node => baseRelationName(node) === 'posts')
-      const postRows = posts.reduce((total, node) => total + processedRows(node), 0)
+      const candidate = nodes.some(node =>
+        [
+          'relation__post__category__topic',
+          'post_review_topic_ratings',
+          'post_data_point_topics',
+        ].includes(baseRelationName(node)),
+      )
+      const posts = nodes.filter(
+        node => baseRelationName(node) === 'posts' && node['Alias'] === 'posts',
+      )
       if (
+        !candidate ||
         !posts.some(
           node =>
             String(node['Node Type']).includes('Index') &&
-            (stringFromUnknown(node['Index Cond'] ?? '').includes('id') ||
-              stringFromUnknown(node['Index Name'] ?? '').includes('pkey')),
+            stringFromUnknown(node['Index Cond'] ?? '').includes('id'),
         ) ||
-        posts.some(node => node['Node Type'] === 'Seq Scan') ||
-        postRows > MAX_UNIVERSAL_TOPIC_POST_ROWS
+        posts.some(node => node['Node Type'] === 'Seq Scan')
       )
         throw new Error(
-          `${result.name} must walk at most ${MAX_UNIVERSAL_TOPIC_POST_ROWS} post-key candidates and use indexed posts.id lookups`,
+          `${result.name} must drive universal-topic search from reverse-indexed candidates before indexed posts.id lookups`,
         )
       return
     }

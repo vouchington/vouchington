@@ -63,7 +63,7 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
   const baseUrl = SITEMAP_CONFIG.BASE_URL
 
   // Invalid cursors remain errors even when a username or topic resolves to no posts.
-  decodePostSearchCursor({ after }, 'new', false, true)
+  decodePostSearchCursor({ after }, 'new', false)
   validateTopicSearchTerms({ topicSlugs }, ['topicSlugs'])
 
   if (postType !== undefined && !isCatalogValue(VALID_RSS_POST_TYPES, postType)) {

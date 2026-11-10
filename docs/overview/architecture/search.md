@@ -70,14 +70,9 @@ discovery query. Topic terms are conjunctive; alternate attachment sources satis
 When keyword and semantic signals are both present, they contribute to the same relevance rank.
 
 Hot and trending post search use a fixed-epoch rank so unchanged scores keep their ordering across
-requests. Future timestamps participate in that rank. See the
-[pagination contract](pagination.md) for near ties and cohort boundaries.
-
-Rank walks without a post-type prefix retain a scalar boundary alongside the exact tuple cursor
-to avoid bitmap-reading and sorting the tail before the page cap. Type-prefixed walks keep the
-tuple alone: combining both bounds there compounds selectivity estimates and can cause the same
-tail scan. Both forms preserve ties while keeping the measured walk on the ordered index
-([comparison](https://github.com/vouchington/vouchington/pull/5372)).
+requests. Future timestamps participate in that rank. The walk orders by that rank and id and
+stops at the page limit. See the [pagination contract](pagination.md). Trending posts are that
+same search with `sort=trending`.
 
 ## Time bound
 
@@ -139,8 +134,7 @@ Post-search hashtag terms are ANDed together. Linked hashtags become topic terms
 rolling up to a selected topic do not impose a second exact-hashtag restriction. Standalone
 hashtags retain their exact membership filter. Input validation rejects excess hashtag terms
 before resolving them; REST, the website and MCP share this resolution and rejection behavior.
-Newest topic search checks these terms only within a bounded inspected-post window, continuing
-past its inspected key even when the page is short or empty.
+Topic search applies those terms on the sort-key walk and stops at the page limit.
 
 See Feed And List Filters for the full surface matrix.
 

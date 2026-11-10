@@ -11,6 +11,7 @@ import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { labelAndMaskPosts } from '@services/content-provenance'
 import { getPostIds, getPublicPostIds } from '@services/posts'
+import { similarSeedRejected } from '@services/posts/public-similar-seed'
 import {
   parsePostsSearchParams,
   preparePostsSearchParams,
@@ -44,7 +45,13 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
     searchOptions.omitLimit = false
   }
 
-  if (shouldReturnEmpty) {
+  if (
+    shouldReturnEmpty ||
+    (await similarSeedRejected(searchOptions.similar_post_id, {
+      requireCaller: false,
+      hasCaller: currentUser !== undefined,
+    }))
+  ) {
     const output: PostsResponseInput = {
       results: [],
       page_info: {
@@ -71,7 +78,10 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
   }
 
   const result = currentUser
-    ? await getPostIds(currentUser, searchOptions)
+    ? await getPostIds(currentUser, {
+        ...searchOptions,
+        exclude_for_user_id: currentUser.id,
+      })
     : await getPostIdsCached(searchOptions)
   if (!currentUser) {
     const publicPostIds = await getPublicPostIds(result.results.map(postResult => postResult.id))

@@ -17,7 +17,6 @@ import {
   POST_IDS_ANON_CACHE,
   RSS_FEED_ITEMS_ANON_CACHE,
   TOPIC_IDS_ANON_CACHE,
-  TRENDING_POSTS_ANON_CACHE,
   TRENDING_TOPICS_ANON_CACHE,
   URL_HOSTNAMES_ANON_CACHE,
 } from '@services/entity-cache/anonymous-search-prefixes'
@@ -67,11 +66,6 @@ export const getTrendingTopicsCached = createSearchCache(
 export const searchUrlHostnamesCached = createSearchCache(
   URL_HOSTNAMES_ANON_CACHE,
   (options: SearchUrlHostnamesOptions) => searchUrlHostnames(options),
-)
-
-export const getTrendingPostsCached = createSearchCache(
-  TRENDING_POSTS_ANON_CACHE,
-  (options: PostSearchOptions) => getPostIds(undefined, options),
 )
 
 export const getPlatformStatsCached = createSearchCache(

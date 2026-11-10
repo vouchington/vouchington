@@ -603,26 +603,23 @@ does not gate this repository.
 
 ## Shared post discovery filters and ranking
 
-REST post search, community post lists, trending posts, and MCP post search apply the same
-viewer-aware discovery eligibility to community and topic-recommendation filters. Hot and trending
+REST post search, community post lists, and MCP post search share one discovery walk. Trending
+posts are `GET /api/v1/posts?sort=trending` on REST and the same sort on MCP. Hot and trending
 pagination uses an opaque cursor tied to a fixed-epoch rank; near-tie order can differ from
-request-clock ranking, and cursors from the prior rank are refused. A bounded read may return a
-short or empty page while `has_next_page` is true, so clients follow the returned cursor and treat
-it as an opaque string. Keyword relevance is local to bounded newest-first cohorts; the cursor
-retains each cohort’s boundary and ranking position before advancing to older posts. Best sorting
-with a data-point topic filter uses the same bounded-window semantics, ranking by score within each
-newest-first topic cohort. Following-first
-search preserves followed-author priority while continuing past inspected keys. Newest topic searches
-use the same inspected-key continuation; hashtag terms are ANDed together after linked aliases
-collapse to their topic. Excess hashtag terms are rejected equally by REST and MCP.
+request-clock ranking, and cursors from the prior rank are refused. Each page orders by its sort
+key and stops at `limit + 1`. A short page has `has_next_page` false. Keyword relevance orders by
+ranking score, then id. Hashtag terms are ANDed together after linked aliases collapse to their
+topic. Excess hashtag terms are rejected equally by REST and MCP. A similar-post seed that a
+signed-out reader cannot read returns an empty page on both surfaces. Signed-in search omits
+authors, topics, and hostnames that caller has muted or blocked.
 Native catalog and result-fixture adoption remains tracked in
 [vouchington-clients#398](https://github.com/vouchington/vouchington-clients/issues/398); this
 producer contract makes no new native UI parity claim. REST post-list cursor and time-range adoption
 remains tracked in [vouchington-clients#537](https://github.com/vouchington/vouchington-clients/issues/537).
 
-The public posts RSS document can expose an Atom `rel="next"` link, including on a short or empty
-document, so RSS readers can continue with the same filters and opaque cursor. This is an external
-feed-reader contract and makes no native RSS client parity claim.
+The public posts RSS document exposes Atom `rel="next"` only when the post-search page has another
+row. The link carries the opaque cursor and the same filters. This is an external feed-reader
+contract and makes no native RSS client parity claim.
 
 ## Comment descendant head pagination
 
@@ -685,9 +682,8 @@ cap controls the checkbox interaction without changing the API's accepted time r
 searches retain hot ranking for every range, but the server restricts their eligible cohort to at most
 30 elapsed days; narrower requested windows remain narrower.
 
-REST and MCP post feeds may return a short or empty page with `has_next_page` while their bounded
-delivery walk inspects rows rejected by visibility or feed filters. Clients continue with the
-returned `page_info.end_cursor` and keep the same filters until the response says there is no next page.
+REST and MCP post feeds walk eligible deliveries in sort order. Clients continue with
+`page_info.end_cursor` only while `has_next_page` is true, and they keep the same filters.
 
 Swift and .NET must remove the personal discussions preference and client-side lookup, consume stored
 reference facts, and honor the producer's visibility behavior. Their adoption remains dependent work

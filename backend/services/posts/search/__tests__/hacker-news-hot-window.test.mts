@@ -23,7 +23,7 @@ describe('Hacker News hot elapsed-day cutoff', () => {
     const cutoff = decisionInstant - 30 * 86_400_000
     const ids: string[] = []
     const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 1000,
+      hacker_news_hot_candidate_limit: 10,
     })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,

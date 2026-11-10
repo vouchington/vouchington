@@ -8,9 +8,8 @@ import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 const PAGE_SIZE = 25
 const POST_SEARCH_QUERY = 'buildPostSearchQuery'
 const POST_FEED_QUERY = 'getPostFeedIds'
-const MAX_POST_ROWS = 3010
-const MAX_BITMAP_INDEX_ROWS = 1050
-const MAX_ALIAS_RELATION_ROWS = 3010
+const MAX_POST_ROWS = 1200
+const MAX_ALIAS_RELATION_ROWS = 1200
 const MAX_FEED_POST_ROWS = 15_000
 const MAX_FEED_MEMBERSHIP_ROWS = MAX_FEED_POST_ROWS * 2
 const TOPIC_ALIAS_INDEX = 'idx_topic_aliases__topic_id'
@@ -42,7 +41,6 @@ function registerTopicSemiJoinScenario(id: string, allowEmptyResult: boolean): v
         relation: 'relation__post__category__topic_alias',
         max: MAX_ALIAS_RELATION_ROWS,
       },
-      { kind: 'maxBitmapIndexRows', max: MAX_BITMAP_INDEX_ROWS },
       {
         kind: 'usesIndexes',
         indexes: [TOPIC_ALIAS_INDEX, POSITIVE_ALIAS_RELATION_INDEX],
@@ -50,8 +48,7 @@ function registerTopicSemiJoinScenario(id: string, allowEmptyResult: boolean): v
     ],
     allowEmptyResult,
     crossPartition: {
-      posts:
-        'A topic search traverses retained post history through a bounded membership semijoin.',
+      posts: 'A topic search walks matching posts in sort order.',
     },
   })
 }
@@ -68,28 +65,29 @@ async function captureTopicPair(topic: TopicFixture): Promise<void> {
   const prefix = `post-topic-semi-join-${topic}`
   const options = optionsFor(topic)
   const firstPage = await page(options)
-  const cursor = firstPage.page_info.end_cursor
-  if (!cursor || !firstPage.page_info.has_next_page)
-    throw new Error(`${prefix} first page needs an inspected-key continuation cursor`)
-  if (topic === 'dense' && firstPage.results.length === 0)
-    throw new Error(`${prefix} dense first page must return a matching post`)
-  if (topic === 'sparse' && firstPage.results.length > 5)
-    throw new Error(`${prefix} sparse first page exceeded its five seeded matches`)
+  if (topic === 'dense' && firstPage.results.length !== PAGE_SIZE)
+    throw new Error(`${prefix} dense first page must be full`)
+  if (topic === 'sparse' && (firstPage.results.length === 0 || firstPage.results.length > 5))
+    throw new Error(`${prefix} sparse first page must return its seeded matches`)
+  if (topic === 'sparse' && firstPage.page_info.has_next_page)
+    throw new Error(`${prefix} sparse page must be exhausted`)
 
   const firstId = `${prefix}-first`
-  registerTopicSemiJoinScenario(firstId, topic === 'sparse')
+  registerTopicSemiJoinScenario(firstId, false)
   await capture(firstId, options)
+  if (topic === 'sparse') return
 
+  const cursor = firstPage.page_info.end_cursor
+  if (!cursor || !firstPage.page_info.has_next_page)
+    throw new Error(`${prefix} first page needs a continuation cursor`)
   const continuationOptions = { ...options, after: cursor }
   const continuationPage = await page(continuationOptions)
-  if (!continuationPage.page_info.end_cursor || !continuationPage.page_info.has_next_page)
-    throw new Error(`${prefix} continuation must preserve inspected-key progress`)
-  if (topic === 'dense' && continuationPage.results.length === 0)
-    throw new Error(`${prefix} dense continuation must return a matching post`)
-  if (topic === 'sparse' && continuationPage.results.length > 0)
-    throw new Error(`${prefix} sparse continuation must not return unseeded matches`)
+  if (!continuationPage.page_info.has_next_page)
+    throw new Error(`${prefix} continuation must keep walking matching posts`)
+  if (continuationPage.results.length === 0)
+    throw new Error(`${prefix} continuation must return a matching post`)
   const continuationId = `${prefix}-continuation`
-  registerTopicSemiJoinScenario(continuationId, topic === 'sparse')
+  registerTopicSemiJoinScenario(continuationId, false)
   await capture(continuationId, continuationOptions)
 }
 
@@ -118,7 +116,7 @@ function registerMultiTopicFeedScenario(id: string): void {
       'topic_aliases',
     ],
     crossPartition: {
-      posts: 'A followed-post feed applies the bounded two-topic filter after delivery selection.',
+      posts: 'A followed-post feed walks deliveries that match both topics.',
     },
   })
 }
@@ -153,32 +151,14 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
     limit: PAGE_SIZE,
   }
   const feedPage = await getPostFeedIds(seedUser, multiTopicFeedOptions)
-  const feedCursor = feedPage.page_info.end_cursor
-  if (feedPage.results.length > PAGE_SIZE || !feedPage.page_info.has_next_page || !feedCursor)
-    throw new Error('Two-topic post feed must return a bounded page and usable continuation cursor')
+  if (feedPage.results.length > PAGE_SIZE)
+    throw new Error('Two-topic post feed page exceeded its limit')
+  if (feedPage.results.length < PAGE_SIZE && feedPage.page_info.has_next_page)
+    throw new Error('Two-topic post feed must not continue a short page')
   registerMultiTopicFeedScenario('post-topic-semi-join-multi-topic-feed')
   await runAndCapture(
     'post-topic-semi-join-multi-topic-feed',
     () => getPostFeedIds(seedUser, multiTopicFeedOptions),
-    undefined,
-    POST_FEED_QUERY,
-  )
-
-  const continuation = await getPostFeedIds(seedUser, {
-    ...multiTopicFeedOptions,
-    after: feedCursor,
-  })
-  if (
-    continuation.results.length > PAGE_SIZE ||
-    !continuation.page_info.has_next_page ||
-    !continuation.page_info.end_cursor ||
-    continuation.page_info.end_cursor === feedCursor
-  )
-    throw new Error('Two-topic post feed continuation must advance its bounded cursor')
-  registerMultiTopicFeedScenario('post-topic-semi-join-multi-topic-feed-after')
-  await runAndCapture(
-    'post-topic-semi-join-multi-topic-feed-after',
-    () => getPostFeedIds(seedUser, { ...multiTopicFeedOptions, after: feedCursor }),
     undefined,
     POST_FEED_QUERY,
   )

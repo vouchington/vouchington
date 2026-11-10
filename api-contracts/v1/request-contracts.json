@@ -47212,38 +47212,6 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/trending-posts": {
-      "query": {
-        "properties": {
-          "after": {
-            "type": "string"
-          },
-          "limit": {
-            "default": 20,
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "min_score": {
-            "type": "number"
-          },
-          "post_type": {
-            "enum": ["discussion", "review", "data_point", "story"],
-            "type": "string"
-          },
-          "time_range": {
-            "default": "day",
-            "enum": ["day", "week", "month"],
-            "type": "string"
-          },
-          "topic_id": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      }
-    },
     "GET:/api/v1/trending-topics": {
       "query": {
         "properties": {
@@ -53015,9 +52983,6 @@
       "type": "object"
     },
     "GET:/api/v1/topics/compare": {
-      "$ref": "#/components/schemas/Record_string_unknown"
-    },
-    "GET:/api/v1/trending-posts": {
       "$ref": "#/components/schemas/Record_string_unknown"
     },
     "GET:/api/v1/trending-topics": {

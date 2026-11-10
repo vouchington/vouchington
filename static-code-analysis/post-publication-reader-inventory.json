@@ -31,10 +31,6 @@
       "classification": "public-boundary"
     },
     {
-      "path": "backend/api/v1/trending-posts/trending-posts.mts",
-      "classification": "public-boundary"
-    },
-    {
       "path": "backend/services/comments/descendant-page.mts",
       "classification": "descendants-boundary"
     },
@@ -186,13 +182,6 @@
       "reason": "Returns only a boolean (a valid reply sits below this placeholder) and no post content. Its public caller, the ancestors route, checks canViewPost on the thread root before asking.",
       "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
       "owner_classification": "direct-boundary"
-    },
-    {
-      "path": "backend/services/feeds/posts/get-ids/raw-deliveries.mts",
-      "classification": "raw-hydrator",
-      "reason": "Selects only bounded direct/share delivery keys. The assembled feed query applies canonical viewer discovery eligibility and feed restrictions to every inspected target before returning content.",
-      "owner_path": "backend/services/feeds/posts/get-ids/eligible-posts-cte.mts",
-      "owner_classification": "viewer-discovery-sql"
     },
     {
       "path": "backend/services/posts/search/query-builder/order-and-limit.mts",
@@ -363,44 +352,9 @@
       "owner_classification": "mixed-discovery-sql"
     },
     {
-      "path": "backend/services/posts/search/query-builder/hacker-news-hot-candidates.mts",
-      "classification": "raw-hydrator",
-      "reason": "The Hacker News cohort selects bounded raw keys and composes the shared discovery eligibility through where-clause and base-filters before returning candidates.",
-      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
-      "owner_classification": "mixed-discovery-sql"
-    },
-    {
-      "path": "backend/services/posts/search/query-builder/bounded-candidates.mts",
-      "classification": "raw-hydrator",
-      "reason": "Bounded candidate assembler applies the shared search visibility predicate through where-clause and base-filters after limiting keys.",
-      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
-      "owner_classification": "mixed-discovery-sql"
-    },
-    {
       "path": "backend/services/posts/search/query-builder/special-filters.mts",
       "classification": "raw-hydrator",
       "reason": "Supplementary community and recommendation filters are composed alongside the shared search visibility predicate in base-filters.",
-      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
-      "owner_classification": "mixed-discovery-sql"
-    },
-    {
-      "path": "backend/services/posts/search/query-builder/bounded-candidate-raw.mts",
-      "classification": "raw-hydrator",
-      "reason": "Raw candidate keyset is capped before the bounded search assembler applies the shared eligibility filters; it never serializes candidates directly.",
-      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
-      "owner_classification": "mixed-discovery-sql"
-    },
-    {
-      "path": "backend/services/posts/search/query-builder/bounded-candidate-indexes.mts",
-      "classification": "raw-hydrator",
-      "reason": "Index-served candidate predicates and bounded topic keysets feed the shared bounded search assembler, whose base-filters apply discovery eligibility after the cap.",
-      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
-      "owner_classification": "mixed-discovery-sql"
-    },
-    {
-      "path": "backend/services/posts/search/query-builder/bounded-candidate-cursor.mts",
-      "classification": "raw-hydrator",
-      "reason": "Keyset and order fragments serve the capped raw search prefix; base-filters apply eligibility after candidate hydration.",
       "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
       "owner_classification": "mixed-discovery-sql"
     }

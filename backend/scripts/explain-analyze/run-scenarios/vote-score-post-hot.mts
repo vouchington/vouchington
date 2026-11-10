@@ -6,7 +6,6 @@ import { seedVoteScorePostHotFixture } from '../seed-data/vote-score-post-hot.mt
 
 const PAGE_SIZE = 25
 const WEEKLY_POST_SCAN_CAP = 15_000
-const BOUNDED_POST_SEARCH_SCAN_CAP = 3010
 
 export type VoteScorePostHotCursors = Readonly<{ search: string; feed: string; trending: string }>
 type RankedPage = {
@@ -16,21 +15,16 @@ type RankedPage = {
 const postScanGate = () => [
   { kind: 'maxProcessedRows' as const, relation: 'posts', max: WEEKLY_POST_SCAN_CAP },
 ]
-const boundedPostSearchScanGate = () => [
-  { kind: 'maxProcessedRows' as const, relation: 'posts', max: BOUNDED_POST_SEARCH_SCAN_CAP },
-]
 async function prepareCursor<T extends RankedPage>(
   label: string,
   loadFirstPage: () => Promise<T>,
-  allowShort = false,
 ): Promise<string> {
   const page = await loadFirstPage()
   const cursor = page.page_info.end_cursor
   if (
     !cursor ||
     !page.page_info.has_next_page ||
-    page.results.length > PAGE_SIZE ||
-    (!allowShort && page.results.length < PAGE_SIZE)
+    page.results.length !== PAGE_SIZE
   )
     throw new Error(`${label} hot-ranking fixture must stay bounded and return a continuation`)
   return cursor
@@ -40,34 +34,29 @@ export async function prepareVoteScorePostHotCursors(): Promise<VoteScorePostHot
     search: await prepareCursor('Post search', () =>
       getPostIds(seedUser, { sort: 'hot', limit: PAGE_SIZE, time_range: '1w' }),
     ),
-    feed: await prepareCursor(
-      'Post feed',
-      () =>
-        getPostFeedIds(seedUser, {
-          sort: 'hot',
-          feed_type: 'any',
-          limit: PAGE_SIZE,
-          time_range: '1w',
-        }),
-      true,
+    feed: await prepareCursor('Post feed', () =>
+      getPostFeedIds(seedUser, {
+        sort: 'hot',
+        feed_type: 'any',
+        limit: PAGE_SIZE,
+        time_range: '1w',
+      }),
     ),
     trending: await prepareCursor('Trending posts', () =>
-      getPostIds(undefined, { sort: 'trending', time_range: 'all', limit: PAGE_SIZE }),
+      getPostIds(undefined, { sort: 'trending', time_range: '1w', limit: PAGE_SIZE }),
     ),
   }))
 }
 async function requireContinuation<T extends RankedPage>(
   label: string,
   load: () => Promise<T>,
-  allowShort = false,
   after?: string,
 ): Promise<T> {
   const page = await load()
   if (
     !page.page_info.end_cursor ||
     !page.page_info.has_next_page ||
-    page.results.length > PAGE_SIZE ||
-    (!allowShort && page.results.length < PAGE_SIZE) ||
+    page.results.length !== PAGE_SIZE ||
     (after !== undefined && page.page_info.end_cursor === after)
   )
     throw new Error(`${label} hot-ranking continuation must stay bounded and advance its cursor`)
@@ -83,22 +72,7 @@ function contractForScenario(id: string): Parameters<typeof registerScenarioCont
   ]
   return {
     expectations: [
-      ...(id.startsWith('vote-score-trending-posts-')
-        ? [
-            { kind: 'maxProcessedRows' as const, relation: 'posts', max: 3010 },
-            { kind: 'maxBitmapIndexRows' as const, max: 1050 },
-            {
-              kind: 'usesIndexes' as const,
-              indexes: [
-                'posts__default_votes_score_sort_id_idx3',
-                'posts__default_case_id_votes_score_sort_idx',
-              ],
-              anyOf: true,
-            },
-          ]
-        : id.startsWith('vote-score-post-search-hot-')
-          ? boundedPostSearchScanGate()
-          : postScanGate()),
+      ...postScanGate(),
       ...(feed ? [{ kind: 'custom' as const, name: 'postTopicMembership' }] : []),
       // Follow and mute can each inspect a candidate's topic children.
       ...(feed
@@ -166,23 +140,20 @@ export function getVoteScorePostHotScenarios(
     {
       id: 'vote-score-post-feed-hot-after',
       run: () =>
-        requireContinuation(
-          'Post feed',
-          () =>
-            getPostFeedIds(seedUser, {
-              sort: 'hot',
-              feed_type: 'any',
-              limit: PAGE_SIZE,
-              time_range: '1w',
-              after: cursors.feed,
-            }),
-          true,
+        requireContinuation('Post feed', () =>
+          getPostFeedIds(seedUser, {
+            sort: 'hot',
+            feed_type: 'any',
+            limit: PAGE_SIZE,
+            time_range: '1w',
+            after: cursors.feed,
+          }),
           cursors.feed,
         ),
     },
     {
       id: 'vote-score-trending-posts-first',
-      run: () => getPostIds(undefined, { sort: 'trending', time_range: 'all', limit: PAGE_SIZE }),
+      run: () => getPostIds(undefined, { sort: 'trending', time_range: '1w', limit: PAGE_SIZE }),
     },
     {
       id: 'vote-score-trending-posts-after',
@@ -190,7 +161,7 @@ export function getVoteScorePostHotScenarios(
         requireContinuation('Trending posts', () =>
           getPostIds(undefined, {
             sort: 'trending',
-            time_range: 'all',
+            time_range: '1w',
             limit: PAGE_SIZE,
             after: cursors.trending,
           }),

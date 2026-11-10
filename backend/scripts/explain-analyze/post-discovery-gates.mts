@@ -1,62 +1,90 @@
 import { registerScenarioContract } from './plan-expectations.mts'
+import { partitionIndexLeaves } from './partition-index-leaves.mts'
 import { POST_DISCOVERY_FIXTURE_SEEDED_ROWS } from './post-discovery-seeded-rows.mts'
 
 export type PostDiscoveryScope = 'community' | 'recommendation'
 export type PostDiscoverySort = 'new' | 'best' | 'hot' | 'trending'
 
-const EXPECTED_POST_WORK = 3010
+const POST_CAP = 1200
+const SIDE_CAP = 720
 
-export function registerPostDiscoveryGate(
+const INDEX_BY_SCOPE: Record<PostDiscoveryScope, Record<PostDiscoverySort, string>> = {
+  community: {
+    new: 'idx_posts__community_id',
+    best: 'idx_posts__community_id__votes_score_sort__id',
+    hot: 'idx_posts__community_id__stable_hot_rank__id',
+    trending: 'idx_posts__community_id__stable_hot_rank__id',
+  },
+  recommendation: {
+    new: 'idx_posts__post_type__id',
+    best: 'idx_posts__post_type__votes_score_sort__id',
+    hot: 'idx_posts__post_type__stable_hot_rank__id',
+    trending: 'idx_posts__post_type__stable_hot_rank__id',
+  },
+}
+
+export async function registerPostDiscoveryGate(
   id: string,
   scope: PostDiscoveryScope,
   sort: PostDiscoverySort,
   allowEmpty = false,
-): void {
-  const indexes =
-    scope === 'community'
-      ? {
-          new: 'posts__default_community_id_id_idx',
-          best: 'posts__default_community_id_votes_score_sort_id_idx',
-          hot: [
-            'posts__default_community_id_case_id_votes_score_sort_idx',
-            'posts__default_case_id_votes_score_sort_idx',
-            'posts__default_votes_score_sort_id_idx3',
-          ],
-          trending: [
-            'posts__default_community_id_case_id_votes_score_sort_idx',
-            'posts__default_case_id_votes_score_sort_idx',
-            'posts__default_votes_score_sort_id_idx3',
-          ],
-        }
-      : {
-          new: 'posts__default_id_idx7',
-          best: 'posts__default_votes_score_sort_id_idx1',
-          hot: 'posts__default_post_type_case_id_idx',
-          trending: 'posts__default_post_type_case_id_idx',
-        }
+): Promise<void> {
+  const leaves = await partitionIndexLeaves(INDEX_BY_SCOPE[scope][sort])
   registerScenarioContract(id, {
     seededRows: POST_DISCOVERY_FIXTURE_SEEDED_ROWS,
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'posts', max: EXPECTED_POST_WORK },
-      { kind: 'maxBitmapIndexRows', max: 1050 },
+      { kind: 'maxProcessedRows', relation: 'posts', max: POST_CAP },
       {
         kind: 'usesIndexes',
-        indexes: Array.isArray(indexes[sort]) ? indexes[sort] : [indexes[sort]],
-        ...(Array.isArray(indexes[sort]) ? { anyOf: true } : {}),
+        indexes: leaves,
+        anyOf: true,
       },
       ...(scope === 'community'
-        ? [{ kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 2010 }]
+        ? [{ kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: SIDE_CAP }]
         : [
             {
               kind: 'maxProcessedRows' as const,
               relation: 'post_topic_recommendations',
-              max: 2010,
+              max: SIDE_CAP,
             },
           ]),
     ],
     allowEmptyResult: allowEmpty,
     crossPartition: {
-      posts: `${scope} ${sort} discovery traverses the retained post history through a bounded candidate window.`,
+      posts: `${scope} ${sort} discovery walks the sort key across retained post history.`,
+    },
+  })
+}
+
+export async function registerNamedPostIndexGate(
+  id: string,
+  indexName: string,
+  options: { allowEmpty?: boolean; follows?: boolean; rowCap?: number | null } = {},
+): Promise<void> {
+  const leaves = indexName === '' ? [] : await partitionIndexLeaves(indexName)
+  const rowCap = options.rowCap === undefined ? POST_CAP : options.rowCap
+  registerScenarioContract(id, {
+    seededRows: POST_DISCOVERY_FIXTURE_SEEDED_ROWS,
+    expectations: [
+      ...(rowCap === null
+        ? []
+        : [{ kind: 'maxProcessedRows' as const, relation: 'posts', max: rowCap }]),
+      ...(leaves.length > 0
+        ? [{ kind: 'usesIndexes' as const, indexes: leaves, anyOf: true }]
+        : []),
+      ...(options.follows
+        ? [
+            {
+              kind: 'maxProcessedRows' as const,
+              relation: 'relation__user__follow__user',
+              max: POST_CAP,
+            },
+          ]
+        : []),
+    ],
+    allowEmptyResult: options.allowEmpty === true,
+    crossPartition: {
+      posts: 'Unscoped post search walks the sort key across retained post history.',
     },
   })
 }

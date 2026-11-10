@@ -1,4 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { buildHotScoreExpression } from '@modules/feed-query-builders/hot-score'
 import {
   buildViewerPostDiscoveryEligibilityFilter,
   buildHostnameExclusionExists,
@@ -19,11 +20,21 @@ export type PostFeedEligibilityOptions = {
   currentUser: Pick<PrivateUser, '__entity_type' | 'id' | 'roles'>
   postTypes: PostFeedOptions['post_types']
   sort: PostFeedWalkSort
+  scoreReferenceDate?: Date
   textSearchQuery: PostFeedOptions['text_search_query']
   universalTopicIds: PostFeedOptions['universal_topic_ids']
   hashtagTopicIds: PostFeedOptions['hashtag_topic_ids']
   hashtagAliasIds: PostFeedOptions['hashtag_alias_ids']
   hasUnknownHashtag: PostFeedOptions['has_unknown_hashtag']
+}
+
+export function appendEligiblePostsCTE(
+  query: SQLStatement,
+  options: PostFeedEligibilityOptions,
+): void {
+  query.append(sql`, eligible_posts AS NOT MATERIALIZED (`)
+  appendEligiblePostsSelect(query, options)
+  query.append(sql`)`)
 }
 
 export function appendEligiblePostsSelect(
@@ -32,6 +43,7 @@ export function appendEligiblePostsSelect(
     currentUser,
     postTypes,
     sort,
+    scoreReferenceDate,
     textSearchQuery,
     universalTopicIds,
     hashtagTopicIds,
@@ -53,6 +65,11 @@ export function appendEligiblePostsSelect(
         posts.broadcast,
         posts.votes_score_net,
         posts.votes_score_sort`)
+  if (sort === 'hot')
+    query
+      .append(sql`,\n        `)
+      .append(buildHotScoreExpression('posts', scoreReferenceDate))
+      .append(sql` AS hot_score`)
   query.append(sql`
       FROM posts
       JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)

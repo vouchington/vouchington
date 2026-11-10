@@ -75,14 +75,8 @@ describe('bounded post search modes', () => {
               limit: 1,
             }
             const first = await getPostIds(user, options)
-            expect(first.results).toEqual([])
-            expect(first.page_info.has_next_page).toBe(true)
-            expect(first.page_info.end_cursor).toEqual(expect.any(String))
-            const second = await getPostIds(user, {
-              ...options,
-              after: first.page_info.end_cursor!,
-            })
-            expect(second.results.map(row => row.id)).toEqual([oldest])
+            expect(first.results.map(row => row.id)).toEqual([oldest])
+            expect(first.page_info.has_next_page).toBe(false)
           },
         )
       } finally {
@@ -192,14 +186,8 @@ describe('bounded post search modes', () => {
             limit: 1,
           }
           const first = await getPostIds(author, options)
-          expect(first.results).toEqual([])
-          expect(first.page_info.has_next_page).toBe(true)
-          expect(first.page_info.end_cursor).toEqual(expect.any(String))
-          const second = await getPostIds(author, {
-            ...options,
-            after: first.page_info.end_cursor!,
-          })
-          expect(second.results.map(row => row.id)).toEqual([oldest])
+          expect(first.results.map(row => row.id)).toEqual([oldest])
+          expect(first.page_info.has_next_page).toBe(false)
         },
       )
     } finally {
@@ -231,14 +219,8 @@ describe('bounded post search modes', () => {
             limit: 1,
           }
           const first = await getPostIds(viewer, options)
-          expect(first.results).toEqual([])
-          expect(first.page_info.has_next_page).toBe(true)
-          expect(first.page_info.end_cursor).toEqual(expect.any(String))
-          const second = await getPostIds(viewer, {
-            ...options,
-            after: first.page_info.end_cursor!,
-          })
-          expect(second.results.map(row => row.id)).toEqual([oldest])
+          expect(first.results.map(row => row.id)).toEqual([oldest])
+          expect(first.page_info.has_next_page).toBe(false)
         },
       )
     } finally {

@@ -6,7 +6,6 @@ import { getTimeRangeLowerBoundDate } from '../time-range-utils.mts'
 import type { PostFeedWalkSort } from './get-ids/eligible-posts-cte.mts'
 import { mapPostFeedResponse, parsePostFeedCursor } from './get-ids/feed-cursor.mts'
 import { buildPostFeedPageQuery } from './get-ids/page-query.mts'
-import { getPostsWorkLimit, postsWorkConfig } from '@services/posts/work-limits'
 
 const DEFAULT_MIN_SCORE_FOLLOW_USERS = -5
 const DEFAULT_MIN_SCORE_FOLLOW_TOPICS = 0
@@ -38,8 +37,6 @@ export async function getPostFeedIds(
   const cutoff =
     sort === 'hot' && (!requestedCutoff || requestedCutoff < hotFloor) ? hotFloor : requestedCutoff
   const safeLimit = clampLimit(limit)
-  await postsWorkConfig.waitForInitialization()
-  const candidateLimit = Math.min(getPostsWorkLimit('post_feed_candidate_limit'), safeLimit + 1)
 
   const query = buildPostFeedPageQuery({
     communityId: options.community_id,
@@ -50,6 +47,7 @@ export async function getPostFeedIds(
       currentUser,
       postTypes: post_types,
       sort,
+      scoreReferenceDate: sort === 'hot' ? decisionInstant : undefined,
       textSearchQuery: options.text_search_query,
       universalTopicIds: options.universal_topic_ids,
       hashtagTopicIds: options.hashtag_topic_ids,
@@ -61,7 +59,6 @@ export async function getPostFeedIds(
     minScoreFollowTopics: options.min_score_follow_topics ?? DEFAULT_MIN_SCORE_FOLLOW_TOPICS,
     minScoreFollowUsers: options.min_score_follow_users ?? DEFAULT_MIN_SCORE_FOLLOW_USERS,
     safeLimit,
-    candidateLimit,
   })
   const { rows } = await read(query)
   return mapPostFeedResponse(rows, safeLimit, sort, decisionInstant)

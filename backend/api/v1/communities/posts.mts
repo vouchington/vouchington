@@ -102,6 +102,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
         include_archived_communities: true,
         post_types: [...VALID_FILTERABLE_POST_TYPES],
         exclude_post_ids: excludedPins,
+        time_range: searchOptions.time_range ?? '1m',
       })
   const pinnedPostIds = shouldIncludeCommunityPinnedPosts({ after, ...pinFilter })
     ? excludedPins

@@ -41,16 +41,8 @@ describe('bounded post search candidates', () => {
             post_types: [...options.post_types],
             exclude_post_ids: [newest!, middle!],
           })
-          expect(filtered.results).toEqual([])
-          expect(filtered.page_info.has_next_page).toBe(true)
-          expect(filtered.page_info.end_cursor).toEqual(expect.any(String))
-          const continuation = await getPostIds(undefined, {
-            ...options,
-            post_types: [...options.post_types],
-            exclude_post_ids: [newest!, middle!],
-            after: filtered.page_info.end_cursor!,
-          })
-          expect(continuation.results.map(row => row.id)).toEqual([oldest])
+          expect(filtered.results.map(row => row.id)).toEqual([oldest])
+          expect(filtered.page_info.has_next_page).toBe(false)
         },
       )
     } finally {

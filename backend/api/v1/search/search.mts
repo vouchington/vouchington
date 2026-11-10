@@ -46,7 +46,6 @@ app.route('/api/v1/search').get(async ctx => {
       cursorOptions,
       detectSearchSort(cursorOptions),
       hasTextSearch(cursorOptions),
-      true,
     )
   }
 

@@ -208,8 +208,7 @@ state from the latest history row.
   index walk with per-row `EXISTS` probes, a cap on inspected rows, and a continuation cursor. A
   short or empty page is fine when it carries "load more" and the cursor. Do not cap product data
   (such as aliases per topic) to make a query cheap. Each cap is a `DynamicConfig` field with a
-  default and a hard maximum. With an approved inspected-key cap, a short or empty page advances
-  on the inspected key and can still have `has_next_page` true. Unenforced.
+  default and a hard maximum. Unenforced.
 
 ## R7 — Every table, column and view has a comment
 

@@ -14,7 +14,7 @@ type PostSearchCursorValues = {
   as_of_ms?: number
 }
 
-const KNOWN_SORTS = new Set(['new', 'following_new', 'best', 'hot', 'relevance'])
+const KNOWN_SORTS = new Set(['new', 'following_new', 'best', 'hot', 'trending', 'relevance'])
 
 /** Opaque scope that binds a post-search cursor to its sort and time-range choice. */
 export function postSearchCursorScope(

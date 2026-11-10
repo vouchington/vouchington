@@ -122,7 +122,8 @@ describe('read_posts.search discovery visibility — real DB', () => {
         const seed = fixtures.hidden.find(post => post.label === label)!
         const mcpIds = await search(caller, { similar_post_id: seed.id })
         const restIds = await restSearch(caller, { similar_post_id: seed.id })
-        expect(mcpIds.toSorted()).toEqual(restIds.toSorted())
+        expect(mcpIds).toEqual([])
+        expect(restIds).toEqual([])
       }
     }
   })
@@ -138,7 +139,8 @@ describe('read_posts.search discovery visibility — real DB', () => {
     for (const [, args] of modes().slice(0, 2)) {
       const mcpIds = await search(mutedViewer, args)
       const restIds = await restSearch(mutedViewer, args)
-      expect(mcpIds).toContain(post.id)
+      expect(mcpIds).not.toContain(post.id)
+      expect(restIds).not.toContain(post.id)
       expect(mcpIds.toSorted()).toEqual(restIds.toSorted())
     }
   })

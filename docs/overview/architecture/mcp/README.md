@@ -161,8 +161,8 @@ private docs site at `/mcp/`, alongside the PostgreSQL reference.
   (`q`, `text_search_query`, `semantic_search_query`) and pages like it (`after`, `limit`,
   `page_info`; see Paged results).
 - **Post types** — a `post_type` enum accepts the same values as its REST equivalent:
-  `VALID_FILTERABLE_POST_TYPES` for `GET /api/v1/posts` and `VALID_TRENDING_POST_TYPES` for
-  `GET /api/v1/trending-posts` (both in `ts-shared/feed-capabilities`).
+  `VALID_FILTERABLE_POST_TYPES` for `GET /api/v1/posts`. Trending uses that route with
+  `sort=trending` (`VALID_TRENDING_POST_TYPES` in `ts-shared/feed-capabilities`).
 - **Alternatives** — `get_domain_ratings` takes exactly one of `url` or `hostname`; its schema
   enforces this with `minProperties`/`maxProperties`, which MCP argument validation checks.
 

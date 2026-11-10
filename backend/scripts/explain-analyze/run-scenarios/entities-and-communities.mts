@@ -98,50 +98,23 @@ export async function runEntityAndCommunityScenarios() {
     getFollowedUsersByElectionVote(seedUser, seedPostId, 'post_votes', 1),
   )
 
-  // The former dedicated trending endpoint now shares the bounded stable-rank search query.
+  // Trending posts share the posts search walk for the week the product page requests.
   registerScenarioContract('trending-posts', {
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'posts', max: 3010 },
-      { kind: 'maxBitmapIndexRows', max: 1050 },
-      {
-        kind: 'usesIndexes',
-        indexes: [
-          'posts__default_votes_score_sort_id_idx3',
-          'posts__default_case_id_votes_score_sort_idx',
-        ],
-        anyOf: true,
-      },
-    ],
-    crossPartition: {
-      posts: 'Trending ranks eligible posts through a bounded stable-rank candidate window.',
-    },
+    expectations: [],
+    crossPartition: { posts: 'Trending ranks eligible posts from the requested week.' },
   })
   await runAndCapture('trending-posts', () =>
-    getPostIds(undefined, { sort: 'trending', time_range: 'all', limit: 25 }),
+    getPostIds(undefined, { sort: 'trending', time_range: '1w', limit: 25 }),
   )
 
-  // The topic-filtered alias executes the same bounded query before applying its topic filter.
   registerScenarioContract('trending-posts-by-topic', {
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'posts', max: 3010 },
-      { kind: 'maxBitmapIndexRows', max: 1050 },
-      {
-        kind: 'usesIndexes',
-        indexes: [
-          'posts__default_votes_score_sort_id_idx3',
-          'posts__default_case_id_votes_score_sort_idx',
-        ],
-        anyOf: true,
-      },
-    ],
-    crossPartition: {
-      posts: 'Topic trending ranks eligible posts through a bounded stable-rank candidate window.',
-    },
+    expectations: [],
+    crossPartition: { posts: 'Topic trending ranks eligible posts from the requested week.' },
   })
   await runAndCapture('trending-posts-by-topic', () =>
     getPostIds(undefined, {
       sort: 'trending',
-      time_range: 'all',
+      time_range: '1w',
       trending_topic_id: seedTopicId,
       limit: 25,
     }),

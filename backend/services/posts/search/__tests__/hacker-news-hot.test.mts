@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { decodeScopedScoreCursor } from '@modules/pagination'
+import { decodePostSearchCursor } from '../get-ids-page-info.mts'
 import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
 import { getPostIds } from '../get-ids.mts'
 import { postsWorkConfig } from '../../work-limits.mts'
@@ -30,7 +30,7 @@ describe('Hacker News hot search bounds', () => {
     ])
     const ids: string[] = []
     const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 1000,
+      hacker_news_hot_candidate_limit: 2,
     })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,
@@ -65,12 +65,12 @@ describe('Hacker News hot search bounds', () => {
       for (const time_range of ['1m', '1y', 'all'] as const) {
         const bounded = await getPostIds(user, { ...options, time_range })
         expect(bounded.results.map(row => row.id)).toEqual([ids[2]])
-        const cursor = decodeScopedScoreCursor(
-          bounded.page_info.end_cursor!,
-          'post-hot-stable-2026',
-          'Expected hot cursor',
+        const cursor = decodePostSearchCursor(
+          { after: bounded.page_info.end_cursor!, time_range },
+          'hot',
+          false,
         )
-        expect(Number.isFinite(cursor.score)).toBe(true)
+        expect(Number.isFinite(cursor.hot_score_lt)).toBe(true)
         const next = await getPostIds(user, {
           ...options,
           time_range,
@@ -102,7 +102,7 @@ describe('Hacker News hot search bounds', () => {
       hackerNewsVisibilityConfig.waitForInitialization(),
     ])
     const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 1000,
+      hacker_news_hot_candidate_limit: 1,
     })
     const ids: string[] = []
     try {
@@ -159,7 +159,7 @@ describe('Hacker News hot search bounds', () => {
       hackerNewsVisibilityConfig.waitForInitialization(),
     ])
     const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 1000,
+      hacker_news_hot_candidate_limit: 10,
     })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,
@@ -214,7 +214,7 @@ describe('Hacker News hot search bounds', () => {
       await setHackerNewsReferenceFlagsForTest(ids, [])
       const expected = ids.toSorted((a, b) => b.localeCompare(a))
       const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-        hacker_news_hot_candidate_limit: 1000,
+        hacker_news_hot_candidate_limit: 2,
       })
       const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
         references_visible: true,

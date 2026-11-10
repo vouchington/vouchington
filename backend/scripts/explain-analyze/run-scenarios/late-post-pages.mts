@@ -1,5 +1,4 @@
 import { continueAfterFailure as runStep } from '../scenario-failures.mts'
-import { runDataPointTopicBestCohortScenarios } from './data-point-topic-best-cohort.mts'
 import {
   cleanupPostDiscoverySearchFixture,
   seedPostDiscoverySearchFixture,
@@ -14,9 +13,6 @@ import { runLateCommunityHotScenarios } from './community-hot-pages.mts'
 
 /** Keep large owned post cohorts after ordinary captures and separate from each other. */
 export async function runLatePostPageScenarios(): Promise<void> {
-  // Deleting a large cohort does not shrink its indexes; keep that physical history
-  // after ordinary topic counts so their plans retain the canonical seed corpus.
-  await runStep(runDataPointTopicBestCohortScenarios.name, runDataPointTopicBestCohortScenarios)
   await runStep('runPostDiscoveryFixtureScenarios', async () => {
     await cleanupPostTopicSemiJoinFixture()
     await cleanupPostDiscoverySearchFixture()

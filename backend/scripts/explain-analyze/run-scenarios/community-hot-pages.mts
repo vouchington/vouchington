@@ -1,4 +1,5 @@
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import { POST_DISCOVERY_FIXTURE_SEEDED_ROWS } from '../post-discovery-seeded-rows.mts'
 import { getPostIds } from '../run-services.mts'
 import { runAndCapture, SEED_PREFIX } from '../run-support.mts'
@@ -6,24 +7,20 @@ import { withSeedAnchorClock } from '../seed-clock.mts'
 
 const COMMUNITY_POST_LIMIT = 25
 const COMMUNITY_ID = `${SEED_PREFIX}-1400-7000-8000-000000000064`
-const COMMUNITY_HOT_GATE = {
-  expectations: [
-    { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 2010 },
-    { kind: 'maxProcessedRows' as const, relation: 'posts', max: 3010 },
-    { kind: 'maxBitmapIndexRows' as const, max: 1050 },
-    {
-      kind: 'usesIndexes' as const,
-      indexes: [
-        'posts__default_community_id_case_id_votes_score_sort_idx',
-        'posts__default_case_id_votes_score_sort_idx',
-        'posts__default_votes_score_sort_id_idx3',
-      ],
-      anyOf: true,
+const COMMUNITY_HOT_INDEX = 'idx_posts__community_id__stable_hot_rank__id'
+
+function communityHotGate(leaves: readonly string[]) {
+  return {
+    expectations: [
+      { kind: 'queryBinds' as const, token: 'candidate_posts' },
+      { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 720 },
+      { kind: 'maxProcessedRows' as const, relation: 'posts', max: 1200 },
+      { kind: 'usesIndexes' as const, indexes: leaves, anyOf: true },
+    ],
+    crossPartition: {
+      posts: 'Community hot ranking traverses the retained post history with cursor continuation.',
     },
-  ],
-  crossPartition: {
-    posts: 'Community hot ranking traverses a bounded stable-rank candidate window.',
-  },
+  }
 }
 
 type CommunityHotCursor = Readonly<{ after: string; firstPageIds: readonly string[] }>
@@ -79,34 +76,39 @@ async function runCommunityHotPage(
 
 function getCommunityHotScenarios(
   cursors: Awaited<ReturnType<typeof prepareCommunityHotCursors>>,
+  leaves: readonly string[],
 ): readonly CommunityHotScenario[] {
+  const contract = communityHotGate(leaves)
   return [
     {
       id: 'search-community-posts-hot',
       run: () => runCommunityHotPage(undefined, undefined, 'first page'),
-      contract: COMMUNITY_HOT_GATE,
+      contract,
     },
     {
       id: 'search-community-posts-hot-after',
       run: () => runCommunityHotPage(undefined, cursors.all, 'continuation'),
-      contract: COMMUNITY_HOT_GATE,
+      contract,
     },
     {
       id: 'search-community-posts-hot-1m',
       run: () => runCommunityHotPage('1m', undefined, 'first page'),
-      contract: COMMUNITY_HOT_GATE,
+      contract,
     },
     {
       id: 'search-community-posts-hot-1m-after',
       run: () => runCommunityHotPage('1m', cursors.month, 'continuation'),
-      contract: COMMUNITY_HOT_GATE,
+      contract,
     },
   ]
 }
 
 /** Capture only after the late fixture has created its community and review rows. */
 export async function runLateCommunityHotScenarios(): Promise<void> {
-  const communityHotScenarios = getCommunityHotScenarios(await prepareCommunityHotCursors())
+  const communityHotScenarios = getCommunityHotScenarios(
+    await prepareCommunityHotCursors(),
+    await partitionIndexLeaves(COMMUNITY_HOT_INDEX),
+  )
   for (const scenario of communityHotScenarios) {
     registerScenarioContract(scenario.id, {
       ...scenario.contract,

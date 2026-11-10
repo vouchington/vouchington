@@ -1,6 +1,7 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { BasicUser } from '@services/users/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { PostSearchOptions } from './types.mts'
+import type { PostSearchOptions, PostSearchSort } from './types.mts'
 import {
   detectSearchSort,
   hasSemanticSearch as hasSemanticSearchFn,
@@ -12,12 +13,6 @@ import { appendPostSearchOrderAndLimit } from './query-builder/order-and-limit.m
 import { appendPostSearchSelectAndJoins } from './query-builder/select-and-joins.mts'
 import { appendPostSearchWhereClause } from './query-builder/where-clause.mts'
 import { buildSemanticPostCandidates } from './query-builder/semantic-candidates.mts'
-import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
-import { buildHackerNewsHotCandidates } from './query-builder/hacker-news-hot-candidates.mts'
-import {
-  buildBoundedPostSearchQuery,
-  usesBoundedPostSearchCandidates,
-} from './query-builder/bounded-candidates.mts'
 
 export function buildPostSearchQuery(
   currentUser?: BasicUser,
@@ -29,16 +24,6 @@ export function buildPostSearchQuery(
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
   const rawSort = detectSearchSort(options)
   const sort = rawSort === 'following_new' && !currentUser ? 'new' : rawSort
-  if (usesBoundedPostSearchCandidates(options, sort)) {
-    return buildBoundedPostSearchQuery(
-      currentUser,
-      options,
-      sort,
-      decisionInstant,
-      hasTextSearch,
-      hasSemanticSearch,
-    )
-  }
   const rankingScoreExpression = buildPostRankingScoreExpression({
     hasTextSearch,
     hasSemanticSearch,
@@ -57,38 +42,28 @@ export function buildPostSearchQuery(
   })
   if (hasSemanticSearch)
     ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch, decisionInstant))
-  // Hacker News hot ranks within its fixed newest candidate cohort.
-  const useHackerNewsHotCandidates = usesHackerNewsHotCandidates(options)
-  if (useHackerNewsHotCandidates) {
-    ctes.push(
-      buildHackerNewsHotCandidates(
-        currentUser,
-        options,
-        hasTextSearch,
-        hasSemanticSearch,
-        rankingScoreExpression,
-        decisionInstant,
-      ),
+  appendCtes(query, ctes)
+  // Community lists keep the checked candidate_posts name: one sort-key walk, then the page.
+  if (options.community_id !== undefined) {
+    query.append(
+      ctes.length > 0
+        ? sql`,\n candidate_posts AS NOT MATERIALIZED (`
+        : sql`WITH candidate_posts AS NOT MATERIALIZED (`,
     )
   }
-  appendCtes(query, ctes)
   appendPostSearchSelectAndJoins(query, {
     decisionInstant,
     useSemanticCandidates: hasSemanticSearch,
-    useHackerNewsHotCandidates,
     currentUser,
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
     options,
-    rankingScoreExpression:
-      useHackerNewsHotCandidates && rankingScoreExpression
-        ? sql`posts.ranking_score`
-        : rankingScoreExpression,
+    rankingScoreExpression,
     sort,
   })
   appendPostSearchWhereClause(query, {
-    paginationOnly: useHackerNewsHotCandidates,
+    paginationOnly: false,
     decisionInstant,
     currentUser,
     followingRankExpression,
@@ -107,6 +82,78 @@ export function buildPostSearchQuery(
     omitOrderBy,
     sort,
   })
+  if (options.community_id !== undefined) {
+    appendCommunityCandidatePage(query, {
+      followingRankExpression,
+      hasSemanticSearch,
+      hasTextSearch,
+      hydrate: options.hydrateDataPointPage === true,
+      ranking: rankingScoreExpression !== null,
+      sort,
+    })
+  }
 
   return query
+}
+
+function appendCommunityCandidatePage(
+  query: SQLStatement,
+  {
+    followingRankExpression,
+    hasSemanticSearch,
+    hasTextSearch,
+    hydrate,
+    ranking,
+    sort,
+  }: {
+    followingRankExpression: SQLStatement | null
+    hasSemanticSearch: boolean
+    hasTextSearch: boolean
+    hydrate: boolean
+    ranking: boolean
+    sort: PostSearchSort
+  },
+): void {
+  query.append(sql`)
+    SELECT
+      candidate_posts.id,
+      candidate_posts.post_type`)
+  if (hydrate) {
+    query.append(sql`,
+      candidate_posts.title,
+      candidate_posts.data_point_vertical,
+      candidate_posts.structured_data`)
+  }
+  if (ranking) query.append(sql`,\n      candidate_posts.ranking_score`)
+  if (followingRankExpression) query.append(sql`,\n      candidate_posts.following_rank`)
+  query.append(communitySortColumns(sort))
+  query.append(sql`
+    FROM candidate_posts`)
+  appendPostSearchOrderAndLimit(query, {
+    followingRankExpression,
+    hasSemanticSearch,
+    hasTextSearch,
+    omitLimit: true,
+    omitOrderBy: false,
+    sort,
+    idRelation: 'candidate_posts',
+    outputColumns: true,
+  })
+}
+
+function communitySortColumns(sort: PostSearchSort): SQLStatement {
+  switch (sort) {
+    case 'best':
+      return sql`,\n      candidate_posts.vote_score`
+    case 'hot':
+      return sql`,\n      candidate_posts.hot_score`
+    case 'trending':
+      return sql`,\n      candidate_posts.hot_score,\n      candidate_posts.trending_score`
+    case 'new':
+    case 'following_new':
+    case 'relevance':
+      return sql``
+    default:
+      return assertNever(sort, 'Unknown post search sort')
+  }
 }

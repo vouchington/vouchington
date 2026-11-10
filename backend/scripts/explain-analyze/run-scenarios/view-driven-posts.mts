@@ -33,21 +33,9 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
   for (const scenario of scenarios) {
     registerScenarioContract(scenario.id, {
       expectations: [
-        ...(scenario.id === 'search-community-agent-simulation-posts'
-          ? [
-              { kind: 'queryBinds' as const, token: 'candidate_posts' },
-              { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 720 },
-              { kind: 'maxProcessedRows' as const, relation: 'posts', max: 1200 },
-            ]
-          : [
-              { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 720 },
-              { kind: 'maxProcessedRows' as const, relation: 'posts', max: 1200 },
-              { kind: 'maxBitmapIndexRows' as const, max: 1050 },
-              {
-                kind: 'usesIndexes' as const,
-                indexes: ['posts__default_community_id_id_idx'],
-              },
-            ]),
+        { kind: 'queryBinds' as const, token: 'candidate_posts' },
+        { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 720 },
+        { kind: 'maxProcessedRows' as const, relation: 'posts', max: 1200 },
       ],
       crossPartition: { posts: scenario.description },
     })

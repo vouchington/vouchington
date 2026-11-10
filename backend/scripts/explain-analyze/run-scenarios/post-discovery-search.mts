@@ -1,12 +1,11 @@
 import {
+  registerNamedPostIndexGate,
   registerPostDiscoveryGate,
   type PostDiscoveryScope,
   type PostDiscoverySort,
 } from '../post-discovery-gates.mts'
 import { getPostIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
-import { registerScenarioContract } from '../plan-expectations.mts'
-import { POST_DISCOVERY_FIXTURE_SEEDED_ROWS } from '../post-discovery-seeded-rows.mts'
 import { runPostDiscoveryUnscopedScenarios } from './post-discovery-unscoped.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
@@ -14,9 +13,6 @@ import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 const PAGE_SIZE = 25
 const COMMUNITY_IDS = [seedUuid(100, '14'), seedUuid(101, '14')] as const
 const POST_SEARCH_QUERY = 'buildPostSearchQuery'
-// A full candidate page touches the raw cap+1 prefix, keyed candidate rows and root-eligibility
-// rows (1,001 + 1,000 + 1,000); its 25 rows plus one page sentinel (PAGE_SIZE + 1 = 26) fit within it.
-const EXPECTED_POST_WORK = 3010
 
 function optionsFor(scope: PostDiscoveryScope, sort: PostDiscoverySort): PostSearchOptions {
   return {
@@ -46,14 +42,14 @@ async function captureScopeSort(scope: PostDiscoveryScope, sort: PostDiscoverySo
     throw new Error(`${prefix} must produce a continuation cursor`)
 
   const firstId = `${prefix}-first`
-  registerPostDiscoveryGate(firstId, scope, sort)
+  await registerPostDiscoveryGate(firstId, scope, sort)
   await runCaptured(firstId, firstOptions)
 
   const continuationId = `${prefix}-continuation`
   const continuation = await getPage({ ...firstOptions, after: cursor })
   if (continuation.results.length === 0)
     throw new Error(`${prefix} continuation page must contain a post`)
-  registerPostDiscoveryGate(continuationId, scope, sort)
+  await registerPostDiscoveryGate(continuationId, scope, sort)
   await runCaptured(continuationId, { ...firstOptions, after: cursor })
 
   const sparseId = `${prefix}-sparse`
@@ -64,7 +60,7 @@ async function captureScopeSort(scope: PostDiscoveryScope, sort: PostDiscoverySo
   const sparse = await getPage(sparseOptions)
   if (sparse.results.length === 0 || sparse.results.length >= PAGE_SIZE)
     throw new Error(`${prefix} sparse page must contain fewer than one page of posts`)
-  registerPostDiscoveryGate(sparseId, scope, sort, true)
+  await registerPostDiscoveryGate(sparseId, scope, sort, true)
   await runCaptured(sparseId, sparseOptions)
 
   const emptyId = `${prefix}-empty`
@@ -77,9 +73,9 @@ async function captureScopeSort(scope: PostDiscoveryScope, sort: PostDiscoverySo
           topic_recommendation_q: 'no-matching-post-discovery-cohort',
         }
   const empty = await getPage(emptyOptions)
-  if (empty.results.length !== 0 || !empty.page_info.has_next_page)
-    throw new Error(`${prefix} empty page must expose a bounded candidate continuation`)
-  registerPostDiscoveryGate(emptyId, scope, sort, true)
+  if (empty.results.length !== 0 || empty.page_info.has_next_page || empty.page_info.end_cursor)
+    throw new Error(`${prefix} empty page must be exhausted`)
+  await registerPostDiscoveryGate(emptyId, scope, sort, true)
   await runCaptured(emptyId, emptyOptions)
 }
 
@@ -100,21 +96,17 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
   const globalHotCursor = globalHotFirst.page_info.end_cursor
   if (!globalHotCursor || !globalHotFirst.page_info.has_next_page)
     throw new Error('Global hot fixture must produce a continuation cursor')
-  const globalScenarios: readonly [string, PostSearchOptions, readonly string[] | null][] = [
-    [
-      'post-discovery-global-hot-first',
-      globalHot,
-      ['posts__default_votes_score_sort_id_idx3', 'posts__default_case_id_votes_score_sort_idx'],
-    ],
+  const globalScenarios: readonly [string, PostSearchOptions, string][] = [
+    ['post-discovery-global-hot-first', globalHot, 'idx_posts__stable_hot_rank__id'],
     [
       'post-discovery-global-hot-continuation',
       { ...globalHot, after: globalHotCursor },
-      ['posts__default_votes_score_sort_id_idx3', 'posts__default_case_id_votes_score_sort_idx'],
+      'idx_posts__stable_hot_rank__id',
     ],
     [
       'post-discovery-type-hot-first',
       { ...globalHot, post_types: ['discussion'] },
-      ['posts__default_post_type_case_id_idx'],
+      'idx_posts__post_type__stable_hot_rank__id',
     ],
     [
       'post-discovery-mixed-recommendation-new',
@@ -124,7 +116,7 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
         limit: PAGE_SIZE,
         post_types: ['discussion', 'topic_recommendation'],
       },
-      null,
+      'idx_posts__post_type__id',
     ],
     [
       'post-discovery-mixed-recommendation-best',
@@ -134,30 +126,11 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
         limit: PAGE_SIZE,
         post_types: ['discussion', 'topic_recommendation'],
       },
-      null,
+      'idx_posts__post_type__votes_score_sort__id',
     ],
   ]
-  for (const [id, options, index] of globalScenarios) {
-    registerScenarioContract(id, {
-      seededRows: POST_DISCOVERY_FIXTURE_SEEDED_ROWS,
-      expectations: [
-        { kind: 'maxProcessedRows', relation: 'posts', max: EXPECTED_POST_WORK },
-        { kind: 'maxBitmapIndexRows', max: 1050 },
-        ...(index
-          ? [
-              {
-                kind: 'usesIndexes' as const,
-                indexes: index,
-                ...(index.length > 1 ? { anyOf: true } : {}),
-              },
-            ]
-          : []),
-      ],
-      crossPartition: {
-        posts:
-          'Global post discovery traverses the retained post history through a bounded candidate window.',
-      },
-    })
+  for (const [id, options, indexName] of globalScenarios) {
+    await registerNamedPostIndexGate(id, indexName)
     // no-mistakes-disable-next-line query-reached-per-item: each fixed global/type case needs its own production query plan.
     await runCaptured(id, options)
   }

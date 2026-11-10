@@ -58,6 +58,16 @@ CREATE INDEX IF NOT EXISTS idx_posts__hacker_news_references__votes_score_sort__
   ON posts (votes_score_sort DESC, id DESC)
   WHERE has_hacker_news_references AND deleted_at IS NULL;
 
+-- Hot order for posts that reference Hacker News. The expression matches
+-- buildStablePostHotRankExpression so the page walk stops at LIMIT.
+CREATE INDEX IF NOT EXISTS idx_posts__hacker_news_references__stable_hot_rank__id
+  ON posts ((CASE WHEN votes_score_sort > 0 THEN
+    LN(votes_score_sort::DOUBLE PRECISION) +
+    EXTRACT(EPOCH FROM (uuid_extract_timestamp(id) - TIMESTAMPTZ '2026-01-01 00:00:00+00'))
+      / 259200.0 * LN(2.0)
+    ELSE -1e300::DOUBLE PRECISION END) DESC, id DESC)
+  WHERE has_hacker_news_references AND deleted_at IS NULL AND votes_score_net > 0;
+
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__hacker_news_references__published_at__id
   ON rss_feed_items (published_at DESC, id DESC)
   WHERE has_hacker_news_references AND deleted_at IS NULL;

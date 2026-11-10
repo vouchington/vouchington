@@ -1205,9 +1205,6 @@ importers:
       '@services/totp':
         specifier: workspace:^
         version: link:../services/totp
-      '@services/trending-posts':
-        specifier: workspace:^
-        version: link:../services/trending-posts
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../services/trending-topics
@@ -11704,15 +11701,6 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-
-  backend/services/trending-posts:
-    dependencies:
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@ts-shared/feed-capabilities':
-        specifier: workspace:^
-        version: link:../../../ts-shared/feed-capabilities
 
   backend/services/trending-topics:
     dependencies:

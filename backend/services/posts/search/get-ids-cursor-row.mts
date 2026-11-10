@@ -21,7 +21,7 @@ export function encodePostSearchCursor(
   if (sort === 'best') {
     return encodeCursor({ score: requiredNumber(row.vote_score, 'vote_score'), id: row.id, scope })
   }
-  if (sort === 'hot') {
+  if (sort === 'hot' || sort === 'trending') {
     return encodeCursor({ score: requiredNumber(row.hot_score, 'hot_score'), id: row.id, scope })
   }
   if (sort === 'relevance' && hasRankingScore) {
@@ -43,7 +43,9 @@ export function cursorValues(
     return { ranking_lt: finiteField(row, 'ranking'), id_lt: row.id }
   }
   if (sort === 'best') return { vote_score_lt: finiteField(row, 'score'), id_lt: row.id }
-  if (sort === 'hot') return { hot_score_lt: finiteField(row, 'score'), id_lt: row.id }
+  if (sort === 'hot' || sort === 'trending') {
+    return { hot_score_lt: finiteField(row, 'score'), id_lt: row.id }
+  }
   return { id_lt: row.id }
 }
 
@@ -54,7 +56,7 @@ export function cursorGuard(
   const numberField =
     sort === 'following_new' || (sort === 'relevance' && hasRankingScore)
       ? 'ranking'
-      : sort === 'best' || sort === 'hot'
+      : sort === 'best' || sort === 'hot' || sort === 'trending'
         ? 'score'
         : null
   return row => isCursorRow(row, numberField)

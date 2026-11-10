@@ -6,6 +6,7 @@ import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPaginationLimits } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
 import { getPostIds } from '@services/posts/search/get-ids'
+import { rejectMcpSimilarSeed } from '@services/posts/public-similar-seed'
 import { getPostsWithRootsByAnyCached } from '@services/posts/get-cached-with-roots'
 import { labelAndMaskPosts } from '@services/content-provenance'
 import {
@@ -31,7 +32,6 @@ import { requirePrivateToolUser } from './private-user.mts'
 import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 import { POST_SORTS, postSearchFilterSchemaProperties } from './search-post-input.mts'
-
 type ToolArgs = PagedSearchArgs & {
   sort?: (typeof POST_SORTS)[number]
   post_type?: SearchPostType
@@ -89,7 +89,7 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Search posts with keyword, semantic, or similar-item signals. Follow the opaque end_cursor while has_next_page is true, including after a short or empty filtered page.',
+      'Search posts with keyword, semantic, or similar-item signals. Follow the opaque end_cursor while has_next_page is true.',
     parameters: {
       type: 'object',
       properties: {
@@ -155,11 +155,16 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           getPaginationLimits(25),
         )
         const { shouldReturnEmpty, searchOptions } = await resolvePostsSearchParams(prepared)
-        if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
+        if (
+          shouldReturnEmpty ||
+          (await rejectMcpSimilarSeed(viewer !== undefined, searchOptions.similar_post_id))
+        )
+          return { results: [], page_info: EMPTY_PAGE_INFO }
 
         return getPostIds(viewer, {
           ...searchOptions,
           omitLimit: false,
+          ...(viewer && { exclude_for_user_id: viewer.id }),
         })
       })
       if (!page) return INVALID_CURSOR_RESULT
