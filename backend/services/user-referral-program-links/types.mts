@@ -20,12 +20,6 @@ export type UserReferralLink = {
   unfurl_last_error: string | null
 }
 
-export type UserReferralLinkWithDetails = UserReferralLink & {
-  url: string
-  referral_program_name: string
-  referral_program_slug: string
-}
-
 /** Fields present on every list row. Owner rows also include the management columns. */
 export type PublicUserReferralLinkListItem = {
   id: string

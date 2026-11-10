@@ -645,7 +645,7 @@
       },
       "get_referral_links": {
         "measured": {
-          "list": 3756,
+          "list": 3540,
           "core": 1046
         },
         "max": {
