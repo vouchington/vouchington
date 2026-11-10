@@ -2,7 +2,6 @@ import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import {
   repairFailedImageDeliveryMutation,
-  writeImageDeliveryPolicyMutation,
   prepublishImagePlacementDenialBatch,
 } from '@services/media-delivery-safety'
 import { retireImagePlacementsForDeletedImage } from './placements.mts'
@@ -29,14 +28,12 @@ export async function deleteImageByIdWhileStorageLocked(
       return false
     }
     if (rows[0] && !rows[0].deleted_at) {
-      const retired = await writeImageDeliveryPolicyMutation(transaction, imageId, async scope => {
-        const result = await scope(
-          '/* deleteImageById:fence */ UPDATE images SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL AND (quarantine_pending_at IS NULL OR quarantined_at IS NOT NULL)',
-          [imageId],
-        )
-        if (result.rowCount !== 1) throw new Error('Image deletion eligibility changed')
-        return retireImagePlacementsForDeletedImage(imageId, scope)
-      })
+      const result = await transaction(
+        '/* deleteImageById:fence */ UPDATE images SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL AND (quarantine_pending_at IS NULL OR quarantined_at IS NOT NULL)',
+        [imageId],
+      )
+      if (result.rowCount !== 1) throw new Error('Image deletion eligibility changed')
+      const retired = await retireImagePlacementsForDeletedImage(imageId, transaction)
       await prepublishImagePlacementDenialBatch(retired, { query: transaction })
     }
     await transaction.commit()

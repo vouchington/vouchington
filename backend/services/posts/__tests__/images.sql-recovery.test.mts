@@ -30,7 +30,7 @@ describe('image transaction SQL failure recovery', () => {
     const before = await getPostImages(fixture.postId)
     const replacement = await insertTestImage(fixture.user.id)
     const { result, error } = await withPostgresQueryFailureForTest(
-      '/* projectImagePlacementPolicy */',
+      '/* countImagePlacementOccupancy */',
       () =>
         setPostImages(fixture.user, fixture.post, [
           { image_id: replacement, order_index: 0 },

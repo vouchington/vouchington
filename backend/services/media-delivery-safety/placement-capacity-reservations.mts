@@ -68,22 +68,6 @@ export async function admitImagePlacements(
   }
 }
 
-/** Copy the image's current delivery eligibility onto the placements this write just admitted. */
-export async function projectImagePlacementPolicy(
-  query: TransactionQuery,
-  placementIds: readonly string[],
-): Promise<void> {
-  if (placementIds.length === 0) return
-  await query(sql`/* projectImagePlacementPolicy */
-    UPDATE media_placements placement
-    SET is_current_image_delivery_eligible = image.is_delivery_eligible
-    FROM retained_image_placement_bindings binding
-    JOIN images image ON image.id = binding.image_id
-    WHERE placement.id = binding.placement_id
-      AND placement.id = ANY(${[...placementIds]}::uuid[])
-      AND placement.is_current_image_delivery_eligible IS DISTINCT FROM image.is_delivery_eligible`)
-}
-
 function capacityLimitError() {
   return createCodedError(409, 'Image placement limit reached', IMAGE_PLACEMENT_LIMIT_REACHED)
 }

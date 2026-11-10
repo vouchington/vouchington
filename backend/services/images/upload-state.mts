@@ -1,5 +1,4 @@
 import { write, beginTransaction } from '@data-stores/psql'
-import { writeImageDeliveryPolicyMutation } from '@services/media-delivery-safety/image-policy-mutation'
 import onError from '@modules/on-error'
 
 interface ImageMetadata {
@@ -31,9 +30,8 @@ export async function finalizeImageMetadata(
   metadata: ImageMetadata,
 ): Promise<{ rowCount: number }> {
   await using query = await beginTransaction()
-  const result = await writeImageDeliveryPolicyMutation(query, imageId, scope =>
-    scope(
-      `/* finalizeImageMetadata */
+  const result = await query(
+    `/* finalizeImageMetadata */
     UPDATE images
     SET
       data = $1,
@@ -43,8 +41,7 @@ export async function finalizeImageMetadata(
       AND upload_completed_at IS NULL
       AND upload_failed_at IS NULL
   `,
-      [metadata, imageId],
-    ),
+    [metadata, imageId],
   )
   await query.commit()
 

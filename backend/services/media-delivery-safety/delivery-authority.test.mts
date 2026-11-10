@@ -166,8 +166,8 @@ describe('delivery authority and durable denial repair', () => {
     const fixture = await createSurface()
     const edge = enableEdge()
     await markImageModerationFlagged(fixture.tuple.imageId)
-    // Policy mutation already acknowledged its denial. Reproduce a stale reconciler staging
-    // an allow afterward, so publication must revalidate policy and mint a fresh denial.
+    // The flag is visible by joining images. Reproduce a stale reconciler staging an allow
+    // afterward, so publication must revalidate that join and mint a fresh denial.
     await stageImagePlacementDeliveryRecord(
       { ...fixture.tuple, state: 'allow' },
       { forceGeneration: true },

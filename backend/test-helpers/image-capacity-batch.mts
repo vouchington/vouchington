@@ -3,7 +3,6 @@ import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
 import {
   admitImagePlacements,
-  projectImagePlacementPolicy,
   withImagePlacementMutation,
 } from '../services/media-delivery-safety/placement-capacity-reservations.mts'
 import type { ImagePlacementAdmission } from '../services/media-delivery-safety/placement-capacity-types.mts'
@@ -30,7 +29,6 @@ async function pendingClaims(
     ) INSERT INTO image_placements (placement_id, post_id, image_id)
       SELECT parents.id, ${postId}, retained.image_id FROM parents
       JOIN retained ON retained.placement_id = parents.id`)
-  await projectImagePlacementPolicy(query, placementIds)
   return imageIds.map((imageId, index) => ({
     placementId: placementIds[index]!,
     imageId,

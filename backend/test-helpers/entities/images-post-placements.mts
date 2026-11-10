@@ -2,10 +2,7 @@ import { createHash } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
-import {
-  admitImagePlacements,
-  projectImagePlacementPolicy,
-} from '../../services/media-delivery-safety/placement-capacity-reservations.mts'
+import { admitImagePlacements } from '../../services/media-delivery-safety/placement-capacity-reservations.mts'
 import { ensureImagePlacementBinding } from '../../services/media-delivery-safety/retained-image-identities.mts'
 
 export async function insertTestPostImage(data: {
@@ -50,7 +47,6 @@ export async function insertTestPostImage(data: {
     SELECT placement_id, post_id, image_id FROM missing_binding
   `,
   )
-  await projectImagePlacementPolicy(query, [placementId])
   await query.commit()
   return placementId
 }

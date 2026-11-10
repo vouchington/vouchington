@@ -1,48 +1,43 @@
-import { withTestImageWriterLockWait } from '@voucha/test-helpers/image-writer-lock-race'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
   createTestUserDirect,
+  getTestMediaDeliveryRecord,
   insertTestImage,
   getTestImageSurfacePlacements,
 } from '@voucha/test-helpers'
-import { writeTestImageSurfaceMutation } from '@voucha/test-helpers/image-surface-mutation'
+import { testImageSurfaceDeliveryIsAuthorized } from '@voucha/test-helpers/entities/image-surface-owner-deletion'
+import { getTestMediaDeliveryRegistryRecordId } from '@voucha/test-helpers/entities/image-surface-placements'
 import { flagTestDeliveryImageInTransaction } from '@voucha/test-helpers/entities/media-delivery-repair'
+import { writeTestImageSurfaceMutation } from '@voucha/test-helpers/image-surface-mutation'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 
 describe('concrete image policy admission', () => {
-  it('rejects a new surface behind an uncommitted unsafe image before edge effects', async () => {
+  it('rejects a committed unsafe image before edge effects', async () => {
     const user = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
     const edge = installTestMediaDeliveryEdge()
     await using unsafe = await beginTransaction()
     await flagTestDeliveryImageInTransaction(unsafe, imageId)
-    const error = await withTestImageWriterLockWait(
-      unsafe,
-      'writeTestUserImageSurface',
-      async () => {
-        await using owner = await beginTransaction()
-        return await writeTestImageSurfaceMutation(
-          { surfaceKind: 'user-profile-image', userId: user.id },
-          imageId,
-          user.id,
-          owner,
-        ).then(
-          () => null,
-          (err: unknown) => err,
-        )
-      },
-      () => {
-        expect(edge.put).not.toHaveBeenCalled()
-      },
+    await unsafe.commit()
+    await using owner = await beginTransaction()
+    const error = await writeTestImageSurfaceMutation(
+      { surfaceKind: 'user-profile-image', userId: user.id },
+      imageId,
+      user.id,
+      owner,
+    ).then(
+      () => null,
+      (err: unknown) => err,
     )
-    expect(error).not.toBeNull()
+    expect(error).toEqual(
+      expect.objectContaining({ message: 'Image is not ready for a public surface' }),
+    )
     expect(edge.put).not.toHaveBeenCalled()
     expect(await getTestImageSurfacePlacements({ imageId })).toEqual([])
   })
 
-  it('retries a missed uncommitted binding and denies its current concrete tuple', async () => {
+  it('does not push an edge denial when a published image is flagged', async () => {
     const user = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
     const edge = installTestMediaDeliveryEdge()
@@ -53,17 +48,27 @@ describe('concrete image policy admission', () => {
       user.id,
       owner,
     )
+    await owner.commit()
     if (!tuple) throw new Error('Missing owned surface')
-    await withTestImageWriterLockWait(owner, 'flagTestDeliveryImageInTransaction', async () => {
-      await using unsafe = await beginTransaction()
-      await flagTestDeliveryImageInTransaction(unsafe, imageId)
-      await unsafe.commit()
-    })
-    const key = getImagePlacementDeliveryKey({
+    const recordId = await getTestMediaDeliveryRegistryRecordId({
       placementId: tuple.placement_id,
       revision: tuple.placement_revision,
       imageId,
     })
-    expect(edge.records.get(key)?.state).toBe('withheld')
+    if (!recordId) throw new Error('Missing registry identity')
+    expect(await getTestMediaDeliveryRecord(recordId)).toMatchObject({ desired_state: 'allow' })
+    expect(edge.put).not.toHaveBeenCalled()
+    await using unsafe = await beginTransaction()
+    await flagTestDeliveryImageInTransaction(unsafe, imageId)
+    await unsafe.commit()
+    expect(edge.put).not.toHaveBeenCalled()
+    expect(await getTestMediaDeliveryRecord(recordId)).toMatchObject({ desired_state: 'allow' })
+    await expect(
+      testImageSurfaceDeliveryIsAuthorized({
+        placement_id: tuple.placement_id,
+        placement_revision: tuple.placement_revision,
+        image_id: imageId,
+      }),
+    ).resolves.toBe(false)
   })
 })

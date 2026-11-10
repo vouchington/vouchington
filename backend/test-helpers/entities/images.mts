@@ -1,7 +1,6 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { writeImageDeliveryPolicyMutation } from '../../services/media-delivery-safety/image-policy-mutation.mts'
 import { retireImagePlacementsForDeletedImage } from '../../services/images/placements.mts'
 export { insertTestImage, insertTestImageWithSha256 } from './images-insert.mts'
 export { insertTestPostImage, insertPendingTestImage } from './images-post-placements.mts'
@@ -18,42 +17,36 @@ export async function updateImageStatus(
           ? sql`upload_started_at = NOW()`
           : sql`upload_started_at = NULL, upload_completed_at = NULL, upload_failed_at = NULL`
   await using query = await beginTransaction()
-  await writeImageDeliveryPolicyMutation(query, imageId, async scope => {
-    await scope(
-      allowUnannotatedQuery(
-        sql`UPDATE images SET `.append(timestamps).append(sql` WHERE id = ${imageId}`),
-      ),
-    )
-  })
+  await query(
+    allowUnannotatedQuery(
+      sql`UPDATE images SET `.append(timestamps).append(sql` WHERE id = ${imageId}`),
+    ),
+  )
   await query.commit()
 }
 
 export async function markImageDeleted(imageId: string) {
   await using query = await beginTransaction()
-  await writeImageDeliveryPolicyMutation(query, imageId, async scope => {
-    await scope(
-      `/* markImageDeleted */
+  await query(
+    `/* markImageDeleted */
     UPDATE images SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1
   `,
-      [imageId],
-    )
-    await retireImagePlacementsForDeletedImage(imageId, scope)
-  })
+    [imageId],
+  )
+  await retireImagePlacementsForDeletedImage(imageId, query)
   await query.commit()
 }
 
 export async function markImageModerationFlagged(imageId: string) {
   await using query = await beginTransaction()
-  await writeImageDeliveryPolicyMutation(query, imageId, async scope => {
-    await scope(
-      sql`/* markImageModerationFlagged */
+  await query(
+    sql`/* markImageModerationFlagged */
     UPDATE images
     SET is_flagged_by_openai_omni_moderation = true,
         openai_omni_moderation_created_at = NOW()
     WHERE id = ${imageId}
   `,
-    )
-  })
+  )
   await query.commit()
 }
 
@@ -63,17 +56,15 @@ export async function setImageOpenAIModerationResults(
   flagged: boolean,
 ) {
   await using query = await beginTransaction()
-  await writeImageDeliveryPolicyMutation(query, imageId, async scope => {
-    await scope(
-      sql`/* setImageOpenAIModerationResults */
+  await query(
+    sql`/* setImageOpenAIModerationResults */
     UPDATE images
     SET openai_omni_moderation_results = ${JSON.stringify(results)}::jsonb,
         is_flagged_by_openai_omni_moderation = ${flagged},
         openai_omni_moderation_created_at = NOW()
     WHERE id = ${imageId}
   `,
-    )
-  })
+  )
   await query.commit()
 }
 
@@ -105,9 +96,8 @@ export async function getImageModerationState(imageId: string): Promise<{
 
 export async function markImageComplete(imageId: string) {
   await using query = await beginTransaction()
-  await writeImageDeliveryPolicyMutation(query, imageId, async scope => {
-    await scope(
-      `/* markImageComplete */
+  await query(
+    `/* markImageComplete */
     UPDATE images
     SET upload_started_at = NOW(),
         upload_completed_at = NOW(),
@@ -115,9 +105,8 @@ export async function markImageComplete(imageId: string) {
         s3_key = replace($1::text, '-', '') || replace($1::text, '-', '')
     WHERE id = $1
   `,
-      [imageId],
-    )
-  })
+    [imageId],
+  )
   await query.commit()
 }
 
@@ -137,18 +126,16 @@ export async function backdateImageUploadStagedAt(
         ? sql`upload_started_at = NOW(), upload_completed_at = NULL, upload_failed_at = NULL`
         : sql`upload_started_at = NULL, upload_completed_at = NULL, upload_failed_at = NULL`
   await using query = await beginTransaction()
-  await writeImageDeliveryPolicyMutation(query, imageId, async scope => {
-    await scope(
-      allowUnannotatedQuery(
-        sql`
+  await query(
+    allowUnannotatedQuery(
+      sql`
     UPDATE images
     SET upload_staged_at = ${uploadStagedAt},
         `.append(timestamps).append(sql`
     WHERE id = ${imageId}
   `),
-      ),
-    )
-  })
+    ),
+  )
   await query.commit()
 }
 
@@ -165,15 +152,13 @@ export async function setImageCompleteWithData(
   data: Record<string, unknown>,
 ): Promise<void> {
   await using query = await beginTransaction()
-  await writeImageDeliveryPolicyMutation(query, imageId, async scope => {
-    await scope(
-      `/* setImageCompleteWithData */ UPDATE images
+  await query(
+    `/* setImageCompleteWithData */ UPDATE images
        SET sha_256 = $1, s3_key = $2, upload_started_at = NOW(), upload_completed_at = NOW(),
            data = $3::jsonb
        WHERE id = $4`,
-      [sha256, sha256.toString('hex'), JSON.stringify(data), imageId],
-    )
-  })
+    [sha256, sha256.toString('hex'), JSON.stringify(data), imageId],
+  )
   await query.commit()
 }
 

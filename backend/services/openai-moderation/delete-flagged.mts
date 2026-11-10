@@ -6,7 +6,6 @@ import { read, write, beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { recordImageAutoRemoval } from './image-auto-removal-audit.mts'
-import { writeImageDeliveryPolicyMutation } from '@services/media-delivery-safety'
 
 export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
   const image = await getImageByAny(imageId, { includeQuarantinePending: true })
@@ -92,15 +91,13 @@ export async function processPendingImageQuarantinePage(
 
 async function markImageQuarantinePending(imageId: string): Promise<boolean> {
   await using transaction = await beginTransaction()
-  const { rows } = await writeImageDeliveryPolicyMutation(transaction, imageId, scope =>
-    scope(sql`/* markImageQuarantinePending */
+  const { rows } = await transaction(sql`/* markImageQuarantinePending */
     UPDATE images
     SET quarantine_pending_at = COALESCE(quarantine_pending_at, NOW())
     WHERE id = ${imageId}
       AND deleted_at IS NULL
     RETURNING id
-  `),
-  )
+  `)
   await transaction.commit()
   return rows.length > 0
 }

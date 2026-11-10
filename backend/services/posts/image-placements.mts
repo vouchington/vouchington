@@ -3,7 +3,6 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import {
   admitImagePlacements,
-  projectImagePlacementPolicy,
   withImagePlacementMutation,
   type ImagePlacementAdmission,
 } from '@services/media-delivery-safety/placement-capacity-reservations'
@@ -104,10 +103,6 @@ export async function syncPostImagePlacements(
     ORDER BY binding.image_id, binding.placement_id`)
         : { rows: [] }
       assert(after.length === desired.length, 400, 'Image not found or not complete')
-      await projectImagePlacementPolicy(
-        query,
-        after.map(row => row.placement_id),
-      )
       const removedById = new Map(removed.map(row => [row.placement_id, row.image_id]))
       return {
         denied: retired.map(row => ({

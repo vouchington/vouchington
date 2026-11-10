@@ -1,7 +1,4 @@
-import {
-  admitImagePlacements,
-  projectImagePlacementPolicy,
-} from '@services/media-delivery-safety/placement-capacity-reservations'
+import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity-reservations'
 import type { CopyrightSeedContext } from './copyright-context.mts'
 import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
@@ -92,10 +89,6 @@ export async function seedCopyrightMedia(
   await admitImagePlacements(
     transaction,
     active.map(row => ({ imageId, placementId: row.placement_id, alreadyActive: true })),
-  )
-  await projectImagePlacementPolicy(
-    transaction,
-    active.map(row => row.placement_id),
   )
   await transaction.commit()
   return {

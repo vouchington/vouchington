@@ -1,4 +1,3 @@
-import { AsyncLocalStorage } from 'node:async_hooks'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // Import order matters here -- see the comment in undici-mock.mts.
 import { createCaptchaUndiciMock, mockFetch } from '@voucha/test-helpers/captcha/undici-mock'
@@ -48,17 +47,13 @@ describe('POST /api/v1/posts freshness after CAPTCHA', () => {
       })
       const request = createRequest()
       await request.authenticateAs(user)
-      // Run the simulated competing writer in its own context, outside request query attribution.
-      const runCompetingWriter = AsyncLocalStorage.snapshot()
-      const respondToCaptcha = () =>
-        runCompetingWriter(async () => {
-          if (state === 'deleted') await softDeleteTopic(topicId, user.id)
-          else await mergeTopicForTest(topicId, destinationId, user.id)
-          return new UndiciResponse(
-            JSON.stringify({ success: true, hostname: 'localhost', action: 'test' }),
-          )
-        })
-      mockFetch.mockImplementationOnce(respondToCaptcha)
+      mockFetch.mockImplementationOnce(async () => {
+        if (state === 'deleted') await softDeleteTopic(topicId, user.id)
+        else await mergeTopicForTest(topicId, destinationId, user.id)
+        return new UndiciResponse(
+          JSON.stringify({ success: true, hostname: 'localhost', action: 'test' }),
+        )
+      })
       const response = await request
         .post('/api/v1/posts')
         .send({
@@ -81,16 +76,12 @@ describe('POST /api/v1/posts freshness after CAPTCHA', () => {
     const urlId = await createTestUrlWithHostname()
     const request = createRequest()
     await request.authenticateAs(user)
-    // Run the simulated competing writer in its own context, outside request query attribution.
-    const runCompetingWriter = AsyncLocalStorage.snapshot()
-    const respondToCaptcha = () =>
-      runCompetingWriter(async () => {
-        await hardDeleteTestUrl(urlId)
-        return new UndiciResponse(
-          JSON.stringify({ success: true, hostname: 'localhost', action: 'test' }),
-        )
-      })
-    mockFetch.mockImplementationOnce(respondToCaptcha)
+    mockFetch.mockImplementationOnce(async () => {
+      await hardDeleteTestUrl(urlId)
+      return new UndiciResponse(
+        JSON.stringify({ success: true, hostname: 'localhost', action: 'test' }),
+      )
+    })
     const response = await request
       .post('/api/v1/posts')
       .send({

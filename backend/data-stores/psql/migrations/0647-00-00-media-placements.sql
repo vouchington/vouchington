@@ -3,7 +3,6 @@ CREATE TABLE media_placements (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   revision integer NOT NULL DEFAULT 0 CHECK (revision >= 0),
   activation_revision integer NOT NULL DEFAULT 0 CHECK (activation_revision >= 0 AND activation_revision <= revision),
-  is_current_image_delivery_eligible boolean NOT NULL DEFAULT false,
   retired_at timestamptz,
   retirement_reason media_placement_retirement_reasons CHECK (retirement_reason IN ('asset_deleted', 'owner_removed')),
   copyright_withheld_at timestamptz,
@@ -27,8 +26,7 @@ CREATE TABLE image_placements (
   post_id uuid NOT NULL REFERENCES posts(id) ON DELETE RESTRICT,
   image_id uuid NOT NULL,
   binding_family image_binding_families NOT NULL DEFAULT 'post' CHECK (binding_family = 'post'),
-  UNIQUE (post_id, image_id),
-  UNIQUE (placement_id, post_id)
+  UNIQUE (post_id, image_id)
 );
 
 ALTER TABLE image_placements
@@ -45,11 +43,6 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';
-  END IF;
-  IF (to_jsonb(NEW) - ARRAY['is_current_image_delivery_eligible', 'updated_at'])
-      = (to_jsonb(OLD) - ARRAY['is_current_image_delivery_eligible', 'updated_at'])
-    AND NEW.is_current_image_delivery_eligible IS DISTINCT FROM OLD.is_current_image_delivery_eligible THEN
-    RETURN NEW;
   END IF;
   IF NEW.revision <> OLD.revision + 1 THEN
     RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';
@@ -91,5 +84,3 @@ COMMENT ON COLUMN image_placements.placement_id IS 'Stable media placement ident
 COMMENT ON COLUMN image_placements.post_id IS 'Hosting post for this immutable image use; retained with the placement so delivery authorization is scoped to the use.';
 COMMENT ON COLUMN image_placements.image_id IS 'Immutable byte asset bound to this post placement; an asset can have multiple separately authorized placements.';
 COMMENT ON COLUMN image_placements.binding_family IS 'Literal post family checked by the retained image placement triple foreign key.';
-
-COMMENT ON COLUMN media_placements.is_current_image_delivery_eligible IS 'Current image policy projected onto actual placement publication authority; policy changes do not advance availability revision.';

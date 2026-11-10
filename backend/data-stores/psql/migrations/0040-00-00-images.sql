@@ -47,19 +47,11 @@ CREATE TABLE IF NOT EXISTS images (
   quarantine_s3_key TEXT,
 
   bedrock_nova_multimodal_v1_embedding VECTOR(1024),
-  bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ,
-  is_delivery_eligible boolean GENERATED ALWAYS AS (
-    deleted_at IS NULL AND upload_completed_at IS NOT NULL AND quarantine_pending_at IS NULL
-      AND is_flagged_by_openai_omni_moderation IS FALSE
-      AND openai_omni_moderation_results IS NOT NULL AND openai_omni_moderation_created_at IS NOT NULL
-  ) STORED,
-  UNIQUE (id, is_delivery_eligible)
+  bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_images__deleted_by_id
   ON images (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
-
-COMMENT ON COLUMN images.is_delivery_eligible IS 'Current upload, moderation and quarantine eligibility copied onto active placement publication authority.';
 
 ALTER TABLE images
 ADD CONSTRAINT fk_images__retained_image_identity

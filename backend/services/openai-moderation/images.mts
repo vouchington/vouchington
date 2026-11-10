@@ -7,7 +7,6 @@ import sql from 'sql-template-strings'
 import { deleteFlaggedImage } from './delete-flagged.mts'
 import { createOpenAIModeration } from './request.mts'
 import { publishTerminalImageState } from './terminal-image-state.mts'
-import { writeImageDeliveryPolicyMutation } from '@services/media-delivery-safety'
 
 export async function upsertImageOpenAIModeration(imageId: string) {
   const image = await getImageByAny(imageId)
@@ -113,8 +112,7 @@ async function applyImageOpenAIModerationResults(
   flagged: boolean,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  const { rows } = await writeImageDeliveryPolicyMutation(transaction, imageId, scope =>
-    scope(sql`/* applyImageOpenAIModerationResults */
+  const { rows } = await transaction(sql`/* applyImageOpenAIModerationResults */
     UPDATE images
     SET openai_omni_moderation_results = ${JSON.stringify(results)}::jsonb,
         is_flagged_by_openai_omni_moderation = ${flagged},
@@ -122,8 +120,7 @@ async function applyImageOpenAIModerationResults(
     WHERE id = ${imageId}
       AND deleted_at IS NULL
     RETURNING id
-  `),
-  )
+  `)
 
   await transaction.commit()
   return rows.length > 0

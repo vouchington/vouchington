@@ -3,11 +3,11 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import {
   admitImagePlacements,
-  projectImagePlacementPolicy,
   withImagePlacementMutation,
 } from './placement-capacity-reservations.mts'
 import { settleImagePlacementDeliveryChanges } from './delivery-registry-publish.mts'
 import { assertImagesReadyForSurface } from './asset-admission-lock.mts'
+import { prepareImageSurfacePlacements } from './surface-placement-prepare.mts'
 
 import {
   imageSurfaceMutationPreimage,
@@ -41,6 +41,7 @@ export async function writeImageSurfaceMutation<Result>(
     parentQuery,
     async query => {
       await admitSurfaceReferences(query, references)
+      const displaced = await prepareImageSurfacePlacements(query, references)
       const write = await writeOwner(references, query)
       assert(
         write.changes.length === references.length,
@@ -62,10 +63,6 @@ export async function writeImageSurfaceMutation<Result>(
           'Image surface placement was not created',
         )
       }
-      await projectImagePlacementPolicy(
-        query,
-        after.flatMap(row => (row.placement_id ? [row.placement_id] : [])),
-      )
       const activated = after.filter(
         row =>
           row.placement_id &&
@@ -78,20 +75,27 @@ export async function writeImageSurfaceMutation<Result>(
       )
       if (activated.length > 0) await recordSurfaceActivations(query, activated, actorUserId!)
       const currentIds = new Set(after.flatMap(row => (row.placement_id ? [row.placement_id] : [])))
-      const denied = after.flatMap(row =>
-        row.previous_placement_id &&
-        row.previous_image_id &&
-        !currentIds.has(row.previous_placement_id) &&
-        row.prior_denial_revision !== null
-          ? [
-              {
-                placementId: row.previous_placement_id,
-                revision: row.prior_denial_revision,
-                imageId: row.previous_image_id,
-              },
-            ]
-          : [],
-      )
+      const denied = [
+        ...displaced.map(row => ({
+          placementId: row.placement_id,
+          revision: row.revision,
+          imageId: row.image_id,
+        })),
+        ...after.flatMap(row =>
+          row.previous_placement_id &&
+          row.previous_image_id &&
+          !currentIds.has(row.previous_placement_id) &&
+          row.prior_denial_revision !== null
+            ? [
+                {
+                  placementId: row.previous_placement_id,
+                  revision: row.prior_denial_revision,
+                  imageId: row.previous_image_id,
+                },
+              ]
+            : [],
+        ),
+      ]
       return { write, after, activated, denied }
     },
     async ({ write, after, activated, denied }, query) => {

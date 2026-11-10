@@ -11,7 +11,6 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import {
   IMAGE_PLACEMENT_CAPACITY_CORPUS,
   seedImagePlacementCapacityCohort,
-  seedImagePlacementCapacityPolicyCorpus,
 } from '../seed-data/image-placement-capacity.mts'
 import { runAndCapture } from '../run-support.mts'
 
@@ -38,7 +37,6 @@ export async function runImagePlacementCapacityScenarios(): Promise<void> {
     const mixed = await seedImagePlacementCapacityCohort(3, cap, 'mixed')
     const sparse = await seedImagePlacementCapacityCohort(4, 1, 'post')
     const retired = await seedImagePlacementCapacityCohort(5, 0, 'surface')
-    const policyImageId = await seedImagePlacementCapacityPolicyCorpus()
     await write(
       '/* analyzeCapacity */ VACUUM (ANALYZE) retained_image_placement_bindings, media_placements',
     )
@@ -58,7 +56,7 @@ export async function runImagePlacementCapacityScenarios(): Promise<void> {
     }
     await capture('image-placement-activation-new', sparse.candidate, false)
     await capture('image-placement-activation-retired', retired.candidate, false)
-    await runImageCapacityConditionalWrites(policyImageId)
+    await runImageCapacityConditionalWrites()
   } finally {
     restore()
   }

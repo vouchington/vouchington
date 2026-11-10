@@ -1,4 +1,3 @@
-import { writeImageDeliveryPolicyMutation } from '../../../services/media-delivery-safety/image-policy-mutation.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { withTestOwnedPostgresWait } from '../../postgres-client-lock-observer.mts'
@@ -75,20 +74,16 @@ export async function cancelTestCopyrightRestorationDeadline(deadlineId: string)
 
 export async function quarantineTestCopyrightRestorationImage(imageId: string): Promise<void> {
   await using query = await beginTransaction()
-  await writeImageDeliveryPolicyMutation(query, imageId, scope =>
-    scope(
-      sql`/* quarantineTestCopyrightRestorationImage */ UPDATE images SET quarantine_pending_at = CURRENT_TIMESTAMP WHERE id = ${imageId}`,
-    ),
+  await query(
+    sql`/* quarantineTestCopyrightRestorationImage */ UPDATE images SET quarantine_pending_at = CURRENT_TIMESTAMP WHERE id = ${imageId}`,
   )
   await query.commit()
 }
 
 export async function makeTestCopyrightRestorationImageUnready(imageId: string): Promise<void> {
   await using query = await beginTransaction()
-  await writeImageDeliveryPolicyMutation(query, imageId, scope =>
-    scope(
-      sql`/* makeTestCopyrightRestorationImageUnready */ UPDATE images SET openai_omni_moderation_created_at = NULL WHERE id = ${imageId}`,
-    ),
+  await query(
+    sql`/* makeTestCopyrightRestorationImageUnready */ UPDATE images SET openai_omni_moderation_created_at = NULL WHERE id = ${imageId}`,
   )
   await query.commit()
 }

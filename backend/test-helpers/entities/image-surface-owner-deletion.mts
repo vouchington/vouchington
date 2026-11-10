@@ -1,9 +1,6 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  admitImagePlacements,
-  projectImagePlacementPolicy,
-} from '../../services/media-delivery-safety/placement-capacity-reservations.mts'
+import { admitImagePlacements } from '../../services/media-delivery-safety/placement-capacity-reservations.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { imageDeliveryIsAuthorized } from '../../services/media-delivery-safety/delivery-authority.mts'
 import { lockImageDeliveryMutation } from '../../services/media-delivery-safety/delivery-lock.mts'
@@ -59,7 +56,6 @@ export async function reactivateTestImageSurfaceInTransaction(
   ])
   await query(sql`/* reactivateTestImageSurfaceInTransaction */ UPDATE media_placements SET retired_at = NULL,
     retirement_reason = NULL, revision = revision + 1 WHERE id = ${placementId}`)
-  await projectImagePlacementPolicy(query, [placementId])
 }
 
 export async function changeTestOwnerlessImageSurfaceRetirementReason(

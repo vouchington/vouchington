@@ -3,7 +3,6 @@ import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { reconcileDeliveryRepairMarkers } from '../../services/media-delivery-safety/delivery-repair-markers.mts'
 import { writeTestImageSurfaceMutation } from '../image-surface-mutation.mts'
-import { writeImageDeliveryPolicyMutation } from '../../services/media-delivery-safety/image-policy-mutation.mts'
 
 /** Real autocommit executor for rejecting authority calls without a retained transaction. */
 export const testDeliveryAutocommitQuery = write
@@ -42,10 +41,8 @@ export async function flagTestDeliveryImageInTransaction(
   query: TransactionQuery,
   imageId: string,
 ): Promise<void> {
-  await writeImageDeliveryPolicyMutation(query, imageId, scope =>
-    scope(
-      sql`/* flagTestDeliveryImageInTransaction */ UPDATE images SET is_flagged_by_openai_omni_moderation = TRUE WHERE id = ${imageId}`,
-    ),
+  await query(
+    sql`/* flagTestDeliveryImageInTransaction */ UPDATE images SET is_flagged_by_openai_omni_moderation = TRUE WHERE id = ${imageId}`,
   )
 }
 

@@ -1,4 +1,3 @@
-export { writeImageDeliveryPolicyMutation } from './image-policy-mutation.mts'
 export { writeImageSurfaceMutation } from './surface-mutation.mts'
 
 export * from './delivery-registry.mts'
