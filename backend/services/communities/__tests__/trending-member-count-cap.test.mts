@@ -14,6 +14,7 @@ import {
   readTrendingCommunityScoresForTest,
   refreshMaterializedViewForTest,
 } from '../../../test-helpers/refresh-materialized-view-for-test.mts'
+import processPsql from '../../../workers/psql/processors.mts'
 import { describe, expect, it } from 'vitest'
 import {
   syncTrendingCommunityMemberCountCap,
@@ -126,7 +127,11 @@ describe('trending community member count cap', () => {
         broadcast: 'everyone',
       })
 
-      await syncTrendingCommunityMemberCountCap()
+      await processPsql(
+        'refreshMaterializedView',
+        { viewName: 'mv_trending_communities' },
+        { refreshMaterializedView: async () => undefined },
+      )
       expect(await readTrendingCommunityMemberCountCapForTest()).toBe(cap)
       await refreshMaterializedViewForTest('mv_trending_communities')
       const rows = await readTrendingCommunityScoresForTest([
