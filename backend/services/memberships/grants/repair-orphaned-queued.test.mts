@@ -12,6 +12,7 @@ import { getMembershipByUserId } from '../get.mts'
 import { grantMembership } from '../grant.mts'
 import {
   activateOrphanedQueuedGrant,
+  readOrphanedQueuedGrantUserIds,
   repairOrphanedQueuedGrantsBatch,
 } from './repair-orphaned-queued.mts'
 import { revokeMembershipGrant } from './revoke.mts'
@@ -22,6 +23,9 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
       'Membership orphan repair batch size must be a positive integer',
     )
     await expect(repairOrphanedQueuedGrantsBatch(null, 1.5)).rejects.toThrow(RangeError)
+    await expect(
+      commitMembershipGrantTransaction(query => readOrphanedQueuedGrantUserIds(null, 0, query)),
+    ).rejects.toThrow(RangeError)
   })
 
   it('activates a queued grant that committed after its covering grant was revoked', async () => {
@@ -47,6 +51,11 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
       hasMore: false,
       nextCursor: member.id,
     })
+    await expect(
+      commitMembershipGrantTransaction(query =>
+        readOrphanedQueuedGrantUserIds(null, 1, query, [member.id]),
+      ),
+    ).resolves.toEqual([])
     await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({
       plan: 'pro',
       status: 'active',
