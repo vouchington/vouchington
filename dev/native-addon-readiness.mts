@@ -40,7 +40,6 @@ async function checkNativeAddon(
   }
 
   try {
-    // no-mistakes-disable-next-line production-exports-only-used-by-tests -- runtime-resolved import boundary: loads each native addon from the consumer package's node_modules via require.resolve; the path exists only after that package resolves it
     await import(pathToFileURL(resolvedPackagePath).href)
     return null
   } catch (err) {

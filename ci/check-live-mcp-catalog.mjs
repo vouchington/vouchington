@@ -42,7 +42,6 @@ async function unregisteredMcpToolFiles() {
   const unregistered = []
   for (const file of files) {
     /** @type {{default?: unknown}} */
-    // no-mistakes-disable-next-line production-exports-only-used-by-tests -- runtime-resolved import boundary: loads every file in backend/mcp so an unregistered tool file fails this check; a literal registry would hide the file this check exists to find
     const mod = await import(pathToFileURL(join(toolsDir, file)).href)
     if (isUnregisteredMcpToolFile(mod.default, registeredNames, sourceCounts))
       unregistered.push(file)

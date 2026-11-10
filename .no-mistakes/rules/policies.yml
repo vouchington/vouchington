@@ -4483,6 +4483,11 @@
       - lambdas/test-helpers
       - ts-shared/test-helpers
       - email-templates/test-helpers
+    # Wrangler binds the CachedOrigin WorkerEntrypoint that src/index.mts (`main`) re-exports.
+    # Named at its declaring file: platformConsumedExports does not yet follow entry re-exports.
+    platformConsumedExports:
+      - file: cloudflare-worker/src/cached-origin.mts
+        exports: [CachedOrigin]
     unanalyzable: advise
 # Source: #3160. Fix React compiler and hook findings in web source instead of suppressing them.
 - name: React compiler and hook rules are never suppressed in web source

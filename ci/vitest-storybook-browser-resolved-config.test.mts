@@ -47,7 +47,6 @@ describe('resolved Storybook browser Vitest config', () => {
       // Vitest owns Vite here; use its copy without changing the CI workspace manifest.
       const require = createRequire(import.meta.url)
       const vitestRequire = createRequire(require.resolve('vitest/node'))
-      // no-mistakes-disable-next-line production-exports-only-used-by-tests -- runtime-resolved import boundary: loads Vitest's own Vite from vitest/node so resolveConfig matches that runner; a package import can bind a different Vite copy
       const vite = await import(pathToFileURL(vitestRequire.resolve('vite')).href)
       const resolved = (await vite.resolveConfig(
         { root: fixtureRoot, configFile, plugins: [resetBasePlugin] },
