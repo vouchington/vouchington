@@ -1,5 +1,8 @@
 /** The copyright statement and delivery scenarios in run-scenarios/copyright-*.mts. */
 export const COPYRIGHT_DELIVERY_SCENARIO_IDS = [
+  'copyright-accepted-notices-after',
+  'copyright-accepted-notices-empty',
+  'copyright-accepted-notices-first',
   'copyright-claimant-decision-flags',
   'copyright-claimant-misuse-case-page',
   'copyright-claimant-misuse-older-window',
