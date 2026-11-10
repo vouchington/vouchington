@@ -25,6 +25,8 @@ describe('Hacker News hot query bounds', () => {
       })
       expect(query.sql).toContain('posts.has_hacker_news_references')
       expect(query.sql).toContain('hackerNewsHotWindow')
+      expect(query.sql).toContain('uuid_extract_timestamp(posts.id)')
+      expect(query.sql).not.toContain('posts.id >=')
       expect(query.sql).toContain('posts.search_vector')
       expect(query.sql).toContain(
         'ORDER BY (CASE WHEN posts.votes_score_sort > 0 THEN LN(posts.votes_score_sort::DOUBLE PRECISION)',
@@ -57,6 +59,8 @@ describe('Hacker News hot query bounds', () => {
         time_range: '1m',
       })
       expect(query.sql).toContain('posts.has_hacker_news_references')
+      expect(query.sql).toContain('uuid_extract_timestamp(posts.id)')
+      expect(query.sql).not.toContain('posts.id >=')
       expect(query.sql).toContain(
         'ORDER BY (CASE WHEN posts.votes_score_sort > 0 THEN LN(posts.votes_score_sort::DOUBLE PRECISION)',
       )

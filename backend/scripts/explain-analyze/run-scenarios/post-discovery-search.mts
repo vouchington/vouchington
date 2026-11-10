@@ -1,3 +1,5 @@
+import { encodeCursor } from '@modules/pagination'
+import { postSearchCursorScope } from '@services/posts/search/get-ids-cursor'
 import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import {
   registerNamedPostIndexExpectations,
@@ -14,6 +16,15 @@ import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 const PAGE_SIZE = 25
 const COMMUNITY_IDS = [seedUuid(100, '14'), seedUuid(101, '14')] as const
 const POST_SEARCH_QUERY = 'buildPostSearchQuery'
+const EMPTY_CURSOR_ID = '00000000-0000-0000-0000-000000000000'
+// Ordinal 599 of the 600-row recommendation cohort is pending and not deleted.
+const SPARSE_RECOMMENDATION_QUERY = 'post-discovery-fixture-599'
+
+function exhaustedCommunityCursor(sort: PostDiscoverySort): string {
+  const scope = postSearchCursorScope(sort, 'all')
+  if (sort === 'new') return encodeCursor({ id: EMPTY_CURSOR_ID, scope })
+  return encodeCursor({ id: EMPTY_CURSOR_ID, score: -1e300, scope })
+}
 
 function optionsFor(scope: PostDiscoveryScope, sort: PostDiscoverySort): PostSearchOptions {
   return {
@@ -57,7 +68,7 @@ async function captureScopeSort(scope: PostDiscoveryScope, sort: PostDiscoverySo
   const sparseOptions: PostSearchOptions =
     scope === 'community'
       ? { ...firstOptions, community_id: COMMUNITY_IDS[1] }
-      : { ...firstOptions, topic_recommendation_q: 'post-discovery-fixture-19999' }
+      : { ...firstOptions, topic_recommendation_q: SPARSE_RECOMMENDATION_QUERY }
   const sparse = await getPage(sparseOptions)
   if (sparse.results.length === 0 || sparse.results.length >= PAGE_SIZE)
     throw new Error(`${prefix} sparse page must contain fewer than one page of posts`)
@@ -67,7 +78,7 @@ async function captureScopeSort(scope: PostDiscoveryScope, sort: PostDiscoverySo
   const emptyId = `${prefix}-empty`
   const emptyOptions: PostSearchOptions =
     scope === 'community'
-      ? { ...firstOptions, post_types: ['link'] }
+      ? { ...firstOptions, after: exhaustedCommunityCursor(sort) }
       : {
           ...firstOptions,
           topic_recommendation_status: 'approved',

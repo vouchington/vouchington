@@ -71,8 +71,9 @@ async function captureTopicPair(
   const firstPage = await page(options)
   if (topic === 'dense' && firstPage.results.length !== PAGE_SIZE)
     throw new Error(`${prefix} dense first page must be full`)
-  if (topic === 'sparse' && (firstPage.results.length === 0 || firstPage.results.length > 5))
-    throw new Error(`${prefix} sparse first page must return its seeded matches`)
+  // Five alias members plus the direct feed post that both topics share.
+  if (topic === 'sparse' && firstPage.results.length !== 6)
+    throw new Error(`${prefix} sparse first page must return its five alias posts and feed post`)
   if (topic === 'sparse' && firstPage.page_info.has_next_page)
     throw new Error(`${prefix} sparse page must be exhausted`)
 

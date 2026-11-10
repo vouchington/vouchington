@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import { contentHash, seedUuid, seedUuidAtTimestamp } from './common.mts'
 import { addUtcMonths, nextUtcMonthStart } from './comment-descendant-partition-storage.mts'
@@ -118,5 +118,74 @@ export async function insertHackerNewsScalePartitions(
         FROM generate_series($5::int, $5::int + $6::int - 1) AS fixture(ordinal)`,
       [partition.idPrefix, POST_SERIAL, fixture.actorId, hash, partition.start, partition.count],
     )
+  }
+}
+
+const REFERENCE_AUTOVACUUM_ROOTS = [
+  'urls',
+  'url_hacker_news_totals',
+  'relation__post__related__url',
+]
+
+/**
+ * The historical join reads these relations, which are outside the owned post leaves. A running
+ * autovacuum worker pins their buffers and cold eviction then skips them. Statistics still come
+ * from the explicit ANALYZE calls.
+ */
+export async function disableHackerNewsScaleReferenceAutovacuum(): Promise<void> {
+  const { rows } = await read<{ root: string; statement: string }>(
+    `/* hackerNewsScaleReferenceRelations */ SELECT parent.relname AS root,
+       format('ALTER TABLE %s SET (autovacuum_enabled = false)', parent.oid::regclass) AS statement
+     FROM pg_class parent
+     JOIN pg_namespace namespace ON namespace.oid = parent.relnamespace
+       AND namespace.nspname = current_schema()
+     WHERE parent.relname = ANY($1::text[]) AND parent.relkind = 'r'
+     UNION ALL
+     SELECT 'relation__post__related__url',
+       format('ALTER TABLE %s SET (autovacuum_enabled = false)', child.oid::regclass)
+     FROM pg_partition_tree('relation__post__related__url'::regclass) tree
+     JOIN pg_class child ON child.oid = tree.relid AND child.relkind IN ('r', 'p')
+     ORDER BY 1, 2 LIMIT 201`,
+    [REFERENCE_AUTOVACUUM_ROOTS],
+  )
+  if (rows.length === 0 || rows.length > 200)
+    throw new Error('HN scale reference relations must be a bounded local inventory')
+  if (new Set(rows.map(row => row.root)).size !== REFERENCE_AUTOVACUUM_ROOTS.length)
+    throw new Error('HN scale reference relations are missing from the disposable database')
+  const statements = rows.map(row => {
+    if (!/^ALTER TABLE [a-z0-9_."]+ SET \(autovacuum_enabled = false\)$/.test(row.statement))
+      throw new Error('Unexpected HN scale autovacuum statement')
+    return row.statement
+  })
+  await write(
+    `/* cancelHackerNewsScaleAutovacuum */ SELECT pg_cancel_backend(activity.pid)
+     FROM pg_stat_activity activity
+     WHERE activity.datname = current_database() AND activity.backend_type = 'autovacuum worker'
+       AND EXISTS (
+         SELECT 1 FROM unnest($1::text[]) AS relation(name)
+         WHERE strpos(activity.query, relation.name) > 0
+       )`,
+    [REFERENCE_AUTOVACUUM_ROOTS],
+  )
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const { rows: active } = await read<{ workers: number }>(
+      `/* hackerNewsScaleAutovacuumWorkers */ SELECT count(*)::int AS workers
+       FROM pg_stat_activity activity
+       WHERE activity.datname = current_database() AND activity.backend_type = 'autovacuum worker'
+         AND EXISTS (
+           SELECT 1 FROM unnest($1::text[]) AS relation(name)
+           WHERE strpos(activity.query, relation.name) > 0
+         )`,
+      [REFERENCE_AUTOVACUUM_ROOTS],
+    )
+    if ((active[0]?.workers ?? 1) === 0) break
+    if (attempt === 19) throw new Error('HN scale autovacuum workers still pin reference relations')
+    await new Promise(resolve => {
+      setTimeout(resolve, 100)
+    })
+  }
+  for (const statement of statements) {
+    // no-mistakes-disable-next-line query-reached-per-item: at most 200 local reference relations need autovacuum off so a worker cannot pin buffers during cold eviction.
+    await write(`/* disableHackerNewsScaleAutovacuum */ ${statement}`)
   }
 }

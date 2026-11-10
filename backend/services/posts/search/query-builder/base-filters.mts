@@ -8,13 +8,16 @@ import {
 } from '@modules/feed-query-builders'
 import type { PostSearchOptions } from '../types.mts'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/metadata'
+import { appendFollowingPhaseFilters } from './ranked-page-queries.mts'
 
 export function appendBaseFilters(
   filters: SQLStatement[],
   currentUser: BasicUser | undefined,
   {
     exclude_for_user_id,
+    following_phase,
     include_archived_communities,
+    limit,
     post_types,
     profileCountPostType,
     user_id,
@@ -64,6 +67,8 @@ export function appendBaseFilters(
   }
   discoveryEligibility.append(sql`) END`)
   filters.push(discoveryEligibility)
+  if (following_phase && viewer)
+    appendFollowingPhaseFilters(filters, viewer.id, following_phase, limit ?? 100)
   if (exclude_for_user_id) appendUserExclusionFilters(filters, exclude_for_user_id)
   if (user_id) {
     appendUserFilter(filters, {

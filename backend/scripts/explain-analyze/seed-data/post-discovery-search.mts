@@ -4,7 +4,9 @@ import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts
 
 const START_INDEX = 100_000
 const COMMUNITY_POSTS_PER_COMMUNITY = 10_000
-const RECOMMENDATION_COUNT = 20_000
+// Sparse community approval is a residual review lookup, so the cohort stays under both caps.
+const SPARSE_COMMUNITY_POSTS = 400
+const RECOMMENDATION_COUNT = 600
 const COMMUNITY_COUNT = 2
 const CLEANUP_BATCH_SIZE = 500
 
@@ -15,7 +17,7 @@ function fixturePostId(index: number): string {
 }
 
 export async function seedPostDiscoverySearchFixture(): Promise<void> {
-  console.log('Seeding a 40,000-post post-discovery search cohort...')
+  console.log('Seeding the post-discovery search cohort...')
   await seedPosts(
     COMMUNITY_POSTS_PER_COMMUNITY * COMMUNITY_COUNT + RECOMMENDATION_COUNT,
     START_INDEX,
@@ -49,8 +51,12 @@ export async function seedPostDiscoverySearchFixture(): Promise<void> {
   )
   await transaction(
     `/* seedPostDiscoverySearchFixture:community-posts */
-     UPDATE posts post SET community_id = fixture.community_id,
-       votes_score_up = CASE WHEN fixture.ordinal <= 10_000 OR fixture.ordinal % 2_000 = 0
+     UPDATE posts post SET community_id = CASE
+         WHEN fixture.ordinal <= $4::int THEN $2::uuid
+         WHEN fixture.ordinal <= $5::int THEN $3::uuid
+         ELSE NULL
+       END,
+       votes_score_up = CASE WHEN fixture.ordinal <= $4::int OR fixture.ordinal % 2_000 = 0
          THEN 100 ELSE 1 + (fixture.ordinal % 100) END,
        deleted_at = CASE
          WHEN fixture.ordinal % 4 = 1 AND fixture.ordinal % 200 <> 0
@@ -59,16 +65,17 @@ export async function seedPostDiscoverySearchFixture(): Promise<void> {
        END,
        deleted_by_id = CASE
          WHEN fixture.ordinal % 4 = 1 AND fixture.ordinal % 200 <> 0
-           THEN COALESCE(post.deleted_by_id, $3::uuid)
+           THEN COALESCE(post.deleted_by_id, $6::uuid)
          ELSE post.deleted_by_id
        END
-     FROM UNNEST($1::uuid[], $2::uuid[]) WITH ORDINALITY AS fixture(post_id, community_id, ordinal)
+     FROM UNNEST($1::uuid[]) WITH ORDINALITY AS fixture(post_id, ordinal)
      WHERE post.id = fixture.post_id`,
     [
       communityPostIds,
-      communityPostIds.map(
-        (_, index) => communityIds[index < COMMUNITY_POSTS_PER_COMMUNITY ? 0 : 1],
-      ),
+      communityIds[0],
+      communityIds[1],
+      COMMUNITY_POSTS_PER_COMMUNITY,
+      COMMUNITY_POSTS_PER_COMMUNITY + SPARSE_COMMUNITY_POSTS,
       seedUuid(0, '01'),
     ],
   )
@@ -77,17 +84,18 @@ export async function seedPostDiscoverySearchFixture(): Promise<void> {
      INSERT INTO community_post_reviews
        (community_id, post_id, submitted_by_id, reviewed_at, reviewed_by_id, approved_at)
      SELECT fixture.community_id, fixture.post_id, $3::uuid,
-       CASE WHEN fixture.ordinal <= 10_000 OR fixture.ordinal % 2_000 = 0 THEN CURRENT_TIMESTAMP END,
-       CASE WHEN fixture.ordinal <= 10_000 OR fixture.ordinal % 2_000 = 0 THEN $3::uuid END,
-       CASE WHEN fixture.ordinal <= 10_000 OR fixture.ordinal % 2_000 = 0 THEN CURRENT_TIMESTAMP END
+       CASE WHEN fixture.ordinal <= $4::int OR fixture.ordinal % 80 = 0 THEN CURRENT_TIMESTAMP END,
+       CASE WHEN fixture.ordinal <= $4::int OR fixture.ordinal % 80 = 0 THEN $3::uuid END,
+       CASE WHEN fixture.ordinal <= $4::int OR fixture.ordinal % 80 = 0 THEN CURRENT_TIMESTAMP END
      FROM UNNEST($1::uuid[], $2::uuid[]) WITH ORDINALITY AS fixture(post_id, community_id, ordinal)
      ON CONFLICT (post_id) DO NOTHING`,
     [
-      communityPostIds,
-      communityPostIds.map(
-        (_, index) => communityIds[index < COMMUNITY_POSTS_PER_COMMUNITY ? 0 : 1],
-      ),
+      communityPostIds.slice(0, COMMUNITY_POSTS_PER_COMMUNITY + SPARSE_COMMUNITY_POSTS),
+      communityPostIds
+        .slice(0, COMMUNITY_POSTS_PER_COMMUNITY + SPARSE_COMMUNITY_POSTS)
+        .map((_, index) => communityIds[index < COMMUNITY_POSTS_PER_COMMUNITY ? 0 : 1]),
       seedUuid(0, '01'),
+      COMMUNITY_POSTS_PER_COMMUNITY,
     ],
   )
   await transaction(

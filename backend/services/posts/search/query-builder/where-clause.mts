@@ -91,7 +91,7 @@ function optionValues(...groups: ReadonlyArray<readonly { value: string }[]>): r
 }
 
 const POST_TYPE_LITERALS = closedLiterals(
-  VALID_FILTERABLE_POST_TYPES,
+  [...VALID_FILTERABLE_POST_TYPES, 'topic_recommendation'],
   quoted => `posts.post_type = ${quoted}::post_types`,
 )
 const VERTICAL_LITERALS = closedLiterals(

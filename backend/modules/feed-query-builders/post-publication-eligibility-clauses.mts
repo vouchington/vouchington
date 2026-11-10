@@ -179,21 +179,20 @@ export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
         FROM rss_feed_items story_item
         WHERE story_item.story_id = publication_story.id AND story_item.deleted_at IS NULL AND `
   visibleItem.append(itemHasDiscoverableSourceSql('story_item.id')).append(sql` LIMIT 1`)
-  const existsOpen = ` OR EXISTS (
-      SELECT 1
-      FROM story_posts post_story
-      JOIN stories publication_story
-        ON publication_story.id = post_story.story_id
-       AND publication_story.deleted_at IS NULL
-      JOIN LATERAL (`
+  // post_id is the primary key, so one LATERAL row replaces a hash of every story.
+  const existsOpen = ` OR EXISTS (SELECT 1 FROM LATERAL (
+        SELECT post_story.story_id FROM story_posts post_story
+        WHERE post_story.post_id = `
   return sql`(`
     .append(`${rootAlias}.post_type <> 'story'`)
     .append(existsOpen)
-    .append(visibleItem)
-    .append(sql`) story_item ON TRUE
-      WHERE post_story.post_id = `)
     .append(`${rootAlias}.id`)
-    .append(sql`))`)
+    .append(sql` LIMIT 1) post_story
+      JOIN stories publication_story
+        ON publication_story.id = post_story.story_id AND publication_story.deleted_at IS NULL
+      JOIN LATERAL (`)
+    .append(visibleItem)
+    .append(sql`) story_item ON TRUE))`)
 }
 export function assertSafeSqlAlias(alias: string): void {
   if (!SAFE_SQL_IDENTIFIER.test(alias)) throw new Error(`Unsafe SQL alias: ${alias}`)

@@ -1,12 +1,12 @@
 import { SEEDED_ROWS_BY_RELATION } from './plan-seeded-rows.mts'
 
-/** Row totals for captures made while the 40k late post-discovery fixture is present. */
+/** Row totals for captures made while the late post-discovery fixture is present. */
 export const POST_DISCOVERY_FIXTURE_SEEDED_ROWS: Readonly<Record<string, number>> = {
-  posts: SEEDED_ROWS_BY_RELATION.posts! + 40_000,
-  community_post_reviews: SEEDED_ROWS_BY_RELATION.community_post_reviews! + 20_000,
+  posts: SEEDED_ROWS_BY_RELATION.posts! + 20_600,
+  community_post_reviews: SEEDED_ROWS_BY_RELATION.community_post_reviews! + 10_400,
   communities: SEEDED_ROWS_BY_RELATION.communities! + 2,
-  post_clearance_changes: SEEDED_ROWS_BY_RELATION.post_clearance_changes! + 40_000,
-  post_topic_recommendations: SEEDED_ROWS_BY_RELATION.post_topic_recommendations! + 20_000,
+  post_clearance_changes: SEEDED_ROWS_BY_RELATION.post_clearance_changes! + 20_600,
+  post_topic_recommendations: SEEDED_ROWS_BY_RELATION.post_topic_recommendations! + 600,
 }
 
 /** Row totals while the discovery and topic-semi-join fixtures overlap. */

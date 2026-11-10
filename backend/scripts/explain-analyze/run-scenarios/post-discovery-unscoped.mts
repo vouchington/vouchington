@@ -125,6 +125,10 @@ export async function runPostDiscoveryUnscopedScenarios(): Promise<void> {
     time_range: 'all',
     limit: PAGE_SIZE,
     community_id: seedUuid(999_999, '14'),
+    after: encodeCursor({
+      id: '00000000-0000-0000-0000-000000000000',
+      scope: postSearchCursorScope('new', 'all'),
+    }),
   }
   const missingPage = await getPage(missingCommunity)
   if (
