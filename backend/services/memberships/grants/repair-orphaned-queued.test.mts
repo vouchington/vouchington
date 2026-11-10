@@ -1,5 +1,5 @@
-import { beginTransaction } from '@data-stores/psql'
 import {
+  commitMembershipGrantTransaction,
   createTestSku,
   createTestUser,
   getTestMembershipGrant,
@@ -66,9 +66,9 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
       grantedById: admin.id,
     })
 
-    await using query = await beginTransaction()
-    await expect(activateOrphanedQueuedGrant(member.id, query)).resolves.toBeNull()
-    await query.commit()
+    await expect(
+      commitMembershipGrantTransaction(query => activateOrphanedQueuedGrant(member.id, query)),
+    ).resolves.toBeNull()
     await expect(repairOrphanedQueuedGrantsBatch(null, 10, [member.id])).resolves.toMatchObject({
       repaired: 0,
       hasMore: false,

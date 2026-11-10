@@ -9,6 +9,18 @@ type QueuedMembershipGrantInput = {
   userId: string
 }
 
+type MembershipGrantTransaction = Awaited<ReturnType<typeof beginTransaction>>
+
+/** Runs one membership-grant read or write and commits it. Tests use this instead of opening a pool. */
+export async function commitMembershipGrantTransaction<T>(
+  run: (query: MembershipGrantTransaction) => Promise<T>,
+): Promise<T> {
+  await using query = await beginTransaction()
+  const result = await run(query)
+  await query.commit()
+  return result
+}
+
 export async function insertQueuedMembershipGrant(
   input: QueuedMembershipGrantInput,
 ): Promise<string> {
