@@ -69,4 +69,14 @@ describe('post search page info', () => {
       decodePostSearchCursor({ after: encodeCursor({ id: postId }) }, 'unsupported', false),
     ).toEqual({})
   })
+
+  it('rejects a finite cursor whose age bound is not a post id', () => {
+    const after = encodeCursor({
+      id: postId,
+      scope: postSearchCursorScope('new', '1m', 0),
+    })
+    expect(() => decodePostSearchCursor({ after, time_range: '1m' }, 'new', false)).toThrow(
+      expect.objectContaining({ statusCode: 400, message: 'Invalid cursor for sort=new' }),
+    )
+  })
 })
