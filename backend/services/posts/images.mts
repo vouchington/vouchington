@@ -7,7 +7,11 @@ import sql from 'sql-template-strings'
 import { createPostRevision } from '@services/post-revisions'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { resetPostImageClearance } from './image-publication-state.mts'
-import { syncPostImagePlacements, type PostImagePlacement } from './image-placements.mts'
+import {
+  assertPostImagePlacementCapacity,
+  syncPostImagePlacements,
+  type PostImagePlacement,
+} from './image-placements.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import onError from '@modules/on-error'
 import { assertPostImagesCanBeUpdated } from './images-update-authorization.mts'
@@ -36,6 +40,11 @@ export async function setPostImages(
       await lockPostImageAdmission(
         query,
         images.map(image => image.image_id),
+      )
+      await assertPostImagePlacementCapacity(
+        post.id,
+        images.map(image => image.image_id),
+        query,
       )
       deliveryPrepared = true
       const postState = await prepareLockedPostImageUpdate(query, post.id)
@@ -92,6 +101,7 @@ export async function setPostImages(
             post.id,
             images.map(image => image.image_id),
             query,
+            { capacityChecked: true },
           ),
         () =>
           query(sql`/* setPostImages:moderationContentSha */

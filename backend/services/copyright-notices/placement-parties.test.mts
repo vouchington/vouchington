@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { insertTestCommunityMember } from '@voucha/test-helpers/entities/community-members'
-import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-community-image-reactivation'
+import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { readTestCopyrightPlacementParties as parties } from '@voucha/test-helpers/copyright-placement-policy-boundaries'
 import {
   createTestCopyrightImageFixture,

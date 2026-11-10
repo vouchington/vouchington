@@ -1,21 +1,14 @@
-import {
-  retireTestTopicImageOwners,
-  writeTestImageOwnerRetirement,
-} from '../../image-owner-retirement.mts'
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function softDeleteTopic(topicId: string, deletedById: string): Promise<void> {
-  await using query = await beginTransaction()
-  await writeTestImageOwnerRetirement(query, { topicId }, (references, scopeQuery) =>
-    retireTestTopicImageOwners(
-      references,
-      scopeQuery,
-      sql`deleted_at = CURRENT_TIMESTAMP, deleted_by_id = ${deletedById}`,
-      'softDeleteTopic',
-    ),
+  await write(
+    sql`/* softDeleteTopic */
+    UPDATE topics
+    SET deleted_at = CURRENT_TIMESTAMP, deleted_by_id = ${deletedById}
+    WHERE id = ${topicId}
+  `,
   )
-  await query.commit()
 }
 
 export async function hardDeleteTestTopic(topicId: string): Promise<void> {
@@ -47,16 +40,15 @@ export async function mergeTopicForTest(
   intoTopicId: string,
   mergedById: string,
 ): Promise<void> {
-  await using query = await beginTransaction()
-  await writeTestImageOwnerRetirement(query, { topicId }, (references, scopeQuery) =>
-    retireTestTopicImageOwners(
-      references,
-      scopeQuery,
-      sql`merged_into_topic_id = ${intoTopicId}, merged_at = CURRENT_TIMESTAMP, merged_by_id = ${mergedById}`,
-      'mergeTopicForTest',
-    ),
+  await write(
+    sql`/* mergeTopicForTest */
+    UPDATE topics
+    SET merged_into_topic_id = ${intoTopicId},
+        merged_at = CURRENT_TIMESTAMP,
+        merged_by_id = ${mergedById}
+    WHERE id = ${topicId}
+  `,
   )
-  await query.commit()
 }
 
 export async function getTopicDeletedById(topicId: string): Promise<{

@@ -20,7 +20,7 @@ export async function markImageDeliveryAuthorityStarted(query: QueryExecutor): P
   await query(statement)
 }
 
-/** Checks the current readiness; concrete reservation policy FKs arbitrate concurrent changes. */
+/** Checks the current readiness of images before a public surface activation. */
 export async function assertImagesReadyForSurface(
   imageIds: string[],
   query: QueryExecutor,

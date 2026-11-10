@@ -1,4 +1,3 @@
-import { withTransactionSavepoint } from '@data-stores/psql/transaction-savepoint'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { IMAGE_PLACEMENT_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { createCodedError } from '@vouchington/sentry'
@@ -7,18 +6,6 @@ import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
 
 import type { ImagePlacementAdmission } from './placement-capacity-types.mts'
 export type { ImagePlacementAdmission } from './placement-capacity-types.mts'
-
-/** One savepoint so a later provider failure rolls the placement write back. Settlement is not retried. */
-export async function withImagePlacementMutation<Plan, Result>(
-  query: TransactionQuery,
-  mutate: (scope: TransactionQuery) => Promise<Plan>,
-  settle: (plan: Plan, scope: TransactionQuery) => Promise<Result>,
-): Promise<Result> {
-  return withTransactionSavepoint(query, async scope => {
-    const plan = await mutate(scope)
-    return settle(plan, scope)
-  })
-}
 
 /**
  * Best-effort cap: read at most cap+1 other active placements, then the caller writes.

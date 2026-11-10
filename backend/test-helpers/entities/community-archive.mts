@@ -1,8 +1,4 @@
-import {
-  retireTestCommunityImageOwners,
-  writeTestImageOwnerRetirement,
-} from '../image-owner-retirement.mts'
-import { beginTransaction, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CommunityVisibility } from '@voucha/types/entities/community'
 
@@ -36,17 +32,10 @@ export async function deleteTestCommunity(options: {
   communityId: string
   deletedById: string
 }): Promise<void> {
-  await using query = await beginTransaction()
-  await writeTestImageOwnerRetirement(
-    query,
-    { communityId: options.communityId },
-    (references, scopeQuery) =>
-      retireTestCommunityImageOwners(
-        references,
-        scopeQuery,
-        sql`deleted_at = CURRENT_TIMESTAMP, deleted_by_id = ${options.deletedById}`,
-        'deleteTestCommunity',
-      ),
-  )
-  await query.commit()
+  await write(sql`/* deleteTestCommunity */
+    UPDATE communities
+    SET deleted_at = CURRENT_TIMESTAMP,
+        deleted_by_id = ${options.deletedById}
+    WHERE id = ${options.communityId}::uuid
+  `)
 }

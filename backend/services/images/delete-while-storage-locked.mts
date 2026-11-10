@@ -1,10 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
-import {
-  repairFailedImageDeliveryMutation,
-  prepublishImagePlacementDenialBatch,
-} from '@services/media-delivery-safety'
+import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import { retireImagePlacementsForDeletedImage } from './placements.mts'
+import { retireImageSurfacePlacementsForDeletedImage } from './surface-placements.mts'
 import { processImageDeletionPageWhileLocked, type ImageDeletionOptions } from './delete-page.mts'
 
 export async function deleteImageByIdWhileStorageLocked(
@@ -33,8 +31,8 @@ export async function deleteImageByIdWhileStorageLocked(
         [imageId],
       )
       if (result.rowCount !== 1) throw new Error('Image deletion eligibility changed')
-      const retired = await retireImagePlacementsForDeletedImage(imageId, transaction)
-      await prepublishImagePlacementDenialBatch(retired, { query: transaction })
+      await retireImagePlacementsForDeletedImage(imageId, transaction)
+      await retireImageSurfacePlacementsForDeletedImage(imageId, transaction)
     }
     await transaction.commit()
     return true

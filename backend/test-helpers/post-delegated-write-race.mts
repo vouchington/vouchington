@@ -1,8 +1,4 @@
-import {
-  retireTestUserImageOwners,
-  writeTestImageOwnerRetirement,
-} from './image-owner-retirement.mts'
-import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createMembershipLockDiagnosticReporter } from './membership-lock-diagnostics.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
@@ -46,14 +42,8 @@ export function withConcurrentActorDeletionForTest<T>(
   operation: () => Promise<T>,
 ): Promise<T> {
   return commitDelegatedWriteChangeThenRun(async query => {
-    await writeTestImageOwnerRetirement(query, { userId }, (references, scopeQuery) =>
-      retireTestUserImageOwners(
-        references,
-        scopeQuery,
-        sql`deleted_at = CURRENT_TIMESTAMP`,
-        'withConcurrentActorDeletionForTest',
-      ),
-    )
+    await query(sql`/* withConcurrentActorDeletionForTest */
+        UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${userId}`)
   }, operation)
 }
 /** Revoke membership only after the write waits on its active membership row. */
@@ -82,7 +72,7 @@ export function withConcurrentCommunityMembershipRemovalForTest<T>(
 
 /** Commits the staged row, then runs the writer. Used when that writer no longer locks the row. */
 async function commitDelegatedWriteChangeThenRun<T>(
-  stageChange: (query: TransactionQuery) => Promise<void>,
+  stageChange: (query: QueryExecutor) => Promise<void>,
   operation: () => Promise<T>,
 ): Promise<T> {
   await using query = await beginTransaction()
@@ -95,7 +85,7 @@ async function withConcurrentDelegatedWriteChangeForTest<T>(
   operation: () => Promise<T>,
   queryMarker: string,
   lock: TestOwnedPostgresWaitOptions['lock'],
-  stageChange: (query: TransactionQuery) => Promise<void>,
+  stageChange: (query: QueryExecutor) => Promise<void>,
   membershipDiagnostics = false,
 ): Promise<T> {
   const diagnostics = createMembershipLockDiagnosticReporter(membershipDiagnostics)

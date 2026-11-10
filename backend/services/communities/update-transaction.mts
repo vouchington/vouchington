@@ -1,26 +1,20 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
-  writeImageSurfaceMutation,
+  syncImageSurfacePlacement,
   type ImageSurfaceReference,
 } from '@services/media-delivery-safety'
-import assert from 'http-assert'
 import { recordPostPublicationChange } from '@services/post-publication'
 import type { CommunityWithOwner } from './get.mts'
 import { mapCommunityWithOwner, type CommunityRowWithOwner } from './get-mapping.mts'
 import type { UpdateCommunityInput } from './update-types.mts'
 import type { CommunityVisibility } from './types.mts'
-import {
-  imageSurfaceMutationChange,
-  type ImageSurfaceMutationWrite,
-} from '@services/media-delivery-safety/surface-mutation-bindings'
-import type { SQLStatement } from 'sql-template-strings'
 
 export async function updateCommunityInTransaction(input: {
   community: CommunityWithOwner
   communityId: string
   actorUserId: string
   update: UpdateCommunityInput
-  statement: (references: readonly ImageSurfaceReference[]) => SQLStatement
+  statement: { text: string; values: unknown[] }
   query: TransactionQuery
 }): Promise<{
   prior: { visibility: CommunityVisibility; slug: string } | null
@@ -41,62 +35,30 @@ export async function updateCommunityInTransaction(input: {
 async function applyLockedCommunityUpdate(
   input: Parameters<typeof updateCommunityInTransaction>[0],
 ) {
-  const surfaces = changedCommunitySurfaces(input)
+  const surfaces = await prepublishChangedCommunitySurfaces(input)
+  for (const surface of surfaces) {
+    // oxlint-disable-next-line no-await-in-loop -- each surface admits, then writes its own placement.
+    await syncImageSurfacePlacement(
+      surface,
+      surface.nextImageId ?? null,
+      surface.nextImageId ? input.actorUserId : null,
+      input.query,
+    )
+  }
   const locked = await lockCommunityPublicationInputs(input.query, input.communityId)
-  const updated = await writeImageSurfaceMutation(
-    input.query,
-    surfaces,
-    input.actorUserId,
-    (references, scopeQuery) => writeCommunityOwner({ ...input, query: scopeQuery }, references),
-  )
+  const updated = await prepublishAndUpdateCommunity(input)
   return { locked, updated }
 }
 
-async function writeCommunityOwner(
+async function prepublishAndUpdateCommunity(
   input: Parameters<typeof updateCommunityInTransaction>[0],
-  references: readonly ImageSurfaceReference[],
-): Promise<ImageSurfaceMutationWrite<CommunityWithOwner | null>> {
-  const statement = input.statement(references)
-  const { rows } = await input.query<
-    CommunityRowWithOwner & {
-      previous_profile_image_id?: string | null
-      current_profile_image_id?: string | null
-      previous_banner_image_id?: string | null
-      current_banner_image_id?: string | null
-      previous_profile_placement_id?: string | null
-      previous_profile_placement_revision?: number | null
-      previous_profile_activation_revision?: number | null
-      previous_banner_placement_id?: string | null
-      previous_banner_placement_revision?: number | null
-      previous_banner_activation_revision?: number | null
-    }
-  >(statement.text, statement.values)
-  if (references.length) assert(rows.length === 1, 409, 'Community or image surface changed')
-  const row = rows[0]
-  return {
-    result: row ? mapCommunityWithOwner(row) : null,
-    changes: references.map((reference, index) =>
-      imageSurfaceMutationChange(
-        reference.surfaceKind === 'community-profile-image'
-          ? {
-              ordinality: index + 1,
-              previousImageId: row?.previous_profile_image_id ?? null,
-              currentImageId: row?.current_profile_image_id ?? null,
-              previousPlacementId: row?.previous_profile_placement_id ?? null,
-              previousPlacementRevision: row?.previous_profile_placement_revision ?? null,
-              previousActivationRevision: row?.previous_profile_activation_revision ?? null,
-            }
-          : {
-              ordinality: index + 1,
-              previousImageId: row?.previous_banner_image_id ?? null,
-              currentImageId: row?.current_banner_image_id ?? null,
-              previousPlacementId: row?.previous_banner_placement_id ?? null,
-              previousPlacementRevision: row?.previous_banner_placement_revision ?? null,
-              previousActivationRevision: row?.previous_banner_activation_revision ?? null,
-            },
-      ),
-    ),
-  }
+): Promise<CommunityWithOwner | null> {
+  const result = await input.query<CommunityRowWithOwner>(
+    input.statement.text,
+    input.statement.values,
+  )
+  const row = result.rows[0]
+  return row ? mapCommunityWithOwner(row) : null
 }
 
 async function lockCommunityPublicationInputs(
@@ -105,19 +67,19 @@ async function lockCommunityPublicationInputs(
 ): Promise<{ visibility: CommunityVisibility; slug: string } | null> {
   const { rows } = await query<{ visibility: CommunityVisibility; slug: string }>(
     `/* updateCommunity:lockPublicationInputs */
-    SELECT visibility, slug FROM communities WHERE id = $1 AND deleted_at IS NULL`,
+    SELECT visibility, slug FROM communities WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
     [communityId],
   )
   return rows[0] ?? null
 }
 
-function changedCommunitySurfaces(input: {
+async function prepublishChangedCommunitySurfaces(input: {
   community: CommunityWithOwner
   communityId: string
   update: UpdateCommunityInput
   query: TransactionQuery
-}): (ImageSurfaceReference & { nextImageId: string | null })[] {
-  const references: (ImageSurfaceReference & { nextImageId: string | null })[] = []
+}): Promise<(ImageSurfaceReference & { nextImageId?: string | null })[]> {
+  const references: (ImageSurfaceReference & { nextImageId?: string | null })[] = []
   if ('profile_image_id' in input.update) {
     references.push({
       surfaceKind: 'community-profile-image',

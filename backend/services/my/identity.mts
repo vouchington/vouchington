@@ -8,11 +8,7 @@ import { getPrivateUserByAny } from '@services/users'
 import { commitUserUpdateOperation } from '@services/users/update-username-publication'
 import { ensureDefaultLandingPage } from './landing-pages/index.mts'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
-import { writeImageSurfaceMutation } from '@services/media-delivery-safety'
-import {
-  imageSurfaceMutationChange,
-  imageSurfaceMutationPreimage,
-} from '@services/media-delivery-safety/surface-mutation-bindings'
+import { syncImageSurfacePlacement } from '@services/media-delivery-safety'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 
 export async function updateUsername(userId: string, username: string): Promise<void> {
@@ -39,50 +35,16 @@ export async function updateProfileImageId(
     assert(rows.length > 0, 400, 'Image not found or does not belong to you')
   }
   await using transaction = await beginTransaction()
-  await writeImageSurfaceMutation(
+  await syncImageSurfacePlacement(
+    { surfaceKind: 'user-profile-image', userId },
+    profileImageId,
+    profileImageId ? userId : null,
     transaction,
-    [{ surfaceKind: 'user-profile-image', userId, nextImageId: profileImageId }],
-    userId,
-    async (references, scopeQuery) => {
-      const statement = imageSurfaceMutationPreimage(references, 'updateProfileImageId')
-      statement.append(sql`, updated AS (
-        UPDATE users SET profile_image_id = ${profileImageId}
-        FROM surface_preimage before
-        WHERE users.id = ${userId} AND users.deleted_at IS NULL
-          AND before.ordinality = 1
-          AND users.profile_image_id IS NOT DISTINCT FROM before.current_image_id
-        RETURNING WITH (OLD AS prior, NEW AS current)
-          before.ordinality::int AS ordinality,
-          prior.profile_image_id AS previous_image_id,
-          current.profile_image_id AS current_image_id,
-          before.placement_id AS previous_placement_id,
-          before.placement_revision AS previous_placement_revision,
-          before.activation_revision AS previous_activation_revision
-      ) SELECT * FROM updated`)
-      const { rows } = await scopeQuery<{
-        ordinality: number
-        previous_image_id: string | null
-        current_image_id: string | null
-        previous_placement_id: string | null
-        previous_placement_revision: number | null
-        previous_activation_revision: number | null
-      }>(statement)
-      assert(rows.length === 1, 409, 'User or profile image changed')
-      return {
-        result: undefined,
-        changes: rows.map(row =>
-          imageSurfaceMutationChange({
-            ordinality: row.ordinality,
-            previousImageId: row.previous_image_id,
-            currentImageId: row.current_image_id,
-            previousPlacementId: row.previous_placement_id,
-            previousPlacementRevision: row.previous_placement_revision,
-            previousActivationRevision: row.previous_activation_revision,
-          }),
-        ),
-      }
-    },
   )
+  const { rowCount } = await transaction(
+    sql`/* updateProfileImageId */ UPDATE users SET profile_image_id = ${profileImageId} WHERE id = ${userId} AND deleted_at IS NULL`,
+  )
+  assert(rowCount === 1, 404, 'User not found')
   await transaction.commit()
   clearRequestCurrentUser(userId)
   void enqueueReconcileMediaDeliveryRegistry()

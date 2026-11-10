@@ -2,7 +2,7 @@ import { read, write, writePool, withTransactionOptions } from '@data-stores/psq
 import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { reconcileDeliveryRepairMarkers } from '../../services/media-delivery-safety/delivery-repair-markers.mts'
-import { writeTestImageSurfaceMutation } from '../image-surface-mutation.mts'
+import { syncImageSurfacePlacement } from '../../services/media-delivery-safety/surface-placement-sync.mts'
 
 /** Real autocommit executor for rejecting authority calls without a retained transaction. */
 export const testDeliveryAutocommitQuery = write
@@ -51,12 +51,25 @@ export async function setTestDeliveryUserImageInTransaction(
   userId: string,
   imageId: string,
 ): Promise<void> {
-  await writeTestImageSurfaceMutation(
+  await syncImageSurfacePlacement(
     { surfaceKind: 'user-profile-image', userId },
     imageId,
     userId,
     query,
   )
+  await query(
+    sql`/* setTestDeliveryUserImageInTransaction */ UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}`,
+  )
+}
+
+export async function testDeliveryTransactionIsBlockingAdmission(pid: number): Promise<boolean> {
+  const { rows } = await read<{
+    blocked: boolean
+  }>(sql`/* testDeliveryTransactionIsBlockingAdmission */
+    SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE ${pid} = ANY(pg_blocking_pids(pid))
+      AND query LIKE '%lockImageAssetAdmission%') AS blocked
+  `)
+  return rows[0]!.blocked
 }
 
 export async function getTestDeliveryRepairMarker(

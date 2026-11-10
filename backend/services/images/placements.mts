@@ -1,7 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import type { QueryExecutor, QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { mediaDeliverySafetyWorkMaxValues } from '@services/media-delivery-safety/work-limits'
 import { copyrightPlacementHostIsLiveSql } from './placement-copyright-host-sql.mts'
 import { buildCopyrightPlacementsMutationSql } from './placement-copyright-mutation-sql.mts'
 import {
@@ -26,28 +25,19 @@ export function getImagePlacementKey(placementId: string): string {
 export async function retireImagePlacementsForDeletedImage(
   imageId: string,
   query: TransactionQuery,
-): Promise<{ placementId: string; revision: number; imageId: string }[]> {
-  const { rows: current } = await query<{ placement_id: string; revision: number }>(sql`
-    /* retireImagePlacementsForDeletedImage:current */
-    SELECT binding.placement_id, placement.revision
-    FROM retained_image_placement_bindings binding
-    JOIN media_placements placement ON placement.id = binding.placement_id
-    WHERE binding.image_id = ${imageId}
-      AND placement.retired_at IS NULL
-    ORDER BY binding.placement_id
-    LIMIT ${mediaDeliverySafetyWorkMaxValues.max_placements_per_image}`)
-  const { rows: retired } = await query<{ placement_id: string; revision: number }>(
+): Promise<void> {
+  await query(
     sql`/* retireImagePlacementsForDeletedImage */
       UPDATE media_placements placement
       SET retired_at = CURRENT_TIMESTAMP,
           retirement_reason = 'asset_deleted',
           revision = placement.revision + 1
-      WHERE placement.id = ANY(${current.map(row => row.placement_id)}::uuid[])
+      FROM image_placements image_placement
+      WHERE image_placement.placement_id = placement.id
+        AND image_placement.image_id = ${imageId}
         AND placement.retired_at IS NULL
-      RETURNING WITH (OLD AS prior) placement.id AS placement_id, prior.revision
     `,
   )
-  return retired.map(row => ({ placementId: row.placement_id, revision: row.revision, imageId }))
 }
 
 export async function getImagePlacementForCopyright(
@@ -105,8 +95,7 @@ export type CopyrightImagePlacementMutationInput = {
   expectedRevision: number
 }
 
-/** Conditionally writes exact placement revisions; result order matches input order.
- * Callers retain the actual mutation transaction through delivery publication. */
+/** Changes many placements in one statement; result order matches input order. */
 export async function changeImagePlacementsCopyrightWithholding(
   inputs: readonly CopyrightImagePlacementMutationInput[],
   withhold: boolean,

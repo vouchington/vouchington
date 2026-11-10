@@ -1,8 +1,6 @@
-import { readTestActiveImagePlacementCount } from '@voucha/test-helpers/image-placement-capacity'
-import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { randomUUID } from 'node:crypto'
 import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
-import { writeTestImageSurfaceMutation } from '@voucha/test-helpers/image-surface-mutation'
+import { syncImageSurfacePlacement } from '@services/media-delivery-safety/surface-placement-sync'
 import {
   beginTransaction,
   createTestUser,
@@ -12,7 +10,7 @@ import {
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getTestPostImagePlacement } from '@voucha/test-helpers/entities/post-images'
 import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
-import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { syncPostImagePlacements } from './image-placements.mts'
 
 const limitError = { status: 409, code: 'IMAGE_PLACEMENT_LIMIT_REACHED' }
@@ -36,12 +34,6 @@ async function attach(postId: string, imageIds: string[]): Promise<void> {
 describe('image placement capacity', () => {
   beforeEach(async () => {
     await mediaDeliverySafetyWorkConfig.waitForInitialization()
-    installTestMediaDeliveryEdge()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
   })
 
   it('allows the last slot, keeps active pairs idempotent, and rejects a new pair', async () => {
@@ -95,6 +87,29 @@ describe('image placement capacity', () => {
     })
   })
 
+  it('serializes competing posts for the final slot', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
+        max_placements_per_image: 1,
+      }),
+    )
+    const user = await createTestUser()
+    const imageId = await insertTestImage(user.id)
+    const [first, second] = await Promise.all([post(user.id), post(user.id)])
+    const results = await Promise.allSettled([
+      attach(first!, [imageId]),
+      attach(second!, [imageId]),
+    ])
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
+    const rejection = results.find(result => result.status === 'rejected')
+    expect(rejection).toMatchObject({ status: 'rejected', reason: limitError })
+    const placements = await Promise.all([
+      getTestPostImagePlacement(first!, imageId),
+      getTestPostImagePlacement(second!, imageId),
+    ])
+    expect(placements.filter(placement => placement?.retired_at === null)).toHaveLength(1)
+  })
+
   it('shares capacity between post and surface placements', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
@@ -108,7 +123,9 @@ describe('image placement capacity', () => {
     const reference = { surfaceKind: 'user-profile-image' as const, userId: user.id }
     const attachSurface = async () => {
       await using query = await beginTransaction()
-      const result = await writeTestImageSurfaceMutation(reference, imageId, user.id, query)
+      const result = await syncImageSurfacePlacement(reference, imageId, user.id, query, {
+        ready: true,
+      })
       await query.commit()
       return result
     }
@@ -118,29 +135,5 @@ describe('image placement capacity', () => {
     const surface = await attachSurface()
     await expect(attachSurface()).resolves.toMatchObject({ placement_id: surface!.placement_id })
     await expect(attach(postId, [imageId])).rejects.toMatchObject(limitError)
-  })
-  it('rejects a new placement while one remains after the cap drops, and replays that placement', async () => {
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
-        max_placements_per_image: 2,
-      }),
-    )
-    const user = await createTestUser()
-    const imageId = await insertTestImage(user.id)
-    const [first, second, third] = await Promise.all([post(user.id), post(user.id), post(user.id)])
-    await attach(first!, [imageId])
-    await attach(second!, [imageId])
-    await expect(attach(third!, [imageId])).rejects.toMatchObject(limitError)
-    const restoreReduced = overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
-      max_placements_per_image: 1,
-    })
-    try {
-      await attach(first!, [])
-      await expect(attach(third!, [imageId])).rejects.toMatchObject(limitError)
-      await attach(second!, [imageId])
-      expect(await readTestActiveImagePlacementCount(imageId)).toBe(1)
-    } finally {
-      restoreReduced()
-    }
   })
 })

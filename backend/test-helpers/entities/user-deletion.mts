@@ -1,7 +1,3 @@
-import {
-  retireTestUserImageOwners,
-  writeTestImageOwnerRetirement,
-} from '../image-owner-retirement.mts'
 import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { beginTransaction, read, type TransactionQuery, write } from '@data-stores/psql'
@@ -58,14 +54,9 @@ export async function startPausedTestUserSoftDeletion(
       SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
     `)
     holderProcessId = await getTestPostgresBackendProcessId(query)
-    await writeTestImageOwnerRetirement(query, { userId }, (references, scopeQuery) =>
-      retireTestUserImageOwners(
-        references,
-        scopeQuery,
-        sql`deleted_at = CURRENT_TIMESTAMP`,
-        'startPausedTestUserSoftDeletion:delete',
-      ),
-    )
+    await query(sql`/* startPausedTestUserSoftDeletion:delete */
+      UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${userId}
+    `)
   })
   if (holderProcessId === undefined)
     throw new Error('Test deletion did not acquire a PostgreSQL backend')

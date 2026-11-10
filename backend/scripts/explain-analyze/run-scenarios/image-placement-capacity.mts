@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict'
-import { runImageCapacityConditionalWrites } from './image-capacity-conditional-writes.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import {
   mediaDeliverySafetyWorkConfig,
   mediaDeliverySafetyWorkMaxValues,
 } from '@services/media-delivery-safety/work-limits'
-import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity-reservations'
+import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import {
@@ -56,7 +55,6 @@ export async function runImagePlacementCapacityScenarios(): Promise<void> {
     }
     await capture('image-placement-activation-new', sparse.candidate, false)
     await capture('image-placement-activation-retired', retired.candidate, false)
-    await runImageCapacityConditionalWrites()
   } finally {
     restore()
   }

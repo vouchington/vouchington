@@ -1,4 +1,4 @@
-import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity-reservations'
+import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity'
 import type { CopyrightSeedContext } from './copyright-context.mts'
 import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'

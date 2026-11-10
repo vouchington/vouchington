@@ -4,7 +4,6 @@ import { emptyTopicMergeMetricStats } from './merge-metrics-stats.mts'
 import { buildElectionStatsUpdateQuery } from '@services/elections-votes/shared/vote-stats-update-query'
 import { TOPIC_ELECTION_CONFIG } from '@services/elections-votes/topic/config'
 import { recordTopicMergePublicationChange } from '@services/post-publication/capture-topic-merge'
-import { finalizeTopicMergeSource } from './merge-domain-source-finalize.mts'
 
 /** The redirect is the last domain mutation, after every bounded reference and metric page. */
 export async function finalizeTopicMergeDomain(
@@ -89,4 +88,21 @@ async function writeTopicMergeRatingsAndSource(
     [operation.destination_topic_id, ...statsKeys.map(key => stats[key as keyof typeof stats])],
   )
   await finalizeTopicMergeSource(query, operation)
+}
+
+async function finalizeTopicMergeSource(
+  query: TransactionQuery,
+  operation: TopicMergeOperationRow,
+) {
+  await query(
+    `/* finalizeTopicMergeDomain source */ UPDATE topics SET merged_into_topic_id=$2::uuid,
+    merged_at=CURRENT_TIMESTAMP,merged_by_id=$3::uuid,
+    updated_by_id=(SELECT id FROM users WHERE id=$3::uuid AND deleted_at IS NULL),
+    aliases='{}'::text[] WHERE id=$1::uuid`,
+    [operation.source_topic_id, operation.destination_topic_id, operation.requested_by_id],
+  )
+  await query(
+    `/* finalizeTopicMergeDomain source metrics */ DELETE FROM topic_metrics WHERE topic_id=$1::uuid`,
+    [operation.source_topic_id],
+  )
 }

@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
-import { admitImagePlacements } from '../../services/media-delivery-safety/placement-capacity-reservations.mts'
 import { ensureImagePlacementBinding } from '../../services/media-delivery-safety/retained-image-identities.mts'
 
 export async function insertTestPostImage(data: {
@@ -19,7 +18,6 @@ export async function insertTestPostImage(data: {
   if (existing[0]) return existing[0].placement_id
   const placementId = data.placementId ?? v7()
   await using query = await beginTransaction()
-  await admitImagePlacements(query, [{ imageId: data.imageId }])
   await ensureImagePlacementBinding(query, {
     placementId,
     imageId: data.imageId,

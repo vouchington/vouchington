@@ -6,7 +6,7 @@ import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
-import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-community-image-reactivation'
+import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { updateCommunity } from '@services/communities/update'
 import { readTestCopyrightSurfaceRetainedEvidence } from '@voucha/test-helpers/copyright-surface-retained-evidence'
 import { readTestCopyrightPlacementParties } from '@voucha/test-helpers/copyright-placement-policy-boundaries'

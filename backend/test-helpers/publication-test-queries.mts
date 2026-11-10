@@ -1,9 +1,4 @@
-import {
-  retireTestTopicImageOwners,
-  writeTestImageOwnerRetirement,
-} from './image-owner-retirement.mts'
-import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read, write, type TransactionQuery } from '@data-stores/psql'
 
 export async function listExistingTestPostIds(postIds: readonly string[]): Promise<string[]> {
   const { rows } = await read<{ id: string }>(
@@ -141,14 +136,9 @@ export async function countTestFeedSources(feedId: string): Promise<number> {
 
 /** A retained alias can be claimed from an inactive owner by the normal link service. */
 export async function markTestTopicInactiveKeepingAliases(topicId: string): Promise<void> {
-  await using query = await beginTransaction()
-  await writeTestImageOwnerRetirement(query, { topicId }, (references, scopeQuery) =>
-    retireTestTopicImageOwners(
-      references,
-      scopeQuery,
-      sql`deleted_at = CURRENT_TIMESTAMP`,
-      'markTestTopicInactiveKeepingAliases',
-    ),
+  await write(
+    `/* markTestTopicInactiveKeepingAliases */
+    UPDATE topics SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1::uuid`,
+    [topicId],
   )
-  await query.commit()
 }

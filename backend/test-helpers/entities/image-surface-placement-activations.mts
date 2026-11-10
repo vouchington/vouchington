@@ -1,6 +1,5 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { admitImagePlacements } from '../../services/media-delivery-safety/placement-capacity-reservations.mts'
 
 export type TestImageSurfacePlacementActivation = {
   placement_id: string
@@ -36,18 +35,9 @@ export async function reactivateTestUserProfileImageThroughDatabaseTrigger(
   await transaction(sql`/* reactivateTestUserProfileImageThroughDatabaseTrigger:retire */
     UPDATE users SET profile_image_id = NULL WHERE id = ${userId}
   `)
-  await admitImagePlacements(transaction, [{ imageId }])
   await transaction(sql`/* reactivateTestUserProfileImageThroughDatabaseTrigger:reactivate */
     UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}
   `)
-  const { rows } = await transaction<{
-    placement_id: string
-    activation_revision: number
-  }>(sql`/* reactivateTestUserProfileImageThroughDatabaseTrigger:capacity */
-    SELECT surface.placement_id, placement.activation_revision
-    FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
-    WHERE surface.user_id = ${userId} AND surface.surface_kind = 'user-profile-image' AND surface.image_id = ${imageId}`)
-  if (!rows[0]) throw new Error('Missing owned reactivated surface')
   await transaction.commit()
 }
 

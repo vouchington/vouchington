@@ -16,6 +16,7 @@ export async function lockUserProfileImageOwners(
 ): Promise<void> {
   await lockSurfaceOwnerDomains({ userIds }, query)
 }
+
 type SurfaceOwnerDomains = {
   userIds?: string[]
   linkIds?: string[]
@@ -50,23 +51,4 @@ export function imageSurfaceWhere(reference: ImageSurfaceReference): ReturnType<
   if ('communityId' in reference)
     return sql`surface.surface_kind = ${reference.surfaceKind} AND surface.community_id = ${reference.communityId}`
   return sql`surface.surface_kind = ${reference.surfaceKind} AND surface.user_profile_link_id = ${reference.userProfileLinkId}`
-}
-
-/** Preserve input order (and duplicate references) while querying all surface kinds together. */
-export function imageSurfaceReferences(
-  references: (ImageSurfaceReference & { nextImageId?: string | null })[],
-): ReturnType<typeof sql> {
-  return sql`SELECT surface_kind, user_id, topic_id, community_id, user_profile_link_id,
-      next_image_id, ordinality
-    FROM unnest(
-      ${references.map(ref => ref.surfaceKind)}::image_surface_placement_surface_kinds[],
-      ${references.map(ref => ('userId' in ref ? ref.userId : null))}::uuid[],
-      ${references.map(ref => ('topicId' in ref ? ref.topicId : null))}::uuid[],
-      ${references.map(ref => ('communityId' in ref ? ref.communityId : null))}::uuid[],
-      ${references.map(ref => ('userProfileLinkId' in ref ? ref.userProfileLinkId : null))}::uuid[],
-      ${references.map(ref => ref.nextImageId ?? null)}::uuid[]
-    ) WITH ORDINALITY AS refs(
-      surface_kind, user_id, topic_id, community_id, user_profile_link_id,
-      next_image_id, ordinality
-    )`
 }

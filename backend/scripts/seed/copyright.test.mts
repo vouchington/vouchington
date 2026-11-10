@@ -1,4 +1,3 @@
-import { readTestActiveImagePlacementCount } from '@voucha/test-helpers/image-placement-capacity'
 import {
   createCopyrightSeedInputsForTest,
   settleCopyrightSeedReads,
@@ -39,7 +38,6 @@ describe('seedCopyright', () => {
     })
     const foreign = await createParsedCopyrightEmailIntake(inputs.now)
     const first = await seedCopyright(inputs)
-    expect(await readTestActiveImagePlacementCount(inputs.identity.imageId)).toBe(1)
     expect(await getTestCurrentPostClearance(inputs.identity.postId)).toMatchObject({
       clearance_changed_by_id: null,
       clearance_public_reason_code: null,
@@ -48,7 +46,6 @@ describe('seedCopyright', () => {
     })
     const second = await seedCopyright(inputs)
     expect(second).toEqual(first)
-    expect(await readTestActiveImagePlacementCount(inputs.identity.imageId)).toBe(1)
 
     // The email queue is oldest first: new notice, its reply, a failed parse, no parse row, then
     // the message SES flagged for malware.

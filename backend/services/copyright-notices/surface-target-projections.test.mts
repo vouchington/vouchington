@@ -9,7 +9,7 @@ import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
-import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-community-image-reactivation'
+import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { readTestCopyrightStaffTargetProjection } from '@voucha/test-helpers/copyright-staff-target-projection'
 import { readAccountExport } from '@voucha/test-helpers/services/copyright-notices/read-account-export'
 import { getCopyrightParticipantNoticeDetail } from './read-models-participant.mts'

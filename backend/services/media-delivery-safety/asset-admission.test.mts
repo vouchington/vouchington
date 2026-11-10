@@ -9,8 +9,8 @@ import {
 import { testImageSurfaceDeliveryIsAuthorized } from '@voucha/test-helpers/entities/image-surface-owner-deletion'
 import { getTestMediaDeliveryRegistryRecordId } from '@voucha/test-helpers/entities/image-surface-placements'
 import { flagTestDeliveryImageInTransaction } from '@voucha/test-helpers/entities/media-delivery-repair'
-import { writeTestImageSurfaceMutation } from '@voucha/test-helpers/image-surface-mutation'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
 
 describe('concrete image policy admission', () => {
   it('rejects a committed unsafe image before edge effects', async () => {
@@ -21,7 +21,7 @@ describe('concrete image policy admission', () => {
     await flagTestDeliveryImageInTransaction(unsafe, imageId)
     await unsafe.commit()
     await using owner = await beginTransaction()
-    const error = await writeTestImageSurfaceMutation(
+    const error = await syncImageSurfacePlacement(
       { surfaceKind: 'user-profile-image', userId: user.id },
       imageId,
       user.id,
@@ -42,7 +42,7 @@ describe('concrete image policy admission', () => {
     const imageId = await insertTestImage(user.id)
     const edge = installTestMediaDeliveryEdge()
     await using owner = await beginTransaction()
-    const tuple = await writeTestImageSurfaceMutation(
+    const tuple = await syncImageSurfacePlacement(
       { surfaceKind: 'user-profile-image', userId: user.id },
       imageId,
       user.id,

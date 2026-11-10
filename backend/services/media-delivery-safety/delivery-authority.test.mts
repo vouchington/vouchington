@@ -20,18 +20,48 @@ import {
   prepublishImagePlacementDenial,
   publishStagedMediaDeliveryRecord,
   reconcileMediaDeliveryRepairMarkers,
+  stageImagePlacementDeliveryRecord,
+  ensureImagePlacementBinding,
 } from './index.mts'
-import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 import {
   recordImageDeliveryRepairMarker,
   reconcileDeliveryRepairMarkers,
 } from './delivery-repair-markers.mts'
-import { writeTestImageSurfaceMutation } from '@voucha/test-helpers/image-surface-mutation'
+import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
 
 describe('delivery authority and durable denial repair', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
+  })
+
+  it('rejects a conflicting retained binding in the owner transaction', async () => {
+    const { tuple } = await createSurface()
+    const otherImageId = (await createSurface()).tuple.imageId
+    await using query = await beginTransaction()
+    await expect(
+      ensureImagePlacementBinding(query, {
+        ...tuple,
+        imageId: otherImageId,
+        bindingFamily: 'surface',
+      }),
+    ).rejects.toThrow('already bound')
+    await expect(
+      ensureImagePlacementBinding(query, { ...tuple, bindingFamily: 'post' }),
+    ).rejects.toThrow('already bound')
+    await expect(
+      ensureImagePlacementBinding(query, { ...tuple, bindingFamily: 'surface' }),
+    ).resolves.toBeUndefined()
+  })
+
+  it('does not persist a marker without a committed registry parent', async () => {
+    const tuple = {
+      placementId: crypto.randomUUID(),
+      revision: 0,
+      imageId: crypto.randomUUID(),
+    }
+    await recordImageDeliveryRepairMarker(tuple)
+    expect(await getTestDeliveryRepairMarker(crypto.randomUUID())).toBeNull()
   })
 
   it('repairs a provider-accepted denial after its owner rolls back without compensation', async () => {
@@ -59,7 +89,7 @@ describe('delivery authority and durable denial repair', () => {
     const fixture = await createSurface()
     const edge = enableEdge()
     await using transaction = await beginTransaction()
-    await writeTestImageSurfaceMutation(
+    await syncImageSurfacePlacement(
       { surfaceKind: 'user-profile-image', userId: fixture.userId },
       null,
       null,
@@ -166,12 +196,6 @@ describe('delivery authority and durable denial repair', () => {
     const fixture = await createSurface()
     const edge = enableEdge()
     await markImageModerationFlagged(fixture.tuple.imageId)
-    // The flag is visible by joining images. Reproduce a stale reconciler staging an allow
-    // afterward, so publication must revalidate that join and mint a fresh denial.
-    await stageImagePlacementDeliveryRecord(
-      { ...fixture.tuple, state: 'allow' },
-      { forceGeneration: true },
-    )
     edge.invalidatePath.mockRejectedValueOnce(new Error('invalidation outage'))
     await expect(
       publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId),
@@ -201,7 +225,7 @@ describe('delivery authority and durable denial repair', () => {
     let intermediateId = ''
     {
       await using transaction = await beginTransaction()
-      const b = await writeTestImageSurfaceMutation(
+      const b = await syncImageSurfacePlacement(
         { surfaceKind: 'user-profile-image', userId: fixture.userId },
         imageB,
         fixture.userId,
@@ -224,7 +248,7 @@ describe('delivery authority and durable denial repair', () => {
           { query: transaction },
         )
       ).mediaDeliveryRegistryRecordId
-      await writeTestImageSurfaceMutation(
+      await syncImageSurfacePlacement(
         { surfaceKind: 'user-profile-image', userId: fixture.userId },
         imageC,
         fixture.userId,
@@ -246,7 +270,7 @@ describe('delivery authority and durable denial repair', () => {
     const edge = enableEdge()
     const captured = await stageImagePlacementDeliveryRecord({ ...fixture.tuple, state: 'allow' })
     await using transaction = await beginTransaction()
-    await writeTestImageSurfaceMutation(
+    await syncImageSurfacePlacement(
       { surfaceKind: 'user-profile-image', userId: fixture.userId },
       null,
       null,

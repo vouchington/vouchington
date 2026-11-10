@@ -1,6 +1,7 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createTestUserDirect } from './entities/users.mts'
+import { getTestImageSurfacePlacements } from './entities/image-surface-placements.mts'
 import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 import { createTestCopyrightImageFixture } from './copyright-surface-target-fixtures.mts'
@@ -74,6 +75,31 @@ export async function createTestLiftNotice(
     restrictions,
     actionIntents: restricted.actionIntents,
   }
+}
+
+/** Rebinds a detached community image through its database trigger, without an application actor. */
+export async function reactivateTestCommunityImageWithoutBinder(fixture: LiftSurfaceFixture) {
+  if (
+    fixture.selector.surfaceKind !== 'community-profile-image' &&
+    fixture.selector.surfaceKind !== 'community-banner-image'
+  )
+    throw new Error('Expected community image')
+  await fixture.detach()
+  const column =
+    fixture.selector.surfaceKind === 'community-profile-image'
+      ? sql`profile_image_id`
+      : sql`banner_image_id`
+  const statement = sql`/* reactivateTestCommunityImageWithoutBinder */ UPDATE communities SET `
+  statement.append(column).append(sql` = ${fixture.imageId} WHERE id = ${fixture.ownerId}`)
+  await write(statement)
+  const placements = await getTestImageSurfacePlacements({
+    communityId: fixture.ownerId,
+    imageId: fixture.imageId,
+    surfaceKind: fixture.selector.surfaceKind,
+  })
+  const live = placements.find(placement => placement.retired_at === null)
+  if (!live) throw new Error('Trigger did not reactivate community image')
+  return live
 }
 
 /** Seeds the same durable receipt shape the claimant-decision email reader consults. */
