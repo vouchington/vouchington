@@ -57,9 +57,7 @@ export async function checkTransientRetryPolicy(root: string): Promise<string[]>
   const modules = await Promise.all(
     sources.flatMap(path =>
       path.endsWith('-rules.mts')
-        ? [
-            import(pathToFileURL(join(root, path)).href) as Promise<Record<string, unknown>>,
-          ]
+        ? [import(pathToFileURL(join(root, path)).href) as Promise<Record<string, unknown>>]
         : [],
     ),
   )
