@@ -31,7 +31,7 @@ async function pendingClaims(
       SELECT parents.id, ${postId}, retained.image_id FROM parents
       JOIN retained ON retained.placement_id = parents.id`)
   await projectImagePlacementPolicy(query, placementIds)
-  return imageIds.map((imageId, index): ImagePlacementAdmission => ({
+  return imageIds.map((imageId, index) => ({
     placementId: placementIds[index]!,
     imageId,
     alreadyActive: true,

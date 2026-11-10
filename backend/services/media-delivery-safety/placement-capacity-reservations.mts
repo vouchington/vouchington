@@ -44,6 +44,7 @@ export async function admitImagePlacements(
     FROM unnest(${imageIds}::uuid[], ${newCounts}::integer[]) AS requested(image_id, new_count)
     JOIN LATERAL (
       SELECT binding.placement_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: the image id is the lookup key; placement_id partitions the table and is what this count is finding
       FROM retained_image_placement_bindings binding
       JOIN LATERAL (
         SELECT placement.id
