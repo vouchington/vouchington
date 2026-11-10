@@ -31,7 +31,7 @@ import { runEntityTailScenarios } from './entity-tail.mts'
 import { runViewDrivenPostScenarios } from './view-driven-posts.mts'
 
 export async function runEntityAndCommunityScenarios() {
-  // Vote aggregation — post and topic stats (reads from post_votes / topic_votes)
+  // Vote aggregation — post and topic stats (reads from post_vote_states / topic_votes)
   await runAndCapture('vote-aggregation-post', () =>
     aggregateElectionVoteStatsFromReplica(POST_ELECTION_CONFIG, seedPostId),
   )

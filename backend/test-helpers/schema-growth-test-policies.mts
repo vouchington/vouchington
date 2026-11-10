@@ -76,6 +76,14 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
   ['community_agent_prompts', sharedParentUuidv7('agent_prompts')],
   ['remote_actors', sharedParentUuidv7('remote_actor_identities')],
   ['activitypub_post_likes', sharedParentUuidv7('activitypub_post_like_activities')],
+  [
+    'post_vote_states',
+    {
+      policy: 'uuidv7',
+      rationale:
+        'Copied UUIDv7 transition id; current state remains authoritative after ballot history expires.',
+    },
+  ],
   ['rss_feed_items', sharedParentUuidv7('rss_feed_item_guids')],
   ['classifier_runs', sharedParentUuidv7('classifier_run_identities')],
   ['migrations', naturalOrProviderId('The checked-in migration filename is the key.')],

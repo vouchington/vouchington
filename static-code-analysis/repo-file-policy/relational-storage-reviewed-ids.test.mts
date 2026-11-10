@@ -82,6 +82,16 @@ describe('reviewed token and audit snapshot identifiers', () => {
     ).toEqual([expect.stringContaining(`new_records.${name}`)])
   })
 
+  it('allows the current ballot Like protocol ID only on the reviewed table', () => {
+    const columns = { outbound_activitypub_like_activity_id: column('uuid') }
+    expect(checkRelationalStorage(snapshot('post_vote_states', columns), noFreshness)).toEqual([])
+    expect(checkRelationalStorage(snapshot('new_records', columns), noFreshness)).toEqual([
+      expect.stringContaining(
+        'new_records.outbound_activitypub_like_activity_id: UUID reference without a target foreign key',
+      ),
+    ])
+  })
+
   it('accepts a reviewed token and a reviewed audit snapshot id without a foreign key', () => {
     expect(
       checkRelationalStorage(snapshot('post_votes', { device_id: column('uuid') }), noFreshness),

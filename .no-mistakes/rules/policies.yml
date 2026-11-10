@@ -2371,6 +2371,7 @@
       - { table: agent_moderation_votes, column: created_at }
       - { table: hostname_votes, column: created_at }
       - { table: post_votes, column: created_at }
+      - { table: post_vote_states, column: created_at }
       - { table: relation__post__category__topic__votes, column: created_at }
       - { table: relation__post__category__topic_alias__votes, column: created_at }
       - { table: relation__post__related__post__votes, column: created_at }
@@ -2745,6 +2746,7 @@
       - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
       - { table: hostname_votes, column: created_at, sourceColumn: id }
       - { table: post_votes, column: created_at, sourceColumn: id }
+      - { table: post_vote_states, column: created_at, sourceColumn: id }
       - { table: relation__post__category__topic__votes, column: created_at, sourceColumn: id }
       - {
           table: relation__post__category__topic_alias__votes,
@@ -2813,6 +2815,7 @@
       - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
       - { table: hostname_votes, column: created_at, sourceColumn: id }
       - { table: post_votes, column: created_at, sourceColumn: id }
+      - { table: post_vote_states, column: created_at, sourceColumn: id }
       - { table: relation__post__category__topic__votes, column: created_at, sourceColumn: id }
       - {
           table: relation__post__category__topic_alias__votes,
@@ -4005,6 +4008,8 @@
         reason: 'Decision 14 external request correlation id.'
       - object: 'column:post_votes.outbound_activitypub_like_activity_id'
         reason: 'Decision 14 pre-allocated external ActivityPub id.'
+      - object: 'column:post_vote_states.outbound_activitypub_like_activity_id'
+        reason: 'Current-state copy of the opaque outbound ActivityPub Like protocol identity.'
       - object: 'column:post_votes.outbound_activitypub_original_like_activity_id'
         reason: 'Original external ActivityPub Like protocol id retained for UndoLike replay.'
       - object: 'column:follower_distribution_deliveries.delivery_id'

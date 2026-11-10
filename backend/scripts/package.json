@@ -35,6 +35,7 @@
     "@queues/background": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/account-data-requests": "workspace:^",
+    "@services/activitypub-delivery": "workspace:^",
     "@services/admin-imports": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/articles": "workspace:^",

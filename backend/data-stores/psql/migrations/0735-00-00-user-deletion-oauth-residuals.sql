@@ -11,6 +11,7 @@ BEGIN
   FOR ownership IN
     SELECT * FROM (VALUES
       ('posts', 'created_by_id'),
+      ('post_vote_states', 'user_id'),
       ('post_topic_alias_sources', 'contributor_user_id'),
       ('user_email_addresses', 'user_id'),
       ('user_phone_numbers', 'user_id'),

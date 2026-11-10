@@ -1,5 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { insertPostElectionVoteRows } from './post-vote-upsert.mts'
 import type {
   ElectionVoteMutationResult,
   ElectionVoteScore,
@@ -21,6 +22,10 @@ export async function insertElectionVoteRows(
   userAgentId: string | null,
   run: QueryExecutor,
 ): Promise<ElectionVoteMutationResult[]> {
+  if (config.tracksOutboundActivityPubLike) {
+    if (config.voteTable !== 'post_votes') throw new Error('Unsupported outbound Like ballot')
+    return insertPostElectionVoteRows(userId, values, context, userAgentId, run)
+  }
   // previous_votes reads the pre-statement snapshot (PostgreSQL evaluates every WITH branch
   // against the state as of statement start), so it always reflects this user's latest score
   // before `inserted`'s row lands — never a value from this same call. Folding the lookup into
@@ -56,13 +61,7 @@ export async function insertElectionVoteRows(
   } else {
     query.append(sql`, FALSE AS previous_score_is_semantic`)
   }
-  if (config.tracksOutboundActivityPubLike) {
-    query.append(
-      sql`, outbound_activitypub_like_activity_id AS previous_outbound_ap_like_activity_id`,
-    )
-  } else {
-    query.append(sql`, NULL::uuid AS previous_outbound_ap_like_activity_id`)
-  }
+  query.append(sql`, NULL::uuid AS previous_outbound_ap_like_activity_id`)
   query.append(sql`
       FROM `)
   query.append(config.voteTable)
@@ -81,46 +80,23 @@ export async function insertElectionVoteRows(
   query.append(sql`, id, score, ip_address, device_id, session_id, user_agent_string_id`)
   if (config.tracksNeutralScore) query.append(sql`, score_is_neutral`)
   if (config.tracksSemanticScore) query.append(sql`, score_is_semantic`)
-  if (config.tracksOutboundActivityPubLike) {
-    query.append(
-      sql`, outbound_activitypub_like_activity_id, outbound_activitypub_original_like_activity_id`,
-    )
-  }
   query.append(sql`)
       SELECT input_data.user_id, input_data.entity_id, input_data.id, input_data.score,
              input_data.ip_address, input_data.device_id, input_data.session_id,
              input_data.user_agent_string_id`)
   if (config.tracksNeutralScore) query.append(sql`, input_data.score_is_neutral`)
   if (config.tracksSemanticScore) query.append(sql`, input_data.score_is_semantic`)
-  if (config.tracksOutboundActivityPubLike) {
-    query.append(sql`,
-             CASE
-               WHEN input_data.score <= 0 OR input_data.score IS NULL THEN NULL
-               WHEN previous_votes.previous_score > 0
-                 THEN previous_votes.previous_outbound_ap_like_activity_id
-               ELSE input_data.id
-             END,
-             CASE
-               WHEN input_data.score <= 0 OR input_data.score IS NULL
-                 THEN CASE WHEN previous_votes.previous_score > 0
-                   THEN previous_votes.previous_outbound_ap_like_activity_id ELSE NULL END
-               ELSE NULL
-             END`)
-  }
   query.append(sql`
       FROM input_data
       LEFT JOIN previous_votes ON previous_votes.entity_id = input_data.entity_id
-      WHERE input_data.score IS DISTINCT FROM previous_votes.previous_score
+      WHERE EXISTS (SELECT 1 FROM users WHERE users.id = input_data.user_id AND users.deleted_at IS NULL)
+        AND (input_data.score IS DISTINCT FROM previous_votes.previous_score
          OR input_data.score_is_neutral IS DISTINCT FROM COALESCE(previous_votes.previous_score_is_neutral, FALSE)
-         OR input_data.score_is_semantic IS DISTINCT FROM COALESCE(previous_votes.previous_score_is_semantic, FALSE)
+         OR input_data.score_is_semantic IS DISTINCT FROM COALESCE(previous_votes.previous_score_is_semantic, FALSE))
       RETURNING `)
   query.append(config.entityIdColumn)
   query.append(sql` AS entity_id, id, user_id, score, created_at`)
-  if (config.tracksOutboundActivityPubLike) {
-    query.append(sql`, outbound_activitypub_like_activity_id`)
-  } else {
-    query.append(sql`, NULL::uuid AS outbound_activitypub_like_activity_id`)
-  }
+  query.append(sql`, NULL::uuid AS outbound_activitypub_like_activity_id`)
   query.append(sql`
     )
     SELECT inserted.entity_id, inserted.id, inserted.user_id, inserted.score, inserted.created_at,

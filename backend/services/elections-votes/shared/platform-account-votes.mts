@@ -20,7 +20,7 @@ export function createPlatformAccountVoteForbiddenError() {
  * Every other score, including a stored neutral `0`, is a trust signal and is rejected before
  * anything is written, even when it repeats the account's current score.
  *
- * Runs on the vote transaction's own handle, after the user lock, so the check and the insert
+ * Runs on the vote transaction's own handle, so the check and the insert
  * share one transaction. `account_type` comes from `view_embedded_users`, the single derivation.
  */
 export async function assertPlatformAccountVotesAllowed(

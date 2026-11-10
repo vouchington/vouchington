@@ -77,7 +77,7 @@ export async function runRelationReadBatchScenarios(): Promise<void> {
   )
   registerScenarioContract('post-moderation-viewer-votes', {
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'post_votes', max: 2 },
+      { kind: 'maxProcessedRows', relation: 'post_vote_states', max: 2 },
       { kind: 'maxProcessedRows', relation: 'posts', max: 2 },
       { kind: 'maxProcessedRows', relation: 'agent_moderation_votes', max: 0 },
     ],
@@ -87,7 +87,7 @@ export async function runRelationReadBatchScenarios(): Promise<void> {
   )
   registerScenarioContract('follow-context-votes-batch', {
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'post_votes', max: 4 },
+      { kind: 'maxProcessedRows', relation: 'post_vote_states', max: 4 },
       { kind: 'maxProcessedRows', relation: 'relation__user__follow__user', max: 2 },
       { kind: 'maxProcessedRows', relation: 'users', max: 2 },
     ],

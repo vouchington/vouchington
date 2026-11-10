@@ -107,6 +107,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'post-votes-by-user',
   'posts-by-url-ids',
   'prioritized-referral-links',
+  'prioritized-referral-links-long-vote-history',
   'profile-posts-page',
   'recommended-rss-feeds',
   'recommended-topics',

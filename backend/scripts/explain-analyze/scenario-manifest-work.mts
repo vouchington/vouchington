@@ -1,4 +1,6 @@
 import { DISPATCH_AND_CRAWL_SCENARIO_IDS } from './dispatch-and-crawl-scenario-ids.mts'
+import { CURRENT_POST_VOTE_READ_SCENARIO_IDS } from './current-post-vote-read-scenario-ids.mts'
+import { POST_VOTE_STATE_TRANSITION_SCENARIO_IDS } from './post-vote-state-scenario-ids.mts'
 import { MEDIA_DELIVERY_LOCK_SCENARIOS } from './media-delivery-lock-scenario-ids.mts'
 import { MEMBERSHIP_COLLISION_REVIEW_SCENARIO_IDS } from './membership-collision-review-scenario-ids.mts'
 import { ELIGIBLE_LIST_SCENARIO_IDS } from './eligible-list-scenario-ids.mts'
@@ -24,6 +26,9 @@ export const BOUNDED_WORK_SCENARIOS = [
   'ai-usage-tier-existing',
   ...CATEGORY_PROJECTION_SCENARIO_IDS,
   ...MEDIA_DELIVERY_LOCK_SCENARIOS,
+  ...CURRENT_POST_VOTE_READ_SCENARIO_IDS,
+  'user-deletion-post-vote-state',
+  ...POST_VOTE_STATE_TRANSITION_SCENARIO_IDS,
   ...COMMUNITY_BAN_SCENARIO_IDS,
   ...ELIGIBLE_LIST_SCENARIO_IDS,
   ...COMMUNITY_AGENT_PROMPT_SCENARIO_IDS,

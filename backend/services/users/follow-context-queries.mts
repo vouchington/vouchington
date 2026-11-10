@@ -89,9 +89,17 @@ export async function getFollowedUsersByElectionVoteIdsBatch(
           ))
         )`
 
-  // Vote tables are append-only — DISTINCT ON resolves each voter's latest vote
-  // before bucketing by sign. Choice strength is deliberately not exposed here.
-  const currentVotesCte = `current_votes AS (
+  // Post vote state is already unique per voter/post, so it needs no ordering or DISTINCT ON;
+  // other configured vote tables remain append-only and resolve each voter's latest vote.
+  // Choice strength is deliberately not exposed here.
+  const currentVotesCte =
+    voteTable === 'post_votes'
+      ? `current_votes AS (
+      SELECT id, user_id, score, created_at
+      FROM post_vote_states
+      WHERE ${entityIdColumn} = $2
+    )`
+      : `current_votes AS (
       SELECT DISTINCT ON (user_id) id, user_id, score, created_at
       FROM ${voteTable}
       WHERE ${entityIdColumn} = $2

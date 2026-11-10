@@ -16,6 +16,7 @@ import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-bat
 import { runPublicationScopePageScenarios } from './run-scenarios/publication-scope-pages.mts'
 import { runNotificationVisibilityScenarios } from './run-scenarios/notification-visibility.mts'
 import { runDispatchWorkPlanScenarios } from './run-scenarios/dispatch-work-plans.mts'
+import { runPostVoteStateScenarios } from './run-scenarios/post-vote-state.mts'
 import { runMediaDeliveryReplayScenarios } from './run-scenarios/media-delivery-replay.mts'
 import {
   runMediaDeliveryGlobalPageScenarios,
@@ -104,6 +105,7 @@ export async function runScenariosBeforePartition(): Promise<void> {
   await runStep(runSearchAndFacetScenarios.name, runSearchAndFacetScenarios)
   await runStep(runSpamSignalScenarios.name, runSpamSignalScenarios)
   await runStep(runOAuthClientVerificationScenarios.name, runOAuthClientVerificationScenarios)
+  await runStep(runPostVoteStateScenarios.name, runPostVoteStateScenarios)
   await runStep(runFollowerDistributionScenarios.name, runFollowerDistributionScenarios)
   await runStep(runEntityAndCommunityScenarios.name, runEntityAndCommunityScenarios)
   await runStep(runViewDrivenReadScenarios.name, runViewDrivenReadScenarios)

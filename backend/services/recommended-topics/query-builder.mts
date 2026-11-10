@@ -58,15 +58,11 @@ export async function buildRecommendationQuery(
         3.0 AS score,
         'from_upvoted_posts' AS reason
       FROM (
-        SELECT DISTINCT ON (post_id) post_id, score
-        FROM (
-          SELECT post_id, id, score
-          FROM post_votes
-          WHERE user_id = ${userId}
-          ORDER BY id DESC
-          LIMIT ${VOTE_HISTORY_WINDOW}
-        ) recent_votes
-        ORDER BY post_id, id DESC
+        SELECT post_id, score
+        FROM post_vote_states
+        WHERE user_id = ${userId}
+        ORDER BY id DESC
+        LIMIT ${VOTE_HISTORY_WINDOW}
       ) ev
       INNER JOIN posts p
         ON p.id = ev.post_id
