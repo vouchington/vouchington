@@ -1,9 +1,7 @@
 import { getRelationVoteCandidates } from './get-relation-vote-candidates.mts'
 import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
 import sql from 'sql-template-strings'
-import { getPublicationVoteTargetScopes } from './delete-publication-vote-targets.mts'
 import {
   recomputeEntityRelationVoteStats,
   recordUserDeletionRelationPublicationChanges,
@@ -40,7 +38,6 @@ type EntityRelationVoteBatch = {
     subject_id: string
     entity_relation_id: string
   }[]
-  scopes: Awaited<ReturnType<typeof getPublicationVoteTargetScopes>>
 }
 
 async function getEntityRelationVoteBatch(
@@ -49,13 +46,7 @@ async function getEntityRelationVoteBatch(
   batchSize: number,
 ): Promise<EntityRelationVoteBatch> {
   const candidates = await getRelationVoteCandidates(query, userId, batchSize)
-  const targets = candidates.map(candidate => ({
-    relationTable: candidate.entity_relation,
-    subjectId: candidate.subject_id,
-    entityRelationId: candidate.entity_relation_id,
-  }))
-  const scopes = await getPublicationVoteTargetScopes(query, targets)
-  return { candidates, scopes }
+  return { candidates }
 }
 
 async function deleteEntityRelationVoteBatch(
@@ -63,7 +54,6 @@ async function deleteEntityRelationVoteBatch(
   userId: string,
   batch: EntityRelationVoteBatch,
 ) {
-  await lockEntityRelationVoteScopes(query, batch.scopes)
   const families = [
     ...new Set(batch.candidates.map(candidate => candidate.entity_relation)),
   ].toSorted()
@@ -95,13 +85,6 @@ async function deleteEntityRelationVoteBatch(
   return deleted
 }
 
-async function lockEntityRelationVoteScopes(
-  query: TransactionQuery,
-  scopes: EntityRelationVoteBatch['scopes'],
-): Promise<void> {
-  await lockPostPublicationPostScopes(query, scopes.postIds)
-}
-
 export async function recomputeUserDeletionRelationImpactsBatch(
   requestId: string,
   batchSize: number,
@@ -109,14 +92,13 @@ export async function recomputeUserDeletionRelationImpactsBatch(
 ): Promise<number> {
   const batch = await getRelationImpactBatch(query, requestId, batchSize)
   if (batch.rows.length === 0) return 0
-  const changes = await lockAndRecomputeRelationImpacts(query, batch)
+  const changes = await recomputeEntityRelationVoteStats(batch.targets, query)
   return recordRelationImpactChanges(query, batch.rows, changes)
 }
 
 type RelationImpactBatch = {
   rows: { id: string }[]
   targets: EntityRelationVoteTarget[]
-  scopes: Awaited<ReturnType<typeof getPublicationVoteTargetScopes>>
 }
 
 async function getRelationImpactBatch(
@@ -141,16 +123,7 @@ async function getRelationImpactBatch(
     ORDER BY id LIMIT ${batchSize} FOR UPDATE
   `)
   const targets = rows.map(mapRelationImpactRow)
-  const scopes = await getPublicationVoteTargetScopes(query, targets)
-  return { rows, targets, scopes }
-}
-
-async function lockAndRecomputeRelationImpacts(
-  query: TransactionQuery,
-  batch: RelationImpactBatch,
-) {
-  await lockEntityRelationVoteScopes(query, batch.scopes)
-  return recomputeEntityRelationVoteStats(batch.targets, query)
+  return { rows, targets }
 }
 
 async function recordRelationImpactChanges(

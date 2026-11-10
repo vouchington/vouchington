@@ -80,6 +80,9 @@ CREATE TABLE IF NOT EXISTS membership_provider_products (
 CREATE OR REPLACE TRIGGER trigger_membership_provider_products_updated_at BEFORE UPDATE ON membership_provider_products FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__provider_identity ON membership_provider_products (membership_provider_context_id, provider_product_id, base_plan_id, offer_id, sku_id) NULLS NOT DISTINCT;
+-- One active catalog key per provider context. A second active price for the same key conflicts.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__active_sku ON membership_provider_products (membership_provider_context_id, sku_id) WHERE retired_at IS NULL AND sku_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__id_context ON membership_provider_products (id, membership_product_id, membership_provider_context_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
