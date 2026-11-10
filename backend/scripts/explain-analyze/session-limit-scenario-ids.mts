@@ -21,6 +21,6 @@ export const SESSION_LIMIT_SCENARIO_IDS = [
   'session-limit-revokeOldestAuthenticatedSessions',
   'session-limit-revoke-all',
   'session-limit-revoke-other',
-  'session-limit-list-active',
-  'session-limit-list-active-cursor',
+  'session-limit-list-active-lookahead',
+  'session-limit-list-active-lookahead-cursor',
 ] as const

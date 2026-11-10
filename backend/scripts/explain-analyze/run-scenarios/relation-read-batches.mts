@@ -88,7 +88,7 @@ export async function runRelationReadBatchScenarios(): Promise<void> {
   registerScenarioContract('follow-context-votes-batch', {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'post_vote_states', max: 4 },
-      { kind: 'maxProcessedRows', relation: 'relation__user__follow__user', max: 4 },
+      { kind: 'maxProcessedRows', relation: 'relation__user__follow__user', max: 2 },
       { kind: 'maxProcessedRows', relation: 'users', max: 2 },
     ],
   })

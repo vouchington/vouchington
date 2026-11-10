@@ -116,7 +116,9 @@ async function runSessionLimitScenariosWithCorpus(): Promise<void> {
     'revokeOtherAuthenticatedSessions',
   )
 
-  registerScenarioContract('session-limit-list-active', {
+  // The page reads one row past the admission cap to detect overflow, so this is a new scenario
+  // with its own caps rather than a widened `session-limit-list-active`.
+  registerScenarioContract('session-limit-list-active-lookahead', {
     seededRows: { user_session_revocation_cutoffs: 4_000 },
     forbidSequentialScans: ['user_session_revocation_cutoffs'],
     expectations: [
@@ -133,13 +135,13 @@ async function runSessionLimitScenariosWithCorpus(): Promise<void> {
     ],
   })
   await runAndCapture(
-    'session-limit-list-active',
+    'session-limit-list-active-lookahead',
     () => listActiveUserSessions(SESSION_LIMIT_USER_ID, seedUuid(0, 'fd')),
     undefined,
     'listActiveUserSessions',
   )
 
-  registerScenarioContract('session-limit-list-active-cursor', {
+  registerScenarioContract('session-limit-list-active-lookahead-cursor', {
     seededRows: { user_session_revocation_cutoffs: 4_000 },
     forbidSequentialScans: ['user_session_revocation_cutoffs'],
     expectations: [
@@ -152,7 +154,7 @@ async function runSessionLimitScenariosWithCorpus(): Promise<void> {
     ],
   })
   await runAndCapture(
-    'session-limit-list-active-cursor',
+    'session-limit-list-active-lookahead-cursor',
     () =>
       listActiveUserSessions(SESSION_LIMIT_USER_ID, seedUuid(0, 'fd'), {
         after: { timestamp: '2100-01-01T00:00:00.000Z', id: seedUuid(0, 'fd') },
