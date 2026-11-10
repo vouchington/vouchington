@@ -64,6 +64,32 @@ export function buildTopicMembershipExists(postIdColumn: string, topicId: string
     )`)
 }
 
+/**
+ * List filters probe one post. A topic-side `IN (SELECT post_id …)` reads every alias
+ * relation for that topic: explain-analyze read 40,466 and 80,932 of those rows against
+ * the existing 3,010 and 30,000 caps. The post id is the index key instead.
+ */
+function buildKeyedTopicAttachmentExists(postIdColumn: string, topicId: string): SQLStatement {
+  return sql`EXISTS (
+    SELECT 1 FROM `
+    .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
+    .append(sql` direct_relation
+    WHERE direct_relation.subject_id = `)
+    .append(postIdColumn)
+    .append(sql` AND direct_relation.object_id = ${topicId}
+      AND direct_relation.deleted_at IS NULL AND direct_relation.votes_score_net > 0
+  ) OR EXISTS (
+    SELECT 1 FROM `)
+    .append(POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE)
+    .append(sql` alias_relation
+    WHERE alias_relation.subject_id = `)
+    .append(postIdColumn).append(sql` AND alias_relation.object_id = ANY (ARRAY(
+      SELECT alias.id FROM topic_aliases alias WHERE alias.topic_id = ${topicId}
+    ))
+      AND alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0
+  )`)
+}
+
 /** A keyed check across direct relations, linked aliases, review ratings and data-point topics. */
 export function buildUniversalTopicMembershipExists(
   postIdColumn: string,
@@ -71,7 +97,7 @@ export function buildUniversalTopicMembershipExists(
 ): SQLStatement {
   assertSafePostIdColumn(postIdColumn)
   return sql`(`
-    .append(buildTopicMembershipExists(postIdColumn, topicId))
+    .append(buildKeyedTopicAttachmentExists(postIdColumn, topicId))
     .append(sql` OR EXISTS (
       SELECT 1 FROM post_review_topic_ratings rating
       WHERE rating.post_id = `)
