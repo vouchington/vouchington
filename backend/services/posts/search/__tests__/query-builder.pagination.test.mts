@@ -120,7 +120,7 @@ describe('query-builder (pagination and moderation)', () => {
     expect(query.sql).toContain('hot_score DESC, posts.id DESC')
   })
 
-  it('applies hot result and credit filters on the rank-ordered walk', () => {
+  it('applies hot result and credit filters after a bounded rank-ordered cohort', () => {
     const result = buildPostSearchQuery(undefined, {
       post_types: ['data_point'],
       sort: 'hot',
@@ -133,7 +133,8 @@ describe('query-builder (pagination and moderation)', () => {
     })
 
     for (const query of [result, credit]) {
-      expect(query.sql).not.toContain('raw_post_search_candidates')
+      expect(query.sql).toContain('raw_post_search_candidates AS MATERIALIZED')
+      expect(query.sql).toContain('bounded_post_search_candidates AS MATERIALIZED')
       expect(query.sql).toContain('posts.votes_score_net > 0')
       expect(query.sql).toContain('LN(posts.votes_score_sort::DOUBLE PRECISION)')
       expect(query.sql).toContain('AS hot_score')
@@ -146,7 +147,7 @@ describe('query-builder (pagination and moderation)', () => {
     expect(credit.values).not.toContain('300-579')
   })
 
-  it('applies a stable hot cursor on the same filtered walk', () => {
+  it('applies a stable hot cursor to bounded candidates before result filtering', () => {
     const query = buildPostSearchQuery(undefined, {
       post_types: ['data_point'],
       sort: 'hot',
@@ -155,7 +156,7 @@ describe('query-builder (pagination and moderation)', () => {
       id_lt: '01234567-0000-7000-0000-000000000000',
     })
 
-    expect(query.sql).not.toContain('raw_post_search_candidates')
+    expect(query.sql).toContain('raw_post_search_candidates AS MATERIALIZED')
     expect(query.sql).toContain("posts.structured_data->>'result' = 'pending'")
     expect(query.sql).toContain('posts.votes_score_net > 0')
     expect(query.sql).toContain(', posts.id) < (')

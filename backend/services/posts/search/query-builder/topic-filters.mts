@@ -18,6 +18,8 @@ export function appendTopicFilters(
     universal_topic_ids,
     url_id,
   }: PostSearchOptions,
+  useBoundedCandidates = false,
+  indexedDataPointTopicId?: string,
 ): void {
   if (url_id) appendUrlFilter(filters)
   if (related_topic_ids?.length) appendRelatedTopicFilters(filters, related_topic_ids)
@@ -30,7 +32,13 @@ export function appendTopicFilters(
       filters.push(buildTopicAliasMembershipExists('posts.id', aliasId))
   }
   if (review_topic_ids?.length) appendReviewTopicFilters(filters, review_topic_ids)
-  if (data_point_topic_ids?.length) appendDataPointTopicFilters(filters, data_point_topic_ids)
+  if (data_point_topic_ids?.length)
+    appendDataPointTopicFilters(
+      filters,
+      data_point_topic_ids,
+      useBoundedCandidates,
+      indexedDataPointTopicId,
+    )
   if (universal_topic_ids?.length) {
     for (const topicId of new Set(universal_topic_ids))
       filters.push(buildUniversalTopicMembershipExists('posts.id', topicId))
@@ -74,12 +82,39 @@ function appendReviewTopicFilters(filters: SQLStatement[], topicIds: string[]): 
   })
 }
 
-function appendDataPointTopicFilters(filters: SQLStatement[], topicIds: string[]): void {
+const DATA_POINT_TOPIC_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function appendDataPointTopicFilters(
+  filters: SQLStatement[],
+  topicIds: string[],
+  useBoundedCandidates: boolean,
+  indexedDataPointTopicId?: string,
+): void {
   filters.push(sql`posts.post_type = 'data_point'`)
-  for (const topicId of topicIds)
-    filters.push(sql`EXISTS (
+  for (const topicId of topicIds) {
+    if (topicId !== indexedDataPointTopicId)
+      filters.push(dataPointTopicExists(topicId, useBoundedCandidates))
+  }
+}
+
+function dataPointTopicExists(topicId: string, useBoundedCandidates: boolean): SQLStatement {
+  const topicIdMatch = DATA_POINT_TOPIC_ID.exec(topicId)
+  const query = useBoundedCandidates
+    ? sql`EXISTS (
+        SELECT 1 FROM LATERAL (
+          -- (post_id, topic_id) is the primary key. Keep each topic probe keyed to
+          -- one bounded post candidate instead of rewalking the page per topic row.
+          SELECT 1 FROM post_data_point_topics
+          WHERE post_data_point_topics.post_id = posts.id
+            AND post_data_point_topics.topic_id = `
+    : sql`EXISTS (
         SELECT 1 FROM post_data_point_topics
         WHERE post_data_point_topics.post_id = posts.id
-          AND post_data_point_topics.topic_id = ${topicId}
-      )`)
+          AND post_data_point_topics.topic_id = `
+  if (topicIdMatch) query.append(`'${topicIdMatch[0].toLowerCase()}'::uuid`)
+  else query.append(sql`${topicId}`)
+  return useBoundedCandidates
+    ? query.append(sql` ORDER BY post_id, topic_id LIMIT 1
+        ) matched_topic)`)
+    : query.append(')')
 }

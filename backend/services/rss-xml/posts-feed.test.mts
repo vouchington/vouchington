@@ -42,7 +42,7 @@ describe('buildPostsRssFeed', () => {
     adminSlugPrefix = `rss-admin-test-${randomHex()}`
   })
 
-  it('returns the topic match and keeps the request filters on the next page', async () => {
+  it('continues an empty filtered page and preserves its request filters', async () => {
     await postsWorkConfig.waitForInitialization()
     const username = `rsspage${randomHex()}`
     const user = await createTestUserDirect({ username })
@@ -51,7 +51,7 @@ describe('buildPostsRssFeed', () => {
       post_search_filter_candidate_limit: 2,
     })
     try {
-      for (const [index, clearanceStatus] of ['approved', 'approved', 'pending'].entries()) {
+      for (const [index, clearanceStatus] of ['approved', 'pending', 'pending'].entries()) {
         ids.push(
           await insertTestPost({
             title: `RSS continuation ${index}`,
@@ -65,16 +65,13 @@ describe('buildPostsRssFeed', () => {
       }
       const topic = await createTestTopic()
       await insertScoredPostTopicCategoryRelation(ids[0]!, topic.id, user.id)
-      await insertScoredPostTopicCategoryRelation(ids[1]!, topic.id, user.id)
       const first = await buildPostsRssFeed({
         username,
         postType: 'discussion',
         topicSlugs: [topic.slug],
         apiKey: 'test-key',
-        limit: 1,
       })
-      expect(first).toContain('RSS continuation 1')
-      expect(first).not.toContain('RSS continuation 2')
+      expect(first).not.toContain('<item>')
       const href = first.match(/<atom:link\b[^>]*\bhref="([^"]+)"/)?.[1]
       expect(href).toBeDefined()
       const next = new URL(href!.replaceAll('&amp;', '&'))
@@ -90,7 +87,6 @@ describe('buildPostsRssFeed', () => {
         postType: 'discussion',
         topicSlugs: [topic.slug],
         after: after!,
-        limit: 1,
       })
       expect(second).toContain('RSS continuation 0')
       expect(second).not.toContain('<atom:link')

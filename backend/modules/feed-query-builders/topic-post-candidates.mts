@@ -12,14 +12,56 @@ function assertSafePostIdColumn(postIdColumn: string): void {
   }
 }
 
-/** A keyed direct or linked-alias membership check for one topic. */
+/**
+ * Single-topic candidate `post_id` derivation: every post positively attached to `topicId`,
+ * directly or through one of its hashtag aliases. Meant for a `FROM (…) candidate` subselect —
+ * candidate-binding from this indexed topic side (instead of a per-row correlated `EXISTS`) lets
+ * the planner drive the query from the topic's relation rows.
+ */
+export function buildTopicPostCandidateSelect(topicId: string): SQLStatement {
+  return sql`
+    SELECT rel.subject_id AS post_id
+    FROM `
+    .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
+    .append(sql` rel
+    WHERE (CASE WHEN rel.deleted_at IS NULL AND rel.votes_score_net > 0 THEN rel.object_id END) = ${topicId}
+      AND rel.deleted_at IS NULL
+      AND rel.votes_score_net > 0
+
+    UNION ALL
+
+    SELECT alias_relation.subject_id AS post_id
+    FROM topic_aliases alias
+    JOIN `)
+    .append(POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE).append(sql` alias_relation
+      ON (CASE WHEN alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0 THEN alias_relation.object_id END) = alias.id
+     AND alias_relation.deleted_at IS NULL
+     AND alias_relation.votes_score_net > 0
+    WHERE alias.topic_id = ${topicId}
+  `)
+}
+
+/**
+ * Single-topic membership test: is the post at `postIdColumn` positively attached to `topicId`,
+ * directly or through one of its hashtag aliases? `postIdColumn` must be a qualified
+ * `table.column` identifier (e.g. `posts.id`, `eligible_posts.id`) — every call site joins at
+ * least one other `posts`-aliased table, so a bare column would be ambiguous at runtime.
+ *
+ * Uses a candidate-bind `IN (SELECT candidate.post_id FROM (…) candidate)` shape built from
+ * `buildTopicPostCandidateSelect`, rather than a correlated `EXISTS (… UNION ALL …)`: Postgres
+ * cannot pull a `UNION ALL` body into a semijoin, so that shape materialized the candidate set
+ * once per outer row. A correlated `OR EXISTS` also let topic discussion counts start at `posts`
+ * and filter by `post_type`, which misses the topic-viewer row cap.
+ */
 export function buildTopicMembershipExists(postIdColumn: string, topicId: string): SQLStatement {
   assertSafePostIdColumn(postIdColumn)
-  return sql`(`
-    .append(directTopicExists(postIdColumn, topicId))
-    .append(sql` OR `)
-    .append(aliasTopicExists(postIdColumn, topicId))
-    .append(sql`)`)
+  return sql``
+    .append(postIdColumn)
+    .append(sql` IN (
+      SELECT candidate.post_id
+      FROM (`)
+    .append(buildTopicPostCandidateSelect(topicId)).append(sql`) candidate
+    )`)
 }
 
 /** A keyed check across direct relations, linked aliases, review ratings and data-point topics. */
@@ -54,30 +96,6 @@ export function buildTopicAliasMembershipExists(
     .append(sql` relation
     WHERE relation.subject_id = `)
     .append(postIdColumn).append(sql` AND relation.object_id = ${aliasId}
-      AND relation.deleted_at IS NULL AND relation.votes_score_net > 0
-  )`)
-}
-
-function directTopicExists(postIdColumn: string, topicId: string): SQLStatement {
-  return sql`EXISTS (
-    SELECT 1 FROM `
-    .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
-    .append(sql` relation
-    WHERE relation.subject_id = `)
-    .append(postIdColumn).append(sql` AND relation.object_id = ${topicId}
-      AND relation.deleted_at IS NULL AND relation.votes_score_net > 0
-  )`)
-}
-
-function aliasTopicExists(postIdColumn: string, topicId: string): SQLStatement {
-  return sql`EXISTS (
-    SELECT 1 FROM `
-    .append(POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE)
-    .append(sql` relation
-    WHERE relation.subject_id = `)
-    .append(postIdColumn).append(sql` AND relation.object_id = ANY (ARRAY(
-      SELECT alias.id FROM topic_aliases alias WHERE alias.topic_id = ${topicId}
-    ))
       AND relation.deleted_at IS NULL AND relation.votes_score_net > 0
   )`)
 }

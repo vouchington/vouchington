@@ -88,37 +88,50 @@ async function captureSparseNewFeedPages(): Promise<void> {
     universal_topic_ids: POST_FEED_INSPECTED_CURSOR_FIXTURE.topicIds,
     limit: SHARE_PAGE_SIZE,
   }
+  let firstCursor: string | null = null
   registerLowCandidateScenario('post-feed-inspected-empty')
   await runAndCapture(
     'post-feed-inspected-empty',
-    () => getPostFeedIds(heavyFollowUser, options),
-    undefined,
-    'getPostFeedIds',
-  )
-
-  let matchCursor: string | null = null
-  registerLowCandidateScenario('post-feed-inspected-match')
-  await runAndCapture(
-    'post-feed-inspected-match',
     async () => {
       const page = await getPostFeedIds(heavyFollowUser, options)
-      assert.equal(page.results.length, 1)
-      assert.equal(page.results[0]?.entity_id, POST_FEED_INSPECTED_CURSOR_FIXTURE.matchingPostId)
-      matchCursor = page.page_info.end_cursor
+      assert.equal(page.results.length, 0)
+      assert.equal(page.page_info.has_next_page, true)
+      assert.ok(page.page_info.end_cursor)
+      firstCursor = page.page_info.end_cursor
     },
     undefined,
     'getPostFeedIds',
   )
 
+  if (!firstCursor) throw new Error('Empty post feed page did not return its continuation cursor')
+  let secondCursor: string | null = null
+  registerLowCandidateScenario('post-feed-inspected-match')
+  await runAndCapture(
+    'post-feed-inspected-match',
+    async () => {
+      const page = await getPostFeedIds(heavyFollowUser, { ...options, after: firstCursor! })
+      assert.equal(page.results.length, 1)
+      assert.equal(page.results[0]?.entity_id, POST_FEED_INSPECTED_CURSOR_FIXTURE.matchingPostId)
+      assert.equal(page.page_info.has_next_page, true)
+      assert.ok(page.page_info.end_cursor)
+      assert.notEqual(page.page_info.end_cursor, firstCursor)
+      secondCursor = page.page_info.end_cursor
+    },
+    undefined,
+    'getPostFeedIds',
+  )
+
+  if (!secondCursor)
+    throw new Error('Post feed match page did not advance its inspected-delivery cursor')
   registerLowCandidateScenario('post-feed-inspected-empty-after-match')
   await runAndCapture(
     'post-feed-inspected-empty-after-match',
     async () => {
-      const page = await getPostFeedIds(heavyFollowUser, {
-        ...options,
-        ...(matchCursor ? { after: matchCursor } : {}),
-      })
-      if (matchCursor) assert.equal(page.results.length, 0)
+      const page = await getPostFeedIds(heavyFollowUser, { ...options, after: secondCursor! })
+      assert.equal(page.results.length, 0)
+      assert.equal(page.page_info.has_next_page, true)
+      assert.ok(page.page_info.end_cursor)
+      assert.notEqual(page.page_info.end_cursor, secondCursor)
     },
     undefined,
     'getPostFeedIds',

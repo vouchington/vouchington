@@ -26,7 +26,7 @@ describe('bounded post feed pages', () => {
           createdAt: new Date(281_474_976_710_655 - offset),
           createdById: author.id,
         })),
-        async ([oldest, middle, newest]) => {
+        async ([, middle, newest]) => {
           await hidePost(viewer, { id: middle! })
           await hidePost(viewer, { id: newest! })
           const options = {
@@ -35,16 +35,23 @@ describe('bounded post feed pages', () => {
             post_types: ['discussion' as const],
           }
           const first = await getPostFeedIds(viewer, options)
-          expect(first.results.map(row => row.entity_id)).toEqual([oldest])
+          expect(first.results).toEqual([])
           expect(first.page_info.has_next_page).toBe(true)
           const cursor = first.page_info.end_cursor
           expect(cursor).toEqual(expect.any(String))
-          const decoded = decodeCursor(cursor!) as { timestamp: string; id: string }
-          expect(decoded.timestamp).toMatch(/^\d{5}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$/)
-          expect(decoded.id).toBe(first.results[0]?.id)
+          expect(decodeCursor(cursor!)).toMatchObject({
+            timestamp: '10889-08-02T05:31:50.655000Z',
+          })
           const next = await getPostFeedIds(viewer, { ...options, after: cursor! })
-          expect(next.results).toEqual([])
-          expect(next.page_info.has_next_page).toBe(false)
+          expect(next.page_info.has_next_page).toBe(true)
+          expect(next.page_info.end_cursor).toEqual(expect.any(String))
+          expect(next.page_info.end_cursor).not.toBe(cursor)
+          const firstKey = decodeCursor(cursor!) as { timestamp: string; id: string }
+          const nextKey = decodeCursor(next.page_info.end_cursor!) as {
+            timestamp: string
+            id: string
+          }
+          expect(nextKey.timestamp !== firstKey.timestamp || nextKey.id < firstKey.id).toBe(true)
         },
       )
     } finally {
@@ -57,7 +64,7 @@ describe('bounded post feed pages', () => {
     { label: 'hot', sort: 'hot', time_range: '1w' },
     { label: 'best', sort: 'hot', time_range: 'all' },
   ] as const)(
-    'keeps direct and shared $label deliveries after hidden posts are filtered',
+    'advances through hidden $label candidates without losing direct or shared deliveries',
     async ({ sort, time_range }) => {
       await postsWorkConfig.waitForInitialization()
       const viewer = await createTestUser()
@@ -85,6 +92,7 @@ describe('bounded post feed pages', () => {
             const expected = [...ids.slice(0, 3), shared].toSorted()
             const seen: string[] = []
             let after: string | undefined
+            let sawShort = false
             for (let pageIndex = 0; pageIndex < 30; pageIndex++) {
               const page = await getPostFeedIds(viewer, {
                 feed_type: 'follow_users',
@@ -93,11 +101,13 @@ describe('bounded post feed pages', () => {
                 limit: 2,
                 after,
               })
+              sawShort ||= page.results.length < 2 && page.page_info.has_next_page
               seen.push(...page.results.map(row => row.id))
               if (expected.every(id => seen.includes(id)) || !page.page_info.has_next_page) break
               after = page.page_info.end_cursor ?? undefined
               if (!after) throw new Error('Expected continuation cursor')
             }
+            expect(sawShort).toBe(true)
             expect(seen.toSorted()).toEqual(expected)
             expect(new Set(seen).size).toBe(seen.length)
           },

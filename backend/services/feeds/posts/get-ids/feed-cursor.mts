@@ -84,18 +84,19 @@ export function mapPostFeedResponse(
   safeLimit: number,
   sort: PostFeedWalkSort,
   asOf: Date,
-  fetchLimit = safeLimit + 1,
 ): PostFeedResponse {
   const visibleRows = rows.filter(row => typeof row.result_id === 'string')
   const pageRows = visibleRows.slice(0, safeLimit)
-  const hasNextPage =
-    visibleRows.length > safeLimit || (fetchLimit <= safeLimit && visibleRows.length >= fetchLimit)
+  const metadata = rows[0]
+  const hasNextPage = visibleRows.length > safeLimit || metadata?.raw_has_more === true
   const first = pageRows[0]
   const last = pageRows.at(-1)
+  const inspected = pageRows.length < safeLimit && hasNextPage
+  const end = inspected ? metadata : last
   const pageInfo: PageInfo = {
     has_next_page: hasNextPage,
-    start_cursor: first ? encodeFeedCursor(first, sort, asOf) : null,
-    end_cursor: hasNextPage && last ? encodeFeedCursor(last, sort, asOf) : null,
+    start_cursor: first ? encodeFeedCursor(first, sort, asOf, false) : null,
+    end_cursor: hasNextPage && end ? encodeFeedCursor(end, sort, asOf, inspected) : null,
   }
   return {
     results: pageRows.map(row => ({
@@ -111,25 +112,31 @@ export function mapPostFeedResponse(
   }
 }
 
-function encodeFeedCursor(row: Row, sort: PostFeedWalkSort, asOf: Date): string {
+function encodeFeedCursor(
+  row: Row,
+  sort: PostFeedWalkSort,
+  asOf: Date,
+  inspected: boolean,
+): string {
   if (sort === 'new') {
-    const timestamp = row.cursor_sort_at
-    const id = row.result_id
+    const timestamp = inspected ? row.inspected_sort_at : row.cursor_sort_at
+    const id = inspected ? row.inspected_id : row.result_id
     if (!isPreciseUtcTimestamp(timestamp) || !isUuidString(id))
-      throw new Error('Missing feed cursor')
+      throw new Error('Missing feed inspection boundary')
     return encodeCursor({ scope: SCOPES.new, timestamp, id })
   }
-  const rank = row.delivery_rank
-  const postId = row.entity_id
-  if (!isFiniteNumber(rank) || !isUuidString(postId)) throw new Error('Missing ranked feed cursor')
+  const rank = inspected ? row.inspected_rank : row.delivery_rank
+  const postId = inspected ? row.inspected_post_id : row.entity_id
+  if (!isFiniteNumber(rank) || !isUuidString(postId))
+    throw new Error('Missing ranked feed inspection boundary')
   const cursor = {
     scope: SCOPES[sort],
-    kind: 'delivered' as const,
+    kind: inspected ? 'inspected' : 'delivered',
     rank,
     post_id: postId,
     ...(sort === 'hot' ? { as_of: asOf.getTime() } : {}),
   }
-  const id = row.result_id
+  const id = inspected ? row.inspected_id : row.result_id
   if (!isUuidString(id)) throw new Error('Missing feed delivery ID')
   return encodeCursor({ ...cursor, id })
 }

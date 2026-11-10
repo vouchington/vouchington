@@ -1,7 +1,7 @@
 import { clampLimit } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions, PostSearchResult } from './types.mts'
-import { buildPostSearchQuery, postSearchStatementLimit } from './query-builder.mts'
+import { buildPostSearchQuery } from './query-builder.mts'
 import { executePostSearchQuery } from './execute-query.mts'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import {
@@ -15,11 +15,30 @@ import { isUUID } from '@modules/utils'
 import { DEFAULT_POST_SEARCH_TIME_RANGE } from '@modules/feed-query-builders'
 import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-info.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
+import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
 import { postsWorkConfig } from '../work-limits.mts'
+import { usesBoundedPostSearchCandidates } from './query-builder/bounded-candidates.mts'
+import {
+  buildDefaultBoundedPage,
+  buildFollowingBoundedPage,
+  buildRelevanceBoundedPage,
+  buildTopicBestBoundedPage,
+} from './get-ids-bounded-page.mts'
+import { usesTopicBestCohort } from './topic-best-cohort.mts'
 
 type PostSearchResponse = {
   results: PostSearchResult[]
   page_info: ReturnType<typeof buildPostSearchPageInfo>
+}
+
+type BoundedSearchRow = Omit<PostSearchRow, 'id'> & {
+  id: string | null
+  candidate_has_more?: boolean
+  inspected_id?: string | null
+  inspected_score?: string | number | null
+  cohort_hi?: string | null
+  cohort_lo?: string | null
+  candidate_cap?: number
 }
 
 export async function getPostIds(
@@ -44,7 +63,9 @@ export async function getPostIds(
   const limit = clampLimit(options.limit)
   const rawSort = detectSearchSort(options)
   const sort = rawSort === 'following_new' && !currentUser ? 'new' : rawSort
-  await postsWorkConfig.waitForInitialization()
+  if (usesHackerNewsHotCandidates(options) || usesBoundedPostSearchCandidates(options, sort)) {
+    await postsWorkConfig.waitForInitialization()
+  }
   const hasTextSearch = hasTextSearchFn(options)
   // Fetch embedding before cursor decode so hasSemanticSearch and hasRankingScore
   // mirror the builder's SELECT decision (embedding presence required, not just query string).
@@ -53,6 +74,10 @@ export async function getPostIds(
     semanticSearchEmbedding = await getCachedSearchEmbedding(options.semantic_search_query!)
   }
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
+  const boundedCandidates = usesBoundedPostSearchCandidates(
+    { ...options, semanticSearchEmbedding },
+    sort,
+  )
   const hasRankingScore =
     buildPostRankingScoreExpression({ hasTextSearch, hasSemanticSearch }) !== null
   // Post search is always time-bounded; callers needing the full history pass 'all'. Only an
@@ -60,24 +85,19 @@ export async function getPostIds(
   const effectiveTimeRange =
     options.time_range ??
     (isOwnDraftsListing(currentUser, options) ? 'all' : DEFAULT_POST_SEARCH_TIME_RANGE)
-  const cursor = decodePostSearchCursor(options, sort, hasRankingScore)
-  const fetchLimit =
-    postSearchStatementLimit(
-      { ...options, limit: limit + 1, time_range: effectiveTimeRange },
-      sort,
-      hasSemanticSearch,
-    ) ?? limit + 1
+  const cursor = decodePostSearchCursor(options, sort, hasRankingScore, boundedCandidates)
+  // Build query - pass decoded cursor values and use limit + 1
   const queryOptions: PostSearchOptions = {
     ...options,
     time_range: effectiveTimeRange,
     semanticSearchEmbedding,
-    limit: fetchLimit,
+    limit: limit + 1,
   }
   Object.assign(queryOptions, cursor)
   const query = buildPostSearchQuery(currentUser, queryOptions)
-  const { rows } = await executePostSearchQuery<PostSearchRow>(query, hasSemanticSearch)
-  const resultRows = rows.slice(0, limit)
-  const hasMore = rows.length > limit || (fetchLimit <= limit && rows.length >= fetchLimit)
+  const { rows } = await executePostSearchQuery<BoundedSearchRow>(query, hasSemanticSearch)
+  const typedRows = rows.filter((row): row is BoundedSearchRow & PostSearchRow => row.id !== null)
+  const resultRows = typedRows.slice(0, limit)
   const results: PostSearchResult[] = resultRows.map(row => ({
     __entity_type: 'post',
     id: row.id,
@@ -93,9 +113,24 @@ export async function getPostIds(
       ? { trending_score: Number(row.trending_score) }
       : {}),
   }))
+  const pageInfo =
+    boundedCandidates && sort === 'following_new'
+      ? buildFollowingBoundedPage(typedRows, rows[0], limit, cursor)
+      : boundedCandidates && usesTopicBestCohort(options, sort)
+        ? buildTopicBestBoundedPage(typedRows, rows[0], limit, cursor)
+        : boundedCandidates && sort === 'relevance' && hasRankingScore
+          ? buildRelevanceBoundedPage(typedRows, rows[0], limit, cursor)
+          : buildDefaultBoundedPage(
+              typedRows,
+              rows[0],
+              limit,
+              sort,
+              hasRankingScore,
+              boundedCandidates,
+            )
   return {
     results,
-    page_info: buildPostSearchPageInfo(resultRows, hasMore, sort, hasRankingScore),
+    page_info: pageInfo,
   }
 }
 

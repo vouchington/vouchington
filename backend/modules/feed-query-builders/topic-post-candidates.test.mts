@@ -6,6 +6,14 @@ import {
 } from './topic-post-candidates.mts'
 
 describe('topic membership column validation', () => {
+  it('binds one topic from its relation before probing posts', () => {
+    const membership = buildTopicMembershipExists('candidate_post.id', 'topic-id')
+    expect(membership.text).toContain('candidate_post.id IN (')
+    expect(membership.text).toContain('rel.subject_id')
+    expect(membership.text).toContain('alias_relation.subject_id')
+    expect(membership.values).toEqual(['topic-id', 'topic-id'])
+  })
+
   it.each([
     buildTopicMembershipExists,
     buildUniversalTopicMembershipExists,

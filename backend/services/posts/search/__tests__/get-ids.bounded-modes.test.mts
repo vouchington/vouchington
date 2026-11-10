@@ -52,7 +52,7 @@ describe('bounded post search modes', () => {
   })
 
   it.each(['new', 'best'] as const)(
-    'returns the matching %s post when newer rows are excluded',
+    'continues an unscoped %s search after filtered candidates',
     async sort => {
       await postsWorkConfig.waitForInitialization()
       const user = await createTestUser()
@@ -75,8 +75,14 @@ describe('bounded post search modes', () => {
               limit: 1,
             }
             const first = await getPostIds(user, options)
-            expect(first.results.map(row => row.id)).toEqual([oldest])
-            expect(first.page_info.has_next_page).toBe(false)
+            expect(first.results).toEqual([])
+            expect(first.page_info.has_next_page).toBe(true)
+            expect(first.page_info.end_cursor).toEqual(expect.any(String))
+            const second = await getPostIds(user, {
+              ...options,
+              after: first.page_info.end_cursor!,
+            })
+            expect(second.results.map(row => row.id)).toEqual([oldest])
           },
         )
       } finally {
@@ -142,11 +148,10 @@ describe('bounded post search modes', () => {
         ...relevanceOptions,
         after: relevanceSecond.page_info.end_cursor!,
       })
-      expect([
-        relevance.results[0]?.id,
-        relevanceSecond.results[0]?.id,
-        relevanceThird.results[0]?.id,
-      ]).toEqual([ids[0], ids[2], ids[1]])
+      expect([relevance.results[0]?.id, relevanceSecond.results[0]?.id].toSorted()).toEqual(
+        [ids[1], ids[2]].toSorted(),
+      )
+      expect(relevanceThird.results.map(row => row.id)).toEqual([ids[0]])
       await expect(
         getPostIds(viewer, { ...relevanceOptions, after: following.page_info.end_cursor! }),
       ).rejects.toMatchObject({ status: 400 })
@@ -164,7 +169,7 @@ describe('bounded post search modes', () => {
     }
   })
 
-  it('returns the older visible post when newer author posts are deleted', async () => {
+  it('advances past deleted author keys to older visible posts', async () => {
     await postsWorkConfig.waitForInitialization()
     const author = await createTestUser()
     const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
@@ -187,8 +192,14 @@ describe('bounded post search modes', () => {
             limit: 1,
           }
           const first = await getPostIds(author, options)
-          expect(first.results.map(row => row.id)).toEqual([oldest])
-          expect(first.page_info.has_next_page).toBe(false)
+          expect(first.results).toEqual([])
+          expect(first.page_info.has_next_page).toBe(true)
+          expect(first.page_info.end_cursor).toEqual(expect.any(String))
+          const second = await getPostIds(author, {
+            ...options,
+            after: first.page_info.end_cursor!,
+          })
+          expect(second.results.map(row => row.id)).toEqual([oldest])
         },
       )
     } finally {
@@ -196,7 +207,7 @@ describe('bounded post search modes', () => {
     }
   })
 
-  it('returns the matching followed post when newer rows are excluded', async () => {
+  it('continues following search after a filtered candidate prefix', async () => {
     await postsWorkConfig.waitForInitialization()
     const viewer = await createTestUser()
     const followed = await createTestUser()
@@ -220,8 +231,14 @@ describe('bounded post search modes', () => {
             limit: 1,
           }
           const first = await getPostIds(viewer, options)
-          expect(first.results.map(row => row.id)).toEqual([oldest])
-          expect(first.page_info.has_next_page).toBe(false)
+          expect(first.results).toEqual([])
+          expect(first.page_info.has_next_page).toBe(true)
+          expect(first.page_info.end_cursor).toEqual(expect.any(String))
+          const second = await getPostIds(viewer, {
+            ...options,
+            after: first.page_info.end_cursor!,
+          })
+          expect(second.results.map(row => row.id)).toEqual([oldest])
         },
       )
     } finally {

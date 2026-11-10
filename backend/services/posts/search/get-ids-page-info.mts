@@ -3,7 +3,7 @@ import {
   decodeUuidCursor,
   decodeScopedScoreCursor,
   encodeCursor,
-  hasExactKeys,
+  isRankingCursor,
   isScoreCursor,
   isSimpleCursor,
 } from '@modules/pagination'
@@ -12,32 +12,63 @@ import type { PostSearchOptions } from './types.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { stableHotCursorScope } from './stable-hot-rank.mts'
+import {
+  decodeFollowingCursor,
+  decodeRelevanceCursor,
+  decodeTopicBestCursor,
+} from './bounded-cursors.mts'
+import { usesTopicBestCohort } from './topic-best-cohort.mts'
 
 export type PostSearchCursorValues = {
   id_lt?: string
   vote_score_lt?: number
   ranking_lt?: number
   hot_score_lt?: number
+  cohort_hi?: string
+  cohort_lo?: string
+  cohort_before_id?: string
+  cohort_cap?: number
+  cohort_older?: boolean
+  following_phase?: 'followed' | 'other'
 }
-
-/** Following rank and text rank share a keyset shape, so each sort carries its own scope. */
-export const postSearchRankingCursorScope = {
-  following_new: 'post-following-new-1',
-  relevance: 'post-relevance-1',
-} as const
 
 export function decodePostSearchCursor(
   options: PostSearchOptions,
   sort: string,
   hasRankingScore: boolean,
+  boundedCandidates = false,
 ): PostSearchCursorValues {
   if (!options.after) return {}
   if (sort === 'new') {
     const cursor = decodeUuidCursor(options.after, isSimpleCursor, 'Invalid cursor for sort=new')
     return { id_lt: cursor.id }
   }
-  if (sort === 'following_new') return decodeRankingCursor(options.after, sort)
+  if (sort === 'following_new') {
+    if (boundedCandidates) {
+      const cursor = decodeFollowingCursor(options.after)
+      return { following_phase: cursor.phase, ...(!('start' in cursor) && { id_lt: cursor.id }) }
+    }
+    const cursor = decodeUuidCursor(
+      options.after,
+      isRankingCursor,
+      'Invalid cursor for sort=following_new',
+    )
+    return { ranking_lt: cursor.ranking, id_lt: cursor.id }
+  }
   if (sort === 'best') {
+    if (boundedCandidates && usesTopicBestCohort(options, sort)) {
+      const cursor = decodeTopicBestCursor(options.after)
+      return cursor.kind === 'next'
+        ? { cohort_before_id: cursor.id }
+        : {
+            cohort_hi: cursor.hi,
+            cohort_lo: cursor.lo,
+            cohort_cap: cursor.cap,
+            cohort_older: cursor.older,
+            vote_score_lt: cursor.ranking,
+            id_lt: cursor.id,
+          }
+    }
     const cursor = decodeUuidCursor(options.after, isScoreCursor, 'Invalid cursor for sort=best')
     return { vote_score_lt: cursor.score, id_lt: cursor.id }
   }
@@ -52,7 +83,27 @@ export function decodePostSearchCursor(
     return { hot_score_lt: cursor.score, id_lt: cursor.id }
   }
   if (sort === 'relevance') {
-    if (hasRankingScore) return decodeRankingCursor(options.after, sort)
+    if (boundedCandidates && hasRankingScore) {
+      const cursor = decodeRelevanceCursor(options.after)
+      return cursor.kind === 'next'
+        ? { cohort_before_id: cursor.id }
+        : {
+            cohort_hi: cursor.hi,
+            cohort_lo: cursor.lo,
+            cohort_cap: cursor.cap,
+            cohort_older: cursor.older,
+            ranking_lt: cursor.ranking,
+            id_lt: cursor.id,
+          }
+    }
+    if (hasRankingScore) {
+      const cursor = decodeUuidCursor(
+        options.after,
+        isRankingCursor,
+        'Invalid cursor for sort=relevance',
+      )
+      return { ranking_lt: cursor.ranking, id_lt: cursor.id }
+    }
     const cursor = decodeUuidCursor(
       options.after,
       isSimpleCursor,
@@ -89,7 +140,6 @@ function encodePostSearchCursor(
     return encodeCursor({
       ranking: requiredNumber(row.following_rank, 'following_rank'),
       id: row.id,
-      scope: postSearchRankingCursorScope.following_new,
     })
   }
   if (sort === 'best') {
@@ -106,38 +156,9 @@ function encodePostSearchCursor(
     return encodeCursor({
       ranking: requiredNumber(row.ranking_score, 'ranking_score'),
       id: row.id,
-      scope: postSearchRankingCursorScope.relevance,
     })
   }
   return encodeCursor({ id: row.id })
-}
-
-function decodeRankingCursor(
-  after: string,
-  sort: keyof typeof postSearchRankingCursorScope,
-): PostSearchCursorValues {
-  const cursor = decodeUuidCursor(after, isScopedRankingCursor, `Invalid cursor for sort=${sort}`)
-  if (cursor.scope !== postSearchRankingCursorScope[sort])
-    throw createHttpError(400, `Invalid cursor for sort=${sort}`)
-  return { ranking_lt: cursor.ranking, id_lt: cursor.id }
-}
-
-function isScopedRankingCursor(
-  value: unknown,
-): value is { ranking: number; id: string; scope: string } {
-  if (
-    typeof value !== 'object' ||
-    value === null ||
-    !hasExactKeys(value, ['ranking', 'id', 'scope'])
-  )
-    return false
-  const cursor = value as { ranking: unknown; id: unknown; scope: unknown }
-  return (
-    typeof cursor.ranking === 'number' &&
-    Number.isFinite(cursor.ranking) &&
-    typeof cursor.id === 'string' &&
-    typeof cursor.scope === 'string'
-  )
 }
 
 function requiredNumber(value: unknown, column: string): number {

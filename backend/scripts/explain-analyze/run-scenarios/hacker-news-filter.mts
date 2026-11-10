@@ -65,13 +65,15 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
               expectations: [
                 { kind: 'queryBinds', token: 'posts.has_hacker_news_references' },
                 ...(boundedHot
+                  ? [{ kind: 'queryBinds' as const, token: 'hacker_news_hot_candidates' }]
+                  : []),
+                ...(boundedHot
                   ? [{ kind: 'queryBinds' as const, token: 'hackerNewsHotWindow' }]
                   : []),
                 {
                   kind: 'maxProcessedRows',
                   relation: 'posts',
-                  // Hot walks the stored rank inside the requested window. The row
-                  // ceiling stays the previous inspected-cap budget.
+                  // Bounded cohort source/root and page probes; never the corpus.
                   max: boundedHot
                     ? 4 * getPostsWorkLimit('hacker_news_hot_candidate_limit') + 2 * 26
                     : 2000,
