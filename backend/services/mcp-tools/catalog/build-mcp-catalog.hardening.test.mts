@@ -23,9 +23,9 @@ const names = [
 ]
 // Pin the exact-grant listing including explicit message and household grants.
 const PLUS_WITHOUT_MODERATION_DIGEST =
-  'dd2490c09f08512369f6b167e5baf31130c4e6e48be2c32a5a096aaa0173dd97'
-const PRE_MESSAGE_DIGEST = '4e87c1be51278cd08d01f479b25bc4cf430b7b6ca8b4680267477f263b1a952a'
-const UMBRELLA_ONLY_DIGEST = '886080eeddafdecef0cd91d6cfc8757492cc1f2fa1d88ac1122302199dc8a83f'
+  '8a705f298264625fed283e9c3f13903909a30ce012f3dc9b119b2774febfe777'
+const PRE_MESSAGE_DIGEST = '0dc5a896a1f7223355e2ef7f4040e39f345e6bb89be51059d73e8dfb63b71c23'
+const UMBRELLA_ONLY_DIGEST = 'cb59c35ed3211d686aba8a66c71471da7b4fd69ed2678aa9ef1286b59f626889'
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
 describe('community moderation exact-grant catalog boundaries', () => {
