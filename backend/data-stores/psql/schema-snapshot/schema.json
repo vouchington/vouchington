@@ -68380,6 +68380,7 @@
     },
     "membership_queued_grant_repair_cursors": {
       "checkConstraints": {
+        "membership_queued_grant_repair_cursors_check": "CHECK (((cursor_id IS NULL) = (cursor_grant_id IS NULL)))",
         "membership_queued_grant_repair_cursors_is_singleton_check": "CHECK (is_singleton)"
       },
       "columns": {
@@ -68391,12 +68392,23 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
+        },
+        "cursor_grant_id": {
+          "collation": null,
+          "comment": "Grant id of the last inspected row. NULL, with cursor_id, starts at the first grant. It is not a reference to a surviving grant.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
         },
         "cursor_id": {
           "collation": null,
-          "comment": "Last inspected user id in the current pass. NULL starts at the first grant. It is not a reference to a surviving user.",
+          "comment": "User id of the last inspected grant row. NULL, with cursor_grant_id, starts at the first grant. It is not a reference to a surviving user.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -68424,11 +68436,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Durable user keyset for the scheduled repair of queued grants behind a cancelled or expired projection.",
+      "comment": "Durable (user, grant) keyset for the scheduled repair of queued grants behind a cancelled or expired projection.",
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
