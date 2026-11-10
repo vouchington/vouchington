@@ -71,15 +71,8 @@ export async function publishStripeCatalogMapping({
   )
   if (exact.length !== 1) throw new Error(`Stripe catalog mapping ${skuId} is ambiguous`)
   const mapping = exact[0]!
-  if (
-    mapping.membership_product_id !== membershipProductId ||
-    Number(mapping.price_minor_units) !== amount ||
-    mapping.currency_code !== 'usd'
-  )
-    /* v8 ignore next -- defensive: the pre-read and database uniqueness prevent this drift. */
-    throw new Error(`Stripe catalog mapping ${skuId} conflicts with its canonical identity`)
   if (mapping.retired_at === null) return
-  const { rows: reactivated } = await write<{ id: string }>(
+  await write(
     sql`/* publishStripeCatalogMapping: reactivate */
       UPDATE membership_provider_products SET retired_at = NULL
       WHERE id = ${mapping.id}
@@ -88,13 +81,9 @@ export async function publishStripeCatalogMapping({
         AND sku_id = ${skuId}
         AND membership_product_id = ${membershipProductId}
         AND price_minor_units = ${amount}
-        AND currency_code = 'usd'
-      RETURNING id`,
+        AND currency_code = 'usd'`,
     { query },
   )
-  if (reactivated.length !== 1)
-    /* v8 ignore next -- defensive: the pre-read just matched this row; zero rows means a concurrent writer changed it. */
-    throw new Error(`Stripe catalog mapping ${skuId} conflicts with its canonical identity`)
 }
 
 async function findStripeCatalogMappings(
