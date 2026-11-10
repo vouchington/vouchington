@@ -74,7 +74,11 @@ export async function runMembershipOrphanedQueuedGrantScenarios(): Promise<void>
     'membership-orphaned-queued-grant-candidates',
     async () => {
       await using transaction = await beginTransaction()
-      await readOrphanedQueuedGrantUserIds(cursor, PAGE_SIZE, transaction)
+      await readOrphanedQueuedGrantUserIds(
+        { userId: cursor, grantId: seedUuid(9_999, '02') },
+        PAGE_SIZE,
+        transaction,
+      )
     },
     undefined,
     'repairOrphanedQueuedGrantsBatch: candidates',

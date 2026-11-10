@@ -7,56 +7,67 @@ import { activateOrphanedQueuedGrant } from './repair-orphaned-queued-activate.m
 
 export { activateOrphanedQueuedGrant } from './repair-orphaned-queued-activate.mts'
 
-// Below every uuidv7, so a null cursor is still `user_id > $bound` and can use the user index.
-const NIL_USER_ID = '00000000-0000-0000-0000-000000000000'
+// Below every uuidv7, so a null cursor is still `(user_id, id) > ($user, $grant)`.
+const NIL_UUID = '00000000-0000-0000-0000-000000000000'
+
+export type OrphanedQueuedGrantCursor = {
+  userId: string
+  grantId: string
+}
 
 type InspectedGrantRow = {
+  id: string
   matched: boolean
   user_id: string
 }
 
 export async function repairOrphanedQueuedGrantsBatch(
-  cursor: string | null,
+  cursor: OrphanedQueuedGrantCursor | null,
   batchSize = getMembershipWorkLimits().batchSize,
   userIds?: readonly string[],
-): Promise<{ repaired: number; hasMore: boolean; nextCursor: string | null }> {
+): Promise<{ repaired: number; hasMore: boolean; nextCursor: OrphanedQueuedGrantCursor | null }> {
   if (!Number.isInteger(batchSize) || batchSize < 1)
     throw new RangeError('Membership orphan repair batch size must be a positive integer')
   if (userIds && userIds.length === 0) return { repaired: 0, hasMore: false, nextCursor: cursor }
   const inspected = await readOrphanedQueuedGrantUserPage(cursor, batchSize, userIds)
   const repaired = await repairOrphanedQueuedGrantUsers(matchingUserIds(inspected.rows))
-  // The cap counts grant rows read. hasMore means a later user_id remains after this page.
+  const last = inspected.rows.at(-1)
+  // The cap counts grant rows read. hasMore means a later grant row remains after this keyset.
   return {
     repaired,
     hasMore: inspected.hasMore,
-    nextCursor: inspected.rows.at(-1)?.user_id ?? null,
+    nextCursor: last ? { userId: last.user_id, grantId: last.id } : null,
   }
 }
 
 async function readOrphanedQueuedGrantUserPage(
-  cursor: string | null,
+  cursor: OrphanedQueuedGrantCursor | null,
   batchSize: number,
   userIds?: readonly string[],
 ): Promise<{ rows: InspectedGrantRow[]; hasMore: boolean }> {
   await using query = await beginTransaction()
   const rows = await readOrphanedQueuedGrantRows(cursor, batchSize, query, userIds)
-  const lastUserId = rows.at(-1)?.user_id
+  const last = rows.at(-1)
   const hasMore =
     rows.length === batchSize &&
-    lastUserId !== undefined &&
-    (await orphanedQueuedGrantRemainsAfter(lastUserId, query, userIds))
+    last !== undefined &&
+    (await orphanedQueuedGrantRemainsAfter(
+      { userId: last.user_id, grantId: last.id },
+      query,
+      userIds,
+    ))
   await query.commit()
   return { rows, hasMore }
 }
 
 async function orphanedQueuedGrantRemainsAfter(
-  cursor: string,
+  cursor: OrphanedQueuedGrantCursor,
   query: QueryExecutor,
   userIds?: readonly string[],
 ): Promise<boolean> {
   const statement = sql`/* repairOrphanedQueuedGrantsBatch: hasMore */
     SELECT 1 FROM membership_grants grant_row
-    WHERE grant_row.user_id > ${cursor}::uuid`
+    WHERE (grant_row.user_id, grant_row.id) > (${cursor.userId}::uuid, ${cursor.grantId}::uuid)`
   if (userIds) statement.append(sql` AND grant_row.user_id = ANY(${[...userIds]}::uuid[])`)
   statement.append(' LIMIT 1')
   const { rows } = await query(statement)
@@ -64,7 +75,7 @@ async function orphanedQueuedGrantRemainsAfter(
 }
 
 export async function readOrphanedQueuedGrantUserIds(
-  cursor: string | null,
+  cursor: OrphanedQueuedGrantCursor | null,
   batchSize: number,
   query: QueryExecutor,
   userIds?: readonly string[],
@@ -85,18 +96,18 @@ function matchingUserIds(rows: readonly InspectedGrantRow[]): string[] {
 }
 
 async function readOrphanedQueuedGrantRows(
-  cursor: string | null,
+  cursor: OrphanedQueuedGrantCursor | null,
   batchSize: number,
   query: QueryExecutor,
   userIds?: readonly string[],
 ): Promise<InspectedGrantRow[]> {
   if (!Number.isInteger(batchSize) || batchSize < 1)
     throw new RangeError('Membership orphan repair batch size must be a positive integer')
-  const bound = cursor ?? NIL_USER_ID
+  const bound = cursor ?? { userId: NIL_UUID, grantId: NIL_UUID }
   // One user can hold many grants, so this walk is not one row per user. DISTINCT ON would
   // keep reading until it filled the cap with users. The limit below is the rows inspected.
   const statement = sql`/* repairOrphanedQueuedGrantsBatch: candidates */
-    SELECT inspected.user_id,
+    SELECT inspected.id, inspected.user_id,
            (
              inspected.revoked_at IS NULL
              AND EXISTS (
@@ -123,7 +134,7 @@ async function readOrphanedQueuedGrantRows(
     FROM (
       SELECT grant_row.id, grant_row.user_id, grant_row.membership_source_id, grant_row.revoked_at
       FROM membership_grants grant_row
-      WHERE grant_row.user_id > ${bound}::uuid`
+      WHERE (grant_row.user_id, grant_row.id) > (${bound.userId}::uuid, ${bound.grantId}::uuid)`
   if (userIds) statement.append(sql` AND grant_row.user_id = ANY(${[...userIds]}::uuid[])`)
   statement.append(`
       ORDER BY grant_row.user_id, grant_row.id

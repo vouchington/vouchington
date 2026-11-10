@@ -49,6 +49,6 @@ export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
   ],
   [
     'membership_queued_grant_repair_cursors',
-    'One durable user keyset for the scheduled orphaned queued-grant repair.',
+    'One durable (user, grant) keyset for the scheduled orphaned queued-grant repair.',
   ],
 ])

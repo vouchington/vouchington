@@ -35,7 +35,11 @@ export const ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, stri
   ],
   [
     'membership_queued_grant_repair_cursors.cursor_id',
-    'Durable user keyset for orphaned queued-grant repair. It survives user deletion so a pass cannot rewind, and it is not a foreign key.',
+    'User id of the last inspected grant row. It survives user deletion so a pass cannot rewind, and it is not a foreign key.',
+  ],
+  [
+    'membership_queued_grant_repair_cursors.cursor_grant_id',
+    'Grant id of the last inspected row. It survives grant deletion so a pass cannot rewind, and it is not a foreign key.',
   ],
 ])
 /* v8 ignore stop */

@@ -3,9 +3,14 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
 import { expireElapsedMemberships, type MembershipExpiryResult } from './expire-elapsed.mts'
-import { repairOrphanedQueuedGrantsBatch } from './repair-orphaned-queued.mts'
+import {
+  repairOrphanedQueuedGrantsBatch,
+  type OrphanedQueuedGrantCursor,
+} from './repair-orphaned-queued.mts'
 
-type MembershipExpiryBatchResult = MembershipExpiryResult & { repairNextCursor: string | null }
+type MembershipExpiryBatchResult = MembershipExpiryResult & {
+  repairNextCursor: OrphanedQueuedGrantCursor | null
+}
 
 export async function resumeExpireElapsedMemberships(
   batchSize = getMembershipWorkLimits().batchSize,
@@ -18,24 +23,32 @@ export async function resumeExpireElapsedMemberships(
   return result
 }
 
-export async function readOrphanedQueuedGrantRepairCursor(): Promise<string | null> {
-  const { rows } = await write<{ cursor_id: string | null }>(
+export async function readOrphanedQueuedGrantRepairCursor(): Promise<OrphanedQueuedGrantCursor | null> {
+  const { rows } = await write<{ cursor_id: string | null; cursor_grant_id: string | null }>(
     sql`/* readOrphanedQueuedGrantRepairCursor */
-    SELECT cursor_id FROM membership_queued_grant_repair_cursors WHERE is_singleton`,
+    SELECT cursor_id, cursor_grant_id
+    FROM membership_queued_grant_repair_cursors
+    WHERE is_singleton`,
   )
-  return rows[0]?.cursor_id ?? null
+  const row = rows[0]
+  if (!row?.cursor_id || !row.cursor_grant_id) return null
+  return { userId: row.cursor_id, grantId: row.cursor_grant_id }
 }
 
-export async function saveOrphanedQueuedGrantRepairCursor(cursor: string | null): Promise<void> {
+export async function saveOrphanedQueuedGrantRepairCursor(
+  cursor: OrphanedQueuedGrantCursor | null,
+): Promise<void> {
   await write(sql`/* saveOrphanedQueuedGrantRepairCursor */
-    INSERT INTO membership_queued_grant_repair_cursors (is_singleton, cursor_id)
-    VALUES (TRUE, ${cursor}::uuid)
-    ON CONFLICT (is_singleton) DO UPDATE SET cursor_id = EXCLUDED.cursor_id`)
+    INSERT INTO membership_queued_grant_repair_cursors (is_singleton, cursor_id, cursor_grant_id)
+    VALUES (TRUE, ${cursor?.userId ?? null}::uuid, ${cursor?.grantId ?? null}::uuid)
+    ON CONFLICT (is_singleton) DO UPDATE
+      SET cursor_id = EXCLUDED.cursor_id,
+          cursor_grant_id = EXCLUDED.cursor_grant_id`)
 }
 
 export async function expireElapsedMembershipsBatch(
   batchSize = getMembershipWorkLimits().batchSize,
-  repairCursor: string | null = null,
+  repairCursor: OrphanedQueuedGrantCursor | null = null,
   repairUserIds?: readonly string[],
 ): Promise<MembershipExpiryBatchResult> {
   const limits = getMembershipWorkLimits()
