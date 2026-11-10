@@ -2419,7 +2419,7 @@
       "returnsSet": true
     },
     "fn_user_deletion_has_remaining_owned_data(target_user_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  ownership RECORD;\n  has_rows BOOLEAN;\nBEGIN\n  FOR ownership IN\n    SELECT * FROM (VALUES\n      ('posts', 'created_by_id'),\n      ('post_topic_alias_sources', 'contributor_user_id'),\n      ('user_email_addresses', 'user_id'),\n      ('user_phone_numbers', 'user_id'),\n      ('user_passkeys', 'user_id'),\n      ('user_totp_authenticators', 'user_id'),\n      ('api_keys', 'user_id'),\n      ('user_sessions', 'user_id'),\n      ('facebook_accounts', 'user_id'),\n      ('apple_accounts', 'user_id'),\n      ('google_accounts', 'user_id'),\n      ('x_accounts', 'user_id'),\n      ('linkedin_accounts', 'user_id'),\n      ('microsoft_accounts', 'user_id'),\n      ('github_accounts', 'user_id'),\n      ('bluesky_link_completions', 'user_id'),\n      ('bluesky_linked_accounts', 'user_id'),\n      ('session_referral_attributions', 'user_id')\n    ) AS configured(table_name, column_name)\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE %I = $1)',\n      ownership.table_name,\n      ownership.column_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'user_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'user_id'\n      AND table_name LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE user_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'subject_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'subject_id'\n      AND table_name LIKE 'relation\\_\\_user\\_\\_%' ESCAPE '\\'\n      AND table_name NOT LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE subject_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  IF EXISTS (\n    SELECT 1 FROM user_lists WHERE owner_user_id = target_user_id AND removed_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_link_authorizations\n    WHERE user_id = target_user_id\n      AND status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached')\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_follow_records\n    WHERE follower_user_id = target_user_id OR followee_user_id = target_user_id\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM user_data_requests\n    WHERE user_id = target_user_id\n      AND (\n        (completed_at IS NULL AND failed_at IS NULL)\n        OR (completed_at IS NOT NULL AND failed_at IS NULL AND s3_key IS NOT NULL)\n      )\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_clients\n    WHERE owner_user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_grants\n    WHERE user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_token_families family\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND family.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_access_tokens access\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = access.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND access.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_tokens refresh\n    JOIN oauth_refresh_token_families family ON family.id = refresh.family_id\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND refresh.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  RETURN FALSE;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  ownership RECORD;\n  has_rows BOOLEAN;\nBEGIN\n  FOR ownership IN\n    SELECT * FROM (VALUES\n      ('posts', 'created_by_id'),\n      ('post_vote_states', 'user_id'),\n      ('post_topic_alias_sources', 'contributor_user_id'),\n      ('user_email_addresses', 'user_id'),\n      ('user_phone_numbers', 'user_id'),\n      ('user_passkeys', 'user_id'),\n      ('user_totp_authenticators', 'user_id'),\n      ('api_keys', 'user_id'),\n      ('user_sessions', 'user_id'),\n      ('facebook_accounts', 'user_id'),\n      ('apple_accounts', 'user_id'),\n      ('google_accounts', 'user_id'),\n      ('x_accounts', 'user_id'),\n      ('linkedin_accounts', 'user_id'),\n      ('microsoft_accounts', 'user_id'),\n      ('github_accounts', 'user_id'),\n      ('bluesky_link_completions', 'user_id'),\n      ('bluesky_linked_accounts', 'user_id'),\n      ('session_referral_attributions', 'user_id')\n    ) AS configured(table_name, column_name)\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE %I = $1)',\n      ownership.table_name,\n      ownership.column_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'user_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'user_id'\n      AND table_name LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE user_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'subject_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'subject_id'\n      AND table_name LIKE 'relation\\_\\_user\\_\\_%' ESCAPE '\\'\n      AND table_name NOT LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE subject_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  IF EXISTS (\n    SELECT 1 FROM user_lists WHERE owner_user_id = target_user_id AND removed_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_link_authorizations\n    WHERE user_id = target_user_id\n      AND status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached')\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_follow_records\n    WHERE follower_user_id = target_user_id OR followee_user_id = target_user_id\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM user_data_requests\n    WHERE user_id = target_user_id\n      AND (\n        (completed_at IS NULL AND failed_at IS NULL)\n        OR (completed_at IS NOT NULL AND failed_at IS NULL AND s3_key IS NOT NULL)\n      )\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_clients\n    WHERE owner_user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_grants\n    WHERE user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_token_families family\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND family.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_access_tokens access\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = access.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND access.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_tokens refresh\n    JOIN oauth_refresh_token_families family ON family.id = refresh.family_id\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND refresh.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  RETURN FALSE;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)": {
@@ -97445,6 +97445,242 @@
         }
       }
     },
+    "post_vote_states": {
+      "checkConstraints": {
+        "post_vote_states_check": {
+          "definition": "CHECK (((NOT score_is_neutral) OR (NOT (score IS DISTINCT FROM 0))))",
+          "validated": true
+        },
+        "post_vote_states_check1": {
+          "definition": "CHECK (((NOT score_is_semantic) OR (score IS NOT NULL)))",
+          "validated": true
+        },
+        "post_vote_states_score_check": {
+          "definition": "CHECK (((score IS NULL) OR ((score >= '-2'::integer) AND (score <= 2))))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
+        "id": {
+          "comment": "Copied UUIDv7 identity of the current ballot transition; current state remains authoritative after history expires.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "outbound_activitypub_like_activity_id": {
+          "comment": "Opaque outbound Like protocol identity retained across positive score changes.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
+        "post_id": {
+          "comment": "The post whose current ballot is owned by this row.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "score": {
+          "comment": "Current ballot value; NULL records an explicit clear.",
+          "dataType": "smallint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "score_is_neutral": {
+          "comment": "Whether zero is an explicit neutral choice rather than an older implicit zero.",
+          "dataType": "boolean",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        },
+        "score_is_semantic": {
+          "comment": "Whether the ballot uses current choice-strength semantics.",
+          "dataType": "boolean",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6
+        },
+        "updated_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9
+        },
+        "user_id": {
+          "comment": "The voter whose current choice is stored independently of ballot history.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        }
+      },
+      "comment": "One current ballot per post and user; its atomic transition chooses the ActivityPub Like epoch before appending history.",
+      "foreignKeys": {
+        "post_vote_states_post_id_fkey": {
+          "columns": ["post_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "post_vote_states_user_id_fkey": {
+          "columns": ["user_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_post_vote_states__user_id_id_post_id_score": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_vote_states__user_id_id_post_id_score ON public.post_vote_states USING btree (user_id, id DESC) INCLUDE (post_id, score)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_vote_states__user_id_post_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_vote_states__user_id_post_id ON public.post_vote_states USING btree (user_id, post_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "post_vote_states_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_vote_states_pkey ON public.post_vote_states USING btree (post_id, user_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["post_id", "user_id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_post_vote_states_updated_at": {
+          "definition": "CREATE TRIGGER trigger_post_vote_states_updated_at BEFORE UPDATE ON public.post_vote_states FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "post_votes": {
       "checkConstraints": {
         "chk_post_votes_score_domain": {
@@ -97845,38 +98081,6 @@
           ],
           "live": true,
           "predicate": "(user_agent_string_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_votes__user_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_votes__user_id__id ON ONLY public.post_votes USING btree (user_id, id DESC) INCLUDE (post_id, score)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
