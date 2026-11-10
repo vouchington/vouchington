@@ -2,6 +2,7 @@ export const ROUND_TRIP_SHAPE_SCENARIO_IDS = [
   'community-with-viewer',
   'notification-block-set',
   'hostname-policies-batch',
+  'topic-cache-keys',
   'messaging-eligibility-batch',
   'copyright-staff-case-batch',
   'user-agent-read-first',

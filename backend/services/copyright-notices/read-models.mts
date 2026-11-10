@@ -32,8 +32,26 @@ export async function listAcceptedCopyrightNotices(options: {
 }): Promise<{ notices: CopyrightAcceptedNoticeCursorRow[]; hasNextPage: boolean }> {
   await using transaction = await beginTransaction()
   const query = sql`/* listAcceptedCopyrightNotices */
+    WITH selected AS (
+      SELECT notice.id, notice.jurisdiction, notice.received_at, notice.accepted_at,
+        notice.provisional_withholding_at, notice.claimant_user_id
+      FROM copyright_notices notice
+      WHERE notice.accepted_at IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM copyright_notice_targets target
+          WHERE target.copyright_notice_id = notice.id
+        )
+  `
+  if (options.after) {
+    query.append(sql`
+      AND (notice.accepted_at, notice.id) < (${options.after.timestamp}::timestamptz, ${options.after.id})`)
+  }
+  query.append(sql`
+      ORDER BY notice.accepted_at DESC, notice.id DESC
+      LIMIT ${options.limit + 1}
+    )
     SELECT notice.id, notice.jurisdiction, notice.received_at, notice.accepted_at,
-      notice.provisional_withholding_at, count(target.id)::integer AS target_count,
+      notice.provisional_withholding_at, targets.target_count,
       claimant.id AS claimant_user_id,
       COALESCE(claimant.display_account->>'name', claimant.username, 'Voucha member')
         AS public_claimant_display_name,
@@ -41,19 +59,13 @@ export async function listAcceptedCopyrightNotices(options: {
         notice.accepted_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
       ) AS cursor_accepted_at
-    FROM copyright_notices notice
-    JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
+    FROM selected notice
+    CROSS JOIN LATERAL (
+      SELECT count(*)::integer AS target_count FROM copyright_notice_targets target
+      WHERE target.copyright_notice_id = notice.id
+    ) targets
     LEFT JOIN view_users_public claimant ON claimant.id = notice.claimant_user_id
-    WHERE notice.accepted_at IS NOT NULL
-  `
-  if (options.after) {
-    query.append(sql`
-      AND (notice.accepted_at, notice.id) < (${options.after.timestamp}::timestamptz, ${options.after.id})`)
-  }
-  query.append(sql`
-    GROUP BY notice.id, claimant.id, claimant.display_account, claimant.username
     ORDER BY notice.accepted_at DESC, notice.id DESC
-    LIMIT ${options.limit + 1}
   `)
   const { rows } = await transaction<CopyrightAcceptedNoticeCursorDatabaseRow>(query)
   await transaction.commit()

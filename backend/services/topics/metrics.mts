@@ -6,7 +6,7 @@ import type { TopicMetrics } from './types.mts'
 import { getTopicMetricsByAnyBatch } from './metrics-batch.mts'
 import {
   buildViewerPostDiscoveryEligibilityFilter,
-  buildTopicPostCandidateSelect,
+  buildTopicMembershipExists,
 } from '@modules/feed-query-builders'
 
 export async function getTopicMetricsByAny(
@@ -29,17 +29,18 @@ export async function getTopicViewerCounts(
   const query = sql`/* getTopicViewerCounts */
       SELECT
         (
-          SELECT COUNT(DISTINCT candidate_post.id)::bigint
-          FROM (`.append(buildTopicPostCandidateSelect(topicId)).append(sql`) candidate
-          JOIN posts candidate_post ON candidate_post.id = candidate.post_id
+          SELECT COUNT(*)::bigint
+          FROM posts candidate_post
           JOIN posts root_post
             ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
           WHERE candidate_post.post_type = 'discussion'
+            AND `
+  query.append(buildTopicMembershipExists('candidate_post.id', topicId)).append(sql`
             AND `)
   query.append(eligibility).append(sql`
         ) AS count__discussions,
         (
-          SELECT COUNT(DISTINCT candidate_post.id)::bigint
+          SELECT COUNT(*)::bigint
           FROM posts candidate_post
           JOIN posts root_post
             ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
@@ -51,7 +52,7 @@ export async function getTopicViewerCounts(
   query.append(eligibility).append(sql`
         ) AS count__reviews,
         (
-          SELECT COUNT(DISTINCT candidate_post.id)::bigint
+          SELECT COUNT(*)::bigint
           FROM posts candidate_post
           JOIN posts root_post
             ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)

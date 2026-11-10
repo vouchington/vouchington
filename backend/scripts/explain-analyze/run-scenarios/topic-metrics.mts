@@ -36,5 +36,9 @@ export async function runTopicMetricsBatchScenario(seedAllTopicIds: string[]) {
       rss_feed_items: 'Topic metrics aggregate matching RSS items across the seed window.',
     },
   })
-  await runAndCapture('topic-metrics-batch', () => getTopicMetricsByAnyBatch(seedAllTopicIds))
+  await runAndCapture('topic-metrics-batch', async () => {
+    const metrics = await getTopicMetricsByAnyBatch(seedAllTopicIds)
+    if (metrics.length !== seedAllTopicIds.length || metrics.some(row => row === null))
+      throw new Error('Every requested seeded topic must retain its metrics row')
+  })
 }

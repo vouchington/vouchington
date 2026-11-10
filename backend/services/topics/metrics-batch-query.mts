@@ -8,30 +8,34 @@ export function buildTopicMetricsBatchQuery(inputCtes: string): string {
 function topicMetricsSelectSql(): string {
   return `
     news_counts AS (
-      SELECT category.topic_id, COUNT(DISTINCT item.id)::bigint AS count
-      FROM requested_topic_ids requested
-      JOIN rss_feed_item_categories category ON category.topic_id = requested.id
-      JOIN rss_feed_items item ON item.id = category.rss_feed_item_id
-      JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id
-      JOIN rss_feeds feed ON feed.id = source.rss_feed_id
-      JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = feed.id
+      SELECT requested.id AS topic_id, COUNT(*)::bigint AS count
+      FROM rss_feed_items item
+      CROSS JOIN requested_topic_ids requested
       WHERE item.deleted_at IS NULL
-        AND feed.deleted_at IS NULL
-        AND current_state.is_enabled = TRUE
-        AND current_state.is_discoverable = TRUE
-      GROUP BY category.topic_id
+      AND (requested.id, item.id) IN (
+        SELECT category.topic_id, category.rss_feed_item_id
+        FROM rss_feed_item_categories category
+        JOIN requested_topic_ids wanted ON wanted.id = category.topic_id
+      )
+      AND EXISTS (
+        SELECT 1 FROM rss_feed_item_sources source
+        WHERE source.rss_feed_item_id = item.id
+          -- IS TRUE retains one hashed eligibility set instead of per-source feed probes.
+          AND (source.rss_feed_id IN (
+            SELECT feed.id FROM rss_feeds feed
+            WHERE feed.deleted_at IS NULL AND feed.is_enabled AND feed.is_discoverable
+          )) IS TRUE
+      )
+      GROUP BY requested.id
     ),
     latest_counts AS (
-      SELECT feed.topic_id, COUNT(DISTINCT item.id)::bigint AS count
+      SELECT feed.topic_id, COUNT(*)::bigint AS count
       FROM requested_topic_ids requested
       JOIN rss_feeds feed ON feed.topic_id = requested.id
       JOIN rss_feed_item_sources source ON source.rss_feed_id = feed.id
       JOIN rss_feed_items item ON item.id = source.rss_feed_item_id
-      JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = feed.id
-      WHERE feed.deleted_at IS NULL
-        AND current_state.is_enabled = TRUE
-        AND current_state.is_discoverable = TRUE
-        AND item.deleted_at IS NULL
+      WHERE item.deleted_at IS NULL AND feed.deleted_at IS NULL
+        AND feed.is_enabled = TRUE AND feed.is_discoverable = TRUE
       GROUP BY feed.topic_id
     )
     SELECT
