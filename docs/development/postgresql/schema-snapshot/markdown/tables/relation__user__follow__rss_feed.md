@@ -32,7 +32,7 @@ _none_
 
 **Indexes:**
 
-- `idx_relation__user__follow__rss_feed__created_at`: `CREATE INDEX idx_relation__user__follow__rss_feed__created_at ON public.relation__user__follow__rss_feed USING btree (created_at, object_id) WHERE (deleted_at IS NULL)`
+- `idx_relation__user__follow__rss_feed__created_at`: `CREATE INDEX idx_relation__user__follow__rss_feed__created_at ON public.relation__user__follow__rss_feed USING btree (created_at) INCLUDE (object_id) WHERE (deleted_at IS NULL)`
 - `idx_relation__user__follow__rss_feed__created_by_id`: `CREATE INDEX idx_relation__user__follow__rss_feed__created_by_id ON public.relation__user__follow__rss_feed USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
 - `idx_relation__user__follow__rss_feed__deleted_by_id`: `CREATE INDEX idx_relation__user__follow__rss_feed__deleted_by_id ON public.relation__user__follow__rss_feed USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_relation__user__follow__rss_feed__object__newest`: `CREATE INDEX idx_relation__user__follow__rss_feed__object__newest ON public.relation__user__follow__rss_feed USING btree (object_id, created_at DESC, subject_id DESC) WHERE (deleted_at IS NULL)`

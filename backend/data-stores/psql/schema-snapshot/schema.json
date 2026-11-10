@@ -115215,8 +115215,8 @@
         "idx_relation__user__follow__rss_feed__created_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__user__follow__rss_feed__created_at ON public.relation__user__follow__rss_feed USING btree (created_at, object_id) WHERE (deleted_at IS NULL)",
-          "includedColumns": [],
+          "definition": "CREATE INDEX idx_relation__user__follow__rss_feed__created_at ON public.relation__user__follow__rss_feed USING btree (created_at) INCLUDE (object_id) WHERE (deleted_at IS NULL)",
+          "includedColumns": ["object_id"],
           "keys": [
             {
               "column": "created_at",
@@ -115224,13 +115224,6 @@
               "expression": "created_at",
               "nullsFirst": false,
               "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "object_id",
-              "descending": false,
-              "expression": "object_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
             }
           ],
           "predicate": "(deleted_at IS NULL)",

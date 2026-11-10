@@ -48,10 +48,14 @@ export const entityRelations: EntityRelations = {
     rss_feed: {
       follow: {
         extra_indexes: [
-          // Partial index for time-window queries on rss_feed follow relations.
-          // Used by the trending RSS feeds view to count recent follows within a time window.
+          // Time-window counts for trending feeds. object_id is included so the trending
+          // aggregate can stay index-only, but it is not a key: a (created_at, object_id) key lets PostgreSQL
+          // 18 skip-scan object equality. The collaborative arm then incremental-sorts every
+          // follower of a popular feed before LIMIT, because that order is not
+          // (object_id, created_at DESC, subject_id DESC). Newest-follower lookups use
+          // idx_relation__user__follow__rss_feed__object__newest.
           `CREATE INDEX IF NOT EXISTS idx_relation__user__follow__rss_feed__created_at
-ON relation__user__follow__rss_feed (created_at, object_id)
+ON relation__user__follow__rss_feed (created_at) INCLUDE (object_id)
 WHERE deleted_at IS NULL;`,
           // Newest followers of one feed; the recommended RSS feeds collaborative arm reads the
           // newest M co-followers per seed feed from this ordering.
