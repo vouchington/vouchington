@@ -129,3 +129,54 @@ describe('insert conflict arbiter', () => {
     ).not.toThrow()
   })
 })
+
+describe('no sequential scan expectation', () => {
+  afterEach(() => {
+    vi.resetModules()
+  })
+
+  it('rejects a scan that reads rows and ignores a different query', async () => {
+    const { registerScenarioContract, assertRequiredPlanShape } = await loadGates()
+    const query = 'WITH requested_posts AS (SELECT id) SELECT id FROM requested_posts'
+    registerScenarioContract('post-metrics-batch', {
+      expectations: [
+        {
+          kind: 'noSeqScan',
+          relation: 'membership_verifications',
+          queryContains: 'requested_posts',
+        },
+        { kind: 'maxProcessedRows', relation: 'membership_verifications', max: 1 },
+      ],
+      seededRows: { membership_verifications: 1 },
+    })
+    const indexScan = {
+      'Node Type': 'Index Scan',
+      'Relation Name': 'membership_verifications',
+      'Index Name': 'membership_verifications_pkey',
+      'Actual Rows': 1,
+      'Actual Loops': 1,
+    }
+    expect(() =>
+      assertRequiredPlanShape(result('post-metrics-batch', indexScan, query)),
+    ).not.toThrow()
+    expect(() =>
+      assertRequiredPlanShape(
+        result('post-metrics-batch', { ...indexScan, 'Node Type': 'Seq Scan' }, query),
+      ),
+    ).toThrow('sequentially scanned membership_verifications')
+    expect(() =>
+      assertRequiredPlanShape(
+        result(
+          'post-metrics-batch',
+          { ...indexScan, 'Node Type': 'Seq Scan', 'Actual Rows': 0 },
+          query,
+        ),
+      ),
+    ).not.toThrow()
+    expect(() =>
+      assertRequiredPlanShape(
+        result('post-metrics-batch', { ...indexScan, 'Node Type': 'Seq Scan' }, 'SELECT 1'),
+      ),
+    ).not.toThrow()
+  })
+})
