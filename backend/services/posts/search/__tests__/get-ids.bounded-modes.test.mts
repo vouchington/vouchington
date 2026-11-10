@@ -142,10 +142,9 @@ describe('bounded post search modes', () => {
         ...relevanceOptions,
         after: relevanceSecond.page_info.end_cursor!,
       })
-      expect([relevance.results[0]?.id, relevanceSecond.results[0]?.id].toSorted()).toEqual(
-        [ids[1], ids[2]].toSorted(),
-      )
-      expect(relevanceThird.results.map(row => row.id)).toEqual([ids[0]])
+      expect(relevance.results.map(row => row.id)).toEqual([ids[0]])
+      expect(relevanceSecond.results.map(row => row.id)).toEqual([ids[2]])
+      expect(relevanceThird.results.map(row => row.id)).toEqual([ids[1]])
       await expect(
         getPostIds(viewer, { ...relevanceOptions, after: following.page_info.end_cursor! }),
       ).rejects.toMatchObject({ status: 400 })

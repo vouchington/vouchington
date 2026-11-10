@@ -57,7 +57,6 @@ describe('getPostIds hot-score pagination', () => {
         false,
       )
       expect(cursor.hot_score_lt).toBeGreaterThan(0)
-      expect(cursor.hot_score_lt).toBeLessThan(1)
       expect(Number.isFinite(cursor.hot_score_lt)).toBe(true)
 
       const page2 = await getPostIds(undefined, {

@@ -1,4 +1,5 @@
 import { it, expect, describe } from 'vitest'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { buildPostSearchQuery } from '../query-builder.mts'
 import type { PrivateUser } from '@services/users/types'
 
@@ -14,6 +15,18 @@ describe('query-builder (pagination and moderation)', () => {
     // Should add posts.id < ? predicate
     expect(query.sql).toContain('posts.id <')
     expect(query.values).toContain(testId)
+  })
+
+  it('pins an explicit finite time range to the supplied decision instant', () => {
+    const asOf = new Date('2026-06-15T12:00:00.000Z')
+    const query = buildPostSearchQuery(undefined, {
+      sort: 'new',
+      time_range: '1w',
+      time_range_as_of: asOf,
+    })
+
+    expect(query.sql).toContain('posts.id >=')
+    expect(query.values).toContain(timestampToUuidv7LowerBound(asOf.getTime() - 7 * 86_400_000))
   })
 
   it('buildPostSearchQuery allows drafts when currentUser matches user_id', () => {

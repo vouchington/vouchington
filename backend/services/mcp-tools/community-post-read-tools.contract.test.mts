@@ -23,6 +23,12 @@ type PostBody = {
 
 const NOT_FOUND = { success: false, error: 'Community not found' }
 
+function cursorScope(cursor: string): Record<string, unknown> {
+  const payload = JSON.parse(Buffer.from(cursor, 'base64url').toString()) as { scope?: unknown }
+  if (typeof payload.scope !== 'string') throw new Error('Expected a scoped cursor')
+  return JSON.parse(payload.scope) as Record<string, unknown>
+}
+
 type Caller = PrivateUser & { membership_plan: null }
 
 const asCaller = (user: PrivateUser): Caller => ({ ...user, membership_plan: null })
@@ -107,7 +113,25 @@ describe('read_community.posts and read_community.pinned_posts — real DB', () 
       rest.body.results.map((post: { id: string }) => post.id),
     )
     expect((result.results as PostBody[]).map(post => post.id)).toEqual([posts.four])
-    expect(result.page_info).toEqual(rest.body.page_info)
+    const mcpPage = result.page_info as {
+      has_next_page: boolean
+      end_cursor: string | null
+      start_cursor: string
+    }
+    expect(mcpPage).toMatchObject({
+      has_next_page: rest.body.page_info.has_next_page,
+      end_cursor: rest.body.page_info.end_cursor,
+    })
+    expect(cursorScope(rest.body.page_info.start_cursor)).toMatchObject({
+      resource: 'post-search',
+      sort: 'new',
+      time_range: '1m',
+    })
+    expect(cursorScope(mcpPage.start_cursor)).toEqual({
+      resource: 'post-search',
+      sort: 'new',
+      time_range: null,
+    })
   })
 
   describe('read_community.pinned_posts', () => {

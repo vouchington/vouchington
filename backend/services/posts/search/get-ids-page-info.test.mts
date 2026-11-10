@@ -10,7 +10,13 @@ describe('post search page info', () => {
   it('decodes following_new cursors with ranking and id', () => {
     expect(
       decodePostSearchCursor(
-        { after: encodeCursor({ ranking: 12.5, id: postId }) },
+        {
+          after: encodeCursor({
+            ranking: 12.5,
+            id: postId,
+            scope: postSearchCursorScope('following_new'),
+          }),
+        },
         'following_new',
         false,
       ),

@@ -18,7 +18,7 @@ export function buildPostSearchQuery(
   currentUser?: BasicUser,
   options: PostSearchOptions = {},
 ): SQLStatement {
-  const decisionInstant = new Date()
+  const decisionInstant = options.time_range_as_of ?? new Date()
   const { limit, omitLimit = false, omitOrderBy = false, semanticSearchEmbedding } = options
   const hasTextSearch = hasTextSearchFn(options)
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined

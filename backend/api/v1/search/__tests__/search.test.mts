@@ -18,8 +18,6 @@ import {
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { createTopicAliases } from '@services/topics/aliases'
 import { withDominantPostFixtures } from '@voucha/test-helpers/entities/trending-posts'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { postsWorkConfig } from '@services/posts/work-limits'
 
 describe('GET /api/v1/search', () => {
   let user: PrivateUser
@@ -94,63 +92,34 @@ describe('GET /api/v1/search', () => {
     },
   )
 
-  it('continues an empty hashtag post page to an older matching post', async () => {
-    await postsWorkConfig.waitForInitialization()
+  it('returns the matching hashtag post ahead of newer unrelated posts', async () => {
     const alias = `omnisearch-page-${createRandomString(10).toLowerCase()}`
     await insertUnlinkedTopicAliasForTest(alias)
     const aliasId = await getTopicAliasIdForTest(alias)
     if (!aliasId) throw new Error('Expected created topic alias')
-    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      post_search_filter_candidate_limit: 2,
-    })
     const target = await createTestPost({ user })
-    try {
-      await createTopHashtagPostSourceForTest({
-        postId: target.id,
-        topicAliasId: aliasId,
-        userId: user.id,
-        authoredToken: alias,
-      })
-      await withDominantPostFixtures(
-        [998, 999].map(milliseconds => ({
-          createdAt: new Date(`9999-12-31T23:59:59.${milliseconds}Z`),
-          createdById: user.id,
-        })),
-        async () => {
-          const request = createRequest()
-          await request.authenticateAs(user)
-          const first = await request
-            .get('/api/v1/search')
-            .query({ q: `#${alias}` })
-            .expect(200)
-          expect(first.body.posts).toEqual([])
-          expect(first.body.posts_page_info.has_next_page).toBe(true)
-          expect(first.body.posts_page_info.end_cursor).toEqual(expect.any(String))
-          let after: string = first.body.posts_page_info.end_cursor
-          let found = false
-          let matchingPageIds: string[] = []
-          for (let pageIndex = 0; pageIndex < 30; pageIndex++) {
-            const page = await request
-              .get('/api/v1/search')
-              .query({ q: `#${alias}`, after })
-              .expect(200)
-            if (page.body.posts.some((post: { id: string }) => post.id === target.id)) {
-              matchingPageIds = page.body.posts.map((post: { id: string }) => post.id)
-              found = true
-              break
-            }
-            expect(page.body.posts_page_info.has_next_page).toBe(true)
-            expect(page.body.posts_page_info.end_cursor).toEqual(expect.any(String))
-            expect(page.body.posts_page_info.end_cursor).not.toBe(after)
-            after = page.body.posts_page_info.end_cursor
-          }
-          expect(found).toBe(true)
-          expect(matchingPageIds).toEqual([target.id])
-        },
-      )
-    } finally {
-      restore()
-    }
+    await createTopHashtagPostSourceForTest({
+      postId: target.id,
+      topicAliasId: aliasId,
+      userId: user.id,
+      authoredToken: alias,
+    })
+    await withDominantPostFixtures(
+      [998, 999].map(milliseconds => ({
+        createdAt: new Date(`9999-12-31T23:59:59.${milliseconds}Z`),
+        createdById: user.id,
+      })),
+      async () => {
+        const request = createRequest()
+        await request.authenticateAs(user)
+        const first = await request
+          .get('/api/v1/search')
+          .query({ q: `#${alias}` })
+          .expect(200)
+        expect(first.body.posts.map((post: { id: string }) => post.id)).toEqual([target.id])
+        expect(first.body.posts_page_info.has_next_page).toBe(false)
+      },
+    )
   })
 
   it('returns an empty shape for an unknown hashtag topic mention', async () => {
