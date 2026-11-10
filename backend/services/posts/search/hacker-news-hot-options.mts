@@ -2,25 +2,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildTimeRangeFilter } from '@modules/feed-query-builders'
 import { getTimeRangeLowerBoundDate } from '@modules/feed-query-builders/time-range'
 import { areHackerNewsReferencesVisible } from '@services/urls/hacker-news-visibility-config'
-import { buildStablePostHotRankExpression } from './stable-hot-rank.mts'
 import type { PostSearchOptions } from './types.mts'
-
-/**
- * The rank leaf loses to an empty id index plus a sort when eligibility is cheap.
- * This upper bound is always true and makes the rank expression an index condition.
- */
-export function appendHackerNewsHotRankBound(
-  filters: SQLStatement[],
-  options: PostSearchOptions,
-): void {
-  if (!usesHackerNewsHotCandidates(options)) return
-  const bound = sql`(`
-  bound.append(buildStablePostHotRankExpression())
-  bound.append(
-    sql`, posts.id) < (1e300::DOUBLE PRECISION, 'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid)`,
-  )
-  filters.push(bound)
-}
 
 /** HN hot always ranks within the requested window capped at thirty elapsed days. */
 export function buildPostSearchTimeRangeFilter(

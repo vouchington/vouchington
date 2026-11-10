@@ -28,10 +28,11 @@ const RSS_FEED_ITEM_TOPIC_ALIAS_CATEGORY_RELATION_TABLE = getEntityRelationTable
  * Single-topic candidate `rss_feed_item_id` derivation: every RSS feed item positively attached to
  * `topicId`, directly or through one of its hashtag aliases. Meant for a `FROM (…) candidate`
  * subselect — candidate-binding from this indexed topic side (instead of a per-row correlated
- * `EXISTS`) lets the planner drive the query from the topic's relation rows. The RSS side keeps
- * that candidate-bind pattern locally (no shared table-name constants module, no
- * injection-guarded caller-supplied column, no 4-way "universal topic" union — RSS has only 2
- * relation legs and 2 call sites, so those invariants don't apply here).
+ * `EXISTS`) lets the planner drive the query from the topic's relation rows. Mirrors
+ * `buildTopicPostCandidateSelect`'s shape from `topic-post-candidates.mts`; the RSS side reuses the
+ * candidate-bind *pattern*, not that file's post-specific invariants (no shared table-name
+ * constants module, no injection-guarded caller-supplied column, no 4-way "universal topic" union
+ * — RSS has only 2 relation legs and 2 call sites, so those invariants don't apply here).
  */
 function buildRssFeedItemTopicCandidateSelect(topicId: string): SQLStatement {
   return sql`

@@ -3,6 +3,7 @@ import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions, PostSearchResult } from './types.mts'
 import { buildPostSearchQuery } from './query-builder.mts'
 import { executePostSearchQuery } from './execute-query.mts'
+import { readFollowingNewRows } from './get-ids-following.mts'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import {
   hasSemanticSearch as hasSemanticSearchFn,
@@ -70,10 +71,19 @@ export async function getPostIds(
   if (vote_score_lt !== undefined) queryOptions.vote_score_lt = vote_score_lt
   if (ranking_lt !== undefined) queryOptions.ranking_lt = ranking_lt
   if (hot_score_lt !== undefined) queryOptions.hot_score_lt = hot_score_lt
-  const query = buildPostSearchQuery(currentUser, queryOptions)
-  const { rows } = await executePostSearchQuery<PostSearchRow>(query, hasSemanticSearch)
-  const hasNextPage = rows.length > limit
-  const resultRows = rows.slice(0, limit)
+  const followedPage =
+    sort === 'following_new' && currentUser
+      ? await readFollowingNewRows(currentUser, queryOptions, limit, hasSemanticSearch)
+      : undefined
+  const singleQuery = followedPage
+    ? undefined
+    : await executePostSearchQuery<PostSearchRow>(
+        buildPostSearchQuery(currentUser, queryOptions),
+        hasSemanticSearch,
+      )
+  const rows = followedPage?.rows ?? singleQuery?.rows ?? []
+  const hasNextPage = followedPage?.hasNextPage ?? rows.length > limit
+  const resultRows = followedPage ? rows : rows.slice(0, limit)
   const results: PostSearchResult[] = resultRows.map(row => ({
     __entity_type: 'post',
     id: row.id,

@@ -1,5 +1,6 @@
 import { getPostIds, getPostFeedIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
+import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { withSeedAnchorClock } from '../seed-clock.mts'
 import { seedVoteScorePostHotFixture } from '../seed-data/vote-score-post-hot.mts'
@@ -59,7 +60,10 @@ async function requireContinuation<T extends RankedPage>(
   return page
 }
 
-function contractForScenario(id: string): Parameters<typeof registerScenarioContract>[1] {
+function contractForScenario(
+  id: string,
+  leaves: { rank: readonly string[]; primaryKey: readonly string[]; shares: readonly string[] },
+): Parameters<typeof registerScenarioContract>[1] {
   const feed = id.startsWith('vote-score-post-feed-hot-')
   const topicRelations = [
     'relation__post__category__topic',
@@ -69,6 +73,11 @@ function contractForScenario(id: string): Parameters<typeof registerScenarioCont
   return {
     expectations: [
       ...postScanGate(),
+      {
+        kind: 'usesIndexes' as const,
+        indexes: feed ? leaves.shares : [...leaves.rank, ...leaves.primaryKey],
+        anyOf: true,
+      },
       ...(feed ? [{ kind: 'custom' as const, name: 'postTopicMembership' }] : []),
       // Follow and mute can each inspect a candidate's topic children.
       ...(feed
@@ -88,7 +97,12 @@ function contractForScenario(id: string): Parameters<typeof registerScenarioCont
 export async function runVoteScorePostHotScenarios(): Promise<void> {
   await seedVoteScorePostHotFixture()
   const cursors = await prepareVoteScorePostHotCursors()
-  const scenarios = getVoteScorePostHotScenarios(cursors)
+  const [rank, primaryKey, shares] = await Promise.all([
+    partitionIndexLeaves('idx_posts__stable_hot_rank__id'),
+    partitionIndexLeaves('posts_pkey'),
+    partitionIndexLeaves('idx_post_feed_shares__recipient__sort'),
+  ])
+  const scenarios = getVoteScorePostHotScenarios(cursors, { rank, primaryKey, shares })
 
   for (const scenario of scenarios) {
     registerScenarioContract(scenario.id, scenario.contract)
@@ -105,6 +119,7 @@ export type VoteScorePostHotScenario = Readonly<{
 
 export function getVoteScorePostHotScenarios(
   cursors: VoteScorePostHotCursors,
+  leaves: { rank: readonly string[]; primaryKey: readonly string[]; shares: readonly string[] },
 ): readonly VoteScorePostHotScenario[] {
   return [
     {
@@ -165,5 +180,5 @@ export function getVoteScorePostHotScenarios(
           }),
         ),
     },
-  ].map(scenario => ({ ...scenario, contract: contractForScenario(scenario.id) }))
+  ].map(scenario => ({ ...scenario, contract: contractForScenario(scenario.id, leaves) }))
 }

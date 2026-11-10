@@ -42,7 +42,7 @@ export async function getPinnedPosts(
     : buildPublicPostEligibilityFilter('vp', 'root_post', { includeArchivedCommunities: true })
   query.append(sql` AND `).append(eligibility)
 
-  query.append(sql` ORDER BY cpp.order_index ASC`)
+  query.append(sql` ORDER BY cpp.order_index ASC LIMIT 3`)
 
   const { rows } = await read(query)
   return rows as CommunityPinnedPost[]

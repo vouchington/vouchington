@@ -1,7 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
 import sql from 'sql-template-strings'
-import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { seedUuid } from './common.mts'
 
 // Forty aliases times a 26-row page stays inside the 1,200 alias-relation cap.
@@ -35,10 +34,7 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
     ...fixture.sparseAliasIds.map((_, index) => `post-semi-join-sparse-${index}`),
     ...fixture.denseAliasIds.map((_, index) => `post-semi-join-dense-${index}`),
   ]
-  const newestPostCohortSize = Math.max(
-    MIN_NEWEST_POST_COHORT_SIZE,
-    getPostsWorkLimit('post_search_filter_candidate_limit') * 2,
-  )
+  const newestPostCohortSize = MIN_NEWEST_POST_COHORT_SIZE
 
   await using transaction = await beginTransaction()
   await transaction(
@@ -69,21 +65,8 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
   if (newestPosts.length !== newestPostCohortSize)
     throw new Error('Post topic fixture needs enough eligible newest posts for both raw windows')
 
-  const { rows: feedPostRows } = await transaction<{ post_id: string }>(
-    `/* seedPostTopicSemiJoinFixture:feed-witness */
-     SELECT posts.id AS post_id
-     FROM posts
-     JOIN LATERAL (
-       SELECT id FROM post_feed_shares
-       WHERE recipient_user_id = $1 AND post_id = posts.id
-       ORDER BY id DESC LIMIT 1
-     ) shares ON TRUE
-     WHERE posts.id = $2
-     LIMIT 1`,
-    [seedUuid(0, '01'), seedUuid(2, '05')],
-  )
-  const feedPostId = feedPostRows[0]?.post_id
-  if (!feedPostId) throw new Error('Post topic fixture requires the seeded post-2 share witness')
+  const directPostId = newestPosts[SPARSE_POST_COUNT]?.id
+  if (!directPostId) throw new Error('Post topic fixture needs a newest direct member')
   const sparsePostIds = newestPosts.slice(0, SPARSE_POST_COUNT).map(post => post.id)
   const sparseAliasIds = fixture.sparseAliasIds.slice(0, SPARSE_POST_COUNT)
   await transaction(
@@ -118,7 +101,7 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
      SELECT $1::uuid, topic.topic_id, $2::uuid, 1, 1
      FROM UNNEST($3::uuid[]) AS topic(topic_id)
      ON CONFLICT DO NOTHING`,
-    [feedPostId, seedUuid(0, '01'), topicIds],
+    [directPostId, seedUuid(0, '01'), topicIds],
   )
   await transaction(
     '/* seedPostTopicSemiJoinFixture:analyze */ ANALYZE topic_aliases, relation__post__category__topic_alias, posts',

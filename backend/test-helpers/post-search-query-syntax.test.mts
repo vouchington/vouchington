@@ -24,17 +24,17 @@ describe('post search SQL composition', () => {
     }
   }
 
-  it('parses a followed-author page as two id walks', async () => {
+  it('parses a followed-author page as one id walk', async () => {
     const query = buildPostSearchQuery({ id: '123e4567-e89b-12d3-a456-426614174000' } as never, {
       sort: 'following_new',
+      following_phase: 'followed',
       limit: 26,
       ranking_lt: 1,
       id_lt: '123e4567-e89b-12d3-a456-426614174001',
     })
-    expect(query.sql).toContain('WITH followed_page AS')
-    expect(query.sql).toContain('LIMIT 1')
-    expect(query.sql).not.toContain('MATERIALIZED')
-    expect(query.sql).not.toContain('viewer_following.object_id IS NULL')
+    expect(query.sql).toContain('relation__user__follow__user')
+    expect(query.sql).not.toContain('WITH followed_page AS')
+    expect(query.sql).not.toContain('UNION ALL')
     const facts = await parsePostgresSql({ sql: query.text })
     expect(facts.diagnostics).toEqual([])
   })
@@ -42,32 +42,32 @@ describe('post search SQL composition', () => {
   it('parses a community followed-author page with the candidate walk inline', async () => {
     const query = buildPostSearchQuery({ id: '123e4567-e89b-12d3-a456-426614174000' } as never, {
       sort: 'following_new',
+      following_phase: 'followed',
       limit: 26,
       community_id: '123e4567-e89b-12d3-a456-426614174002',
       ranking_lt: 1,
       id_lt: '123e4567-e89b-12d3-a456-426614174001',
     })
     expect(query.sql).toContain('candidate_posts AS NOT MATERIALIZED')
-    expect(query.sql).toContain('(SELECT count(*) FROM followed_page)')
+    expect(query.sql).not.toContain('followed_page')
     expect(query.sql).not.toContain(' AS MATERIALIZED')
     const facts = await parsePostgresSql({ sql: query.text })
     expect(facts.diagnostics).toEqual([])
   })
 
-  it('parses mixed post types as two sort-key walks', async () => {
+  it('parses mixed post types as one post_type walk', async () => {
     const query = buildPostSearchQuery(undefined, {
       sort: 'new',
       limit: 26,
       post_types: ['discussion', 'topic_recommendation'],
     })
-    expect(query.sql).toContain('UNION ALL')
-    expect(query.sql).toContain("posts.post_type = 'topic_recommendation'::post_types")
-    expect(query.sql).toContain("posts.post_type = 'discussion'::post_types")
+    expect(query.sql).not.toContain('UNION ALL')
+    expect(query.sql).toContain('posts.post_type = ANY')
     const facts = await parsePostgresSql({ sql: query.text })
     expect(facts.diagnostics).toEqual([])
   })
 
-  it('parses a newest universal-topic page as bounded attachment walks', async () => {
+  it('parses a newest universal-topic page as keyed membership probes', async () => {
     const query = buildPostSearchQuery(undefined, {
       sort: 'new',
       limit: 26,
@@ -77,9 +77,9 @@ describe('post search SQL composition', () => {
       ],
       id_lt: '123e4567-e89b-12d3-a456-426614174012',
     })
-    expect(query.sql).toContain('CROSS JOIN LATERAL')
-    expect(query.sql).toContain('topic_aliases alias')
-    expect(query.sql).toContain('LIMIT ?')
+    expect(query.sql).toContain('post_review_topic_ratings')
+    expect(query.sql).toContain('post_data_point_topics')
+    expect(query.sql).not.toContain('UNION ALL')
     const facts = await parsePostgresSql({ sql: query.text })
     expect(facts.diagnostics).toEqual([])
   })
@@ -104,10 +104,8 @@ describe('post search SQL composition', () => {
       time_range: '1w',
       limit: 26,
     })
-    expect(query.sql).toContain(
-      "1e300::DOUBLE PRECISION, 'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid",
-    )
     expect(query.sql).toContain('hackerNewsHotWindow')
+    expect(query.sql).not.toContain('1e300::DOUBLE PRECISION')
     expect(query.sql).not.toContain('posts.id >=')
     const facts = await parsePostgresSql({ sql: query.text })
     expect(facts.diagnostics).toEqual([])
@@ -142,8 +140,9 @@ describe('post search SQL composition', () => {
       safeLimit: 25,
     })
     expect(query.sql).toContain('eligible_posts AS NOT MATERIALIZED')
-    expect(query.sql).toContain('CROSS JOIN LATERAL')
+    expect(query.sql).toContain('post_review_topic_ratings')
     expect(query.sql).toContain('topic_aliases alias')
+    expect(query.sql).not.toContain('SELECT DISTINCT post_id')
     const facts = await parsePostgresSql({ sql: query.text })
     expect(facts.diagnostics).toEqual([])
   })

@@ -46,7 +46,7 @@ export function appendPostSearchWhereClause(
   // Pagination-only statements already applied eligibility inside the same query.
   if (!paginationOnly) {
     appendBaseFilters(filters, currentUser, options)
-    appendTopicFilters(filters, options, sort === 'new' && !hasSemanticSearch)
+    appendTopicFilters(filters, options)
     appendSimpleColumnFilters(filters, options)
     appendPostSearchSpecialFilters(filters, options, decisionInstant)
     appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })

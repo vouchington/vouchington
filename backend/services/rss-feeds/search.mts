@@ -38,10 +38,6 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
   let sortBy = sql`rss_feeds.id DESC`
   const effectiveTopicIds = Array.from(new Set([...(topic_id ? [topic_id] : []), ...topic_ids]))
   const effectiveTopicMatch = topic_id && effectiveTopicIds.length > 1 ? 'all' : topic_match
-  const usesAnyDescendantTopics =
-    include_descendants &&
-    effectiveTopicIds.length > 0 &&
-    !(effectiveTopicMatch === 'all' && effectiveTopicIds.length > 1)
   const effectivePublisherTypeIds = Array.from(
     new Set(publisher_type_id ? [publisher_type_id] : publisher_type_ids),
   )
@@ -56,12 +52,20 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     }
   }
 
-  if (include_descendants && effectiveTopicMatch === 'all' && effectiveTopicIds.length > 1) {
-    for (const topicId of effectiveTopicIds) {
+  if (effectiveTopicIds.length > 0 && include_descendants) {
+    if (effectiveTopicMatch === 'all' && effectiveTopicIds.length > 1) {
+      filters.push(sql`(
+        SELECT COUNT(DISTINCT topic_descendants.root_post_id)
+        FROM topic_descendants
+        WHERE topic_descendants.topic_id = rss_feeds.topic_id
+      ) = ${effectiveTopicIds.length}`)
+    } else {
       filters.push(sql`EXISTS (
         SELECT 1 FROM topic_descendants
-        WHERE topic_descendants.root_post_id = ${topicId}
-          AND topic_descendants.topic_id = rss_feeds.topic_id
+        WHERE topic_descendants.topic_id = rss_feeds.topic_id
+          AND topic_descendants.root_post_id IN (
+            SELECT root_post_id FROM topic_descendant_roots
+          )
       )`)
     }
   }
@@ -125,20 +129,7 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
         SELECT `)
     query.append(sql`id`)
   }
-  if (usesAnyDescendantTopics) {
-    query.append(sql` FROM (
-      SELECT DISTINCT topic_id FROM topic_descendants
-    ) candidate_topics
-    JOIN LATERAL (
-      -- Live feeds have a unique topic_id, so this keyed probe returns at most one row.
-      SELECT rss_feeds.* FROM rss_feeds
-      WHERE rss_feeds.topic_id = candidate_topics.topic_id
-        AND rss_feeds.deleted_at IS NULL
-      LIMIT 1
-    ) rss_feeds ON TRUE`)
-  } else {
-    query.append(sql` FROM rss_feeds`)
-  }
+  query.append(sql` FROM rss_feeds`)
   if (hasTextSearch) query.append(sql` CROSS JOIN search_tsquery`)
 
   if (filters.length > 0) {

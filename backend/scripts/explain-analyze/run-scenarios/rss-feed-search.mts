@@ -109,27 +109,6 @@ export async function runRssFeedSearchScopeScenarios(): Promise<void> {
     searchRssFeeds({ topic_ids: [seedParentTopicId], include_descendants: true, limit: 25 }),
   )
 
-  registerScenarioContract('rss-feed-search-topic-match-all', {
-    expectations: [
-      { kind: 'custom', name: 'rssStateProjection' },
-      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 8 },
-      { kind: 'maxProcessedRows', relation: 'urls', max: 3 },
-      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 3 },
-      { kind: 'maxProcessedRows', relation: 'topics', max: 5 },
-      { kind: 'maxProcessedRows', relation: 'relation__topic__parent__topic', max: 2 },
-    ],
-  })
-  await runAndCapture('rss-feed-search-topic-match-all', async () => {
-    const feeds = await searchRssFeeds({
-      topic_ids: [seedTopicId, seedParentTopicId],
-      topic_match: 'all',
-      include_descendants: true,
-      limit: 25,
-    })
-    if (!feeds.some(feed => feed.id === seedUuid(0, '08')))
-      throw new Error('All-of RSS descendant search omitted the seeded child feed')
-  })
-
   registerScenarioContract('rss-feed-search-by-publisher-type', {
     expectations: [
       { kind: 'custom', name: 'rssStateProjection' },

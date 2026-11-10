@@ -130,30 +130,23 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
         limit: PAGE_SIZE,
         post_types: ['discussion', 'topic_recommendation'],
       },
-      'idx_posts__post_type__id',
+      'posts_pkey',
     ],
     [
-      'post-discovery-mixed-recommendation-best',
-      {
-        sort: 'best',
-        time_range: 'all',
-        limit: PAGE_SIZE,
-        post_types: ['discussion', 'topic_recommendation'],
-      },
-      'idx_posts__post_type__votes_score_sort__id',
+      'post-discovery-global-hot-exclude-first',
+      { ...globalHot, exclude_for_user_id: seedUser.id },
+      'idx_posts__stable_hot_rank__id',
     ],
   ]
-  const [globalHotLeaves, typeHotLeaves, typeNewLeaves, typeBestLeaves] = await Promise.all([
+  const [globalHotLeaves, typeHotLeaves, primaryKeyLeaves] = await Promise.all([
     partitionIndexLeaves('idx_posts__stable_hot_rank__id'),
     partitionIndexLeaves('idx_posts__post_type__stable_hot_rank__id'),
-    partitionIndexLeaves('idx_posts__post_type__id'),
-    partitionIndexLeaves('idx_posts__post_type__votes_score_sort__id'),
+    partitionIndexLeaves('posts_pkey'),
   ])
   const leavesByIndex = new Map<string, readonly string[]>([
     ['idx_posts__stable_hot_rank__id', globalHotLeaves],
     ['idx_posts__post_type__stable_hot_rank__id', typeHotLeaves],
-    ['idx_posts__post_type__id', typeNewLeaves],
-    ['idx_posts__post_type__votes_score_sort__id', typeBestLeaves],
+    ['posts_pkey', primaryKeyLeaves],
   ])
   for (const [id, options, indexName] of globalScenarios) {
     const leaves = leavesByIndex.get(indexName)
@@ -162,4 +155,34 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
     // no-mistakes-disable-next-line query-reached-per-item: each fixed global/type case needs its own production query plan.
     await runCaptured(id, options)
   }
+
+  await registerPostDiscoveryGate(
+    'post-discovery-community-best-exclude-first',
+    'community',
+    'best',
+  )
+  await runCaptured('post-discovery-community-best-exclude-first', {
+    sort: 'best',
+    time_range: 'all',
+    limit: PAGE_SIZE,
+    community_id: COMMUNITY_IDS[0],
+    exclude_for_user_id: seedUser.id,
+  })
+
+  await captureWeeklyTrending('community')
+  await captureWeeklyTrending('recommendation')
+}
+
+async function captureWeeklyTrending(scope: PostDiscoveryScope): Promise<void> {
+  const weekOptions = { ...optionsFor(scope, 'trending'), time_range: '1w' as const }
+  const weekFirst = await getPage(weekOptions)
+  const weekCursor = weekFirst.page_info.end_cursor
+  if (!weekCursor || !weekFirst.page_info.has_next_page)
+    throw new Error(`${scope} weekly trending must produce a continuation cursor`)
+  const weekFirstId = `post-discovery-${scope}-trending-week-first`
+  const weekContinuationId = `post-discovery-${scope}-trending-week-continuation`
+  await registerPostDiscoveryGate(weekFirstId, scope, 'trending')
+  await runCaptured(weekFirstId, weekOptions)
+  await registerPostDiscoveryGate(weekContinuationId, scope, 'trending')
+  await runCaptured(weekContinuationId, { ...weekOptions, after: weekCursor })
 }

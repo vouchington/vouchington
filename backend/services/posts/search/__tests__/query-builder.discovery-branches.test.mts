@@ -82,7 +82,7 @@ describe('discovery search branches', () => {
     expect(followed.sql).toContain('ORDER BY following_rank DESC')
 
     expect(() => buildPostSearchQuery(USER, { sort: 'following_new', ranking_lt: 1 })).toThrow(
-      'following_new cursor requires ranking_lt and id_lt',
+      'following_new cursor requires id_lt',
     )
   })
 })

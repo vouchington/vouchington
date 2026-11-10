@@ -145,22 +145,20 @@ describe('query-builder (basic)', () => {
     expect(query.sql).not.toContain('topic_member')
   })
 
-  it('walks the first universal topic in post-id order before the posts lookup', () => {
+  it('probes every universal topic from the post id', () => {
     const topicId = '123e4567-e89b-12d3-a456-426614174010'
     const query = buildPostSearchQuery(undefined, {
       universal_topic_ids: [topicId],
       sort: 'new',
     })
 
-    expect(query.sql).toContain('SELECT DISTINCT ON (posts.id)')
-    expect(query.sql).toContain('JOIN posts ON posts.id = topic_member.post_id')
+    expect(query.sql).toContain('FROM posts')
+    expect(query.sql).not.toContain('SELECT DISTINCT ON (posts.id)')
+    expect(query.sql).not.toContain('UNION ALL')
     expect(query.sql).toContain('relation__post__category__topic')
     expect(query.sql).toContain('post_review_topic_ratings')
     expect(query.sql).toContain('post_data_point_topics')
-    expect(query.sql).toContain('ORDER BY rel.subject_id DESC')
-    expect(query.sql).toContain('CROSS JOIN LATERAL')
     expect(query.sql).toContain('topic_aliases alias')
-    expect(query.sql).toContain('LIMIT ?')
     expect(query.values).toContain(topicId)
   })
 

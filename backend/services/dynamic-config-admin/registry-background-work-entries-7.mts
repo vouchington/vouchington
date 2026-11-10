@@ -33,12 +33,6 @@ export const backgroundWorkRegistryEntries7 = {
     label: 'Posts',
     maxValues: postsWorkMaxValues,
     descriptions: {
-      hacker_news_hot_candidate_limit:
-        'Maximum newest eligible Hacker News posts scored for hot search.',
-      post_feed_candidate_limit:
-        'Maximum ordered direct or shared delivery candidates inspected per feed page.',
-      post_search_filter_candidate_limit:
-        'Maximum index-ordered post candidates inspected per filtered search page.',
       semantic_post_candidate_limit: 'Maximum post candidates in a semantic search window.',
       review_succession_candidate_page_size:
         'Review succession candidate page size for posts processing.',

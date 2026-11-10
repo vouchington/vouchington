@@ -17,7 +17,6 @@ export function appendBaseFilters(
     exclude_for_user_id,
     following_phase,
     include_archived_communities,
-    limit,
     post_types,
     profileCountPostType,
     user_id,
@@ -67,8 +66,7 @@ export function appendBaseFilters(
   }
   discoveryEligibility.append(sql`) END`)
   filters.push(discoveryEligibility)
-  if (following_phase && viewer)
-    appendFollowingPhaseFilters(filters, viewer.id, following_phase, limit ?? 100)
+  if (following_phase && viewer) appendFollowingPhaseFilters(filters, viewer.id, following_phase)
   if (exclude_for_user_id) appendUserExclusionFilters(filters, exclude_for_user_id)
   if (user_id) {
     appendUserFilter(filters, {

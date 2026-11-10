@@ -6,8 +6,7 @@ import {
   insertPostFeedShareForTest,
 } from '@voucha/test-helpers'
 import { withDominantPostFixtures } from '@voucha/test-helpers/entities/trending-posts'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { postsWorkConfig, getPostsWorkLimit } from '@services/posts/work-limits'
+import { postsWorkConfig } from '@services/posts/work-limits'
 import { getPostFeedIds } from '../get-ids.mts'
 
 describe('bounded post feed pages', () => {
@@ -16,31 +15,24 @@ describe('bounded post feed pages', () => {
     const viewer = await createTestUser()
     const author = await createTestUser()
     await followUser(viewer, author)
-    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      post_feed_candidate_limit: 1,
-    })
-    try {
-      await withDominantPostFixtures(
-        [2, 1, 0].map(offset => ({
-          createdAt: new Date(281_474_976_710_655 - offset),
-          createdById: author.id,
-        })),
-        async ([oldest, middle, newest]) => {
-          await hidePost(viewer, { id: middle! })
-          await hidePost(viewer, { id: newest! })
-          const page = await getPostFeedIds(viewer, {
-            feed_type: 'follow_users',
-            limit: 5,
-            post_types: ['discussion'],
-          })
-          expect(page.results.map(row => row.id)).toEqual([oldest])
-          expect(page.page_info.has_next_page).toBe(false)
-          expect(page.page_info.end_cursor).toBeNull()
-        },
-      )
-    } finally {
-      restore()
-    }
+    await withDominantPostFixtures(
+      [2, 1, 0].map(offset => ({
+        createdAt: new Date(281_474_976_710_655 - offset),
+        createdById: author.id,
+      })),
+      async ([oldest, middle, newest]) => {
+        await hidePost(viewer, { id: middle! })
+        await hidePost(viewer, { id: newest! })
+        const page = await getPostFeedIds(viewer, {
+          feed_type: 'follow_users',
+          limit: 5,
+          post_types: ['discussion'],
+        })
+        expect(page.results.map(row => row.id)).toEqual([oldest])
+        expect(page.page_info.has_next_page).toBe(false)
+        expect(page.page_info.end_cursor).toBeNull()
+      },
+    )
   })
 
   it.each([
@@ -55,68 +47,40 @@ describe('bounded post feed pages', () => {
       const author = await createTestUser()
       const sharer = await createTestUser()
       await followUser(viewer, author)
-      const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-        post_feed_candidate_limit: 2,
-      })
-      try {
-        await withDominantPostFixtures(
-          [994, 995, 996, 997, 998, 999].map((milliseconds, index) => ({
-            createdAt: new Date(`9999-12-31T23:59:59.${milliseconds}Z`),
-            votesScoreUp: index >= 3 ? 100_000_001 : 100_000_000,
-            createdById: author.id,
-          })),
-          async ids => {
-            for (const id of ids.slice(3)) await hidePost(viewer, { id })
-            const shared = await insertPostFeedShareForTest({
-              recipientUserId: viewer.id,
-              sharedByUserId: sharer.id,
-              postId: ids[0]!,
-              sortAt: new Date('9999-12-31T23:59:59.993Z'),
+      await withDominantPostFixtures(
+        [994, 995, 996, 997, 998, 999].map((milliseconds, index) => ({
+          createdAt: new Date(`9999-12-31T23:59:59.${milliseconds}Z`),
+          votesScoreUp: index >= 3 ? 100_000_001 : 100_000_000,
+          createdById: author.id,
+        })),
+        async ids => {
+          for (const id of ids.slice(3)) await hidePost(viewer, { id })
+          const shared = await insertPostFeedShareForTest({
+            recipientUserId: viewer.id,
+            sharedByUserId: sharer.id,
+            postId: ids[0]!,
+            sortAt: new Date('9999-12-31T23:59:59.993Z'),
+          })
+          const expected = [...ids.slice(0, 3), shared].toSorted()
+          const seen: string[] = []
+          let after: string | undefined
+          for (let pageIndex = 0; pageIndex < 30; pageIndex++) {
+            const page = await getPostFeedIds(viewer, {
+              feed_type: 'follow_users',
+              sort,
+              time_range,
+              limit: 2,
+              after,
             })
-            const expected = [...ids.slice(0, 3), shared].toSorted()
-            const seen: string[] = []
-            let after: string | undefined
-            for (let pageIndex = 0; pageIndex < 30; pageIndex++) {
-              const page = await getPostFeedIds(viewer, {
-                feed_type: 'follow_users',
-                sort,
-                time_range,
-                limit: 2,
-                after,
-              })
-              seen.push(...page.results.map(row => row.id))
-              if (expected.every(id => seen.includes(id)) || !page.page_info.has_next_page) break
-              after = page.page_info.end_cursor ?? undefined
-              if (!after) throw new Error('Expected continuation cursor')
-            }
-            expect(seen.toSorted()).toEqual(expected)
-            expect(new Set(seen).size).toBe(seen.length)
-          },
-        )
-      } finally {
-        restore()
-      }
+            seen.push(...page.results.map(row => row.id))
+            if (expected.every(id => seen.includes(id)) || !page.page_info.has_next_page) break
+            after = page.page_info.end_cursor ?? undefined
+            if (!after) throw new Error('Expected continuation cursor')
+          }
+          expect(seen.toSorted()).toEqual(expected)
+          expect(new Set(seen).size).toBe(seen.length)
+        },
+      )
     },
   )
-
-  it('uses the candidate default for invalid configuration and accepts the hard maximum', async () => {
-    await postsWorkConfig.waitForInitialization()
-    expect(getPostsWorkLimit('post_feed_candidate_limit')).toBe(1000)
-    const invalid = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      post_feed_candidate_limit: 1_000_000,
-    })
-    try {
-      expect(getPostsWorkLimit('post_feed_candidate_limit')).toBe(1000)
-      const maximum = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-        post_feed_candidate_limit: 10_000,
-      })
-      try {
-        expect(getPostsWorkLimit('post_feed_candidate_limit')).toBe(10_000)
-      } finally {
-        maximum()
-      }
-    } finally {
-      invalid()
-    }
-  })
 })

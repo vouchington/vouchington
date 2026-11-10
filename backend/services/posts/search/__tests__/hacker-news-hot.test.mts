@@ -29,9 +29,6 @@ describe('Hacker News hot search bounds', () => {
       hackerNewsVisibilityConfig.waitForInitialization(),
     ])
     const ids: string[] = []
-    const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 2,
-    })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,
     })
@@ -89,7 +86,6 @@ describe('Hacker News hot search bounds', () => {
       }
     } finally {
       restoreVisibility()
-      restoreCap()
       await Promise.all(ids.map(id => deleteTestPost(id)))
     }
   })
@@ -101,9 +97,6 @@ describe('Hacker News hot search bounds', () => {
       postsWorkConfig.waitForInitialization(),
       hackerNewsVisibilityConfig.waitForInitialization(),
     ])
-    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 1,
-    })
     const ids: string[] = []
     try {
       const approved = await insertTestPost({
@@ -146,7 +139,6 @@ describe('Hacker News hot search bounds', () => {
         ),
       ).toEqual([pending, approved])
     } finally {
-      restore()
       await Promise.all(ids.map(id => deleteTestPost(id)))
     }
   })
@@ -158,9 +150,6 @@ describe('Hacker News hot search bounds', () => {
       postsWorkConfig.waitForInitialization(),
       hackerNewsVisibilityConfig.waitForInitialization(),
     ])
-    const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 10,
-    })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,
     })
@@ -187,7 +176,6 @@ describe('Hacker News hot search bounds', () => {
       expect(page.results.map(row => row.id)).toEqual([ids[0]])
     } finally {
       restoreVisibility()
-      restoreCap()
       await Promise.all(ids.map(id => deleteTestPost(id)))
     }
   })
@@ -213,9 +201,6 @@ describe('Hacker News hot search bounds', () => {
       await seedSearchEmbeddingCache(query, embedding)
       await setHackerNewsReferenceFlagsForTest(ids, [])
       const expected = ids.toSorted((a, b) => b.localeCompare(a))
-      const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-        hacker_news_hot_candidate_limit: 2,
-      })
       const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
         references_visible: true,
       })
@@ -239,7 +224,6 @@ describe('Hacker News hot search bounds', () => {
         expect(second.results.map(row => row.id)).toEqual(expected.slice(1))
       } finally {
         restoreVisibility()
-        restoreCap()
         await Promise.all(ids.map(id => deleteTestPost(id)))
       }
     },

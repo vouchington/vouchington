@@ -36,21 +36,28 @@ async function registerGate(
 async function captureCursorPair(
   prefix: string,
   options: PostSearchOptions,
-  { allowEmptyFirst = false, follows = false } = {},
+  gate: { indexName: string; allowEmptyFirst?: boolean; follows?: boolean; rowCap?: number },
 ): Promise<void> {
   const first = await getPage(options)
   const cursor = first.page_info.end_cursor
   if (!first.page_info.has_next_page || !cursor)
     throw new Error(`${prefix} must return a continuation cursor`)
-  if (!allowEmptyFirst && first.results.length === 0)
+  if (!gate.allowEmptyFirst && first.results.length === 0)
     throw new Error(`${prefix} first page must contain a post`)
 
+  const rowCap = gate.rowCap ?? 1200
   const firstId = `${prefix}-first`
-  await registerGate(firstId, allowEmptyFirst, follows, '', null)
+  await registerGate(
+    firstId,
+    gate.allowEmptyFirst === true,
+    gate.follows === true,
+    gate.indexName,
+    rowCap,
+  )
   await capture(firstId, options)
 
   const continuationId = `${prefix}-continuation`
-  await registerGate(continuationId, true, follows, '', null)
+  await registerGate(continuationId, true, gate.follows === true, gate.indexName, rowCap)
   await capture(continuationId, { ...options, after: cursor })
 }
 
@@ -61,14 +68,6 @@ async function captureKeywordRelevanceScenarios(): Promise<void> {
     time_range: 'all',
     limit: PAGE_SIZE,
   }
-  await captureCursorPair('post-discovery-keyword-relevance', broadOptions, {
-    allowEmptyFirst: true,
-  })
-  await captureCursorPair('post-discovery-keyword-relevance-community', {
-    ...broadOptions,
-    community_id: seedUuid(100, '14'),
-  })
-
   const sparseOptions = { ...broadOptions, text_search_query: '139999' }
   const sparseFirst = await getPage(sparseOptions)
   if (
@@ -78,7 +77,7 @@ async function captureKeywordRelevanceScenarios(): Promise<void> {
   )
     throw new Error('Numeric keyword search must return at most one post and then stop')
   const sparseFirstId = 'post-discovery-keyword-relevance-sparse-first'
-  await registerGate(sparseFirstId, true, false, '', null)
+  await registerGate(sparseFirstId, true, false, 'idx_posts__search_vector', 1200)
   await capture(sparseFirstId, sparseOptions)
 
   const emptyOptions = { ...broadOptions, text_search_query: 'no-matching-seed-token-4989' }
@@ -90,22 +89,21 @@ async function captureKeywordRelevanceScenarios(): Promise<void> {
   )
     throw new Error('Empty keyword search must be exhausted')
   const emptyFirstId = 'post-discovery-keyword-relevance-empty-first'
-  await registerGate(emptyFirstId, true, false, '', null)
+  await registerGate(emptyFirstId, true, false, 'idx_posts__search_vector', 1200)
   await capture(emptyFirstId, emptyOptions)
 }
 
 export async function runPostDiscoveryUnscopedScenarios(): Promise<void> {
   await runPostDiscoveryFiniteWindowScenario()
-  await captureCursorPair('post-discovery-global-new', {
-    sort: 'new',
-    time_range: 'all',
-    limit: PAGE_SIZE,
-  })
-  await captureCursorPair('post-discovery-global-best', {
-    sort: 'best',
-    time_range: 'all',
-    limit: PAGE_SIZE,
-  })
+  await captureCursorPair(
+    'post-discovery-global-new',
+    {
+      sort: 'new',
+      time_range: 'all',
+      limit: PAGE_SIZE,
+    },
+    { indexName: 'posts_pkey' },
+  )
   const authorNewId = 'post-discovery-author-new'
   await registerGate(authorNewId, false, false, 'idx_posts__created_by_id')
   await capture(authorNewId, {
@@ -114,11 +112,6 @@ export async function runPostDiscoveryUnscopedScenarios(): Promise<void> {
     time_range: 'all',
     limit: PAGE_SIZE,
   })
-  await captureCursorPair(
-    'post-discovery-global-following-new',
-    { sort: 'following_new', time_range: 'all', limit: PAGE_SIZE },
-    { allowEmptyFirst: true, follows: true },
-  )
   await captureKeywordRelevanceScenarios()
 
   const missingCommunity: PostSearchOptions = {

@@ -10,7 +10,8 @@ export function startCommunityCandidates(
   search?: string,
   memberUserId?: string,
 ): SQLStatement {
-  if (sort === 'trending') return startTrendingCommunityCandidates(search, memberUserId)
+  if (sort === 'trending')
+    return startTrendingCommunityCandidates(hasListItems, search, memberUserId)
   const listedVirtual = hasListItems && sort === 'virtual_subscriptions'
   // Viewer memberships stay a plain set. Text stays a correlated probe on the ordered walk
   // so a common term stops at the page in both plan-cache modes.
@@ -30,12 +31,11 @@ export function startCommunityCandidates(
   } else {
     query.append(sql`candidate_communities AS MATERIALIZED (SELECT c.id, c.name`)
   }
-  query.append(sql`, counts.list_item_count`)
   if (sort !== 'name') query.append(sql`, counts.member_count, counts.virtual_subscription_count`)
   appendCandidateFrom(query, { listedVirtual, textFromMembers, textFromCounts, search })
   if (memberUserId && !textFromMembers)
     query.append(sql` JOIN member_matches member_match ON member_match.id = c.id`)
-  if (!listedVirtual && !textFromCounts)
+  if (!listedVirtual && !textFromCounts && (sort !== 'name' || hasListItems))
     query.append(sql` JOIN community_search_counts counts ON counts.community_id = c.id`)
   query.append(sql` WHERE c.deleted_at IS NULL`)
   return query

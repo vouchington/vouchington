@@ -1,9 +1,6 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import createHttpError from 'http-errors'
-import {
-  appendHackerNewsHotRankBound,
-  buildPostSearchTimeRangeFilter,
-} from '../hacker-news-hot-options.mts'
+import { buildPostSearchTimeRangeFilter } from '../hacker-news-hot-options.mts'
 import { buildStablePostHotRankExpression } from '../stable-hot-rank.mts'
 import type { PostSearchOptions } from '../types.mts'
 
@@ -61,7 +58,6 @@ function appendPaginationFilters(
     sort: string
   },
 ): void {
-  appendHackerNewsHotRankBound(filters, options)
   if (sort === 'new' && options.id_lt) {
     // community_id equality plus this id bound stays on (community_id, id) and stops at LIMIT.
     filters.push(sql`posts.id < ${options.id_lt}`)

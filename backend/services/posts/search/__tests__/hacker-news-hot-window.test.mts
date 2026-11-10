@@ -22,9 +22,6 @@ describe('Hacker News hot elapsed-day cutoff', () => {
     const decisionInstant = Date.parse('2027-11-06T12:00:00Z')
     const cutoff = decisionInstant - 30 * 86_400_000
     const ids: string[] = []
-    const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      hacker_news_hot_candidate_limit: 10,
-    })
     const restoreVisibility = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: true,
     })
@@ -59,7 +56,6 @@ describe('Hacker News hot elapsed-day cutoff', () => {
     } finally {
       vi.useRealTimers()
       restoreVisibility()
-      restoreCap()
       await Promise.all(ids.map(id => deleteTestPost(id)))
     }
   })

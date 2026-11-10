@@ -8,7 +8,6 @@ import {
 import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import { setPostVotesScoreUp } from '@voucha/test-helpers/entities/posts'
 import { insertTestPostDataTopics } from '@voucha/test-helpers/publication-test-queries'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { postsWorkConfig } from '../../work-limits.mts'
 import { getPostIds } from '../get-ids.mts'
 
@@ -35,48 +34,34 @@ describe('topic-scoped data point best cohorts', () => {
         await setPostVotesScoreUp(id, index === 0 ? 100 : 2)
         ids.push(id)
       }
-      const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-        post_search_filter_candidate_limit: 2,
-      })
-      try {
-        const options = {
-          data_point_topic_ids: [topicId],
-          ...(explicitType ? { post_types: ['data_point'] as Array<'data_point'> } : {}),
-          sort: 'best' as const,
-          time_range: 'all' as const,
-          limit: 1,
-        }
-        const first = await getPostIds(user, options)
-        expect(first.results.map(row => row.id)).toEqual([ids[0]])
-        expect(first.page_info.has_next_page).toBe(true)
-        const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-          post_search_filter_candidate_limit: 1,
-        })
-        try {
-          const second = await getPostIds(user, {
-            ...options,
-            after: first.page_info.end_cursor!,
-          })
-          expect(second.results.map(row => row.id)).toEqual([ids[2]])
-          expect(second.page_info.has_next_page).toBe(true)
-          const third = await getPostIds(user, {
-            ...options,
-            after: second.page_info.end_cursor!,
-          })
-          expect(third.results.map(row => row.id)).toEqual([ids[1]])
-          await expect(
-            getPostIds(user, {
-              ...options,
-              sort: 'new',
-              after: first.page_info.end_cursor!,
-            }),
-          ).rejects.toMatchObject({ status: 400 })
-        } finally {
-          restoreCap()
-        }
-      } finally {
-        restore()
+      const options = {
+        data_point_topic_ids: [topicId],
+        ...(explicitType ? { post_types: ['data_point'] as Array<'data_point'> } : {}),
+        sort: 'best' as const,
+        time_range: 'all' as const,
+        limit: 1,
       }
+      const first = await getPostIds(user, options)
+      expect(first.results.map(row => row.id)).toEqual([ids[0]])
+      expect(first.page_info.has_next_page).toBe(true)
+      const second = await getPostIds(user, {
+        ...options,
+        after: first.page_info.end_cursor!,
+      })
+      expect(second.results.map(row => row.id)).toEqual([ids[2]])
+      expect(second.page_info.has_next_page).toBe(true)
+      const third = await getPostIds(user, {
+        ...options,
+        after: second.page_info.end_cursor!,
+      })
+      expect(third.results.map(row => row.id)).toEqual([ids[1]])
+      await expect(
+        getPostIds(user, {
+          ...options,
+          sort: 'new',
+          after: first.page_info.end_cursor!,
+        }),
+      ).rejects.toMatchObject({ status: 400 })
     },
   )
 
@@ -107,22 +92,15 @@ describe('topic-scoped data point best cohorts', () => {
     }
     await insertTestPostDataTopics(ids[0]!, [secondTopicId])
     await setPostDeletedForTest(ids[2]!)
-    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
-      post_search_filter_candidate_limit: 2,
-    })
-    try {
-      const options = {
-        data_point_topic_ids: [topicId, secondTopicId],
-        post_types: ['data_point'] as Array<'data_point'>,
-        sort: 'best' as const,
-        time_range: 'all' as const,
-        limit: 1,
-      }
-      const first = await getPostIds(user, options)
-      expect(first.results.map(row => row.id)).toEqual([ids[0]])
-      expect(first.page_info.has_next_page).toBe(false)
-    } finally {
-      restore()
+    const options = {
+      data_point_topic_ids: [topicId, secondTopicId],
+      post_types: ['data_point'] as Array<'data_point'>,
+      sort: 'best' as const,
+      time_range: 'all' as const,
+      limit: 1,
     }
+    const first = await getPostIds(user, options)
+    expect(first.results.map(row => row.id)).toEqual([ids[0]])
+    expect(first.page_info.has_next_page).toBe(false)
   })
 })

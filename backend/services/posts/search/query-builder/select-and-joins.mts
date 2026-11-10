@@ -4,7 +4,6 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildHotScoreExpression } from '../query-builder-utils.mts'
 import { buildStablePostHotRankExpression } from '../stable-hot-rank.mts'
 import type { PostSearchOptions, PostSearchSort } from '../types.mts'
-import { appendUniversalTopicNewestSource } from './universal-topic-walk.mts'
 
 export function appendPostSearchSelectAndJoins(
   query: SQLStatement,
@@ -30,18 +29,10 @@ export function appendPostSearchSelectAndJoins(
     useSemanticCandidates?: boolean
   },
 ): void {
-  const walkUniversalTopic = walksUniversalTopic(sort, options, useSemanticCandidates)
-  query.append(
-    walkUniversalTopic
-      ? sql`SELECT DISTINCT ON (posts.id)
+  query.append(sql`SELECT
       posts.id,
       posts.post_type
-  `
-      : sql`SELECT
-      posts.id,
-      posts.post_type
-  `,
-  )
+  `)
   if (options.hydrateDataPointPage) {
     query.append(sql`,
       posts.title,
@@ -63,18 +54,13 @@ export function appendPostSearchSelectAndJoins(
         LIMIT 1
       ) posts
     `)
-  } else if (walkUniversalTopic) {
-    appendUniversalTopicNewestSource(
-      query,
-      options.universal_topic_ids ?? [],
-      options.id_lt,
-      options.limit ?? 100,
-    )
   } else {
     query.append(sql`\n    FROM posts\n`)
   }
   appendSearchJoins(query, { hasSemanticSearch, hasTextSearch, options })
-  if (sort === 'following_new' && currentUser) appendFollowingJoin(query, currentUser.id)
+  // A phase walk ranks with a constant and filters by EXISTS. The join is only the unphased CASE.
+  if (sort === 'following_new' && currentUser && options.following_phase === undefined)
+    appendFollowingJoin(query, currentUser.id)
 }
 
 function sortSelectColumn(sort: PostSearchSort, decisionInstant?: Date): SQLStatement {
@@ -127,14 +113,6 @@ function appendSearchJoins(
   if (options.similar_rss_feed_item_id) {
     query.append(sql`\n    CROSS JOIN similar_rss_feed_item_embedding\n    `)
   }
-}
-
-function walksUniversalTopic(
-  sort: PostSearchSort,
-  options: PostSearchOptions,
-  useSemanticCandidates: boolean,
-): boolean {
-  return sort === 'new' && !useSemanticCandidates && (options.universal_topic_ids?.length ?? 0) > 0
 }
 
 function appendFollowingJoin(query: SQLStatement, userId: string): void {

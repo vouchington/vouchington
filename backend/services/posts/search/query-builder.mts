@@ -12,10 +12,6 @@ import { appendCtes, buildPostSearchCtes } from './query-builder/ctes.mts'
 import { appendPostSearchOrderAndLimit } from './query-builder/order-and-limit.mts'
 import { appendPostSearchSelectAndJoins } from './query-builder/select-and-joins.mts'
 import { appendPostSearchWhereClause } from './query-builder/where-clause.mts'
-import {
-  buildFollowingNewPage,
-  buildMixedPartialPostTypePage,
-} from './query-builder/ranked-page-queries.mts'
 import { buildSemanticPostCandidates } from './query-builder/semantic-candidates.mts'
 
 export function buildPostSearchQuery(
@@ -28,15 +24,6 @@ export function buildPostSearchQuery(
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
   const rawSort = detectSearchSort(options)
   const sort = rawSort === 'following_new' && !currentUser ? 'new' : rawSort
-  if (sort === 'following_new' && currentUser && !options.following_phase)
-    return buildFollowingNewPage(currentUser, options, buildPostSearchQuery)
-  const mixedPostTypes = buildMixedPartialPostTypePage(
-    currentUser,
-    options,
-    sort,
-    buildPostSearchQuery,
-  )
-  if (mixedPostTypes) return mixedPostTypes
   const rankingScoreExpression = buildPostRankingScoreExpression({
     hasTextSearch,
     hasSemanticSearch,

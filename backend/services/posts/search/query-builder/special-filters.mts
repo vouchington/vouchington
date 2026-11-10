@@ -44,17 +44,13 @@ export function appendPostSearchSpecialFilters(
 function appendCommunityFilters(filters: SQLStatement[], communityId: string): void {
   filters.push(sql`posts.community_id = ${communityId}`)
   filters.push(sql`EXISTS (
-    SELECT 1 FROM LATERAL (
-      -- post_id is the primary key; keep approval conditions outside this keyed lookup.
-      SELECT review.community_id, review.approved_at, review.unpublished_at, review.rejected_at
-      FROM community_post_reviews review
-      WHERE review.post_id = posts.id
-      LIMIT 1
-    ) cpr
-    WHERE cpr.community_id = ${communityId}
-      AND cpr.approved_at IS NOT NULL
-      AND cpr.unpublished_at IS NULL
-      AND cpr.rejected_at IS NULL
+    SELECT 1
+    FROM community_post_reviews review
+    WHERE review.post_id = posts.id
+      AND review.community_id = ${communityId}
+      AND review.approved_at IS NOT NULL
+      AND review.unpublished_at IS NULL
+      AND review.rejected_at IS NULL
   )`)
   const mutedTopics = sql`NOT EXISTS (
     SELECT 1
@@ -91,15 +87,9 @@ function appendTopicRecommendationFilters(
 ): void {
   filters.push(sql`posts.post_type = 'topic_recommendation'`)
   const recommendation = sql`EXISTS (
-    SELECT 1 FROM LATERAL (
-      -- post_id is the partitioned primary key. LIMIT 1 fences this keyed lookup
-      -- after the bounded posts page so sparse q/status cannot scan all recommendations.
-      SELECT ptr.reviewed_at, ptr.created_topic_id, ptr.topic_title, ptr.topic_slug
-      FROM post_topic_recommendations ptr
-      WHERE ptr.post_id = posts.id
-      LIMIT 1
-    ) ptr
-    WHERE TRUE`
+    SELECT 1
+    FROM post_topic_recommendations ptr
+    WHERE ptr.post_id = posts.id`
   if (options.topic_recommendation_status === 'pending') {
     recommendation.append(sql` AND ptr.reviewed_at IS NULL`)
   } else if (options.topic_recommendation_status === 'approved') {

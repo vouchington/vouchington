@@ -18,7 +18,6 @@ export function appendTopicFilters(
     universal_topic_ids,
     url_id,
   }: PostSearchOptions,
-  walkFirstUniversalTopic = false,
 ): void {
   if (url_id) appendUrlFilter(filters)
   if (related_topic_ids?.length) appendRelatedTopicFilters(filters, related_topic_ids)
@@ -33,10 +32,7 @@ export function appendTopicFilters(
   if (review_topic_ids?.length) appendReviewTopicFilters(filters, review_topic_ids)
   if (data_point_topic_ids?.length) appendDataPointTopicFilters(filters, data_point_topic_ids)
   if (universal_topic_ids?.length) {
-    const topicIds = [...new Set(universal_topic_ids)]
-    // The newest walk already joins the first topic. Later topics stay keyed probes.
-    const probed = walkFirstUniversalTopic ? topicIds.slice(1) : topicIds
-    for (const topicId of probed)
+    for (const topicId of new Set(universal_topic_ids))
       filters.push(buildUniversalTopicMembershipExists('posts.id', topicId))
   }
 }

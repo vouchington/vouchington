@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { explainAnalyze, read, type ExplainResult } from '@data-stores/psql'
 import { buildPostSearchQuery } from '@services/posts/search/query-builder'
-import { getPostsWorkLimit } from '@services/posts/work-limits'
+import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import { getHackerNewsUrlIdsByPostIds } from '@services/urls/hacker-news-post-urls'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { getExplainPlanCacheModes, runAndCapture } from '../run-support.mts'
@@ -13,6 +13,13 @@ import {
 } from './hacker-news-scale-cache.mts'
 import { buildHackerNewsScaleReference } from './hacker-news-scale-reference.mts'
 import type { HackerNewsScalePage, HackerNewsScaleRow } from './hacker-news-scale-pages.mts'
+
+let hotLeaves: readonly string[] | undefined
+
+async function hackerNewsHotLeaves(): Promise<readonly string[]> {
+  hotLeaves ??= await partitionIndexLeaves('idx_posts__hacker_news_references__stable_hot_rank__id')
+  return hotLeaves
+}
 
 type CaptureContext = {
   fixture: HackerNewsScaleFixture
@@ -28,13 +35,20 @@ export async function captureHackerNewsScalePage(
   cache: HackerNewsCacheState,
 ): Promise<void> {
   const id = `${prefix}-${page.name}-${cache}`
-  const maxPosts =
-    page.options.sort === 'hot'
-      ? 4 * getPostsWorkLimit('hacker_news_hot_candidate_limit') + 2 * 26
-      : 2000
+  const maxPosts = 2000
+  const hot = page.options.sort === 'hot'
   registerScenarioContract(id, {
     expectations: [
       { kind: 'queryBinds', token: 'posts.has_hacker_news_references' },
+      ...(hot
+        ? [
+            {
+              kind: 'usesIndexes' as const,
+              indexes: await hackerNewsHotLeaves(),
+              anyOf: true,
+            },
+          ]
+        : []),
       { kind: 'maxProcessedRows', relation: 'posts', max: maxPosts },
       { kind: 'maxBitmapIndexRows', max: maxPosts },
     ],
