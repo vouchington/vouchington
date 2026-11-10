@@ -7,8 +7,11 @@ fixed per shard, so splitting further buys little wall-clock time while burning 
 capacity.
 
 The prep job resolves the shard count from the live checked-out suite, and a missing or nonpositive
-count fails the prep job instead of falling back to a stale number. A repository variable that
-overrides the registry's files-per-shard value silently re-shards CI, so leave it unset.
+count fails the prep job instead of falling back to a stale number. The registry holds each suite's
+default files-per-shard value; the `TEST_BACKEND_UNIT_FILES_PER_SHARD` and `TEST_WEB_FILES_PER_SHARD`
+repository variables override it, and `PLAYWRIGHT_SHARD_TOTAL` overrides the Playwright shard
+count, so shards can be retuned from measured job times without a code change. A set variable wins
+over the code default, so a code edit has no effect while it is set.
 
 The full-stack integration suite is matrix-capable so it can be split later without redesigning the
 report and artifact contracts, but its build and setup dominate its runtime, so file-count fan-out
