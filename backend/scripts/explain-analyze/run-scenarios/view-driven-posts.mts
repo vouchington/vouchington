@@ -40,8 +40,8 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
               { kind: 'maxProcessedRows' as const, relation: 'posts', max: 1200 },
             ]
           : [
-              { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 2010 },
-              { kind: 'maxProcessedRows' as const, relation: 'posts', max: 3010 },
+              { kind: 'maxProcessedRows' as const, relation: 'community_post_reviews', max: 720 },
+              { kind: 'maxProcessedRows' as const, relation: 'posts', max: 1200 },
               { kind: 'maxBitmapIndexRows' as const, max: 1050 },
               {
                 kind: 'usesIndexes' as const,
