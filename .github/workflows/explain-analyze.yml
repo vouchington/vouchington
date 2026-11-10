@@ -27,11 +27,12 @@ jobs:
       actions: read
       contents: read
 
-  # Two shards restore the same prepared database and seeds, so the shared corpus is identical.
-  # `main` runs every scenario except the partitioned comment fixture and `partition` runs only
-  # that fixture (backend/scripts/explain-analyze/explain-shards.mts), so the slowest scenario
-  # group no longer extends one serial run past its step budget. The `explain-analyze-gates` job
-  # merges both shards and enforces the plan gates, so `backend.yml` still needs one result.
+  # Three shards restore the same prepared database and seeds, so the shared corpus is identical.
+  # `main` runs every scenario except the two fixtures below, `partition` runs only the
+  # partitioned comment fixture and `hn-scale` runs only the million-post Hacker News fixture
+  # (backend/scripts/explain-analyze/explain-shards.mts), so the slowest scenario groups no
+  # longer extend one serial run past its step budget. The `explain-analyze-gates` job
+  # merges all shards and enforces the plan gates, so `backend.yml` still needs one result.
   explain-analyze:
     name: explain-analyze (${{ matrix.shard }})
     needs: [prepare-postgres]
@@ -43,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [main, partition]
+        shard: [main, partition, hn-scale]
     env:
       S3_BUCKET_IMAGES: test-images
       S3_BUCKET_IMAGE_UPLOADS: test-image-uploads
@@ -181,6 +182,19 @@ jobs:
         run: node backend/scripts/explain-analyze/run.mts
         env:
           EXPLAIN_SHARD: partition
+          NODE_DISABLE_COMPILE_CACHE: '1'
+          NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
+          EXPLAIN_PLAN_CACHE_MODE: compare
+          VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
+          VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake explain-analyze CI OTP HMAC secret
+      - name: Run million-post Hacker News scale scenarios
+        if: ${{ matrix.shard == 'hn-scale' }}
+        # Seeding about a million posts and capturing cold and warm plans; sized like the main
+        # shard's step budget until a CI run measures it.
+        timeout-minutes: 20
+        run: node backend/scripts/explain-analyze/run.mts
+        env:
+          EXPLAIN_SHARD: hn-scale
           NODE_DISABLE_COMPILE_CACHE: '1'
           NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
           EXPLAIN_PLAN_CACHE_MODE: compare

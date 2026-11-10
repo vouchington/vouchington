@@ -6,14 +6,18 @@ import { SEED_ANCHOR_DATE_ENV, resolveSeedAnchor } from './seed-data/seed-anchor
 // seq scan and a bitmap scan of `posts` flips with that window. EXPLAIN replays the captured SQL
 // and values, so pinning the clock while a scenario callback builds its query fixes the cutoff
 // for both captures and both plan-cache modes (#3022).
-export async function withSeedAnchorClock<T>(callback: () => Promise<T>): Promise<T> {
+export async function withSeedAnchorClock<T>(
+  callback: () => Promise<T>,
+  decisionInstantMs?: number,
+): Promise<T> {
   const { dayAnchorMs } = resolveSeedAnchor(process.env[SEED_ANCHOR_DATE_ENV])
+  const instantMs = decisionInstantMs ?? dayAnchorMs
   const RealDate = globalThis.Date
   globalThis.Date = new Proxy(RealDate, {
     construct: (target, args, newTarget) => {
       const constructed: unknown = Reflect.construct(
         target,
-        args.length === 0 ? [dayAnchorMs] : args,
+        args.length === 0 ? [instantMs] : args,
         newTarget,
       )
       if (
@@ -24,7 +28,7 @@ export async function withSeedAnchorClock<T>(callback: () => Promise<T>): Promis
       return constructed
     },
     get: (target, property) => {
-      if (property === 'now') return () => dayAnchorMs
+      if (property === 'now') return () => instantMs
       const value: unknown = Reflect.get(target, property, target)
       return value
     },

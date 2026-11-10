@@ -21,6 +21,8 @@ describe('parseExplainShard', () => {
 
 describe('getShardScenarioIds', () => {
   it('splits the manifest by the partition ids and keeps it whole without a shard', () => {
+    expect(getShardScenarioIds('main', manifest, ['p1', 'p2'], ['b'])).toEqual(['a'])
+    expect(getShardScenarioIds('hn-scale', manifest, ['p1', 'p2'], ['b'])).toEqual(['b'])
     expect(getShardScenarioIds('main', manifest, ['p1', 'p2'])).toEqual(['a', 'b'])
     expect(getShardScenarioIds('partition', manifest, ['p1', 'p2'])).toEqual(['p1', 'p2'])
     expect(getShardScenarioIds(undefined, manifest, ['p1', 'p2'])).toEqual(manifest)
@@ -30,21 +32,34 @@ describe('getShardScenarioIds', () => {
 describe('assertShardsPartitionManifest', () => {
   it('accepts disjoint subsets whose union is the manifest', () => {
     expect(() =>
-      assertShardsPartitionManifest(manifest, { main: ['a', 'b'], partition: ['p1', 'p2'] }),
+      assertShardsPartitionManifest(manifest, {
+        main: ['a', 'b'],
+        partition: ['p1', 'p2'],
+        'hn-scale': [],
+      }),
     ).not.toThrow()
   })
 
   it('fails for a scenario in neither shard, in both shards, or outside the manifest', () => {
     expect(() =>
-      assertShardsPartitionManifest(manifest, { main: ['a'], partition: ['p1', 'p2'] }),
+      assertShardsPartitionManifest(manifest, {
+        main: ['a'],
+        partition: ['p1', 'p2'],
+        'hn-scale': [],
+      }),
     ).toThrow('neither=[b]')
     expect(() =>
-      assertShardsPartitionManifest(manifest, { main: ['a', 'b', 'p1'], partition: ['p1', 'p2'] }),
+      assertShardsPartitionManifest(manifest, {
+        main: ['a', 'b', 'p1'],
+        partition: ['p1', 'p2'],
+        'hn-scale': [],
+      }),
     ).toThrow('both=[p1]')
     expect(() =>
       assertShardsPartitionManifest(manifest, {
         main: ['a', 'b', 'ghost'],
         partition: ['p1', 'p2'],
+        'hn-scale': [],
       }),
     ).toThrow('unknown=[ghost]')
   })

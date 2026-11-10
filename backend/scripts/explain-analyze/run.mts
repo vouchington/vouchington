@@ -22,8 +22,10 @@ import {
 } from './run-ordered-scenarios.mts'
 import { runCommentDescendantPartitionedPages } from './run-scenarios/comment-descendant-partitioned-pages.mts'
 import { assertNoLeftoverCommentPartitions } from './seed-data/comment-descendant-partition-storage.mts'
+import { assertNoLeftoverHackerNewsScalePartitions } from './seed-data/hacker-news-scale-fixture.mts'
+import { runHackerNewsScaleScenarios } from './run-scenarios/hacker-news-scale.mts'
 
-// EXPLAIN_SHARD=main|partition splits the CI run (explain-shards.mts); unset runs everything.
+// EXPLAIN_SHARD=main|partition|hn-scale splits the CI run (explain-shards.mts); unset runs everything.
 async function main() {
   const shard = parseExplainShard(process.env.EXPLAIN_SHARD)
   assertShardDeclarations(EXPLAIN_SCENARIO_MANIFEST)
@@ -32,10 +34,15 @@ async function main() {
     assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
     await assertSeedAnchorMatches()
     await assertNoLeftoverCommentPartitions()
-    if (shard !== 'partition') await runScenariosBeforePartition()
-    if (shard !== 'main')
+    await assertNoLeftoverHackerNewsScalePartitions()
+    const ordinary = shard === undefined || shard === 'main'
+    if (ordinary) await runScenariosBeforePartition()
+    if (shard === undefined || shard === 'partition')
       await runStep(runCommentDescendantPartitionedPages.name, runCommentDescendantPartitionedPages)
-    if (shard !== 'partition') await runScenariosAfterPartition()
+    if (ordinary) await runScenariosAfterPartition()
+    // The million-post fixture comes last in a full run so its future leaves never touch ordinary plans.
+    if (shard === undefined || shard === 'hn-scale')
+      await runStep(runHackerNewsScaleScenarios.name, runHackerNewsScaleScenarios)
     const runErrors: unknown[] = []
     try {
       assertScenarioManifest(
