@@ -93,6 +93,7 @@ export async function publishStripeCatalogMapping({
     { query },
   )
   if (reactivated.length !== 1)
+    /* v8 ignore next -- defensive: the pre-read just matched this row; zero rows means a concurrent writer changed it. */
     throw new Error(`Stripe catalog mapping ${skuId} conflicts with its canonical identity`)
 }
 

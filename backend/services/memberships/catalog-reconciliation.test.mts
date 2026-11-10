@@ -145,6 +145,25 @@ describe('Stripe membership catalog reconciliation', () => {
     expect(canonicalMappings(retried)).toEqual(expectedCanonicalMappings('retry'))
   })
 
+  it('reactivates the same provider price after fail-closed retirement', async () => {
+    await reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('reactivate') })
+    const unavailable = async (): Promise<never> => {
+      throw new Error('Stripe unavailable')
+    }
+    await expect(
+      reconcileStripeMembershipCatalog({ context, resolvePrice: unavailable }),
+    ).rejects.toThrow('Stripe unavailable')
+
+    await reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('reactivate') })
+    const reactivated = await getTestStripeCatalogMappings(
+      context.applicationId,
+      context.environment,
+    )
+    expect(reactivated).toHaveLength(4)
+    expect(reactivated.every(mapping => mapping.retired_at === null)).toBe(true)
+    expect(canonicalMappings(reactivated)).toEqual(expectedCanonicalMappings('reactivate'))
+  })
+
   it('keeps publication, replacement, and fail-closed retirement in the supplied environment', async () => {
     const oppositeContext = {
       ...context,
