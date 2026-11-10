@@ -41886,7 +41886,7 @@
     },
     "GET:/api/v1/posts": {
       "bodyKind": "content",
-      "hash": "51b5ba7832f4ad8c6363232b7f1490bb2bfb7b9d909a11d2bff4241f3dcc1a7b",
+      "hash": "8d18deeeb134507a2d180d6f5307302f73a0257e521fdfe8ad393d47300f3c26",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -42064,6 +42064,37 @@
                 "schema": {
                   "name": "AccountType",
                   "type": "ref"
+                }
+              },
+              "display_account": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "id": {
@@ -42595,6 +42626,24 @@
             },
             "type": "object"
           },
+          "HackerNewsReferenceCounts": {
+            "additionalProperties": false,
+            "properties": {
+              "comment_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "story_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "ImagePlacementTuple": {
             "additionalProperties": false,
             "properties": {
@@ -42974,6 +43023,20 @@
                 "required": true,
                 "schema": {
                   "type": "boolean"
+                }
+              },
+              "is_flagged_by_openai_omni_moderation": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "lingua_rs_detected_language": {
@@ -43999,6 +44062,14 @@
             "properties": {},
             "type": "object"
           },
+          "Record<string,HackerNewsReferenceCounts>": {
+            "additionalProperties": {
+              "name": "HackerNewsReferenceCounts",
+              "type": "ref"
+            },
+            "properties": {},
+            "type": "object"
+          },
           "Record<string,Post>": {
             "additionalProperties": {
               "name": "Post",
@@ -44383,6 +44454,13 @@
                       "type": "ref"
                     }
                   ]
+                }
+              },
+              "post_hacker_news_references": {
+                "required": true,
+                "schema": {
+                  "name": "Record<string,HackerNewsReferenceCounts>",
+                  "type": "ref"
                 }
               },
               "post_link_embeds": {
@@ -50479,6 +50557,32 @@
       },
       "source": "backend/api/v1/admin/rss-feed-categories/categories.mts",
       "statusKnowledge": "default"
+    },
+    "GET:/api/v1/rss-feed-items": {
+      "bodyKind": "content",
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/rss-feed-items",
+      "schema": {
+        "definitions": {
+          "Record<string,unknown>": {
+            "additionalProperties": {
+              "type": "unknown"
+            },
+            "properties": {},
+            "type": "object"
+          }
+        },
+        "root": {
+          "name": "Record<string,unknown>",
+          "type": "ref"
+        }
+      },
+      "source": "backend/api/v1/rss-feed-items/rss-feed-items.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
     },
     "GET:/api/v1/rss-feed-items/:id": {
       "bodyKind": "content",
@@ -99159,6 +99263,313 @@
   "fixtures": [
     {
       "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/posts",
+      "bodyFile": "responses/native.posts.hacker-news.filtered.json",
+      "consumers": ["swift-core", "swift-ui"],
+      "id": "native.posts.hacker-news.filtered",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/posts/posts-routes/posts-get.mts"],
+      "path": "/api/v1/posts",
+      "query": {
+        "has_hacker_news_references": "true",
+        "limit": "25",
+        "post_types": "review",
+        "time_range": "1y"
+      },
+      "responseSchema": {
+        "hash": "934531f833a0b1c7d6ed871dd704cbdaa7dfae9c58b320ec8530ad96a3ac41aa",
+        "key": "native.posts.hacker-news.filtered"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/posts"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/posts/:postIdOrSlug",
+      "bodyFile": "responses/native.posts.hacker-news.detail.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.posts.hacker-news.detail",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/posts/post-routes/post-detail-route.mts"],
+      "path": "/api/v1/posts/comment-root",
+      "responseSchema": {
+        "hash": "68f3e5cc61fdcd5d2e08d06d47ece45a14076b88298cd9680d44563c52aa5de3",
+        "key": "native.posts.hacker-news.detail"
+      },
+      "route": {
+        "pathParams": {
+          "postIdOrSlug": "comment-root"
+        },
+        "routeTemplate": "/api/v1/posts/:postIdOrSlug"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/rss-feed-items/:id",
+      "bodyFile": "responses/native.rss-feed-items.hacker-news.detail.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-feed-items.hacker-news.detail",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/rss-feed-items/rss-feed-item.mts"],
+      "path": "/api/v1/rss-feed-items/00000000-0000-7000-8000-000000007886",
+      "responseSchema": {
+        "hash": "6021319f8c85549c0864dfaca6e0cf33338fc9ee02e1e76c141fe3c07c267f36",
+        "key": "native.rss-feed-items.hacker-news.detail"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000007886"
+        },
+        "routeTemplate": "/api/v1/rss-feed-items/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/rss-feed-items",
+      "bodyFile": "responses/native.rss-feed-items.hacker-news.list.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-feed-items.hacker-news.list",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/rss-feed-items/rss-feed-items.mts"],
+      "path": "/api/v1/rss-feed-items",
+      "query": {
+        "limit": "20"
+      },
+      "responseSchema": {
+        "hash": "e45a25cfd087b730a73cc81da9708354345859664f89aca3ed17ac8d0e2c5461",
+        "key": "native.rss-feed-items.hacker-news.list"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/rss-feed-items"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/feeds/rss_feed_items/:feed_type",
+      "bodyFile": "responses/native.podcast-episodes.hacker-news.list.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.podcast-episodes.hacker-news.list",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/feeds/index-routes/feeds-rss-feed-items-by-feed-type-get.mts"
+      ],
+      "path": "/api/v1/feeds/rss_feed_items/any",
+      "query": {
+        "limit": "20",
+        "media_type": "audio"
+      },
+      "responseSchema": {
+        "hash": "3dfd2db8dee5a852be85517485e977823e15a14fd729324631a67e52b53bdaea",
+        "key": "native.podcast-episodes.hacker-news.list"
+      },
+      "route": {
+        "pathParams": {
+          "feed_type": "any"
+        },
+        "routeTemplate": "/api/v1/feeds/rss_feed_items/:feed_type"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/posts",
+      "bodyFile": "responses/native.posts.time-range.explicit-week.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.posts.time-range.explicit-week",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/services/posts/search/__tests__/get-ids.default-time-range.test.mts"
+      ],
+      "path": "/api/v1/posts",
+      "query": {
+        "limit": "25",
+        "sort": "new",
+        "time_range": "1w"
+      },
+      "responseSchema": {
+        "hash": "4bf6a2916388f3b0471b7db4973a6f33bb6286b05966c8ac7e5d2915d40a8f86",
+        "key": "native.posts.time-range.explicit-week"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/posts"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/posts",
+      "bodyFile": "responses/native.posts.time-range.all.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.posts.time-range.all",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/services/posts/search/__tests__/get-ids.default-time-range.test.mts"
+      ],
+      "path": "/api/v1/posts",
+      "query": {
+        "limit": "25",
+        "sort": "new",
+        "time_range": "all"
+      },
+      "responseSchema": {
+        "hash": "4bf6a2916388f3b0471b7db4973a6f33bb6286b05966c8ac7e5d2915d40a8f86",
+        "key": "native.posts.time-range.all"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/posts"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "GET:/api/v1/posts/:idOrSlug/descendants",
+      "bodyFile": "responses/native.comments.descendants.short-continuation.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.comments.descendants.short-continuation",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/posts/__tests__/post.descendants.part-2.test.mts",
+        "backend/services/comments/descendant-page.fold.test.mts"
+      ],
+      "path": "/api/v1/posts/70000000-0000-7000-8000-000000005430/descendants",
+      "query": {
+        "limit": "3"
+      },
+      "responseSchema": {
+        "hash": "9c143d427559b23793f8f011ceb715d3788b8fd6dba7370f6cb92aab332697f9",
+        "key": "native.comments.descendants.short-continuation"
+      },
+      "route": {
+        "pathParams": {
+          "idOrSlug": "70000000-0000-7000-8000-000000005430"
+        },
+        "routeTemplate": "/api/v1/posts/:idOrSlug/descendants"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-comment-descendant-continuation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "GET:/api/v1/posts/:idOrSlug/descendants",
+      "bodyFile": "responses/native.comments.descendants.empty-continuation.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.comments.descendants.empty-continuation",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/posts/__tests__/post.descendants.part-2.test.mts",
+        "backend/services/comments/descendant-page.fold.test.mts"
+      ],
+      "path": "/api/v1/posts/70000000-0000-7000-8000-000000005430/descendants",
+      "query": {
+        "after": "eyJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwNTQzMyIsInNjb3BlIjoiY29tbWVudC1kZXNjZW5kYW50cy12Mjo3MDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDU0MzA6NzAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDA1NDMwIn0",
+        "limit": "1"
+      },
+      "responseSchema": {
+        "hash": "5852859b285f2df1270cef766fe010e2b1eb20ae4273dd437c7cb5717463b5ac",
+        "key": "native.comments.descendants.empty-continuation"
+      },
+      "route": {
+        "pathParams": {
+          "idOrSlug": "70000000-0000-7000-8000-000000005430"
+        },
+        "routeTemplate": "/api/v1/posts/:idOrSlug/descendants"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-comment-descendant-continuation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "GET:/api/v1/posts/:idOrSlug/descendants",
+      "bodyFile": "responses/native.comments.descendants.after-filtered-head.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.comments.descendants.after-filtered-head",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/posts/__tests__/post.descendants.part-2.test.mts",
+        "backend/services/comments/descendant-page.fold.test.mts"
+      ],
+      "path": "/api/v1/posts/70000000-0000-7000-8000-000000005430/descendants",
+      "query": {
+        "after": "eyJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwNTQzNSIsInNjb3BlIjoiY29tbWVudC1kZXNjZW5kYW50cy12Mjo3MDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDU0MzA6NzAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDA1NDMwIn0",
+        "limit": "3"
+      },
+      "responseSchema": {
+        "hash": "8d1cadf4bb4319557d652565ceefacd5087454d5a3d082a0758be86168566e6e",
+        "key": "native.comments.descendants.after-filtered-head"
+      },
+      "route": {
+        "pathParams": {
+          "idOrSlug": "70000000-0000-7000-8000-000000005430"
+        },
+        "routeTemplate": "/api/v1/posts/:idOrSlug/descendants"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-comment-descendant-continuation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "GET:/api/v1/posts/:idOrSlug/descendants",
+      "bodyFile": "responses/native.comments.descendants.expand-preview-child.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.comments.descendants.expand-preview-child",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/posts/__tests__/post.descendants.part-2.test.mts",
+        "backend/services/comments/descendant-page.fold.test.mts"
+      ],
+      "path": "/api/v1/posts/70000000-0000-7000-8000-000000005434/descendants",
+      "query": {
+        "limit": "3"
+      },
+      "responseSchema": {
+        "hash": "585359180e58e960ab10ad3088a8fd0cb0ee7419828cbfe1f05c2a5be4f5d2ca",
+        "key": "native.comments.descendants.expand-preview-child"
+      },
+      "route": {
+        "pathParams": {
+          "idOrSlug": "70000000-0000-7000-8000-000000005434"
+        },
+        "routeTemplate": "/api/v1/posts/:idOrSlug/descendants"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-comment-descendant-continuation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/my/topic-claims",
       "bodyFile": "responses/native.my-topic-claims.page.json",
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
@@ -106606,18 +107017,17 @@
       "id": "native.comments.descendants.default",
       "method": "GET",
       "migratedFrom": ["predecessor-issue#6573"],
-      "path": "/api/v1/posts/comment-root-post/descendants",
+      "path": "/api/v1/posts/70000000-0000-7000-8000-000000005400/descendants",
       "query": {
-        "after": "fixture-root-and-subtree-scoped-cursor",
-        "limit": "2"
+        "limit": "3"
       },
       "responseSchema": {
-        "hash": "b57264982c9271929f0cf4d804b19fd00ebec5e0c745590e1a990d1557cb7662",
+        "hash": "b13f5a61c816768288b5f9a9f2b7afd33296d9e53e670989d974a04e1495398b",
         "key": "native.comments.descendants.default"
       },
       "route": {
         "pathParams": {
-          "idOrSlug": "comment-root-post"
+          "idOrSlug": "70000000-0000-7000-8000-000000005400"
         },
         "routeTemplate": "/api/v1/posts/:idOrSlug/descendants"
       },
@@ -106634,14 +107044,14 @@
       "id": "native.comments.ancestors.permalink",
       "method": "GET",
       "migratedFrom": ["predecessor-issue#6573"],
-      "path": "/api/v1/posts/comment-b/ancestors",
+      "path": "/api/v1/posts/70000000-0000-7000-8000-000000005402/ancestors",
       "responseSchema": {
-        "hash": "03647680d01f1cfff30f01907640a0219b171dcd7bc08bad78ed2571c4606a48",
+        "hash": "293e6955fd9ed2042549a836a1baf84b134f69d6fea7e4391158647cddc51289",
         "key": "native.comments.ancestors.permalink"
       },
       "route": {
         "pathParams": {
-          "idOrSlug": "comment-b"
+          "idOrSlug": "70000000-0000-7000-8000-000000005402"
         },
         "routeTemplate": "/api/v1/posts/:idOrSlug/ancestors"
       },
@@ -106658,17 +107068,17 @@
       "id": "native.comments.ancestors.bounded.shallow",
       "method": "GET",
       "migratedFrom": ["predecessor-issue#11213"],
-      "path": "/api/v1/posts/comment-b/ancestors",
+      "path": "/api/v1/posts/70000000-0000-7000-8000-000000005402/ancestors",
       "query": {
         "limit": "5"
       },
       "responseSchema": {
-        "hash": "ee5bc4184095ec39ec8009e6d3af157f251f1b0267867e52cd4743f1c6bf4c0c",
+        "hash": "2c1cdd51fb3550818a4e47c7d58b66accf35e55a049ea21ddfa79dddc8e791cf",
         "key": "native.comments.ancestors.bounded.shallow"
       },
       "route": {
         "pathParams": {
-          "idOrSlug": "comment-b"
+          "idOrSlug": "70000000-0000-7000-8000-000000005402"
         },
         "routeTemplate": "/api/v1/posts/:idOrSlug/ancestors"
       },
@@ -110539,7 +110949,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "e254a38df70c08cb1ad90fce0c05f743fbd6b94d9ea8822f0dbd8bfd69c4f817",
+        "hash": "d0e8eafd73283e73a61bb8532bd2dbf5a0c3316cb3ea394e6215740e4c16f865",
         "key": "native.users.profile.posts.all"
       },
       "route": {
@@ -110566,7 +110976,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "b1e8bb9c18047e0226a493e24942b10fe8006934af9c0dd6fa3467e764fa572f",
+        "hash": "4bf6a2916388f3b0471b7db4973a6f33bb6286b05966c8ac7e5d2915d40a8f86",
         "key": "native.users.profile.posts.reviews"
       },
       "route": {
@@ -110593,7 +111003,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "aa7dcdea5c65f120f8c878061eba2375d7b5a92a6bc0d3a5224e40e80fe7d893",
+        "hash": "9ea62486fde5a33fa59eeb71d13494513e7a94f1bd89f761975838ca144a451a",
         "key": "native.users.profile.posts.discussions"
       },
       "route": {
@@ -110620,7 +111030,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "8f90bf103c2a3c76839244287d1c52ab6b4929b0257ca04f3a34403a467cce58",
+        "hash": "7dd4ba05b92177c3d864799c085e0d20d1c958e5236c6d488a94f453abb84e24",
         "key": "native.users.profile.posts.provenance"
       },
       "route": {
@@ -110647,7 +111057,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "91dfd38c5ee522a12702edbcfc2065d353584ab6dbcc352ab4be5547e3eb3fc7",
+        "hash": "943d8525d32dc89ad3b4721dc9da2243088d18a49d3e55d776b2b9b60fc65704",
         "key": "native.users.profile.posts.staff-provenance"
       },
       "route": {
@@ -110674,7 +111084,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "a9fb454af3665c6469495f5568d0e8316e4791a2c502e6ab7a60a9b18fc4c7a1",
+        "hash": "a5999f06a2e181145ac91cf94eea8ef44b79f75fb6f10b51367085970956294f",
         "key": "native.users.profile.posts.comments"
       },
       "route": {

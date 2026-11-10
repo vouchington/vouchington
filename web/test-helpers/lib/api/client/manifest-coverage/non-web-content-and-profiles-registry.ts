@@ -4,16 +4,16 @@ export const contentAndProfilesEndpointRegistry = {
   'native.comments.post-detail.default': { method: 'GET', path: '/api/v1/posts/comment-root' },
   'native.comments.descendants.default': {
     method: 'GET',
-    path: '/api/v1/posts/comment-root-post/descendants',
-    query: { after: 'fixture-root-and-subtree-scoped-cursor', limit: '2' },
+    path: '/api/v1/posts/70000000-0000-7000-8000-000000005400/descendants',
+    query: { limit: '3' },
   },
   'native.comments.ancestors.permalink': {
     method: 'GET',
-    path: '/api/v1/posts/comment-b/ancestors',
+    path: '/api/v1/posts/70000000-0000-7000-8000-000000005402/ancestors',
   },
   'native.comments.ancestors.bounded.shallow': {
     method: 'GET',
-    path: '/api/v1/posts/comment-b/ancestors',
+    path: '/api/v1/posts/70000000-0000-7000-8000-000000005402/ancestors',
     query: { limit: '5' },
   },
   'native.comments.ancestors.bounded.deep-initial': {

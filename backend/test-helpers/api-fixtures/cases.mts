@@ -1,4 +1,6 @@
 import { nativeChatApiFixtureCases } from './native-chat-cases.mts'
+import { nativeContentContractApiFixtureCases as contentCases } from './native-content-contract-cases.mts'
+import { nativeCommentDescendantContinuationApiFixtureCases as descendantCases } from './native-comment-descendant-continuation-cases.mts'
 import { engineeringOpsApiFixtureCases } from './engineering-ops-cases.mts'
 import { dynamicConfigApiFixtureCases } from './dynamic-config-cases.mts'
 import { nativeDomainUrlApiFixtureCases } from './native-domain-url-cases.mts'
@@ -17,13 +19,13 @@ import { nativePointValuationApiFixtureCases } from './native-point-valuation-ca
 import { nativeSpendingCategoryApiFixtureCases } from './native-spending-category-cases.mts'
 import { nativeRewardsStatusApiFixtureCases } from './native-rewards-status-cases.mts'
 import { nativeHouseholdPaginationApiFixtureCases } from './native-household-pagination-cases.mts'
-import { topicClaimPaginationApiFixtureCases } from './topic-claim-pagination-cases.mts'
+import { topicClaimPaginationApiFixtureCases as topicClaimCases } from './topic-claim-pagination-cases.mts'
 import { nativeAccountPaginationApiFixtureCases } from './native-account-pagination-cases.mts'
 import { nativeCommentThreadApiFixtureCases } from './native-comment-thread-cases.mts'
 import { nativeCommentAncestorPaginationApiFixtureCases } from './native-comment-ancestor-pagination-cases.mts'
 import { nativeLandingPageApiFixtureCases } from './native-landing-page-cases.mts'
 import { nativeListApiFixtureCases } from './native-list-cases.mts'
-import { classifierThresholdApiFixtureCases } from './classifier-threshold-cases.mts'
+import { classifierThresholdApiFixtureCases as classifierCases } from './classifier-threshold-cases.mts'
 import { nativeAiCostApiFixtureCases } from './native-ai-cost-cases.mts'
 import { nativeMessageApiFixtureCases } from './native-message-cases.mts'
 import { nativeMembershipApiFixtureCases } from './native-membership-cases.mts'
@@ -45,10 +47,9 @@ import { webApiFixtureCases } from './web-cases.mts'
 import { webHostnameBlockingApiFixtureCases } from './web-hostname-blocking-cases.mts'
 const caseRoot = 'backend/test-helpers/api-fixtures/'
 export const apiFixtureCases: ResolvedApiFixtureCase[] = [
-  ...fromCaseFile(
-    `${caseRoot}topic-claim-pagination-cases.mts`,
-    topicClaimPaginationApiFixtureCases,
-  ),
+  ...fromCaseFile(`${caseRoot}native-content-contract-cases.mts`, contentCases),
+  ...fromCaseFile(`${caseRoot}native-comment-descendant-continuation-cases.mts`, descendantCases),
+  ...fromCaseFile(`${caseRoot}topic-claim-pagination-cases.mts`, topicClaimCases),
   ...fromCaseFile(`${caseRoot}copyright-dsa-cases.mts`, copyrightDsaApiFixtureCases),
   ...fromCaseFile(
     `${caseRoot}copyright-trusted-flagger-cases.mts`,
@@ -60,10 +61,7 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
     'backend/test-helpers/api-fixtures/native-ai-cost-cases.mts',
     nativeAiCostApiFixtureCases,
   ),
-  ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/classifier-threshold-cases.mts',
-    classifierThresholdApiFixtureCases,
-  ),
+  ...fromCaseFile(`${caseRoot}classifier-threshold-cases.mts`, classifierCases),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-oauth-broker-cases.mts',
     nativeOAuthBrokerApiFixtureCases,

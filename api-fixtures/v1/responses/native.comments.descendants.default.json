@@ -1,63 +1,63 @@
 {
   "bookmarks": {
-    "comment-a": {
+    "70000000-0000-7000-8000-000000005401": {
       "save": true
     },
-    "comment-b": {
+    "70000000-0000-7000-8000-000000005402": {
       "save": true
     }
   },
   "election_votes": {
-    "comment-a": {
+    "70000000-0000-7000-8000-000000005401": {
       "__entity_type": "election_vote",
       "choice": "like",
       "created_at": "2026-01-01T00:00:00Z",
-      "entity_id": "comment-a",
+      "entity_id": "70000000-0000-7000-8000-000000005401",
       "user_id": "user-1"
     },
-    "comment-b": {
+    "70000000-0000-7000-8000-000000005402": {
       "__entity_type": "election_vote",
       "choice": "dislike",
       "created_at": "2026-01-01T00:00:00Z",
-      "entity_id": "comment-b",
+      "entity_id": "70000000-0000-7000-8000-000000005402",
       "user_id": "user-1"
     }
   },
   "markdown_to_html": {
-    "comment-a": "<p>Top-level native comment</p>",
-    "comment-b": "<p>Nested reply with votes</p>",
-    "comment-c": "<p>Anonymous native reply</p>"
+    "70000000-0000-7000-8000-000000005401": "<p>Top-level native comment</p>",
+    "70000000-0000-7000-8000-000000005402": "<p>Nested reply with votes</p>",
+    "70000000-0000-7000-8000-000000005403": "<p>Anonymous native reply</p>"
   },
   "page_info": {
     "end_cursor": null,
     "has_next_page": false,
-    "start_cursor": null
+    "start_cursor": "eyJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwNTQwMSIsInNjb3BlIjoiY29tbWVudC1kZXNjZW5kYW50cy12Mjo3MDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDU0MDA6NzAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDA1NDAwIn0"
   },
   "post_elections": {
-    "comment-a": {
+    "70000000-0000-7000-8000-000000005401": {
       "__entity_type": "post_election",
-      "id": "comment-a",
+      "id": "70000000-0000-7000-8000-000000005401",
       "votes_count_down": 0,
       "votes_count_up": 8,
       "votes_score_net": 8
     },
-    "comment-b": {
+    "70000000-0000-7000-8000-000000005402": {
       "__entity_type": "post_election",
-      "id": "comment-b",
+      "id": "70000000-0000-7000-8000-000000005402",
       "votes_count_down": 2,
       "votes_count_up": 3,
       "votes_score_net": 1
     },
-    "comment-c": {
+    "70000000-0000-7000-8000-000000005403": {
       "__entity_type": "post_election",
-      "id": "comment-c",
+      "id": "70000000-0000-7000-8000-000000005403",
       "votes_count_down": 0,
       "votes_count_up": 1,
       "votes_score_net": 1
     }
   },
   "posts": {
-    "comment-a": {
+    "70000000-0000-7000-8000-000000005401": {
       "__entity_type": "post",
       "archived_at": null,
       "archived_by_id": null,
@@ -86,21 +86,21 @@
       "created_by_id": "user-1",
       "deleted_at": null,
       "deleted_by_id": null,
-      "id": "comment-a",
+      "id": "70000000-0000-7000-8000-000000005401",
       "is_anonymous": false,
       "locked_at": null,
       "locked_by_id": null,
       "markdown": "Top-level native comment",
-      "parent_post_id": "comment-root-post",
+      "parent_post_id": "70000000-0000-7000-8000-000000005400",
       "post_type": "comment",
       "privacy": "public",
-      "root_post_id": "comment-root-post",
+      "root_post_id": "70000000-0000-7000-8000-000000005400",
       "slug": null,
       "title": "",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null
     },
-    "comment-b": {
+    "70000000-0000-7000-8000-000000005402": {
       "__entity_type": "post",
       "archived_at": null,
       "archived_by_id": null,
@@ -129,21 +129,21 @@
       "created_by_id": "comment-user-2",
       "deleted_at": null,
       "deleted_by_id": null,
-      "id": "comment-b",
+      "id": "70000000-0000-7000-8000-000000005402",
       "is_anonymous": false,
       "locked_at": null,
       "locked_by_id": null,
       "markdown": "Nested reply with votes",
-      "parent_post_id": "comment-a",
+      "parent_post_id": "70000000-0000-7000-8000-000000005401",
       "post_type": "comment",
       "privacy": "public",
-      "root_post_id": "comment-root-post",
+      "root_post_id": "70000000-0000-7000-8000-000000005400",
       "slug": null,
       "title": "",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null
     },
-    "comment-c": {
+    "70000000-0000-7000-8000-000000005403": {
       "__entity_type": "post",
       "archived_at": null,
       "archived_by_id": null,
@@ -160,47 +160,15 @@
       "created_by_id": null,
       "deleted_at": null,
       "deleted_by_id": null,
-      "id": "comment-c",
+      "id": "70000000-0000-7000-8000-000000005403",
       "is_anonymous": true,
       "locked_at": null,
       "locked_by_id": null,
       "markdown": "Anonymous native reply",
-      "parent_post_id": "comment-root-post",
+      "parent_post_id": "70000000-0000-7000-8000-000000005400",
       "post_type": "comment",
       "privacy": "public",
-      "root_post_id": "comment-root-post",
-      "slug": null,
-      "title": "",
-      "updated_at": "2026-01-01T00:00:00Z",
-      "updated_by_id": null
-    },
-    "comment-d": {
-      "__entity_type": "post",
-      "archived_at": null,
-      "archived_by_id": null,
-      "broadcast": "everyone",
-      "can_delete": false,
-      "can_edit_content": false,
-      "can_lock": false,
-      "clearance_reason": null,
-      "clearance_status": null,
-      "clearance_updated_at": null,
-      "community_id": null,
-      "created_at": "2026-01-01T00:00:00Z",
-      "created_by": null,
-      "created_by_id": null,
-      "deleted_at": "2026-01-01T00:00:00Z",
-      "deleted_by_id": "user-1",
-      "id": "comment-d",
-      "is_anonymous": false,
-      "locked_at": null,
-      "locked_by_id": null,
-      "markdown": "",
-      "parent_post_id": "comment-b",
-      "placeholder_state": "deleted",
-      "post_type": "comment",
-      "privacy": "public",
-      "root_post_id": "comment-root-post",
+      "root_post_id": "70000000-0000-7000-8000-000000005400",
       "slug": null,
       "title": "",
       "updated_at": "2026-01-01T00:00:00Z",
@@ -208,7 +176,7 @@
     }
   },
   "posts_metrics": {
-    "comment-a": {
+    "70000000-0000-7000-8000-000000005401": {
       "__entity_type": "post_metrics",
       "bookmarks": {
         "follow": 0,
@@ -218,10 +186,10 @@
         "children": 1,
         "descendants": 1
       },
-      "id": "comment-a",
+      "id": "70000000-0000-7000-8000-000000005401",
       "updated_at": "2026-01-01T00:00:00Z"
     },
-    "comment-b": {
+    "70000000-0000-7000-8000-000000005402": {
       "__entity_type": "post_metrics",
       "bookmarks": {
         "follow": 0,
@@ -231,10 +199,10 @@
         "children": 0,
         "descendants": 0
       },
-      "id": "comment-b",
+      "id": "70000000-0000-7000-8000-000000005402",
       "updated_at": "2026-01-01T00:00:00Z"
     },
-    "comment-c": {
+    "70000000-0000-7000-8000-000000005403": {
       "__entity_type": "post_metrics",
       "bookmarks": {
         "follow": 0,
@@ -244,39 +212,28 @@
         "children": 0,
         "descendants": 0
       },
-      "id": "comment-c",
-      "updated_at": "2026-01-01T00:00:00Z"
-    },
-    "comment-d": {
-      "__entity_type": "post_metrics",
-      "bookmarks": {
-        "follow": 0,
-        "save": 0
-      },
-      "count": {
-        "children": 0,
-        "descendants": 0
-      },
-      "id": "comment-d",
+      "id": "70000000-0000-7000-8000-000000005403",
       "updated_at": "2026-01-01T00:00:00Z"
     }
   },
   "results": [
     {
       "__entity_type": "post",
-      "id": "comment-a"
+      "id": "70000000-0000-7000-8000-000000005401",
+      "ranking": 0,
+      "search_vector_ts": null
     },
     {
       "__entity_type": "post",
-      "id": "comment-b"
+      "id": "70000000-0000-7000-8000-000000005402",
+      "ranking": 0,
+      "search_vector_ts": null
     },
     {
       "__entity_type": "post",
-      "id": "comment-c"
-    },
-    {
-      "__entity_type": "post",
-      "id": "comment-d"
+      "id": "70000000-0000-7000-8000-000000005403",
+      "ranking": 0,
+      "search_vector_ts": null
     }
   ]
 }

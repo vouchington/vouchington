@@ -1,0 +1,111 @@
+{
+  "author_aside": {
+    "about_html": "",
+    "is_following": false,
+    "lingua_rs_detected_language": null,
+    "profile_links": []
+  },
+  "bookmarks": {
+    "70000000-0000-7000-8000-000000005400": {
+      "save": true
+    }
+  },
+  "communities": {},
+  "election_vote": {
+    "__entity_type": "election_vote",
+    "choice": "like",
+    "created_at": "2026-01-01T00:00:00Z",
+    "entity_id": "70000000-0000-7000-8000-000000005400",
+    "user_id": "user-1"
+  },
+  "html": "<p>Root post markdown</p>",
+  "post": {
+    "__entity_type": "post",
+    "archived_at": null,
+    "archived_by_id": null,
+    "broadcast": "everyone",
+    "can_delete": true,
+    "can_edit_content": true,
+    "can_lock": true,
+    "clearance_reason": null,
+    "clearance_status": null,
+    "clearance_updated_at": null,
+    "community_id": null,
+    "created_at": "2026-01-01T00:00:00Z",
+    "created_by": {
+      "__entity_type": "user",
+      "account_type": null,
+      "id": "user-1",
+      "profile_image_id": "00000000-0000-7000-8000-000000000201",
+      "profile_image_placement": {
+        "image_id": "00000000-0000-7000-8000-000000000201",
+        "placement_id": "00000000-0000-7000-8000-000000000301",
+        "placement_revision": 2
+      },
+      "roles": [],
+      "username": "testuser"
+    },
+    "created_by_id": "user-1",
+    "deleted_at": null,
+    "deleted_by_id": null,
+    "id": "70000000-0000-7000-8000-000000005400",
+    "is_anonymous": false,
+    "locked_at": null,
+    "locked_by_id": null,
+    "markdown": "Root post markdown",
+    "parent_post_id": null,
+    "post_type": "discussion",
+    "privacy": "public",
+    "root_post_id": null,
+    "slug": "comment-root",
+    "title": "Comment thread fixture",
+    "updated_at": "2026-01-01T00:00:00Z",
+    "updated_by_id": null
+  },
+  "post_election": {
+    "__entity_type": "post_election",
+    "id": "70000000-0000-7000-8000-000000005400",
+    "votes_count_down": 1,
+    "votes_count_up": 4,
+    "votes_score_net": 3
+  },
+  "post_hacker_news_references": {
+    "70000000-0000-7000-8000-000000005400": {
+      "comment_count": 2,
+      "comments": [
+        {
+          "hacker_news_item_id": 303,
+          "parent_story_item_id": 301,
+          "posted_at": "2026-01-01T02:00:00Z"
+        },
+        {
+          "hacker_news_item_id": 302,
+          "parent_story_item_id": 301,
+          "posted_at": "2026-01-01T01:00:00Z"
+        }
+      ],
+      "stories": [
+        {
+          "hacker_news_item_id": 301,
+          "points": 12,
+          "posted_at": "2026-01-01T00:00:00Z",
+          "reply_count": 4
+        }
+      ],
+      "story_count": 1
+    }
+  },
+  "post_metrics": {
+    "__entity_type": "post_metrics",
+    "bookmarks": {
+      "follow": 0,
+      "save": 1
+    },
+    "count": {
+      "children": 2,
+      "descendants": 3
+    },
+    "id": "70000000-0000-7000-8000-000000005400",
+    "updated_at": "2026-01-01T00:00:00Z"
+  }
+}

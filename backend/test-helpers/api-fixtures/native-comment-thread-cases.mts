@@ -1,7 +1,7 @@
 import { pageInfo, timestamp } from './data.mts'
+import { encodeScopedUuidCursor } from '@modules/pagination'
 import {
   anonymousComment,
-  deletedComment,
   nestedComment,
   rootPost,
   topLevelComment,
@@ -65,7 +65,7 @@ export const nativeCommentThreadApiFixtureCases: ApiFixtureCase[] = [
     id: 'native.comments.descendants.default',
     method: 'GET',
     path: `/api/v1/posts/${rootPost.id}/descendants`,
-    query: { limit: '2', after: 'fixture-root-and-subtree-scoped-cursor' },
+    query: { limit: '3' },
     route: {
       routeTemplate: '/api/v1/posts/:idOrSlug/descendants',
       pathParams: { idOrSlug: rootPost.id },
@@ -74,17 +74,22 @@ export const nativeCommentThreadApiFixtureCases: ApiFixtureCase[] = [
     status: 200,
     body: {
       results: [
-        { __entity_type: 'post', id: topLevelComment.id },
-        { __entity_type: 'post', id: nestedComment.id },
-        { __entity_type: 'post', id: anonymousComment.id },
-        { __entity_type: 'post', id: deletedComment.id },
+        { __entity_type: 'post', id: topLevelComment.id, ranking: 0, search_vector_ts: null },
+        { __entity_type: 'post', id: nestedComment.id, ranking: 0, search_vector_ts: null },
+        { __entity_type: 'post', id: anonymousComment.id, ranking: 0, search_vector_ts: null },
       ],
-      page_info: pageInfo,
+      page_info: {
+        has_next_page: false,
+        start_cursor: encodeScopedUuidCursor(
+          topLevelComment.id,
+          `comment-descendants-v2:${rootPost.id}:${rootPost.id}`,
+        ),
+        end_cursor: null,
+      },
       posts: {
         [topLevelComment.id]: topLevelComment,
         [nestedComment.id]: nestedComment,
         [anonymousComment.id]: anonymousComment,
-        [deletedComment.id]: deletedComment,
       },
       posts_metrics: {
         [topLevelComment.id]: {
@@ -104,13 +109,6 @@ export const nativeCommentThreadApiFixtureCases: ApiFixtureCase[] = [
         [anonymousComment.id]: {
           __entity_type: 'post_metrics',
           id: anonymousComment.id,
-          count: { descendants: 0, children: 0 },
-          bookmarks: { follow: 0, save: 0 },
-          updated_at: timestamp,
-        },
-        [deletedComment.id]: {
-          __entity_type: 'post_metrics',
-          id: deletedComment.id,
           count: { descendants: 0, children: 0 },
           bookmarks: { follow: 0, save: 0 },
           updated_at: timestamp,
