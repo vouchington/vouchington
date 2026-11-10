@@ -1,4 +1,4 @@
-import contracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
+import contracts from '@voucha/api-contracts/v1/request-contracts.json' with { type: 'json' }
 import { postReferenceSchema } from './entity-reference-schema.mts'
 import { inlineSchemaReferences, successSchema } from '@vouchington/mcp-server/schema'
 import { mcpPostSchema } from './mcp-post-output.mts'

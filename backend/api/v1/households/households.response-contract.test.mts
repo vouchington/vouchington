@@ -11,7 +11,7 @@ const manifest = JSON.parse(
 ) as ApiFixtureManifest
 const requestContracts = JSON.parse(
   readFileSync(
-    new URL('../../../../api-fixtures/v1/request-contracts.json', import.meta.url),
+    new URL('../../../../api-contracts/v1/request-contracts.json', import.meta.url),
     'utf8',
   ),
 ) as { responses: Record<string, { $ref?: string }> }

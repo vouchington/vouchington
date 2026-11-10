@@ -1,4 +1,4 @@
-import contracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
+import contracts from '@voucha/api-contracts/v1/request-contracts.json' with { type: 'json' }
 import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
 

@@ -1,4 +1,4 @@
-import runtimeContracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
+import runtimeContracts from '@voucha/api-contracts/v1/request-contracts.json' with { type: 'json' }
 import {
   RequestContractValidatorRegistry,
   type RequestCarrier,

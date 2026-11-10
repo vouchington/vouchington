@@ -10,6 +10,8 @@
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
+!api-contracts/
+!api-contracts/**
 !api-fixtures/
 !api-fixtures/**
 !ci/

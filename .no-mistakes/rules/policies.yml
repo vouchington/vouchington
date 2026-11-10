@@ -1530,6 +1530,7 @@
       - .no-mistakes
       - .opencode
       - .pr-shepherd
+      - api-contracts
       - api-fixtures
       - articles
       - ast-grep-rules

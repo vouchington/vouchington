@@ -28,6 +28,7 @@ on:
       - 'ci/build-infra/start-valkey.sh'
       - '.squawk.toml'
       - '.trivyignore.yaml'
+      - 'api-contracts/**'
       - 'api-fixtures/**'
       - 'backend/**'
       - 'email-templates/**'

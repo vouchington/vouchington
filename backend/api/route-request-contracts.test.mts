@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import contracts from '../../api-fixtures/v1/request-contracts.json' with { type: 'json' }
+import contracts from '../../api-contracts/v1/request-contracts.json' with { type: 'json' }
 import { routeKeyForResponseContract } from '../test-helpers/api-fixtures/response-contract-types.mts'
 import { REQUEST_CONTRACT_EXEMPTIONS as EXEMPTIONS } from '../test-helpers/api/request-contract-exemptions.mts'
 

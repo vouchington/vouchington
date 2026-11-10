@@ -64,7 +64,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # ts-shared sub-packages are declared as workspaces in backend/package.json, so
 # pnpm installs them from the shared workspace lockfile.
 # ts-shared has no root package.json; its sub-packages are installed as backend workspaces.
-COPY --parents api-fixtures/package.json backend/package.json backend/*/package.json backend/*/*/package.json ci/package.json email-templates/package.json ts-shared/*/package.json ./
+COPY --parents api-contracts/package.json api-fixtures/package.json backend/package.json backend/*/package.json backend/*/*/package.json ci/package.json email-templates/package.json ts-shared/*/package.json ./
 
 # Skip workspace postinstall scripts during dependency install.
 # email templates are built explicitly later.
@@ -91,10 +91,10 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharin
 # root .dockerignore also admits the web workspace for web/Dockerfile, but
 # backend builds should not invalidate this layer on unrelated web source edits.
 # @services/runtime-request-validation and @voucha/mcp (MCP output schemas)
-# import @voucha/api-fixtures: request validation loads request-contracts.json,
+# import @voucha/api-contracts: request validation loads request-contracts.json,
 # and admin tool response schemas load the same request bundle. Other files are test and client fixture
 # payload that the compiled executables don't need.
-COPY api-fixtures/v1/request-contracts.json ./api-fixtures/v1/
+COPY api-contracts/v1/request-contracts.json ./api-contracts/v1/
 COPY email-templates/ ./email-templates/
 COPY ts-shared/ ./ts-shared/
 COPY backend/ ./backend/

@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { PUBLIC_POST_FIELDS } from '@services/posts/public-post-projection'
-import contracts from '../../../../../api-fixtures/v1/request-contracts.json' with { type: 'json' }
+import contracts from '../../../../../api-contracts/v1/request-contracts.json' with { type: 'json' }
 
 const BASE = '/api/v1/topic-recommendations'
 const DIAGNOSTIC = /schema|must be|required|invalid/i

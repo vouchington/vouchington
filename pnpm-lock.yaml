@@ -164,6 +164,8 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1
 
+  api-contracts: {}
+
   api-fixtures: {}
 
   backend:
@@ -2187,9 +2189,9 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../ts-shared/utils
-      '@voucha/api-fixtures':
+      '@voucha/api-contracts':
         specifier: workspace:^
-        version: link:../../api-fixtures
+        version: link:../../api-contracts
       '@voucha/types':
         specifier: workspace:^
         version: link:../types
@@ -10998,9 +11000,9 @@ importers:
 
   backend/services/runtime-request-validation:
     dependencies:
-      '@voucha/api-fixtures':
+      '@voucha/api-contracts':
         specifier: workspace:^
-        version: link:../../../api-fixtures
+        version: link:../../../api-contracts
       '@vouchington/request-contract-validation':
         specifier: ^0.0.3
         version: 0.0.3
