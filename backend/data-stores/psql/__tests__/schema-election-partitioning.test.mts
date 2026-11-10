@@ -65,9 +65,11 @@ describe('election schema partitioning', () => {
       expect(tableIndexes.map(row => row.index_name)).toEqual(
         expect.arrayContaining([
           `idx_${config.voteTable}__${config.entityIdColumn}__user_id__id`,
-          `idx_${config.voteTable}__${config.entityIdColumn}__id`,
           `idx_${config.voteTable}__user_id__${config.entityIdColumn}__id`,
         ]),
+      )
+      expect(tableIndexes.map(row => row.index_name)).not.toContain(
+        `idx_${config.voteTable}__${config.entityIdColumn}__id`,
       )
       expect(
         tableIndexes.find(
@@ -96,11 +98,14 @@ describe('election schema partitioning', () => {
         indexes.filter(row => row.table_name === voteTable).map(row => row.index_name),
       ).toEqual(
         expect.arrayContaining(
-          ['relation__user__id', 'relation__id', 'user__relation__id'].map(suffix =>
+          ['relation__user__id', 'user__relation__id'].map(suffix =>
             getElectionIndexName(voteTable, suffix),
           ),
         ),
       )
+      expect(
+        indexes.filter(row => row.table_name === voteTable).map(row => row.index_name),
+      ).not.toContain(getElectionIndexName(voteTable, 'relation__id'))
       expect(leafRows.filter(row => row.table_name === voteTable)).toEqual([
         {
           table_name: voteTable,

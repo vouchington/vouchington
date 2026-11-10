@@ -144,8 +144,7 @@ describe('0000-00-00-entity-elections', () => {
       const { voteTable, entityIdColumn } = config
       expect(sql).toContain(`idx_${voteTable}__${entityIdColumn}__user_id__id`)
       expect(sql).toContain(`(${entityIdColumn}, user_id, id DESC)`)
-      expect(sql).toContain(`idx_${voteTable}__${entityIdColumn}__id`)
-      expect(sql).toContain(`(${entityIdColumn}, id)`)
+      expect(sql).not.toContain(`idx_${voteTable}__${entityIdColumn}__id`)
       expect(sql).toContain(`idx_${voteTable}__user_id__${entityIdColumn}__id`)
       expect(sql).toContain(`(user_id, ${entityIdColumn}, id DESC)`)
     }

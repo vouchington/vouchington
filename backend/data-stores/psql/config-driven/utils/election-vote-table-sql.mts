@@ -18,10 +18,6 @@ CREATE INDEX IF NOT EXISTS ${getElectionIndexName(voteTable, `${key}__${actor}__
 ON ${voteTable} (${entityIdColumn}, user_id, id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS ${getElectionIndexName(voteTable, `${key}__id`)}
-ON ${voteTable} (${entityIdColumn}, id);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS ${getElectionIndexName(voteTable, `${actor}__${key}__id`)}
 ON ${voteTable} (user_id, ${entityIdColumn}, id DESC);
 
