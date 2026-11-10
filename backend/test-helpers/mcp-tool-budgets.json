@@ -45,12 +45,12 @@
       },
       "read_community": {
         "measured": {
-          "list": 11079,
-          "core": 4205
+          "list": 8846,
+          "core": 3092
         },
         "max": {
-          "list": 12000,
-          "core": 5000
+          "list": 9000,
+          "core": 4000
         }
       },
       "read_reference_data": {
@@ -75,8 +75,8 @@
       },
       "discover_communities": {
         "measured": {
-          "list": 4424,
-          "core": 1394
+          "list": 4532,
+          "core": 1502
         },
         "max": {
           "list": 5000,
@@ -95,8 +95,8 @@
       },
       "discover_rss_feeds": {
         "measured": {
-          "list": 4881,
-          "core": 2382
+          "list": 4926,
+          "core": 2427
         },
         "max": {
           "list": 5000,
@@ -125,8 +125,8 @@
       },
       "read_feed": {
         "measured": {
-          "list": 5266,
-          "core": 3077
+          "list": 5242,
+          "core": 3053
         },
         "max": {
           "list": 6000,
@@ -135,18 +135,18 @@
       },
       "read_posts": {
         "measured": {
-          "list": 12852,
-          "core": 5942
+          "list": 11594,
+          "core": 5336
         },
         "max": {
-          "list": 14000,
-          "core": 7000
+          "list": 12000,
+          "core": 6000
         }
       },
       "read_hostnames": {
         "measured": {
-          "list": 2503,
-          "core": 1194
+          "list": 2575,
+          "core": 1266
         },
         "max": {
           "list": 3000,
@@ -325,7 +325,7 @@
       },
       "create_topic_recommendation": {
         "measured": {
-          "list": 4462,
+          "list": 4446,
           "core": 1197
         },
         "max": {
@@ -480,16 +480,6 @@
         },
         "max": {
           "list": 1000,
-          "core": 1000
-        }
-      },
-      "list_my_topic_recommendations": {
-        "measured": {
-          "list": 4827,
-          "core": 895
-        },
-        "max": {
-          "list": 5000,
           "core": 1000
         }
       },
@@ -755,7 +745,7 @@
       },
       "update_topic_recommendation": {
         "measured": {
-          "list": 4503,
+          "list": 4487,
           "core": 1238
         },
         "max": {
@@ -765,7 +755,7 @@
       },
       "withdraw_topic_recommendation": {
         "measured": {
-          "list": 739,
+          "list": 723,
           "core": 397
         },
         "max": {
