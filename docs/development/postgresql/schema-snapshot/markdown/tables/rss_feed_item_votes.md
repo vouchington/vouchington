@@ -41,7 +41,6 @@ _none_
 **Indexes:**
 
 - `idx_rss_feed_item_votes__cleanup__id`: `CREATE INDEX idx_rss_feed_item_votes__cleanup__id ON ONLY public.rss_feed_item_votes USING btree (id)`
-- `idx_rss_feed_item_votes__rss_feed_item_id__id`: `CREATE INDEX idx_rss_feed_item_votes__rss_feed_item_id__id ON ONLY public.rss_feed_item_votes USING btree (rss_feed_item_id, id)`
 - `idx_rss_feed_item_votes__rss_feed_item_id__user_id__id`: `CREATE INDEX idx_rss_feed_item_votes__rss_feed_item_id__user_id__id ON ONLY public.rss_feed_item_votes USING btree (rss_feed_item_id, user_id, id DESC)`
 - `idx_rss_feed_item_votes__user_agent__id`: `CREATE INDEX idx_rss_feed_item_votes__user_agent__id ON ONLY public.rss_feed_item_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `idx_rss_feed_item_votes__user_id__rss_feed_item_id__id`: `CREATE INDEX idx_rss_feed_item_votes__user_id__rss_feed_item_id__id ON ONLY public.rss_feed_item_votes USING btree (user_id, rss_feed_item_id, id DESC)`

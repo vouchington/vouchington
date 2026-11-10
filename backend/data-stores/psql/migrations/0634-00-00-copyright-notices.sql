@@ -733,7 +733,6 @@ CREATE TRIGGER trigger_copyright_action_work_attempt AFTER INSERT OR UPDATE ON c
 FOR EACH ROW EXECUTE FUNCTION fn_create_copyright_action_attempt();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_action_work_items__available ON copyright_notice_action_work_items(available_at, id) WHERE lease_token IS NULL AND state = 'pending';
-CREATE INDEX idx_copyright_notice_action_work_items__notice_id ON copyright_notice_action_work_items(copyright_notice_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_action_work_items__expired ON copyright_notice_action_work_items(lease_expires_at, id) WHERE lease_token IS NOT NULL;
 COMMENT ON COLUMN copyright_notice_action_work_items.generation IS 'Explicit replay cycle; clearing failed or blocked current-cycle outcomes increments it while execution history remains immutable.';
@@ -790,7 +789,6 @@ CREATE INDEX idx_copyright_notice_target_images__image ON copyright_notice_targe
 CREATE INDEX idx_copyright_notice_target_images__binding ON copyright_notice_target_images(placement_id, image_id, binding_family);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__target ON copyright_restrictions(copyright_notice_target_id);
-CREATE INDEX idx_copyright_restrictions__notice_id ON copyright_restrictions(copyright_notice_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__human_reviewer ON copyright_restrictions(human_reviewed_by_id) WHERE human_reviewed_by_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -807,7 +805,6 @@ CREATE INDEX idx_copyright_notice_submissions__current_assessment
 CREATE INDEX idx_copyright_notice_submissions__current_assessment_global
   ON copyright_notice_submissions(current_assessment_identity_id)
   WHERE current_assessment_identity_id IS NOT NULL;
-CREATE INDEX idx_copyright_notice_targets__notice_id ON copyright_notice_targets(copyright_notice_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__submitted_by ON copyright_notice_submissions(submitted_by_id) WHERE submitted_by_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -816,7 +813,6 @@ CREATE INDEX idx_copyright_notice_submissions__guest_capability ON copyright_not
 CREATE UNIQUE INDEX idx_copyright_notice_submissions__one_guest_court_hold ON copyright_notice_submissions(copyright_notice_guest_capability_id) WHERE kind = 'court_or_ccb_hold' AND copyright_notice_guest_capability_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submission_assessments__submission ON copyright_notice_submission_assessments(copyright_notice_submission_id, id DESC);
-CREATE INDEX idx_copyright_notice_submission_assessments__notice_id ON copyright_notice_submission_assessments(copyright_notice_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submission_assessments__assessed_by ON copyright_notice_submission_assessments(assessed_by_id) WHERE assessed_by_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

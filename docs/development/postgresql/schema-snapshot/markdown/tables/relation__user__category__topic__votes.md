@@ -41,7 +41,6 @@ _none_
 **Indexes:**
 
 - `idx_relation__user__category__topic__votes__cleanup__id`: `CREATE INDEX idx_relation__user__category__topic__votes__cleanup__id ON ONLY public.relation__user__category__topic__votes USING btree (id)`
-- `idx_relation__user__category__topic__votes__relation__id`: `CREATE INDEX idx_relation__user__category__topic__votes__relation__id ON ONLY public.relation__user__category__topic__votes USING btree (entity_relation_id, id)`
 - `idx_relation__user__category__topic__votes__relation__user__id`: `CREATE INDEX idx_relation__user__category__topic__votes__relation__user__id ON ONLY public.relation__user__category__topic__votes USING btree (entity_relation_id, user_id, id DESC)`
 - `idx_relation__user__category__topic__votes__user__id`: `CREATE INDEX idx_relation__user__category__topic__votes__user__id ON ONLY public.relation__user__category__topic__votes USING btree (user_id, id)`
 - `idx_relation__user__category__topic__votes__user__relation__id`: `CREATE INDEX idx_relation__user__category__topic__votes__user__relation__id ON ONLY public.relation__user__category__topic__votes USING btree (user_id, entity_relation_id, id DESC)`

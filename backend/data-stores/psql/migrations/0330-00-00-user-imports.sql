@@ -223,9 +223,6 @@ CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_result
 BEFORE INSERT OR UPDATE OF outcome, completed_at, rss_feed_id ON user_rss_feed_import_rows
 FOR EACH ROW EXECUTE FUNCTION fn_reject_user_rss_feed_import_result();
 
-CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_rows__batch_id__row_index
-ON user_rss_feed_import_rows (batch_id, row_index);
-
 ALTER TABLE user_import_requests
   ADD CONSTRAINT user_import_requests_rss_feed_import_row_id_fkey
   FOREIGN KEY (rss_feed_import_row_id)

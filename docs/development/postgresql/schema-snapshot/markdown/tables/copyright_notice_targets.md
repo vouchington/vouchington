@@ -41,7 +41,6 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_targets_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_targets_copyright_notice_id_id_key ON public.copyright_notice_targets USING btree (copyright_notice_id, id)`
 - `copyright_notice_targets_id_placement_id_key`: `CREATE UNIQUE INDEX copyright_notice_targets_id_placement_id_key ON public.copyright_notice_targets USING btree (id, placement_id)`
 - `copyright_notice_targets_pkey`: `CREATE UNIQUE INDEX copyright_notice_targets_pkey ON public.copyright_notice_targets USING btree (id)`
-- `idx_copyright_notice_targets__notice_id`: `CREATE INDEX idx_copyright_notice_targets__notice_id ON public.copyright_notice_targets USING btree (copyright_notice_id, id)`
 - `idx_copyright_notice_targets__placement`: `CREATE INDEX idx_copyright_notice_targets__placement ON public.copyright_notice_targets USING btree (placement_id, placement_revision)`
 - `idx_copyright_notice_targets__surface_owner_user`: `CREATE INDEX idx_copyright_notice_targets__surface_owner_user ON public.copyright_notice_targets USING btree (surface_owner_user_id) WHERE (surface_owner_user_id IS NOT NULL)`
 - `uq_copy_noti_targe__notice_id__placement_id__placement_revision`: `CREATE UNIQUE INDEX uq_copy_noti_targe__notice_id__placement_id__placement_revision ON public.copyright_notice_targets USING btree (copyright_notice_id, placement_id, placement_revision)`

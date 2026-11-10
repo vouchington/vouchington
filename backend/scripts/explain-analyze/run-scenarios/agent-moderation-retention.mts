@@ -100,7 +100,7 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
           'agent_moderations__default_post_id_prompt_id_id_idx',
           'idx_moderation_training_feedbacks__agent_moderation_id',
           'idx_vote_integrity_flags__agent_moderation_id',
-          'agent_moderation_votes__default_agent_moderation_id_id_idx',
+          'agent_moderation_votes__default_pkey',
           'idx_moderator_actions__agent_moderation_id',
         ],
       },

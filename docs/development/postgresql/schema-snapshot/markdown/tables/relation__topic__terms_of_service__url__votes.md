@@ -44,7 +44,6 @@ _none_
 - `idx_rela__topic__terms_of_servi__url__votes__user__relation__id`: `CREATE INDEX idx_rela__topic__terms_of_servi__url__votes__user__relation__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (user_id, entity_relation_id, id DESC)`
 - `idx_relati__topic__terms_of_service__url__votes__user_agent__id`: `CREATE INDEX idx_relati__topic__terms_of_service__url__votes__user_agent__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `idx_relation__topic__terms_of_service__url__votes__cleanup__id`: `CREATE INDEX idx_relation__topic__terms_of_service__url__votes__cleanup__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (id)`
-- `idx_relation__topic__terms_of_service__url__votes__relation__id`: `CREATE INDEX idx_relation__topic__terms_of_service__url__votes__relation__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (entity_relation_id, id)`
 - `idx_relation__topic__terms_of_service__url__votes__user__id`: `CREATE INDEX idx_relation__topic__terms_of_service__url__votes__user__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (user_id, id)`
 - `relation__topic__terms_of_service__url__votes_pkey`: `CREATE UNIQUE INDEX relation__topic__terms_of_service__url__votes_pkey ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (entity_relation_id, id)`
 

@@ -4638,38 +4638,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_agent_moderation_votes__agent_moderation_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_agent_moderation_votes__agent_moderation_id__id ON ONLY public.agent_moderation_votes USING btree (agent_moderation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "agent_moderation_id",
-              "descending": false,
-              "expression": "agent_moderation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_agent_moderation_votes__agent_moderation_id__user_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -31858,38 +31826,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_copyright_notice_action_work_items__notice_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_action_work_items__notice_id ON public.copyright_notice_action_work_items USING btree (copyright_notice_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_copyright_notice_action_work_items__pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -43084,38 +43020,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_copyright_notice_submission_assessments__notice_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_submission_assessments__notice_id ON ONLY public.copyright_notice_submission_assessments USING btree (copyright_notice_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_copyright_notice_submission_assessments__submission": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -44846,38 +44750,6 @@
           "primary": true,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_copyright_notice_targets__notice_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_targets__notice_id ON public.copyright_notice_targets USING btree (copyright_notice_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_copyright_notice_targets__placement": {
@@ -47741,38 +47613,6 @@
           ],
           "live": true,
           "predicate": "(lifted_by_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_copyright_restrictions__notice_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_restrictions__notice_id ON public.copyright_restrictions USING btree (copyright_notice_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -57604,38 +57444,6 @@
           "definition": "CREATE INDEX idx_hostname_votes__cleanup__id ON ONLY public.hostname_votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_hostname_votes__hostname_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_hostname_votes__hostname_id__id ON ONLY public.hostname_votes USING btree (hostname_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "hostname_id",
-              "descending": false,
-              "expression": "hostname_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -83752,29 +83560,6 @@
         }
       },
       "indexes": {
-        "idx_moderator_agents__slug": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderator_agents__slug ON public.moderator_agents USING btree (slug)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "slug",
-              "descending": false,
-              "expression": "slug",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "moderator_agents_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -97914,38 +97699,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_post_votes__post_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_votes__post_id__id ON ONLY public.post_votes USING btree (post_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_post_votes__post_id__user_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -102707,38 +102460,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_relation__post__category__topic__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__post__category__topic__votes__relation__id ON ONLY public.relation__post__category__topic__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_relation__post__category__topic__votes__relation__user__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -103824,38 +103545,6 @@
           "definition": "CREATE INDEX idx_relation__post__category__topic_alias__votes__cleanup__id ON ONLY public.relation__post__category__topic_alias__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__post__category__topic_alias__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__post__category__topic_alias__votes__relation__id ON ONLY public.relation__post__category__topic_alias__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -105520,38 +105209,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_relation__post__related__post__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__post__related__post__votes__relation__id ON ONLY public.relation__post__related__post__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_relation__post__related__post__votes__relation__user__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -106656,38 +106313,6 @@
           "definition": "CREATE INDEX idx_relation__post__related__url__votes__cleanup__id ON ONLY public.relation__post__related__url__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__post__related__url__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__post__related__url__votes__relation__id ON ONLY public.relation__post__related__url__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -108061,38 +107686,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_relatio__rss_feed_item__categor__topic__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relatio__rss_feed_item__categor__topic__votes__relation__id ON ONLY public.relation__rss_feed_item__category__topic__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_relatio__rss_feed_item__category__topic__votes__cleanup__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -109056,38 +108649,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_rela__rss_feed_item__cate__topic_alias__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rela__rss_feed_item__cate__topic_alias__votes__relation__id ON ONLY public.relation__rss_feed_item__category__topic_alias__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_rela__rss_feed_item__categ__topic_alias__votes__cleanup__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -109953,38 +109514,6 @@
           "definition": "CREATE INDEX idx_relation__topic__category__topic__votes__cleanup__id ON ONLY public.relation__topic__category__topic__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__topic__category__topic__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__topic__category__topic__votes__relation__id ON ONLY public.relation__topic__category__topic__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -110952,38 +110481,6 @@
           "definition": "CREATE INDEX idx_relation__topic__faq__post__votes__cleanup__id ON ONLY public.relation__topic__faq__post__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__topic__faq__post__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__topic__faq__post__votes__relation__id ON ONLY public.relation__topic__faq__post__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -112000,38 +111497,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_relation__topic__faq__url__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__topic__faq__url__votes__relation__id ON ONLY public.relation__topic__faq__url__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_relation__topic__faq__url__votes__relation__user__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -113014,38 +112479,6 @@
           "definition": "CREATE INDEX idx_relation__topic__guide__url__votes__cleanup__id ON ONLY public.relation__topic__guide__url__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__topic__guide__url__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__topic__guide__url__votes__relation__id ON ONLY public.relation__topic__guide__url__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -114127,38 +113560,6 @@
           "definition": "CREATE INDEX idx_relation__topic__landing_page__url__votes__cleanup__id ON ONLY public.relation__topic__landing_page__url__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__topic__landing_page__url__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__topic__landing_page__url__votes__relation__id ON ONLY public.relation__topic__landing_page__url__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -115694,38 +115095,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_relation__topic__publisher_type__topic__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__topic__publisher_type__topic__votes__relation__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_relation__topic__publisher_type__topic__votes__user__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -116571,38 +115940,6 @@
           "definition": "CREATE INDEX idx_relation__topic__related__post__votes__cleanup__id ON ONLY public.relation__topic__related__post__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__topic__related__post__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__topic__related__post__votes__relation__id ON ONLY public.relation__topic__related__post__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -117570,38 +116907,6 @@
           "definition": "CREATE INDEX idx_relation__topic__related__topic__votes__cleanup__id ON ONLY public.relation__topic__related__topic__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__topic__related__topic__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__topic__related__topic__votes__relation__id ON ONLY public.relation__topic__related__topic__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -118601,38 +117906,6 @@
           "definition": "CREATE INDEX idx_relation__topic__related__url__votes__cleanup__id ON ONLY public.relation__topic__related__url__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__topic__related__url__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__topic__related__url__votes__relation__id ON ONLY public.relation__topic__related__url__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -119737,38 +119010,6 @@
           "definition": "CREATE INDEX idx_relation__topic__terms_of_service__url__votes__cleanup__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__topic__terms_of_service__url__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__topic__terms_of_service__url__votes__relation__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -121415,38 +120656,6 @@
           "definition": "CREATE INDEX idx_relation__user__category__topic__votes__cleanup__id ON ONLY public.relation__user__category__topic__votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_relation__user__category__topic__votes__relation__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__user__category__topic__votes__relation__id ON ONLY public.relation__user__category__topic__votes USING btree (entity_relation_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -135774,38 +134983,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_rss_feed_item_votes__rss_feed_item_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_votes__rss_feed_item_id__id ON ONLY public.rss_feed_item_votes USING btree (rss_feed_item_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_rss_feed_item_votes__rss_feed_item_id__user_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -149457,38 +148634,6 @@
           "definition": "CREATE INDEX idx_topic_votes__cleanup__id ON ONLY public.topic_votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_topic_votes__topic_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_votes__topic_id__id ON ONLY public.topic_votes USING btree (topic_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",
@@ -163856,38 +163001,6 @@
         }
       },
       "indexes": {
-        "idx_user_rss_feed_import_rows__batch_id__row_index": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_rss_feed_import_rows__batch_id__row_index ON public.user_rss_feed_import_rows USING btree (batch_id, row_index)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "batch_id",
-              "descending": false,
-              "expression": "batch_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "row_index",
-              "descending": false,
-              "expression": "row_index",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.int4_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_user_rss_feed_import_rows__rss_feed_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -165297,38 +164410,6 @@
           "definition": "CREATE INDEX idx_user_vouch_votes__cleanup__id ON ONLY public.user_vouch_votes USING btree (id)",
           "immediate": true,
           "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_user_vouch_votes__target_user_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_vouch_votes__target_user_id__id ON ONLY public.user_vouch_votes USING btree (target_user_id, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "target_user_id",
-              "descending": false,
-              "expression": "target_user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
             {
               "collation": null,
               "column": "id",

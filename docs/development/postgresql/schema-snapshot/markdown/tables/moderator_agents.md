@@ -30,7 +30,6 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `idx_moderator_agents__slug`: `CREATE INDEX idx_moderator_agents__slug ON public.moderator_agents USING btree (slug)`
 - `moderator_agents_pkey`: `CREATE UNIQUE INDEX moderator_agents_pkey ON public.moderator_agents USING btree (agent_id)`
 - `moderator_agents_slug_key`: `CREATE UNIQUE INDEX moderator_agents_slug_key ON public.moderator_agents USING btree (slug)`
 

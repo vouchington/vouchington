@@ -58,7 +58,6 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_restrictions__human_reviewer`: `CREATE INDEX idx_copyright_restrictions__human_reviewer ON public.copyright_restrictions USING btree (human_reviewed_by_id) WHERE (human_reviewed_by_id IS NOT NULL)`
 - `idx_copyright_restrictions__imposed_by`: `CREATE INDEX idx_copyright_restrictions__imposed_by ON public.copyright_restrictions USING btree (imposed_by_id) WHERE (imposed_by_id IS NOT NULL)`
 - `idx_copyright_restrictions__lifted_by`: `CREATE INDEX idx_copyright_restrictions__lifted_by ON public.copyright_restrictions USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)`
-- `idx_copyright_restrictions__notice_id`: `CREATE INDEX idx_copyright_restrictions__notice_id ON public.copyright_restrictions USING btree (copyright_notice_id, id)`
 - `idx_copyright_restrictions__one_active_per_target`: `CREATE UNIQUE INDEX idx_copyright_restrictions__one_active_per_target ON public.copyright_restrictions USING btree (copyright_notice_target_id) WHERE (lifted_at IS NULL)`
 - `idx_copyright_restrictions__target`: `CREATE INDEX idx_copyright_restrictions__target ON public.copyright_restrictions USING btree (copyright_notice_target_id)`
 

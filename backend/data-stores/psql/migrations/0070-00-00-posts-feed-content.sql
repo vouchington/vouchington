@@ -828,9 +828,6 @@ CREATE TABLE IF NOT EXISTS moderator_agents (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_moderator_agents__slug ON moderator_agents (slug);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderator_agents_updated_at
 BEFORE UPDATE ON moderator_agents
 FOR EACH ROW
