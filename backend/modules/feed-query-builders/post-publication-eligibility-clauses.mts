@@ -179,16 +179,16 @@ export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
           AND story_item.deleted_at IS NULL
           AND `
   visibleItem.append(itemHasDiscoverableSourceSql('story_item.id')).append(sql` LIMIT 1`)
-  return sql`(`
-    .append(`${rootAlias}.post_type <> 'story'`)
-    .append(sql` OR EXISTS (
+  const existsOpen = ` OR EXISTS (
       SELECT 1
       FROM story_posts post_story
       JOIN stories publication_story
         ON publication_story.id = post_story.story_id
        AND publication_story.deleted_at IS NULL
-      -- no-mistakes-disable-next-line postgres-required-predicates: one discoverable item is enough, and story_id serves each item partition
-      JOIN LATERAL (`)
+      JOIN LATERAL (`
+  return sql`(`
+    .append(`${rootAlias}.post_type <> 'story'`)
+    .append(existsOpen)
     .append(visibleItem)
     .append(sql`) story_item ON TRUE
       WHERE post_story.post_id = `)
