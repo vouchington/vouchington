@@ -129,7 +129,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_create_user_metrics`: `CREATE TRIGGER trigger_create_user_metrics AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_metrics('user_metrics', 'id')`
 - `trigger_handoff_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces BEFORE DELETE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_handoff_deleted_user_image_surfaces()`
 - `trigger_register_retained_user_identity`: `CREATE TRIGGER trigger_register_retained_user_identity BEFORE INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('user')`
 - `trigger_retire_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_user_image_surfaces()`
