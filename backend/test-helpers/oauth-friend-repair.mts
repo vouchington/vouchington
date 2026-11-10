@@ -1,5 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { v7 } from 'uuid'
+import { requestOAuthFriendRepairSweep } from '../services/oauth-accounts/request-friend-repair-sweep.mts'
 import {
   repairOAuthFriendEdgePage,
   repairOAuthFriendEdgesInTransaction,
@@ -90,4 +91,25 @@ export async function observeTestGithubFriendRepairCoordinator(
   )
   await query.rollback()
   return { first, firstCursor, second, secondCursor, completed, completedCursor, edges }
+}
+
+/** Repair with no cursor row, then request a sweep; reports cursor counts and the idle result. */
+export async function runTestFriendRepairSweepRequest() {
+  await using query = await beginTransaction()
+  const countCursors = async () =>
+    (
+      await query<{ count: number }>(
+        `/* countTestRepairCursors */ SELECT count(*)::int AS count
+         FROM oauth_friend_reference_repair_cursors WHERE provider = 'github'`,
+      )
+    ).rows[0]!.count
+  await query(
+    `/* clearTestRepairCursor */ DELETE FROM oauth_friend_reference_repair_cursors WHERE provider = 'github'`,
+  )
+  const idle = await repairOAuthFriendEdgesInTransaction(query, 'github', 1)
+  const idleCursors = await countCursors()
+  await requestOAuthFriendRepairSweep(query, 'github')
+  const requestedCursors = await countCursors()
+  await query.rollback()
+  return { idle, idleCursors, requestedCursors }
 }

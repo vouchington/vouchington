@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { insertTestReview, insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import {
   runTestLandingPageReplacementRace,
   getTestLandingPageGroupMemberCount,
+  retireTestTopicForLandingPage,
 } from '@voucha/test-helpers/landing-page-replacement-race'
 import { buildLandingPageInsertRows } from './replace-item-rows.mts'
 import { replaceLandingPageItemRows } from './replace-item-writes.mts'
@@ -143,9 +144,7 @@ describe('landing page atomic item replacement', () => {
       name: `Landing source ${crypto.randomUUID()}`,
       slug: `landing-source-${crypto.randomUUID()}`,
     })
-    await write('/* retireLandingTestTopic */ UPDATE topics SET deleted_at = now() WHERE id = $1', [
-      sourceId,
-    ])
+    await retireTestTopicForLandingPage(sourceId)
     const rows = buildLandingPageInsertRows(
       [{ type: 'topic_group', topic_id: sourceId, entries: [] }],
       new Map(),

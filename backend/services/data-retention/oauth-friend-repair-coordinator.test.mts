@@ -10,13 +10,12 @@ import {
   insertTestGithubRepairEdge,
   makeTestGithubRepairEdgeIds,
   observeTestGithubFriendRepairCoordinator,
+  runTestFriendRepairSweepRequest,
 } from '@voucha/test-helpers/oauth-friend-repair'
-import { beginTransaction } from '@data-stores/psql'
 import {
   repairOAuthFriendEdges,
   repairOAuthFriendEdgesInTransaction,
 } from './cleanup-oauth-friend-repair.mts'
-import { requestOAuthFriendRepairSweep } from '../oauth-accounts/request-friend-repair-sweep.mts'
 
 describe('OAuth friend repair coordinator', () => {
   it('advances owned pages and clears the finished cursor without touching an excluded edge', async () => {
@@ -76,24 +75,9 @@ describe('OAuth friend repair coordinator', () => {
   })
 
   it('starts no sweep until one is requested and ends it when the sweep completes', async () => {
-    await using query = await beginTransaction()
-    const countCursors = async () =>
-      (
-        await query<{ count: number }>(
-          `/* countTestRepairCursors */ SELECT count(*)::int AS count
-           FROM oauth_friend_reference_repair_cursors WHERE provider = 'github'`,
-        )
-      ).rows[0]!.count
-    await query(
-      `/* clearTestRepairCursor */ DELETE FROM oauth_friend_reference_repair_cursors WHERE provider = 'github'`,
-    )
-    expect(await repairOAuthFriendEdgesInTransaction(query, 'github', 1)).toMatchObject({
-      worked: false,
-      hasMore: false,
-    })
-    expect(await countCursors()).toBe(0)
-    await requestOAuthFriendRepairSweep(query, 'github')
-    expect(await countCursors()).toBe(1)
-    await query.rollback()
+    const { idle, idleCursors, requestedCursors } = await runTestFriendRepairSweepRequest()
+    expect(idle).toMatchObject({ worked: false, hasMore: false })
+    expect(idleCursors).toBe(0)
+    expect(requestedCursors).toBe(1)
   })
 })

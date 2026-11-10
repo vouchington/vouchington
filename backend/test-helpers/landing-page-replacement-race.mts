@@ -48,3 +48,10 @@ export async function getTestLandingPageGroupMemberCount(pageId: string): Promis
   )
   return rows[0]!.count
 }
+
+/** Soft-delete a topic the way a retire or merge finalize does, after the caller validated it. */
+export async function retireTestTopicForLandingPage(topicId: string): Promise<void> {
+  await write('/* retireLandingTestTopic */ UPDATE topics SET deleted_at = now() WHERE id = $1', [
+    topicId,
+  ])
+}
