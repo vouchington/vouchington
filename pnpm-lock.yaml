@@ -6131,9 +6131,15 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@ts-shared/data-points':
         specifier: workspace:^
         version: link:../../../ts-shared/data-points
@@ -6158,6 +6164,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -6410,6 +6419,9 @@ importers:
       '@services/crawls':
         specifier: workspace:^
         version: link:../crawls
+      '@services/data-points':
+        specifier: workspace:^
+        version: link:../data-points
       '@services/data-retention':
         specifier: workspace:^
         version: link:../data-retention

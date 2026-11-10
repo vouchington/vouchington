@@ -20,3 +20,6 @@ analysis. Schemas and validation live in `ts-shared/data-points` and
   issuer reflects the applicant's state at that application and is deliberately not profile-scoped.
 - **Extensible and versioned.** New verticals add schemas without changing the core data model, and
   an in-document schema version allows evolution without migrations.
+- **Insights sample the latest public points.** Topic insights aggregate the latest public data
+  points inside a configured year window, capped per topic. REST and MCP read that same sample.
+  Empty topics stay at zero.

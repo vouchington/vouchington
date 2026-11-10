@@ -6,7 +6,6 @@ import {
   getMyDirectConversations,
   getPlatformStats,
   getRevenue,
-  getTopicDataPointInsights,
   getUserBookmarkCounts,
   searchTopicAliases,
   updateTopicRatingStats,
@@ -15,6 +14,7 @@ import { runAdminUserSearchScenarios } from './admin-user-search.mts'
 import { runDataPointSearchScenarios } from './data-point-search.mts'
 import { runUserRemovedPostPageScenarios } from './user-removed-post-pages.mts'
 import { runViewDrivenHostnameScenarios } from './view-driven-hostnames.mts'
+import { runTopicDataPointInsightsScenario } from './topic-data-point-insights.mts'
 
 export async function runTopicAliasSearchScenarios(): Promise<void> {
   // The alias keyset owns the order; topics are looked up by alias target id before limiting.
@@ -64,7 +64,7 @@ export async function runTopicAliasSearchScenarios(): Promise<void> {
 }
 
 export async function runEntityTailScenarios(): Promise<void> {
-  await runAndCapture('topic-data-point-insights', () => getTopicDataPointInsights(seedTopicId))
+  await runTopicDataPointInsightsScenario()
 
   await runAndCapture('topic-rating-stats', () => updateTopicRatingStats(seedTopicId))
 

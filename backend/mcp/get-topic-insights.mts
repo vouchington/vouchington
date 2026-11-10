@@ -35,7 +35,7 @@ type ToolResult =
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get aggregate data point statistics for a topic (card, bank account, etc.). Returns approval rate, median credit limit, and credit score distribution.',
+      'Get aggregate statistics for a topic from its latest public data points inside the configured year window, capped per topic. Returns approval rate, median credit limit, and credit score distribution.',
     parameters: {
       type: 'object',
       properties: {
