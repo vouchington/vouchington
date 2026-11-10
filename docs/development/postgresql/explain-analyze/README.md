@@ -164,9 +164,13 @@ Add service calls through `runAndCapture()` and register the new stable scenario
 The `EXPLAIN ANALYZE` workflow is called by `test-explain-analyze` in `backend.yml`, gated by the
 `explain-analyze:` path filter. The `seed-explain` job seeds the corpus once and dumps it, so a
 slow runner can fail only one seed and the shards do not each pay for it. Two parallel shards
-each restore that seeded dump into their own PostgreSQL instance. A restore carries neither the
-visibility map nor planner statistics, so each shard runs a database-wide `VACUUM (ANALYZE)`
-before its first capture. `main` runs every scenario except
+each restore that seeded dump into their own PostgreSQL instance. Plans depend on the seed's
+statistics as much as its rows: the seed analyzes only the relations it fills, and the planner sizes a
+never-analyzed table differently from one analyzed as empty. The dump therefore keeps the seed's
+statistics, and a shard never analyzes the whole database, which would turn every never-analyzed table
+into a known-empty one. A restore does not carry the visibility map, so the shard runs a plain
+`VACUUM` only on the tables the seed analyzed. Materialized views are refreshed after the base tables
+carry those statistics, and only the views are analyzed afterwards. `main` runs every scenario except
 the partitioned comment fixture, and `partition` runs only that fixture plus the pruning proof
 (`explain-shards.mts` declares the split). The partition fixture is additive, so no other scenario
 reads it. A scenario listed in neither shard or both fails the manifest checks. The

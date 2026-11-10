@@ -32,8 +32,8 @@ BEGIN
           DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', reserved_topic_id)::TEXT;
       END IF;
       IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (
-        SELECT 1 FROM topic_merge_parent_ancestors ancestor
-        JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id
+        SELECT 1 FROM public.topic_merge_parent_ancestors ancestor
+        JOIN public.topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id
         WHERE ancestor.topic_id = reserved_topic_id
           AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL
           AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM
@@ -44,7 +44,7 @@ BEGIN
           DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;
       END IF;
       IF EXISTS (
-        SELECT 1 FROM topic_merge_operations merge_operation
+        SELECT 1 FROM public.topic_merge_operations merge_operation
         WHERE (merge_operation.source_topic_id = reserved_topic_id
             OR merge_operation.destination_topic_id = reserved_topic_id)
           AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL
@@ -61,7 +61,7 @@ BEGIN
     -- Re-enabling a deleted or merged program must not reuse its unchanged topic id.
     IF referenced_topic_id IS NOT NULL
       AND EXISTS (
-        SELECT 1 FROM topics WHERE id = referenced_topic_id
+        SELECT 1 FROM public.topics WHERE id = referenced_topic_id
           AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)
       ) THEN
       RAISE EXCEPTION USING ERRCODE = 'V0409',
@@ -81,7 +81,7 @@ CREATE OR REPLACE FUNCTION fn_ensure_topic_merge_participant_not_reserved()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF EXISTS (
-    SELECT 1 FROM topic_merge_operations merge_operation
+    SELECT 1 FROM public.topic_merge_operations merge_operation
     WHERE (merge_operation.source_topic_id = OLD.id
         OR merge_operation.destination_topic_id = OLD.id)
       AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL
@@ -119,7 +119,7 @@ BEGIN
       SELECT CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.alias END
     ) aliases WHERE alias IS NOT NULL
   LOOP
-    SELECT id INTO source_id FROM topics WHERE slug = candidate_alias AND deleted_at IS NULL LIMIT 1;
+    SELECT id INTO source_id FROM public.topics WHERE slug = candidate_alias AND deleted_at IS NULL LIMIT 1;
     IF source_id IS NULL THEN CONTINUE; END IF;
     IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(
       'topic-merge-lifecycle:' || source_id::TEXT, 0
@@ -129,7 +129,7 @@ BEGIN
         DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', source_id)::TEXT;
     END IF;
     IF EXISTS (
-      SELECT 1 FROM topic_merge_operations merge_operation
+      SELECT 1 FROM public.topic_merge_operations merge_operation
       WHERE merge_operation.source_topic_id = source_id
         AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL
         AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM
@@ -217,7 +217,7 @@ BEGIN
     parent_subject_id := (candidate_record.row_value ->> TG_ARGV[1])::UUID;
     parent_relation_id := (candidate_record.row_value ->> TG_ARGV[2])::UUID;
     IF parent_relation_id IS NULL THEN CONTINUE; END IF;
-    EXECUTE format('SELECT ARRAY[%s] FROM %I WHERE subject_id = $1 AND id = $2', TG_ARGV[3], TG_ARGV[0])
+    EXECUTE format('SELECT ARRAY[%s] FROM public.%I WHERE subject_id = $1 AND id = $2', TG_ARGV[3], TG_ARGV[0])
       INTO participant_ids USING parent_subject_id, parent_relation_id;
     FOR participant_id IN SELECT DISTINCT id FROM unnest(participant_ids) ids(id) WHERE id IS NOT NULL ORDER BY id
     LOOP
@@ -226,7 +226,7 @@ BEGIN
           DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', participant_id)::TEXT;
       END IF;
       IF EXISTS (
-        SELECT 1 FROM topic_merge_operations operation
+        SELECT 1 FROM public.topic_merge_operations operation
         WHERE (operation.source_topic_id = participant_id OR operation.destination_topic_id = participant_id)
           AND operation.completed_at IS NULL AND operation.failed_at IS NULL
           AND (operation.id::TEXT, operation.fence_token::TEXT) IS DISTINCT FROM

@@ -8,12 +8,10 @@
 # as known-empty, where the seeded run leaves it never-analyzed, and that flipped 17 plan
 # contracts to sequential scans (run 42723948597). Refreshing views before their sources have
 # statistics plans them blind; mv_trending_communities then ran past the restore deadline.
-# Triggers stay off while loading: the seed already satisfied them, and some run unqualified
-# lookups that fail under pg_restore's empty search_path when parallel load order reaches them.
 set -euo pipefail
 dump_dir="$RUNNER_TEMP/explain-seeded"
 pg() { docker run --rm --network host -v "$dump_dir:/dump" "$PG_IMAGE" "$@"; }
-restore_flags=(--dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges --disable-triggers)
+restore_flags=(--dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges)
 # Runs one VACUUM per matching relation in a single session; VACUUM cannot share a transaction.
 vacuum_matching() {
   docker run --rm -i --network host "$PG_IMAGE" psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -qAt <<SQL
