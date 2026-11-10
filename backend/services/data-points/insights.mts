@@ -34,6 +34,8 @@ function buildTopicDataPointInsightsQuery(
   options?: { vertical?: string },
 ) {
   // Keep the requested UUID spelling in result keys; compare only UUID-typed ids in SQL.
+  // The year window bounds post_data_point_topics.post_id so the (topic_id, post_id)
+  // scan can stop. posts.id equals that post_id, so it does not need the same predicate.
   const query = sql`/* getTopicDataPointInsights */
     WITH sample AS (
       SELECT
@@ -55,7 +57,7 @@ function buildTopicDataPointInsightsQuery(
         JOIN posts ON posts.id = pdpt.post_id
         JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
         WHERE pdpt.topic_id = requested.topic_id::uuid
-          AND posts.id >= ${bounds.minId}
+          AND pdpt.post_id >= ${bounds.minId}
           AND posts.post_type = 'data_point'
           AND `
   query.append(buildPublicPostEligibilityFilter('posts', 'root_post'))
