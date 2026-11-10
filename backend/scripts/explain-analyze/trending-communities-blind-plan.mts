@@ -9,12 +9,15 @@ const TRENDING_COMMUNITIES_BLIND_REFRESH_SCENARIO = 'mv-trending-communities-ref
 const VIEW = 'mv_trending_communities'
 
 // Same ceilings the other refresh scenarios already use for posts and reviews.
-// The member gate is new and only on this scenario: a full count of a large community fails it.
+// The member gate is new and only on this scenario. The blind seed read 30045.75
+// member rows: sixty search communities of 500 members stay under LIMIT cap+1,
+// plus the five small seed communities. 40000 still fails a sequential scan, which
+// also reads the membership-cap community and the rest of the member seed.
 const BLIND_CONTRACT: ScenarioPlanContract = {
   expectations: [
     { kind: 'maxProcessedRows', relation: 'posts', max: 250_000 },
     { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 200_000 },
-    { kind: 'maxProcessedRows', relation: 'community_members', max: 20_000 },
+    { kind: 'maxProcessedRows', relation: 'community_members', max: 40_000 },
   ],
   crossPartition: { posts: 'The post id window defines the rolling trend window.' },
 }
