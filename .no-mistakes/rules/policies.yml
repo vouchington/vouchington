@@ -536,12 +536,12 @@
       - {
           file: backend/services/rss-feed-items/upsert-write-locks.mts,
           callee: 'txQuery',
-          line: 86,
+          line: 84,
         }
       - {
           file: backend/services/rss-feed-items/upsert-write-locks.mts,
           callee: 'txQuery',
-          line: 111,
+          line: 109,
         }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: loops the fixed literal statements array of processUserDeletionCredentialsBatch; each statement deletes at most batchSize rows and the first non-empty one ends the page.
       - { file: backend/services/users/delete-phase-credentials.mts, callee: 'query', line: 63 }
