@@ -71,6 +71,8 @@ async function readOrphanedQueuedGrantRows(
   query: QueryExecutor,
   userIds?: readonly string[],
 ): Promise<InspectedGrantRow[]> {
+  if (!Number.isInteger(batchSize) || batchSize < 1)
+    throw new RangeError('Membership orphan repair batch size must be a positive integer')
   const bound = cursor ?? NIL_USER_ID
   // One user can hold many grants, so this walk is not one row per user. DISTINCT ON would
   // keep reading until it filled the cap with users. The limit below is the rows inspected.
@@ -104,9 +106,12 @@ async function readOrphanedQueuedGrantRows(
       FROM membership_grants grant_row
       WHERE grant_row.user_id > ${bound}::uuid`
   if (userIds) statement.append(sql` AND grant_row.user_id = ANY(${[...userIds]}::uuid[])`)
-  statement.append(sql`
+  statement.append(`
       ORDER BY grant_row.user_id, grant_row.id
-      LIMIT ${batchSize}
+      LIMIT `)
+  // batchSize is a validated DynamicConfig integer.
+  statement.append(batchSize)
+  statement.append(`
     ) inspected
     ORDER BY inspected.user_id, inspected.id`)
   const { rows } = await query<InspectedGrantRow>(statement)
