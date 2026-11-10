@@ -2,9 +2,6 @@ import type { TimeRange } from '@voucha/types/feed'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
-/** Age bound a caller applies by passing this code. Post search does not add it when the range is omitted. */
-export const DEFAULT_POST_SEARCH_TIME_RANGE: TimeRange = '1m'
-
 /**
  * Generates SQL filter for time range using a UUIDv7 lower bound.
  * Returns null for 'all' which means no time filter.

@@ -27,7 +27,6 @@ import { attachPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embed'
 import { isAdminUser } from '@services/users'
-import { DEFAULT_POST_SEARCH_TIME_RANGE } from '@modules/feed-query-builders'
 import { indexById } from '@modules/utils'
 import type { TimeRange } from '@voucha/types/feed'
 import {
@@ -103,7 +102,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
         include_archived_communities: true,
         post_types: [...VALID_FILTERABLE_POST_TYPES],
         exclude_post_ids: excludedPins,
-        time_range: searchOptions.time_range ?? DEFAULT_POST_SEARCH_TIME_RANGE,
+        time_range: searchOptions.time_range ?? '1m',
       })
   const pinnedPostIds = shouldIncludeCommunityPinnedPosts({ after, ...pinFilter })
     ? excludedPins
