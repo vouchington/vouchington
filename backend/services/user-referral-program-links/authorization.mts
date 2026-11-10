@@ -4,13 +4,12 @@ import { createCodedError } from '@vouchington/sentry'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { isPlatformAccount } from '@services/users/authorization'
 
+/** Owner list shape. Other callers, including administrators and anonymous readers, get the public list. */
 export function currentUserCanAccessUserReferralLinks(
   currentUser: PrivateUser | null,
   userId: string,
 ): boolean {
-  if (!currentUser) return false
-  if (currentUser.roles.includes('administrator')) return true
-  return currentUser.id === userId
+  return currentUser?.id === userId
 }
 
 export function currentUserCanCreateUserReferralLink(

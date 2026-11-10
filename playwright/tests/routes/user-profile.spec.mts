@@ -1,8 +1,13 @@
-import { createTestUser, insertEntityRelation } from '../../../backend/test-helpers/index.mts'
+import {
+  createTestReferralProgramLink,
+  createTestUser,
+  insertEntityRelation,
+} from '../../../backend/test-helpers/index.mts'
 import { updateUserFields } from '../../../backend/services/users/update-fields.mts'
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsTestUser, TEST_USER_USERNAME } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
+import { insertTestReferralProgram } from '../../helpers/insert-test-referral-program.mts'
 import { userSignalChoice } from '../../helpers/semantic-vote.mts'
 
 // Anonymous by default — most tests assert the logged-out public profile view
@@ -87,16 +92,16 @@ test.describe('User profile page', () => {
     expect(canonical).toContain('/user/')
   })
 
-  test('shows all six public profile tabs to anonymous users', async ({ page }) => {
+  test('shows all public profile tabs to anonymous users', async ({ page }) => {
     await navigateTo(page, `/user/${TEST_USER_USERNAME}`)
 
-    // All 6 tabs are public — no management gate
     await expect(page.getByTestId('user-profile-tab-about')).toBeVisible()
     await expect(page.getByTestId('user-profile-tab-posts')).toBeVisible()
     await expect(page.getByTestId('user-profile-tab-topics')).toBeVisible()
     await expect(page.getByTestId('user-profile-tab-friends')).toBeVisible()
     await expect(page.getByTestId('user-profile-tab-sources')).toBeVisible()
     await expect(page.getByTestId('user-profile-tab-communities')).toBeVisible()
+    await expect(page.getByTestId('user-profile-tab-referral-links')).toBeVisible()
   })
 
   test('Posts tab dropdown shows sub-navigation and supports navigation', async ({ page }) => {
@@ -155,5 +160,37 @@ test.describe('User profile page', () => {
     await expect(
       userSignalChoice(userTagsSidebar, 'user-vouch-election-card', 'disavow'),
     ).toBeVisible()
+  })
+})
+
+test.describe('public referral-link summaries', () => {
+  let username: string
+  let programName: string
+  let programSlug: string
+
+  test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
+    const suffix = randomSuffix()
+    username = `profile-referrals-${suffix}`
+    programName = `Playwright Referral Program ${suffix}`
+    const owner = await createTestUser({ username })
+    if (!owner) throw new Error('Failed to create referral profile user')
+    const program = await insertTestReferralProgram(suffix)
+    programSlug = program.referralProgramTopicSlug
+    await createTestReferralProgramLink({
+      userId: owner.id,
+      referralProgramId: program.referralProgramTopicId,
+      url: `https://${program.hostname}/ref/profile-${suffix}`,
+      label: 'Public profile link',
+    })
+  })
+
+  test('opens the referral program from a summary row', async ({ page }) => {
+    await navigateTo(page, `/user/${username}/referral-links`)
+    const summary = page.getByTestId('user-referral-link-summary')
+    await expect(summary).toBeVisible()
+    await expect(summary).toContainText(programName)
+    await summary.click()
+    await expect(page).toHaveURL(new RegExp(`/referral-program/${programSlug}$`))
   })
 })

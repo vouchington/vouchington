@@ -6,8 +6,8 @@ import { validateUUID } from '@modules/utils'
 import { decodeUuidCursor, encodeCursor, isSimpleCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import { currentUserCanAccessUserReferralLinks } from './authorization.mts'
-import type { UserReferralLink, UserReferralLinkWithDetails } from './types.mts'
-import { userReferralLinkColumns } from './columns.mts'
+import type { UserReferralLink, UserReferralLinkListItem } from './types.mts'
+import { userReferralLinkColumns, userReferralLinkListColumns } from './columns.mts'
 
 export async function getUserReferralLinks(
   currentUser: PrivateUser | null,
@@ -18,14 +18,12 @@ export async function getUserReferralLinks(
     referral_program_id?: string
   },
 ): Promise<{
-  results: UserReferralLinkWithDetails[]
+  results: UserReferralLinkListItem[]
   page_info: PageInfo
 }> {
-  assert(currentUser, 401, 'User not logged in')
   validateUUID(userId)
 
-  assert(currentUserCanAccessUserReferralLinks(currentUser, userId), 403, 'Forbidden')
-
+  const includePrivate = currentUserCanAccessUserReferralLinks(currentUser, userId)
   const limit = options?.limit ?? 100
   const after = options?.after
   const referralProgramId = options?.referral_program_id
@@ -57,7 +55,7 @@ export async function getUserReferralLinks(
 
   const query = sql`/* getUserReferralLinks */
     SELECT `
-    .append(userReferralLinkColumns('urpl'))
+    .append(userReferralLinkListColumns('urpl', includePrivate))
     .append(
       sql`,
       u.url,
@@ -73,6 +71,13 @@ export async function getUserReferralLinks(
   `,
     )
 
+  if (!includePrivate) {
+    query.append(sql`
+      AND urpl.activated_at IS NOT NULL
+      AND urpl.deactivated_at IS NULL
+    `)
+  }
+
   if (referralProgramId) {
     query.append(sql` AND urpl.referral_program_topic_id = ${referralProgramId}`)
   }
@@ -87,7 +92,7 @@ export async function getUserReferralLinks(
     LIMIT ${limit + 1}
   `)
 
-  const { rows } = await read<UserReferralLinkWithDetails>(query, queryOptions)
+  const { rows } = await read<UserReferralLinkListItem>(query, queryOptions)
 
   // Check if there are more results
   const hasNextPage = rows.length > limit

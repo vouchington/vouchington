@@ -13,6 +13,7 @@ import { insertTestTotpAuthenticator } from '@voucha/test-helpers/entities/totp'
 import { getPrivateUserByAny } from '@services/users/get'
 import { encodeCursor } from '@modules/pagination'
 import { createUserReferralLink } from './create.mts'
+import { deactivateUserReferralLink } from './activate.mts'
 import { getUserReferralLink, getUserReferralLinks } from './get.mts'
 
 describe('get', () => {
@@ -69,26 +70,29 @@ describe('get', () => {
       expect(result.results.some(item => item.id === link.id)).toBe(true)
     })
 
-    it('allows admin to read another user links', async () => {
+    it('returns another user active links without management fields', async () => {
       const link = await createUserReferralLink(regularUser, WEB_PROVENANCE, {
         user_id: regularUser!.id,
         referral_program_id: referralProgramId!,
-        url: `https://${testHostname}/ref/admin-${Date.now()}`,
-        label: 'admin link',
+        url: `https://${testHostname}/ref/public-${Date.now()}`,
+        label: 'hidden from other readers',
       })
-      const result = await getUserReferralLinks(adminUser, regularUser!.id, { limit: 5 })
-
-      expect(result.results.some(item => item.id === link.id)).toBe(true)
-    })
-
-    it('rejects unauthenticated and unauthorized access', async () => {
-      await expect(getUserReferralLinks(null, regularUser!.id)).rejects.toMatchObject({
-        status: 401,
+      const deactivated = await createUserReferralLink(regularUser, WEB_PROVENANCE, {
+        user_id: regularUser!.id,
+        referral_program_id: referralProgramId!,
+        url: `https://${testHostname}/ref/deactivated-${Date.now()}`,
+        label: 'owner only',
       })
-
-      await expect(getUserReferralLinks(otherUser, regularUser!.id)).rejects.toMatchObject({
-        status: 403,
-      })
+      await deactivateUserReferralLink(regularUser, deactivated.id)
+      for (const reader of [null, otherUser, adminUser]) {
+        const result = await getUserReferralLinks(reader, regularUser!.id, { limit: 100 })
+        const visible = result.results.find(item => item.id === link.id)
+        expect(visible).toMatchObject({ id: link.id, url: expect.stringContaining('/ref/public-') })
+        expect(visible === undefined || 'label' in visible || 'activated_at' in visible).toBe(false)
+        expect(result.results.some(item => item.id === deactivated.id)).toBe(false)
+      }
+      const ownerResult = await getUserReferralLinks(regularUser, regularUser!.id, { limit: 100 })
+      expect(ownerResult.results.find(item => item.id === deactivated.id)?.label).toBe('owner only')
     })
 
     it('validates limit and UUID options', async () => {

@@ -4,6 +4,7 @@ import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
 import type {
   PrioritizedReferralLinksResponse,
   ListResponse,
+  UserReferralLinkSummary,
   UserReferralLinkWithDetails,
 } from '@/types/api-responses'
 
@@ -37,6 +38,16 @@ export const getAllMyReferralLinks = cache(
   (): Promise<ListResponse<UserReferralLinkWithDetails> | null> => {
     return returnNullForMissingEntity(
       serverApi.get<ListResponse<UserReferralLinkWithDetails>>('/api/v1/referral-links'),
+    )
+  },
+)
+
+export const getUserReferralLinksList = cache(
+  (userId: string): Promise<ListResponse<UserReferralLinkSummary> | null> => {
+    return returnNullForMissingEntity(
+      serverApi.get<ListResponse<UserReferralLinkSummary>>('/api/v1/referral-links', {
+        searchParams: { user_id: userId },
+      }),
     )
   },
 )

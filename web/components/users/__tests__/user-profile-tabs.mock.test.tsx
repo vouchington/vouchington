@@ -39,7 +39,7 @@ vi.mock(
 )
 
 describe('UserProfileTabs', () => {
-  it('renders all 6 public tabs', () => {
+  it('renders all 7 public tabs', () => {
     mockNav.setPathname('/user/tests')
 
     render(<UserProfileTabs usernameOrId='tests' />)
@@ -50,6 +50,9 @@ describe('UserProfileTabs', () => {
     expect(screen.getByText('Friends')).toBeDefined()
     expect(screen.getByText('Sources')).toBeDefined()
     expect(screen.getByText('Communities')).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Referral links' }).getAttribute('href')).toBe(
+      '/user/tests/referral-links',
+    )
   })
 
   it('About tab is a link to the user index route', () => {

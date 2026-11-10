@@ -233,17 +233,49 @@ describe('links', () => {
       await request.delete(`/api/v1/referral-links/${created.body.referral_link.id}`).expect(204)
     })
 
-    it('GET /api/v1/referral-links enforces user scoping', async () => {
-      const requestAsRegular = createRequest()
-      await requestAsRegular.authenticateAs(regularUser!)
-
-      await requestAsRegular.get(`/api/v1/referral-links?user_id=${otherUser!.id}`).expect(403)
-
-      const requestAsAdmin = createRequest()
-      await requestAsAdmin.authenticateAs(adminUser!)
-      await requestAsAdmin
-        .get(`/api/v1/referral-links?user_id=${regularUser!.id}&limit=2`)
+    it('GET /api/v1/referral-links returns public fields for another user', async () => {
+      const ownerRequest = createRequest()
+      await ownerRequest.authenticateAs(regularUser!)
+      const created = await ownerRequest
+        .post('/api/v1/referral-links')
+        .send({
+          referral_program_id: referralProgramId,
+          url: `https://${testHostname}/ref/public-list-${Date.now()}`,
+          label: 'not public',
+        })
+        .expect(201)
+      const linkId = created.body.referral_link.id
+      const memberRequest = createRequest()
+      await memberRequest.authenticateAs(otherUser!)
+      const adminRequest = createRequest()
+      await adminRequest.authenticateAs(adminUser!)
+      const anonymous = createRequest()
+      await anonymous.get('/api/v1/referral-links').expect(401)
+      for (const request of [memberRequest, adminRequest, anonymous]) {
+        const listed = await request
+          .get(`/api/v1/referral-links?user_id=${regularUser!.id}&limit=100`)
+          .expect(200)
+        const row = listed.body.results.find((item: { id: string }) => item.id === linkId)
+        expect(row.referral_program_slug).toEqual(expect.any(String))
+        expect(row).not.toHaveProperty('label')
+        expect(row).not.toHaveProperty('activated_at')
+      }
+      const cached = await anonymous
+        .get(`/api/v1/referral-links?user_id=${regularUser!.id}&limit=100`)
         .expect(200)
+      expect(cached.headers['cache-control']).toContain('public')
+
+      await ownerRequest.delete(`/api/v1/referral-links/${linkId}/activations`).expect(200)
+      const hidden = await anonymous
+        .get(`/api/v1/referral-links?user_id=${regularUser!.id}&limit=100`)
+        .expect(200)
+      expect(hidden.body.results.some((item: { id: string }) => item.id === linkId)).toBe(false)
+      const ownerList = await ownerRequest
+        .get(`/api/v1/referral-links?user_id=${regularUser!.id}&limit=100`)
+        .expect(200)
+      expect(ownerList.body.results.find((item: { id: string }) => item.id === linkId).label).toBe(
+        'not public',
+      )
     })
 
     it('PATCH/activate/deactivate return 404 for unknown link and enforce JSON content-type', async () => {

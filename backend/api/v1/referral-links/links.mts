@@ -1,7 +1,10 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
+import { clampAnonLimit } from '@services/pagination'
+import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
+  getOptionalAuthAndRateLimit,
   parseJsonBody,
   requireAuth,
   validateRequestContract,
@@ -46,25 +49,29 @@ app
   .route('/api/v1/referral-links')
   .get(async (ctx: Context) => {
     apiQuery('GET:/api/v1/referral-links', userReferralLinksParser, userReferralLinksQueryContract)
-    const currentUser = await requireAuth(ctx, 'GET:/api/v1/referral-links')
+    const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/referral-links')
     const paginationOptions = parseRuntimePagination(userReferralLinksParser, ctx.query)
     const validationQuery = prepareUserReferralLinksListQuery(ctx.query, paginationOptions.limit)
     validateRequestContract(ctx, 'GET:/api/v1/referral-links', {
       query: validationQuery,
     })
 
-    // Parse referral-links specific parameters
-    const userId = ctx.query.user_id ? String(ctx.query.user_id) : undefined
+    const requestedUserId = ctx.query.user_id ? String(ctx.query.user_id) : undefined
+    if (!requestedUserId && !currentUser) ctx.throw(401, 'Unauthorized')
     const referralProgramId = ctx.query.referral_program_id
       ? String(ctx.query.referral_program_id)
       : undefined
+    const limit = currentUser ? paginationOptions.limit : clampAnonLimit(paginationOptions.limit)
 
-    const result = await getUserReferralLinks(currentUser, userId || currentUser.id, {
-      limit: paginationOptions.limit,
+    const result = await getUserReferralLinks(currentUser, requestedUserId ?? currentUser!.id, {
+      limit,
       after: paginationOptions.after,
       referral_program_id: referralProgramId,
     })
 
+    if (!currentUser) {
+      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
+    }
     ctx.json({
       results: result.results,
       page_info: result.page_info,

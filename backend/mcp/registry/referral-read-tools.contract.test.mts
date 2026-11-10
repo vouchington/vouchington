@@ -161,18 +161,16 @@ describe('get_referral_links — real DB', () => {
     expect(String(page.results[1]!['label'])).not.toContain('previous instructions')
   })
 
-  it('reads the caller when user_id is their own id, and forbids another user the way REST does', async () => {
+  it('reads the caller when user_id is their own id, and another user the way REST does', async () => {
     expect(ids(await mine({ user_id: owner.id }))).toEqual(ids(await mine()))
     const request = createRequest()
     await request.authenticateAs(owner)
-    const rest = await request.get(`/api/v1/referral-links?user_id=${other.id}`)
-    expect(rest.status).toBe(403)
-    const rejected = await callRejectedMcpTool(owner, 'get_referral_links', { user_id: other.id }, [
-      'referral-links:read',
-    ])
-    expect(JSON.parse(rejected)).toMatchObject({
-      error: { status: rest.status, code: 'FORBIDDEN', message: rest.body.message },
-    })
+    const rest = await request.get(`/api/v1/referral-links?user_id=${other.id}`).expect(200)
+    const page = await mine({ user_id: other.id })
+    expect(page.results).toEqual(rest.body.results)
+    expect(page.page_info).toEqual(rest.body.page_info)
+    expect(ids(page)).toEqual([othersLink])
+    expect(page.results[0]).not.toHaveProperty('label')
   })
 
   it('keeps only the links under one program and sanitizes the labels', async () => {
@@ -200,40 +198,33 @@ describe('get_referral_links — real DB', () => {
     }
     expect(ids(await mine({ referral_program_id: crypto.randomUUID() }))).toEqual([])
   })
-
   it('uses the bulk default and runtime maximum shared with REST', async () => {
-    const restore = overrideDynamicConfigFieldsForTest(paginationConfig, {
-      bulk_default_limit: 2,
-      large_default_limit: 3,
-      max_limit: 3,
-    })
-    try {
-      const request = createRequest()
-      await request.authenticateAs(owner)
-      const rest = await request.get('/api/v1/referral-links').expect(200)
-      const page = await mine()
-      expect(ids(page)).toEqual([links[2], links[1]])
-      expect(page.page_info.has_next_page).toBe(true)
-      expect(ids(page)).toEqual(rest.body.results.map((row: Link) => row.id))
-      expect(page.page_info).toEqual(rest.body.page_info)
-    } finally {
-      restore()
+    const assertLimited = async (
+      fields: Parameters<typeof overrideDynamicConfigFieldsForTest>[1],
+      path: string,
+      args: Body,
+    ) => {
+      const restore = overrideDynamicConfigFieldsForTest(paginationConfig, fields)
+      try {
+        const request = createRequest()
+        await request.authenticateAs(owner)
+        const rest = await request.get(path).expect(200)
+        const page = await mine(args)
+        expect(ids(page)).toEqual([links[2], links[1]])
+        expect(page.page_info).toEqual(rest.body.page_info)
+        expect(ids(page)).toEqual(rest.body.results.map((row: Link) => row.id))
+      } finally {
+        restore()
+      }
     }
 
-    const restoreMax = overrideDynamicConfigFieldsForTest(paginationConfig, { max_limit: 2 })
-    try {
-      const request = createRequest()
-      await request.authenticateAs(owner)
-      const rest = await request.get('/api/v1/referral-links?limit=100').expect(200)
-      const page = await mine({ limit: 100 })
-      expect(ids(page)).toEqual([links[2], links[1]])
-      expect(page.page_info.has_next_page).toBe(true)
-      expect(ids(page)).toEqual(rest.body.results.map((row: Link) => row.id))
-    } finally {
-      restoreMax()
-    }
+    await assertLimited(
+      { bulk_default_limit: 2, large_default_limit: 3, max_limit: 3 },
+      '/api/v1/referral-links',
+      {},
+    )
+    await assertLimited({ max_limit: 2 }, '/api/v1/referral-links?limit=100', { limit: 100 })
   })
-
   it('preserves prioritized and all topic modes', async () => {
     const ownLinkId = links[0]
     for (const [args, expectOwn] of [
@@ -254,7 +245,6 @@ describe('get_referral_links — real DB', () => {
       expect((page.links as Link[]).some(link => link.id === ownLinkId)).toBe(expectOwn)
     }
   })
-
   it('rejects personal filters in topic mode and all without a topic', async () => {
     for (const args of [
       { topic_id: programA.referralProgramId, user_id: owner.id },

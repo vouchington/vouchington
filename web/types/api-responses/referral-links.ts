@@ -54,6 +54,18 @@ export interface PrioritizedReferralLinksResponse {
   page_info?: PageInfo
 }
 
+/** Public list row. Owner responses also include management fields. */
+export interface UserReferralLinkSummary {
+  id: string
+  user_id: string
+  referral_program_id: string
+  referral_program_name: string
+  referral_program_slug: string
+  url: string
+  label?: string | null
+  deactivated_at?: string | null
+}
+
 export interface UserReferralLinkWithDetails {
   id: string
   user_id: string

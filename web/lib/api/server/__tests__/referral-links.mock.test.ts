@@ -33,6 +33,7 @@ import {
   getReferralProgramValidationInfo,
   getReferralProgramValidations,
   getReferralProgramLinkedValidation,
+  getUserReferralLinksList,
 } from '../referral-links'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 
@@ -95,6 +96,24 @@ describe('referral-links server api helpers', () => {
       const result = await getAllMyReferralLinks()
 
       expect(result).toBeNull()
+    })
+  })
+
+  describe('getUserReferralLinksList', () => {
+    it('calls the shared list filtered by user id', async () => {
+      const response = {
+        results: [],
+        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+      }
+      mockGet.mockResolvedValueOnce(response)
+
+      const result = await getUserReferralLinksList('user-1')
+
+      expect(mockGet).toHaveBeenCalledWith('/api/v1/referral-links', {
+        searchParams: { user_id: 'user-1' },
+      })
+      expect(mockReturnNullForMissingEntity).toHaveBeenCalledTimes(1)
+      expect(result).toEqual(response)
     })
   })
 

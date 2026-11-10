@@ -7,8 +7,9 @@ import {
 } from '@services/user-referral-program-links/list-query'
 import {
   getUserReferralLinks,
-  type UserReferralLinkWithDetails,
+  type UserReferralLinkListItem,
 } from '@services/user-referral-program-links'
+import { userReferralLinkPrivateFieldNames } from '@services/user-referral-program-links/columns'
 import type { BasicUser } from '@services/users/types'
 import { iso, pageProperties, sanitizedTitle } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
@@ -32,12 +33,15 @@ const userReferralLinkProperties = componentSchema('UserReferralLink')['properti
 export const USER_REFERRAL_LINK_PAGE_SCHEMA = closedObject({
   success: { const: true },
   ...pageProperties(
-    closedObject({
-      ...userReferralLinkProperties,
-      referral_program_name: { type: 'string' },
-      referral_program_slug: { type: 'string' },
-      url: { type: 'string' },
-    }),
+    closedObject(
+      {
+        ...userReferralLinkProperties,
+        referral_program_name: { type: 'string' },
+        referral_program_slug: { type: 'string' },
+        url: { type: 'string' },
+      },
+      userReferralLinkPrivateFieldNames,
+    ),
   ),
 })
 
@@ -76,24 +80,37 @@ export async function getUserReferralLinksPage(
   }
 }
 
-async function serializeLink(link: UserReferralLinkWithDetails) {
-  return {
-    ...link,
-    referral_program_name: await sanitizedTitle(link.referral_program_name),
-    label: link.label === null ? null : await sanitizedTitle(link.label),
-    unfurl_last_error:
-      link.unfurl_last_error === null ? null : await sanitizedTitle(link.unfurl_last_error),
-    activated_at: link.activated_at === null ? null : iso(link.activated_at),
-    deactivated_at: link.deactivated_at === null ? null : iso(link.deactivated_at),
+async function serializeLink(link: UserReferralLinkListItem) {
+  const serialized = {
+    id: link.id,
+    user_id: link.user_id,
+    referral_program_id: link.referral_program_id,
+    url_id: link.url_id,
     created_at: iso(link.created_at),
     updated_at: iso(link.updated_at),
     deleted_at: link.deleted_at === null ? null : iso(link.deleted_at),
-    last_crawl_failure_at:
-      link.last_crawl_failure_at === null ? null : iso(link.last_crawl_failure_at),
-    last_crawl_success_at:
-      link.last_crawl_success_at === null ? null : iso(link.last_crawl_success_at),
-    unfurl_requested_at: link.unfurl_requested_at === null ? null : iso(link.unfurl_requested_at),
-    unfurl_completed_at: link.unfurl_completed_at === null ? null : iso(link.unfurl_completed_at),
-    unfurl_failed_at: link.unfurl_failed_at === null ? null : iso(link.unfurl_failed_at),
+    parent_link_id: link.parent_link_id,
+    referral_program_name: await sanitizedTitle(link.referral_program_name),
+    referral_program_slug: link.referral_program_slug,
+    url: link.url,
+  }
+  if (!('label' in link)) return serialized
+  const text = async (value: string | null | undefined) =>
+    value === null || value === undefined ? null : sanitizedTitle(value)
+  const timestamp = (value: Date | null | undefined) =>
+    value === null || value === undefined ? null : iso(value)
+  return {
+    ...serialized,
+    label: await text(link.label),
+    activated_at: timestamp(link.activated_at),
+    deactivated_at: timestamp(link.deactivated_at),
+    consecutive_crawl_failures: link.consecutive_crawl_failures,
+    last_crawl_failure_at: timestamp(link.last_crawl_failure_at),
+    last_crawl_success_at: timestamp(link.last_crawl_success_at),
+    last_crawl_id: link.last_crawl_id ?? null,
+    unfurl_requested_at: timestamp(link.unfurl_requested_at),
+    unfurl_completed_at: timestamp(link.unfurl_completed_at),
+    unfurl_failed_at: timestamp(link.unfurl_failed_at),
+    unfurl_last_error: await text(link.unfurl_last_error),
   }
 }

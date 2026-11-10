@@ -45,9 +45,12 @@ function makeUserMetrics(overrides: UserMetricsOverrides = {}): UserMetrics {
 }
 
 describe('buildUserProfileDropdownItems', () => {
-  it.each(['about', 'topics', 'communities'] as const)('hides dropdown items for %s', tabName => {
-    expect(buildUserProfileDropdownItems(t, tabName, 'alice', undefined, '', 'en')).toBeNull()
-  })
+  it.each(['about', 'topics', 'communities', 'referral-links'] as const)(
+    'hides dropdown items for %s',
+    tabName => {
+      expect(buildUserProfileDropdownItems(t, tabName, 'alice', undefined, '', 'en')).toBeNull()
+    },
+  )
 
   it('builds post dropdown items from the posts this viewer can see', () => {
     const tabs = buildUserProfileDropdownItems(

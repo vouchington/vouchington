@@ -66,11 +66,14 @@ per `private_count` key with the same meaning as `count_capped`. The earlier `us
 
 ## Referral-link reads
 
-REST and the no-topic mode of `get_referral_links` share the personal-link list contract. The same
-tool keeps prioritized topic reads when a topic is supplied. Swift and .NET send an explicit page
-size for the REST list and have no runtime callers of either referral-link MCP tool name, so this
-change needs no native request or response-model migration and makes no new UI parity claim.
-The clients-owned MCP facts inventory follows the consolidated catalog under
+REST and the no-topic mode of `get_referral_links` share one list. A `user_id` for someone else
+returns that person's active links and the public fields. The signed-in caller's own `user_id`
+also returns deactivated links and the private management fields. Administrators use that same
+public read for someone else. The same tool keeps prioritized topic reads when a topic is supplied.
+Web user pages show the rows as summaries that open the referral program page. Swift and .NET do
+not show that tab yet; [clients #585](https://github.com/vouchington/vouchington-clients/issues/585)
+tracks it and does not block this change. The clients-owned MCP facts inventory follows the
+consolidated catalog under
 [clients #398](https://github.com/vouchington/vouchington-clients/issues/398).
 
 ## Membership verification outcomes
