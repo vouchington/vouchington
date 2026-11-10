@@ -40,6 +40,7 @@ export async function writeImageSurfaceMutation<Result>(
   return withImagePlacementMutation(
     parentQuery,
     async query => {
+      // ast-grep-ignore: no-three-sequential-awaits -- admission must reject a full image before the missing placement is inserted, and that placement must exist before the owner write
       await admitSurfaceReferences(query, references)
       const displaced = await prepareImageSurfacePlacements(query, references)
       const write = await writeOwner(references, query)
