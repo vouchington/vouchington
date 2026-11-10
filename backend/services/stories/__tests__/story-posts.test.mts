@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import {
   createTestUserDirect,
   createSystemUser,
   restoreUser,
   softDeleteTestUserAndWaitBeforeCommit,
+  beginTransaction,
   insertTestRssFeedItem,
   createTestUrlWithHostname,
   insertTestStory,
@@ -16,6 +17,7 @@ import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '../story-posts.mts'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
+import * as publicationLock from '@services/post-publication/lock'
 import { canViewPost } from '@services/posts/check-privacy-access'
 import { getPostStoryByStoryId } from '../get-post-stories.mts'
 
@@ -119,49 +121,63 @@ describe('story posts', () => {
     expect(result.post.ai_summary_markdown).toBe('')
   })
 
-  it('uses the author snapshot without fencing a concurrent deletion and denies later creation', async () => {
-    const random = crypto.randomUUID()
+  it('does not create a story post after a concurrent story-teller deletion commits', async () => {
+    const random = Math.random().toString(36).slice(2, 10)
     const storyTeller = await createSystemUser(`story-teller-${random}`)
-    const story = await insertTestStory({ title: 'Story-teller lifecycle snapshot' })
+    const story = await insertTestStory({ title: 'Story-teller lifecycle lock' })
     await insertItem(story.id)
     await insertItem(story.id)
     const releaseDeletion = Promise.withResolvers<void>()
-    const deletionReady = Promise.withResolvers<void>()
-    const deleting = softDeleteTestUserAndWaitBeforeCommit(
-      storyTeller.id,
-      releaseDeletion.promise,
-      deletionReady.resolve,
-      query => lockAuthorPublicationLifecycle(query, storyTeller.id),
-    )
+    const deletionHoldsAuthorLifecycle = Promise.withResolvers<void>()
+    let deleting: Promise<void> | undefined
+    let creationOutcome: Promise<unknown> | undefined
+
     try {
-      await deletionReady.promise
-      const created = await prepareStoryPost(
+      deleting = softDeleteTestUserAndWaitBeforeCommit(
+        storyTeller.id,
+        releaseDeletion.promise,
+        deletionHoldsAuthorLifecycle.resolve,
+        async query => {
+          await lockAuthorPublicationLifecycle(query, storyTeller.id)
+        },
+      )
+      await deletionHoldsAuthorLifecycle.promise
+      const lockAuthor = publicationLock.lockAuthorPublicationLifecycle
+      const entered = Promise.withResolvers<void>()
+      const authorSpy = vi
+        .spyOn(publicationLock, 'lockAuthorPublicationLifecycle')
+        .mockImplementation((query, authorUserId) => {
+          if (authorUserId === storyTeller.id) entered.resolve()
+          return lockAuthor(query, authorUserId)
+        })
+
+      const creating = prepareStoryPost(
         story.id,
         testUser,
         {},
-        {
-          getStoryTeller: async () => storyTeller,
-        },
+        { getStoryTeller: async () => storyTeller },
       )
-      expect(created.response.post.id).toEqual(expect.any(String))
+      creationOutcome = creating.catch((err: unknown) => err)
+      try {
+        await entered.promise
+        await using probe = await beginTransaction()
+        await probe(`/* testStoryPosts */ SET LOCAL lock_timeout = '50ms'`)
+        await expect(lockAuthor(probe, storyTeller.id)).rejects.toMatchObject({ code: '55P03' })
+      } finally {
+        authorSpy.mockRestore()
+      }
       releaseDeletion.resolve()
-      await deleting
-      await expect(
-        prepareStoryPost(
-          story.id,
-          testUser,
-          {},
-          {
-            getStoryTeller: async () => storyTeller,
-          },
-        ),
-      ).rejects.toMatchObject({ status: 409, message: 'System user @story-teller is not active' })
-      await expect(getPostStoryByStoryId(story.id)).resolves.toMatchObject({
-        post_id: created.response.post.id,
+
+      await expect(deleting).resolves.toBeUndefined()
+      await expect(creationOutcome).resolves.toMatchObject({
+        status: 409,
+        message: 'System user @story-teller is not active',
       })
+      await expect(getPostStoryByStoryId(story.id)).resolves.toBeNull()
     } finally {
       releaseDeletion.resolve()
-      await deleting
+      await deleting?.catch(() => undefined)
+      await creationOutcome
       await restoreUser(storyTeller.id)
     }
   })

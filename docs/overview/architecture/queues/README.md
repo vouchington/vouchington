@@ -18,12 +18,6 @@ Post-commit admission failure cannot undo the relation mutation. No reconciler r
 publisher-relation snapshot: loss before root admission or after terminal queue loss is accepted,
 consistent with direct publication delivery; it must not be described as recovered by a sweep.
 
-Story-post URL projection and category repair share their existing ordered reconciliation lane.
-Each run gives both work families a bounded turn, so either backlog can continue without starving
-the other. Category repair records intent by story even before a post association is visible;
-creation and source changes advance that intent transactionally. Scheduled recovery can therefore
-repair a missed post-commit admission or a creation racing membership changes.
-
 ## Topology
 
 ```mermaid

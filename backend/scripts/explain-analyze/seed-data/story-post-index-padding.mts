@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 
 const PADDING_COUNT = 600
@@ -34,9 +34,6 @@ export async function seedStoryPostIndexPadding(initiatedById: string): Promise<
     [postIds, storyIds, initiatedById],
   )
   await transaction.commit()
-  // Earlier scenarios may analyze an empty, allocated heap. Own the final corpus statistics
-  // so each correlated eligibility probe sees the padding cardinality in both plan modes.
-  await write('/* analyzeStoryPostIndexPadding */ ANALYZE story_posts')
 }
 
 export async function deleteStoryPostIndexPadding(): Promise<void> {
@@ -52,8 +49,6 @@ export async function deleteStoryPostIndexPadding(): Promise<void> {
     [storyIds],
   )
   await transaction.commit()
-  // Later collection scenarios retain only the visible/hidden cohort, not this index padding.
-  await write('/* vacuumStoryPostIndexPadding */ VACUUM (ANALYZE) story_posts')
 }
 
 function paddingIds(): { postIds: string[]; storyIds: string[] } {

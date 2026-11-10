@@ -5,17 +5,14 @@ import {
   hasClaimableStoryPostRelatedUrlProjectionWork,
 } from './story-post-related-url-projection-work.mts'
 
-export async function reconcileStoryPostRelatedUrlProjection(options?: {
-  postIds?: readonly string[]
-}): Promise<ProjectionResult> {
-  if (options?.postIds?.length === 0) return { processed: 0, continue: false }
-  const work = await claimStoryPostRelatedUrlProjectionWork(options)
+export async function reconcileStoryPostRelatedUrlProjection(): Promise<ProjectionResult> {
+  const work = await claimStoryPostRelatedUrlProjectionWork()
   if (!work) return { processed: 0, continue: false }
   const result = await processStoryPostRelatedUrlProjectionPage(work)
   return {
     processed: result.processed,
     continue: result.completed
-      ? await hasClaimableStoryPostRelatedUrlProjectionWork(options)
+      ? await hasClaimableStoryPostRelatedUrlProjectionWork()
       : result.continue,
   }
 }

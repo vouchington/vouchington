@@ -57,8 +57,6 @@ export const backgroundWorkRegistryEntries7 = {
     maxValues: storiesWorkMaxValues,
     descriptions: {
       crawl_effect_page_size: 'Crawl effect page size for stories processing.',
-      category_projection_page_size:
-        'Maximum category or relation rows processed per story projection page.',
     },
   }),
   'topics-work-config': defineBoundedWorkNamespace({

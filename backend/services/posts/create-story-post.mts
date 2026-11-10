@@ -53,7 +53,7 @@ export async function insertStoryPostRecord(
       created_via,
       created_via_oauth_client_id
     )
-    SELECT
+    VALUES (
       'story',
       ${input.title},
       '',
@@ -66,16 +66,13 @@ export async function insertStoryPostRecord(
       ${input.moderationContentSha},
       ${SYSTEM_PROVENANCE.createdVia},
       ${SYSTEM_PROVENANCE.oauthClientId}
-    FROM users author
-    WHERE author.id = ${input.createdById} AND author.deleted_at IS NULL
-      AND author.platform_account_kind = 'system'
+    )
     RETURNING id, title, markdown, ai_summary_markdown, broadcast, privacy, is_anonymous, structured_data,
       data_point_vertical, declared_language, deleted_at, archived_at
   `,
     options,
   )
-  const rawPost = postRows[0]
-  assert(rawPost, 409, 'System user @story-teller is not active')
+  const rawPost = postRows[0]!
 
   await setPostClearanceStatus(rawPost.id as string, 'approved', input.createdById, options)
 

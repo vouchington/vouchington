@@ -9,8 +9,6 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { continueAfterFailure } from '../scenario-failures.mts'
 import { runPostUrlCapacityScenarios } from './post-related-url-capacity.mts'
-import { runStoryCategoryProjectionScenarios } from './story-category-projection.mts'
-import { runStoryPostUrlScopedWorkScenarios } from './story-post-url-scoped-work.mts'
 import {
   seedStoryProjectionDispatcherWitness,
   removeStoryProjectionDispatcherWitness,
@@ -121,14 +119,6 @@ export async function runStoryProjectionWorkScenarios(): Promise<void> {
       [planStoryId],
     )
   }
-  await continueAfterFailure(
-    runStoryPostUrlScopedWorkScenarios.name,
-    runStoryPostUrlScopedWorkScenarios,
-  )
-  await continueAfterFailure(
-    runStoryCategoryProjectionScenarios.name,
-    runStoryCategoryProjectionScenarios,
-  )
 }
 
 /** One empty-prefix dispatcher pass and the jobs still waiting after it. */

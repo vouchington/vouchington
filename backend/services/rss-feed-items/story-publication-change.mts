@@ -1,4 +1,3 @@
-import { markStoryCategoryProjectionWork } from '@services/post-publication/story-category-projection-work'
 /* oxlint-disable no-await-in-loop -- Sequential bounded batches preserve lock order and cap query inputs. */
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
@@ -56,7 +55,6 @@ export async function lockRssFeedItemsForStoryPublicationChanges(
 export async function recordStoryPublicationChangesForCategoryTopics(
   query: TransactionQuery,
   changes: readonly CategoryTopicChange[],
-  options: { deferCategoryProjection?: boolean } = {},
 ): Promise<void> {
   const STORY_CATEGORY_CHANGE_BATCH_SIZE = getRssFeedItemsWorkLimit(
     'story_category_change_batch_size',
@@ -135,16 +133,6 @@ export async function recordStoryPublicationChangesForCategoryTopics(
       const topicIds = topicIdsByRssFeed.get(row.rss_feed_id) ?? new Set<string>()
       for (const topicId of row.topic_ids ?? []) topicIds.add(topicId)
       topicIdsByRssFeed.set(row.rss_feed_id, topicIds)
-    }
-  }
-  const storyIds = [...impactsByStory.keys()].toSorted()
-  if (!options.deferCategoryProjection) {
-    for (let offset = 0; offset < storyIds.length; offset += STORY_CATEGORY_CHANGE_BATCH_SIZE) {
-      // no-mistakes-disable-next-line query-reached-per-item: each bounded page marks its own story work in global order.
-      await markStoryCategoryProjectionWork(
-        query,
-        storyIds.slice(offset, offset + STORY_CATEGORY_CHANGE_BATCH_SIZE),
-      )
     }
   }
   await recordStoryTopicPublicationChanges(

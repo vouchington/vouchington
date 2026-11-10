@@ -181,7 +181,6 @@ BEGIN
         'review_disputes', 'topic_revisions', 'user_import_requests', 'vote_integrity_flags',
         'image_surface_placements', 'topic_classifier_results',
         'topic_metrics', 'bedrock_embedding_batch_entities',
-        'story_post_category_projection_receipts',
         'classifier_run_candidates', 'post_autotagger_result_topics',
         'rss_feed_item_autotagger_result_topics', 'autotagger_agent_run_topics',
         'post_classifier_local_outcomes', 'topic_merge_operations'

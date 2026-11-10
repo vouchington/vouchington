@@ -4009,8 +4009,6 @@
         reason: 'Decision 14 external request correlation id.'
       - object: 'column:post_votes.outbound_activitypub_like_activity_id'
         reason: 'Decision 14 pre-allocated external ActivityPub id.'
-      - object: 'column:story_post_category_projection_jobs.active_item_id'
-        reason: 'Deletion-stable bounded category projection keyset position, not a joined entity.'
       - object: 'column:post_vote_states.outbound_activitypub_like_activity_id'
         reason: 'Current-state copy of the opaque outbound ActivityPub Like protocol identity.'
       - object: 'column:post_votes.outbound_activitypub_original_like_activity_id'

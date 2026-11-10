@@ -1,4 +1,3 @@
-import { markStoryCategoryProjectionWork } from '@services/post-publication/story-category-projection-work'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
@@ -37,7 +36,7 @@ export type StoryPostRefreshResult = {
  *
  * Assignment, removal, and clustering callers include this refresh in their transaction and hold the
  * story lifecycle lock first; without `options.query` the refresh locks the story in its own transaction.
- * If no story post exists yet, retain category repair intent and return without immediate effects.
+ * If no story post exists yet (the story was never turned into a post), this is a no-op.
  */
 export async function refreshStoryPostForStory(
   storyId: string,
@@ -62,7 +61,6 @@ async function refreshStoryPostForStoryInTransaction(
   storyId: string,
   options: RefreshStoryPostTransactionOptions,
 ): Promise<StoryPostRefreshResult | null> {
-  await markStoryCategoryProjectionWork(options.query, [storyId])
   const postStory = await getPostStoryByStoryId(storyId, options)
   if (!postStory) return null
 

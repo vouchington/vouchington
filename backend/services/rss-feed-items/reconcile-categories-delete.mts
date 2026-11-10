@@ -1,4 +1,3 @@
-import { markStoryCategoryProjectionWork } from '@services/post-publication/story-category-projection-work'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { RssFeedItemCategorySnapshot } from './category-batches.mts'
 import {
@@ -59,30 +58,12 @@ export async function deleteStaleCategoriesAndRetractVotes(
       previous_topic_id: category.topic_id,
       topic_id: null,
     })),
-    { deferCategoryProjection: true },
   )
   await recordTopicAliasPublicationWork(
     query,
     staleCategories.flatMap(category => (category.topic_alias_id ? [category.topic_alias_id] : [])),
   )
   return { staleCategories }
-}
-
-/** Mark the current stories after snapshot category writes, while item locks are still held. */
-export async function markReconciledCategorySnapshotStories(
-  snapshots: readonly RssFeedItemCategorySnapshot[],
-  query: TransactionQuery,
-): Promise<void> {
-  const itemIds = snapshots.map(snapshot => snapshot.rss_feed_item_id)
-  const currentStories = await query<{ story_id: string }>(
-    `/* readStoriesForCategorySnapshotProjection */ SELECT DISTINCT story_id FROM rss_feed_items
-     WHERE id = ANY($1::uuid[]) AND story_id IS NOT NULL ORDER BY story_id`,
-    [itemIds],
-  )
-  await markStoryCategoryProjectionWork(
-    query,
-    currentStories.rows.map(row => row.story_id),
-  )
 }
 
 /** Discovers alias scopes before the item lock so category writers share alias → item ordering. */

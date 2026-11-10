@@ -2,10 +2,7 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from '@services/elections-votes/entity-relation/vote-stats-batch'
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
 import type { RssFeedItemCategorySnapshot } from './category-batches.mts'
-import {
-  deleteStaleCategoriesAndRetractVotes,
-  markReconciledCategorySnapshotStories,
-} from './reconcile-categories-delete.mts'
+import { deleteStaleCategoriesAndRetractVotes } from './reconcile-categories-delete.mts'
 
 /** Replaces each supplied item's category snapshot and retracts unsupported categorizer ballots. */
 export async function reconcileRssFeedItemCategorySnapshots(
@@ -14,7 +11,6 @@ export async function reconcileRssFeedItemCategorySnapshots(
   if (snapshots.length === 0) return { changedItemIds: [] }
   await using query = await beginTransaction()
   const { staleCategories } = await deleteStaleCategoriesAndRetractVotes(snapshots, query)
-  await markReconciledCategorySnapshotStories(snapshots, query)
   await query.commit()
   const targets = await getCategoryRelationTargetsForItems(
     snapshots.map(snapshot => snapshot.rss_feed_item_id),

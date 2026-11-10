@@ -10,12 +10,6 @@ import {
   insertTestStoryPostProjectionJob,
 } from '@voucha/test-helpers'
 import { storyPostRelatedUrlProjectionsHandlers } from './workers.mts'
-import { processReconcileStoryPostRelatedUrlProjections } from './processors.mts'
-import {
-  markTestStoryCategoryWork,
-  deleteTestStoryCategoryWork,
-  countTestStoryCategoryWork,
-} from '@voucha/test-helpers/story-category-projection-fixtures'
 
 const reconcileJob = { name: STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB.name } as Job
 
@@ -41,35 +35,6 @@ describe('story post related URL projections handler', () => {
 
     await expect(handler!.handle(reconcileJob)).resolves.toEqual({ processed: expect.any(Number) })
 
-    expect(add).toHaveBeenCalledWith(
-      STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB.name,
-      {},
-      expect.anything(),
-    )
-  })
-
-  it('drains owned category repair through the shared worker and admits continuation', async () => {
-    const stories = await Promise.all([
-      insertTestStory({ title: `Category repair ${crypto.randomUUID()}` }),
-      insertTestStory({ title: `Category repair ${crypto.randomUUID()}` }),
-    ])
-    const storyIds = stories.map(story => story.id)
-    onTestFinished(() => deleteTestStoryCategoryWork(storyIds))
-    await markTestStoryCategoryWork(storyIds)
-    const add = vi.spyOn(background, 'add')
-    onTestFinished(() => add.mockRestore())
-
-    // Each absent-post job has no receipts, so one bounded page completes one owned job.
-    await processReconcileStoryPostRelatedUrlProjections({
-      categoryStoryIds: storyIds,
-      urlPostIds: [],
-    })
-    await expect(countTestStoryCategoryWork(storyIds)).resolves.toBe(1)
-    await processReconcileStoryPostRelatedUrlProjections({
-      categoryStoryIds: storyIds,
-      urlPostIds: [],
-    })
-    await expect(countTestStoryCategoryWork(storyIds)).resolves.toBe(0)
     expect(add).toHaveBeenCalledWith(
       STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB.name,
       {},
