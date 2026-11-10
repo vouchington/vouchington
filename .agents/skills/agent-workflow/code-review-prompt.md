@@ -9,6 +9,9 @@ Report concrete findings with file/line evidence:
 - Correctness and security: authorization, input validation, secrets, races, and failure handling.
 - Performance and cost: query shape, unnecessary external calls, fan-out, and hot-path allocations.
 - Simplicity: obsolete paths, duplication, or indirection that obscures behavior.
+- Query simplicity: flag layers added to a query (candidate pools, CTEs over the listed entity,
+  dedupe, extra cursor state) without EXPLAIN ANALYZE plans against the simpler query; a comparison
+  with old main does not count ([R6](../../../docs/development/postgres-schema-rules.md#r6--query-shape)).
 - Prelaunch storage: enforce [One current contract](../../../AGENTS.md) and
   [prelaunch relational storage](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage):
   internal entity ids and UUID arrays of entity ids become foreign-key columns or child rows,

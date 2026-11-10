@@ -20,6 +20,8 @@ alone.
   the [prelaunch relational-storage rules](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage),
   including retained identities. Keep the canonical document authoritative; do not copy its rules
   here.
+- Queries use the simplest shape; added complexity needs plans against the simpler query
+  ([R6](../../../docs/development/postgres-schema-rules.md#r6--query-shape)).
 - Counters, trending lists, and count rankings follow the
   [counts and rankings rules](../../../docs/development/postgres-schema-rules.md#prefer-no-counter-columns-trending-and-rankings-are-materialized-views);
   a counter column needs evidence.

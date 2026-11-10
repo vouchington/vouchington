@@ -31,8 +31,10 @@ to resolve historical-identity retention conflicts before choosing foreign-key b
   [bounded-iteration](../bounded-iteration/SKILL.md) for the required per-run cap. Pass `readOnly: false` when
   the cursor locks rows, must observe a just-written row, or writes within its transaction;
   ordinary replica-safe cursor reads remain read-only.
-- Default to straightforward SQL; a complex shape needs an explain-analyze scenario and a benchmark
-  beating the plain version ([R6](../../../docs/development/postgres-schema-rules.md#r6--query-shape)).
+- Use the simplest query; added complexity needs explain-analyze plans in the PR against the
+  simpler query (old main does not count). When a plan gate fails, try the simpler query before
+  adding layers and never widen the gate
+  ([R6](../../../docs/development/postgres-schema-rules.md#r6--query-shape)).
 - Prefer set-based SQL. Use `psql.pipelineBatch()` only after a local benchmark beats serial and
   set-based alternatives for the real workload while preserving failure semantics.
 - Parse SQL for repository analysis with the existing `@libpg-query/parser`; do not add regex SQL
