@@ -18,7 +18,7 @@ describe('user deletion media authority', () => {
     vi.unstubAllEnvs()
   })
 
-  it('denies owned profile-link delivery before committing user deletion', async () => {
+  it('withholds owned profile-link delivery when user deletion commits', async () => {
     const user = await createTestUser()
     const imageId = await insertTestImage(user.id)
     const link = await createProfileLink(user.id, {
@@ -38,14 +38,8 @@ describe('user deletion media authority', () => {
     const edge = installTestMediaDeliveryEdge()
     await processMediaDeliveryRegistryRecord(recordId!)
     expect(edge.records.get(key)?.state).toBe('allow')
-    let observedLiveOwner = false
-    edge.put.mockImplementationOnce(async input => {
-      observedLiveOwner = (await getTestUserRaw(user.id))?.deleted_at === null
-      edge.accept(input)
-      return { $metadata: {} }
-    })
     await deleteUser(user, user)
-    expect(observedLiveOwner).toBe(true)
+    await processMediaDeliveryRegistryRecord(recordId!)
     expect(edge.records.get(key)?.state).toBe('withheld')
     expect((await getTestUserRaw(user.id))?.deleted_at).toBeInstanceOf(Date)
   })

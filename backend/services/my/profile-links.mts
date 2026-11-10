@@ -154,7 +154,7 @@ export async function updateProfileLink(
 export async function deleteProfileLink(userId: string, linkId: string): Promise<void> {
   await using transaction = await beginTransaction()
   const { rows } = await transaction(
-    sql`/* deleteProfileLink */ SELECT id FROM user_profile_links
+    sql`/* deleteProfileLink:lock */ SELECT id FROM user_profile_links
       WHERE id = ${linkId} AND user_id = ${userId} FOR UPDATE`,
   )
   assert(rows.length === 1, 404, 'Profile link not found')
