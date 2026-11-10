@@ -40,6 +40,47 @@ async function createRecentFeedItems(feedId: string) {
 }
 
 describe('personalized RSS weekly walk', () => {
+  it('caps broad requests at seven days while preserving a narrower day', async () => {
+    const viewer = await createTestUser()
+    const feedId = await createTestRssFeedWithTiming((await createTestTopic()).id)
+    await followRssFeed(viewer, feedId)
+    const now = Date.now()
+    const input = [0.5, 3, 8].map(daysAgo => {
+      const guid = randomUUID()
+      return {
+        guid,
+        link: `https://example.com/${guid}`,
+        title: `Window ${daysAgo}`,
+        isoDate: new Date(now - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
+      }
+    })
+    const items = await upsertRssFeedItems(feedId, input)
+    const expected = items.slice(0, 2).map(item => item.id)
+    for (const time_range of ['1m', '1y', 'all'] as const) {
+      const first = await getRssFeedItemFeedIds(viewer, {
+        feed_type: 'all',
+        time_range,
+        limit: 1,
+      })
+      expect(first.results.map(row => row.entity_id)).toEqual([expected[0]])
+      expect(first.page_info.has_next_page).toBe(true)
+      const second = await getRssFeedItemFeedIds(viewer, {
+        feed_type: 'all',
+        time_range,
+        limit: 1,
+        after: first.page_info.end_cursor!,
+      })
+      expect(second.results.map(row => row.entity_id)).toEqual([expected[1]])
+      expect(second.page_info.has_next_page).toBe(false)
+    }
+    const narrow = await getRssFeedItemFeedIds(viewer, {
+      feed_type: 'all',
+      time_range: '1d',
+      limit: 10,
+    })
+    expect(narrow.results.map(row => row.entity_id)).toEqual([expected[0]])
+  })
+
   it('walks every eligible item through page cursors with one feed query per page', async () => {
     const viewer = await createTestUser()
     const feedId = await createTestRssFeedWithTiming((await createTestTopic()).id)

@@ -5,6 +5,8 @@ import { createTestUser } from '@voucha/test-helpers'
 
 import type { PrivateUser } from '@services/users/types'
 import { processRssFeedImportRow } from '@services/user-import-export/rss-feed-imports'
+import { backendResponseContracts } from '../../../../test-helpers/api-fixtures/response-contracts.mts'
+import { validateResponseContract } from '../../../../test-helpers/api-fixtures/contract-schema.mts'
 
 describe('POST /api/v1/rss-feeds', () => {
   let user: PrivateUser
@@ -45,6 +47,12 @@ describe('POST /api/v1/rss-feeds', () => {
       .post('/api/v1/rss-feeds')
       .send({ rss_feed_url: `https://post-create-${random}.example.com/feed.xml` })
       .expect(202)
+    expect(
+      validateResponseContract(
+        backendResponseContracts['POST:/api/v1/rss-feeds']!.schema,
+        response.body,
+      ),
+    ).toEqual([])
 
     expect(response.body.import).toMatchObject({ total_rows: 1, pending_rows: 1 })
     expect(response.body.status_url).toBe(`/api/v1/my/import/rss-feeds/${response.body.import.id}`)

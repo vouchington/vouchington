@@ -122,18 +122,23 @@ describe('getRssFeedItemFeedIds', () => {
     expect(foundItemWithCategory).toBeDefined()
   })
 
-  it('returns items from followed RSS feeds AND followed topics with feed_type=all', async () => {
+  it('returns the source-or-topic union once with feed_type=all', async () => {
     const user = await createTestUser()
     const feedCreator = await createTestUser()
     const topic = await createTestTopic({ user: feedCreator })
     const categoryTopic = await createTestTopic({ user: feedCreator })
     const followedFeedId = await createTestRssFeedWithTiming(topic.id)
+    const topicOnlyFeedId = await createTestRssFeedWithTiming(
+      (await createTestTopic({ user: feedCreator })).id,
+    )
 
     await followRssFeed(user, followedFeedId)
     await followTopic(user, categoryTopic)
 
     // Item from followed feed without followed topic category
     const itemOnlyFeed = await createTestRssFeedItemWithUrl(followedFeedId)
+    const itemOnlyTopic = await createTestRssFeedItemWithUrl(topicOnlyFeedId)
+    await addCategoryToRssFeedItem(itemOnlyTopic.id, categoryTopic.id)
     // Item from followed feed with followed topic category
     const itemBoth = await createTestRssFeedItemWithUrl(followedFeedId)
     await addCategoryToRssFeedItem(itemBoth.id, categoryTopic.id)
@@ -141,9 +146,12 @@ describe('getRssFeedItemFeedIds', () => {
     const result = await getRssFeedItemFeedIds(user, { feed_type: 'all', limit: 100 })
 
     const foundItemOnlyFeed = result.results.find(r => r.id === itemOnlyFeed.id)
+    const foundItemOnlyTopic = result.results.find(r => r.id === itemOnlyTopic.id)
     const foundItemBoth = result.results.find(r => r.id === itemBoth.id)
     expect(foundItemOnlyFeed).toBeDefined()
+    expect(foundItemOnlyTopic).toBeDefined()
     expect(foundItemBoth).toBeDefined()
+    expect(result.results.filter(row => row.entity_id === itemBoth.id)).toHaveLength(1)
   })
 
   it('excludes hidden items', async () => {

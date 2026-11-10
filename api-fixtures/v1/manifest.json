@@ -625,6 +625,71 @@
       "source": "backend/api/v1/report-integrity/penalties.mts",
       "statusKnowledge": "default"
     },
+    "DELETE:/api/v1/rss-feeds/:id": {
+      "bodyKind": "content",
+      "hash": "984328b2eb7a7dba1e2d99d7f70559287c4fd807bd9657a344cb81cd93ef2584",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "DELETE",
+      "routeTemplate": "/api/v1/rss-feeds/:id",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "rss_feed_id": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "status": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": "deleting"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/rss-feeds/rss-feed.mts",
+      "statusCodes": [202],
+      "statusKnowledge": "explicit"
+    },
+    "DELETE:/api/v1/rss-feeds/:id#conflict": {
+      "bodyKind": "content",
+      "hash": "6372be5baa2cbaab39eb557fa939891170a6025ce7083a9d7c6570af93845423",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "DELETE",
+      "routeTemplate": "/api/v1/rss-feeds/:id",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "request_id": {
+              "required": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/services/rss-feeds/delete.mts",
+      "statusCodes": [409],
+      "statusKnowledge": "explicit"
+    },
     "DELETE:/api/v1/users/:idOrSlug": {
       "bodyKind": "content",
       "hash": "36d977532e88d581b08000ee0b9446ed61ecdc62a1c63dc9cf3fc9cb3aa4d292",
@@ -36612,15 +36677,7 @@
                   "variants": [
                     {
                       "type": "literal",
-                      "value": "INVALID_URL"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "INVALID_FEED_CONTENT"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "FEED_FETCH_TIMEOUT"
+                      "value": "ACCOUNT_SUSPENDED"
                     },
                     {
                       "type": "literal",
@@ -36628,11 +36685,19 @@
                     },
                     {
                       "type": "literal",
-                      "value": "ACCOUNT_SUSPENDED"
+                      "value": "FEED_FETCH_TIMEOUT"
                     },
                     {
                       "type": "literal",
                       "value": "IMPORT_FAILED"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "INVALID_FEED_CONTENT"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "INVALID_URL"
                     },
                     {
                       "type": "literal",
@@ -58650,6 +58715,123 @@
       },
       "source": "backend/api/v1/topics/claims.mts",
       "statusKnowledge": "default"
+    },
+    "GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId": {
+      "bodyKind": "content",
+      "hash": "a55022103a94f7ba88a279276fe9b67fa9493f5789047aa1680f02ec0fabe700",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/topics/:sourceIdOrSlug/merges/:operationId",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "topic_merge": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "completed_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "created_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "destination_topic_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "error_code": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "source_topic_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "stage": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "status": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "literal",
+                          "value": "completed"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "failed"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "queued"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "running"
+                        }
+                      ]
+                    }
+                  },
+                  "status_url": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/topics/merges.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
     },
     "GET:/api/v1/topics/:topicId/prioritized-referral-links": {
       "bodyKind": "content",
@@ -96281,6 +96463,102 @@
       "statusCodes": [202],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/rss-feeds": {
+      "bodyKind": "content",
+      "hash": "decb40d52aefa349a521cbb03f22fc8f438e20b6b3dc2770ad8b27fbc2690978",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/rss-feeds",
+      "schema": {
+        "definitions": {
+          "UserRssFeedImportSummary": {
+            "additionalProperties": false,
+            "properties": {
+              "completed_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "completed_rows": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "failed_rows": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "pending_rows": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "skipped_rows": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "total_rows": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "import": {
+              "required": true,
+              "schema": {
+                "name": "UserRssFeedImportSummary",
+                "type": "ref"
+              }
+            },
+            "status_url": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/rss-feeds/rss-feeds.mts",
+      "statusCodes": [202],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/topics": {
       "bodyKind": "content",
       "hash": "66232707fa8a2afea29b949add49a67e9ef1de885b465eba0ddf8b6201d4ee03",
@@ -97116,6 +97394,123 @@
       },
       "source": "backend/api/v1/topics/topics.mts",
       "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/topics/:sourceIdOrSlug/merges": {
+      "bodyKind": "content",
+      "hash": "a55022103a94f7ba88a279276fe9b67fa9493f5789047aa1680f02ec0fabe700",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/topics/:sourceIdOrSlug/merges",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "topic_merge": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "completed_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "created_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "destination_topic_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "error_code": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "source_topic_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "stage": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "status": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "literal",
+                          "value": "completed"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "failed"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "queued"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "running"
+                        }
+                      ]
+                    }
+                  },
+                  "status_url": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/topics/merges.mts",
+      "statusCodes": [202],
       "statusKnowledge": "explicit"
     },
     "POST:/api/v1/urls/:id/crawl": {
@@ -99565,6 +99960,467 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-comment-descendant-continuation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "DELETE:/api/v1/rss-feeds/:id",
+      "bodyFile": "responses/native.rss-feeds.delete.accepted.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-feeds.delete.accepted",
+      "method": "DELETE",
+      "migratedFrom": [
+        "backend/api/v1/rss-feeds/__tests__/index.get-latest-crawl-membership-gating.test.mts"
+      ],
+      "path": "/api/v1/rss-feeds/70000000-0000-7000-8000-000000003680",
+      "responseSchema": {
+        "hash": "959a1f40e34919b16462c74f282c14fa42842b9ce746c476f6a3fbd2c3671cf6",
+        "key": "native.rss-feeds.delete.accepted"
+      },
+      "route": {
+        "pathParams": {
+          "id": "70000000-0000-7000-8000-000000003680"
+        },
+        "routeTemplate": "/api/v1/rss-feeds/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-async-content-contract-cases.mts"
+      },
+      "status": 202
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/topics/:sourceIdOrSlug/merges",
+      "bodyFile": "responses/native.topics.merge.accepted.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.topics.merge.accepted",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/topics/merges.test.mts"],
+      "path": "/api/v1/topics/70000000-0000-7000-8000-000000005170/merges",
+      "requestBody": {
+        "destination_id_or_slug": "70000000-0000-7000-8000-000000005171"
+      },
+      "responseSchema": {
+        "hash": "500e5098310b58f44265d0d235cd21f051db68481ef381c3c369618a8d55998b",
+        "key": "native.topics.merge.accepted"
+      },
+      "route": {
+        "pathParams": {
+          "sourceIdOrSlug": "70000000-0000-7000-8000-000000005170"
+        },
+        "routeTemplate": "/api/v1/topics/:sourceIdOrSlug/merges"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-async-content-contract-cases.mts"
+      },
+      "status": 202
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId",
+      "bodyFile": "responses/native.topics.merge.status.queued.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.topics.merge.status.queued",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/topics/merges.test.mts"],
+      "path": "/api/v1/topics/70000000-0000-7000-8000-000000005170/merges/70000000-0000-7000-8000-000000005172",
+      "responseSchema": {
+        "hash": "500e5098310b58f44265d0d235cd21f051db68481ef381c3c369618a8d55998b",
+        "key": "native.topics.merge.status.queued"
+      },
+      "route": {
+        "pathParams": {
+          "operationId": "70000000-0000-7000-8000-000000005172",
+          "sourceIdOrSlug": "70000000-0000-7000-8000-000000005170"
+        },
+        "routeTemplate": "/api/v1/topics/:sourceIdOrSlug/merges/:operationId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-async-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId",
+      "bodyFile": "responses/native.topics.merge.status.running.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.topics.merge.status.running",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/topics/merges.test.mts"],
+      "path": "/api/v1/topics/70000000-0000-7000-8000-000000005170/merges/70000000-0000-7000-8000-000000005172",
+      "responseSchema": {
+        "hash": "500e5098310b58f44265d0d235cd21f051db68481ef381c3c369618a8d55998b",
+        "key": "native.topics.merge.status.running"
+      },
+      "route": {
+        "pathParams": {
+          "operationId": "70000000-0000-7000-8000-000000005172",
+          "sourceIdOrSlug": "70000000-0000-7000-8000-000000005170"
+        },
+        "routeTemplate": "/api/v1/topics/:sourceIdOrSlug/merges/:operationId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-async-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId",
+      "bodyFile": "responses/native.topics.merge.status.completed.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.topics.merge.status.completed",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/topics/merges.test.mts"],
+      "path": "/api/v1/topics/70000000-0000-7000-8000-000000005170/merges/70000000-0000-7000-8000-000000005172",
+      "responseSchema": {
+        "hash": "4336e1d79d3eadb77332466189c23cbd480ed3fa81b0da216c22184dd1c61a1f",
+        "key": "native.topics.merge.status.completed"
+      },
+      "route": {
+        "pathParams": {
+          "operationId": "70000000-0000-7000-8000-000000005172",
+          "sourceIdOrSlug": "70000000-0000-7000-8000-000000005170"
+        },
+        "routeTemplate": "/api/v1/topics/:sourceIdOrSlug/merges/:operationId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-async-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId",
+      "bodyFile": "responses/native.topics.merge.status.failed.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.topics.merge.status.failed",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/topics/merges.test.mts"],
+      "path": "/api/v1/topics/70000000-0000-7000-8000-000000005170/merges/70000000-0000-7000-8000-000000005172",
+      "responseSchema": {
+        "hash": "c8a7b70d5fd5e61183cedb6075b7fe5ca50d5ba648931dcfd9e338db659c459a",
+        "key": "native.topics.merge.status.failed"
+      },
+      "route": {
+        "pathParams": {
+          "operationId": "70000000-0000-7000-8000-000000005172",
+          "sourceIdOrSlug": "70000000-0000-7000-8000-000000005170"
+        },
+        "routeTemplate": "/api/v1/topics/:sourceIdOrSlug/merges/:operationId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-async-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/rss-feeds",
+      "bodyFile": "responses/native.rss-feeds.create.accepted.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-feeds.create.accepted",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/rss-feeds/__tests__/index.post-api-v1-rss-feeds.test.mts"],
+      "path": "/api/v1/rss-feeds",
+      "requestBody": {
+        "follow": true,
+        "rss_feed_url": "https://example.test/feed.xml"
+      },
+      "responseSchema": {
+        "hash": "f93346b88cedb009c88d517ddaef388d2fe11231f67825ed917951faf14f64e8",
+        "key": "native.rss-feeds.create.accepted"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/rss-feeds"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-async-content-contract-cases.mts"
+      },
+      "status": 202
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/import/rss-feeds/:importId",
+      "bodyFile": "responses/native.rss-feeds.create.status.pending.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-feeds.create.status.pending",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/rss-feeds/__tests__/index.post-api-v1-rss-feeds.test.mts"],
+      "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000003681",
+      "responseSchema": {
+        "hash": "a2a683edbf646a2c697dc4da6cbf52c411fec3d0540b3d498be34dd223b795d1",
+        "key": "native.rss-feeds.create.status.pending"
+      },
+      "route": {
+        "pathParams": {
+          "importId": "70000000-0000-7000-8000-000000003681"
+        },
+        "routeTemplate": "/api/v1/my/import/rss-feeds/:importId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-async-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/import/rss-feeds/:importId",
+      "bodyFile": "responses/native.rss-feeds.create.status.completed.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-feeds.create.status.completed",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/rss-feeds/__tests__/index.post-api-v1-rss-feeds.test.mts"],
+      "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000003681",
+      "responseSchema": {
+        "hash": "b520e8af82d32e9d72440f29f2ab51e8084d79890f7f8c88e5684340f89cb363",
+        "key": "native.rss-feeds.create.status.completed"
+      },
+      "route": {
+        "pathParams": {
+          "importId": "70000000-0000-7000-8000-000000003681"
+        },
+        "routeTemplate": "/api/v1/my/import/rss-feeds/:importId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-async-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/import/rss-feeds/:importId",
+      "bodyFile": "responses/native.rss-feeds.create.status.failed.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-feeds.create.status.failed",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/rss-feeds/__tests__/index.post-api-v1-rss-feeds.test.mts"],
+      "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000003681",
+      "responseSchema": {
+        "hash": "54eaa93990bdf7c754546ec37abfadf34c944b63a4b3f43892bf06af72f6c773",
+        "key": "native.rss-feeds.create.status.failed"
+      },
+      "route": {
+        "pathParams": {
+          "importId": "70000000-0000-7000-8000-000000003681"
+        },
+        "routeTemplate": "/api/v1/my/import/rss-feeds/:importId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-async-content-contract-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "DELETE:/api/v1/rss-feeds/:id#conflict",
+      "bodyFile": "responses/native.rss-feeds.delete.retained-import-conflict.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-feeds.delete.retained-import-conflict",
+      "method": "DELETE",
+      "migratedFrom": ["backend/services/rss-feeds/delete.mts"],
+      "path": "/api/v1/rss-feeds/70000000-0000-7000-8000-000000003680",
+      "responseSchema": {
+        "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550",
+        "key": "native.rss-feeds.delete.retained-import-conflict"
+      },
+      "route": {
+        "pathParams": {
+          "id": "70000000-0000-7000-8000-000000003680"
+        },
+        "routeTemplate": "/api/v1/rss-feeds/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-rss-delete-conflict-cases.mts"
+      },
+      "status": 409
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/feeds/rss_feed_items/:feed_type",
+      "bodyFile": "responses/native.rss-personal.seven-day.1m.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-personal.seven-day.1m",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.weekly-walk.test.mts",
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.empty-no-follows.generated.test.mts"
+      ],
+      "path": "/api/v1/feeds/rss_feed_items/all",
+      "query": {
+        "limit": "25",
+        "time_range": "1m"
+      },
+      "responseSchema": {
+        "hash": "2512aa3c001c829549836320b6d60ebae39212807f8cca1a783f29393e02d08b",
+        "key": "native.rss-personal.seven-day.1m"
+      },
+      "route": {
+        "pathParams": {
+          "feed_type": "all"
+        },
+        "routeTemplate": "/api/v1/feeds/rss_feed_items/:feed_type"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-personal-rss-window-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/feeds/rss_feed_items/:feed_type",
+      "bodyFile": "responses/native.rss-personal.seven-day.1y.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-personal.seven-day.1y",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.weekly-walk.test.mts",
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.empty-no-follows.generated.test.mts"
+      ],
+      "path": "/api/v1/feeds/rss_feed_items/all",
+      "query": {
+        "limit": "25",
+        "time_range": "1y"
+      },
+      "responseSchema": {
+        "hash": "2512aa3c001c829549836320b6d60ebae39212807f8cca1a783f29393e02d08b",
+        "key": "native.rss-personal.seven-day.1y"
+      },
+      "route": {
+        "pathParams": {
+          "feed_type": "all"
+        },
+        "routeTemplate": "/api/v1/feeds/rss_feed_items/:feed_type"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-personal-rss-window-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/feeds/rss_feed_items/:feed_type",
+      "bodyFile": "responses/native.rss-personal.seven-day.all.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-personal.seven-day.all",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.weekly-walk.test.mts",
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.empty-no-follows.generated.test.mts"
+      ],
+      "path": "/api/v1/feeds/rss_feed_items/all",
+      "query": {
+        "limit": "25",
+        "time_range": "all"
+      },
+      "responseSchema": {
+        "hash": "2512aa3c001c829549836320b6d60ebae39212807f8cca1a783f29393e02d08b",
+        "key": "native.rss-personal.seven-day.all"
+      },
+      "route": {
+        "pathParams": {
+          "feed_type": "all"
+        },
+        "routeTemplate": "/api/v1/feeds/rss_feed_items/:feed_type"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-personal-rss-window-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/feeds/rss_feed_items/:feed_type",
+      "bodyFile": "responses/native.rss-personal.one-day.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-personal.one-day",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.weekly-walk.test.mts",
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.empty-no-follows.generated.test.mts"
+      ],
+      "path": "/api/v1/feeds/rss_feed_items/all",
+      "query": {
+        "limit": "25",
+        "time_range": "1d"
+      },
+      "responseSchema": {
+        "hash": "2c4ae680f778a213a4d8ffee95859918c444dc9b128c8885e312c05e74c8a8ca",
+        "key": "native.rss-personal.one-day"
+      },
+      "route": {
+        "pathParams": {
+          "feed_type": "all"
+        },
+        "routeTemplate": "/api/v1/feeds/rss_feed_items/:feed_type"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-personal-rss-window-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/feeds/rss_feed_items/:feed_type",
+      "bodyFile": "responses/native.rss-personal.union.first-page.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-personal.union.first-page",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.weekly-walk.test.mts",
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.empty-no-follows.generated.test.mts"
+      ],
+      "path": "/api/v1/feeds/rss_feed_items/all",
+      "query": {
+        "limit": "2",
+        "time_range": "all"
+      },
+      "responseSchema": {
+        "hash": "ce4ac1008532fac4be3b89b28d6a269cd09f291bf65912fa36ca576081ed5061",
+        "key": "native.rss-personal.union.first-page"
+      },
+      "route": {
+        "pathParams": {
+          "feed_type": "all"
+        },
+        "routeTemplate": "/api/v1/feeds/rss_feed_items/:feed_type"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-personal-rss-window-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/feeds/rss_feed_items/:feed_type",
+      "bodyFile": "responses/native.rss-personal.union.next-page.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.rss-personal.union.next-page",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.weekly-walk.test.mts",
+        "backend/services/feeds/rss-feed-items/__tests__/get-ids.empty-no-follows.generated.test.mts"
+      ],
+      "path": "/api/v1/feeds/rss_feed_items/all",
+      "query": {
+        "after": "eyJ0aW1lc3RhbXAiOiIyMDI2LTExLTA1VDEyOjAwOjAwLjAwMDAwMFoiLCJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwNTQ2MiIsInNjb3BlIjoiMGRkMDM0OTRjZWEwYWViOTI0MDFkMDBmYzMxZGY0MWMxODllYmZiMzlkZmY3NDM4ZDNiYjE3ZWNmZWM5MmJjNSJ9",
+        "limit": "2",
+        "time_range": "all"
+      },
+      "responseSchema": {
+        "hash": "638d455378f5504e1bdd02b577b36742a44d3b3a1abc29e1e4f179bd79dd87ee",
+        "key": "native.rss-personal.union.next-page"
+      },
+      "route": {
+        "pathParams": {
+          "feed_type": "all"
+        },
+        "routeTemplate": "/api/v1/feeds/rss_feed_items/:feed_type"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-personal-rss-window-cases.mts"
       },
       "status": 200
     },

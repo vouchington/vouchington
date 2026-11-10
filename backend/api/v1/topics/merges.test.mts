@@ -2,6 +2,8 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
+import { backendResponseContracts } from '../../../test-helpers/api-fixtures/response-contracts.mts'
+import { validateResponseContract } from '../../../test-helpers/api-fixtures/contract-schema.mts'
 
 describe('POST /api/v1/topics/:sourceIdOrSlug/merges', () => {
   it('returns 401 for unauthenticated users', async () => {
@@ -68,6 +70,12 @@ describe('POST /api/v1/topics/:sourceIdOrSlug/merges', () => {
       .post(`/api/v1/topics/${source.slug}/merges`)
       .send({ destination_id_or_slug: destination.id })
       .expect(202)
+    expect(
+      validateResponseContract(
+        backendResponseContracts['POST:/api/v1/topics/:sourceIdOrSlug/merges']!.schema,
+        response.body,
+      ),
+    ).toEqual([])
 
     expect(response.body.topic_merge).toMatchObject({
       source_topic_id: source.id,
@@ -80,6 +88,12 @@ describe('POST /api/v1/topics/:sourceIdOrSlug/merges', () => {
     const statusUrl = `/api/v1/topics/${source.id}/merges/${response.body.topic_merge.id}`
     expect(response.body.topic_merge.status_url).toBe(statusUrl)
     const status = await request.get(statusUrl).expect(200)
+    expect(
+      validateResponseContract(
+        backendResponseContracts['GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId']!.schema,
+        status.body,
+      ),
+    ).toEqual([])
     expect(status.body).toEqual(response.body)
 
     await createRequest().get(statusUrl).expect(401)

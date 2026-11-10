@@ -10,6 +10,12 @@ import {
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 import type { PrivateUser } from '@services/users/types'
+import { backendResponseContracts } from '../../../../test-helpers/api-fixtures/response-contracts.mts'
+import { validateResponseContract } from '../../../../test-helpers/api-fixtures/contract-schema.mts'
+import {
+  createCompletedTestAdminImportWithFeed,
+  deleteTestAdminImportBatch,
+} from '../../../../test-helpers/rss-hard-delete-import-fixtures.mts'
 
 describe('index', () => {
   describe('RSS Feeds Routes', () => {
@@ -89,6 +95,33 @@ describe('index', () => {
     })
 
     describe('GET/PATCH/DELETE /api/v1/rss-feeds/:id', () => {
+      it('returns the retained admin-import conflict envelope', async () => {
+        const admin = await createTestUser({ administrator: true })
+        const random = Math.random().toString(36).slice(2, 8)
+        const topicId = await insertTestTopic({
+          name: `Retained Feed Topic ${random}`,
+          slug: `retained-feed-topic-${random}`,
+          createdById: admin.id,
+        })
+        const feedId = await insertTestRssFeed({ topicId, title: `Retained Feed ${random}` })
+        const batchId = await createCompletedTestAdminImportWithFeed(admin.id, feedId)
+        try {
+          const request = createRequest()
+          await request.authenticateAs(admin)
+          const response = await request.delete(`/api/v1/rss-feeds/${feedId}`).expect(409)
+          expect(response.body.message).toBe('Feed is referenced by admin import history')
+          const { stack: _stack, ...deployedBody } = response.body
+          expect(
+            validateResponseContract(
+              backendResponseContracts['DELETE:/api/v1/rss-feeds/:id#conflict']!.schema,
+              deployedBody,
+            ),
+          ).toEqual([])
+        } finally {
+          await deleteTestAdminImportBatch(batchId)
+        }
+      })
+
       it('should get, update, and delete a feed as admin', async () => {
         const admin = await createTestUser({ administrator: true })
         const random = Math.random().toString(36).slice(2, 8)
@@ -124,6 +157,12 @@ describe('index', () => {
 
         const deleteResponse = await request.delete(`/api/v1/rss-feeds/${feedId}`).expect(202)
         expect(deleteResponse.body).toEqual({ rss_feed_id: feedId, status: 'deleting' })
+        expect(
+          validateResponseContract(
+            backendResponseContracts['DELETE:/api/v1/rss-feeds/:id']!.schema,
+            deleteResponse.body,
+          ),
+        ).toEqual([])
       })
 
       it('should update enablement and discoverability state as admin', async () => {
