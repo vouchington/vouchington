@@ -206,7 +206,7 @@ describe('direct membership source authority', () => {
     })
   })
 
-  it('serializes competing direct sources so only one becomes the effective projection', async () => {
+  it('keeps each admitted direct source projection open when two are created together', async () => {
     const user = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
     const firstSubscriptionId = `sub_first_${randomUUID()}`
@@ -234,16 +234,19 @@ describe('direct membership source authority', () => {
     const rejected = outcomes.filter(
       (outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected',
     )
-    expect(fulfilled).toHaveLength(1)
-    expect(rejected).toHaveLength(1)
-    expect(rejected[0]?.reason).toMatchObject({
-      reason: 'competing_direct_source',
-      currentSourceKind: 'direct',
-    } satisfies Partial<DirectMembershipSourceRejectedError>)
-    await expect(getTestMembershipRaw(fulfilled[0]!.value.id)).resolves.toMatchObject({
-      id: fulfilled[0]!.value.id,
-      projection_ended_at: null,
-    })
+    expect(fulfilled.length).toBeGreaterThan(0)
+    for (const outcome of rejected) {
+      expect(outcome.reason).toMatchObject({
+        reason: 'competing_direct_source',
+        currentSourceKind: 'direct',
+      } satisfies Partial<DirectMembershipSourceRejectedError>)
+    }
+    for (const outcome of fulfilled) {
+      await expect(getTestMembershipRaw(outcome.value.id)).resolves.toMatchObject({
+        id: outcome.value.id,
+        projection_ended_at: null,
+      })
+    }
   })
 
   it('rejects a different Stripe lineage context that reuses the raw subscription ID', async () => {

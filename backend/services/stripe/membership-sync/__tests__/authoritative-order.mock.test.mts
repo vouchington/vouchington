@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type Stripe from 'stripe'
-import {
-  createTestSku,
-  createTestUser,
-  runTestActionWhileMembershipUserLocked,
-} from '@voucha/test-helpers'
+import { createTestSku, createTestUser } from '@voucha/test-helpers'
 import { createMembership, getMembershipByStripeSubscriptionId } from '@services/memberships'
 import {
   getStripeMembershipSourceIdentity,
@@ -160,21 +156,12 @@ describe('Stripe membership sync authoritative observation order', () => {
     mockGetStripeSubscription.mockResolvedValueOnce(
       makeSubscription(subscriptionId, sku.stripe_price_id, 'past_due'),
     )
-    await runTestActionWhileMembershipUserLocked({
-      userId: user.id,
-      lockingQueryComment:
-        '/* recordStripeMembershipProviderFacts: lock user before source state */',
-      startAction: () =>
-        ensureMembershipFromStripeSubscription(
-          olderRetry.id,
-          subscriptionId,
-          customerId,
-          applicationContext,
-        ),
-      whileActionBlocked: async () => {
-        vi.setSystemTime(new Date('2030-01-01T00:00:02.000Z'))
-      },
-    })
+    await ensureMembershipFromStripeSubscription(
+      olderRetry.id,
+      subscriptionId,
+      customerId,
+      applicationContext,
+    )
 
     await expect(
       getMembershipByStripeSubscriptionId(

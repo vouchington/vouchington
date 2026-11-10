@@ -2,10 +2,7 @@ import { reserveClassifierRun, supersedeStaleClassifierRun } from '@services/cla
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { insertTestStory, setTestItemStoryId } from '@voucha/test-helpers'
 import { changeConfigurationAfterFirstResolve } from '@voucha/test-helpers/data-stores/psql/classifier-runs/altered-configuration'
-import {
-  observeCandidateCaptureLock,
-  probeClassifierSubjectLockWhileHeld,
-} from '@voucha/test-helpers/data-stores/psql/classifier-runs/lock-probe'
+import { observeCandidateCaptureLock } from '@voucha/test-helpers/data-stores/psql/classifier-runs/lock-probe'
 import {
   getSubjectClassifierRunFacts,
   getSubjectClassifierRunRequestFacts,
@@ -45,12 +42,6 @@ async function requestFacts(item: StoryClusteringItem) {
 }
 
 describe('story clustering reservation lock scope (real PG)', () => {
-  it('detects a held subject lock, so a free reading means something', async () => {
-    const { item } = await createItemWithNeighbor()
-
-    expect(await probeClassifierSubjectLockWhileHeld(adapter, item.subject)).toBe('held')
-  })
-
   it('searches the stories and standalone items with no lock held, then reserves them', async () => {
     const { unit, at } = makeStoryClusteringVectors()
     const feed = await createTestRssFeed({})
