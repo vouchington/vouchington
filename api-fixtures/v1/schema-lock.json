@@ -72,6 +72,14 @@
       "fixtureIds": ["native.moderation.report-integrity.penalties.revoke"],
       "hash": "201de00b32abc05762e50271bed8f4d539506de0d6f2dc02251d07b7c63da301"
     },
+    "DELETE:/api/v1/rss-feeds/:id": {
+      "fixtureIds": ["native.rss-feeds.delete.accepted"],
+      "hash": "984328b2eb7a7dba1e2d99d7f70559287c4fd807bd9657a344cb81cd93ef2584"
+    },
+    "DELETE:/api/v1/rss-feeds/:id#conflict": {
+      "fixtureIds": ["native.rss-feeds.delete.retained-import-conflict"],
+      "hash": "6372be5baa2cbaab39eb557fa939891170a6025ce7083a9d7c6570af93845423"
+    },
     "DELETE:/api/v1/users/:idOrSlug": {
       "fixtureIds": ["native.users.delete.default"],
       "hash": "36d977532e88d581b08000ee0b9446ed61ecdc62a1c63dc9cf3fc9cb3aa4d292"
@@ -500,6 +508,12 @@
     "GET:/api/v1/feeds/rss_feed_items/:feed_type": {
       "fixtureIds": [
         "native.podcast-episodes.hacker-news.list",
+        "native.rss-personal.one-day",
+        "native.rss-personal.seven-day.1m",
+        "native.rss-personal.seven-day.1y",
+        "native.rss-personal.seven-day.all",
+        "native.rss-personal.union.first-page",
+        "native.rss-personal.union.next-page",
         "swift.integration.rss-feed-items.audio",
         "swift.integration.rss-feed-items.video",
         "swift.rss-feed-items.feed.default",
@@ -668,7 +682,10 @@
     "GET:/api/v1/my/import/rss-feeds/:importId": {
       "fixtureIds": [
         "native.import-export.rss-feeds.status.partial",
-        "native.import-export.rss-feeds.status.retrying"
+        "native.import-export.rss-feeds.status.retrying",
+        "native.rss-feeds.create.status.completed",
+        "native.rss-feeds.create.status.failed",
+        "native.rss-feeds.create.status.pending"
       ],
       "hash": "b8b1d7dc2e8316de02269dd031178ea0d9014de64f98a7584bd07d9da6905f28"
     },
@@ -976,6 +993,15 @@
     "GET:/api/v1/topics/:idOrSlug/claims": {
       "fixtureIds": ["native.topic-claims.page"],
       "hash": "f4c16d24e5edbed14e30293c023203487298ad2eaa29dc8efb83b9d82f10bf7d"
+    },
+    "GET:/api/v1/topics/:sourceIdOrSlug/merges/:operationId": {
+      "fixtureIds": [
+        "native.topics.merge.status.completed",
+        "native.topics.merge.status.failed",
+        "native.topics.merge.status.queued",
+        "native.topics.merge.status.running"
+      ],
+      "hash": "a55022103a94f7ba88a279276fe9b67fa9493f5789047aa1680f02ec0fabe700"
     },
     "GET:/api/v1/topics/:topicId/prioritized-referral-links": {
       "fixtureIds": ["web.referral-links.prioritized.default"],
@@ -1614,9 +1640,17 @@
       "fixtureIds": ["native.rss-feed-items.followers.share"],
       "hash": "4e08b0299f6aaa051f39f3ac907f5f863849bb7bf99269b46429ad539b12504b"
     },
+    "POST:/api/v1/rss-feeds": {
+      "fixtureIds": ["native.rss-feeds.create.accepted"],
+      "hash": "decb40d52aefa349a521cbb03f22fc8f438e20b6b3dc2770ad8b27fbc2690978"
+    },
     "POST:/api/v1/topics": {
       "fixtureIds": ["web.topics.mutation.default"],
       "hash": "66232707fa8a2afea29b949add49a67e9ef1de885b465eba0ddf8b6201d4ee03"
+    },
+    "POST:/api/v1/topics/:sourceIdOrSlug/merges": {
+      "fixtureIds": ["native.topics.merge.accepted"],
+      "hash": "a55022103a94f7ba88a279276fe9b67fa9493f5789047aa1680f02ec0fabe700"
     },
     "POST:/api/v1/urls/:id/crawl": {
       "fixtureIds": ["native.url-crawl-trigger.default"],
@@ -2988,6 +3022,54 @@
       "fixtureIds": ["native.rss-feed-items.hacker-news.list"],
       "hash": "e45a25cfd087b730a73cc81da9708354345859664f89aca3ed17ac8d0e2c5461"
     },
+    "native.rss-feeds.create.accepted": {
+      "fixtureIds": ["native.rss-feeds.create.accepted"],
+      "hash": "f93346b88cedb009c88d517ddaef388d2fe11231f67825ed917951faf14f64e8"
+    },
+    "native.rss-feeds.create.status.completed": {
+      "fixtureIds": ["native.rss-feeds.create.status.completed"],
+      "hash": "b520e8af82d32e9d72440f29f2ab51e8084d79890f7f8c88e5684340f89cb363"
+    },
+    "native.rss-feeds.create.status.failed": {
+      "fixtureIds": ["native.rss-feeds.create.status.failed"],
+      "hash": "54eaa93990bdf7c754546ec37abfadf34c944b63a4b3f43892bf06af72f6c773"
+    },
+    "native.rss-feeds.create.status.pending": {
+      "fixtureIds": ["native.rss-feeds.create.status.pending"],
+      "hash": "a2a683edbf646a2c697dc4da6cbf52c411fec3d0540b3d498be34dd223b795d1"
+    },
+    "native.rss-feeds.delete.accepted": {
+      "fixtureIds": ["native.rss-feeds.delete.accepted"],
+      "hash": "959a1f40e34919b16462c74f282c14fa42842b9ce746c476f6a3fbd2c3671cf6"
+    },
+    "native.rss-feeds.delete.retained-import-conflict": {
+      "fixtureIds": ["native.rss-feeds.delete.retained-import-conflict"],
+      "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550"
+    },
+    "native.rss-personal.one-day": {
+      "fixtureIds": ["native.rss-personal.one-day"],
+      "hash": "2c4ae680f778a213a4d8ffee95859918c444dc9b128c8885e312c05e74c8a8ca"
+    },
+    "native.rss-personal.seven-day.1m": {
+      "fixtureIds": ["native.rss-personal.seven-day.1m"],
+      "hash": "2512aa3c001c829549836320b6d60ebae39212807f8cca1a783f29393e02d08b"
+    },
+    "native.rss-personal.seven-day.1y": {
+      "fixtureIds": ["native.rss-personal.seven-day.1y"],
+      "hash": "2512aa3c001c829549836320b6d60ebae39212807f8cca1a783f29393e02d08b"
+    },
+    "native.rss-personal.seven-day.all": {
+      "fixtureIds": ["native.rss-personal.seven-day.all"],
+      "hash": "2512aa3c001c829549836320b6d60ebae39212807f8cca1a783f29393e02d08b"
+    },
+    "native.rss-personal.union.first-page": {
+      "fixtureIds": ["native.rss-personal.union.first-page"],
+      "hash": "ce4ac1008532fac4be3b89b28d6a269cd09f291bf65912fa36ca576081ed5061"
+    },
+    "native.rss-personal.union.next-page": {
+      "fixtureIds": ["native.rss-personal.union.next-page"],
+      "hash": "638d455378f5504e1bdd02b577b36742a44d3b3a1abc29e1e4f179bd79dd87ee"
+    },
     "native.spending-categories.create.default": {
       "fixtureIds": ["native.spending-categories.create.default"],
       "hash": "8c73a9b1d44517ff09bc3889c1921a19435b5a4498607ada7b479c0345c3833d"
@@ -3039,6 +3121,26 @@
     "native.topic-recommendations.top-hashtags.default": {
       "fixtureIds": ["native.topic-recommendations.top-hashtags.default"],
       "hash": "659dae7d79084999f7b8816b818877117eb27cf8dfbf2867fe7dc5754388d947"
+    },
+    "native.topics.merge.accepted": {
+      "fixtureIds": ["native.topics.merge.accepted"],
+      "hash": "500e5098310b58f44265d0d235cd21f051db68481ef381c3c369618a8d55998b"
+    },
+    "native.topics.merge.status.completed": {
+      "fixtureIds": ["native.topics.merge.status.completed"],
+      "hash": "4336e1d79d3eadb77332466189c23cbd480ed3fa81b0da216c22184dd1c61a1f"
+    },
+    "native.topics.merge.status.failed": {
+      "fixtureIds": ["native.topics.merge.status.failed"],
+      "hash": "c8a7b70d5fd5e61183cedb6075b7fe5ca50d5ba648931dcfd9e338db659c459a"
+    },
+    "native.topics.merge.status.queued": {
+      "fixtureIds": ["native.topics.merge.status.queued"],
+      "hash": "500e5098310b58f44265d0d235cd21f051db68481ef381c3c369618a8d55998b"
+    },
+    "native.topics.merge.status.running": {
+      "fixtureIds": ["native.topics.merge.status.running"],
+      "hash": "500e5098310b58f44265d0d235cd21f051db68481ef381c3c369618a8d55998b"
     },
     "native.topics.user-tags.default": {
       "fixtureIds": ["native.topics.user-tags.default"],
