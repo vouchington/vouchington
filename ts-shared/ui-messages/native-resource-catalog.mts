@@ -6,6 +6,7 @@ import {
   type PluralForms,
 } from './message-descriptors.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest.mts'
+import { indexedCatalogLeaf } from './catalog-tree.mts'
 import { catalogTreeForLocale } from './load-catalog-json.mts'
 
 export const NATIVE_RESOURCE_LOCALES = ['en', 'es', 'fr', 'pt'] as const
@@ -38,6 +39,8 @@ function createNativeCatalogs(
 export const DEFAULT_NATIVE_CATALOGS: NativeCatalogs = createNativeCatalogs(catalogTreeForLocale)
 
 export function getNativeCatalogLeaf(catalog: Catalog, key: string): CatalogLeaf {
+  const indexed = indexedCatalogLeaf(catalog, key)
+  if (indexed !== undefined) return indexed
   let node: CatalogLeaf | Catalog = catalog
   for (const segment of key.split('.')) {
     if (typeof node !== 'object' || node === null || isMessageDescriptor(node)) {

@@ -15,6 +15,21 @@ const SOURCE_TO_STORED: Record<string, string> = {
   pt: 'pt',
 }
 
+const leavesByCatalog = new WeakMap<object, Map<string, CatalogLeaf>>()
+
+export function indexedCatalogLeaf(catalog: object, key: string): CatalogLeaf | undefined {
+  return leavesByCatalog.get(catalog)?.get(key)
+}
+
+function rememberLeaf(root: object, id: string, value: CatalogLeaf): void {
+  let leaves = leavesByCatalog.get(root)
+  if (leaves === undefined) {
+    leaves = new Map()
+    leavesByCatalog.set(root, leaves)
+  }
+  leaves.set(id, value)
+}
+
 export function catalogTreeFromMessages(
   messages: readonly CatalogMessage[],
   locale: string,
@@ -97,4 +112,5 @@ function setLeaf(root: Record<string, unknown>, id: string, value: CatalogLeaf):
   const last = segments.at(-1)
   if (last === undefined) return
   node[last] = value
+  rememberLeaf(root, id, value)
 }
