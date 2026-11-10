@@ -5,7 +5,6 @@ import {
   uniquePublicationKeys,
   type PublicationCapturedKey,
 } from '@services/post-publication/captured-keys'
-import { lockPostPublicationRssFeedScopes } from '@services/post-publication/capture-rss-feeds'
 import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import { enqueueCapturedPublicationChangeAfterCommit } from '@services/post-publication/direct-capture'
@@ -23,7 +22,6 @@ export async function hardDeleteRssFeedSourcePage(
 ): Promise<HardDeleteRssFeedSourcePage> {
   const limit = getPostPublicationWorkLimit('rss_feed_hard_delete_capture_batch_size')
   await using query = await beginTransaction()
-  await lockPostPublicationRssFeedScopes(query, [rssFeedId])
   const feed = await query<{ topic_id: string }>(
     `/* hardDeleteRssFeedSourcePage:feed */
     SELECT topic_id FROM rss_feeds

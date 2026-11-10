@@ -5,9 +5,7 @@ import { lockPostPublication } from '@services/post-publication'
 import {
   getAutomodFeedbackContext,
   hasExistingAutomodFeedback,
-  lockAutomodFeedbackPost,
   lockAutomodFeedbackPostRow,
-  lockAutomodFeedbackSource,
 } from './automod-feedback-context.mts'
 import { recordModerationTrainingFeedback } from './feedback.mts'
 import { parseAutomodActionSourceKey } from './recent-actions.mts'
@@ -30,7 +28,6 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
   )
   let postIdToInvalidate: string | null = null
   await using query = await beginTransaction()
-  await lockAutomodFeedbackSource(input.communityId, input.sourceKey, query)
   let context = await getAutomodFeedbackContext(
     input.communityId,
     parsed.sourceType,
@@ -40,7 +37,6 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
   )
   assert(context, 404, 'Automod action not found')
   await lockPostPublication(query, context.post_id)
-  await lockAutomodFeedbackPost(input.communityId, context.post_id, query)
   assert(
     await lockAutomodFeedbackPostRow(context.post_id, query),
     409,

@@ -1,12 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-/** Hostname ownership no longer takes an advisory lock. Callers keep this call. */
-export async function lockHostnameOwnership(
-  _query: TransactionQuery,
-  _hostnameIds: readonly string[],
-): Promise<void> {}
-
 /** Returns the hostnames of URL rows already visible in this transaction. */
 export async function lockHostnameOwnershipForUrls(
   query: TransactionQuery,
@@ -24,15 +18,3 @@ export async function lockHostnameOwnershipForUrls(
   `)
   return rows.map(row => row.hostname)
 }
-
-/** Retained so in-transaction topic inserts keep their call site. */
-export function registerCreatedTopicsForHostnameOwnership(
-  _query: TransactionQuery,
-  _topicIds: readonly string[],
-): void {}
-
-/** Topic hostname mutations no longer take an advisory lock. */
-export async function lockTopicHostnameMutations(
-  _query: TransactionQuery,
-  _topicIds: readonly string[],
-): Promise<void> {}

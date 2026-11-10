@@ -1,5 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockTopicMergeLifecycles } from './merge-preflight.mts'
 import { olderTopicMergeOwnsAny } from './merge-priority-preflight.mts'
 import { getTopicsWorkLimit } from './work-limits.mts'
 
@@ -103,9 +102,6 @@ async function reserveTopicMergeParentAncestors(
   topicIds: string[],
   depth: number,
 ): Promise<void> {
-  // Drain pre-existing parent writers before publishing reservations. Future parent writers
-  // acquire the shared lifecycle fence and reject the durable reservation after this commits.
-  await lockTopicMergeLifecycles(query, topicIds)
   await query(
     `/* reserveTopicMergeParentAncestors */
       INSERT INTO topic_merge_parent_ancestors (operation_id, topic_id, depth)

@@ -58,9 +58,3 @@ export async function recordRssFeedTopicPublicationChanges(
       })
   }
 }
-
-/** Retained call site. RSS feed publication scopes no longer take an advisory lock. */
-export async function lockPostPublicationRssFeedScopes(
-  _query: TransactionQuery,
-  _rssFeedIds: readonly string[],
-): Promise<void> {}

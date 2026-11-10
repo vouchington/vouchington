@@ -16,9 +16,3 @@ export async function lockActiveUserSubjectsForMutation(
     ) ordered
   `)
 }
-
-/** Retained call site. Subject mutation fences no longer take an advisory lock. */
-export async function lockUserSubjectMutationFences(
-  _query: TransactionQuery,
-  _userIds: readonly string[],
-): Promise<void> {}

@@ -5,7 +5,6 @@ import assert from 'http-assert'
 import { isAdminUser } from '@services/users/authorization'
 import { getPublicUserByAny } from '@services/users/get'
 import { getActiveCommunityMembersForUsers } from '../members/batch.mts'
-import { lockCommunityUsers } from './lock.mts'
 import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listeners/enqueues'
 import onError from '@modules/on-error'
 import type { PrivateUser } from '@services/users/types'
@@ -28,10 +27,6 @@ export async function banUserFromCommunity(
   await using query = await beginTransaction()
   const options = { query }
   const caseId = await openOrGetOpenCase({ entityType: 'user', entityId: targetUserId }, options)
-
-  // Serialize against concurrent joins/posts/approvals, other bans, and role changes for the
-  // actor or target before reading membership authority.
-  await lockCommunityUsers(communityId, [currentUser.id, targetUserId], options)
 
   const isAdmin = isAdminUser(currentUser) || (opts?.bypassCommunityMemberCheck ?? false)
   const members = await getActiveCommunityMembersForUsers(
@@ -86,9 +81,8 @@ export async function banUserFromCommunity(
   const kickRolePredicate = callerIsModeratorOnly
     ? sql`AND role = 'member'`
     : sql`AND role <> 'owner'`
-  // Role writers (updateMemberRole, transferLockedCommunityOwnership) take lockCommunityUsers
-  // before changing community_members.role. The kick WHERE is the promotion guard: RETURNING
-  // the role of the row this statement removed, with no follow-up membership read.
+  // The kick WHERE is the promotion guard: RETURNING the role of the row this statement removed,
+  // with no follow-up membership read.
   await writeCommunityMembershipMutation<{ role: CommunityMemberRole }>(
     sql`/* banUserFromCommunity:kick */
     UPDATE community_members

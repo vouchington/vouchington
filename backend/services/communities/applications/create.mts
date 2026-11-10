@@ -10,7 +10,7 @@ import assert from 'http-assert'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { getCommunity } from '../get.mts'
 import { getCommunityMember } from '../members/get.mts'
-import { lockAndAssertNotBanned } from '../bans/lock.mts'
+import { assertNotBanned } from '../bans/get.mts'
 import { insertApplicationAnswers } from './answer-rows.mts'
 import { assertApplicationAnswers } from './answers.mts'
 import { getApplication } from './get.mts'
@@ -57,9 +57,7 @@ async function insertApplication(
   // Malformed answers stay 422 ahead of the ban, member, and pending gates.
   assertApplicationAnswers(questions, answers)
 
-  // Serialize against a concurrent ban so a ban committing before the insert blocks the
-  // application, matching the join/invite/approval entry points.
-  await lockAndAssertNotBanned(communityId, currentUserId, options)
+  await assertNotBanned(communityId, currentUserId, options)
 
   const existing = await getCommunityMember(communityId, currentUserId, options)
   assert(!existing, 409, 'You are already a member of this community')

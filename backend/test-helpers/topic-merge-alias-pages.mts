@@ -1,5 +1,4 @@
 import { beginTransaction, write } from '@data-stores/psql'
-import { lockTopicMergeAdmission } from '../services/topics/merge-preflight.mts'
 import {
   processTopicMergeAliasPage,
   type TopicMergeAliasPhase,
@@ -11,7 +10,6 @@ export async function createTopicMergeAliasTestOperation(
   userId: string,
 ) {
   await using query = await beginTransaction()
-  await lockTopicMergeAdmission(query)
   const { rows } = await query<{ id: string }>(
     `/* createTopicMergeAliasTestOperation */ INSERT INTO topic_merge_operations
       (source_topic_id, destination_topic_id, requested_by_id, stage)

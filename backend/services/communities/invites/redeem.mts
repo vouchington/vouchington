@@ -5,7 +5,6 @@ import assert from 'http-assert'
 import { getCommunity } from '../get.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { assertNotBanned } from '../bans/get.mts'
-import { lockCommunityUser } from '../bans/lock.mts'
 import type { CommunityInvite } from '../types.mts'
 import { invalidateCommunityMemberUserMetrics } from '../members/invalidate-user-metrics.mts'
 import { hashCommunityInviteCode } from './code.mts'
@@ -46,9 +45,6 @@ export async function redeemInviteCode(
   const community = await getCommunity(found.community_id, options)
   assert(community, 404, 'Community not found')
   assert(!community.archived_at, 403, 'Community is archived')
-
-  // Serialize against a concurrent ban for this user so the check + insert are atomic.
-  await lockCommunityUser(found.community_id, currentUserId, options)
 
   const existing = await getCommunityMember(found.community_id, currentUserId, options)
   assert(!existing, 409, 'You are already a member of this community')

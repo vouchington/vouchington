@@ -5,7 +5,6 @@ import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostn
 import createHttpError from 'http-errors'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
-import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 
 export async function unblockHostname(
   adminUserId: string,
@@ -54,7 +53,6 @@ async function assertHostnameCleanupCompletedForUnblock(
 }
 
 async function lockHostnameForUnblock(query: TransactionQuery, hostnameId: string): Promise<void> {
-  await lockHostnameOwnership(query, [hostnameId])
   // Match the block flow's hostname-before-block-row order.
   await query(sql`/* unblockHostname:lockHostname */
     SELECT id FROM url_hostnames WHERE id = ${hostnameId} FOR UPDATE

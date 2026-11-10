@@ -11,8 +11,6 @@ import { enqueueSendCommunityInviteEmail } from '@queues/emails/enqueues'
 import onError from '@modules/on-error'
 import type { CommunityInvite, CreatedCommunityInvite } from '../types.mts'
 import { hashCommunityInviteCode } from './code.mts'
-import { lockCommunityUser } from '../bans/lock.mts'
-
 function generateInviteCode(): string {
   return randomBytes(4).toString('hex')
 }
@@ -66,7 +64,6 @@ export async function createInvite(
   await using transaction = await beginTransaction()
   const options = { query: transaction }
   if (invitedUserId) {
-    await lockCommunityUser(communityId, invitedUserId, options)
     const existing = await getCommunityMember(communityId, invitedUserId, options)
     assert(!existing, 409, 'This user is already a member of the community')
     await write(

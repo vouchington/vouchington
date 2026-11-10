@@ -1,6 +1,5 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import { lockHostnameOwnershipForUrls } from '@services/urls-hostnames/ownership-lock'
-import { runHostnameOwnershipSnapshotScenario } from './hostname-relation-policy.mts'
 import { addAdditionalHostname } from '@services/topics/additional-hostnames'
 import { setTopicHostnameLink } from '@services/topics/hostname-link'
 import { getLockedTopicRecommendationApproval } from '@services/topic-recommendations/get-locked-topic-recommendation-approval'
@@ -12,7 +11,6 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedHostnameIds, seedTopicId, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 export async function runHostnameOwnershipScenarios(): Promise<void> {
-  await runHostnameOwnershipSnapshotScenario()
   registerScenarioContract('hostname-owner-url-ids', {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'urls', max: 3 },

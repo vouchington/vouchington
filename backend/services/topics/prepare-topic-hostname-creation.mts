@@ -1,10 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import type { CreateTopicUpdates } from './types.mts'
-import {
-  lockHostnameOwnership,
-  lockTopicHostnameMutations,
-} from '@services/urls-hostnames/ownership-lock'
-import { lockTopicHostnameOwnership } from './hostname-ownership-lock.mts'
 import { prepareHostnameForOwnedMutation } from './resolve-hostname.mts'
 import sql from 'sql-template-strings'
 import { lockExistingTopicAliasPublicationScopes } from './alias-publication-locks.mts'
@@ -14,7 +9,6 @@ export async function prepareTopicHostnameCreation(
   updates: CreateTopicUpdates,
   options: { query: TransactionQuery },
 ) {
-  // A revival can clear its old primary link; stabilize that identity before hostname locks.
   const { rows: revivalRows } = updates.source_topic_alias_id
     ? await options.query<{ id: string }>(sql`/* getTopicRevivalHostnameOwner */
         SELECT topic.id FROM topic_aliases source_alias
@@ -23,14 +17,10 @@ export async function prepareTopicHostnameCreation(
       `)
     : { rows: [] }
   const revivalIds = revivalRows.map(row => row.id)
-  await lockTopicHostnameMutations(options.query, revivalIds)
   const hostnameId =
     updates.hostname !== undefined
       ? await prepareHostnameForOwnedMutation(creatorId, updates.hostname, options.query)
       : undefined
-  if (revivalIds.length)
-    await lockTopicHostnameOwnership(options.query, revivalIds, hostnameId ? [hostnameId] : [])
-  else await lockHostnameOwnership(options.query, hostnameId ? [hostnameId] : [])
 
   await lockExistingTopicAliasPublicationScopes(
     options.query,

@@ -1,7 +1,5 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { processTopicMergeParentPreflightPage } from '../../services/topics/merge-parent-pages.mts'
-import { lockTopicMergeAdmission } from '../../services/topics/merge-preflight.mts'
-
 export async function getTopicMergeParentEdge(subjectId: string, objectId: string) {
   const { rows } = await write<{ deleted_at: Date | null }>(
     `/* getTopicMergeParentEdge */ SELECT deleted_at
@@ -18,7 +16,6 @@ export async function createTopicMergeParentTestOperation(
   requestedById: string,
 ): Promise<string> {
   await using query = await beginTransaction()
-  await lockTopicMergeAdmission(query)
   const { rows } = await query<{ id: string }>(
     `/* createTopicMergeParentTestOperation */
       INSERT INTO topic_merge_operations (source_topic_id, destination_topic_id, requested_by_id)

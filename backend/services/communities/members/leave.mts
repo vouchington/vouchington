@@ -5,7 +5,6 @@ import assert from 'http-assert'
 import type { LoadedCommunity } from '../load-with-viewer.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
-import { lockCommunityRoleMutation } from '../bans/lock.mts'
 import { getActiveCommunityMembersForUsers } from './batch.mts'
 
 export async function leaveCommunity(
@@ -23,7 +22,6 @@ export async function leaveCommunity(
 
   await using query = await beginTransaction()
   const options = { query }
-  await lockCommunityRoleMutation(query, communityId, [currentUserId])
   const lockedMembership = (
     await getActiveCommunityMembersForUsers(communityId, [currentUserId], options)
   ).get(currentUserId)

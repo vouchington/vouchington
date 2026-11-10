@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { TimeUnit } from '@valkey/valkey-glide'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
@@ -121,9 +121,7 @@ async function admitLogoutCleanup(
   revocationOptions: SessionRevocationOptions,
 ): Promise<boolean> {
   await using query = await beginTransaction()
-  // Share the user and SID fences with deletion, minting and revocation. No lock
-  // survives admission: the capability, not a database transaction, covers cleanup.
-  await lockLogoutCleanupAdmission(query, revocationOptions.userId, sessionId)
+  // No row lock survives admission: the capability, not a database transaction, covers cleanup.
   const { rows } = await query(sql`/* admitLogoutCleanup */
     SELECT s.id FROM user_sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ${sessionId} AND s.user_id = ${revocationOptions.userId}
@@ -149,13 +147,6 @@ async function admitLogoutCleanup(
   await query.commit()
   return true
 }
-
-/** Retained call site. Logout cleanup admission no longer locks the session row. */
-async function lockLogoutCleanupAdmission(
-  _query: TransactionQuery,
-  _userId: string,
-  _sessionId: string,
-): Promise<void> {}
 
 async function commitLogoutRevocation(
   sessionId: string,

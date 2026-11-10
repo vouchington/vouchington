@@ -4,11 +4,7 @@ import { enqueueTopicMergePage } from '@queues/background/enqueues/topic-merge-e
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import { currentUserCanMergeTopic } from './authorization.mts'
-import {
-  lockAndAssertMergeParticipants,
-  lockTopicMergeAdmission,
-  lockTopicMergeLifecycles,
-} from './merge-preflight.mts'
+import { lockAndAssertMergeParticipants } from './merge-preflight.mts'
 import type { Topic } from './types.mts'
 
 type TopicMergeOperationStatus = 'queued' | 'running' | 'completed' | 'failed'
@@ -43,9 +39,7 @@ export async function createTopicMergeOperation(
   assert(currentUserCanMergeTopic(currentUser), 403, 'Forbidden')
   assert(sourceTopic.id !== destinationTopic.id, 409, 'Cannot merge a topic into itself')
   await using query = await beginTransaction()
-  await lockTopicMergeAdmission(query)
   const topicIds = [sourceTopic.id, destinationTopic.id]
-  await lockTopicMergeLifecycles(query, topicIds)
   await lockAndAssertMergeParticipants(query, sourceTopic.id, destinationTopic.id)
   const { rows: reservations } = await query<{ id: string }>(
     `/* createTopicMergeOperation reservations */

@@ -119,20 +119,6 @@ export async function hasExistingAutomodFeedback(input: {
   return rows.length > 0
 }
 
-/** Retained call site. Automod feedback no longer locks the source row. */
-export async function lockAutomodFeedbackSource(
-  _communityId: string,
-  _sourceKey: string,
-  _query: QueryExecutor,
-): Promise<void> {}
-
-/** Retained call site. Automod feedback no longer locks the post row up front. */
-export async function lockAutomodFeedbackPost(
-  _communityId: string,
-  _postId: string,
-  _query: QueryExecutor,
-): Promise<void> {}
-
 export async function lockAutomodFeedbackPostRow(
   postId: string,
   query: QueryExecutor,

@@ -91,12 +91,7 @@ export async function attemptTestPurgeOwnershipTransfer(
     slug: string
   }>(sql`/* attemptTestPurgeOwnershipTransfer:community */
     SELECT id, name, slug FROM communities WHERE id = ${communityId}`)
-  await lockUserPurgeOwnership(
-    query,
-    fromUserId,
-    [communityId],
-    [{ communityId, successorId: toUserId }],
-  )
+  await lockUserPurgeOwnership(query, [{ communityId, successorId: toUserId }])
   const { afterCommit: effect } = await transferCommunitiesOwnershipForUserPurge(
     query,
     fromUserId,

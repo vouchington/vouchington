@@ -11,7 +11,6 @@ import { isCanonicalWriteConflict } from '@services/urls/canonical-write-retry'
 import { getUrlByAny } from '@services/urls/get'
 import { findUrlIdByIdentity } from '@services/urls/url-identities'
 import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
-import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import type { Post, UpdatePostChanges } from '../types.mts'
 
 /** Assess external URL policy without holding the post transaction. */
@@ -50,7 +49,7 @@ export async function persistPostLinkEdit(
   changes: UpdatePostChanges,
   urls: Awaited<ReturnType<typeof assessUrls>>,
 ): Promise<UpdatePostChanges> {
-  await prepareAndLockPostLinkHostnames(query, userId, urls)
+  await preparePostLinkHostnames(query, userId, urls)
   // Persistence locks both assessed alias and terminal until the post transaction commits.
   const persisted = await persistAssessedUrls(userId, urls, { query }).catch((err: unknown) => {
     if (isCanonicalWriteConflict(err)) assert(false, 422, 'URL destination changed; retry the edit')
@@ -90,15 +89,14 @@ export async function assertCommunityLinkEditAllowed(
   })
 }
 
-async function prepareAndLockPostLinkHostnames(
+async function preparePostLinkHostnames(
   query: TransactionQuery,
   userId: string,
   urls: Awaited<ReturnType<typeof assessUrls>>,
 ): Promise<void> {
-  const resolved = await prepareUrlHostnamesForOwnedMutation(
+  await prepareUrlHostnamesForOwnedMutation(
     userId,
     urls.map(url => url.hostname),
     query,
   )
-  await lockHostnameOwnership(query, [...resolved.values()])
 }

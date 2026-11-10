@@ -58,13 +58,11 @@ export async function cleanupUserOwnedCommunities(
     () =>
       lockUserPurgeOwnership(
         query,
-        userId,
-        ids,
         [...provisional.values()].flatMap(row =>
           row.userId ? [{ communityId: row.communityId, successorId: row.userId }] : [],
         ),
       ),
-    // Authoritative: roles are fenced now, so a successor that changed since the first read is skipped.
+    // Re-read successors after the lifecycle check so a successor that changed is skipped.
     async () => (scans = await scan()),
   ])
 

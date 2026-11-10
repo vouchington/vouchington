@@ -5,7 +5,6 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { createTopic } from '@services/topics/create'
 import { updateTopic } from '@services/topics/update'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
-import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { getPostByAny } from '@services/posts'
 import assert from 'http-assert'
@@ -37,22 +36,12 @@ export async function approveTopicRecommendationInTransaction(
     typedUrls.push(...lockedRecommendation.landing_page_urls)
   }
 
+  // ast-grep-ignore: no-three-sequential-awaits -- Assessed URLs are reused by later relation writes, and typed hostname rows are prepared on this transaction before the topic is created.
   const assessedUrls = await assessUrls([
     ...lockedRecommendation.hostnames.map(hostname => `https://${hostname.hostname}/`),
     ...typedUrls,
   ])
-  const typedHostnameIds = await prepareUrlHostnamesForOwnedMutation(
-    currentUser.id,
-    typedUrls,
-    options.query,
-  )
-  // normalizeUrlForUrlTable and URL.hostname agree on these hostnames, so later
-  // materialization reuses this held set instead of acquiring locks after publication.
-  await lockHostnameOwnership(options.query, [
-    ...lockedRecommendation.hostnames.map(hostname => hostname.id),
-    ...typedHostnameIds.values(),
-    ...(lockedRecommendation.hostname_id ? [lockedRecommendation.hostname_id] : []),
-  ])
+  await prepareUrlHostnamesForOwnedMutation(currentUser.id, typedUrls, options.query)
 
   const topic = await createTopic(
     currentUser,

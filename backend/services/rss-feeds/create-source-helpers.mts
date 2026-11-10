@@ -3,10 +3,6 @@ import type { BasicUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { createTopicEmbeddingContent } from '@services/topics/content'
 import { linkHostnameToSourceTopic } from '@services/topics/hostname-link'
-import {
-  lockHostnameOwnership,
-  registerCreatedTopicsForHostnameOwnership,
-} from '@services/urls-hostnames/ownership-lock'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { createTopicRevision, computeTopicChanges } from '@services/topic-revisions'
 import { getTopicByAny } from '@services/topics/get'
@@ -61,7 +57,6 @@ async function createSourceInTransaction(
   try {
     await using query = await beginTransaction()
     const options = { query }
-    await lockHostnameOwnership(query, [hostnameId])
     const { content_sha256 } = createTopicEmbeddingContent({ name: topicName })
     const { rows: topicRows } = await write(
       sql`/* createSourceInTransaction:topic */
@@ -78,7 +73,6 @@ async function createSourceInTransaction(
       options,
     )
     const topicId = topicRows[0].id as string
-    registerCreatedTopicsForHostnameOwnership(query, [topicId])
     // This new topic is private to this transaction; both parallel guarded writers inherit its fence.
     await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     const [claimedAlias] = await Promise.all([

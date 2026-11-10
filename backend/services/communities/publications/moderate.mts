@@ -12,7 +12,6 @@ import {
 import { recordCommunityPublicationChange } from './publication-change.mts'
 import { assertPublicationModeratorAccess, getPublicationReview } from './access.mts'
 import { assertNotBanned } from '../bans/get.mts'
-import { lockCommunityUser } from '../bans/lock.mts'
 import { overridePublication } from './platform-override.mts'
 import { requestCommunityModerationRun } from './moderation-run.mts'
 import { recordPublicationReviewChange } from './review-change.mts'
@@ -48,7 +47,6 @@ export async function approvePublication(
   await using query = await beginTransaction()
   const options = { query }
   if (publication.submitted_by_id) {
-    await lockCommunityUser(communityId, publication.submitted_by_id, options)
     await assertNotBanned(communityId, publication.submitted_by_id, options)
   }
   const { rowCount } = await write(

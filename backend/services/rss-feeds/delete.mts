@@ -8,10 +8,7 @@ import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { markRssFeedCategorySnapshotsForReconciliation } from '@services/rss-feed-items/category-snapshot-reconciliations'
 import { enqueueReconcileRssFeedItemCategorySnapshots } from '@queues/rss-feed-maintenance/enqueues/item-categories'
 import { enqueueNextHardDeleteRssFeedPages } from './hard-delete-next-page.mts'
-import {
-  lockPostPublicationRssFeedScopes,
-  recordPostPublicationChange,
-} from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 
 /**
  * Soft-deletes an RSS feed by setting deleted_at. Internal use only — no auth check.
@@ -31,7 +28,6 @@ export async function softDeleteRssFeedById(id: string): Promise<boolean> {
   return affected
 
   async function softDeleteInTransaction() {
-    await lockPostPublicationRssFeedScopes(query, [id])
     const locked = await query(sql`/* softDeleteRssFeedById:lock */
       SELECT id FROM rss_feeds WHERE id = ${id} AND deleted_at IS NULL FOR UPDATE
     `)
@@ -56,7 +52,6 @@ export async function softDeleteRssFeedById(id: string): Promise<boolean> {
  */
 export async function hardDeleteRssFeedById(id: string): Promise<boolean> {
   await using query = await beginTransaction()
-  await lockPostPublicationRssFeedScopes(query, [id])
   const { rows: feedRows } = await query<{ id: string; topic_id: string }>(
     `/* hardDeleteRssFeedById:lockFeed */
     SELECT id, topic_id FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`,

@@ -1,6 +1,5 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { getTopicMergeWorkLimit } from './merge-work-limits.mts'
-import { lockTopicMergeLifecycles } from './merge-preflight.mts'
 import { executeTopicMergeStagePage } from './merge-page-stages.mts'
 import { nextTopicMergeStage, type TopicMergeOperationRow } from './merge-operation-types.mts'
 
@@ -42,7 +41,6 @@ async function processLockedPage(
   query: Awaited<ReturnType<typeof beginTransaction>>,
   operation: TopicMergeOperationRow,
 ) {
-  await lockTopicMergeLifecycles(query, [operation.source_topic_id, operation.destination_topic_id])
   const result = await executeLockedPage(query, operation)
   return commitPage(query, operation, result)
 }

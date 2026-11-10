@@ -12,10 +12,6 @@ import { invalidate } from '@services/entity-cache'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import {
-  lockHostnameOwnership,
-  lockTopicHostnameMutations,
-} from '@services/urls-hostnames/ownership-lock'
-import {
   lockTopicRssFeedAttachmentLifecycle,
   lockTopicRssFeedAttachmentLifecycles,
 } from '@services/post-publication/lock'
@@ -86,8 +82,6 @@ async function addAdditionalHostnameInTransaction(
   userId: string,
   options: { query: TransactionQuery },
 ): Promise<TopicAdditionalHostname> {
-  await lockTopicHostnameMutations(options.query, [topicId])
-  // Resolve without promotion so no existing hostname row is locked before ownership.
   const hostnameMap = await prepareUrlHostnamesForOwnedMutation(
     userId,
     [normalizedHostname],
@@ -95,7 +89,6 @@ async function addAdditionalHostnameInTransaction(
   )
   const hostnameId = hostnameMap.values().next().value as string | undefined
   assert(hostnameId, 500, 'Failed to resolve hostname')
-  await lockHostnameOwnership(options.query, [hostnameId])
   const { rows: previousOwners } = await options.query<{ topic_id: string | null }>(
     sql`/* addAdditionalHostname:previousOwner */
       SELECT topic_id FROM url_hostnames WHERE id = ${hostnameId}`,
@@ -110,7 +103,7 @@ async function addAdditionalHostnameInTransaction(
   // The UPDATE only runs if the hostname is not the topic's own primary, not the primary
   // for another topic, and not already claimed by a different topic.
   const { rows } = await write(
-    // no-mistakes-disable-next-line postgres-required-predicates: hostname ownership and topic lifecycle fences protect this exact primary-pointer comparison until commit, including retained ownership rows
+    // no-mistakes-disable-next-line postgres-required-predicates: the statement compares this hostname id with the topic primary pointer and rejects another live topic's primary
     sql`/* addAdditionalHostname */ WITH is_own_primary AS (SELECT 1 FROM topics WHERE id = ${topicId} AND hostname_id = ${hostnameId} LIMIT 1), conflict_topic AS (SELECT id FROM topics WHERE hostname_id = ${hostnameId} AND id <> ${topicId} AND deleted_at IS NULL AND merged_into_topic_id IS NULL LIMIT 1), upd AS (UPDATE url_hostnames SET topic_id = ${topicId} WHERE id = ${hostnameId} AND NOT EXISTS (SELECT 1 FROM is_own_primary) AND NOT EXISTS (SELECT 1 FROM conflict_topic) AND (topic_id IS NULL OR topic_id = ${topicId} OR NOT EXISTS (SELECT 1 FROM topics WHERE topics.id = url_hostnames.topic_id AND topics.deleted_at IS NULL AND topics.merged_into_topic_id IS NULL)) RETURNING id) SELECT uh.hostname, uh.created_at, EXISTS (SELECT 1 FROM is_own_primary) AS is_own_primary, EXISTS (SELECT 1 FROM conflict_topic) AS is_primary_for_other, EXISTS (SELECT 1 FROM upd) AS updated FROM url_hostnames uh WHERE uh.id = ${hostnameId}`,
     options,
   )
@@ -171,13 +164,10 @@ async function removeAdditionalHostnameInTransaction(
   hostnameId: string,
   options: { query: TransactionQuery },
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- Topic ownership, hostname ownership and RSS attachment lifecycle locks must be acquired in that order before the hostname release UPDATE.
-  await lockTopicHostnameMutations(options.query, [topicId])
-  await lockHostnameOwnership(options.query, [hostnameId])
   await lockTopicRssFeedAttachmentLifecycle(options.query, topicId)
 
   const { rows } = await write(
-    // no-mistakes-disable-next-line postgres-required-predicates: hostname ownership and topic lifecycle fences protect this exact primary-pointer comparison until commit, including retained ownership rows
+    // no-mistakes-disable-next-line postgres-required-predicates: the UPDATE matches this hostname id and topic id, and skips the topic's primary hostname pointer
     sql`/* removeAdditionalHostname */ UPDATE url_hostnames SET topic_id = NULL WHERE id = ${hostnameId} AND topic_id = ${topicId} AND id IS DISTINCT FROM (SELECT hostname_id FROM topics WHERE id = ${topicId}) RETURNING id`,
     options,
   )
