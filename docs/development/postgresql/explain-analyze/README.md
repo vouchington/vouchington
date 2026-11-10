@@ -62,6 +62,12 @@ and realistic eligible and ineligible rows when a stage has a distinct access pa
 - A fixture restored after a captured write needs fresh statistics for its participating relations
   before replay: bulk-seed statistics may no longer describe those rows. The hostname invalidation
   fixture owns this refresh so initial seeding and restoration use the same preparation.
+- A latest-per-entity lookup (`WHERE fk = $1 ORDER BY id DESC LIMIT 1`) needs target entities that
+  are a minority of their column, with many one-row entities beside them. With only a few
+  entities the planner expects each filter hit within a few primary-key rows and its cost is close
+  to the foreign-key index's, so the plan can flip to a backward primary-key walk that filters
+  thousands of rows. Real tables are never that skewed, and the plan then flips by margins of
+  50x rather than 1.5x.
 - Bounded-claim fixtures need a ready backlog large enough to distinguish an ordered index page
   from scanning all eligible work. A small eligible queue can legitimately favor a bitmap scan
   and sort even with accurate statistics; that choice does not establish unbounded backlog work.

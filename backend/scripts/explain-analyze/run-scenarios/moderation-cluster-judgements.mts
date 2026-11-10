@@ -4,6 +4,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import {
   loadModerationClusterJudgementTargets,
+  MODERATION_CLUSTER_JUDGEMENT_NOISE_PER_KIND,
   MODERATION_CLUSTER_JUDGEMENTS_PER_TARGET,
 } from '../seed-data/moderation-cluster-judgements.mts'
 
@@ -14,7 +15,9 @@ export async function runModerationClusterJudgementScenarios(): Promise<void> {
   const queryName = 'getLatestJudgementsForEntitiesBatch'
   registerScenarioContract(scenarioId, {
     seededRows: {
-      moderation_report_judgements: targets.length * MODERATION_CLUSTER_JUDGEMENTS_PER_TARGET,
+      moderation_report_judgements:
+        targets.length *
+        (MODERATION_CLUSTER_JUDGEMENTS_PER_TARGET + MODERATION_CLUSTER_JUDGEMENT_NOISE_PER_KIND),
     },
     forbidSequentialScans: ['moderation_report_judgements'],
     expectations: [
