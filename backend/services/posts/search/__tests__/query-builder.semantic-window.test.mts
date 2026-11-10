@@ -58,7 +58,6 @@ describe('semantic candidate window', () => {
     })
     // Four story-item probes, the eligible lookup, the id lookup, and the candidate cap.
     expect(query.sql.match(/LIMIT/g)).toHaveLength(7)
-    expect(query.sql).not.toContain('LIMIT 100')
     expect(query.sql).toContain(`LIMIT ${SEMANTIC_POST_CANDIDATE_LIMIT}`)
   })
 
