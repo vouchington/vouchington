@@ -39,7 +39,7 @@ export async function runTopicMetricsBatchScenario(seedAllTopicIds: string[]) {
         // News checks each category row's sources, and latest walks each topic feed to the probe.
         rss_feed_item_sources: 40_000,
         rss_feed_items: 30_000,
-        // One enabled-feed eligibility set plus one topic-feed lookup per requested topic.
+        // One feed probe per news source row plus one topic-feed lookup per requested topic.
         rss_feeds: 6_000,
       }).map(([relation, max]) => ({ kind: 'maxProcessedRows' as const, relation, max })),
     ],

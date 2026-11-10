@@ -75,19 +75,18 @@ export function topicCountLaterals(probeParam: string): string {
             FROM rss_feed_items item
             WHERE item.id = category.rss_feed_item_id
           ) IS TRUE
-          AND EXISTS (
-            SELECT 1
+          -- A scalar probe keeps the planner from pulling the source check into a semi-join
+          -- that scans every source row once per topic.
+          AND (
+            SELECT TRUE
             FROM rss_feed_item_sources source
+            JOIN rss_feeds source_feed ON source_feed.id = source.rss_feed_id
             WHERE source.rss_feed_item_id = category.rss_feed_item_id
-              -- IS TRUE retains one hashed eligibility set instead of per-source feed probes.
-              AND (source.rss_feed_id IN (
-                SELECT feed.id
-                FROM rss_feeds feed
-                WHERE feed.deleted_at IS NULL
-                  AND feed.is_enabled
-                  AND feed.is_discoverable
-              )) IS TRUE
-          )
+              AND source_feed.deleted_at IS NULL
+              AND source_feed.is_enabled
+              AND source_feed.is_discoverable
+            LIMIT 1
+          ) IS TRUE
         ORDER BY category.rss_feed_item_id DESC, category.category_identity_id DESC
         LIMIT ${probeParam}
       ) page
