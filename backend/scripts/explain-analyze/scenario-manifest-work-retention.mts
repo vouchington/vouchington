@@ -55,6 +55,8 @@ export const RETENTION_WORK_SCENARIOS = [
   'crawler-refresh-success-write',
   'copyright-review-target-breaches',
   'membership-grant-expiry-candidates',
+  'membership-orphaned-queued-grant-candidates',
+  'membership-orphaned-queued-grant-activation',
   'membership-pause-collection-due',
   'membership-apple-notification-recovery',
   'membership-google-notification-recovery',

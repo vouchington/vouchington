@@ -3,12 +3,18 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
 import { expireElapsedMemberships, type MembershipExpiryResult } from './expire-elapsed.mts'
+import { repairOrphanedQueuedGrantsBatch } from './repair-orphaned-queued.mts'
 
 export async function expireElapsedMembershipsBatch(
   batchSize = getMembershipWorkLimits().batchSize,
 ): Promise<MembershipExpiryResult> {
   const limits = getMembershipWorkLimits()
   const result = await expireSelectedMembershipUsers(batchSize, limits)
+  const hasMore = await elapsedOrOrphanedMembershipWorkRemains(batchSize)
+  return { ...result, hasMore: result.hasMore || hasMore }
+}
+
+async function elapsedOrOrphanedMembershipWorkRemains(batchSize: number): Promise<boolean> {
   const { rows } = await write(sql`/* expireElapsedMembershipsBatch:hasMore */
     SELECT 1 FROM memberships membership
     JOIN membership_sources source ON source.id = membership.membership_source_id
@@ -17,7 +23,8 @@ export async function expireElapsedMembershipsBatch(
       AND membership.expired_at IS NULL AND membership.expires_at IS NOT NULL
       AND membership.expires_at <= CURRENT_TIMESTAMP
     LIMIT 1`)
-  return { ...result, hasMore: result.hasMore || rows.length > 0 }
+  const repair = await repairOrphanedQueuedGrantsBatch(null, batchSize)
+  return rows.length > 0 || repair.hasMore
 }
 
 async function expireSelectedMembershipUsers(
