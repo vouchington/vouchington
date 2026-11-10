@@ -37,6 +37,7 @@ export async function readClassifierTerminalCounts(
         ELSE 'incomplete'
       END AS outcome,
       count(*)::int AS total
+    -- no-mistakes-disable-next-line postgres-bounded-statements -- the 24-hour UUIDv7 reservation window must count every run of this classifier to keep terminal health alarms accurate
     FROM classifier_runs run
     WHERE run.classifier_id = (SELECT id FROM classifiers WHERE slug = ${classifier})
       AND run.id >= ${since}`

@@ -43,15 +43,23 @@ async function revokeOAuthRefreshFamilyTokens(
   query: TransactionQuery,
 ): Promise<void> {
   await query(
-    `/* revokeOAuthRefreshFamilyTokens refresh */ UPDATE oauth_refresh_tokens
-     SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
-     WHERE family_id = $1`,
+    `/* revokeOAuthRefreshFamilyTokens refresh */
+     -- no-mistakes-disable-next-line postgres-bounded-statements -- revocation must cover every live token in the family; rows are limited to unrevoked, unexpired tokens
+     UPDATE oauth_refresh_tokens
+     SET revoked_at = CURRENT_TIMESTAMP
+     WHERE family_id = $1
+       AND revoked_at IS NULL
+       AND expires_at > CURRENT_TIMESTAMP`,
     [familyId],
   )
   await query(
-    `/* revokeOAuthRefreshFamilyTokens access */ UPDATE oauth_access_tokens
-     SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
-     WHERE refresh_family_id = $1`,
+    `/* revokeOAuthRefreshFamilyTokens access */
+     -- no-mistakes-disable-next-line postgres-bounded-statements -- revocation must cover every live token in the family; rows are limited to unrevoked, unexpired tokens
+     UPDATE oauth_access_tokens
+     SET revoked_at = CURRENT_TIMESTAMP
+     WHERE refresh_family_id = $1
+       AND revoked_at IS NULL
+       AND expires_at > CURRENT_TIMESTAMP`,
     [familyId],
   )
 }

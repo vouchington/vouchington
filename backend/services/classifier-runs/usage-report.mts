@@ -62,7 +62,9 @@ async function readClassifierRequestCounts(
   // The report tolerates replica lag because it summarizes a closed time window.
   const { rows } = await read<RequestCountRow>(sql`/* readClassifierRequestCounts */
     SELECT classifier.slug AS classifier, count(*)::int AS total
+    -- no-mistakes-disable-next-line postgres-bounded-statements -- aggregate every request in the validated UUIDv7 report window so classifier totals remain exact
     FROM classifier_run_requests request
+    -- no-mistakes-disable-next-line postgres-bounded-statements -- each windowed request joins one classifier by primary key to include its slug in exact totals
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE request.id >= ${timestampToUuidv7LowerBound(window.from.getTime())}
       AND request.id < ${timestampToUuidv7LowerBound(window.to.getTime())}
