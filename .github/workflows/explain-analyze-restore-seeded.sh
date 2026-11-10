@@ -34,7 +34,7 @@ case "${1:-}" in
       /dump/explain-seeded.dump
     ;;
   settle)
-    vacuum_matching '' "c.relkind = 'r' AND c.reltuples >= 0"
+    vacuum_matching '(ANALYZE)' "c.relkind IN ('r', 'p', 'm')"
     ;;
   materialized-views)
     pg pg_restore "${restore_flags[@]}" --use-list=/dump/materialized-views.list \
