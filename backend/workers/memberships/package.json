@@ -34,7 +34,7 @@
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@voucha/test-helpers": "workspace:^"
   }
 }
