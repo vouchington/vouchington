@@ -40,16 +40,16 @@ export async function getInNetworkLinks(
   )
   const query = sql`/* getInNetworkReferralLinks */
 WITH recent_votes AS (
-  -- Newest current ballots, read index-only from (user_id, id DESC) INCLUDE (post_id, score).
-  SELECT post_id, score
-  FROM post_vote_states
+  -- Newest votes first; an older vote on the same post is superseded below.
+  SELECT id, post_id, score
+  FROM post_votes
   WHERE user_id = ${viewerId} AND post_id >= ${minVotedPostId}
   ORDER BY id DESC
   LIMIT ${RECENT_VOTE_LIMIT}
 ),
 rated_positively AS (
   SELECT DISTINCT p.created_by_id AS user_id
-  FROM recent_votes pv
+  FROM (SELECT DISTINCT ON (post_id) post_id, score FROM recent_votes ORDER BY post_id, id DESC) pv
   JOIN posts p ON pv.post_id = p.id
   JOIN posts voted_root_post ON voted_root_post.id = COALESCE(p.root_post_id, p.id)
   WHERE pv.score > 0

@@ -8,13 +8,13 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import type { AggregatedElectionStats, EntityElectionConfig } from './types.mts'
 
 /**
- * Aggregates vote stats from replica for a specific entity. Posts use their unique current-state
- * rows; other elections resolve each user's latest vote from the append-only table.
+ * Aggregates vote stats from replica for a specific entity.
+ * Uses DISTINCT ON to resolve the current (latest) vote per user from the append-only table.
  *
  * Used by entity-specific services to calculate updated vote counts and scores from current votes.
  *
  * Intentionally reads the replica, not the primary: this recompute is a full idempotent
- * overwrite of an absolute value from the current vote source, run asynchronously with
+ * overwrite of an absolute value from an append-only vote table, run asynchronously with
  * throttle dedup and delayed through the throttle window plus a replica-lag safety margin
  * (`ELECTIONS_DEFAULTS.recomputeDelayMs`; see `backend/queues/vote-aggregation/config.mts` and
  * `enqueues/elections.mts`). A stale read under residual lag does NOT self-correct when the missed vote is
@@ -38,12 +38,6 @@ export async function aggregateElectionVoteStatsFromPrimary(
 }
 
 function buildAggregateElectionVoteStatsQuery(config: EntityElectionConfig, entityId: string) {
-  const voteTable = assertWhitelistedSqlIdentifier(
-    config.voteTable,
-    VOTE_TABLE_IDENTIFIERS,
-    'voteTable',
-  )
-  const currentVoteTable = voteTable === 'post_votes' ? 'post_vote_states' : voteTable
   const query = sql`/* aggregateElectionVoteStats */
     WITH captured_snapshot AS MATERIALIZED (
       SELECT pg_current_snapshot() AS value
@@ -53,10 +47,7 @@ function buildAggregateElectionVoteStatsQuery(config: EntityElectionConfig, enti
         (SELECT COUNT(*)::integer FROM pg_snapshot_xip(value)) AS xip_count
       FROM captured_snapshot
     ), current_votes AS (
-      SELECT `
-  if (currentVoteTable !== 'post_vote_states')
-    query.append(sql`DISTINCT ON (election_vote.user_id) `)
-  query.append(sql`election_vote.user_id, election_vote.id, election_vote.score, `)
+      SELECT DISTINCT ON (election_vote.user_id) election_vote.user_id, election_vote.id, election_vote.score, `
 
   query.append(config.tracksNeutralScore ? sql`election_vote.score_is_neutral` : sql`FALSE`)
   query.append(sql` AS score_is_neutral
@@ -68,7 +59,9 @@ function buildAggregateElectionVoteStatsQuery(config: EntityElectionConfig, enti
   query.append(sql`
       FROM `)
 
-  query.append(currentVoteTable)
+  query.append(
+    assertWhitelistedSqlIdentifier(config.voteTable, VOTE_TABLE_IDENTIFIERS, 'voteTable'),
+  )
   query.append(sql` AS election_vote`)
   appendLegacySentimentPolicyJoin(config, query)
   query.append(sql`
@@ -82,10 +75,8 @@ function buildAggregateElectionVoteStatsQuery(config: EntityElectionConfig, enti
   )
   query.append(sql` = ${entityId}
   `)
-  if (currentVoteTable !== 'post_vote_states') {
-    query.append(sql`      ORDER BY election_vote.user_id, election_vote.id DESC`)
-  }
-  query.append(sql`    ), aggregated_stats AS (
+  query.append(sql`      ORDER BY election_vote.user_id, election_vote.id DESC
+    ), aggregated_stats AS (
     SELECT
       COALESCE(SUM(CASE WHEN cv.score > 0 THEN (CASE WHEN cv.score = 1 AND NOT cv.score_is_semantic AND cv.is_sentiment_policy THEN 2 ELSE cv.score END) * u.vote_weight ELSE 0 END), 0)::double precision AS votes_score_up,
       COALESCE(SUM(CASE WHEN cv.score = 0 AND cv.score_is_neutral THEN u.vote_weight ELSE 0 END), 0)::double precision AS votes_score_none,

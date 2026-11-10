@@ -3237,7 +3237,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Reconcile denormalized post vote counters against the post_vote_states source of truth",
+        "description": "Reconcile denormalized post vote counters against the post_votes source of truth",
         "id": "reconcile-vote-drift",
         "kind": "scheduled-jobs",
         "schedule": "0 6 * * *",
@@ -3696,7 +3696,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueModerationRetentionCleanup",
   },
   {
-    "description": "Reconcile denormalized post vote counters against the post_vote_states source of truth",
+    "description": "Reconcile denormalized post vote counters against the post_votes source of truth",
     "id": "reconcile-vote-drift",
     "job_name": "reconcileVoteDrift",
     "queue_name": "psql",

@@ -49,7 +49,6 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'conversations', column: 'id' },
   { table: 'conversation_messages', column: 'conversation_id' },
   { table: 'post_votes', column: 'user_id' },
-  { table: 'post_vote_states', column: 'user_id' },
   { table: 'topic_votes', column: 'user_id' },
   { table: 'crawls', column: 'id', prefix: CRAWL_SEED_PREFIX },
   { table: 'crawl_chunks', column: 'crawl_id', prefix: CRAWL_SEED_PREFIX },

@@ -1,13 +1,11 @@
 import { beginTransaction } from '@data-stores/psql'
-import {
-  VOTE_HISTORY_POST_COUNT,
-  VOTE_HISTORY_REVOTE_COUNT,
-} from '../post-vote-state-scenario-ids.mts'
 import { seedUuid } from './common.mts'
-import { buildPostVoteStateSeedSql } from './post-vote-state.mts'
 
 export const VOTE_HISTORY_USER_INDEX = 19_500
 export const VOTE_HISTORY_USER_ID = seedUuid(VOTE_HISTORY_USER_INDEX, '01')
+export const VOTE_HISTORY_POST_COUNT = 5_000
+export const VOTE_HISTORY_REVOTE_COUNT = 500
+export const VOTE_HISTORY_ROW_COUNT = VOTE_HISTORY_POST_COUNT + VOTE_HISTORY_REVOTE_COUNT
 
 // Posts 0..49,999 carry a post->topic relation (seedEntityRelations), so each vote reaches topics.
 const POST_STRIDE = 7
@@ -23,16 +21,12 @@ export async function seedRecommendedTopicsVoteHistory(): Promise<void> {
     seedUuid((index * POST_STRIDE) % RELATED_POST_COUNT, '05'),
   )
   await using transaction = await beginTransaction()
-  const castVotes = (ids: readonly string[], score: number) =>
-    transaction(
-      buildPostVoteStateSeedSql(
-        ids.map((_, index) => `($${index + 1}, $${ids.length + 1}, ${score})`).join(', '),
-      ),
-      [...ids, VOTE_HISTORY_USER_ID],
-    )
-  await castVotes(postIds, 1)
-  // The re-votes are newer than the first pass, so the latest ballot per post flips these to
+  const insert = `/* seedExplainData */ INSERT INTO post_votes (post_id, user_id, score)
+    SELECT post_id, $2::uuid, $3::smallint FROM unnest($1::uuid[]) AS input(post_id)`
+  await transaction(insert, [postIds, VOTE_HISTORY_USER_ID, 1])
+  // The re-votes are newer than the first pass, so the latest vote per post flips these to
   // downvotes. Post 0 is the shared trending fixture's only positively voted post: keep it upvoted.
-  await castVotes(postIds.slice(1, VOTE_HISTORY_REVOTE_COUNT + 1), -1)
+  const revoted = postIds.slice(1, VOTE_HISTORY_REVOTE_COUNT + 1)
+  await transaction(insert, [revoted, VOTE_HISTORY_USER_ID, -1])
   await transaction.commit()
 }

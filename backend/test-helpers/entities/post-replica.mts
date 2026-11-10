@@ -24,8 +24,9 @@ export async function isTestPostVoteFixtureVisibleFromReplica({
     FROM posts
     JOIN LATERAL (
       SELECT score, score_is_neutral, score_is_semantic
-      FROM post_vote_states
+      FROM post_votes
       WHERE post_id = posts.id AND user_id = ${voterId}
+      ORDER BY id DESC
       LIMIT 1
     ) AS latest_vote ON TRUE
     WHERE posts.id = ${postId}

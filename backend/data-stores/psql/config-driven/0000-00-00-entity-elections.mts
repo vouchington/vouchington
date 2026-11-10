@@ -8,7 +8,6 @@ import {
   neutralScoreProvenanceColumnSql,
   semanticScoreProvenanceColumnSql,
 } from './utils/neutral-score-provenance-schema.mts'
-import { POST_VOTE_STATE_SCHEMA_SQL } from './utils/post-vote-state-schema.mts'
 /** loaded by path by the config-driven migration runner */
 export default function generateEntityElectionSchemaSql(): string {
   return VOTE_SCHEMA_CONFIGS.map(createVoteSchemaSql).join('\n\n')
@@ -39,8 +38,11 @@ BEGIN
 END $$;`)
   }
   if (config.voteTable === 'post_votes') {
-    parts.push(POST_VOTE_STATE_SCHEMA_SQL)
-    parts.push(`CREATE INDEX IF NOT EXISTS idx_post_votes__activitypub_pending
+    parts.push(`-- Newest-first index-only walk of one viewer's ballots across partitions (recommended topics).
+CREATE INDEX IF NOT EXISTS idx_post_votes__user_id__id
+ON post_votes (user_id, id DESC) INCLUDE (post_id, score);
+
+CREATE INDEX IF NOT EXISTS idx_post_votes__activitypub_pending
 ON post_votes (post_id, id)
 WHERE outbound_activitypub_distributed_at IS NULL
   AND (outbound_activitypub_like_activity_id = id

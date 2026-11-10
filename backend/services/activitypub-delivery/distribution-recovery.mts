@@ -84,9 +84,10 @@ export async function listPendingOutboundDistributionPage(
       FROM pending_page pending
       LEFT JOIN LATERAL (
         SELECT current_vote.outbound_activitypub_like_activity_id AS like_id
-        FROM post_vote_states current_vote
+        FROM post_votes current_vote
         WHERE current_vote.post_id = pending.post_id
           AND current_vote.user_id = pending.user_id
+        ORDER BY current_vote.id DESC
         LIMIT 1
       ) latest ON TRUE
     ), retired AS (

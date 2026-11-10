@@ -95,10 +95,6 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'Frozen UUIDv7 age bound is a timestamp boundary, not a pointer to a persisted intent.',
   ],
   [
-    'post_vote_states.outbound_activitypub_like_activity_id',
-    'Opaque outbound ActivityPub Like identity retained across current ballot transitions; no activity row is joined.',
-  ],
-  [
     'post_votes.outbound_activitypub_like_activity_id',
     'Identity of the outbound ActivityPub Like; no activities table exists.',
   ],

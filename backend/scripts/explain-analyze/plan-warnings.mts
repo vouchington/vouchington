@@ -17,7 +17,6 @@ const LARGE_TABLES = new Set([
   'crawls',
   'crawl_chunks',
   'post_votes',
-  'post_vote_states',
   'topic_votes',
   'notifications',
   'community_post_reviews',

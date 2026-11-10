@@ -1,5 +1,4 @@
 import { read, write, type TransactionQuery } from '@data-stores/psql'
-import { seedTestCurrentPostVote } from '../post-vote-state.mts'
 import sql from 'sql-template-strings'
 
 export type TestVoteWeightPenalty = {
@@ -84,7 +83,6 @@ export async function insertTestPostVote(
   `,
     { query },
   )
-  await seedTestCurrentPostVote(userId, postId, query ?? write)
 }
 
 export async function getTestVoteIntegrityFlagTypesByPostId(postId: string): Promise<string[]> {

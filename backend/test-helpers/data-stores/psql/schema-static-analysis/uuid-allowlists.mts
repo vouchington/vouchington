@@ -154,14 +154,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Opaque fencing token rotated for the current exclusive claimant; it intentionally identifies no durable relation.',
   ],
   [
-    'post_vote_states.id',
-    'Copied current ballot transition UUIDv7 remains after the history event expires; it is not a foreign-key relation.',
-  ],
-  [
-    'post_vote_states.outbound_activitypub_like_activity_id',
-    'ActivityPub protocol identity for the active Like generation; it intentionally identifies no database row.',
-  ],
-  [
     'post_votes.outbound_activitypub_like_activity_id',
     'ActivityPub protocol identity for the current Like generation; it intentionally identifies no database row.',
   ],

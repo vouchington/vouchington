@@ -3,7 +3,6 @@
  */
 
 import { type TransactionQuery, beginTransaction, write } from '@data-stores/psql'
-import { seedTestCurrentPostVote } from '../post-vote-state.mts'
 import sql from 'sql-template-strings'
 
 /**
@@ -21,7 +20,6 @@ export async function insertPostElectionVote(
     INSERT INTO post_votes (id, user_id, post_id, score, score_is_neutral, score_is_semantic)
     VALUES (COALESCE(${id}::uuid, uuidv7()), ${userId}, ${postId}, ${score}, ${scoreIsNeutral}, ${scoreIsSemantic})
   `)
-  await seedTestCurrentPostVote(userId, postId)
 }
 
 /** Inserts a positive vote whose outbound Like has not been distributed yet. */
@@ -34,7 +32,6 @@ export async function insertPendingOutboundLikeForTest(
     INSERT INTO post_votes (id, user_id, post_id, score, outbound_activitypub_like_activity_id)
     VALUES (${id}::uuid, ${userId}, ${postId}, 1, ${id}::uuid)
   `)
-  await seedTestCurrentPostVote(userId, postId)
 }
 
 /** Every post election vote row a user has ever written, across all posts. */
@@ -91,7 +88,6 @@ export async function insertPostElectionVoteAt(
       ${userId}, ${postId}, ${score}, FALSE, FALSE
     )
   `)
-  await seedTestCurrentPostVote(userId, postId)
 }
 
 export async function getLatestPostElectionVoteCreatedAt(
@@ -153,5 +149,4 @@ async function insertPostElectionVoteWithQuery(
     INSERT INTO post_votes (id, user_id, post_id, score, score_is_neutral, score_is_semantic)
     VALUES (${options.id}, ${options.userId}, ${options.postId}, ${options.score}, FALSE, FALSE)
   `)
-  await seedTestCurrentPostVote(options.userId, options.postId, query)
 }

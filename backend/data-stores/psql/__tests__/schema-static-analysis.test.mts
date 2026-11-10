@@ -30,8 +30,6 @@ describe('PostgreSQL schema static analysis', () => {
     ['operational_tombstone_retention_cursors', 'cursor_record_id'],
     ['rss_feed_item_category_projection_results', 'change_id'],
     ['rss_feed_item_category_snapshot_reconciliations', 'change_id'],
-    ['post_vote_states', 'id'],
-    ['post_vote_states', 'outbound_activitypub_like_activity_id'],
   ])('limits the reviewed %s.%s UUID exception to its exact table', (table, name) => {
     const problem = 'uuid-column-without-key-constraint'
     expect(

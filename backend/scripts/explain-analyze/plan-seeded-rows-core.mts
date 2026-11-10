@@ -1,4 +1,4 @@
-import { VOTE_SEEDED_ROWS } from './post-vote-state-scenario-ids.mts'
+import { VOTE_HISTORY_ROW_COUNT } from './seed-data/recommended-topics-vote-history.mts'
 import * as rss from './seed-data/rss-feed-weekly-proxy.mts'
 import * as prompt from './community-agent-prompt-page-ids.mts'
 import { LANDING_PAGE_REVIEW_COUNT } from './seed-data/landing-page-candidates.mts'
@@ -46,7 +46,8 @@ export const CORE_SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   notifications: 2_000,
   conversations: 2_001,
   conversation_messages: 500,
-  ...VOTE_SEEDED_ROWS,
+  post_votes: 20_002 + VOTE_HISTORY_ROW_COUNT,
+  topic_votes: 5_000,
   crawls: 500,
   crawl_chunks: 1_500,
   topic_aliases: 2_757,

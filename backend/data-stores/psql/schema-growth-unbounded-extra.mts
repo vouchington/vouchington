@@ -9,7 +9,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'moderator_agents',
   'activitypub_actor_keys',
   'post_activitypub_like_tallies',
-  'post_vote_states',
   'post_vote_retained_daily_counts',
   'api_keys',
   'apple_accounts',

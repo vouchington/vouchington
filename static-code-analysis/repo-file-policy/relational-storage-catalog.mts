@@ -46,9 +46,6 @@ export {
 
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
-  // Provider-edge repair must advance after deleting the scanned edge; neither bound authorizes it.
-  'oauth_friend_reference_repair_cursors.cursor_edge_id',
-  'oauth_friend_reference_repair_cursors.cursor_upper_edge_id',
   // Durable keyset positions can outlive their scanned rows.
   'copyright_notice_operational_retention_cursors.cursor_record_id',
   'copyright_notice_operational_retention_cursors.sweep_upper_bound_record_id',

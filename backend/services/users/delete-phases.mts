@@ -16,10 +16,7 @@ import {
   recomputeUserDeletionRelationImpactsBatch,
 } from './delete-entity-relation-votes-batches.mts'
 
-const voteTables = new Set([
-  ...VOTE_SCHEMA_CONFIGS.map(config => config.voteTable),
-  'post_vote_states',
-])
+const voteTables = new Set(VOTE_SCHEMA_CONFIGS.map(config => config.voteTable))
 const voteEntityKeyColumns = new Set(VOTE_SCHEMA_CONFIGS.map(config => config.entityIdColumn))
 const userRelationTables = new Set(
   entityRelationMetadatum.reduce<string[]>((tables, metadata) => {
@@ -77,17 +74,6 @@ async function processVotes(userId: string, requestId: string, batchSize: number
       query,
     )
     if (relationVotes > 0) return { hasMore: true }
-    const currentPostVotes = await deleteOwnedRows(
-      query,
-      'post_vote_states',
-      voteTables,
-      'user_id',
-      'post_id',
-      voteEntityKeyColumns,
-      userId,
-      batchSize,
-    )
-    if (currentPostVotes > 0) return { hasMore: true }
     for (const { voteTable, entityIdColumn } of VOTE_SCHEMA_CONFIGS) {
       // oxlint-disable-next-line no-await-in-loop -- process one mutation-backed table page per job.
       const deleted = await deleteOwnedRows(

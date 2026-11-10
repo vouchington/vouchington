@@ -1,5 +1,3 @@
-import { CURRENT_POST_VOTE_READ_SCENARIO_IDS } from './current-post-vote-read-scenario-ids.mts'
-import { POST_VOTE_STATE_TRANSITION_SCENARIO_IDS } from './post-vote-state-scenario-ids.mts'
 import { MEDIA_DELIVERY_LOCK_SCENARIOS } from './media-delivery-lock-scenario-ids.mts'
 
 export const OAUTH_AUTHORITY_SCENARIO_IDS = [
@@ -14,9 +12,6 @@ export const OAUTH_AUTHORITY_SCENARIO_IDS = [
 
 export const HOT_PATH_LOCK_SCOPE_SCENARIOS = [
   ...MEDIA_DELIVERY_LOCK_SCENARIOS,
-  ...CURRENT_POST_VOTE_READ_SCENARIO_IDS,
-  'user-deletion-post-vote-state',
-  ...POST_VOTE_STATE_TRANSITION_SCENARIO_IDS,
   ...OAUTH_AUTHORITY_SCENARIO_IDS,
   'image-upload-owner-snapshot',
   'image-claim-owner-snapshot',

@@ -1,6 +1,3 @@
-import { runUserDeletionPostVoteStateScenario } from './user-deletion-post-vote-state.mts'
-import { runCurrentPostVoteReadScenarios } from './current-post-vote-reads.mts'
-import { runPostVoteStateTransitionScenarios } from './post-vote-state-transitions.mts'
 import { runFollowCycleCasScenarios } from './follow-cycle-cas.mts'
 import {
   seedBlueskyAuthorityCorpus,
@@ -22,9 +19,6 @@ export async function runHotPathLockScopeScenarios(): Promise<void> {
     await runContentAuthoritySnapshotScenarios()
     await runOAuthAuthorityScenarios()
     await runActivityPubVoteAuthorityScenarios()
-    await runPostVoteStateTransitionScenarios()
-    await runCurrentPostVoteReadScenarios()
-    await runUserDeletionPostVoteStateScenario()
     await runFollowCycleCasScenarios()
     await runLockScopeDomainScenarios()
     await runProviderOwnerSnapshotScenarios()

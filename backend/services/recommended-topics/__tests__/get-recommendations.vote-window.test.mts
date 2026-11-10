@@ -13,9 +13,9 @@ import { recommendedTopicsWorkConfig } from '@services/recommended-topics/work-l
 const MINUTE_MS = 60_000
 
 describe('get-recommendations.vote-window', () => {
-  it('reads only the newest current ballots, ordered by latest cast, inside that window', async () => {
+  it('reads only the newest votes and keeps the latest vote per post inside that window', async () => {
     onTestFinished(
-      overrideDynamicConfigFieldsForTest(recommendedTopicsWorkConfig, { vote_history_window: 2 }),
+      overrideDynamicConfigFieldsForTest(recommendedTopicsWorkConfig, { vote_history_window: 3 }),
     )
     const user = await createTestUser()
     const suffix = `${Date.now()}-${Math.random()}`

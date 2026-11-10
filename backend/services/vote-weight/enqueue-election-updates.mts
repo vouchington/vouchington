@@ -62,7 +62,7 @@ export async function enqueueElectionUpdatePageForUser(
   const statement = sql`/* enqueueElectionUpdatesForUser */
     SELECT lane, entity_type, entity_id, entity_relation, sort_id FROM (
       (SELECT 1 AS lane, 'post' AS entity_type, post_id AS entity_id, NULL::text AS entity_relation, post_id AS sort_id
-      FROM post_vote_states
+      FROM post_votes
       WHERE user_id = ${userId} AND (1 > ${lane}::int OR (1 = ${lane}::int AND post_id > ${afterId}::uuid))
       ORDER BY post_id LIMIT ${limit})
 
