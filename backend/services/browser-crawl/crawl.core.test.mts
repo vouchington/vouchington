@@ -220,18 +220,21 @@ describe('crawlWithBrowser', () => {
     )
   })
 
-  it('throws CrawlerNetworkError when page.goto throws a non-timeout error', async () => {
+  it.each([
+    [
+      'page.goto throws a non-timeout error',
+      () => Promise.reject(new Error('net::ERR_NAME_NOT_RESOLVED')),
+    ],
+    ['navigation completes with HTTP status 0', () => Promise.resolve({ status: () => 0 })],
+  ])('throws CrawlerNetworkError when %s', async (_case, goto) => {
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
     process.env.LIGHTPANDA_TOKEN = 'test-token'
     const page = makeMockPage()
-    page.goto = vi.fn<VitestLooseMock>().mockRejectedValue(new Error('net::ERR_NAME_NOT_RESOLVED'))
+    page.goto = vi.fn<VitestLooseMock>().mockImplementation(goto)
     f.connectTo(makeMockBrowser(page))
-    await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      f.errors.CrawlerNetworkError,
-    )
-    await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      f.errors.CrawlerConnectError,
-    )
+    const caught = await crawlWithBrowserForTest('https://example.com').catch((err: unknown) => err)
+    expect(caught).toBeInstanceOf(f.errors.CrawlerNetworkError)
+    expect(caught).not.toBeInstanceOf(f.errors.CrawlerConnectError)
   })
 
   it('returns a result on the happy path', async () => {

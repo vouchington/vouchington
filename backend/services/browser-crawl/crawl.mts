@@ -100,17 +100,17 @@ export async function crawlWithBrowser(url: string): Promise<BrowserCrawlResult>
     }
 
     let statusCode = 200
+    let gotoResponse: Awaited<ReturnType<Page['goto']>>
     try {
       // 'networkidle' requires zero in-flight connections and times out on real-world
       // referral pages that hold a persistent connection open (WebSockets, SSE,
       // long-polling analytics/chat widgets). 'load' plus the CSR_HYDRATION_WAIT_MS wait
       // below is the reliable analog of the previous Puppeteer 'networkidle2' milestone
       // (<=2 connections tolerated), which we can no longer express directly in Playwright.
-      const gotoResponse = await page.goto(url, {
+      gotoResponse = await page.goto(url, {
         waitUntil: 'load',
         timeout: NAVIGATION_TIMEOUT_MS,
       })
-      if (gotoResponse) statusCode = gotoResponse.status()
     } catch (err) {
       if (ssrfError) throw ssrfError
       const error = err instanceof Error ? err : new Error(String(err))
@@ -118,6 +118,15 @@ export async function crawlWithBrowser(url: string): Promise<BrowserCrawlResult>
         throw new CrawlerTimeoutError(url, NAVIGATION_TIMEOUT_MS, NAVIGATION_TIMEOUT_MS)
       }
       throw new CrawlerNetworkError(url, 0, error)
+    }
+    if (gotoResponse) statusCode = gotoResponse.status()
+    // Lightpanda completes navigation with status 0 when its egress proxy fetched nothing; that is a provider failure, not an HTTP response.
+    if (statusCode === 0) {
+      throw new CrawlerNetworkError(
+        url,
+        0,
+        new Error('navigation completed without an HTTP response'),
+      )
     }
 
     await new Promise(resolve => {

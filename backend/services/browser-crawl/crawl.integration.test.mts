@@ -28,7 +28,7 @@ describe('crawlWithBrowser (Lightpanda cloud)', () => {
       // Unconditional, not `??=`: local dev's .env may already export a stale
       // LIGHTPANDA_CDP_URL (or a future non-cloud value); this test must always
       // exercise the real cloud endpoint regardless of ambient environment state.
-      process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
+      process.env.LIGHTPANDA_CDP_URL = 'wss://euwest.cloud.lightpanda.io/ws'
       const result = await crawlWithBrowser('https://example.com/')
       expect(result.statusCode).toBe(200)
       expect(result.hasContent).toBe(true)
