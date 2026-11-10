@@ -88,6 +88,9 @@ async function backfillCategoryBatch(
     await lockCategoryItemsAndRows(query, candidateItemIds, candidateItems)
     if (!(await stillOwnsCategoryBackfill(query, topicId, rawPage.match)))
       return { rows: [], changedItemIds: [], statTargets: [], hasMore }
+    const oldTopicIds = candidateItems.flatMap(row =>
+      row.previous_topic_id ? [row.previous_topic_id] : [],
+    )
     const { rows } = await query<{
       rss_feed_item_id: string
       previous_topic_id: string | null
