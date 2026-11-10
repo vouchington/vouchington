@@ -97,8 +97,9 @@ export async function insertHackerNewsScalePartitions(
   for (const partition of fixture.partitions) {
     const lower = seedUuidAtTimestamp(partition.month, 0)
     const upper = seedUuidAtTimestamp(addUtcMonths(partition.month, 1), 0)
-    // Autovacuum is off: its worker pins leaf buffers while it runs, and cold-cache eviction fails
-    // on any pinned buffer. Statistics come from the explicit ANALYZE calls before each capture.
+    // Autovacuum is off so a worker does not pin these leaf buffers during capture. A buffer
+    // another backend still has pinned is counted in eviction.skipped and does not fail the shard.
+    // Statistics come from the explicit ANALYZE calls before each capture.
     // no-mistakes-disable-next-line query-reached-per-item: exactly 24 owned monthly partitions are created once in the disposable EXPLAIN database.
     await query(
       `/* createHackerNewsScalePartition */ CREATE TABLE ${partition.name} PARTITION OF posts

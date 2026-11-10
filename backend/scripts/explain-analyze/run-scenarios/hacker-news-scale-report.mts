@@ -58,7 +58,7 @@ export function writeHackerNewsScaleReport(
     clockNote:
       'Future owned ranges avoid changing ordinary fixtures. JS query cutoffs use the recorded decision instant; SQL NOW stays at wall clock, so the existing future-post hot-score guard applies.',
     cacheNote:
-      'Cold PostgreSQL shared buffers after relation/index eviction; warm is immediate same-mode replay. OS and storage caches remain uncontrolled. No global cache eviction or server restart.',
+      'Cold PostgreSQL shared buffers after relation/index eviction; warm is immediate same-mode replay. OS and storage caches remain uncontrolled. No global cache eviction or server restart. A nonzero skipped count is recorded on the eviction observation and does not fail the shard.',
     historicalNote:
       'Canonical-URL join predicate under current pagination/hot cohort policy; diagnostic only, never application code or a gate exception.',
     observations,

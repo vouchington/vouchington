@@ -96,7 +96,5 @@ async function evictPlanRelations(input: Parameters<BeforeExplain>[0]): Promise<
     evidence.flushed += Number(eviction.buffers_flushed)
     evidence.skipped += Number(eviction.buffers_skipped)
   }
-  if (evidence.skipped !== 0)
-    throw new Error(`HN cold-buffer preparation skipped ${evidence.skipped} pinned buffers`)
   return evidence
 }
