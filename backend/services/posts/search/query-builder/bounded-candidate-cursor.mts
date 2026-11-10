@@ -1,7 +1,6 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PostSearchOptions, PostSearchSort } from '../types.mts'
 import { buildStablePostHotRankExpression } from '../stable-hot-rank.mts'
-import { indexServedPostType } from './bounded-candidate-indexes.mts'
 
 export function appendCandidateCursor(
   query: SQLStatement,
@@ -28,14 +27,8 @@ export function appendCandidateCursor(
     options.hot_score_lt !== undefined &&
     options.id_lt
   ) {
-    // The scalar bound steers rank walks to their ordered index. With a post-type prefix,
-    // it instead compounds selectivity estimates and can cause a bitmap scan of the tail.
-    if (!indexServedPostType(options, sort))
-      query
-        .append(sql` AND `)
-        .append(buildStablePostHotRankExpression())
-        .append(sql` <= ${options.hot_score_lt}`)
-    // The tuple preserves the exact ID boundary for equal ranks.
+    // A scalar `rank <= cursor` is the whole tail. The planner bitmap-scans and sorts
+    // that range before LIMIT. The tuple comparison is the ordered index bound.
     query
       .append(sql` AND (`)
       .append(buildStablePostHotRankExpression())
