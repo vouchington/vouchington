@@ -26,7 +26,10 @@ describe('Hacker News hot query bounds', () => {
       expect(query.sql).toContain('posts.has_hacker_news_references')
       expect(query.sql).toContain('hackerNewsHotWindow')
       expect(query.sql).toContain('posts.search_vector')
-      expect(query.sql).toContain('ORDER BY hot_score DESC, posts.id DESC')
+      expect(query.sql).toContain(
+        'ORDER BY (CASE WHEN posts.votes_score_sort > 0 THEN LN(posts.votes_score_sort::DOUBLE PRECISION)',
+      )
+      expect(query.sql).not.toContain('ORDER BY hot_score')
       expect(query.sql).not.toContain('hacker_news_hot_candidates')
       expect(query.sql).not.toMatch(/ORDER BY posts\.id DESC\s+LIMIT/)
       expect(query.values).not.toContain(2)
@@ -54,7 +57,10 @@ describe('Hacker News hot query bounds', () => {
         time_range: '1m',
       })
       expect(query.sql).toContain('posts.has_hacker_news_references')
-      expect(query.sql).toContain('ORDER BY hot_score DESC, posts.id DESC')
+      expect(query.sql).toContain(
+        'ORDER BY (CASE WHEN posts.votes_score_sort > 0 THEN LN(posts.votes_score_sort::DOUBLE PRECISION)',
+      )
+      expect(query.sql).not.toContain('ORDER BY hot_score')
       expect(query.sql).not.toContain('LIMIT 1000')
       expect(query.sql).not.toContain('LIMIT 1000000')
       expect(query.values).not.toContain(1_000_000)

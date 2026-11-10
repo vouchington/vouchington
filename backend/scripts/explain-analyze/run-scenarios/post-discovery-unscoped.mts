@@ -1,4 +1,5 @@
 import { encodeCursor } from '@modules/pagination'
+import { postSearchCursorScope } from '@services/posts/search/get-ids-cursor'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -143,7 +144,10 @@ export async function runPostDiscoveryUnscopedScenarios(): Promise<void> {
     limit: PAGE_SIZE,
     post_types: ['topic_recommendation'],
     topic_recommendation_status: 'pending',
-    after: encodeCursor({ id: seedUuid(45_000, '05') }),
+    after: encodeCursor({
+      id: seedUuid(45_000, '05'),
+      scope: postSearchCursorScope('new', 'all'),
+    }),
   }
   const exhaustedPage = await getPage(exhaustedRecommendation)
   if (

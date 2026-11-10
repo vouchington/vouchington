@@ -1,6 +1,7 @@
 import { getPostFeedIds, getPostIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import { POST_TOPIC_SEMI_JOIN_FIXTURE } from '../seed-data/post-topic-semi-join-fixture.mts'
 import { POST_TOPIC_FIXTURES_SEEDED_ROWS } from '../post-discovery-seeded-rows.mts'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
@@ -13,8 +14,6 @@ const MAX_ALIAS_RELATION_ROWS = 1200
 const MAX_FEED_POST_ROWS = 15_000
 const MAX_FEED_MEMBERSHIP_ROWS = MAX_FEED_POST_ROWS * 2
 const TOPIC_ALIAS_INDEX = 'idx_topic_aliases__topic_id'
-const POSITIVE_ALIAS_RELATION_INDEX =
-  'relation__post__category__topic_alias__defaul_subject_id_id_key'
 
 type TopicFixture = 'sparse' | 'dense'
 
@@ -31,7 +30,11 @@ function optionsFor(topic: TopicFixture): PostSearchOptions {
   }
 }
 
-function registerTopicSemiJoinScenario(id: string, allowEmptyResult: boolean): void {
+function registerTopicSemiJoinScenario(
+  id: string,
+  allowEmptyResult: boolean,
+  aliasRelationLeaves: readonly string[],
+): void {
   registerScenarioContract(id, {
     seededRows: POST_TOPIC_FIXTURES_SEEDED_ROWS,
     expectations: [
@@ -41,10 +44,8 @@ function registerTopicSemiJoinScenario(id: string, allowEmptyResult: boolean): v
         relation: 'relation__post__category__topic_alias',
         max: MAX_ALIAS_RELATION_ROWS,
       },
-      {
-        kind: 'usesIndexes',
-        indexes: [TOPIC_ALIAS_INDEX, POSITIVE_ALIAS_RELATION_INDEX],
-      },
+      { kind: 'usesIndexes', indexes: [TOPIC_ALIAS_INDEX] },
+      { kind: 'usesIndexes', indexes: [...aliasRelationLeaves], anyOf: true },
     ],
     allowEmptyResult,
     crossPartition: {
@@ -61,7 +62,10 @@ async function capture(id: string, options: PostSearchOptions): Promise<void> {
   await runAndCapture(id, () => page(options), undefined, POST_SEARCH_QUERY)
 }
 
-async function captureTopicPair(topic: TopicFixture): Promise<void> {
+async function captureTopicPair(
+  topic: TopicFixture,
+  aliasRelationLeaves: readonly string[],
+): Promise<void> {
   const prefix = `post-topic-semi-join-${topic}`
   const options = optionsFor(topic)
   const firstPage = await page(options)
@@ -73,7 +77,7 @@ async function captureTopicPair(topic: TopicFixture): Promise<void> {
     throw new Error(`${prefix} sparse page must be exhausted`)
 
   const firstId = `${prefix}-first`
-  registerTopicSemiJoinScenario(firstId, false)
+  registerTopicSemiJoinScenario(firstId, false, aliasRelationLeaves)
   await capture(firstId, options)
   if (topic === 'sparse') return
 
@@ -87,7 +91,7 @@ async function captureTopicPair(topic: TopicFixture): Promise<void> {
   if (continuationPage.results.length === 0)
     throw new Error(`${prefix} continuation must return a matching post`)
   const continuationId = `${prefix}-continuation`
-  registerTopicSemiJoinScenario(continuationId, false)
+  registerTopicSemiJoinScenario(continuationId, false, aliasRelationLeaves)
   await capture(continuationId, continuationOptions)
 }
 
@@ -122,8 +126,15 @@ function registerMultiTopicFeedScenario(id: string): void {
 }
 
 export async function runPostTopicSemiJoinScenarios(): Promise<void> {
-  await captureTopicPair('sparse')
-  await captureTopicPair('dense')
+  const positiveLeaves = await partitionIndexLeaves(
+    'idx_relation__post__category__topic_alias__positive_object',
+  )
+  const newestLeaves = await partitionIndexLeaves(
+    'idx_relation__post__category__topic_alias__subject__newest',
+  )
+  const aliasRelationLeaves = [...positiveLeaves, ...newestLeaves]
+  await captureTopicPair('sparse', aliasRelationLeaves)
+  await captureTopicPair('dense', aliasRelationLeaves)
 
   const topicIds = [
     POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
@@ -138,7 +149,11 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
   const multiTopicPage = await page(multiTopicOptions)
   if (multiTopicPage.results.length === 0)
     throw new Error('Two-topic post search omitted its seeded intersection')
-  registerTopicSemiJoinScenario('post-topic-semi-join-multi-topic-search', false)
+  registerTopicSemiJoinScenario(
+    'post-topic-semi-join-multi-topic-search',
+    false,
+    aliasRelationLeaves,
+  )
   await capture('post-topic-semi-join-multi-topic-search', multiTopicOptions)
 
   const multiTopicFeedOptions = {

@@ -1,6 +1,7 @@
 import { assertNever } from '@modules/utils/assert-never'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PostSearchSort } from '../types.mts'
+import { buildStablePostHotRankExpression } from '../stable-hot-rank.mts'
 
 export function appendPostSearchOrderAndLimit(
   query: SQLStatement,
@@ -96,7 +97,13 @@ function orderByClause({
         .append(sql` DESC`)
     case 'hot':
     case 'trending':
-      return sql`\n    ORDER BY hot_score DESC, `.append(id).append(sql` DESC`)
+      if (outputColumns) return sql`\n    ORDER BY hot_score DESC, `.append(id).append(sql` DESC`)
+      // The index expression, not the output alias, so the stable-rank leaf can stop at LIMIT.
+      return sql`\n    ORDER BY `
+        .append(buildStablePostHotRankExpression(idRelation))
+        .append(sql` DESC, `)
+        .append(id)
+        .append(sql` DESC`)
     case 'relevance':
       return hasTextSearch || hasSemanticSearch
         ? sql`\n    ORDER BY ranking_score DESC, `.append(id).append(sql` DESC`)

@@ -1,4 +1,5 @@
 import { encodeCursor } from '@modules/pagination'
+import { postSearchCursorScope } from '@services/posts/search/get-ids-cursor'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedTopicId, seedUser } from '../run-support.mts'
@@ -12,7 +13,10 @@ export async function runPostDiscoveryFiniteWindowScenario(): Promise<void> {
     sort: 'new',
     time_range: '1d',
     limit: 25,
-    after: encodeCursor({ id: seedUuid(3000, '05') }),
+    after: encodeCursor({
+      id: seedUuid(3000, '05'),
+      scope: postSearchCursorScope('new', '1d', Date.now()),
+    }),
   }
   await captureFiniteWindow('post-discovery-global-new-finite-window-exhausted', options, false)
   await captureFiniteWindow(

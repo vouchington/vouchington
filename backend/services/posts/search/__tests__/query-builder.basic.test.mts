@@ -142,6 +142,23 @@ describe('query-builder (basic)', () => {
     const query = buildPostSearchQuery(undefined, { universal_topic_ids: [] })
 
     expect(query.sql).not.toContain('universal_topic_candidates')
+    expect(query.sql).not.toContain('topic_member')
+  })
+
+  it('walks the first universal topic in post-id order before the posts lookup', () => {
+    const topicId = '123e4567-e89b-12d3-a456-426614174010'
+    const query = buildPostSearchQuery(undefined, {
+      universal_topic_ids: [topicId],
+      sort: 'new',
+    })
+
+    expect(query.sql).toContain('SELECT DISTINCT ON (posts.id)')
+    expect(query.sql).toContain('JOIN posts ON posts.id = topic_member.post_id')
+    expect(query.sql).toContain('relation__post__category__topic')
+    expect(query.sql).toContain('post_review_topic_ratings')
+    expect(query.sql).toContain('post_data_point_topics')
+    expect(query.sql).toContain('ORDER BY rel.subject_id DESC')
+    expect(query.values).toContain(topicId)
   })
 
   it('buildPostSearchQuery adds similar_post_id CTE and filter', () => {
@@ -207,6 +224,7 @@ describe('query-builder (basic)', () => {
     expect(known.sql).toContain("posts.data_point_vertical = 'bank_account'")
     expect(known.sql).toContain("posts.structured_data->>'result' = 'pending'")
     expect(known.sql).toContain("posts.structured_data->>'credit_score_range' = '300-579'")
+    expect(known.sql).toContain('posts.community_id IS NULL')
     expect(known.sql).toContain("'019e0000-ee00-7000-8000-000000000001'::uuid")
     expect(known.values).not.toContain('019e0000-ee00-7000-8000-000000000001')
     expect(known.values).not.toContain('bank_account')

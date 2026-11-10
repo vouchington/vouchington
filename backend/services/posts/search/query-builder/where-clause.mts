@@ -46,7 +46,7 @@ export function appendPostSearchWhereClause(
   // Pagination-only statements already applied eligibility inside the same query.
   if (!paginationOnly) {
     appendBaseFilters(filters, currentUser, options)
-    appendTopicFilters(filters, options)
+    appendTopicFilters(filters, options, sort === 'new' && !hasSemanticSearch)
     appendSimpleColumnFilters(filters, options)
     appendPostSearchSpecialFilters(filters, options, decisionInstant)
     appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })
@@ -154,6 +154,9 @@ function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchO
       ),
     )
   }
+  // The positive result and credit indexes cover global data points only.
+  if (options.data_point_result || options.data_point_credit_score_range)
+    filters.push(sql`posts.community_id IS NULL`)
   if (options.story_id) {
     filters.push(sql`EXISTS (
       SELECT 1

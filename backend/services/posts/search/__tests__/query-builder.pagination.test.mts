@@ -130,7 +130,10 @@ describe('query-builder (pagination and moderation)', () => {
   it('buildPostSearchQuery orders by hot_score DESC for sort=hot', () => {
     const query = buildPostSearchQuery(undefined, { sort: 'hot' })
 
-    expect(query.sql).toContain('hot_score DESC, posts.id DESC')
+    expect(query.sql).toContain(
+      'ORDER BY (CASE WHEN posts.votes_score_sort > 0 THEN LN(posts.votes_score_sort::DOUBLE PRECISION)',
+    )
+    expect(query.sql).not.toContain('ORDER BY hot_score')
   })
 
   it('applies hot result and credit filters on the hot-score walk', () => {
@@ -150,7 +153,11 @@ describe('query-builder (pagination and moderation)', () => {
       expect(query.sql).toContain('posts.votes_score_net > 0')
       expect(query.sql).toContain('LN(posts.votes_score_sort::DOUBLE PRECISION)')
       expect(query.sql).toContain('AS hot_score')
-      expect(query.sql).toContain('ORDER BY hot_score DESC, posts.id DESC')
+      expect(query.sql).toContain('posts.community_id IS NULL')
+      expect(query.sql).toContain(
+        'ORDER BY (CASE WHEN posts.votes_score_sort > 0 THEN LN(posts.votes_score_sort::DOUBLE PRECISION)',
+      )
+      expect(query.sql).not.toContain('ORDER BY hot_score')
       expect(query.sql).toContain('LIMIT')
     }
     expect(result.sql).toContain("posts.structured_data->>'result' = 'pending'")
