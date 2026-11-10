@@ -22,7 +22,9 @@ data as sidecars (`post_elections`, `topic_elections`, `hostname_elections`,
 The entity VIEW payload itself must not include nested `election` objects or raw vote aggregates.
 
 Topic metrics cache only stores public-safe values. For topics this includes public tab counts
-(`discussions`, `reviews`, `data-points`, `news`) plus ratings/bookmark aggregates. Any
+(`discussions`, `reviews`, `data-points`, `news`, `latest`) plus ratings/bookmark aggregates. Each
+tab count is exact up to the profile count cap and `count_capped` records when the number stopped
+there. Any
 viewer-aware tab counts used for `N+` / `0+` UI are computed at request time for authenticated
 topic detail responses and are not written into the shared entity cache.
 

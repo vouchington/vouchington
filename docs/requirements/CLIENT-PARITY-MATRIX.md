@@ -57,6 +57,11 @@ header render this for the author, a stranger, and an anonymous viewer. Swift an
 native work is a vouchington-clients follow-up and does not gate this producer change. MCP has no
 user-metrics tool, so the change adds no MCP surface.
 
+`topic_metrics.count` uses that same cap for discussions, reviews, data points, news, and latest.
+`topic_metrics.count_capped` uses the same boolean-per-key shape. Markdown topic listings print a
+trailing plus when a shown count is capped. Swift and .NET render it the same way as profile counts;
+that native work does not gate this producer change.
+
 The owner and administrators also get `user_metrics.private_count` (saved, hidden, blocked, muted,
 viewed and similar), read to the same cap. `user_metrics.private_count_capped` carries one boolean
 per `private_count` key with the same meaning as `count_capped`. The earlier `user_metrics.bookmarks`,

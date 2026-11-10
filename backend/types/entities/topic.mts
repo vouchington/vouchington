@@ -129,6 +129,15 @@ export type TopicMetrics = {
     news: number
     latest: number
   }
+  // Present when the count was read through the profile count cap. True means the stored
+  // number is the cap and the real total is larger.
+  count_capped?: {
+    discussions: boolean
+    reviews: boolean
+    'data-points': boolean
+    news: boolean
+    latest: boolean
+  }
   viewer_count?: {
     discussions: number
     reviews: number

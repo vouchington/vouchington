@@ -75,8 +75,12 @@ app.route('/md/topics').get(async (ctx: Context) => {
     lines.push('')
     lines.push(`- **Type**: ${topic.topic_type}`)
     if (m) {
-      lines.push(`- **Discussions**: ${m.count.discussions}`)
-      lines.push(`- **Reviews**: ${m.count.reviews}`)
+      const discussions = m.count_capped?.discussions
+        ? `${m.count.discussions}+`
+        : String(m.count.discussions)
+      const reviews = m.count_capped?.reviews ? `${m.count.reviews}+` : String(m.count.reviews)
+      lines.push(`- **Discussions**: ${discussions}`)
+      lines.push(`- **Reviews**: ${reviews}`)
     }
     lines.push('')
   }

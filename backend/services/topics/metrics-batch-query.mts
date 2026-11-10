@@ -1,43 +1,12 @@
-import { topicPostCountCtes } from './metrics-batch-post-counts.mts'
+import { topicCountLaterals } from './metrics-batch-post-counts.mts'
 import { topicResolutionCtes } from './metrics-batch-topic-resolution.mts'
 
-export function buildTopicMetricsBatchQuery(inputCtes: string): string {
-  return `${inputCtes},${topicResolutionCtes()}${topicPostCountCtes()}${topicMetricsSelectSql()}`
+export function buildTopicMetricsBatchQuery(inputCtes: string, probeParam: string): string {
+  return `${inputCtes},${topicResolutionCtes()}${topicMetricsSelectSql(probeParam)}`
 }
 
-function topicMetricsSelectSql(): string {
+function topicMetricsSelectSql(probeParam: string): string {
   return `
-    news_counts AS (
-      SELECT requested.id AS topic_id, COUNT(*)::bigint AS count
-      FROM rss_feed_items item
-      CROSS JOIN requested_topic_ids requested
-      WHERE item.deleted_at IS NULL
-      AND (requested.id, item.id) IN (
-        SELECT category.topic_id, category.rss_feed_item_id
-        FROM rss_feed_item_categories category
-        JOIN requested_topic_ids wanted ON wanted.id = category.topic_id
-      )
-      AND EXISTS (
-        SELECT 1 FROM rss_feed_item_sources source
-        WHERE source.rss_feed_item_id = item.id
-          -- IS TRUE retains one hashed eligibility set instead of per-source feed probes.
-          AND (source.rss_feed_id IN (
-            SELECT feed.id FROM rss_feeds feed
-            WHERE feed.deleted_at IS NULL AND feed.is_enabled AND feed.is_discoverable
-          )) IS TRUE
-      )
-      GROUP BY requested.id
-    ),
-    latest_counts AS (
-      SELECT feed.topic_id, COUNT(*)::bigint AS count
-      FROM requested_topic_ids requested
-      JOIN rss_feeds feed ON feed.topic_id = requested.id
-      JOIN rss_feed_item_sources source ON source.rss_feed_id = feed.id
-      JOIN rss_feed_items item ON item.id = source.rss_feed_item_id
-      WHERE item.deleted_at IS NULL AND feed.deleted_at IS NULL
-        AND feed.is_enabled = TRUE AND feed.is_discoverable = TRUE
-      GROUP BY feed.topic_id
-    )
     SELECT
       topic_metrics.topic_id AS id,
       COALESCE(discussion_counts.count, 0)::bigint AS count__discussions,
@@ -71,11 +40,7 @@ function topicMetricsSelectSql(): string {
       ORDER BY metrics.topic_id
       LIMIT 1
     ) topic_metrics ON TRUE
-    LEFT JOIN discussion_counts ON discussion_counts.topic_id = combined_ids.id
-    LEFT JOIN review_counts ON review_counts.topic_id = combined_ids.id
-    LEFT JOIN data_point_counts ON data_point_counts.topic_id = combined_ids.id
-    LEFT JOIN news_counts ON news_counts.topic_id = combined_ids.id
-    LEFT JOIN latest_counts ON latest_counts.topic_id = combined_ids.id
+    ${topicCountLaterals(probeParam)}
     ORDER BY combined_ids.input_order
   `
 }
