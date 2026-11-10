@@ -21,6 +21,12 @@ export async function withRssFeedImportRowLock<Result>(
   let released = false
   let operationError: Error | undefined
   let result: Result | undefined
+  // pg-pool detaches its idle error listener while a client is checked out, so a dropped connection
+  // would otherwise crash the process. pg emits 'error' again when the socket closes after the
+  // server's FATAL message, so a dropped client keeps this listener for its remaining life. The
+  // loss surfaces through the unlock query rejecting.
+  const ignoreClientError = () => {}
+  client.on('error', ignoreClientError)
 
   try {
     const { rows } = await client.query<{ acquired: boolean }>(
@@ -28,6 +34,7 @@ export async function withRssFeedImportRowLock<Result>(
       values,
     )
     if (!rows[0]?.acquired) {
+      client.removeListener('error', ignoreClientError)
       client.release()
       released = true
       throw new RssFeedImportRowBusyError()
@@ -61,6 +68,7 @@ export async function withRssFeedImportRowLock<Result>(
       throw unlockError
     }
 
+    client.removeListener('error', ignoreClientError)
     client.release()
     released = true
     if (operationError) throw operationError
