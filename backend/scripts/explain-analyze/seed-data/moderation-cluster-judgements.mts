@@ -8,7 +8,11 @@ import {
 } from './moderation-report-contexts.mts'
 
 export const MODERATION_CLUSTER_JUDGEMENTS_PER_TARGET = 1024
+/** Other entities per kind, one judgement each, so a target is a minority of its column. */
+export const MODERATION_CLUSTER_JUDGEMENT_NOISE_PER_KIND = 2048
 const JUDGEMENT_TIME = Date.parse('2101-01-01T00:00:00.000Z')
+/** Older than any real judgement, so noise never becomes an entity's latest. */
+const NOISE_JUDGEMENT_TIME = Date.parse('2020-01-01T00:00:00.000Z')
 
 export async function loadModerationClusterJudgementTargets(): Promise<
   Array<ReportContextEntity & { latestJudgementId: string }>
@@ -28,18 +32,81 @@ export async function loadModerationClusterJudgementTargets(): Promise<
   }))
 }
 
-/** Long histories make latest-per-target lookup regressions visible in the plan. */
+/**
+ * Long histories make latest-per-target lookup regressions visible in the plan. The targets sit
+ * among many one-judgement entities, as in production: with only four entities the planner
+ * expects every filter hit within a few primary-key rows and can walk the primary key backwards,
+ * which reads a different number of rows per run.
+ */
 export async function seedModerationClusterJudgements(): Promise<void> {
   const targets = await loadModerationClusterJudgementTargets()
-  const rows = targets.flatMap((target, targetIndex) =>
+  const hotRows = targets.flatMap((target, targetIndex) =>
     Array.from({ length: MODERATION_CLUSTER_JUDGEMENTS_PER_TARGET }, (_, index) => ({
       id: judgementId(targetIndex, index),
-      postId: target.entityType === 'post' ? target.entityId : null,
-      userId: target.entityType === 'user' ? target.entityId : null,
-      hostnameId: target.entityType === 'url_hostname' ? target.entityId : null,
-      rssItemId: target.entityType === 'rss_feed_item' ? target.entityId : null,
+      ...entityColumns(target),
     })),
   )
+  const noiseRows = (await loadNoiseEntities(targets)).map((entity, index) => ({
+    id: seedUuidAtTimestamp(NOISE_JUDGEMENT_TIME, index + 1),
+    ...entityColumns(entity),
+  }))
+  await insertJudgements([...hotRows, ...noiseRows])
+  await write('/* analyzeModerationClusterJudgements */ ANALYZE moderation_report_judgements')
+}
+
+type JudgementRow = {
+  id: string
+  postId: string | null
+  userId: string | null
+  hostnameId: string | null
+  rssItemId: string | null
+}
+
+function entityColumns(entity: ReportContextEntity): Omit<JudgementRow, 'id'> {
+  return {
+    postId: entity.entityType === 'post' ? entity.entityId : null,
+    userId: entity.entityType === 'user' ? entity.entityId : null,
+    hostnameId: entity.entityType === 'url_hostname' ? entity.entityId : null,
+    rssItemId: entity.entityType === 'rss_feed_item' ? entity.entityId : null,
+  }
+}
+
+/** Entities with no moderation case, so no other fixture reads their judgement history. */
+async function loadNoiseEntities(
+  targets: readonly ReportContextEntity[],
+): Promise<ReportContextEntity[]> {
+  const { rows } = await write<ReportContextEntity>(
+    `/* loadModerationClusterJudgementNoise */
+    SELECT kind AS "entityType", id AS "entityId" FROM (
+      SELECT 'post' AS kind, p.id FROM posts p
+      WHERE NOT EXISTS (SELECT 1 FROM moderation_cases c WHERE c.post_id = p.id)
+      ORDER BY p.id LIMIT $1
+    ) posts_page
+    UNION ALL
+    SELECT kind, id FROM (
+      SELECT 'user' AS kind, u.id FROM users u
+      WHERE NOT EXISTS (SELECT 1 FROM moderation_cases c WHERE c.reported_user_id = u.id)
+      ORDER BY u.id LIMIT $1
+    ) users_page
+    UNION ALL
+    SELECT kind, id FROM (
+      SELECT 'url_hostname' AS kind, h.id FROM url_hostnames h
+      WHERE NOT EXISTS (SELECT 1 FROM moderation_cases c WHERE c.hostname_id = h.id)
+      ORDER BY h.id LIMIT $1
+    ) hostnames_page
+    UNION ALL
+    SELECT kind, id FROM (
+      SELECT 'rss_feed_item' AS kind, i.id FROM rss_feed_items i
+      WHERE NOT EXISTS (SELECT 1 FROM moderation_cases c WHERE c.rss_feed_item_id = i.id)
+      ORDER BY i.id LIMIT $1
+    ) items_page`,
+    [MODERATION_CLUSTER_JUDGEMENT_NOISE_PER_KIND],
+  )
+  const targetIds = new Set(targets.map(target => target.entityId))
+  return rows.filter(entity => !targetIds.has(entity.entityId))
+}
+
+async function insertJudgements(rows: readonly JudgementRow[]): Promise<void> {
   await write(
     `/* seedModerationClusterJudgements */
     INSERT INTO moderation_report_judgements (
@@ -61,7 +128,6 @@ export async function seedModerationClusterJudgements(): Promise<void> {
       rows.map(row => row.rssItemId),
     ],
   )
-  await write('/* analyzeModerationClusterJudgements */ ANALYZE moderation_report_judgements')
 }
 
 function judgementId(targetIndex: number, index: number): string {
