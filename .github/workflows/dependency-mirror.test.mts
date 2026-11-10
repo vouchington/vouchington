@@ -1,12 +1,13 @@
 import { execFile } from 'node:child_process'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { chmod, copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
 const exec = promisify(execFile)
+const regctlDouble = resolve('ci/dependency-mirror/regctl-double.sh')
 const directories: string[] = []
 const first = `sha256:${'a'.repeat(64)}`
 const second = `sha256:${'b'.repeat(64)}`
@@ -38,55 +39,8 @@ async function runMirror(
       JSON.stringify({ [`ghcr.io/vouchington/dependency-one:candidate-${first.slice(7)}`]: first }),
     )
   }
-  await writeFile(
-    regctl,
-    `#!/usr/bin/env node
-const fs = require('node:fs')
-const args = process.argv.slice(2)
-fs.appendFileSync(process.env.CALLS, JSON.stringify(args) + '\\n')
-const statePath = process.env.STATE
-const state = fs.existsSync(statePath) ? JSON.parse(fs.readFileSync(statePath, 'utf8')) : {}
-const save = () => fs.writeFileSync(statePath, JSON.stringify(state))
-const expected = ref => ref.includes('example/one') ? '${first}' : '${second}'
-if (args[0] === 'registry' && args[1] === 'login') process.exit(0)
-if (args[0] === 'image' && args[1] === 'digest') {
-  const ref = args[2]
-  if (ref.includes('ghcr.io/') && process.env.AUTH_LOOKUP_FAILURE === '1') {
-    console.error('unauthorized [http 401]')
-    process.exit(1)
-  }
-  if (ref.startsWith('docker.io/') || ref.startsWith('gcr.io/')) {
-    console.log(expected(ref))
-    process.exit(0)
-  }
-  if (ref.includes(':sha-') && process.env.POISONED_APPROVED === '1') {
-    console.log('sha256:' + 'f'.repeat(64))
-    process.exit(0)
-  }
-  const value = state[ref] || (ref.includes('@sha256:') && Object.entries(state).some(([key, digest]) =>
-    key.startsWith(ref.split('@')[0] + ':') && digest === ref.split('@')[1]) ? ref.split('@')[1] : '')
-  if (!value) {
-    console.error('failed to request manifest head ' + ref + ': request failed: not found [http 404]:')
-    process.exit(1)
-  }
-  console.log(value)
-  process.exit(0)
-}
-if (args[0] === 'image' && args[1] === 'copy') {
-  const src = args.at(-2)
-  const dst = args.at(-1)
-  if (dst.startsWith('ocidir://') && dst.includes('entry-' + process.env.FAIL_STAGE)) process.exit(17)
-  if (dst.startsWith('ocidir://') && dst.includes('/verify-') && process.env.FAIL_ROUNDTRIP === '1') process.exit(21)
-  const digest = state[src] || (src.includes('@sha256:') ? src.split('@')[1] : '')
-  if (!digest) process.exit(18)
-  state[dst] = digest
-  save()
-  process.exit(0)
-}
-process.exit(19)
-`,
-    { mode: 0o755 },
-  )
+  await copyFile(regctlDouble, regctl)
+  await chmod(regctl, 0o755)
   const result = await exec('bash', ['ci/dependency-mirror/sync.sh', config], {
     env: {
       ...process.env,
@@ -102,6 +56,8 @@ process.exit(19)
       POISONED_APPROVED: options.poisonedApproved ? '1' : '0',
       AUTH_LOOKUP_FAILURE: options.authLookupFailure ? '1' : '0',
       FAIL_ROUNDTRIP: options.failRoundtrip ? '1' : '0',
+      EXPECTED_FIRST: first,
+      EXPECTED_SECOND: second,
     },
   }).then(
     value => ({ code: 0, ...value }),
