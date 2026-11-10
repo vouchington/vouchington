@@ -12,10 +12,7 @@ import {
   observeTestGithubFriendRepairCoordinator,
   runTestFriendRepairSweepRequest,
 } from '@voucha/test-helpers/oauth-friend-repair'
-import {
-  repairOAuthFriendEdges,
-  repairOAuthFriendEdgesInTransaction,
-} from './cleanup-oauth-friend-repair.mts'
+import { repairOAuthFriendEdges } from './cleanup-oauth-friend-repair.mts'
 
 describe('OAuth friend repair coordinator', () => {
   it('advances owned pages and clears the finished cursor without touching an excluded edge', async () => {
