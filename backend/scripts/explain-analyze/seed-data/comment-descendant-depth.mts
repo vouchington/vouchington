@@ -11,6 +11,10 @@ export const COMMENT_DESCENDANT_DEPTH_ROOT_ID = seedUuidAtTimestamp(
 const SPINE_START_MS = postSeedTimestampMs(0) + 241_000
 const SPINE_SERIAL_START = 9_900_000
 const LEAF_SERIAL_START = 10_000_000
+export const COMMENT_DESCENDANT_DEPTH_LEAF_ID = seedUuidAtTimestamp(
+  SPINE_START_MS + SPINE_LENGTH * 1000,
+  LEAF_SERIAL_START,
+)
 
 export async function seedCommentsAndDescendantDepth(): Promise<void> {
   await seedComments()

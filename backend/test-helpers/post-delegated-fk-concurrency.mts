@@ -10,11 +10,10 @@ import { lockDelegatedPostThread } from '../services/posts/delegated-write-locks
 /** Keep delegated fences held while a separate connection performs ordinary FK-backed writes. */
 export async function withHeldDelegatedThreadFenceForTest<Result>(
   postId: string,
-  actorId: string,
   operation: () => Promise<Result>,
 ): Promise<Result> {
   await using query = await beginTransaction()
-  await lockDelegatedPostThread(query, postId, actorId)
+  await lockDelegatedPostThread(query, postId)
   const pending = operation()
   void pending.catch(() => undefined)
   let cleanup: Promise<void> | undefined

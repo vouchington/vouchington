@@ -1,4 +1,4 @@
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { normalizeHashtag, type NormalizedHashtag } from '@ts-shared/utils'
 import {
   assertPostMutationAccess,
@@ -6,7 +6,6 @@ import {
 } from '@services/entity-relations/post-access'
 import { entityRelationViewerFor } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
-import { lockPostPublication, lockPostPublicationPostScopes } from '@services/post-publication'
 import { canViewPost } from '../check-privacy-access.mts'
 import { assertPostUpdatePreflight } from './validation.mts'
 import type { Post, UpdatePostChanges } from '../types.mts'
@@ -25,18 +24,6 @@ export type PostHashtagIntent = {
 
 export const HASHTAG_IN_POST_TEXT_MESSAGE =
   'The hashtag is written in the post title or text; edit the text to remove it'
-
-export async function lockPostUpdatePublicationScopes(
-  query: TransactionQuery,
-  postId: string,
-  intent?: PostHashtagIntent,
-): Promise<void> {
-  if (intent) {
-    await lockPostPublicationPostScopes(query, [postId, ...intent.rootIds.values()])
-  } else {
-    await lockPostPublication(query, postId)
-  }
-}
 
 export async function prepareLockedHashtagIntentChanges(
   creator: PrivateUser,

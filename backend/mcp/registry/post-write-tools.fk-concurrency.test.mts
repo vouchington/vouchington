@@ -51,7 +51,7 @@ describe('delegated thread fences and ordinary foreign-key inserts', () => {
     expect(result).toMatchObject({ success: true, post: { parent_post_id: root } })
   })
 
-  it('permits member and reply inserts while retaining community and ancestry fences', async () => {
+  it('permits member and reply inserts while only the target post row is locked', async () => {
     const owner = await createTestUser()
     const joining = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id })
@@ -73,7 +73,7 @@ describe('delegated thread fences and ordinary foreign-key inserts', () => {
       rootId: root,
       parentId: root,
     })
-    const replyId = await withHeldDelegatedThreadFenceForTest(child, owner.id, async () => {
+    const replyId = await withHeldDelegatedThreadFenceForTest(child, async () => {
       await insertTestCommunityMember({
         communityId: community.id,
         userId: joining.id,

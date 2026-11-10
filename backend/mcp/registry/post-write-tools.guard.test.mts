@@ -17,7 +17,7 @@ import {
   callStructuredMcpTool,
   optionArgs,
 } from '@voucha/test-helpers/mcp-tool-contract'
-import { withConcurrentPostPrivacyChangeForTest } from '@voucha/test-helpers/post-delegated-write-race'
+import { makeTestPostPrivate } from '@voucha/test-helpers/post-write-context'
 import { getCommunityMember } from '@services/communities/members/get'
 import { deleteCommunity } from '@services/communities/delete'
 import { getPostByAny } from '@services/posts'
@@ -263,7 +263,7 @@ describe('post MCP write guards — real services', () => {
     }
   })
   it.each(['create_post', 'act_on_post', 'delete_post'])(
-    'rechecks %s thread access after waiting for a concurrent privacy transaction',
+    'checks %s thread access after the root privacy change commits',
     async name => {
       const [user, author] = await Promise.all([caller(), caller()])
       const root = await insertTestPost({
@@ -290,11 +290,8 @@ describe('post MCP write guards — real services', () => {
               id: comment,
               ...(name === 'act_on_post' ? { markdown: 'Changed' } : {}),
             })
-      expect(
-        await withConcurrentPostPrivacyChangeForTest(root, () =>
-          callRejectedMcpTool(user, name, args, SCOPES),
-        ),
-      ).toContain('Post not found')
+      await makeTestPostPrivate(root)
+      expect(await callRejectedMcpTool(user, name, args, SCOPES)).toContain('Post not found')
     },
   )
 })

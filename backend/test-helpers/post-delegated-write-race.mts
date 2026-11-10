@@ -5,59 +5,11 @@ import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 import type { TestOwnedPostgresWaitOptions } from './postgres-client-lock-identity.mts'
 
-/** Hold the canonical writer fence while a delegated mutation passes its old public preflight. */
-export function withConcurrentPostPrivacyChangeForTest<T>(
-  postId: string,
-  operation: () => Promise<T>,
-): Promise<T> {
-  return withConcurrentDelegatedWriteChangeForTest(
-    operation,
-    'lockPostPublicationCaptures',
-    { kind: 'advisory', key: `post:${postId.toLowerCase()}` },
-    async query => {
-      await query(sql`/* withConcurrentPostPrivacyChangeForTest.fence */
-        SELECT pg_advisory_xact_lock(hashtextextended(${`post:${postId.toLowerCase()}`}, 0))`)
-      await query(sql`/* withConcurrentPostPrivacyChangeForTest */
-        UPDATE posts SET privacy = 'private', broadcast = 'users' WHERE id = ${postId}`)
-    },
-  )
-}
-/** Commit a disabled community type only after creation reaches its settings row fence. */
-export function withConcurrentCommunityReviewDisableForTest<T>(
-  communityId: string,
-  operation: () => Promise<T>,
-): Promise<T> {
-  return withConcurrentDelegatedWriteChangeForTest(
-    operation,
-    'lockDelegatedPostCommunity',
-    { kind: 'transaction' },
-    async query => {
-      await query(sql`/* withConcurrentCommunityReviewDisableForTest */
-        UPDATE communities SET should_allow_review_posts = false WHERE id = ${communityId}`)
-    },
-  )
-}
-/** Delete a community only after a delegated thread write waits on its live row. */
-export function withConcurrentCommunityDeletionForTest<T>(
-  communityId: string,
-  operation: () => Promise<T>,
-): Promise<T> {
-  return withConcurrentDelegatedWriteChangeForTest(
-    operation,
-    'lockDelegatedPostCommunity',
-    { kind: 'transaction' },
-    async query => {
-      await query(sql`/* withConcurrentCommunityDeletionForTest */
-        UPDATE communities SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${communityId}`)
-    },
-  )
-}
-
 /** Archive a community only after a delegated reply waits on its live row. */
 export function withConcurrentCommunityArchiveForTest<T>(
   communityId: string,
   operation: () => Promise<T>,
-  queryMarker = 'lockDelegatedPostCommunity',
+  queryMarker: string,
 ): Promise<T> {
   return withConcurrentDelegatedWriteChangeForTest(
     operation,
@@ -109,7 +61,7 @@ export function withConcurrentCommunityMembershipRemovalForTest<T>(
   communityId: string,
   userId: string,
   operation: () => Promise<T>,
-  queryMarker = 'lockDelegatedPostCommunity.membership',
+  queryMarker: string,
 ): Promise<T> {
   return withConcurrentDelegatedWriteChangeForTest(
     operation,

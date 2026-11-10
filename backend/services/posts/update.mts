@@ -75,7 +75,10 @@ export const updatePost = async (
         delegated,
       )
       const options = { query }
-      await query(sql`/* updatePost.lock */ SELECT id FROM posts WHERE id = ${post.id} FOR UPDATE`)
+      if (!delegated)
+        await query(
+          sql`/* updatePost.lock */ SELECT id FROM posts WHERE id = ${post.id} FOR UPDATE`,
+        )
       const currentPost = await getPostByAny(post.id, options)
       if (!currentPost) throw createHttpError(404, 'Post not found')
       if (delegated) await loadWritablePost(creator, post.id, 'edit', options, currentPost)
@@ -107,7 +110,6 @@ export const updatePost = async (
       const hasAiSummaryUpdate =
         changes.ai_summary_markdown !== undefined &&
         changes.ai_summary_markdown !== currentPost.ai_summary_markdown
-
       if (hasContentUpdates)
         await assertCommunityLinkEditAllowed(creator, currentPost, changes, options)
       if (changes.slug) {
@@ -138,7 +140,6 @@ export const updatePost = async (
         options,
         post: currentPost,
       })
-
       if (changes.archive === true) {
         if (!currentPost.archived_at) shouldEnqueuePostUpdated = true
         await archivePost(currentPost.id, creator.id, { ...options, capturePublication: false })

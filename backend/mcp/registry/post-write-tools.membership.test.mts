@@ -13,19 +13,16 @@ import {
   callStructuredMcpTool,
   optionArgs,
 } from '@voucha/test-helpers/mcp-tool-contract'
-import {
-  withConcurrentCommunityMembershipRemovalForTest,
-  withConcurrentCommunityArchiveForTest,
-} from '@voucha/test-helpers/post-delegated-write-race'
+import { archiveTestCommunity } from '@voucha/test-helpers/entities/community-archive'
 import { loadWritablePost } from '@services/posts/authorization'
 import { deletePost, getPostByAny } from '@services/posts'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 
 const SCOPES = ['posts:read', 'posts:write'] as const
 
-describe('delegated private community membership fences', () => {
+describe('delegated private community membership checks', () => {
   it.each(['create_post', 'act_on_post', 'delete_post'] as const)(
-    '%s refuses revoked membership after preflight',
+    '%s refuses revoked membership after removal commits',
     async tool => {
       const user = { ...(await createTestUser()), membership_plan: 'plus' as const }
       await createTestMembership({ user_id: user.id, plan: 'plus' })
@@ -79,18 +76,15 @@ describe('delegated private community membership fences', () => {
           : tool === 'act_on_post'
             ? optionArgs('edit', { id, markdown: 'Refused' })
             : { id }
-      expect(
-        await withConcurrentCommunityMembershipRemovalForTest(community.id, user.id, () =>
-          callRejectedMcpTool(user, tool, args, SCOPES),
-        ),
-      ).toContain('Post not found')
+      await removeTestCommunityMember(community.id, user.id)
+      expect(await callRejectedMcpTool(user, tool, args, SCOPES)).toContain('Post not found')
       expect((await getPostByAny(id, { readOnly: false }))?.markdown).toBe('Own comment')
     },
   )
 })
 
 describe('delegated moderator deletion recheck', () => {
-  it('rejects a stale moderator role after membership removal without another lookup', async () => {
+  it('rejects a stale moderator role after membership removal with a plain role lookup', async () => {
     const owner = await createTestUser()
     const moderator = { ...(await createTestUser()), membership_plan: 'plus' as const }
     await createTestMembership({ user_id: moderator.id, plan: 'plus' })
@@ -136,10 +130,10 @@ describe('delegated moderator deletion recheck', () => {
       }),
     )
     expect((await getPostByAny(comment, { readOnly: false }))?.id).toBe(comment)
-    expect(queries.filter(item => item.text.includes('getCommunityMember'))).toHaveLength(0)
+    expect(queries.filter(item => item.text.includes('getCommunityMember'))).toHaveLength(1)
     expect(
       queries.filter(item => item.text.includes('lockDelegatedPostCommunity.membership')),
-    ).toHaveLength(1)
+    ).toHaveLength(0)
   })
 })
 
@@ -165,11 +159,8 @@ describe('delegated archived community mutations', () => {
         submittedById: user.id,
       })
       const args = tool === 'act_on_post' ? optionArgs('edit', { id, title: 'Updated' }) : { id }
-      expect(
-        await withConcurrentCommunityArchiveForTest(community.id, () =>
-          callStructuredMcpTool(user, tool, args, SCOPES),
-        ),
-      ).toMatchObject({ success: true })
+      await archiveTestCommunity({ communityId: community.id, archivedById: user.id })
+      expect(await callStructuredMcpTool(user, tool, args, SCOPES)).toMatchObject({ success: true })
       const post = await getPostByAny(id, { readOnly: false })
       expect(post?.title ?? null).toBe(tool === 'delete_post' ? null : 'Updated')
     },

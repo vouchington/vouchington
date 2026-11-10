@@ -111,14 +111,13 @@ export function currentUserCanCreatePost(currentUser: PrivateUser): boolean {
   return hasOAuth || (hasUsername && hasEmail)
 }
 
-/** Delegated access covers public threads and only the caller's own private records. */
+/** Delegated access checks the target, immediate parent, and stored root without ancestry walks. */
 export async function loadWritablePost(
   user: PrivateUser,
   id: string,
   operation: 'edit' | 'delete' | 'reply',
   options: QueryOptions = { readOnly: false },
   knownPost?: Post,
-  knownCommunityMemberRole?: CommunityMemberRole | null,
 ): Promise<{ post: Post; communityMemberRole: CommunityMemberRole | null }> {
   const { post, nodes, posts } = await loadPostWriteThread(id, options, knownPost)
   if (nodes.some(node => node.post_type === 'topic_recommendation'))
@@ -129,7 +128,6 @@ export async function loadWritablePost(
     user,
     post,
     operation,
-    knownCommunityMemberRole,
     options,
   )
   if (operation === 'edit' && !currentUserCanUpdatePost(user, post))
