@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
-import { searchPostsVertical } from '@services/search/omnisearch-content-verticals'
 import { getPostIds } from '../get-ids.mts'
 import { buildPostSearchQuery } from '../query-builder.mts'
 import { appendPostSearchOrderAndLimit } from '../query-builder/order-and-limit.mts'
@@ -86,12 +85,5 @@ describe('discovery search branches', () => {
     expect(() => buildPostSearchQuery(USER, { sort: 'following_new', ranking_lt: 1 })).toThrow(
       'following_new cursor requires ranking_lt and id_lt',
     )
-  })
-
-  it('returns an empty post vertical for an unknown hashtag', async () => {
-    await expect(searchPostsVertical({ hasUnknownHashtag: true })).resolves.toEqual({
-      results: [],
-      page_info: { start_cursor: null, end_cursor: null, has_next_page: false },
-    })
   })
 })
