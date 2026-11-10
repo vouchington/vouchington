@@ -721,34 +721,6 @@ COMMENT ON COLUMN amazon_ses_bounce_events.diagnostic_code IS 'SMTP diagnostic c
 COMMENT ON COLUMN amazon_ses_bounce_events.reporting_mta IS 'The MTA that reported the bounce.';
 COMMENT ON COLUMN amazon_ses_bounce_events.dedup_key IS 'SHA-256 hex digest of amazon_ses_message_id, notification_type, occurred_at, and the sorted normalized recipients; NULL when amazon_ses_message_id or the provider occurred_at is missing. Absorbs at-least-once redelivery duplicates without collapsing distinct per-recipient notifications that share a mail.messageId and timestamp.';
 
--- ==========================================================================
--- 0009-00-00-user-metrics.sql
--- ============================================================================
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS user_metrics (
-  id UUID PRIMARY KEY REFERENCES users ON DELETE CASCADE,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_user_metrics_updated_at
-BEFORE UPDATE ON user_metrics
-FOR EACH ROW
-EXECUTE FUNCTION fn_update_updated_at();
-
-COMMENT ON TABLE user_metrics IS 'One row per user for profile metrics reads; counts are read live and capped, not stored.';
-
--- Function to auto-create user_metrics row when user is created
-
--- Trigger to create user_metrics after user insert
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_create_user_metrics
-AFTER INSERT ON users
-FOR EACH ROW
-EXECUTE FUNCTION fn_create_metrics('user_metrics', 'id');
-
 -- Partial index supporting orphaned GitHub OAuth account retention cleanup:
 -- WHERE user_id IS NULL AND created_at is older than the retention cutoff
 -- ORDER BY created_at ASC, github_user_id ASC

@@ -1327,16 +1327,6 @@ UNION ALL
   WHERE (li.removed_at IS NULL);
 ```
 
-## `view_user_metrics`
-
-User activity metrics for public profile reads.
-
-```sql
- SELECT 'user_metrics'::text AS __entity_type,
-    id
-   FROM user_metrics;
-```
-
 ## `view_users_private`
 
 Private account projection for the authenticated owner or explicitly authorized staff; never a public user response.

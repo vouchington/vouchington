@@ -125,7 +125,7 @@ export const ALLOWED_NONRELATION_UUID = new Set([
 
 // Sole UUID primary keys without a generator are shared identities unless listed here. Retained
 // roots, publication bridges that mint their own id, and the session JWT sid are their own identity.
-// Extension tables such as user_metrics.id must keep the target FK instead of joining this set.
+// A shared primary key that points at its parent keeps that foreign key instead of joining this set.
 export const ALLOWED_OWN_PRIMARY_UUID = new Set([
   'oauth_grant_retention_anchors.id',
   'post_publication_community_identities.id',

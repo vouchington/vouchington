@@ -151599,90 +151599,6 @@
       },
       "uniqueConstraints": {}
     },
-    "user_metrics": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 2,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "One row per user for profile metrics reads; counts are read live and capped, not stored.",
-      "foreignKeys": {
-        "user_metrics_id_fkey": {
-          "columns": ["id"],
-          "definition": "FOREIGN KEY (id) REFERENCES users(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "user_metrics_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX user_metrics_pkey ON public.user_metrics USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_user_metrics_updated_at": "CREATE TRIGGER trigger_user_metrics_updated_at BEFORE UPDATE ON public.user_metrics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
     "user_moderation_email_sends": {
       "checkConstraints": {},
       "columns": {
@@ -157888,7 +157804,6 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_create_user_metrics": "CREATE TRIGGER trigger_create_user_metrics AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_metrics('user_metrics', 'id')",
         "trigger_handoff_deleted_user_image_surfaces": "CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces BEFORE DELETE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_handoff_deleted_user_image_surfaces()",
         "trigger_register_retained_user_identity": "CREATE TRIGGER trigger_register_retained_user_identity BEFORE INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('user')",
         "trigger_retire_deleted_user_image_surfaces": "CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_user_image_surfaces()",
@@ -162525,11 +162440,6 @@
     "view_user_list_items": {
       "comment": "User list content projection; callers enforce list ownership and audience access.",
       "definition": " SELECT li.id,\n    li.user_list_id AS list_id,\n    'rss_feed_item'::user_list_item_types AS item_type,\n    li.rss_feed_item_id AS entity_id,\n    li.order_index,\n    li.created_at,\n    (rfi.media_type)::text AS media_type\n   FROM (user_list_rss_feed_items li\n     JOIN rss_feed_items rfi ON (((rfi.id = li.rss_feed_item_id) AND (rfi.deleted_at IS NULL))))\n  WHERE (li.removed_at IS NULL)\nUNION ALL\n SELECT li.id,\n    li.user_list_id AS list_id,\n    'post'::user_list_item_types AS item_type,\n    li.post_id AS entity_id,\n    li.order_index,\n    li.created_at,\n    NULL::text AS media_type\n   FROM user_list_posts li\n  WHERE (li.removed_at IS NULL);",
-      "materialized": false
-    },
-    "view_user_metrics": {
-      "comment": "User activity metrics for public profile reads.",
-      "definition": " SELECT 'user_metrics'::text AS __entity_type,\n    id\n   FROM user_metrics;",
       "materialized": false
     },
     "view_users_private": {
