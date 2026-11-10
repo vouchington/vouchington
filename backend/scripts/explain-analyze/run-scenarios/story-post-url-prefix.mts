@@ -3,7 +3,6 @@ import { beginTransaction } from '@data-stores/psql'
 import { blockedUrlIdsForHostnameBlocks } from '@services/hostname-blocking'
 import { getStoryPostRelatedUrlProjectionPrefix } from '@services/stories/story-post-related-url-projection'
 import { pruneStoryPostRelatedUrlsOutsidePrefix } from '@services/stories/story-post-related-url-projection-prune'
-import { lockStoryPostRelatedUrlProjectionHostnameBlocks } from '@services/stories/story-post-related-url-projection-relation-safety'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { RSS_FEED_ITEM_SEED_COUNT } from '../seed-data/common.mts'
@@ -29,7 +28,7 @@ import { captureStoryPostUrlPrefixEffectScenarios } from './story-post-url-prefi
 
 /** Child hostname row plus parent-suffix probes. The capacity seed host has three labels. */
 const URL_HOSTNAME_PROBE_LIMIT = 5
-/** Admission, prefix hostname locks, and the post-bounded prune at both relation caps. */
+/** Admission, hostname-block reads, and the post-bounded prune at both relation caps. */
 export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
   const [itemIndexes, pruneIndexes, newestIndexes, activeReverseIndexes] = await Promise.all([
     partitionIndexNames(ITEM_INDEX),
@@ -43,8 +42,6 @@ export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
     await insertMaxCapReceipts()
     await captureAdmission('story-post-related-url-admission-prefix-default', 1000, itemIndexes)
     await captureAdmission('story-post-related-url-admission-prefix-maximum', 10_000, itemIndexes)
-    await captureHostLocks('story-post-related-url-prefix-host-locks-default', 1000)
-    await captureHostLocks('story-post-related-url-prefix-host-locks-maximum', 10_000)
     await captureBlockedHostnames('story-post-related-url-prefix-hostname-blocks-default', 1000)
     await captureBlockedHostnames('story-post-related-url-prefix-hostname-blocks-maximum', 10_000)
     await capturePrune(
@@ -107,26 +104,6 @@ async function captureAdmission(
     },
     undefined,
     'getStoryPostRelatedUrlProjectionPrefix',
-  )
-}
-
-async function captureHostLocks(id: string, cap: number): Promise<void> {
-  const urlIds = await prefixUrlIds(cap)
-  registerScenarioContract(id, {
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'urls', max: cap },
-      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: cap * URL_HOSTNAME_PROBE_LIMIT },
-    ],
-    forbidSequentialScans: ['urls', 'url_hostnames'],
-  })
-  await using query = await beginTransaction()
-  await runAndCapture(
-    id,
-    () => lockStoryPostRelatedUrlProjectionHostnameBlocks(query, urlIds),
-    undefined,
-    'lockStoryPostRelatedUrlProjectionHostnameBlocks',
-    // Release the callback's advisory locks before EXPLAIN reruns them on another connection.
-    { afterCapture: () => query.rollback() },
   )
 }
 
