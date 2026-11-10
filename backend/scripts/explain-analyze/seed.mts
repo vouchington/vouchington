@@ -18,8 +18,6 @@ import {
   seedPostReviewTopicRatings,
   seedPostSlugs,
   seedProfileLinks,
-  seedRecentlyViewedPosts,
-  seedRecentlyViewedTopics,
   seedRelatedUrlPostRelations,
   seedTopicAliases,
   seedVoteAggregation,
@@ -160,8 +158,6 @@ async function main() {
   await seedHostnameVoteAggregation()
   await seedRelatedUrlPostRelations()
   await checkpointSeed('votes')
-  await seedRecentlyViewedPosts(500)
-  await seedRecentlyViewedTopics(500)
   await seedCrawls(500)
   await seedCrawlChunks(1500)
   await checkpointSeed('crawls')
