@@ -1445,12 +1445,6 @@
 - `public`
 - `confidential`
 
-## `oauth_friend_repair_providers`
-
-- `facebook`
-- `github`
-- `x`
-
 ## `oauth_grant_types`
 
 - `authorization_code`

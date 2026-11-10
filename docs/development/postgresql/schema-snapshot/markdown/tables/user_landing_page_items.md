@@ -24,8 +24,7 @@ Not partitioned — growth: unbounded.
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-
-- `uq_user_landing_page_items__landing_page_id_sort_order`: `UNIQUE (landing_page_id, sort_order)`
+_none_
 
 **Check constraints:**
 
@@ -50,7 +49,6 @@ Not partitioned — growth: unbounded.
 - `idx_user_landing_page_items__review_id`: `CREATE INDEX idx_user_landing_page_items__review_id ON public.user_landing_page_items USING btree (review_post_id) WHERE (review_post_id IS NOT NULL)`
 - `idx_user_landing_page_items__topic_id`: `CREATE INDEX idx_user_landing_page_items__topic_id ON public.user_landing_page_items USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
 - `idx_user_landing_page_items__url_id`: `CREATE INDEX idx_user_landing_page_items__url_id ON public.user_landing_page_items USING btree (url_id)`
-- `uq_user_landing_page_items__landing_page_id_sort_order`: `CREATE UNIQUE INDEX uq_user_landing_page_items__landing_page_id_sort_order ON public.user_landing_page_items USING btree (landing_page_id, sort_order)`
 - `user_landing_page_items_pkey`: `CREATE UNIQUE INDEX user_landing_page_items_pkey ON public.user_landing_page_items USING btree (id)`
 
 **Triggers:**

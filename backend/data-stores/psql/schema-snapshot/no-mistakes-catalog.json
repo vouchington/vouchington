@@ -1097,9 +1097,6 @@
     "oauth_client_types": {
       "values": ["public", "confidential"]
     },
-    "oauth_friend_repair_providers": {
-      "values": ["facebook", "github", "x"]
-    },
     "oauth_grant_types": {
       "values": ["authorization_code", "refresh_token"]
     },
@@ -2418,7 +2415,7 @@
       "returnsSet": true
     },
     "fn_user_deletion_has_remaining_owned_data(target_user_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  ownership RECORD;\n  has_rows BOOLEAN;\nBEGIN\n  FOR ownership IN\n    SELECT * FROM (VALUES\n      ('posts', 'created_by_id'),\n      ('post_vote_states', 'user_id'),\n      ('post_topic_alias_sources', 'contributor_user_id'),\n      ('user_email_addresses', 'user_id'),\n      ('user_phone_numbers', 'user_id'),\n      ('user_passkeys', 'user_id'),\n      ('user_totp_authenticators', 'user_id'),\n      ('api_keys', 'user_id'),\n      ('user_sessions', 'user_id'),\n      ('user_session_revocation_cutoffs', 'user_id'),\n      ('facebook_accounts', 'user_id'),\n      ('apple_accounts', 'user_id'),\n      ('google_accounts', 'user_id'),\n      ('x_accounts', 'user_id'),\n      ('linkedin_accounts', 'user_id'),\n      ('microsoft_accounts', 'user_id'),\n      ('github_accounts', 'user_id'),\n      ('bluesky_link_completions', 'user_id'),\n      ('bluesky_linked_accounts', 'user_id'),\n      ('session_referral_attributions', 'user_id')\n    ) AS configured(table_name, column_name)\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE %I = $1)',\n      ownership.table_name,\n      ownership.column_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'user_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'user_id'\n      AND table_name LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE user_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'subject_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'subject_id'\n      AND table_name LIKE 'relation\\_\\_user\\_\\_%' ESCAPE '\\'\n      AND table_name NOT LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE subject_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  IF EXISTS (\n    SELECT 1 FROM user_lists WHERE owner_user_id = target_user_id AND removed_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_link_authorizations\n    WHERE user_id = target_user_id\n      AND status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached')\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_follow_records\n    WHERE follower_user_id = target_user_id OR followee_user_id = target_user_id\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM user_data_requests\n    WHERE user_id = target_user_id\n      AND (\n        (completed_at IS NULL AND failed_at IS NULL)\n        OR (completed_at IS NOT NULL AND failed_at IS NULL AND s3_key IS NOT NULL)\n      )\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_clients\n    WHERE owner_user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_grants\n    WHERE user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_token_families family\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND family.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_access_tokens access\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = access.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND access.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_tokens refresh\n    JOIN oauth_refresh_token_families family ON family.id = refresh.family_id\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND refresh.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  RETURN FALSE;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  ownership RECORD;\n  has_rows BOOLEAN;\nBEGIN\n  FOR ownership IN\n    SELECT * FROM (VALUES\n      ('posts', 'created_by_id'),\n      ('post_vote_states', 'user_id'),\n      ('post_topic_alias_sources', 'contributor_user_id'),\n      ('user_email_addresses', 'user_id'),\n      ('user_phone_numbers', 'user_id'),\n      ('user_passkeys', 'user_id'),\n      ('user_totp_authenticators', 'user_id'),\n      ('api_keys', 'user_id'),\n      ('user_sessions', 'user_id'),\n      ('facebook_accounts', 'user_id'),\n      ('apple_accounts', 'user_id'),\n      ('google_accounts', 'user_id'),\n      ('x_accounts', 'user_id'),\n      ('linkedin_accounts', 'user_id'),\n      ('microsoft_accounts', 'user_id'),\n      ('github_accounts', 'user_id'),\n      ('bluesky_link_completions', 'user_id'),\n      ('bluesky_linked_accounts', 'user_id'),\n      ('session_referral_attributions', 'user_id')\n    ) AS configured(table_name, column_name)\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE %I = $1)',\n      ownership.table_name,\n      ownership.column_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'user_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'user_id'\n      AND table_name LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE user_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'subject_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'subject_id'\n      AND table_name LIKE 'relation\\_\\_user\\_\\_%' ESCAPE '\\'\n      AND table_name NOT LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE subject_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  IF EXISTS (\n    SELECT 1 FROM user_lists WHERE owner_user_id = target_user_id AND removed_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_link_authorizations\n    WHERE user_id = target_user_id\n      AND status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached')\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_follow_records\n    WHERE follower_user_id = target_user_id OR followee_user_id = target_user_id\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM user_data_requests\n    WHERE user_id = target_user_id\n      AND (\n        (completed_at IS NULL AND failed_at IS NULL)\n        OR (completed_at IS NOT NULL AND failed_at IS NULL AND s3_key IS NOT NULL)\n      )\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_clients\n    WHERE owner_user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_grants\n    WHERE user_id = target_user_id AND revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_token_families family\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND family.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_access_tokens access\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = access.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND access.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM oauth_refresh_tokens refresh\n    JOIN oauth_refresh_token_families family ON family.id = refresh.family_id\n    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id\n    WHERE oauth_grant.user_id = target_user_id AND refresh.revoked_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  RETURN FALSE;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_wake_agent_moderation_retention(p_post_id uuid, p_moderation_id uuid)": {
@@ -89205,94 +89202,6 @@
         }
       }
     },
-    "oauth_friend_reference_repair_cursors": {
-      "checkConstraints": {
-        "oauth_friend_reference_repair_cursors_check": {
-          "definition": "CHECK (((cursor_edge_id IS NULL) OR (cursor_upper_edge_id IS NOT NULL)))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "cursor_edge_id": {
-          "comment": "Edge identifier at the last scanned position, retained only as a cursor.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 2
-        },
-        "cursor_upper_edge_id": {
-          "comment": "Edge identifier at the fixed end of the current sweep, retained only as a cursor.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3
-        },
-        "provider": {
-          "comment": "Provider whose edge index is traversed.",
-          "dataType": "oauth_friend_repair_providers",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "updated_at": {
-          "comment": "Time the current repair checkpoint last changed.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        }
-      },
-      "comment": "Bounded sweep progress for provider friend edges.",
-      "foreignKeys": {},
-      "indexes": {
-        "oauth_friend_reference_repair_cursors_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX oauth_friend_reference_repair_cursors_pkey ON public.oauth_friend_reference_repair_cursors USING btree (provider)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "provider",
-              "descending": false,
-              "expression": "provider",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.enum_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["provider"]
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_oauth_friend_reference_repair_cursors_updated_at": {
-          "definition": "CREATE TRIGGER trigger_oauth_friend_reference_repair_cursors_updated_at BEFORE UPDATE ON public.oauth_friend_reference_repair_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
-      "uniqueConstraints": {}
-    },
     "oauth_grant_retention_anchors": {
       "checkConstraints": {},
       "columns": {
@@ -91739,16 +91648,6 @@
         }
       },
       "columns": {
-        "actor_user_id": {
-          "comment": "Contributing user whose admissions are serialized; the unique key lets one conditional upsert claim or take over the actor lease.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -91757,17 +91656,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 5
         },
         "lease_expires_at": {
-          "comment": "Lease expiration after which another admission by the same user may take over this claim.",
+          "comment": "Lease expiration after which another worker may take over the reservation.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 4
         },
         "lease_token": {
           "comment": "Opaque fencing token rotated whenever an expired claim is taken over.",
@@ -91777,7 +91676,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 2
         },
         "leased_at": {
           "comment": "When the current fenced admission attempt acquired this claim.",
@@ -91787,7 +91686,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 3
         },
         "reservation_id": {
           "comment": "Admission reservation exclusively owned while this lease remains unexpired.",
@@ -91807,19 +91706,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 6
         }
       },
-      "comment": "Short-lived exclusive leases that serialize contribution admission per user: one lease per actor, replaced only after it expires.",
+      "comment": "Short-lived exclusive leases that serialize execution of one admission reservation.",
       "foreignKeys": {
-        "post_admission_claims_actor_user_id_fkey": {
-          "columns": ["actor_user_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
         "post_admission_claims_reservation_id_fkey": {
           "columns": ["reservation_id"],
           "onDelete": "CASCADE",
@@ -91851,29 +91742,6 @@
           "primary": false,
           "ready": true,
           "unique": false,
-          "valid": true
-        },
-        "post_admission_claims_actor_user_id_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_admission_claims_actor_user_id_key ON public.post_admission_claims USING btree (actor_user_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "actor_user_id",
-              "descending": false,
-              "expression": "actor_user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
           "valid": true
         },
         "post_admission_claims_pkey": {
@@ -91910,11 +91778,7 @@
           "definition": "CREATE TRIGGER trigger_post_admission_claims_updated_at BEFORE UPDATE ON public.post_admission_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
-      "uniqueConstraints": {
-        "post_admission_claims_actor_user_id_key": {
-          "columns": ["actor_user_id"]
-        }
-      }
+      "uniqueConstraints": {}
     },
     "post_admission_quota_consumptions": {
       "checkConstraints": {
@@ -158525,38 +158389,6 @@
           "unique": false,
           "valid": true
         },
-        "uq_user_landing_page_items__landing_page_id_sort_order": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_user_landing_page_items__landing_page_id_sort_order ON public.user_landing_page_items USING btree (landing_page_id, sort_order)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "landing_page_id",
-              "descending": false,
-              "expression": "landing_page_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "sort_order",
-              "descending": false,
-              "expression": "sort_order",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.int4_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "user_landing_page_items_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -158594,18 +158426,10 @@
           "definition": "CREATE TRIGGER trigger_user_landing_page_items_updated_at BEFORE UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
-      "uniqueConstraints": {
-        "uq_user_landing_page_items__landing_page_id_sort_order": {
-          "columns": ["landing_page_id", "sort_order"]
-        }
-      }
+      "uniqueConstraints": {}
     },
     "user_landing_pages": {
       "checkConstraints": {
-        "user_landing_pages_slot_check": {
-          "definition": "CHECK (((slot >= 1) AND (slot <= 20)))",
-          "validated": true
-        },
         "user_landing_pages_slug_check": {
           "definition": "CHECK ((char_length(slug) <= 100))",
           "validated": true
@@ -158648,7 +158472,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 7
         },
         "id": {
           "comment": null,
@@ -158661,24 +158485,14 @@
           "ordinalPosition": 1
         },
         "is_default": {
-          "comment": "Explicit default preference, at most one per user. If none is marked, readers use the oldest remaining page.",
+          "comment": "Whether this is the user's default landing page; at most one per user.",
           "dataType": "boolean",
           "defaultExpression": "false",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
-        },
-        "slot": {
-          "comment": "One of twenty reusable per-owner positions that enforce the page limit through a unique key.",
-          "dataType": "smallint",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 6
         },
         "slug": {
           "comment": "URL-safe slug unique per user for the landing page URL.",
@@ -158688,7 +158502,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 5
         },
         "subtitle": {
           "comment": "Optional subtitle or description.",
@@ -158698,7 +158512,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 4
         },
         "title": {
           "comment": "Display title for the landing page.",
@@ -158708,7 +158522,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 3
         },
         "updated_at": {
           "comment": null,
@@ -158718,7 +158532,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "user_id": {
           "comment": "The user who owns this landing page.",
@@ -158798,38 +158612,6 @@
           "unique": false,
           "valid": true
         },
-        "uq_user_landing_pages__user_id_slot": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_user_landing_pages__user_id_slot ON public.user_landing_pages USING btree (user_id, slot)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "slot",
-              "descending": false,
-              "expression": "slot",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.int2_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "uq_user_landing_pages__user_id_slug": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -158892,17 +158674,11 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_user_landing_pages_owner_immutable": {
-          "definition": "CREATE TRIGGER trigger_user_landing_pages_owner_immutable BEFORE UPDATE OF user_id ON public.user_landing_pages FOR EACH ROW WHEN ((new.user_id IS DISTINCT FROM old.user_id)) EXECUTE FUNCTION fn_reject_always('Landing page ownership cannot change')"
-        },
         "trigger_user_landing_pages_updated_at": {
           "definition": "CREATE TRIGGER trigger_user_landing_pages_updated_at BEFORE UPDATE ON public.user_landing_pages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {
-        "uq_user_landing_pages__user_id_slot": {
-          "columns": ["user_id", "slot"]
-        },
         "uq_user_landing_pages__user_id_slug": {
           "columns": ["user_id", "slug"]
         }
@@ -163572,115 +163348,6 @@
         }
       }
     },
-    "user_session_revocation_cutoffs": {
-      "checkConstraints": {},
-      "columns": {
-        "cutoff_at": {
-          "comment": "Monotonically advancing security-change time. Sessions authenticated at or before this time are revoked unless they are the preserved actor.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "preserved_session_id": {
-          "comment": "Exact actor session preserved by the latest security change. NULL preserves no session, including after the actor session is deleted.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3
-        },
-        "user_id": {
-          "comment": "User whose authenticated sessions are governed by this cutoff; removed with the user.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        }
-      },
-      "comment": "Latest durable per-user security revocation boundary. Readers reject older authenticated sessions independently of bounded row cleanup; only the preserved actor may survive that boundary.",
-      "foreignKeys": {
-        "user_session_revocation_cutoffs_preserved_session_id_fkey": {
-          "columns": ["preserved_session_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_sessions",
-          "validated": true
-        },
-        "user_session_revocation_cutoffs_user_id_fkey": {
-          "columns": ["user_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "idx_user_session_revocation_cutoffs__preserved_session_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_session_revocation_cutoffs__preserved_session_id ON public.user_session_revocation_cutoffs USING btree (preserved_session_id) WHERE (preserved_session_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "preserved_session_id",
-              "descending": false,
-              "expression": "preserved_session_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(preserved_session_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "user_session_revocation_cutoffs_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX user_session_revocation_cutoffs_pkey ON public.user_session_revocation_cutoffs USING btree (user_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["user_id"]
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
     "user_sessions": {
       "checkConstraints": {
         "user_sessions_account_change_proof_hash_check": {
@@ -163749,7 +163416,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 20
         },
         "account_change_proof_hash": {
           "comment": "Hash of the one outstanding SID-owned account-change proof; cleared transactionally with the mutation.",
@@ -163759,17 +163426,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
-        },
-        "authenticated_at": {
-          "comment": "Immutable server time when this authenticated session row was first admitted, independent of the pre-sign-in SID UUID timestamp and preserved across refresh and credential rotation.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "clock_timestamp()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 19
         },
         "authentication_origin": {
           "comment": "Server-controlled sign-in provenance; native is set only by native OTP or verified native OAuth broker completion.",
@@ -163789,7 +163446,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 21
         },
         "device_bound_session_binding": {
           "comment": "Chrome device-bound session public key, canonical origin and binding time; durable structured proof state, never joined to another row. Valkey retains only single-use challenges.",
@@ -163799,7 +163456,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 18
         },
         "device_id": {
           "comment": "JWT device ID (dt.did) associated with this session.",
@@ -163819,7 +163476,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 5
         },
         "device_token_binding": {
           "comment": "Original client family and optional browser User-Agent/JA4 hashes. The completed MFA time is stored only in mfa_verified_at and reconstructed for signed credential replay.",
@@ -163829,7 +163486,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 16
         },
         "device_token_digest": {
           "comment": "SHA-256 digest of the current signed device credential. Row-locked compare-and-set rotation detects reuse without storing plaintext credentials.",
@@ -163839,7 +163496,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 11
         },
         "device_token_encrypted": {
           "comment": "Current device credential encrypted with token-secrets and a session-specific purpose, retained for exact credential-completion replay and signing-key rotation.",
@@ -163849,7 +163506,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 14
         },
         "device_token_issued_at": {
           "comment": "Original authenticated device credential issuance time. Ordinary rotation preserves this revocation epoch.",
@@ -163859,7 +163516,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 15
         },
         "expires_at": {
           "comment": "Original device credential expiry when device authority is present; otherwise the registered access-session expiry. Ordinary refresh never extends it.",
@@ -163869,7 +163526,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 9
         },
         "id": {
           "comment": null,
@@ -163889,7 +163546,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 7
         },
         "last_seen_at": {
           "comment": "Most recent login/list/logout/revoke/refresh touch time for this session.",
@@ -163899,7 +163556,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "mfa_verified_at": {
           "comment": "Typed original completed MFA time from the signed device binding, used for durable session assurance checks.",
@@ -163909,7 +163566,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 17
         },
         "previous_device_token_digest": {
           "comment": "Immediately preceding signed device credential digest, accepted only during a bounded lost-response grace window under the session row lock.",
@@ -163919,7 +163576,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 12
         },
         "previous_device_token_grace_expires_at": {
           "comment": "Deadline for idempotent replay of the immediately preceding device credential; older reuse revokes the session.",
@@ -163929,7 +163586,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 13
         },
         "revoked_at": {
           "comment": "When the session was revoked. NULL means active.",
@@ -163939,7 +163596,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 10
         },
         "updated_at": {
           "comment": null,
@@ -163949,7 +163606,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 23
+          "ordinalPosition": 22
         },
         "user_agent_string_id": {
           "comment": "Normalized user-agent row for the raw browser user-agent captured for this session.",
@@ -163959,7 +163616,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 6
         },
         "user_id": {
           "comment": "Owning user for this session row.",
@@ -164073,7 +163730,7 @@
         "idx_user_sessions__user_id_active_expires_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_sessions__user_id_active_expires_at ON ONLY public.user_sessions USING btree (user_id, expires_at, id) INCLUDE (authenticated_at) WHERE (revoked_at IS NULL)",
+          "definition": "CREATE INDEX idx_user_sessions__user_id_active_expires_at ON ONLY public.user_sessions USING btree (user_id, expires_at, id) WHERE (revoked_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -164100,47 +163757,6 @@
               "descending": false,
               "expression": "id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(revoked_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_user_sessions__user_id_last_seen_active": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_sessions__user_id_last_seen_active ON ONLY public.user_sessions USING btree (user_id, last_seen_at DESC, id DESC) INCLUDE (device_id, device_name, user_agent_string_id, ip_address, expires_at, authenticated_at) WHERE (revoked_at IS NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "last_seen_at",
-              "descending": true,
-              "expression": "last_seen_at",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
@@ -164184,9 +163800,6 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
-        "trigger_user_sessions_authenticated_at_immutable": {
-          "definition": "CREATE TRIGGER trigger_user_sessions_authenticated_at_immutable BEFORE UPDATE OF authenticated_at ON public.user_sessions FOR EACH ROW WHEN ((new.authenticated_at IS DISTINCT FROM old.authenticated_at)) EXECUTE FUNCTION fn_reject_always('Session authentication time is immutable')"
-        },
         "trigger_user_sessions_queue_released_user_agent_string": {
           "definition": "CREATE TRIGGER trigger_user_sessions_queue_released_user_agent_string AFTER DELETE OR UPDATE OF user_agent_string_id ON public.user_sessions FOR EACH ROW EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
         },

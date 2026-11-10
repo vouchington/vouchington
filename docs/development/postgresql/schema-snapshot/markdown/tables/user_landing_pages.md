@@ -6,28 +6,25 @@ User-created landing pages for organizing and displaying their links, reviews, a
 
 Not partitioned — growth: unbounded.
 
-| Column       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                      |
-| ------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------ |
-| `id`         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                              |
-| `user_id`    | `uuid`                     | no       |                              |          |           |           | The user who owns this landing page.                                                                         |
-| `slot`       | `smallint`                 | no       |                              |          |           |           | One of twenty reusable per-owner positions that enforce the page limit through a unique key.                 |
-| `title`      | `text`                     | no       |                              |          |           |           | Display title for the landing page.                                                                          |
-| `subtitle`   | `text`                     | yes      |                              |          |           |           | Optional subtitle or description.                                                                            |
-| `slug`       | `text`                     | no       |                              |          |           |           | URL-safe slug unique per user for the landing page URL.                                                      |
-| `is_default` | `boolean`                  | no       | `false`                      |          |           |           | Explicit default preference, at most one per user. If none is marked, readers use the oldest remaining page. |
-| `created_at` | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                              |
-| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                              |
+| Column       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                |
+| ------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
+| `id`         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                        |
+| `user_id`    | `uuid`                     | no       |                              |          |           |           | The user who owns this landing page.                                   |
+| `title`      | `text`                     | no       |                              |          |           |           | Display title for the landing page.                                    |
+| `subtitle`   | `text`                     | yes      |                              |          |           |           | Optional subtitle or description.                                      |
+| `slug`       | `text`                     | no       |                              |          |           |           | URL-safe slug unique per user for the landing page URL.                |
+| `is_default` | `boolean`                  | no       | `false`                      |          |           |           | Whether this is the user's default landing page; at most one per user. |
+| `created_at` | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                        |
+| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
-- `uq_user_landing_pages__user_id_slot`: `UNIQUE (user_id, slot)`
 - `uq_user_landing_pages__user_id_slug`: `UNIQUE (user_id, slug)`
 
 **Check constraints:**
 
-- `user_landing_pages_slot_check`: `CHECK (((slot >= 1) AND (slot <= 20)))`
 - `user_landing_pages_slug_check`: `CHECK ((char_length(slug) <= 100))`
 - `user_landing_pages_slug_check1`: `CHECK ((slug = lower(slug)))`
 - `user_landing_pages_slug_check2`: `CHECK ((slug = TRIM(BOTH FROM slug)))`
@@ -45,11 +42,9 @@ Not partitioned — growth: unbounded.
 
 - `idx_user_landing_pages__user_id_default`: `CREATE UNIQUE INDEX idx_user_landing_pages__user_id_default ON public.user_landing_pages USING btree (user_id) WHERE is_default`
 - `idx_user_landing_pages__user_id_id`: `CREATE INDEX idx_user_landing_pages__user_id_id ON public.user_landing_pages USING btree (user_id, id)`
-- `uq_user_landing_pages__user_id_slot`: `CREATE UNIQUE INDEX uq_user_landing_pages__user_id_slot ON public.user_landing_pages USING btree (user_id, slot)`
 - `uq_user_landing_pages__user_id_slug`: `CREATE UNIQUE INDEX uq_user_landing_pages__user_id_slug ON public.user_landing_pages USING btree (user_id, slug)`
 - `user_landing_pages_pkey`: `CREATE UNIQUE INDEX user_landing_pages_pkey ON public.user_landing_pages USING btree (id)`
 
 **Triggers:**
 
-- `trigger_user_landing_pages_owner_immutable`: `CREATE TRIGGER trigger_user_landing_pages_owner_immutable BEFORE UPDATE OF user_id ON public.user_landing_pages FOR EACH ROW WHEN ((new.user_id IS DISTINCT FROM old.user_id)) EXECUTE FUNCTION fn_reject_always('Landing page ownership cannot change')`
 - `trigger_user_landing_pages_updated_at`: `CREATE TRIGGER trigger_user_landing_pages_updated_at BEFORE UPDATE ON public.user_landing_pages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
