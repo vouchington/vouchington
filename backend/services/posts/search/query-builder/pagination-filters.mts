@@ -63,12 +63,8 @@ function appendPaginationFilters(
 ): void {
   appendHackerNewsHotRankBound(filters, options)
   if (sort === 'new' && options.id_lt) {
-    // An empty community cursor must stay on (community_id, id). A bare id bound uses the id index.
-    filters.push(
-      options.community_id
-        ? sql`(posts.community_id, posts.id) < (${options.community_id}, ${options.id_lt})`
-        : sql`posts.id < ${options.id_lt}`,
-    )
+    // community_id equality plus this id bound stays on (community_id, id) and stops at LIMIT.
+    filters.push(sql`posts.id < ${options.id_lt}`)
   } else if (sort === 'following_new' && (options.ranking_lt !== undefined || options.id_lt)) {
     appendCompositePagination(filters, {
       expression: requiredFollowingRankExpression(followingRankExpression),

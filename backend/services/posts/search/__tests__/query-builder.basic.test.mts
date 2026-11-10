@@ -173,8 +173,9 @@ describe('query-builder (basic)', () => {
       id_lt: testId,
     })
 
-    expect(query.sql).toContain('(posts.community_id, posts.id) < (?, ?)')
-    expect(query.sql).not.toContain('posts.id < ?')
+    expect(query.sql).toContain('posts.community_id = ?')
+    expect(query.sql).toContain('posts.id < ?')
+    expect(query.sql).not.toContain('(posts.community_id, posts.id) <')
     expect(query.values).toContain(communityId)
     expect(query.values).toContain(testId)
   })

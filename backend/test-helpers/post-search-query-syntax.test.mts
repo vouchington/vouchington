@@ -84,14 +84,15 @@ describe('post search SQL composition', () => {
     expect(facts.diagnostics).toEqual([])
   })
 
-  it('parses an empty community cursor as a community id row comparison', async () => {
+  it('parses an empty community cursor as a community id bound', async () => {
     const query = buildPostSearchQuery(undefined, {
       sort: 'new',
       limit: 26,
       community_id: '123e4567-e89b-12d3-a456-426614174010',
       id_lt: '00000000-0000-0000-0000-000000000000',
     })
-    expect(query.sql).toContain('(posts.community_id, posts.id) < (?, ?)')
+    expect(query.sql).toContain('posts.community_id = ?')
+    expect(query.sql).toContain('posts.id < ?')
     const facts = await parsePostgresSql({ sql: query.text })
     expect(facts.diagnostics).toEqual([])
   })

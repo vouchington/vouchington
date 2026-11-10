@@ -154,38 +154,45 @@ export async function seedHackerNewsFilterFixture(
   return fixture
 }
 
-/** Establish the corpus's known truth; the consuming scenario validates it against card selection. */
+/** Low flags two of every five posts so the hot walk stays on the rank leaf. */
 export async function setHackerNewsFilterDensity(
   query: QueryExecutor,
   f: HackerNewsFilterFixture,
   high: boolean,
 ) {
+  const flaggedInFiveHundred = high ? 400 : 200
   const q = async (text: string, values?: unknown[]) =>
     query(`/* setHackerNewsFilterDensity */ ${text}`, values)
   await q(
-    `UPDATE url_hacker_news_totals SET story_count=CASE WHEN $2 AND ordinality<=400 THEN 1 ELSE 0 END
+    `UPDATE url_hacker_news_totals SET story_count=CASE WHEN ordinality<=$2 THEN 1 ELSE 0 END
     FROM unnest($1::uuid[]) WITH ORDINALITY x(id,ordinality) WHERE url_id=x.id`,
-    [f.urlIds.slice(0, 500), high],
+    [f.urlIds.slice(0, 500), flaggedInFiveHundred],
   )
   for (let start = 0; start < f.postCount; start += f.batchSize) {
     const count = Math.min(f.batchSize, f.postCount - start)
     // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
-      `UPDATE posts SET has_hacker_news_references=$2 AND i%500<400
+      `UPDATE posts SET has_hacker_news_references=i%500<$2
       FROM generate_series($3::int,$3::int+$8::int-1)i
       WHERE id=((CASE WHEN i<$4*.2 THEN $5 WHEN i<$4*.5 THEN $6 ELSE $7 END)||$1||lpad(to_hex(i),6,'0'))::uuid
-      AND posts.has_hacker_news_references IS DISTINCT FROM ($2 AND i%500<400)`,
-      [f.token, high, start, f.postCount, ...f.postPrefixes, count],
+      AND posts.has_hacker_news_references IS DISTINCT FROM (i%500<$2)`,
+      [f.token, flaggedInFiveHundred, start, f.postCount, ...f.postPrefixes, count],
     )
   }
   for (let start = 0; start < f.rssCount; start += f.batchSize) {
     // no-mistakes-disable-next-line query-reached-per-item: each call writes one set-based fixture batch capped at 5000 rows; the loop has a finite corpus limit.
     await q(
-      `UPDATE rss_feed_items SET has_hacker_news_references=$2 AND i%500<400
+      `UPDATE rss_feed_items SET has_hacker_news_references=i%500<$2
       FROM generate_series($3::int,$3::int+$4::int-1)i
       WHERE id=($5||$1||lpad(to_hex(i),6,'0'))::uuid
-      AND rss_feed_items.has_hacker_news_references IS DISTINCT FROM ($2 AND i%500<400)`,
-      [f.token, high, start, Math.min(f.batchSize, f.rssCount - start), f.rssPrefix],
+      AND rss_feed_items.has_hacker_news_references IS DISTINCT FROM (i%500<$2)`,
+      [
+        f.token,
+        flaggedInFiveHundred,
+        start,
+        Math.min(f.batchSize, f.rssCount - start),
+        f.rssPrefix,
+      ],
     )
   }
 }
