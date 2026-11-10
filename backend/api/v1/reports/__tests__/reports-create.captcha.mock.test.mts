@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
@@ -93,13 +94,17 @@ describe('POST /api/v1/reports CAPTCHA', () => {
             )
       const request = createRequest()
       await request.authenticateAs(administrator)
-      mockFetch.mockImplementationOnce(async () => {
-        if (state === 'deleted') await softDeleteUser(administrator.id)
-        else await removeTestUserRole(administrator.id, 'administrator')
-        return new UndiciResponse(
-          JSON.stringify({ success: true, hostname: 'localhost', action: 'test' }),
-        )
-      })
+      // The competing writer is external to the request whose authorization is being tested.
+      const runCompetingWriter = AsyncLocalStorage.snapshot()
+      const respondToCaptcha = () =>
+        runCompetingWriter(async () => {
+          if (state === 'deleted') await softDeleteUser(administrator.id)
+          else await removeTestUserRole(administrator.id, 'administrator')
+          return new UndiciResponse(
+            JSON.stringify({ success: true, hostname: 'localhost', action: 'test' }),
+          )
+        })
+      mockFetch.mockImplementationOnce(respondToCaptcha)
       const response = await request
         .post('/api/v1/reports')
         .send({ entityType, entityId, reason: 'spam', cf_turnstile_response: TEST_CAPTCHA_TOKEN })

@@ -1,46 +1,46 @@
-import { writeTestImageOwnerRetirement } from '../image-owner-retirement.mts'
+import {
+  retireTestUserImageOwners,
+  writeTestImageOwnerRetirement,
+} from '../image-owner-retirement.mts'
 import { read, type TransactionQuery, beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function softDeleteUser(userId: string): Promise<void> {
   await using query = await beginTransaction()
-  await writeTestImageOwnerRetirement(query, { userId }, async scopeQuery => {
-    await scopeQuery(
-      sql`/* softDeleteUser */
-    UPDATE users
-    SET deleted_at = CURRENT_TIMESTAMP
-    WHERE id = ${userId}
-  `,
-    )
-  })
+  await writeTestImageOwnerRetirement(query, { userId }, (references, scopeQuery) =>
+    retireTestUserImageOwners(
+      references,
+      scopeQuery,
+      sql`deleted_at = CURRENT_TIMESTAMP`,
+      'softDeleteUser',
+    ),
+  )
   await query.commit()
 }
 
 export async function softDeleteUserDaysAgo(userId: string, daysAgo: number): Promise<void> {
   await using query = await beginTransaction()
-  await writeTestImageOwnerRetirement(query, { userId }, async scopeQuery => {
-    await scopeQuery(
-      sql`/* softDeleteUserDaysAgo */
-    UPDATE users
-    SET deleted_at = CURRENT_TIMESTAMP - make_interval(days => ${daysAgo})
-    WHERE id = ${userId}
-  `,
-    )
-  })
+  await writeTestImageOwnerRetirement(query, { userId }, (references, scopeQuery) =>
+    retireTestUserImageOwners(
+      references,
+      scopeQuery,
+      sql`deleted_at = CURRENT_TIMESTAMP - make_interval(days => ${daysAgo})`,
+      'softDeleteUserDaysAgo',
+    ),
+  )
   await query.commit()
 }
 
 export async function softDeleteUserAt(userId: string, deletedAt: Date): Promise<void> {
   await using query = await beginTransaction()
-  await writeTestImageOwnerRetirement(query, { userId }, async scopeQuery => {
-    await scopeQuery(
-      sql`/* softDeleteUserAt */
-    UPDATE users
-    SET deleted_at = ${deletedAt}
-    WHERE id = ${userId}
-  `,
-    )
-  })
+  await writeTestImageOwnerRetirement(query, { userId }, (references, scopeQuery) =>
+    retireTestUserImageOwners(
+      references,
+      scopeQuery,
+      sql`deleted_at = ${deletedAt}`,
+      'softDeleteUserAt',
+    ),
+  )
   await query.commit()
 }
 
@@ -89,12 +89,13 @@ export async function softDeleteTestUserAndWaitBeforeCommit(
     await using transaction = await beginTransaction()
     const query = transaction
     await beforeDelete?.(query)
-    await writeTestImageOwnerRetirement(query, { userId }, scopeQuery =>
-      scopeQuery(sql`/* softDeleteTestUserAndWaitBeforeCommit */
-        UPDATE users
-        SET deleted_at = CURRENT_TIMESTAMP
-        WHERE id = ${userId}
-      `),
+    await writeTestImageOwnerRetirement(query, { userId }, (references, scopeQuery) =>
+      retireTestUserImageOwners(
+        references,
+        scopeQuery,
+        sql`deleted_at = CURRENT_TIMESTAMP`,
+        'softDeleteTestUserAndWaitBeforeCommit',
+      ),
     )
     afterDelete?.()
     await waitBeforeCommit

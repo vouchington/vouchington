@@ -25,7 +25,11 @@ export function validateCommunityUpdateInput(input: UpdateCommunityInput): void 
   )
 }
 
-export function buildCommunityUpdateStatement(communityId: string, input: UpdateCommunityInput) {
+export function buildCommunityUpdateStatement(
+  communityId: string,
+  input: UpdateCommunityInput,
+  hasImageSurfacePreimage = false,
+) {
   const statement = sql`UPDATE communities SET `
   const updates: ReturnType<typeof sql>[] = []
   if (input.name !== undefined) updates.push(sql`name = ${input.name}`)
@@ -53,6 +57,28 @@ export function buildCommunityUpdateStatement(communityId: string, input: Update
     if (index > 0) statement.append(sql`, `)
     statement.append(update)
   }
-  statement.append(sql` WHERE id = ${communityId} AND deleted_at IS NULL`)
+  if (hasImageSurfacePreimage)
+    statement.append(sql` FROM (SELECT DISTINCT community_id FROM surface_preimage) owner_preimage`)
+  statement.append(sql` WHERE communities.id = ${communityId} AND communities.deleted_at IS NULL`)
+  if (hasImageSurfacePreimage) {
+    statement.append(sql` AND owner_preimage.community_id = communities.id`)
+    if ('profile_image_id' in input)
+      statement.append(sql` AND communities.profile_image_id IS NOT DISTINCT FROM
+        (SELECT current_image_id FROM surface_preimage WHERE surface_kind = 'community-profile-image')`)
+    if ('banner_image_id' in input)
+      statement.append(sql` AND communities.banner_image_id IS NOT DISTINCT FROM
+        (SELECT current_image_id FROM surface_preimage WHERE surface_kind = 'community-banner-image')`)
+    statement.append(sql` RETURNING WITH (OLD AS prior, NEW AS current) current.*,
+      prior.profile_image_id AS previous_profile_image_id,
+      current.profile_image_id AS current_profile_image_id,
+      prior.banner_image_id AS previous_banner_image_id,
+      current.banner_image_id AS current_banner_image_id,
+      (SELECT placement_id FROM surface_preimage WHERE surface_kind = 'community-profile-image') AS previous_profile_placement_id,
+      (SELECT placement_revision FROM surface_preimage WHERE surface_kind = 'community-profile-image') AS previous_profile_placement_revision,
+      (SELECT activation_revision FROM surface_preimage WHERE surface_kind = 'community-profile-image') AS previous_profile_activation_revision,
+      (SELECT placement_id FROM surface_preimage WHERE surface_kind = 'community-banner-image') AS previous_banner_placement_id,
+      (SELECT placement_revision FROM surface_preimage WHERE surface_kind = 'community-banner-image') AS previous_banner_placement_revision,
+      (SELECT activation_revision FROM surface_preimage WHERE surface_kind = 'community-banner-image') AS previous_banner_activation_revision`)
+  }
   return statement
 }

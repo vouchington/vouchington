@@ -18,7 +18,7 @@ export async function raceTestImageSurfaceDeadlock(
     lock: { kind: 'transaction' },
     selected: {
       marker: '/* writeTestUserImageSurface */',
-      binding: { index: 1, value: second.userId },
+      binding: { index: 1, value: [second.userId] },
     },
   })
   const waiting = (async (): Promise<Outcome> => {

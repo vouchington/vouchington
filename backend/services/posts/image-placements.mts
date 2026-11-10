@@ -1,12 +1,13 @@
-import { withTransactionSavepoint } from '@data-stores/psql/transaction-savepoint'
 import { IMAGE_PLACEMENT_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { createCodedError } from '@vouchington/sentry'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { reserveImagePlacementChanges } from '@services/media-delivery-safety/placement-capacity-reservations'
-import { prepublishImagePlacementDenialBatch } from '@services/media-delivery-safety/delivery-registry-publish'
-import { stageImagePlacementDeliveryRecords } from '@services/media-delivery-safety/delivery-registry-staging'
+import {
+  reserveImagePlacementChangesAttempt,
+  withImagePlacementMutation,
+} from '@services/media-delivery-safety/placement-capacity-reservations'
+import { settleImagePlacementDeliveryChanges } from '@services/media-delivery-safety/delivery-registry-publish'
 
 export type PostImagePlacement = {
   placement_id: string
@@ -35,36 +36,38 @@ export async function syncPostImagePlacements(
   parentQuery: TransactionQuery,
 ): Promise<void> {
   try {
-    await withTransactionSavepoint(parentQuery, async query => {
-      const desired = [...new Set(imageIds.map(id => id.toLowerCase()))].toSorted()
-      const { rows: before } =
-        await query<ActivePlacement>(sql`/* syncPostImagePlacements:current */
+    await withImagePlacementMutation(
+      parentQuery,
+      async query => {
+        const desired = [...new Set(imageIds.map(id => id.toLowerCase()))].toSorted()
+        const { rows: before } =
+          await query<ActivePlacement>(sql`/* syncPostImagePlacements:current */
     SELECT reservation.placement_id, placement.revision, placement.activation_revision, reservation.image_id,
       false AS can_publish
     FROM image_placement_capacity_reservations reservation
     JOIN media_placements placement ON placement.id = reservation.placement_id
     WHERE reservation.post_id = ${postId}
     ORDER BY reservation.image_id, reservation.placement_id`)
-      const wanted = new Set(desired)
-      const removed = before.filter(row => !wanted.has(row.image_id))
-      const { rows: retired } =
-        removed.length > 0
-          ? await query<{
-              placement_id: string
-              revision: number
-            }>(sql`/* syncPostImagePlacements:retireAbsent */
+        const wanted = new Set(desired)
+        const removed = before.filter(row => !wanted.has(row.image_id))
+        const { rows: retired } =
+          removed.length > 0
+            ? await query<{
+                placement_id: string
+                revision: number
+              }>(sql`/* syncPostImagePlacements:retireAbsent */
     UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP, retirement_reason = 'owner_removed', revision = revision + 1
     WHERE id = ANY(${removed.map(row => row.placement_id)}::uuid[]) AND retired_at IS NULL
     RETURNING WITH (OLD AS prior) id AS placement_id, prior.revision`)
-          : { rows: [] }
+            : { rows: [] }
 
-      if (desired.length > 0) {
-        await query(sql`/* syncPostImagePlacements:reactivateExisting */
+        if (desired.length > 0) {
+          await query(sql`/* syncPostImagePlacements:reactivateExisting */
       UPDATE media_placements placement SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1
       FROM image_placements binding
       WHERE binding.placement_id = placement.id AND binding.post_id = ${postId}
         AND binding.image_id = ANY(${desired}::uuid[]) AND placement.retired_at IS NOT NULL`)
-        await query(sql`/* syncPostImagePlacements:createMissing */
+          await query(sql`/* syncPostImagePlacements:createMissing */
       WITH allocated AS MATERIALIZED (
         SELECT uuidv7() AS placement_id, requested.image_id
         FROM unnest(${desired}::uuid[]) requested(image_id)
@@ -80,10 +83,10 @@ export async function syncPostImagePlacements(
       ) INSERT INTO image_placements (placement_id, post_id, image_id)
         SELECT parents.id, ${postId}, retained.image_id FROM parents
         JOIN retained ON retained.placement_id = parents.id ORDER BY parents.id`)
-      }
+        }
 
-      const { rows: after } = desired.length
-        ? await query<ActivePlacement>(sql`/* syncPostImagePlacements:desired */
+        const { rows: after } = desired.length
+          ? await query<ActivePlacement>(sql`/* syncPostImagePlacements:desired */
     SELECT binding.placement_id, placement.revision, placement.activation_revision, binding.image_id,
       placement.copyright_withheld_at IS NULL AND image.deleted_at IS NULL
         AND image.upload_completed_at IS NOT NULL AND image.quarantine_pending_at IS NULL
@@ -94,44 +97,44 @@ export async function syncPostImagePlacements(
     JOIN media_placements placement ON placement.id = binding.placement_id AND placement.retired_at IS NULL
     JOIN images image ON image.id = binding.image_id
     ORDER BY binding.image_id, binding.placement_id`)
-        : { rows: [] }
-      assert(after.length === desired.length, 400, 'Image not found or not complete')
-      await reserveImagePlacementChanges(
-        query,
-        removed.map(row => row.placement_id),
-        after.map(row => ({
-          placementId: row.placement_id,
-          imageId: row.image_id,
-          bindingFamily: 'post' as const,
-          activationRevision: row.activation_revision,
-          postId,
-        })),
-      )
-      const removedById = new Map(removed.map(row => [row.placement_id, row.image_id]))
-      await prepublishImagePlacementDenialBatch(
-        retired.map(row => ({
-          placementId: row.placement_id,
-          revision: row.revision,
-          imageId: removedById.get(row.placement_id)!,
-        })),
-        { query },
-      )
-      await stageImagePlacementDeliveryRecords(
-        after.flatMap(row =>
-          row.can_publish
-            ? [
-                {
-                  placementId: row.placement_id,
-                  revision: row.revision,
-                  imageId: row.image_id,
-                  state: 'allow' as const,
-                },
-              ]
-            : [],
-        ),
-        { query },
-      )
-    })
+          : { rows: [] }
+        assert(after.length === desired.length, 400, 'Image not found or not complete')
+        await reserveImagePlacementChangesAttempt(
+          query,
+          removed.map(row => row.placement_id),
+          after.map(row => ({
+            placementId: row.placement_id,
+            imageId: row.image_id,
+            bindingFamily: 'post' as const,
+            activationRevision: row.activation_revision,
+            postId,
+          })),
+        )
+        const removedById = new Map(removed.map(row => [row.placement_id, row.image_id]))
+        return {
+          denied: retired.map(row => ({
+            placementId: row.placement_id,
+            revision: row.revision,
+            imageId: removedById.get(row.placement_id)!,
+          })),
+          allows: after.flatMap(row =>
+            row.can_publish
+              ? [
+                  {
+                    placementId: row.placement_id,
+                    revision: row.revision,
+                    imageId: row.image_id,
+                    state: 'allow' as const,
+                  },
+                ]
+              : [],
+          ),
+        }
+      },
+      async (plan, query) => {
+        await settleImagePlacementDeliveryChanges(plan.denied, plan.allows, { query })
+      },
+    )
   } catch (err) {
     if (err instanceof Error && 'code' in err && err.code === '40P01')
       throw createCodedError(

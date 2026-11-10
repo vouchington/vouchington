@@ -12,90 +12,79 @@ import {
 } from './placement-capacity-types.mts'
 export type { ImagePlacementCapacityReservation } from './placement-capacity-types.mts'
 
-/**
- * Claim the entire concrete change after owner writes and before provider side effects.
- * A short claim releases every slot from this attempt before taking a fresh snapshot.
- */
+/** Recover the whole SQL mutation before retry; provider settlement is never retried. */
+export async function withImagePlacementMutation<Plan, Result>(
+  query: TransactionQuery,
+  mutate: (scope: TransactionQuery) => Promise<Plan>,
+  settle: (plan: Plan, scope: TransactionQuery) => Promise<Result>,
+): Promise<Result> {
+  const attempts = getMediaDeliverySafetyWorkLimit('placement_reservation_attempts')
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    let mutationComplete = false
+    try {
+      // oxlint-disable no-await-in-loop -- Each bounded attempt restores the entire SQL mutation before retry and before provider effects.
+      return await withTransactionSavepoint(query, async scope => {
+        const plan = await mutate(scope)
+        mutationComplete = true
+        return settle(plan, scope)
+      })
+      // oxlint-enable no-await-in-loop
+    } catch (err) {
+      if (mutationComplete) throw err
+      // Earlier caller-owned locks survive this savepoint; retrying a deadlock can recreate it.
+      if (err instanceof Error && 'code' in err && err.code === '40P01')
+        throw createCodedError(
+          409,
+          'Concurrent image placement change',
+          IMAGE_PLACEMENT_LIMIT_REACHED,
+        )
+      if (!(err instanceof ImagePlacementCapacityConflictError)) throw err
+      if (attempt === attempts) throw capacityLimitError()
+    }
+  }
+  throw new Error('Image placement mutation did not complete')
+}
+
+/** Standalone callers retain recovery; owner mutations call the attempt inside their own scope. */
 export async function reserveImagePlacementChanges(
   query: TransactionQuery,
   releasePlacementIds: readonly string[],
   reservations: readonly ImagePlacementCapacityReservation[],
 ): Promise<void> {
-  const attempts = getMediaDeliverySafetyWorkLimit('placement_reservation_attempts')
-  const cap = getMediaDeliverySafetyWorkLimit('max_placements_per_image')
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    // oxlint-disable no-await-in-loop -- Short unique claims roll back the complete bounded phase before another attempt.
-    // no-mistakes-disable-next-line query-reached-per-item: configured bounded retry rolls back every concrete slot change before rereading free slots; no provider effect occurs here.
-    if (await attemptImagePlacementCapacity(query, releasePlacementIds, reservations, cap)) return
-    // oxlint-enable no-await-in-loop
-  }
-  throw createCodedError(409, 'Image placement limit reached', IMAGE_PLACEMENT_LIMIT_REACHED)
+  if (releasePlacementIds.length === 0 && reservations.length === 0) return
+  await withImagePlacementMutation(
+    query,
+    scope => reserveImagePlacementChangesAttempt(scope, releasePlacementIds, reservations),
+    async () => undefined,
+  )
 }
 
-async function attemptImagePlacementCapacity(
+/** Mutate actual slot ownership once; the enclosing owner scope handles retry and rollback. */
+export async function reserveImagePlacementChangesAttempt(
   query: TransactionQuery,
   releasePlacementIds: readonly string[],
   reservations: readonly ImagePlacementCapacityReservation[],
-  cap: number,
-): Promise<boolean> {
-  const incomplete = new Error('Incomplete image capacity claim')
-  try {
-    return await withTransactionSavepoint(query, async scope => {
-      // This discovery takes no locks: every target below is an actual reservation delete/insert.
-
-      const { rows: outgoing } = await scope<{
-        placement_id: string
-        image_id: string
-      }>(sql`/* reserveImagePlacementChanges:outgoing */
-        SELECT placement_id, image_id FROM image_placement_capacity_reservations
-        WHERE placement_id = ANY(${[...releasePlacementIds]}::uuid[]) ORDER BY image_id, slot_number`)
-      const imageIds = [
-        ...new Set([
-          ...outgoing.map(row => row.image_id),
-          ...reservations.map(row => row.imageId.toLowerCase()),
-        ]),
-      ].toSorted()
-      let complete = true
-      for (const imageId of imageIds) {
-        // oxlint-disable no-await-in-loop -- Actual image mutations retain canonical image order.
-        // no-mistakes-disable-next-line query-reached-per-item: sorted actual outgoing/incoming image writes must settle each image before taking a higher image target.
-        if (!(await settleImageCapacity(scope, imageId, outgoing, reservations, cap))) {
-          // oxlint-enable no-await-in-loop
-          complete = false
-          break
-        }
-      }
-      if (!complete) throw incomplete
-      await scope(sql`/* reserveImagePlacementChanges:projectPolicy */
-          UPDATE media_placements placement SET is_current_image_delivery_eligible = reservation.is_current_image_delivery_eligible
-          FROM image_placement_capacity_reservations reservation
-          WHERE reservation.placement_id = placement.id
-            AND reservation.placement_id = ANY(${reservations.map(row => row.placementId)}::uuid[])
-            AND placement.is_current_image_delivery_eligible IS DISTINCT FROM reservation.is_current_image_delivery_eligible`)
-      return true
-    })
-  } catch (err) {
-    if (err === incomplete || err instanceof ImagePlacementCapacityConflictError) return false
-    throw err
-  }
+): Promise<void> {
+  if (releasePlacementIds.length === 0 && reservations.length === 0) return
+  await releaseImagePlacementReservations(query, releasePlacementIds)
+  const result = await claimImagePlacementReservations(
+    query,
+    reservations,
+    getMediaDeliverySafetyWorkLimit('max_placements_per_image'),
+  )
+  if (result === 'capacity_exceeded') throw capacityLimitError()
+  if (result === 'conflict') throw new ImagePlacementCapacityConflictError()
+  if (reservations.length === 0) return
+  await query(sql`/* reserveImagePlacementChanges:projectPolicy */
+    UPDATE media_placements placement SET is_current_image_delivery_eligible = reservation.is_current_image_delivery_eligible
+    FROM image_placement_capacity_reservations reservation
+    WHERE reservation.placement_id = placement.id
+      AND reservation.placement_id = ANY(${reservations.map(row => row.placementId)}::uuid[])
+      AND placement.is_current_image_delivery_eligible IS DISTINCT FROM reservation.is_current_image_delivery_eligible`)
 }
 
-async function settleImageCapacity(
-  query: TransactionQuery,
-  imageId: string,
-  outgoing: readonly { placement_id: string; image_id: string }[],
-  reservations: readonly ImagePlacementCapacityReservation[],
-  cap: number,
-) {
-  await releaseImagePlacementReservations(
-    query,
-    outgoing.flatMap(row => (row.image_id === imageId ? [row.placement_id] : [])),
-  )
-  return claimImagePlacementReservations(
-    query,
-    reservations.filter(row => row.imageId.toLowerCase() === imageId),
-    cap,
-  )
+function capacityLimitError() {
+  return createCodedError(409, 'Image placement limit reached', IMAGE_PLACEMENT_LIMIT_REACHED)
 }
 
 /** Delete only the concrete activation and policy snapshot selected by this statement. */

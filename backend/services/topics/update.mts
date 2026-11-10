@@ -1,3 +1,5 @@
+import { topicImageMutationChanges, type TopicImageMutationRow } from './update-image-changes.mts'
+import { settleTopicUpdateEffects } from './update-effects.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { CreateTopicUpdates, Topic } from './types.mts'
 import { beginTransaction, write, withTransactionOptions } from '@data-stores/psql'
@@ -5,9 +7,6 @@ import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { getTopicByAny } from './get.mts'
 import assert from 'http-assert'
 import { currentUserCanUpdateTopic } from './authorization.mts'
-import { invalidate } from '@services/entity-cache'
-import { enqueueOnTopicUpdated } from '@queues/entity-listeners/enqueues'
-import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { setTopicHostnameLink } from './hostname-link.mts'
 import { prepareHostnameForOwnedMutation } from './resolve-hostname.mts'
 import sql from 'sql-template-strings'
@@ -18,7 +17,7 @@ import {
   assertValidTopicFieldUpdates,
   hasTopicFieldUpdates,
 } from './update-fields.mts'
-import { createTopicAliases, finalizeClaimedTopicAliases } from './aliases.mts'
+import { createTopicAliases } from './aliases.mts'
 import { lockExistingTopicAliasPublicationScopes } from './alias-publication-locks.mts'
 import { prepareTopicAliasInput } from './alias-preflight.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
@@ -27,6 +26,7 @@ import {
   assertImageDeliveryTransaction,
   type ImageSurfaceReference,
 } from '@services/media-delivery-safety'
+import { imageSurfaceMutationPreimage } from '@services/media-delivery-safety/surface-mutation-bindings'
 
 type UpdateTopicOptions = QueryOptions & { allowTypeChange?: boolean } & (
     | { skipSideEffects: true }
@@ -84,9 +84,6 @@ export const updateTopic = async (
         await setTopicHostnameLink(topic.id, resolvedHostnameId ?? null, options)
       }
 
-      updateQuery.append(
-        sql` WHERE id = ${topic.id} AND deleted_at IS NULL AND merged_into_topic_id IS NULL`,
-      )
       if (references.length) {
         const imageQuery = options.query ?? write
         assertImageDeliveryTransaction(imageQuery)
@@ -94,22 +91,47 @@ export const updateTopic = async (
           imageQuery,
           references,
           updater.id,
-          async (before, scopeQuery) => {
-            for (const [position, reference] of references.entries()) {
-              if (reference.surfaceKind === 'topic-logo-image')
-                updateQuery.append(
-                  sql` AND logo_image_id IS NOT DISTINCT FROM ${before[position]!.current_image_id}::uuid`,
-                )
-              else
-                updateQuery.append(
-                  sql` AND hero_image_id IS NOT DISTINCT FROM ${before[position]!.current_image_id}::uuid`,
-                )
+          async (surfaceReferences, scopeQuery) => {
+            const attemptUpdateQuery = sql``.append(updateQuery)
+            const statement = imageSurfaceMutationPreimage(surfaceReferences, 'updateTopicInStore')
+            attemptUpdateQuery.append(sql` FROM (SELECT DISTINCT topic_id FROM surface_preimage) owner_preimage
+              WHERE topics.id = ${topic.id} AND owner_preimage.topic_id = topics.id
+                AND topics.deleted_at IS NULL AND topics.merged_into_topic_id IS NULL`)
+            if (references.some(reference => reference.surfaceKind === 'topic-logo-image'))
+              attemptUpdateQuery.append(sql` AND topics.logo_image_id IS NOT DISTINCT FROM
+                (SELECT current_image_id FROM surface_preimage WHERE surface_kind = 'topic-logo-image')`)
+            if (references.some(reference => reference.surfaceKind === 'topic-hero-image'))
+              attemptUpdateQuery.append(sql` AND topics.hero_image_id IS NOT DISTINCT FROM
+                (SELECT current_image_id FROM surface_preimage WHERE surface_kind = 'topic-hero-image')`)
+            attemptUpdateQuery.append(sql` RETURNING WITH (OLD AS prior, NEW AS current)
+              prior.logo_image_id AS previous_logo_image_id,
+              current.logo_image_id AS current_logo_image_id,
+              prior.hero_image_id AS previous_hero_image_id,
+              current.hero_image_id AS current_hero_image_id,
+              (SELECT placement_id FROM surface_preimage WHERE surface_kind = 'topic-logo-image') AS previous_logo_placement_id,
+              (SELECT placement_revision FROM surface_preimage WHERE surface_kind = 'topic-logo-image') AS previous_logo_placement_revision,
+              (SELECT activation_revision FROM surface_preimage WHERE surface_kind = 'topic-logo-image') AS previous_logo_activation_revision,
+              (SELECT placement_id FROM surface_preimage WHERE surface_kind = 'topic-hero-image') AS previous_hero_placement_id,
+              (SELECT placement_revision FROM surface_preimage WHERE surface_kind = 'topic-hero-image') AS previous_hero_placement_revision,
+              (SELECT activation_revision FROM surface_preimage WHERE surface_kind = 'topic-hero-image') AS previous_hero_activation_revision`)
+            statement
+              .append(sql`, updated AS (`)
+              .append(attemptUpdateQuery)
+              .append(sql`) SELECT * FROM updated`)
+            const { rows } = await scopeQuery<TopicImageMutationRow>(statement)
+            assert(rows.length === 1, 409, 'Topic or image surface changed')
+            return {
+              result: undefined,
+              changes: topicImageMutationChanges(references, rows[0]!),
             }
-            const result = await scopeQuery(updateQuery)
-            assert(result.rowCount === 1, 409, 'Topic or image surface changed')
           },
         )
-      } else await write(updateQuery, options)
+      } else {
+        updateQuery.append(
+          sql` WHERE id = ${topic.id} AND deleted_at IS NULL AND merged_into_topic_id IS NULL`,
+        )
+        await write(updateQuery, options)
+      }
 
       if (changes.slug !== undefined) {
         claimedAliases = await createTopicAliases(topic.id, [topic.slug, changes.slug], {
@@ -142,14 +164,6 @@ export const updateTopic = async (
     return topic2
   }
 
-  if (changes.slug !== undefined) {
-    await finalizeClaimedTopicAliases(topic.id, claimedAliases)
-  } else {
-    await invalidate.topics(topic.id, topic.slug)
-  }
-  if (topic.hostname_id || topic2?.hostname_id) {
-    await invalidate.url_hostnames(topic.hostname_id, topic2?.hostname_id)
-  }
-  await awaitReportedEnqueueAdmission(() => enqueueOnTopicUpdated(topic.id, updater.id))
+  await settleTopicUpdateEffects(topic, topic2, changes, claimedAliases, updater.id)
   return topic2
 }

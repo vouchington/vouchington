@@ -7,6 +7,10 @@ import {
   revokeVerifiedIdentitiesForDeletedUser,
   softDeleteAndScrubUserProfile,
 } from './delete-profile-pii.mts'
+import {
+  imageSurfaceMutationChange,
+  imageSurfaceMutationPreimage,
+} from '@services/media-delivery-safety/surface-mutation-bindings'
 
 export async function scrubUserDeletionIdentities(
   query: TransactionQuery,
@@ -15,9 +19,9 @@ export async function scrubUserDeletionIdentities(
 ): Promise<void> {
   // The caller holds the actual user row FOR UPDATE until deletion commits. Incoming
   // profile-link foreign keys cannot pass that row while this bounded set is captured.
-  const { rows: currentLinks } = await query<{ id: string; image_id: string | null }>(sql`
+  const { rows: currentLinks } = await query<{ id: string }>(sql`
     /* scrubUserDeletionIdentities:profileLinkImages */
-    SELECT id, image_id FROM user_profile_links
+    SELECT id FROM user_profile_links
     WHERE user_id = ${userId}
     ORDER BY sort_order ASC LIMIT ${MAX_PROFILE_LINKS + 1}
   `)
@@ -34,23 +38,49 @@ export async function scrubUserDeletionIdentities(
       })),
     ],
     null,
-    async (_before, scopeQuery) => {
-      const softDeleteRowCount = await softDeleteAndScrubUserProfile(
-        userId,
-        requestedById,
-        scopeQuery,
-      )
-      assert(softDeleteRowCount > 0, 409, 'User is already deleted')
-      if (links.length === 0) return
-      const { rowCount } = await scopeQuery(sql`
-        /* scrubUserDeletionIdentities:deleteProfileLinks */
-        DELETE FROM user_profile_links link
-        USING unnest(${links.map(link => link.id)}::uuid[],
-          ${links.map(link => link.image_id)}::uuid[]) expected(id, image_id)
-        WHERE link.id = expected.id AND link.user_id = ${userId}
-          AND link.image_id IS NOT DISTINCT FROM expected.image_id
-      `)
-      assert(rowCount === links.length, 409, 'Profile link images changed during deletion')
+    async (references, scopeQuery) => {
+      const userMutation = await softDeleteAndScrubUserProfile(userId, requestedById, scopeQuery)
+      assert(userMutation.rowCount > 0 && userMutation.change, 409, 'User is already deleted')
+      const changes = [userMutation.change]
+      if (links.length > 0) {
+        const linkReferences = references.slice(1)
+        const statement = imageSurfaceMutationPreimage(
+          linkReferences,
+          'scrubUserDeletionIdentities:deleteProfileLinks',
+        )
+        statement.append(sql`, removed AS (
+          DELETE FROM user_profile_links link
+          USING surface_preimage before
+          WHERE link.id = before.user_profile_link_id AND link.user_id = ${userId}
+            AND link.image_id IS NOT DISTINCT FROM before.current_image_id
+          RETURNING WITH (OLD AS prior)
+            before.ordinality::int AS ordinality, prior.image_id AS previous_image_id,
+            before.placement_id AS previous_placement_id,
+            before.placement_revision AS previous_placement_revision,
+            before.activation_revision AS previous_activation_revision
+        ) SELECT * FROM removed`)
+        const { rows: removed } = await scopeQuery<{
+          ordinality: number
+          previous_image_id: string | null
+          previous_placement_id: string | null
+          previous_placement_revision: number | null
+          previous_activation_revision: number | null
+        }>(statement)
+        assert(removed.length === links.length, 409, 'Profile link images changed during deletion')
+        changes.push(
+          ...removed.map(row =>
+            imageSurfaceMutationChange({
+              ordinality: row.ordinality + 1,
+              previousImageId: row.previous_image_id,
+              currentImageId: null,
+              previousPlacementId: row.previous_placement_id,
+              previousPlacementRevision: row.previous_placement_revision,
+              previousActivationRevision: row.previous_activation_revision,
+            }),
+          ),
+        )
+      }
+      return { result: undefined, changes }
     },
   )
   await revokeVerifiedIdentitiesForDeletedUser(userId, query)

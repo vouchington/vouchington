@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { stageTestImagePlacementDeliveryRecordsForImageIds } from '@voucha/test-helpers/media-delivery-recovery'
-import { createProfileLink, deleteProfileLink } from './profile-links.mts'
+import { createProfileLink, deleteProfileLink, updateProfileLink } from './profile-links.mts'
 import { updateProfileImageId } from './identity.mts'
 import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety/delivery-registry-staging'
 import { deleteImageById } from '@services/images/delete'
@@ -87,6 +87,36 @@ describe('image surface placement lifecycle', () => {
       user_profile_link_id: null,
       retired_at: expect.any(Date),
     })
+  })
+
+  it('keeps image transition metadata out of stored profile-link results', async () => {
+    const user = await createTestUserDirect()
+    const firstImageId = await insertTestImage(user.id)
+    const secondImageId = await insertTestImage(user.id)
+    const created = await createProfileLink(user.id, {
+      link_type: 'github',
+      handle: `surface-${randomUUID().slice(0, 8)}`,
+      image_id: firstImageId,
+    })
+    const expectedKeys = [
+      'created_at',
+      'handle',
+      'id',
+      'image_id',
+      'image_placement',
+      'link_type',
+      'name',
+      'sort_order',
+      'updated_at',
+      'url',
+      'url_id',
+      'user_id',
+    ]
+    expect(Object.keys(created).toSorted()).toEqual(expectedKeys)
+
+    const updated = await updateProfileLink(user.id, created.id, { image_id: secondImageId })
+    expect(Object.keys(updated).toSorted()).toEqual(expectedKeys)
+    expect(updated.image_id).toBe(secondImageId)
   })
 
   it('keeps one active profile binding and stages the old exact route withheld on replacement', async () => {

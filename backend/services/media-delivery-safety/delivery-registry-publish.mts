@@ -6,6 +6,7 @@ import { lockImageDeliveryMutation } from './delivery-lock.mts'
 import {
   stageImagePlacementDeliveryRecord,
   stageImagePlacementDeliveryRecords,
+  type StageInput,
 } from './delivery-registry-staging.mts'
 import {
   recordImageDeliveryRepairMarker,
@@ -42,27 +43,48 @@ export async function prepublishImagePlacementDenialBatch(
   inputs: readonly PlacementDenial[],
   options: QueryOptions & { placementLocked?: boolean } = {},
 ): Promise<void> {
-  if (inputs.length === 0) return
+  await settleImagePlacementDeliveryChanges(inputs, [], options)
+}
+
+/** Stage both sides once; publish removed tuples before the transaction exposes new allows. */
+export async function settleImagePlacementDeliveryChanges(
+  inputs: readonly PlacementDenial[],
+  allows: readonly StageInput[],
+  options: QueryOptions & { placementLocked?: boolean } = {},
+): Promise<void> {
+  if (inputs.length === 0 && allows.length === 0) return
   if (!options.query) {
     await using transaction = await beginTransaction()
-    await prepublishImagePlacementDenialBatch(inputs, { query: transaction })
+    await settleImagePlacementDeliveryChanges(inputs, allows, { query: transaction })
     await transaction.commit()
     return
   }
   const query = options.query
   // A caller that already held these placements' locks (lockImageSurfacePlacements) passes it down.
-  if (!options.placementLocked)
+  if (inputs.length > 0 && !options.placementLocked)
     await lockImageDeliveryMutation(query, {
       placementIds: inputs.map(input => input.placementId),
       placementOnly: true,
     })
-  if (isMediaDeliveryRegistryPublicationEnabled()) await recordImageDeliveryRepairMarkers(inputs)
+  if (inputs.length > 0 && isMediaDeliveryRegistryPublicationEnabled())
+    await recordImageDeliveryRepairMarkers(inputs)
   const staged = await stageImagePlacementDeliveryRecords(
-    inputs.map(input => ({ ...input, state: 'withheld' as const })),
-    { query, forceGeneration: true },
+    [
+      ...inputs.map(input => ({ ...input, state: 'withheld' as const, forceGeneration: true })),
+      ...allows,
+    ],
+    { query },
   )
   if (!isMediaDeliveryRegistryPublicationEnabled()) return
-  const recordIds = [...staged.values()].map(record => record.mediaDeliveryRegistryRecordId)
+  const recordIds = [
+    ...new Set(
+      inputs.map(
+        input =>
+          staged.get(`${input.placementId}:${input.revision}:${input.imageId}`)!
+            .mediaDeliveryRegistryRecordId,
+      ),
+    ),
+  ]
   const batchSize = getEdgePublishBatchSize()
   for (let offset = 0; offset < recordIds.length; offset += batchSize) {
     const batchIds = recordIds.slice(offset, offset + batchSize)

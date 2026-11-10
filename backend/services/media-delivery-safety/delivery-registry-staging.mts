@@ -3,11 +3,12 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
 
-type StageInput = {
+export type StageInput = {
   placementId: string
   revision: number
   imageId: string
   state: MediaDeliveryRegistryState
+  forceGeneration?: boolean
 }
 type StagedRecord = { mediaDeliveryRegistryRecordId: string; generation: string }
 type StagedRow = {
@@ -50,17 +51,27 @@ export async function stageImagePlacementDeliveryRecords(
       generation: row.generation,
     })
   const { rows } = await query<StagedRow>(sql`/* stageImagePlacementDeliveryRecords */
-    INSERT INTO media_delivery_registry_records (
+    WITH requested AS MATERIALIZED (
+      SELECT * FROM unnest(${placementIds}::uuid[], ${revisions}::integer[], ${imageIds}::uuid[],
+        ${tuples.map(tuple => tuple.state)}::media_delivery_desired_states[],
+        ${tuples.map(tuple => tuple.forceGeneration ?? forceGeneration)}::boolean[])
+        input(placement_id, placement_revision, image_id, desired_state, force_generation)
+    ) INSERT INTO media_delivery_registry_records (
       placement_id, placement_revision, image_id, desired_state
-    ) SELECT * FROM unnest(${placementIds}::uuid[], ${revisions}::integer[], ${imageIds}::uuid[],
-      ${tuples.map(tuple => tuple.state)}::media_delivery_desired_states[])
+    ) SELECT placement_id, placement_revision, image_id, desired_state FROM requested
     ORDER BY 1, 2, 3
     ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE
     SET desired_state = EXCLUDED.desired_state,
-      generation = CASE WHEN ${forceGeneration} THEN media_delivery_registry_records.generation + 1
+      generation = CASE WHEN EXISTS (SELECT 1 FROM requested
+        WHERE requested.placement_id = EXCLUDED.placement_id
+          AND requested.placement_revision = EXCLUDED.placement_revision
+          AND requested.image_id = EXCLUDED.image_id AND requested.force_generation) THEN media_delivery_registry_records.generation + 1
         ELSE media_delivery_registry_records.generation END
     WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-      OR ${forceGeneration}
+      OR EXISTS (SELECT 1 FROM requested
+        WHERE requested.placement_id = EXCLUDED.placement_id
+          AND requested.placement_revision = EXCLUDED.placement_revision
+          AND requested.image_id = EXCLUDED.image_id AND requested.force_generation)
     RETURNING id, generation, placement_id, placement_revision, image_id
   `)
   for (const row of rows) record(row)

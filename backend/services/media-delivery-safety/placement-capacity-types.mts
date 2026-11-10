@@ -8,6 +8,8 @@ export type ImagePlacementCapacityReservation = {
   postId?: string
 }
 
+export type ImagePlacementCapacityClaimResult = 'complete' | 'capacity_exceeded' | 'conflict'
+
 /** A concrete reservation changed before its conditional mutation could settle. */
 export class ImagePlacementCapacityConflictError extends Error {
   readonly status = 409

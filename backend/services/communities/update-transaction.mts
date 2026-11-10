@@ -1,21 +1,26 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
   writeImageSurfaceMutation,
-  type ImageSurfaceMutationBinding,
   type ImageSurfaceReference,
 } from '@services/media-delivery-safety'
+import assert from 'http-assert'
 import { recordPostPublicationChange } from '@services/post-publication'
 import type { CommunityWithOwner } from './get.mts'
 import { mapCommunityWithOwner, type CommunityRowWithOwner } from './get-mapping.mts'
 import type { UpdateCommunityInput } from './update-types.mts'
 import type { CommunityVisibility } from './types.mts'
+import {
+  imageSurfaceMutationChange,
+  type ImageSurfaceMutationWrite,
+} from '@services/media-delivery-safety/surface-mutation-bindings'
+import type { SQLStatement } from 'sql-template-strings'
 
 export async function updateCommunityInTransaction(input: {
   community: CommunityWithOwner
   communityId: string
   actorUserId: string
   update: UpdateCommunityInput
-  statement: (before: readonly ImageSurfaceMutationBinding[]) => { text: string; values: unknown[] }
+  statement: (references: readonly ImageSurfaceReference[]) => SQLStatement
   query: TransactionQuery
 }): Promise<{
   prior: { visibility: CommunityVisibility; slug: string } | null
@@ -42,19 +47,56 @@ async function applyLockedCommunityUpdate(
     input.query,
     surfaces,
     input.actorUserId,
-    (before, scopeQuery) => writeCommunityOwner({ ...input, query: scopeQuery }, before),
+    (references, scopeQuery) => writeCommunityOwner({ ...input, query: scopeQuery }, references),
   )
   return { locked, updated }
 }
 
 async function writeCommunityOwner(
   input: Parameters<typeof updateCommunityInTransaction>[0],
-  before: readonly ImageSurfaceMutationBinding[],
-): Promise<CommunityWithOwner | null> {
-  const statement = input.statement(before)
-  const result = await input.query<CommunityRowWithOwner>(statement.text, statement.values)
-  const row = result.rows[0]
-  return row ? mapCommunityWithOwner(row) : null
+  references: readonly ImageSurfaceReference[],
+): Promise<ImageSurfaceMutationWrite<CommunityWithOwner | null>> {
+  const statement = input.statement(references)
+  const { rows } = await input.query<
+    CommunityRowWithOwner & {
+      previous_profile_image_id?: string | null
+      current_profile_image_id?: string | null
+      previous_banner_image_id?: string | null
+      current_banner_image_id?: string | null
+      previous_profile_placement_id?: string | null
+      previous_profile_placement_revision?: number | null
+      previous_profile_activation_revision?: number | null
+      previous_banner_placement_id?: string | null
+      previous_banner_placement_revision?: number | null
+      previous_banner_activation_revision?: number | null
+    }
+  >(statement.text, statement.values)
+  if (references.length) assert(rows.length === 1, 409, 'Community or image surface changed')
+  const row = rows[0]
+  return {
+    result: row ? mapCommunityWithOwner(row) : null,
+    changes: references.map((reference, index) =>
+      imageSurfaceMutationChange(
+        reference.surfaceKind === 'community-profile-image'
+          ? {
+              ordinality: index + 1,
+              previousImageId: row?.previous_profile_image_id ?? null,
+              currentImageId: row?.current_profile_image_id ?? null,
+              previousPlacementId: row?.previous_profile_placement_id ?? null,
+              previousPlacementRevision: row?.previous_profile_placement_revision ?? null,
+              previousActivationRevision: row?.previous_profile_activation_revision ?? null,
+            }
+          : {
+              ordinality: index + 1,
+              previousImageId: row?.previous_banner_image_id ?? null,
+              currentImageId: row?.current_banner_image_id ?? null,
+              previousPlacementId: row?.previous_banner_placement_id ?? null,
+              previousPlacementRevision: row?.previous_banner_placement_revision ?? null,
+              previousActivationRevision: row?.previous_banner_activation_revision ?? null,
+            },
+      ),
+    ),
+  }
 }
 
 async function lockCommunityPublicationInputs(

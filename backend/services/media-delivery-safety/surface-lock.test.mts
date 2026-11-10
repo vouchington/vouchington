@@ -41,7 +41,7 @@ describe('multi-slot owner capacity and delivery', () => {
             { surfaceKind: 'topic-hero-image', topicId, nextImageId: null },
           ],
           null,
-          (_before, scopeQuery) => retireTestTopicSurfaces(topicId, scopeQuery),
+          (references, scopeQuery) => retireTestTopicSurfaces(topicId, references, scopeQuery),
         )
         await owner.commit()
       },

@@ -1,6 +1,11 @@
 import assert from 'http-assert'
 import { writeImageSurfaceMutation } from '@services/media-delivery-safety'
 import {
+  imageSurfaceMutationChange,
+  imageSurfaceMutationPreimage,
+} from '@services/media-delivery-safety/surface-mutation-bindings'
+import sql from 'sql-template-strings'
+import {
   beginTransaction,
   withTransactionOptions,
   registerPostCommitAction,
@@ -71,25 +76,87 @@ async function hideSource(rssFeedId: string, query: TransactionQuery): Promise<v
       { surfaceKind: 'topic-hero-image' as const, topicId, nextImageId: null },
     ]),
     null,
-    async (before, scopeQuery) => {
-      const result = await scopeQuery(
-        `/* disableAndHideSource:topic */
-      UPDATE topics SET deleted_at = CURRENT_TIMESTAMP
-      FROM unnest($1::uuid[], $2::uuid[], $3::uuid[]) expected(id, logo_image_id, hero_image_id)
-      WHERE topics.id = expected.id AND topics.topic_type = 'rss_feed' AND topics.deleted_at IS NULL
-        AND topics.logo_image_id IS NOT DISTINCT FROM expected.logo_image_id
-        AND topics.hero_image_id IS NOT DISTINCT FROM expected.hero_image_id`,
-        [
-          retiringTopicIds,
-          retiringTopicIds.map((_, index) => before[2 * index]!.current_image_id),
-          retiringTopicIds.map((_, index) => before[2 * index + 1]!.current_image_id),
-        ],
-      )
+    async (references, scopeQuery) => {
+      if (references.length === 0) return { result: undefined, changes: [] }
+      const statement = imageSurfaceMutationPreimage(references, 'disableAndHideSource:topic')
+      statement.append(sql`, updated AS (
+        UPDATE topics SET deleted_at = CURRENT_TIMESTAMP
+        FROM (SELECT DISTINCT topic_id FROM surface_preimage) owner_preimage
+        WHERE topics.id = owner_preimage.topic_id AND topics.topic_type = 'rss_feed'
+          AND topics.deleted_at IS NULL AND topics.merged_into_topic_id IS NULL
+          AND topics.logo_image_id IS NOT DISTINCT FROM (
+            SELECT current_image_id FROM surface_preimage preimage
+            WHERE preimage.topic_id = topics.id AND preimage.surface_kind = 'topic-logo-image'
+          )
+          AND topics.hero_image_id IS NOT DISTINCT FROM (
+            SELECT current_image_id FROM surface_preimage preimage
+            WHERE preimage.topic_id = topics.id AND preimage.surface_kind = 'topic-hero-image'
+          )
+        RETURNING WITH (OLD AS prior, NEW AS current)
+          prior.id AS topic_id,
+          prior.logo_image_id AS previous_logo_image_id,
+          prior.hero_image_id AS previous_hero_image_id,
+          CASE WHEN current.deleted_at IS NULL AND current.merged_into_topic_id IS NULL
+            THEN current.logo_image_id END AS current_logo_image_id,
+          CASE WHEN current.deleted_at IS NULL AND current.merged_into_topic_id IS NULL
+            THEN current.hero_image_id END AS current_hero_image_id,
+          (SELECT placement_id FROM surface_preimage preimage WHERE preimage.topic_id = prior.id
+            AND preimage.surface_kind = 'topic-logo-image') AS previous_logo_placement_id,
+          (SELECT placement_revision FROM surface_preimage preimage WHERE preimage.topic_id = prior.id
+            AND preimage.surface_kind = 'topic-logo-image') AS previous_logo_placement_revision,
+          (SELECT activation_revision FROM surface_preimage preimage WHERE preimage.topic_id = prior.id
+            AND preimage.surface_kind = 'topic-logo-image') AS previous_logo_activation_revision,
+          (SELECT placement_id FROM surface_preimage preimage WHERE preimage.topic_id = prior.id
+            AND preimage.surface_kind = 'topic-hero-image') AS previous_hero_placement_id,
+          (SELECT placement_revision FROM surface_preimage preimage WHERE preimage.topic_id = prior.id
+            AND preimage.surface_kind = 'topic-hero-image') AS previous_hero_placement_revision,
+          (SELECT activation_revision FROM surface_preimage preimage WHERE preimage.topic_id = prior.id
+            AND preimage.surface_kind = 'topic-hero-image') AS previous_hero_activation_revision
+      ) SELECT * FROM updated`)
+      const { rows } = await scopeQuery<{
+        topic_id: string
+        previous_logo_image_id: string | null
+        previous_hero_image_id: string | null
+        current_logo_image_id: string | null
+        current_hero_image_id: string | null
+        previous_logo_placement_id: string | null
+        previous_logo_placement_revision: number | null
+        previous_logo_activation_revision: number | null
+        previous_hero_placement_id: string | null
+        previous_hero_placement_revision: number | null
+        previous_hero_activation_revision: number | null
+      }>(statement)
       assert(
-        result.rowCount === retiringTopicIds.length,
+        rows.length === retiringTopicIds.length,
         409,
         'RSS source images changed during retirement',
       )
+      const byTopicId = new Map(rows.map(row => [row.topic_id, row]))
+      return {
+        result: undefined,
+        changes: references.map((reference, index) => {
+          const row = byTopicId.get('topicId' in reference ? reference.topicId : '')!
+          return imageSurfaceMutationChange(
+            reference.surfaceKind === 'topic-logo-image'
+              ? {
+                  ordinality: index + 1,
+                  previousImageId: row.previous_logo_image_id,
+                  currentImageId: row.current_logo_image_id,
+                  previousPlacementId: row.previous_logo_placement_id,
+                  previousPlacementRevision: row.previous_logo_placement_revision,
+                  previousActivationRevision: row.previous_logo_activation_revision,
+                }
+              : {
+                  ordinality: index + 1,
+                  previousImageId: row.previous_hero_image_id,
+                  currentImageId: row.current_hero_image_id,
+                  previousPlacementId: row.previous_hero_placement_id,
+                  previousPlacementRevision: row.previous_hero_placement_revision,
+                  previousActivationRevision: row.previous_hero_activation_revision,
+                },
+          )
+        }),
+      }
     },
   )
   registerPostCommitAction(query, () => invalidate.rss_feeds(rssFeedId))

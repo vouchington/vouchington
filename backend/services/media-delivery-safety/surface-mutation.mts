@@ -1,22 +1,24 @@
-import { withTransactionSavepoint } from '@data-stores/psql/transaction-savepoint'
+import type { TransactionQuery } from '@data-stores/psql/types'
+import assert from 'http-assert'
+import sql from 'sql-template-strings'
 import { IMAGE_PLACEMENT_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { createCodedError } from '@vouchington/sentry'
-import type { TransactionQuery } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
-import assert from 'http-assert'
-import { reserveImagePlacementChanges } from './placement-capacity-reservations.mts'
-import { prepublishImagePlacementDenialBatch } from './delivery-registry-publish.mts'
-import { stageImagePlacementDeliveryRecords } from './delivery-registry-staging.mts'
+import {
+  reserveImagePlacementChangesAttempt,
+  withImagePlacementMutation,
+} from './placement-capacity-reservations.mts'
+import { settleImagePlacementDeliveryChanges } from './delivery-registry-publish.mts'
 import { assertImagesReadyForSurface } from './asset-admission-lock.mts'
 
 import {
   readSurfaceBindings,
   type ImageSurfaceMutation,
   type ImageSurfaceMutationBinding,
+  type ImageSurfaceMutationWrite,
 } from './surface-mutation-bindings.mts'
 export type {
   ImageSurfaceMutation,
-  ImageSurfaceMutationBinding,
+  ImageSurfaceMutationWrite,
 } from './surface-mutation-bindings.mts'
 
 /** The callback writes the actual owner first; all DB changes roll back before a capacity refusal. */
@@ -25,103 +27,111 @@ export async function writeImageSurfaceMutation<Result>(
   references: readonly ImageSurfaceMutation[],
   actorUserId: string | null,
   writeOwner: (
-    before: readonly ImageSurfaceMutationBinding[],
+    references: readonly ImageSurfaceMutation[],
     query: TransactionQuery,
-  ) => Promise<Result>,
+  ) => Promise<ImageSurfaceMutationWrite<Result>>,
 ): Promise<Result> {
-  if (references.length === 0) return writeOwner([], parentQuery)
+  if (references.length === 0) return (await writeOwner([], parentQuery)).result
   assert(
     actorUserId || references.every(reference => reference.nextImageId === null),
     422,
     'An image surface activation requires an actor',
   )
   try {
-    return await withTransactionSavepoint(parentQuery, async query => {
-      // ast-grep-ignore: no-three-sequential-awaits -- the preimage determines the owner's expected write; the postimage must be read only after that write before enforcing and staging its transitions
-      const before = await readSurfaceBindings(query, references)
-      const result = await writeOwner(before, query)
-      const after = await readSurfaceBindings(query, references)
-      for (const row of after) {
-        const reference = references[Number(row.ordinality) - 1]!
+    return await withImagePlacementMutation(
+      parentQuery,
+      async query => {
+        const write = await writeOwner(references, query)
         assert(
-          row.current_image_id === reference.nextImageId?.toLowerCase() ||
-            (row.current_image_id === null && reference.nextImageId === null),
+          write.changes.length === references.length,
           409,
           'Image surface owner changed during the mutation',
         )
-        assert(
-          !reference.nextImageId || row.placement_id,
-          409,
-          'Image surface placement was not created',
+        const after = await readSurfaceBindings(query, references, write.changes)
+        for (const row of after) {
+          const reference = references[Number(row.ordinality) - 1]!
+          assert(
+            row.current_image_id === reference.nextImageId?.toLowerCase() ||
+              (row.current_image_id === null && reference.nextImageId === null),
+            409,
+            'Image surface owner changed during the mutation',
+          )
+          assert(
+            !reference.nextImageId || row.placement_id,
+            409,
+            'Image surface placement was not created',
+          )
+        }
+        const currentIds = new Set(
+          after.flatMap(row => (row.placement_id ? [row.placement_id] : [])),
         )
-      }
-      const currentIds = new Set(after.flatMap(row => (row.placement_id ? [row.placement_id] : [])))
-      await reserveImagePlacementChanges(
-        query,
-        before.flatMap(row =>
-          row.placement_id && !currentIds.has(row.placement_id) ? [row.placement_id] : [],
-        ),
-        after.flatMap(row =>
-          row.placement_id && row.image_id && row.activation_revision !== null
-            ? [
-                {
-                  placementId: row.placement_id,
-                  imageId: row.image_id,
-                  bindingFamily: 'surface' as const,
-                  activationRevision: row.activation_revision,
-                },
-              ]
-            : [],
-        ),
-      )
-      const activated = after.filter(
-        row =>
-          row.placement_id &&
-          !before.some(
-            prior =>
-              prior.placement_id === row.placement_id &&
-              prior.activation_revision === row.activation_revision,
+        await reserveImagePlacementChangesAttempt(
+          query,
+          after.flatMap(row =>
+            row.previous_placement_id && !currentIds.has(row.previous_placement_id)
+              ? [row.previous_placement_id]
+              : [],
           ),
-      )
-      await assertImagesReadyForSurface(
-        activated.flatMap(row => (row.image_id ? [row.image_id] : [])),
-        query,
-      )
-      const removed = before.filter(
-        row => row.placement_id && row.image_id && !currentIds.has(row.placement_id),
-      )
-      const { rows: retired } = removed.length
-        ? await query<{ id: string; prior_revision: number }>(sql`
-    /* readRetiredImageSurfaceDenials */ SELECT id, revision - 1 AS prior_revision
-    FROM media_placements WHERE id = ANY(${removed.map(row => row.placement_id)}::uuid[])
-      AND retirement_reason = 'owner_removed' AND retired_at IS NOT NULL`)
-        : { rows: [] }
-      const retiredById = new Map(retired.map(row => [row.id, row.prior_revision]))
-      const denied = removed.flatMap(row => {
-        const revision = retiredById.get(row.placement_id!)
-        return revision === undefined
-          ? []
-          : [{ placementId: row.placement_id!, revision, imageId: row.image_id! }]
-      })
-      await prepublishImagePlacementDenialBatch(denied, { query })
-      if (activated.length > 0) await recordSurfaceActivations(query, activated, actorUserId!)
-      await stageImagePlacementDeliveryRecords(
-        activated.flatMap(row =>
-          row.placement_id && row.image_id && row.placement_revision !== null
+          after.flatMap(row =>
+            row.placement_id && row.image_id && row.activation_revision !== null
+              ? [
+                  {
+                    placementId: row.placement_id,
+                    imageId: row.image_id,
+                    bindingFamily: 'surface' as const,
+                    activationRevision: row.activation_revision,
+                  },
+                ]
+              : [],
+          ),
+        )
+        const activated = after.filter(
+          row =>
+            row.placement_id &&
+            (row.previous_placement_id !== row.placement_id ||
+              row.previous_activation_revision !== row.activation_revision),
+        )
+        await assertImagesReadyForSurface(
+          activated.flatMap(row => (row.image_id ? [row.image_id] : [])),
+          query,
+        )
+        if (activated.length > 0) await recordSurfaceActivations(query, activated, actorUserId!)
+        const denied = after.flatMap(row =>
+          row.previous_placement_id &&
+          row.previous_image_id &&
+          !currentIds.has(row.previous_placement_id) &&
+          row.prior_denial_revision !== null
             ? [
                 {
-                  placementId: row.placement_id,
-                  revision: row.placement_revision,
-                  imageId: row.image_id,
-                  state: 'allow' as const,
+                  placementId: row.previous_placement_id,
+                  revision: row.prior_denial_revision,
+                  imageId: row.previous_image_id,
                 },
               ]
             : [],
-        ),
-        { query },
-      )
-      return result
-    })
+        )
+        return { write, after, activated, denied }
+      },
+      async ({ write, after, activated, denied }, query) => {
+        await settleImagePlacementDeliveryChanges(
+          denied,
+          activated.flatMap(row =>
+            row.placement_id && row.image_id && row.placement_revision !== null
+              ? [
+                  {
+                    placementId: row.placement_id,
+                    revision: row.placement_revision,
+                    imageId: row.image_id,
+                    state: 'allow' as const,
+                  },
+                ]
+              : [],
+          ),
+          { query },
+        )
+        return write.resultFromBindings?.(after) ?? write.result
+      },
+    )
   } catch (err) {
     if (err instanceof Error && 'code' in err && err.code === '40P01')
       throw createCodedError(

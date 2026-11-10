@@ -19,7 +19,9 @@ import { buildCommunityUpdateStatement, validateCommunityUpdateInput } from './u
 import { communityUpdateReturning } from './community-update-returning.mts'
 import { updateCommunityInTransaction } from './update-transaction.mts'
 import type { UpdateCommunityInput } from './update-types.mts'
-import type { ImageSurfaceMutationBinding } from '@services/media-delivery-safety'
+import { imageSurfaceMutationPreimage } from '@services/media-delivery-safety/surface-mutation-bindings'
+import type { ImageSurfaceReference } from '@services/media-delivery-safety'
+import { selectCommunityWithOwner } from './select-community.mts'
 export type { UpdateCommunityInput } from './update-types.mts'
 
 export async function updateCommunity(
@@ -36,18 +38,26 @@ export async function updateCommunity(
   assert(currentUserCanUpdateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
   validateCommunityUpdateInput(input)
-  const updateStatement = (before: readonly ImageSurfaceMutationBinding[]) => {
-    const statement = buildCommunityUpdateStatement(communityId, input)
-    let position = 0
-    if ('profile_image_id' in input)
-      statement.append(
-        sql` AND profile_image_id IS NOT DISTINCT FROM ${before[position++]!.current_image_id}::uuid`,
-      )
-    if ('banner_image_id' in input)
-      statement.append(
-        sql` AND banner_image_id IS NOT DISTINCT FROM ${before[position++]!.current_image_id}::uuid`,
-      )
-    return communityUpdateReturning(sql`/* updateCommunity */`, statement)
+  const updateStatement = (references: readonly ImageSurfaceReference[]) => {
+    const update = buildCommunityUpdateStatement(communityId, input, references.length > 0)
+    if (!references.length) return communityUpdateReturning(sql`/* updateCommunity */`, update)
+    const statement = imageSurfaceMutationPreimage(references, 'updateCommunity')
+    statement
+      .append(sql`, updated AS (`)
+      .append(update)
+      .append(sql`) SELECT `)
+    return selectCommunityWithOwner(
+      statement,
+      {
+        columns: sql`, c.previous_profile_image_id, c.current_profile_image_id,
+          c.previous_banner_image_id, c.current_banner_image_id,
+          c.previous_profile_placement_id, c.previous_profile_placement_revision,
+          c.previous_profile_activation_revision, c.previous_banner_placement_id,
+          c.previous_banner_placement_revision, c.previous_banner_activation_revision`,
+        join: sql``,
+      },
+      sql` FROM updated c LEFT JOIN users u ON u.id = c.created_by_id`,
+    )
   }
   const run = (query: TransactionQuery) =>
     updateCommunityInTransaction({

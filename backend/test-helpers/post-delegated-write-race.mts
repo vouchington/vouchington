@@ -1,11 +1,13 @@
-import { writeTestImageOwnerRetirement } from './image-owner-retirement.mts'
+import {
+  retireTestUserImageOwners,
+  writeTestImageOwnerRetirement,
+} from './image-owner-retirement.mts'
 import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createMembershipLockDiagnosticReporter } from './membership-lock-diagnostics.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 import type { TestOwnedPostgresWaitOptions } from './postgres-client-lock-identity.mts'
-
 
 /** Archive a community only after a delegated reply waits on its live row. */
 export function withConcurrentCommunityArchiveForTest<T>(
@@ -44,9 +46,13 @@ export function withConcurrentActorDeletionForTest<T>(
   operation: () => Promise<T>,
 ): Promise<T> {
   return commitDelegatedWriteChangeThenRun(async query => {
-    await writeTestImageOwnerRetirement(query, { userId }, scopeQuery =>
-      scopeQuery(sql`/* withConcurrentActorDeletionForTest */
-      UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${userId}`),
+    await writeTestImageOwnerRetirement(query, { userId }, (references, scopeQuery) =>
+      retireTestUserImageOwners(
+        references,
+        scopeQuery,
+        sql`deleted_at = CURRENT_TIMESTAMP`,
+        'withConcurrentActorDeletionForTest',
+      ),
     )
   }, operation)
 }

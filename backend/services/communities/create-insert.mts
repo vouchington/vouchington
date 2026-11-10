@@ -2,7 +2,6 @@ import { writeCommunityMembershipMutation } from '@services/communities/members/
 import { registerPostCommitAction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import onError from '@modules/on-error'
 import { enqueueLanguageDetection } from '@queues/content-analysis/enqueues'
@@ -13,20 +12,17 @@ import {
   assertImagesReadyForSurface,
   writeImageSurfaceMutation,
 } from '@services/media-delivery-safety'
+import {
+  imageSurfaceMutationChange,
+  imageSurfaceMutationPreimage,
+} from '@services/media-delivery-safety/surface-mutation-bindings'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { invalidateCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
-import type { CreateCommunityInput } from './create-types.mts'
 import type { Community } from './types.mts'
 import { assertCommunityMembershipCapacity } from './membership-limits.mts'
 
-export type CommunityInsert = {
-  id: string
-  slug: string
-  defaultLanguage: string | null
-  currentUserId: string
-  provenance: ContentProvenance
-  input: CreateCommunityInput
-}
+import type { CommunityInsert } from './create-insert-types.mts'
+export type { CommunityInsert } from './create-insert-types.mts'
 
 /**
  * Inserts the community, its owner membership and its surface images in the caller's transaction.
@@ -113,12 +109,71 @@ export async function insertCommunity(
         },
       ],
       currentUserId,
-      (_before, scopeQuery) =>
-        scopeQuery(sql`/* createCommunity:setSurfaceImages */
-        UPDATE communities SET profile_image_id = ${input.profile_image_id ?? null},
-          banner_image_id = ${input.banner_image_id ?? null}
-        WHERE id = ${newCommunity.id}
-      `),
+      async (references, scopeQuery) => {
+        const statement = imageSurfaceMutationPreimage(
+          references,
+          'createCommunity:setSurfaceImages',
+        )
+        statement.append(sql`, updated AS (
+          UPDATE communities SET profile_image_id = ${input.profile_image_id ?? null},
+            banner_image_id = ${input.banner_image_id ?? null}
+          FROM (SELECT DISTINCT community_id FROM surface_preimage) owner_preimage
+          WHERE communities.id = ${newCommunity.id} AND owner_preimage.community_id = communities.id
+            AND communities.profile_image_id IS NOT DISTINCT FROM
+              (SELECT current_image_id FROM surface_preimage WHERE surface_kind = 'community-profile-image')
+            AND communities.banner_image_id IS NOT DISTINCT FROM
+              (SELECT current_image_id FROM surface_preimage WHERE surface_kind = 'community-banner-image')
+          RETURNING WITH (OLD AS prior, NEW AS current)
+            prior.profile_image_id AS previous_profile_image_id,
+            current.profile_image_id AS current_profile_image_id,
+            prior.banner_image_id AS previous_banner_image_id,
+            current.banner_image_id AS current_banner_image_id,
+            (SELECT placement_id FROM surface_preimage WHERE surface_kind = 'community-profile-image') AS previous_profile_placement_id,
+            (SELECT placement_revision FROM surface_preimage WHERE surface_kind = 'community-profile-image') AS previous_profile_placement_revision,
+            (SELECT activation_revision FROM surface_preimage WHERE surface_kind = 'community-profile-image') AS previous_profile_activation_revision,
+            (SELECT placement_id FROM surface_preimage WHERE surface_kind = 'community-banner-image') AS previous_banner_placement_id,
+            (SELECT placement_revision FROM surface_preimage WHERE surface_kind = 'community-banner-image') AS previous_banner_placement_revision,
+            (SELECT activation_revision FROM surface_preimage WHERE surface_kind = 'community-banner-image') AS previous_banner_activation_revision
+        ) SELECT * FROM updated`)
+        const { rows: changedRows } = await scopeQuery<{
+          previous_profile_image_id: string | null
+          current_profile_image_id: string | null
+          previous_banner_image_id: string | null
+          current_banner_image_id: string | null
+          previous_profile_placement_id: string | null
+          previous_profile_placement_revision: number | null
+          previous_profile_activation_revision: number | null
+          previous_banner_placement_id: string | null
+          previous_banner_placement_revision: number | null
+          previous_banner_activation_revision: number | null
+        }>(statement)
+        assert(changedRows.length === 1, 409, 'Community image surface changed')
+        const row = changedRows[0]!
+        return {
+          result: undefined,
+          changes: references.map((reference, index) =>
+            imageSurfaceMutationChange(
+              reference.surfaceKind === 'community-profile-image'
+                ? {
+                    ordinality: index + 1,
+                    previousImageId: row.previous_profile_image_id,
+                    currentImageId: row.current_profile_image_id,
+                    previousPlacementId: row.previous_profile_placement_id,
+                    previousPlacementRevision: row.previous_profile_placement_revision,
+                    previousActivationRevision: row.previous_profile_activation_revision,
+                  }
+                : {
+                    ordinality: index + 1,
+                    previousImageId: row.previous_banner_image_id,
+                    currentImageId: row.current_banner_image_id,
+                    previousPlacementId: row.previous_banner_placement_id,
+                    previousPlacementRevision: row.previous_banner_placement_revision,
+                    previousActivationRevision: row.previous_banner_activation_revision,
+                  },
+            ),
+          ),
+        }
+      },
     )
   }
 
