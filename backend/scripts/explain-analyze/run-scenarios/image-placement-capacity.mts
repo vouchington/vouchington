@@ -33,7 +33,10 @@ export async function runImagePlacementCapacityScenarios(): Promise<void> {
       `/* seedCapacitySparseSlot */ UPDATE image_placement_capacity_reservations SET slot_number = $2 WHERE placement_id = $1`,
       [sparse.current.placementId, cap],
     )
-    await write('/* analyzeCapacity */ ANALYZE image_placement_capacity_reservations, images')
+    // Plain ANALYZE leaves relallvisible at 0 after these inserts. The occupied-slot lookup
+    // then sorts a sequential scan of every reservation and reads past the per-image cap.
+    await write('/* analyzeCapacity */ VACUUM (ANALYZE) image_placement_capacity_reservations')
+    await write('/* analyzeCapacityImages */ ANALYZE images')
     await capture('image-placement-capacity-at-cap', full.candidate, true)
     await capture('image-placement-capacity-empty', empty.candidate, false)
     await capture('image-placement-capacity-surface', surface.candidate, true)
