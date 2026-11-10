@@ -23,6 +23,13 @@ import {
 
 export async function runBlueskyFollowerReceiptScenarios(): Promise<void> {
   const pageSize = getBlueskyFollowsWorkLimit('disconnect_batch_size')
+  const INDEX = 'idx_bluesky_follow_records__authorization_follower_followee'
+  const pageIndexes = {
+    kind: 'usesIndexes' as const,
+    indexes: ['bluesky_follow_records_pkey', INDEX],
+    anyOf: true,
+    noSort: true,
+  }
   for (const id of [
     'bluesky-follower-receipts-page',
     'bluesky-follower-receipts-continuation',
@@ -31,15 +38,8 @@ export async function runBlueskyFollowerReceiptScenarios(): Promise<void> {
     registerScenarioContract(id, {
       allowEmptyResult: id === 'bluesky-follower-receipts-empty',
       expectations: [
-        {
-          kind: 'usesIndexes',
-          indexes: [
-            'bluesky_follow_records_pkey',
-            'idx_bluesky_follow_records__authorization_follower_followee',
-          ],
-          anyOf: true,
-          noSort: true,
-        },
+        { kind: 'noSeqScan', relation: 'bluesky_follow_records' },
+        ...(id === 'bluesky-follower-receipts-empty' ? [] : [pageIndexes]),
         { kind: 'maxProcessedRows', relation: 'bluesky_follow_records', max: pageSize },
       ],
       seededRows: { bluesky_follow_records: TOTAL_RECEIPT_COUNT },
@@ -52,7 +52,7 @@ export async function runBlueskyFollowerReceiptScenarios(): Promise<void> {
         kind: 'usesIndexes',
         indexes: [
           'bluesky_follow_records_pkey',
-          'idx_bluesky_follow_records__authorization_follower_followee',
+          INDEX,
           'idx_bluesky_follow_records__followee_follower',
         ],
         anyOf: true,
