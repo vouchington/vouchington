@@ -149,6 +149,7 @@ jobs:
       # shutdown keeps that log; the JUnit artifact is still skipped when the run is killed.
       # File progress is always buffered to a file and dumped 60s before the step timeout.
       - name: Run backend tests
+        id: backend-tests
         env:
           GIT_COMMIT: ${{ github.sha }}
           IMAGE_ORIGIN: http://127.0.0.1:3100
@@ -204,7 +205,8 @@ jobs:
           if-no-files-found: error
       - name: Preserve full backend-shard-${{ matrix.shard }} LCOV
         timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.publish_coverage }}
+        # Vitest writes no coverage report after a failed test, so a failed shard has nothing to preserve.
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.backend-tests.outcome == 'success' }}
         shell: bash
         run: source "$GITHUB_WORKSPACE/.github/workflows/tests-backend-unit-preserve-full-backend-shard-lcov.sh"
       - name: Upload full backend-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)

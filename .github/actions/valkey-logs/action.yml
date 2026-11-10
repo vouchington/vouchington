@@ -7,4 +7,6 @@ runs:
   steps:
     - name: Print Valkey container logs
       shell: bash
-      run: docker logs voucha-valkey || true
+      # valkey-search logs one startup warning per INFO field it defines; none describe a fault.
+      run: |
+        docker logs voucha-valkey 2>&1 | grep -v 'info.cc:[0-9]*: Defined Info Field: ' || true

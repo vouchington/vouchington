@@ -9,7 +9,7 @@ docker run --pull=never -d --name "$VALKEY_CONTAINER" -p 127.0.0.1::6379 --tmpfs
 readiness_command='until docker exec "$0" valkey-cli ping >/dev/null 2>&1; do sleep 0.5; done'
 if ! timeout 60 sh -c "$readiness_command" "$VALKEY_CONTAINER"; then
   echo "::error::Valkey did not answer PING within 60s"
-  docker logs "$VALKEY_CONTAINER" || true
+  docker logs "$VALKEY_CONTAINER" 2>&1 | grep -v 'info.cc:[0-9]*: Defined Info Field: ' || true
   exit 1
 fi
 # Disposable test instance on tmpfs: skip RDB snapshots (and their log lines).

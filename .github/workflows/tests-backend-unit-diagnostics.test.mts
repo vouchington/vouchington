@@ -40,6 +40,44 @@ describe('backend-unit sampler opt-in', () => {
   })
 })
 
+describe('backend-unit console filter', () => {
+  const profileLine = '[pg-request-profile] route=GET /x queries=1 serialDepth=1 repeats=none'
+  const workerLine = '{"kind":"pg-worker-profile","profile":{}}'
+  const failure = ' FAIL  backend/x.test.mts > fails'
+  const runScript = workflowStepScript(
+    workflow.jobs?.['backend-tests']?.steps?.find(step => step.name === 'Run backend tests')?.run,
+  )
+  const pipeline = runScript.slice(
+    runScript.indexOf('console_filter() {'),
+    runScript.indexOf('| console_filter\n') + '| console_filter'.length,
+  )
+  const fakeVitest = `{ printf '%s\\n' '${profileLine}' '${failure}' '${workerLine}'; exit 3; }`
+  const script = `set -o pipefail\n${pipeline.replace(/pnpm exec [^\n]*?--shard "\$CI_SHARD"/u, fakeVitest)}`
+
+  it('keeps profile lines in the collector file, off the console, and preserves the exit status', () => {
+    expect(script).toContain(fakeVitest)
+    for (const diagnostics of ['0', '1']) {
+      const dir = mkdtempSync(path.join(tmpdir(), 'console-filter-'))
+      try {
+        const result = spawnSync('bash', ['-c', script], {
+          cwd: dir,
+          encoding: 'utf8',
+          env: { ...process.env, VITEST_DIAGNOSTICS: diagnostics },
+        })
+        expect(result.status).toBe(3)
+        expect(readFileSync(path.join(dir, 'backend-unit-output.log'), 'utf8')).toBe(
+          `${profileLine}\n${failure}\n${workerLine}\n`,
+        )
+        expect(result.stdout).toBe(
+          diagnostics === '1' ? `${profileLine}\n${failure}\n${workerLine}\n` : `${failure}\n`,
+        )
+      } finally {
+        rmSync(dir, { recursive: true, force: true })
+      }
+    }
+  })
+})
+
 describe('backend-unit deadline dump', () => {
   type Step = {
     name?: string
