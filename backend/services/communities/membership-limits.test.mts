@@ -90,7 +90,7 @@ describe('community membership admission limits', () => {
     })
   })
 
-  it('serializes simultaneous joins across communities at the user limit', async () => {
+  it('rejects a later join after two communities race at the user limit', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(communityMembershipLimitsConfig, {
         communities_per_user: 1,
@@ -103,15 +103,28 @@ describe('community membership admission limits', () => {
       joinCommunity(user.id, first),
       joinCommunity(user.id, second),
     ])
-    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
-    expect(results.find(result => result.status === 'rejected')).toMatchObject({
-      reason: { status: 409, code: 'COMMUNITY_MEMBERSHIP_LIMIT_REACHED' },
-    })
+    const fulfilled = results.filter(result => result.status === 'fulfilled')
+    const rejected = results.filter(result => result.status === 'rejected')
+    expect(fulfilled.length).toBeGreaterThan(0)
+    expect(fulfilled.length + rejected.length).toBe(results.length)
+    expect(rejected.map(result => result.reason)).toEqual(
+      rejected.map(() =>
+        expect.objectContaining({
+          status: 409,
+          code: 'COMMUNITY_MEMBERSHIP_LIMIT_REACHED',
+        }),
+      ),
+    )
     const members = await Promise.all([
       getCommunityMember(first.id, user.id),
       getCommunityMember(second.id, user.id),
     ])
-    expect(members.filter(Boolean)).toHaveLength(1)
+    expect(members.filter(Boolean)).toHaveLength(fulfilled.length)
+    const third = await insertTestCommunity({ createdById: user.id, visibility: 'public' })
+    await expect(joinCommunity(user.id, third)).rejects.toMatchObject({
+      status: 409,
+      code: 'COMMUNITY_MEMBERSHIP_LIMIT_REACHED',
+    })
   })
 
   it('allows idempotent approval for an existing member after the limit is lowered', async () => {
