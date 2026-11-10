@@ -16,16 +16,11 @@ export async function createReAuthToken(
 ): Promise<string> {
   const token = randomUUID()
   const { rowCount } = await query(
-    `/* createReAuthToken */ UPDATE user_sessions AS session
+    `/* createReAuthToken */ UPDATE user_sessions
      SET account_change_proof_hash = $4,
          account_change_proof_expires_at = clock_timestamp() + ($5 * interval '1 second')
      WHERE id = $1 AND user_id = $2 AND device_id = $3
-       AND revoked_at IS NULL AND expires_at > clock_timestamp()
-       AND NOT EXISTS (
-         SELECT 1 FROM user_session_revocation_cutoffs cutoff
-         WHERE cutoff.user_id = session.user_id AND session.authenticated_at <= cutoff.cutoff_at
-           AND session.id IS DISTINCT FROM cutoff.preserved_session_id
-       )`,
+       AND revoked_at IS NULL AND expires_at > clock_timestamp()`,
     [session.sid, currentUserId, session.did, proofHash(session.sid, token), REAUTH_TTL_SECONDS],
   )
   if (rowCount !== 1) throw freshAuthenticationRequired()
@@ -41,15 +36,10 @@ async function verifyAndDeleteReAuthToken(
 ): Promise<boolean> {
   if (!isUUID(token)) return false
   const { rowCount } = await query(
-    `/* verifyAndDeleteReAuthToken */ UPDATE user_sessions AS session
+    `/* verifyAndDeleteReAuthToken */ UPDATE user_sessions
      SET account_change_proof_hash = NULL, account_change_proof_expires_at = NULL
      WHERE id = $1 AND user_id = $2 AND device_id = $3
        AND revoked_at IS NULL AND expires_at > clock_timestamp()
-       AND NOT EXISTS (
-         SELECT 1 FROM user_session_revocation_cutoffs cutoff
-         WHERE cutoff.user_id = session.user_id AND session.authenticated_at <= cutoff.cutoff_at
-           AND session.id IS DISTINCT FROM cutoff.preserved_session_id
-       )
        AND account_change_proof_hash = $4
        AND account_change_proof_expires_at > clock_timestamp()`,
     [session.sid, currentUserId, session.did, proofHash(session.sid, token)],

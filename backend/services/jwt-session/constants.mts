@@ -3,6 +3,7 @@ import { loadScript, registerScript } from '@data-stores/valkey/scripts'
 // Valkey key prefix. The stale-marker key prefix lives with its logic in
 // @data-stores/valkey/jwt-stale.
 const REVOKED_PREFIX = 'voucha:jwt-revoked:'
+const USER_REVOKED_BEFORE_PREFIX = 'voucha:jwt-user-revoked-before:'
 const LOGOUT_CLEANUP_PREFIX = 'voucha:jwt-logout-cleanup:'
 const LOGOUT_CLEANUP_ADMISSION_PREFIX = 'voucha:jwt-logout-cleanup-admission:'
 const LOGOUT_CLEANUP_FENCE_PREFIX = 'voucha:jwt-logout-cleanup-fence:'
@@ -10,6 +11,10 @@ const LOGOUT_PUSH_CLEANUP_COMPLETION_PREFIX = 'voucha:jwt-logout-push-cleanup-co
 
 export function getJwtRevokedKey(sid: string): string {
   return `${REVOKED_PREFIX}${sid}`
+}
+
+export function getJwtUserRevokedBeforeKey(userId: string): string {
+  return `${USER_REVOKED_BEFORE_PREFIX}${userId}`
 }
 
 export function getJwtLogoutCleanupKey(sessionId: string): string {

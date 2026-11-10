@@ -1,4 +1,4 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { copyrightSubmissionPurpose } from '@services/copyright-notices/submissions'
 import { upsertCopyrightStorageObjectId } from '@services/copyright-notices/storage-objects'
@@ -8,6 +8,43 @@ import { seedUuid } from './common.mts'
 
 const BLOCKLISTED_DOMAIN_SEED_COUNT = 20_000
 const USER_AGENT_SEED_COUNT = 5_000
+const LANDING_PAGE_CREATE_INDEX_FIXTURE_COUNT = 1_000
+const LANDING_PAGE_CREATE_INDEX_FIXTURE_IDS = Array.from(
+  { length: LANDING_PAGE_CREATE_INDEX_FIXTURE_COUNT },
+  (_, index) => seedUuid(9_500_000 + index, 'f7'),
+)
+const LANDING_PAGE_CREATE_INDEX_FIXTURE_OWNER_IDS = Array.from(
+  { length: LANDING_PAGE_CREATE_INDEX_FIXTURE_COUNT },
+  (_, index) => seedUuid(index + 1, '01'),
+)
+
+/** Distributed owner rows keep generic-plan cardinality near one landing page per user. */
+export async function seedLandingPageCreateIndexFixture(): Promise<string[]> {
+  const { rows } = await write<{ id: string }>(
+    `/* seedLandingPageCreateIndexFixture */
+     INSERT INTO user_landing_pages (id, user_id, title, slug)
+     SELECT fixture.id, fixture.user_id, 'Landing page index fixture',
+       'landing-page-index-fixture-' || fixture.ordinal
+     FROM unnest($1::uuid[], $2::uuid[]) WITH ORDINALITY AS fixture(id, user_id, ordinal)
+     ON CONFLICT DO NOTHING
+     RETURNING id`,
+    [LANDING_PAGE_CREATE_INDEX_FIXTURE_IDS, LANDING_PAGE_CREATE_INDEX_FIXTURE_OWNER_IDS],
+  )
+  await write('/* analyzeLandingPageCreateIndexFixture */ ANALYZE user_landing_pages')
+  return rows.map(row => row.id)
+}
+
+/** Delete only rows inserted by this fixture, then refresh table statistics. */
+export async function deleteLandingPageCreateIndexFixture(ids: readonly string[]): Promise<void> {
+  if (ids.length === 0) return
+  await write(
+    `/* deleteLandingPageCreateIndexFixture */
+     DELETE FROM user_landing_pages WHERE id = ANY($1::uuid[])`,
+    [ids],
+  )
+  await write('/* analyzeAfterDeleteLandingPageCreateIndexFixture */ ANALYZE user_landing_pages')
+}
+
 /** Domain-blocklist rows large enough that the policy batches must probe by key, not scan. */
 export async function seedBlocklistedDomains(): Promise<void> {
   console.log(`Seeding ${BLOCKLISTED_DOMAIN_SEED_COUNT} blocklisted domains...`)

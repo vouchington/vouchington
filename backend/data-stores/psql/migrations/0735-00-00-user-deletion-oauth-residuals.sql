@@ -19,7 +19,6 @@ BEGIN
       ('user_totp_authenticators', 'user_id'),
       ('api_keys', 'user_id'),
       ('user_sessions', 'user_id'),
-      ('user_session_revocation_cutoffs', 'user_id'),
       ('facebook_accounts', 'user_id'),
       ('apple_accounts', 'user_id'),
       ('google_accounts', 'user_id'),

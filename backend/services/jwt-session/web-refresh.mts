@@ -29,6 +29,7 @@ export async function refreshWebSessionFromDeviceToken(
   if (
     await isSessionRevoked(device.refresh_sid, {
       userId: device.refresh_uid,
+      issuedAt: device.iat,
       mfaVerifiedAt: device.mfa_at ?? null,
     })
   ) {

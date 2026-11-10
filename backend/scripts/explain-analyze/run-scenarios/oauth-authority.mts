@@ -180,7 +180,6 @@ async function capture(
       { kind: 'maxProcessedRows', relation: 'oauth_access_tokens', max: 4 },
       { kind: 'maxProcessedRows', relation: 'user_suspensions', max: 4 },
       { kind: 'maxProcessedRows', relation: 'user_sessions', max: 2 },
-      { kind: 'maxProcessedRows', relation: 'user_session_revocation_cutoffs', max: 2 },
       { kind: 'maxProcessedRows', relation: 'app_attestation_keys', max: 2 },
     ],
   })

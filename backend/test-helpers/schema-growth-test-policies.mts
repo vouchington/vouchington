@@ -90,10 +90,6 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
   ['auth_session_retention_cleanup_cursors', naturalOrProviderId('Finite cleanup-name key.')],
   ['history_retention_cursors', naturalOrProviderId('Finite cleanup-name key.')],
   [
-    'oauth_friend_reference_repair_cursors',
-    naturalOrProviderId('The finite provider name identifies each repair sweep.'),
-  ],
-  [
     'user_sessions',
     { policy: 'uuidv7', rationale: 'The application supplies the UUIDv7 JWT session id.' },
   ],

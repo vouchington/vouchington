@@ -39,7 +39,7 @@ export async function runActivityPubVoteAuthorityScenarios(): Promise<void> {
       await query.rollback()
     },
     undefined,
-    ['readActivityPubReplayFloor', 'recordInboxActivity', 'recheckInboxActivityReplayFloor'],
+    ['readActivityPubReplayFloor', 'recordInboxActivity'],
   )
 
   registerScenarioContract('activitypub-follow-identity-constraints', {

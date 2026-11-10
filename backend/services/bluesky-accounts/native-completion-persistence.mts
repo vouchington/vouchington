@@ -103,11 +103,6 @@ export async function persistNativeBlueskyLinkCompletion(input: {
             JOIN user_sessions actor ON actor.user_id = owner.id AND actor.id = link_auth.initiating_session_id
             WHERE owner.id = ${input.userId} AND owner.deleted_at IS NULL
               AND actor.revoked_at IS NULL AND actor.expires_at > CURRENT_TIMESTAMP
-              AND NOT EXISTS (
-                SELECT 1 FROM user_session_revocation_cutoffs cutoff
-                WHERE cutoff.user_id = actor.user_id AND actor.authenticated_at <= cutoff.cutoff_at
-                  AND actor.id IS DISTINCT FROM cutoff.preserved_session_id
-              )
               AND actor.device_token_digest IS NOT NULL AND actor.device_token_encrypted IS NOT NULL
               AND actor.device_token_issued_at IS NOT NULL AND actor.device_token_binding IS NOT NULL
               AND NOT EXISTS (SELECT 1 FROM user_suspensions WHERE user_id = owner.id AND lifted_at IS NULL)

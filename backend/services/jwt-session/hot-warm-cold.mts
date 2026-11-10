@@ -10,7 +10,11 @@ import type {
 } from './types.mts'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { getJwtStaleKey } from '@data-stores/valkey/jwt-stale'
-import { getJwtRevokedKey, checkRevokedAndStaleScript } from './constants.mts'
+import {
+  getJwtRevokedKey,
+  getJwtUserRevokedBeforeKey,
+  checkRevokedAndStaleScript,
+} from './constants.mts'
 
 export async function applyHotWarmCold(
   verified: VerifyDeviceAndSessionTokenResult,
@@ -25,8 +29,8 @@ export async function applyHotWarmCold(
   const membershipEntitlementExpired = verified.mpe !== undefined && now >= verified.mpe
   // Warm path: check Valkey for revocation and staleness (single Lua roundtrip)
   const warmResult = await sessionValkeyClient.invokeScript(checkRevokedAndStaleScript, {
-    keys: [getJwtRevokedKey(verified.sid), getJwtStaleKey(uid)],
-    args: [],
+    keys: [getJwtRevokedKey(verified.sid), getJwtStaleKey(uid), getJwtUserRevokedBeforeKey(uid)],
+    args: [String(verified.device_iat ?? 0)],
   })
   const [revokedRaw, staleRaw] = Array.isArray(warmResult) ? warmResult : [0, null]
   const revoked = Number(revokedRaw) !== 0

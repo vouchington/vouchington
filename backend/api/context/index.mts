@@ -122,6 +122,7 @@ const extensions = {
           (await isSessionRevoked(result.sid, {
             userId: result.uid,
             deviceId: result.did,
+            issuedAt: result.device_iat,
             mfaVerifiedAt: result.mfa_at ?? null,
           }))
         ) {

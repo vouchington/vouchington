@@ -37,12 +37,7 @@ export async function readSessionDeviceAuthority(
       s.device_token_issued_at, s.mfa_verified_at, s.device_token_binding,
       s.device_bound_session_binding
     FROM user_sessions s JOIN users u ON u.id = s.user_id
-    WHERE s.id = ${sid} AND u.deleted_at IS NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM user_session_revocation_cutoffs cutoff
-        WHERE cutoff.user_id = s.user_id AND s.authenticated_at <= cutoff.cutoff_at
-          AND s.id IS DISTINCT FROM cutoff.preserved_session_id
-      )`
+    WHERE s.id = ${sid} AND u.deleted_at IS NULL`
   if (lock) statement.append(' FOR UPDATE OF s')
   const { rows } = await query<SessionDeviceAuthorityRow>(statement)
   const row = rows[0] ?? null

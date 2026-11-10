@@ -41,7 +41,6 @@ END $$;
 CREATE TABLE IF NOT EXISTS user_landing_pages (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  slot SMALLINT NOT NULL CHECK (slot BETWEEN 1 AND 20),
   title TEXT NOT NULL,
   CHECK (char_length(title) <= 100),
   CHECK (title = TRIM(title)),
@@ -54,7 +53,6 @@ CREATE TABLE IF NOT EXISTS user_landing_pages (
   CHECK (slug = TRIM(slug)),
   CHECK (slug ~ '^[a-z0-9-]+$'),
   CONSTRAINT uq_user_landing_pages__user_id_slug UNIQUE (user_id, slug),
-  CONSTRAINT uq_user_landing_pages__user_id_slot UNIQUE (user_id, slot),
   is_default BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -67,11 +65,6 @@ WHERE is_default;
 CREATE INDEX IF NOT EXISTS idx_user_landing_pages__user_id_id
 ON user_landing_pages (user_id, id);
 
-CREATE OR REPLACE TRIGGER trigger_user_landing_pages_owner_immutable
-BEFORE UPDATE OF user_id ON user_landing_pages
-FOR EACH ROW WHEN (NEW.user_id IS DISTINCT FROM OLD.user_id)
-EXECUTE FUNCTION fn_reject_always('Landing page ownership cannot change');
-
 CREATE OR REPLACE TRIGGER trigger_user_landing_pages_updated_at
 BEFORE UPDATE ON user_landing_pages
 FOR EACH ROW
@@ -79,11 +72,10 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE user_landing_pages IS 'User-created landing pages for organizing and displaying their links, reviews, and referral links.';
 COMMENT ON COLUMN user_landing_pages.user_id IS 'The user who owns this landing page.';
-COMMENT ON COLUMN user_landing_pages.slot IS 'One of twenty reusable per-owner positions that enforce the page limit through a unique key.';
 COMMENT ON COLUMN user_landing_pages.title IS 'Display title for the landing page.';
 COMMENT ON COLUMN user_landing_pages.subtitle IS 'Optional subtitle or description.';
 COMMENT ON COLUMN user_landing_pages.slug IS 'URL-safe slug unique per user for the landing page URL.';
-COMMENT ON COLUMN user_landing_pages.is_default IS 'Explicit default preference, at most one per user. If none is marked, readers use the oldest remaining page.';
+COMMENT ON COLUMN user_landing_pages.is_default IS 'Whether this is the user''s default landing page; at most one per user.';
 
 --------------------------------------------------------------------------------
 -- user_landing_page_items
@@ -95,7 +87,6 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
   landing_page_id UUID NOT NULL REFERENCES user_landing_pages(id) ON DELETE CASCADE,
   item_type user_landing_page_item_types NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
-  CONSTRAINT uq_user_landing_page_items__landing_page_id_sort_order UNIQUE (landing_page_id, sort_order),
   profile_link_id UUID REFERENCES user_profile_links(id) ON DELETE CASCADE,
   review_post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
   referral_link_id UUID REFERENCES user_referral_program_links(id) ON DELETE CASCADE,

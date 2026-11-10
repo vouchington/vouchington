@@ -32,7 +32,6 @@ export async function runBlueskyAuthoritySnapshotScenario(): Promise<void> {
       expectations: [
         { kind: 'maxProcessedRows', relation: 'users', max: 2 },
         { kind: 'maxProcessedRows', relation: 'user_sessions', max: 2 },
-        { kind: 'maxProcessedRows', relation: 'user_session_revocation_cutoffs', max: 2 },
         { kind: 'maxProcessedRows', relation: 'bluesky_link_authorizations', max: 2 },
         { kind: 'maxProcessedRows', relation: 'user_suspensions', max: 2 },
       ],

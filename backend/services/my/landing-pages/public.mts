@@ -14,22 +14,14 @@ export async function getPublicLandingPage(
   if (!user?.username) return null
 
   const pageQuery = sql`/* getPublicLandingPage */
-    WITH selected_default AS (
-      SELECT COALESCE(
-        (SELECT id FROM user_landing_pages WHERE user_id = ${user.id} AND is_default LIMIT 1),
-        (SELECT id FROM user_landing_pages WHERE user_id = ${user.id} ORDER BY id ASC LIMIT 1)
-      ) AS id
-    )
-    SELECT page.id, page.user_id, page.title, page.subtitle, page.slug,
-      page.id = selected_default.id AS is_default,
-      page.created_at, page.updated_at
-    FROM user_landing_pages page CROSS JOIN selected_default
-    WHERE page.user_id = ${user.id}
+    SELECT id, user_id, title, subtitle, slug, is_default, created_at, updated_at
+    FROM user_landing_pages
+    WHERE user_id = ${user.id}
   `
   if (slug !== undefined) {
-    pageQuery.append(sql` AND page.slug = ${validateLandingPageSlug(slug)}`)
+    pageQuery.append(sql` AND slug = ${validateLandingPageSlug(slug)}`)
   } else {
-    pageQuery.append(sql` AND page.id = selected_default.id`)
+    pageQuery.append(sql` AND is_default = TRUE`)
   }
   pageQuery.append(sql` LIMIT 1`)
 

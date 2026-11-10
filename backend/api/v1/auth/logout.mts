@@ -39,10 +39,10 @@ app.route('/api/v1/auth/logout').post(async ctx => {
         sessionToken: st,
       })
       if (verified) {
-        const { sid, uid: userId } = verified
+        const { iat: issuedAt, sid, uid: userId } = verified
         await runLogoutPushCleanupAndRevoke(
           sid,
-          { userId },
+          { userId, issuedAt },
           binding
             ? () =>
                 deleteExactWebPushSubscription(userId, binding).catch((err: unknown) =>

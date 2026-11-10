@@ -44,11 +44,6 @@ export async function validateOAuthAccessToken(
            AND session.authentication_origin = 'native'
            AND session.revoked_at IS NULL
            AND session.expires_at > CURRENT_TIMESTAMP
-           AND NOT EXISTS (
-             SELECT 1 FROM user_session_revocation_cutoffs cutoff
-             WHERE cutoff.user_id = session.user_id AND session.authenticated_at <= cutoff.cutoff_at
-               AND session.id IS DISTINCT FROM cutoff.preserved_session_id
-           )
        ))
        AND client.revoked_at IS NULL
        AND EXISTS (

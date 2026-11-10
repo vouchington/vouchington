@@ -1,4 +1,4 @@
-import { it, expect, describe } from 'vitest'
+import { it, expect, describe, vi } from 'vitest'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
@@ -6,15 +6,12 @@ import {
 } from '@ts-shared/session-jwt'
 import { getJwtRevokedKey } from './constants.mts'
 import { revokeSession, isSessionRevoked } from './revocation.mts'
+import { revokeSessionKeys, revokeUserSessionsBefore } from './session-revocation-keys.mts'
 import { withAbortedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-aborted-transaction'
 import { withRejectedPostgresQueryForTest } from '@voucha/test-helpers/injected-failures'
 import { v7 } from 'uuid'
-import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers/entities/users'
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { createDeviceAndSessionTokens } from './create.mts'
-import {
-  revokeAllAuthenticatedSessions,
-  revokeAuthenticatedSession,
-} from './user-session-revocation.mts'
 
 describe('revocation', () => {
   it('isSessionRevoked returns false for a session that has not been revoked', async () => {
@@ -71,45 +68,51 @@ describe('revocation', () => {
     expect(await isSessionRevoked(sid2)).toBe(false)
   })
 
-  it('uses the durable user cutoff after cache loss and permits a later authenticated SID', async () => {
+  it('uses the single-key path when revoking one session key', async () => {
+    const sid = v7()
+
+    await revokeSessionKeys([sid])
+
+    await expect(isSessionRevoked(sid)).resolves.toBe(true)
+  })
+
+  it('fails closed instead of treating a null batch result as not revoked', async () => {
+    const userId = v7()
+    const sid = v7()
+
+    const exec = vi.spyOn(sessionValkeyClient, 'exec').mockResolvedValueOnce(null)
+
+    await expect(
+      isSessionRevoked(sid, { userId, issuedAt: Math.floor(Date.now() / 1000) }),
+    ).rejects.toThrow('isSessionRevoked: valkey batch exec returned no result')
+
+    exec.mockRestore()
+  })
+
+  it('does not revoke replacement logins issued in the cutoff second', async () => {
     const { id: userId } = await createTestUserDirect()
-    const revoked = await createDeviceAndSessionTokens({ uid: userId, did: v7() })
-    const anonymous = await createDeviceAndSessionTokens({ did: v7() })
+    const tokens = await createDeviceAndSessionTokens({ uid: userId, did: v7() })
+    const sid = tokens.sessionToken.payload.sid
+    const cutoffSeconds = Math.floor(Date.now() / 1000)
 
-    await revokeAllAuthenticatedSessions(userId)
-    await sessionValkeyClient.del([getJwtRevokedKey(revoked.sessionToken.payload.sid)])
-    await expect(isSessionRevoked(revoked.sessionToken.payload.sid, { userId })).resolves.toBe(true)
+    await revokeUserSessionsBefore(userId, cutoffSeconds)
 
-    const replacement = await createDeviceAndSessionTokens({
-      uid: userId,
-      did: anonymous.deviceToken.payload.did,
-      sid: anonymous.sessionToken.payload.sid,
-    })
-    await expect(isSessionRevoked(replacement.sessionToken.payload.sid, { userId })).resolves.toBe(
+    await expect(isSessionRevoked(sid, { userId, issuedAt: cutoffSeconds - 1 })).resolves.toBe(true)
+    await expect(isSessionRevoked(sid, { userId, issuedAt: cutoffSeconds })).resolves.toBe(true)
+    await expect(isSessionRevoked(sid, { userId, issuedAt: cutoffSeconds + 1 })).resolves.toBe(
       false,
     )
   })
 
-  it('rejects missing or deleted users when revoking sessions', async () => {
-    const deleted = await createTestUserDirect()
-    const session = await createDeviceAndSessionTokens({ uid: deleted.id, did: v7() })
-    await softDeleteUser(deleted.id)
-    const missingId = v7()
+  it('honors a direct session revocation while checking the user cutoff', async () => {
+    const userId = v7()
+    const sid = v7()
+    const cutoffSeconds = Math.floor(Date.now() / 1000)
 
-    for (const [userId, code] of [
-      [deleted.id, '23514'],
-      [missingId, 'P0002'],
-    ] as const) {
-      await expect(
-        revokeAuthenticatedSession(userId, session.sessionToken.payload.sid),
-      ).rejects.toMatchObject({ code })
-      await expect(revokeAllAuthenticatedSessions(userId)).rejects.toMatchObject({ code })
-    }
-  })
+    await revokeSession(sid)
+    await revokeUserSessionsBefore(userId, cutoffSeconds - 10)
 
-  it('returns false when a live user has no matching session', async () => {
-    const user = await createTestUserDirect()
-    await expect(revokeAuthenticatedSession(user.id, v7())).resolves.toBe(false)
+    await expect(isSessionRevoked(sid, { userId, issuedAt: cutoffSeconds })).resolves.toBe(true)
   })
 
   it('keeps revocation flags for the longest supported session lifetime', async () => {

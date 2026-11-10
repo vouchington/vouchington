@@ -25,9 +25,13 @@ describe('logout cleanup lease', () => {
     await expect(logoutCleanupLease.release(sid, 'abandoned-token')).resolves.toBe(true)
 
     let cleanupCalls = 0
-    await runLogoutPushCleanupAndRevoke(sid, { userId }, async () => {
-      cleanupCalls += 1
-    })
+    await runLogoutPushCleanupAndRevoke(
+      sid,
+      { userId, issuedAt: Math.floor(Date.now() / 1000) },
+      async () => {
+        cleanupCalls += 1
+      },
+    )
 
     expect(cleanupCalls).toBe(1)
     await expect(isSessionRevoked(sid)).resolves.toBe(true)
@@ -39,22 +43,32 @@ describe('logout cleanup lease', () => {
     expect(owner).toEqual({ state: 'reserved', token: 'stalled-owner' })
 
     await expect(
-      withLogoutCleanupClock(() => runLogoutPushCleanupAndRevoke(sid, { userId }, async () => {})),
+      withLogoutCleanupClock(() =>
+        runLogoutPushCleanupAndRevoke(
+          sid,
+          { userId, issuedAt: Math.floor(Date.now() / 1000) },
+          async () => {},
+        ),
+      ),
     ).rejects.toThrow('logout push cleanup is already in progress')
     await expect(isSessionRevoked(sid)).resolves.toBe(true)
 
     await logoutCleanupLease.release(sid, 'stalled-owner')
     let cleanupCalls = 0
-    await runLogoutPushCleanupAndRevoke(sid, { userId }, async () => {
-      cleanupCalls += 1
-    })
+    await runLogoutPushCleanupAndRevoke(
+      sid,
+      { userId, issuedAt: Math.floor(Date.now() / 1000) },
+      async () => {
+        cleanupCalls += 1
+      },
+    )
     expect(cleanupCalls).toBe(0)
     await expect(isSessionRevoked(sid)).resolves.toBe(true)
   })
 
   it('cleans pre-revocation exact replays once when a bodyless owner commits the fence first', async () => {
     const { sid, userId } = await createTestSessionCookies()
-    const revocationOptions = { userId }
+    const revocationOptions = { userId, issuedAt: Math.floor(Date.now() / 1000) }
     const binding = {
       endpoint: `https://push.example.test/${crypto.randomUUID()}`,
       subscriptionId: v7(),
@@ -123,7 +137,7 @@ describe('logout cleanup lease', () => {
 
   it('does not clean an exact binding admitted after the revocation fence', async () => {
     const { sid, userId } = await createTestSessionCookies()
-    const revocationOptions = { userId }
+    const revocationOptions = { userId, issuedAt: Math.floor(Date.now() / 1000) }
 
     await runLogoutPushCleanupAndRevoke(sid, revocationOptions, async () => {})
 
@@ -145,7 +159,7 @@ describe('logout cleanup lease', () => {
 
   it('does not issue a cleanup capability after durable revocation when cache state is lost', async () => {
     const { sid, userId } = await createTestSessionCookies()
-    const options = { userId }
+    const options = { userId, issuedAt: Math.floor(Date.now() / 1000) }
     await runLogoutPushCleanupAndRevoke(sid, options, async () => {})
     await sessionValkeyClient.unlink([
       getJwtLogoutCleanupAdmissionKey(sid),
@@ -249,7 +263,11 @@ describe('logout cleanup lease', () => {
     })
 
     await expect(
-      runLogoutPushCleanupAndRevoke(sid, { userId }, async () => {}),
+      runLogoutPushCleanupAndRevoke(
+        sid,
+        { userId, issuedAt: Math.floor(Date.now() / 1000) },
+        async () => {},
+      ),
     ).resolves.toBeUndefined()
     await expect(isSessionRevoked(sid)).resolves.toBe(true)
     expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(releaseError, expect.any(Object))
@@ -266,9 +284,13 @@ describe('logout cleanup lease', () => {
     })
 
     await expect(
-      runLogoutPushCleanupAndRevoke(sid, { userId }, async () => {
-        throw cleanupError
-      }),
+      runLogoutPushCleanupAndRevoke(
+        sid,
+        { userId, issuedAt: Math.floor(Date.now() / 1000) },
+        async () => {
+          throw cleanupError
+        },
+      ),
     ).rejects.toBe(cleanupError)
     expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(releaseError, expect.any(Object))
     await sessionValkeyClient.unlink([getJwtRevokedKey(sid)])

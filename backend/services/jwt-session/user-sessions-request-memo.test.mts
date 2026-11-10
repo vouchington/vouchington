@@ -190,10 +190,9 @@ describe('request-local session user-agent memo', () => {
             deviceContext: { user_agent: userAgent },
           }),
         )
-        // The query path rolled back its new row, so the next write must use the cold insert path.
-        // The client-only path committed the row, so the next write is a warm lookup.
+        // The query path rolled back its new row; the client-only path used its own transaction.
         expect(countCapturedQueriesByAnnotation(queries, 'upsertUserAgentString')).toBe(
-          useClient ? 1 : 2,
+          useClient ? 1 : 3,
         )
       })
 

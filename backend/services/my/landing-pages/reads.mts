@@ -16,16 +16,9 @@ export async function getLandingPageRowForUser(
   validateUUID(pageId)
   const execute = (query: QueryExecutor) =>
     query(sql`/* getLandingPageRowForUser */
-    SELECT page.id, page.user_id, page.title, page.subtitle, page.slug,
-      page.id = COALESCE(
-        (SELECT preferred.id FROM user_landing_pages preferred
-          WHERE preferred.user_id = ${userId} AND preferred.is_default LIMIT 1),
-        (SELECT fallback.id FROM user_landing_pages fallback
-          WHERE fallback.user_id = ${userId} ORDER BY fallback.id ASC LIMIT 1)
-      ) AS is_default,
-      page.created_at, page.updated_at
-    FROM user_landing_pages page
-    WHERE page.id = ${pageId} AND page.user_id = ${userId}
+    SELECT id, user_id, title, subtitle, slug, is_default, created_at, updated_at
+    FROM user_landing_pages
+    WHERE id = ${pageId} AND user_id = ${userId}
     LIMIT 1
   `)
   const { rows } = await execute(options?.query ?? read)
@@ -40,16 +33,9 @@ export async function getLandingPageRowByUsernameAndSlug(
   const user = await getPublicUserByAny(username)
   assert(user?.username, 404, 'Landing page not found')
   const { rows } = await read(sql`/* getLandingPageRowByUsernameAndSlug */
-    SELECT page.id, page.user_id, page.title, page.subtitle, page.slug,
-      page.id = COALESCE(
-        (SELECT preferred.id FROM user_landing_pages preferred
-          WHERE preferred.user_id = ${user.id} AND preferred.is_default LIMIT 1),
-        (SELECT fallback.id FROM user_landing_pages fallback
-          WHERE fallback.user_id = ${user.id} ORDER BY fallback.id ASC LIMIT 1)
-      ) AS is_default,
-      page.created_at, page.updated_at
-    FROM user_landing_pages page
-    WHERE page.user_id = ${user.id} AND page.slug = ${validateLandingPageSlug(slug)}
+    SELECT id, user_id, title, subtitle, slug, is_default, created_at, updated_at
+    FROM user_landing_pages
+    WHERE user_id = ${user.id} AND slug = ${validateLandingPageSlug(slug)}
     LIMIT 1
   `)
   assert(rows[0], 404, 'Landing page not found')

@@ -28,20 +28,13 @@ export async function updateMyLandingPage(
 
   try {
     const { rows } = await write(sql`/* updateMyLandingPage */
-      UPDATE user_landing_pages AS page
+      UPDATE user_landing_pages
       SET
         title = CASE WHEN ${title !== undefined} THEN ${title ?? null} ELSE title END,
         subtitle = CASE WHEN ${subtitle !== undefined} THEN ${subtitle ?? null} ELSE subtitle END,
         slug = CASE WHEN ${slug !== undefined} THEN ${slug ?? null} ELSE slug END
-      WHERE page.id = ${pageId} AND page.user_id = ${userId}
-      RETURNING page.id, page.user_id, page.title, page.subtitle, page.slug,
-        page.id = COALESCE(
-          (SELECT preferred.id FROM user_landing_pages preferred
-            WHERE preferred.user_id = ${userId} AND preferred.is_default LIMIT 1),
-          (SELECT fallback.id FROM user_landing_pages fallback
-            WHERE fallback.user_id = ${userId} ORDER BY fallback.id ASC LIMIT 1)
-        ) AS is_default,
-        page.created_at, page.updated_at
+      WHERE id = ${pageId} AND user_id = ${userId}
+      RETURNING id, user_id, title, subtitle, slug, is_default, created_at, updated_at
     `)
 
     assert(rows[0], 404, 'Landing page not found')

@@ -118,14 +118,6 @@ registry row. Existing rows, including revoked or expired sessions, prevent lost
 being recreated. Session rows must therefore remain until user deletion; active-SID pruning would
 break this invariant. A registry read failure cannot authorize initialization.
 
-Security changes commit a durable per-user revocation cutoff with the mutation, preserving the
-actor session when required. Authentication and renewal check that cutoff within their existing
-session authority lookup; bounded session updates are cleanup, so incomplete cleanup or cache
-loss cannot restore revoked authority. The cutoff compares the first authenticated admission time,
-since an anonymous session identifier can predate sign-in. Concurrent authentication observes the
-statement snapshot without locking the read set. Session lists advance their opaque cursor through
-retained invalid rows, including empty result pages, so a bounded scan does not hide later authority.
-
 Identity verification keeps a keyed document fingerprint after revocation and account deletion so
 the same document cannot verify another account. The domain HMAC key must remain stable while these
 hashes are retained: changing it would make older hashes uncheckable because raw document values

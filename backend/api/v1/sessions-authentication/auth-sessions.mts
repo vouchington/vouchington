@@ -37,14 +37,10 @@ app.route('/api/v1/auth/sessions').get(async (ctx: Context) => {
     ? decodeScopedPreciseTimestampCursor(options.after, scope, 'Invalid cursor format')
     : undefined
 
-  const { results, hasNextPage, continuation } = await listActiveUserSessions(
-    currentUser.id,
-    sessionData.sid,
-    {
-      limit: options.limit,
-      after,
-    },
-  )
+  const { results, hasNextPage } = await listActiveUserSessions(currentUser.id, sessionData.sid, {
+    limit: options.limit,
+    after,
+  })
   const cursorFor = (session: (typeof results)[number]) =>
     encodeScopedPreciseTimestampCursor(session.cursor_timestamp, session.id, scope)
   ctx.json({
@@ -52,9 +48,7 @@ app.route('/api/v1/auth/sessions').get(async (ctx: Context) => {
     page_info: {
       has_next_page: hasNextPage,
       start_cursor: results[0] ? cursorFor(results[0]) : null,
-      end_cursor: continuation
-        ? encodeScopedPreciseTimestampCursor(continuation.timestamp, continuation.id, scope)
-        : null,
+      end_cursor: hasNextPage && results.at(-1) ? cursorFor(results.at(-1)!) : null,
     },
   })
 })

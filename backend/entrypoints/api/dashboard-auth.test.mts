@@ -1,11 +1,8 @@
 import type { IncomingHttpHeaders, IncomingMessage } from 'node:http'
 import { describe, expect, it } from 'vitest'
 import { createWorkerSecretValidator, isAdminDashboardRequest } from './dashboard-auth.mts'
-import {
-  revokeAllAuthenticatedSessions,
-  revokeSession,
-  verifyDeviceAndSessionTokens,
-} from '@services/jwt-session'
+import { revokeSession, verifyDeviceAndSessionTokens } from '@services/jwt-session'
+import { revokeUserSessionsBefore } from '@services/jwt-session/session-revocation-keys'
 import { addTestUserRole } from '@voucha/test-helpers'
 import { createTestSessionCookies } from '@voucha/test-helpers/services/jwt-session/index'
 import { createVerifiedMfaTestSession } from '@voucha/test-helpers/authenticated-session'
@@ -47,8 +44,8 @@ describe('dashboard auth', () => {
       deviceToken: assured.deviceToken.token,
       sessionToken: assured.sessionToken.token,
     })
-    if (!verified) throw new Error('Expected an authenticated session')
-    await revokeAllAuthenticatedSessions(userId)
+    if (!verified || verified.iat === undefined) throw new Error('Expected an issued session')
+    await revokeUserSessionsBefore(userId, verified.iat)
 
     await expect(isAdminDashboardRequest(req({ cookie }))).resolves.toBe(false)
   })

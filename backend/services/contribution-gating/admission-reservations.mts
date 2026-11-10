@@ -81,15 +81,11 @@ export async function claimContributionAdmission(
     await query.commit()
     return { kind: 'replay', response: row.response }
   }
-  // A committed replay only waits for its own pending finalization; any other admission waits for
-  // the actor's live claim, which serializes one contribution admission per user.
-  const committedReplay = !row.expired && row.state === 'committed'
   const liveClaim = await query<{ retry_after_seconds: string }>(
     sql`/* claimContributionAdmission.liveClaim */
       SELECT GREATEST(1, CEIL(EXTRACT(EPOCH FROM lease_expires_at - clock_timestamp())))::integer::text AS retry_after_seconds
       FROM post_admission_claims
-      WHERE lease_expires_at > clock_timestamp()
-        AND (reservation_id = ${reservationId} OR (actor_user_id = ${actorId} AND NOT ${committedReplay}::boolean))`,
+      WHERE reservation_id = ${reservationId} AND lease_expires_at > clock_timestamp()`,
   )
   const liveClaimRetryAfterSeconds = parseClaimRetryAfterSeconds(
     liveClaim.rows[0]?.retry_after_seconds,
@@ -109,24 +105,22 @@ export async function claimContributionAdmission(
     INSERT INTO post_admission_attempt_results (post_admission_attempt_id, abandoned_at)
     SELECT attempt.id, clock_timestamp() FROM post_admission_attempts attempt
     JOIN post_admission_claims claim ON claim.reservation_id = attempt.reservation_id AND claim.lease_token = attempt.lease_token
-    WHERE claim.actor_user_id = ${actorId} AND claim.lease_expires_at <= clock_timestamp()
+    WHERE claim.reservation_id = ${reservationId} AND claim.lease_expires_at <= clock_timestamp()
     ORDER BY attempt.id ASC NULLS LAST
     ON CONFLICT (post_admission_attempt_id) DO NOTHING`)
-  // One lease per actor serializes their admissions; an expired lease of any reservation is taken
-  // over in the single conditional upsert below, after its attempt is marked abandoned.
   const leaseToken = randomUUID()
   const claim = await query<{
     reservation_id: string
   }>(sql`/* claimContributionAdmission.claim */
-      INSERT INTO post_admission_claims (reservation_id, actor_user_id, lease_token, leased_at, lease_expires_at) VALUES (${reservationId}, ${actorId}, ${leaseToken}, clock_timestamp(), clock_timestamp() + ${CONTRIBUTION_ADMISSION_CLAIM_SECONDS} * INTERVAL '1 second')
-      ON CONFLICT (actor_user_id) DO UPDATE SET reservation_id = EXCLUDED.reservation_id, lease_token = EXCLUDED.lease_token, leased_at = EXCLUDED.leased_at, lease_expires_at = EXCLUDED.lease_expires_at
+      INSERT INTO post_admission_claims (reservation_id, lease_token, leased_at, lease_expires_at) VALUES (${reservationId}, ${leaseToken}, clock_timestamp(), clock_timestamp() + ${CONTRIBUTION_ADMISSION_CLAIM_SECONDS} * INTERVAL '1 second')
+      ON CONFLICT (reservation_id) DO UPDATE SET lease_token = EXCLUDED.lease_token, leased_at = EXCLUDED.leased_at, lease_expires_at = EXCLUDED.lease_expires_at
       WHERE post_admission_claims.lease_expires_at <= clock_timestamp() RETURNING reservation_id`)
   if (claim.rowCount !== 1) {
     const contendedClaim = await query<{ retry_after_seconds: string }>(
       sql`/* claimContributionAdmission.contendedClaim */
         SELECT GREATEST(1, CEIL(EXTRACT(EPOCH FROM lease_expires_at - clock_timestamp())))::integer::text AS retry_after_seconds
         FROM post_admission_claims
-        WHERE actor_user_id = ${actorId} AND lease_expires_at > clock_timestamp()`,
+        WHERE reservation_id = ${reservationId} AND lease_expires_at > clock_timestamp()`,
     )
     await query.commit()
     return {

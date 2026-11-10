@@ -2,7 +2,6 @@ import { read, type QueryExecutor, type TransactionQuery } from '@data-stores/ps
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { validateSlug, validateUUID } from '@modules/utils'
-import { LANDING_PAGE_LIMIT_MAX_VALUES } from './limits.mts'
 import type {
   LandingPageCandidateReferralLink,
   LandingPageCandidateReview,
@@ -10,7 +9,7 @@ import type {
 } from './types.mts'
 const MAX_TITLE_LENGTH = 100
 const MAX_SUBTITLE_LENGTH = 280
-export const MAX_LANDING_PAGES = LANDING_PAGE_LIMIT_MAX_VALUES.pages_per_user
+export const MAX_LANDING_PAGES = 20
 
 export function validateTitle(title: string): string {
   const trimmed = title.trim()
@@ -78,9 +77,8 @@ export async function promoteOldestRemainingLandingPage(
 
   await query(sql`/* promoteOldestRemainingLandingPage */
     UPDATE user_landing_pages
-    SET is_default = TRUE
-    WHERE user_id = ${userId} AND id = ${nextId}
-      AND NOT EXISTS (SELECT 1 FROM user_landing_pages WHERE user_id = ${userId} AND is_default)
+    SET is_default = CASE WHEN id = ${nextId} THEN TRUE ELSE FALSE END
+    WHERE user_id = ${userId}
   `)
 }
 

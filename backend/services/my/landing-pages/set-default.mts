@@ -1,5 +1,4 @@
-import type { TransactionQuery } from '@data-stores/psql'
-import { runLandingPageWriteTransaction } from './write-transaction.mts'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getLandingPageRowForUser } from './reads.mts'
@@ -10,26 +9,26 @@ export async function setMyLandingPageDefault(
   userId: string,
   pageId: string,
 ): Promise<LandingPage> {
-  const page = await runLandingPageWriteTransaction(query =>
-    setLandingPageDefaultInTransaction(userId, pageId, query),
-  )
+  await using query = await beginTransaction()
+  const page = await updateLandingPageDefault(query, userId, pageId)
+  await query.commit()
   // Public landing-page GET responses are edge-cached and tagged user:<username> (see
   // ts-shared/cache/cache-tags.mts), so changing the default page must purge that tag.
   await invalidate.users(userId)
   return page
 }
 
-async function setLandingPageDefaultInTransaction(
+async function updateLandingPageDefault(
+  query: Awaited<ReturnType<typeof beginTransaction>>,
   userId: string,
   pageId: string,
-  query: TransactionQuery,
 ): Promise<LandingPage> {
   await getLandingPageRowForUser(userId, pageId, { query })
   return replaceLandingPageDefault(query, userId, pageId)
 }
 
 async function replaceLandingPageDefault(
-  query: TransactionQuery,
+  query: Awaited<ReturnType<typeof beginTransaction>>,
   userId: string,
   pageId: string,
 ): Promise<LandingPage> {

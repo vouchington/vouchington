@@ -54,8 +54,6 @@ export async function processUserDeletionCredentialsBatch(userId: string, batchS
       sql`/* processUserDeletionCredentials:apiKeys */ DELETE FROM api_keys WHERE id IN (
         SELECT id FROM api_keys WHERE user_id = ${userId} ORDER BY id LIMIT ${batchSize}
       )`,
-      sql`/* processUserDeletionCredentials:sessionCutoff */ DELETE FROM user_session_revocation_cutoffs
-        WHERE user_id = ${userId}`,
       sql`/* processUserDeletionCredentials:sessions */ DELETE FROM user_sessions WHERE id IN (
         SELECT id FROM user_sessions WHERE user_id = ${userId} ORDER BY id LIMIT ${batchSize}
       )`,

@@ -1,4 +1,4 @@
-import { runLandingPageWriteTransaction } from './write-transaction.mts'
+import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import { isHttpUrlWithoutFragment, validateUUID } from '@modules/utils'
 import { getSelectedLandingPageCandidates } from './selected-candidates.mts'
@@ -121,22 +121,19 @@ export async function replaceMyLandingPageItems(
       assertNoDuplicateSelection('referral_link', entry.referral_link_id, seenSelections)
     }
   }
-  const { result: committedPage, urls: committedUrls } = await runLandingPageWriteTransaction(
-    async query => {
-      const page = await getLandingPageRowForUser(userId, pageId, { query })
-      const urls = await registerLandingPageLinkUrls(userId, items, query)
-      const { groupMemberRows, itemRows } = buildLandingPageInsertRows(items, urls.idsByInput)
-      await replaceLandingPageItemRows(query, pageId, itemRows, groupMemberRows)
-      const result = await resolveLandingPageWithItems(page, {
-        query,
-        selections: { profileLinksById, reviewsById, referralLinksById },
-      })
-      return { result, urls }
-    },
-  )
+  await using query = await beginTransaction()
+  const page = await getLandingPageRowForUser(userId, pageId, { query })
+  const urls = await registerLandingPageLinkUrls(userId, items, query)
+  const { groupMemberRows, itemRows } = buildLandingPageInsertRows(items, urls.idsByInput)
+  await replaceLandingPageItemRows(query, pageId, itemRows, groupMemberRows)
+  const result = await resolveLandingPageWithItems(page, {
+    query,
+    selections: { profileLinksById, reviewsById, referralLinksById },
+  })
+  await query.commit()
   // Public landing-page GET responses are edge-cached and tagged user:<username> (see
   // ts-shared/cache/cache-tags.mts), so a reorder/replace of items must purge that tag.
-  await invalidate.urls(...committedUrls.records.flatMap(url => [url.id, url.url]))
+  await invalidate.urls(...urls.records.flatMap(url => [url.id, url.url]))
   await invalidate.users(userId)
-  return committedPage
+  return result
 }

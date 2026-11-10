@@ -1,6 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { getOAuthFriendReferenceConnectBatchSize } from './work-limits.mts'
-import { requestOAuthFriendRepairSweep } from './request-friend-repair-sweep.mts'
 
 type FriendProvider = 'facebook' | 'github' | 'x'
 
@@ -62,5 +61,4 @@ export async function resolveConnectedFriendReferences(
      SET friend_references_resolve_pending_at = NULL WHERE id = $1::uuid`,
     [accountId],
   )
-  await requestOAuthFriendRepairSweep(query, provider)
 }

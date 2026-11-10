@@ -5,7 +5,7 @@ import {
   SESSION_EXPIRATION_SECONDS,
   DEVICE_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
-import { getJwtRevokedKey } from './constants.mts'
+import { getJwtRevokedKey, getJwtUserRevokedBeforeKey } from './constants.mts'
 
 export const REVOCATION_EXPIRATION_SECONDS = Math.max(
   SESSION_EXPIRATION_SECONDS,
@@ -33,4 +33,22 @@ export async function revokeSessionKeys(sessionIds: readonly string[]): Promise<
     batch.set(getJwtRevokedKey(sessionId), '1', REVOCATION_EXPIRY)
   }
   await sessionValkeyClient.exec(batch, true)
+}
+
+export async function revokeUserSessionsBefore(
+  userId: string,
+  revokedBeforeSeconds = Math.floor(Date.now() / 1000),
+): Promise<void> {
+  await sessionValkeyClient.set(
+    getJwtUserRevokedBeforeKey(userId),
+    String(revokedBeforeSeconds),
+    REVOCATION_EXPIRY,
+  )
+}
+
+export async function getUserSessionsRevokedBefore(userId: string): Promise<number | null> {
+  const value = await sessionValkeyClient.get(getJwtUserRevokedBeforeKey(userId))
+  if (value === null) return null
+  const revokedBeforeSeconds = Number(value)
+  return Number.isFinite(revokedBeforeSeconds) ? revokedBeforeSeconds : null
 }

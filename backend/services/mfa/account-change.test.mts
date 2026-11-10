@@ -38,11 +38,12 @@ describe('account settings changes', () => {
       name: 'processSendAccountSecurityEmail',
       data: { input: { emailAddress: user.email_address }, variables: {} },
     })
+    const issuedAt = Math.floor(Date.now() / 1000) - 1
     await expect(
-      isSessionRevoked(other.sessionToken.payload.sid, { userId: user.id }),
+      isSessionRevoked(other.sessionToken.payload.sid, { userId: user.id, issuedAt }),
     ).resolves.toBe(true)
     await expect(
-      isSessionRevoked(actor.sessionToken.payload.sid, { userId: user.id }),
+      isSessionRevoked(actor.sessionToken.payload.sid, { userId: user.id, issuedAt }),
     ).resolves.toBe(false)
     await expect(
       withReauthenticatedAccountChange(user.id, actor.session, token, async () => {}),

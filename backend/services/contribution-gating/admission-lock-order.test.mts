@@ -6,9 +6,9 @@ import {
   ensureTestAdmittedPostIdentity,
   executeTestAdmittedPost,
   expireContributionAdmissionClaimForTest,
+  insertContributionAdmissionFkLockedTopicForTest,
 } from '@voucha/test-helpers'
 import { runContributionAdmission } from './admission.mts'
-import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from './config.mts'
 
 function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
   let resolve: (value: T) => void = () => undefined
@@ -19,77 +19,32 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 }
 
 describe('contribution admission lock order', () => {
-  it('rejects a concurrent same-user admission as in progress until the first finishes', async () => {
+  it('allows same-actor commits after mutations acquire foreign-key locks', async () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const mutationStarted = deferred<void>()
-    const releaseMutation = deferred<void>()
-    const first = runContributionAdmission({
-      actorId: user.id,
-      idempotencyKey: crypto.randomUUID(),
-      intent: { request: crypto.randomUUID() },
-      execute: async query => {
-        mutationStarted.resolve()
-        await releaseMutation.promise
-        return executeTestAdmittedPost(query)
-      },
-    })
-    await mutationStarted.promise
-
-    const concurrent = await runContributionAdmission({
-      actorId: user.id,
-      idempotencyKey: crypto.randomUUID(),
-      intent: { request: crypto.randomUUID() },
-      execute: executeTestAdmittedPost,
-    })
-    expect(concurrent.kind).toBe('in_progress')
-    if (concurrent.kind !== 'in_progress') throw new Error('expected in_progress')
-    expect(concurrent.retryAfterSeconds).toBeGreaterThanOrEqual(1)
-    expect(concurrent.retryAfterSeconds).toBeLessThanOrEqual(CONTRIBUTION_ADMISSION_CLAIM_SECONDS)
-
-    releaseMutation.resolve()
-    await expect(first).resolves.toMatchObject({ kind: 'created' })
-    await expect(
+    const mutationsReady = deferred<void>()
+    let readyCount = 0
+    const create = () =>
       runContributionAdmission({
         actorId: user.id,
         idempotencyKey: crypto.randomUUID(),
         intent: { request: crypto.randomUUID() },
-        execute: executeTestAdmittedPost,
-      }),
-    ).resolves.toMatchObject({ kind: 'created' })
-  })
+        execute: async query => {
+          await insertContributionAdmissionFkLockedTopicForTest(query, user.id)
+          const created = await executeTestAdmittedPost(query)
+          readyCount += 1
+          if (readyCount === 2) mutationsReady.resolve()
+          await mutationsReady.promise
+          return created
+        },
+      })
 
-  it('lets another request by the same user take over an expired lease and fences the original', async () => {
-    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const original = {
-      actorId: user.id,
-      idempotencyKey: crypto.randomUUID(),
-      intent: { request: crypto.randomUUID() },
-    }
-    const mutationStarted = deferred<void>()
-    const releaseMutation = deferred<void>()
-    const originalResponse = { post: { id: crypto.randomUUID() } }
-    const first = runContributionAdmission({
-      ...original,
-      execute: async query => {
-        mutationStarted.resolve()
-        await releaseMutation.promise
-        await ensureTestAdmittedPostIdentity(query, originalResponse.post.id)
-        return originalResponse
-      },
-    })
-    await mutationStarted.promise
-    await expireContributionAdmissionClaimForTest(original)
+    const [first, second] = await Promise.all([create(), create()])
 
-    await expect(
-      runContributionAdmission({
-        actorId: user.id,
-        idempotencyKey: crypto.randomUUID(),
-        intent: { request: crypto.randomUUID() },
-        execute: executeTestAdmittedPost,
-      }),
-    ).resolves.toMatchObject({ kind: 'created' })
-    releaseMutation.resolve()
-    await expect(first).resolves.toEqual({ kind: 'in_progress', retryAfterSeconds: 1 })
+    expect(first).toMatchObject({ kind: 'created' })
+    expect(second).toMatchObject({ kind: 'created' })
+    if (first.kind !== 'created' || second.kind !== 'created')
+      throw new Error('expected both admissions to create')
+    expect(first.response.post.id).not.toBe(second.response.post.id)
   })
 
   it('serializes expired-lease takeover without deadlocking the original owner', async () => {
