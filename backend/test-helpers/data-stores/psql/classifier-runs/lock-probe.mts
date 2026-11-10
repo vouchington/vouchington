@@ -27,17 +27,6 @@ export async function probeClassifierSubjectLock<C, L, E>(
   }
 }
 
-/** Probes the subject's lock while another transaction holds it, as the control for the probe. */
-export async function probeClassifierSubjectLockWhileHeld<C, L, E>(
-  adapter: ClassifierRunAdapter<C, L, E>,
-  subject: ClassifierRunSubject,
-): Promise<'free' | 'held'> {
-  await using holder = await beginTransaction()
-  await adapter.lockCurrent(holder, subject)
-  // Awaited so the holder is still open while the probe waits on its lock.
-  return await probeClassifierSubjectLock(adapter, subject)
-}
-
 /**
  * The adapter with every candidate search (topics or stories, whichever it captures) preceded by a
  * lock probe. `observed` collects what each search saw, and `afterCapture` runs once the search

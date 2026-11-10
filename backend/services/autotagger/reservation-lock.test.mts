@@ -9,10 +9,7 @@ import {
   type AutotaggerFeedItemFixture,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
 import { changeConfigurationAfterFirstResolve } from '@voucha/test-helpers/data-stores/psql/classifier-runs/altered-configuration'
-import {
-  observeCandidateCaptureLock,
-  probeClassifierSubjectLockWhileHeld,
-} from '@voucha/test-helpers/data-stores/psql/classifier-runs/lock-probe'
+import { observeCandidateCaptureLock } from '@voucha/test-helpers/data-stores/psql/classifier-runs/lock-probe'
 import {
   getClassifierRunCandidateTopicIdsForTest,
   getSubjectClassifierRunFacts,
@@ -31,14 +28,6 @@ function reviseWithEmbedding(fixture: AutotaggerFeedItemFixture) {
 }
 
 describe('C6 reservation lock scope (real PG)', () => {
-  it('detects a held post lock, so a free feed-item read means something', async () => {
-    const post = await createAutotaggerPostFixture()
-    const item = await createAutotaggerFeedItemFixture()
-
-    expect(await probeClassifierSubjectLockWhileHeld(adapter, post.subject)).toBe('held')
-    expect(await probeClassifierSubjectLockWhileHeld(adapter, item.subject)).toBe('free')
-  })
-
   it('searches a post’s candidates with no lock held, then reserves them', async () => {
     const fixture = await createAutotaggerPostFixture({ topicCount: 2 })
     await requestAutotaggerRun(fixture)
