@@ -5,8 +5,8 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { postsWorkConfig } from '../../work-limits.mts'
 import { getPostIds } from '../get-ids.mts'
 
-describe('bounded post search candidates', () => {
-  it('advances past inspected but filtered rows and uses a returned-row cursor on a full page', async () => {
+describe('inspected post search cap', () => {
+  it('skips excluded rows in the filter and returns the matching post', async () => {
     await postsWorkConfig.waitForInitialization()
     const user = await createTestUserDirect()
     if (!user) throw new Error('Expected bounded search test user')
@@ -41,16 +41,8 @@ describe('bounded post search candidates', () => {
             post_types: [...options.post_types],
             exclude_post_ids: [newest!, middle!],
           })
-          expect(filtered.results).toEqual([])
-          expect(filtered.page_info.has_next_page).toBe(true)
-          expect(filtered.page_info.end_cursor).toEqual(expect.any(String))
-          const continuation = await getPostIds(undefined, {
-            ...options,
-            post_types: [...options.post_types],
-            exclude_post_ids: [newest!, middle!],
-            after: filtered.page_info.end_cursor!,
-          })
-          expect(continuation.results.map(row => row.id)).toEqual([oldest])
+          expect(filtered.results.map(row => row.id)).toEqual([oldest])
+          expect(filtered.page_info.has_next_page).toBe(false)
         },
       )
     } finally {

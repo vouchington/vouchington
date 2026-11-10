@@ -1,4 +1,5 @@
 import { encodeCursor } from '@modules/pagination'
+import { postSearchRankingCursorScope } from '@services/posts/search/get-ids-page-info'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
@@ -11,6 +12,11 @@ import { runPostDiscoveryFiniteWindowScenario } from './post-discovery-finite-wi
 const PAGE_SIZE = 25
 const EXPECTED_POST_WORK = 3010
 const POST_SEARCH_QUERY = 'buildPostSearchQuery'
+const EXHAUSTED_RELEVANCE_CURSOR = encodeCursor({
+  ranking: -1,
+  id: '00000000-0000-7000-8000-000000000001',
+  scope: postSearchRankingCursorScope.relevance,
+})
 
 async function getPage(options: PostSearchOptions) {
   return getPostIds(seedUser, options)
@@ -45,7 +51,7 @@ function registerGate(
     allowEmptyResult,
     crossPartition: {
       posts:
-        'Unscoped post search traverses the retained history through a bounded candidate window.',
+        'Unscoped post search walks retained history by the sort key and stops at the inspected-row cap.',
     },
   })
 }
@@ -88,14 +94,17 @@ async function captureKeywordRelevanceScenarios(): Promise<void> {
 
   const sparseOptions = { ...broadOptions, text_search_query: '139999' }
   const sparseFirst = await getPage(sparseOptions)
-  if (sparseFirst.results.length > 1 || !sparseFirst.page_info.end_cursor)
-    throw new Error('Numeric keyword search must return at most one post and a cohort cursor')
+  if (sparseFirst.results.length > 1)
+    throw new Error('Numeric keyword search must return at most one post')
   const sparseFirstId = 'post-discovery-keyword-relevance-sparse-first'
   registerGate(sparseFirstId, true)
   await capture(sparseFirstId, sparseOptions)
 
   const sparseContinuationId = 'post-discovery-keyword-relevance-sparse-continuation'
-  const sparseContinuation = { ...sparseOptions, after: sparseFirst.page_info.end_cursor }
+  const sparseContinuation = {
+    ...sparseOptions,
+    after: sparseFirst.page_info.end_cursor ?? EXHAUSTED_RELEVANCE_CURSOR,
+  }
   const sparseContinuationPage = await getPage(sparseContinuation)
   if (sparseContinuationPage.results.length > 1)
     throw new Error('Sparse keyword continuation must return at most one post')
@@ -104,18 +113,17 @@ async function captureKeywordRelevanceScenarios(): Promise<void> {
 
   const emptyOptions = { ...broadOptions, text_search_query: 'no-matching-seed-token-4989' }
   const emptyFirst = await getPage(emptyOptions)
-  if (
-    emptyFirst.results.length !== 0 ||
-    !emptyFirst.page_info.has_next_page ||
-    !emptyFirst.page_info.end_cursor
-  )
-    throw new Error('Empty keyword search must return a cursor for its next cohort')
+  if (emptyFirst.results.length !== 0 || emptyFirst.page_info.has_next_page)
+    throw new Error('Unmatched keyword search must be an exhausted empty page')
   const emptyFirstId = 'post-discovery-keyword-relevance-empty-first'
   registerGate(emptyFirstId, true)
   await capture(emptyFirstId, emptyOptions)
 
   const emptyContinuationId = 'post-discovery-keyword-relevance-empty-continuation'
-  const emptyContinuation = { ...emptyOptions, after: emptyFirst.page_info.end_cursor }
+  const emptyContinuation = {
+    ...emptyOptions,
+    after: EXHAUSTED_RELEVANCE_CURSOR,
+  }
   const emptyContinuationPage = await getPage(emptyContinuation)
   if (emptyContinuationPage.results.length !== 0)
     throw new Error('Empty keyword cursor must remain empty in its continuation')

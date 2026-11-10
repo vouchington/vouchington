@@ -1,6 +1,6 @@
 import type { BasicUser } from '@services/users/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { PostSearchOptions } from './types.mts'
+import type { PostSearchOptions, PostSearchSort } from './types.mts'
 import {
   detectSearchSort,
   hasSemanticSearch as hasSemanticSearchFn,
@@ -13,36 +13,39 @@ import { appendPostSearchSelectAndJoins } from './query-builder/select-and-joins
 import { appendPostSearchWhereClause } from './query-builder/where-clause.mts'
 import { buildSemanticPostCandidates } from './query-builder/semantic-candidates.mts'
 import { usesHackerNewsHotCandidates } from './hacker-news-hot-options.mts'
-import { buildHackerNewsHotCandidates } from './query-builder/hacker-news-hot-candidates.mts'
-import {
-  buildBoundedPostSearchQuery,
-  usesBoundedPostSearchCandidates,
-} from './query-builder/bounded-candidates.mts'
+import { getPostsWorkLimit } from '../work-limits.mts'
+
+const INSPECTED_SORTS = new Set<PostSearchSort>([
+  'new',
+  'best',
+  'hot',
+  'trending',
+  'relevance',
+  'following_new',
+])
+
+/** Page size capped by the inspected-row limit. Semantic search keeps its vector window. */
+export function postSearchStatementLimit(
+  options: PostSearchOptions,
+  sort: PostSearchSort,
+  hasSemanticSearch: boolean,
+): number | undefined {
+  if (options.omitLimit) return undefined
+  const requested = options.limit ?? 100
+  const cap = inspectedRowCap(options, sort, hasSemanticSearch)
+  return cap === null ? requested : Math.min(requested, cap)
+}
 
 export function buildPostSearchQuery(
   currentUser?: BasicUser,
   options: PostSearchOptions = {},
 ): SQLStatement {
-  const pinnedDecisionInstant = options.time_range_as_of
-  const decisionInstant =
-    pinnedDecisionInstant instanceof Date && !Number.isNaN(pinnedDecisionInstant.getTime())
-      ? pinnedDecisionInstant
-      : new Date()
-  const { limit, omitLimit = false, omitOrderBy = false, semanticSearchEmbedding } = options
+  const decisionInstant = new Date()
+  const { omitLimit = false, omitOrderBy = false, semanticSearchEmbedding } = options
   const hasTextSearch = hasTextSearchFn(options)
   const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
   const rawSort = detectSearchSort(options)
   const sort = rawSort === 'following_new' && !currentUser ? 'new' : rawSort
-  if (usesBoundedPostSearchCandidates(options, sort)) {
-    return buildBoundedPostSearchQuery(
-      currentUser,
-      options,
-      sort,
-      decisionInstant,
-      hasTextSearch,
-      hasSemanticSearch,
-    )
-  }
   const rankingScoreExpression = buildPostRankingScoreExpression({
     hasTextSearch,
     hasSemanticSearch,
@@ -61,38 +64,19 @@ export function buildPostSearchQuery(
   })
   if (hasSemanticSearch)
     ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch, decisionInstant))
-  // Hacker News hot ranks within its fixed newest candidate cohort.
-  const useHackerNewsHotCandidates = usesHackerNewsHotCandidates(options)
-  if (useHackerNewsHotCandidates) {
-    ctes.push(
-      buildHackerNewsHotCandidates(
-        currentUser,
-        options,
-        hasTextSearch,
-        hasSemanticSearch,
-        rankingScoreExpression,
-        decisionInstant,
-      ),
-    )
-  }
   appendCtes(query, ctes)
   appendPostSearchSelectAndJoins(query, {
     decisionInstant,
     useSemanticCandidates: hasSemanticSearch,
-    useHackerNewsHotCandidates,
     currentUser,
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
     options,
-    rankingScoreExpression:
-      useHackerNewsHotCandidates && rankingScoreExpression
-        ? sql`posts.ranking_score`
-        : rankingScoreExpression,
+    rankingScoreExpression,
     sort,
   })
   appendPostSearchWhereClause(query, {
-    paginationOnly: useHackerNewsHotCandidates,
     decisionInstant,
     currentUser,
     followingRankExpression,
@@ -106,11 +90,24 @@ export function buildPostSearchQuery(
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
-    limit,
+    limit: postSearchStatementLimit(options, sort, hasSemanticSearch),
     omitLimit,
     omitOrderBy,
     sort,
   })
 
   return query
+}
+
+function inspectedRowCap(
+  options: PostSearchOptions,
+  sort: PostSearchSort,
+  hasSemanticSearch: boolean,
+): number | null {
+  if (options.omitLimit || options.omitOrderBy) return null
+  if (usesHackerNewsHotCandidates(options))
+    return getPostsWorkLimit('hacker_news_hot_candidate_limit')
+  if (hasSemanticSearch) return null
+  if (!INSPECTED_SORTS.has(sort)) return null
+  return getPostsWorkLimit('post_search_filter_candidate_limit')
 }

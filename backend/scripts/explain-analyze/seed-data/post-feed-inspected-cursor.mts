@@ -102,12 +102,12 @@ export async function cursorBeforePostFeedSeedShare(
         entity_id: row.post_id,
         delivery_rank: row.delivery_rank,
         delivery_type: 'share',
-        raw_has_more: true,
       },
     ],
     1,
     mode,
     asOf,
+    1,
   )
   const cursor = page.page_info.end_cursor
   if (!cursor) throw new Error('Could not map the seeded share to a continuation cursor')

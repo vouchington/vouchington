@@ -122,11 +122,6 @@ type PostSearchQueryOptions = {
   vote_score_lt?: number
   ranking_lt?: number
   hot_score_lt?: number
-  cohort_hi?: string
-  cohort_lo?: string
-  cohort_before_id?: string
-  cohort_cap?: number
-  following_phase?: 'followed' | 'other'
 }
 
 export type PostSearchOptions = PostSearchFilterOptions &

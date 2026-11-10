@@ -1,7 +1,7 @@
 import { encodeCursor } from '@modules/pagination'
 import { describe, expect, it } from 'vitest'
 
-import { decodePostSearchCursor } from './get-ids-page-info.mts'
+import { decodePostSearchCursor, postSearchRankingCursorScope } from './get-ids-page-info.mts'
 import { stableHotCursorScope } from './stable-hot-rank.mts'
 
 const postId = '00000000-0000-4000-8000-000000000001'
@@ -10,7 +10,13 @@ describe('post search page info', () => {
   it('decodes following_new cursors with ranking and id', () => {
     expect(
       decodePostSearchCursor(
-        { after: encodeCursor({ ranking: 12.5, id: postId }) },
+        {
+          after: encodeCursor({
+            ranking: 12.5,
+            id: postId,
+            scope: postSearchRankingCursorScope.following_new,
+          }),
+        },
         'following_new',
         false,
       ),
@@ -20,6 +26,19 @@ describe('post search page info', () => {
   it('rejects malformed following_new cursors', () => {
     expect(() =>
       decodePostSearchCursor({ after: encodeCursor({ id: postId }) }, 'following_new', false),
+    ).toThrow('Invalid cursor for sort=following_new')
+    expect(() =>
+      decodePostSearchCursor(
+        {
+          after: encodeCursor({
+            ranking: 12.5,
+            id: postId,
+            scope: postSearchRankingCursorScope.relevance,
+          }),
+        },
+        'following_new',
+        false,
+      ),
     ).toThrow('Invalid cursor for sort=following_new')
   })
 

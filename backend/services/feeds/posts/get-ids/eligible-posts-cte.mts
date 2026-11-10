@@ -6,6 +6,7 @@ import {
   buildTopicAliasMembershipExists,
   buildUniversalTopicMembershipExists,
 } from '@modules/feed-query-builders'
+import { buildStablePostHotRankExpression } from '@services/posts/search/stable-hot-rank'
 import type { PrivateUser } from '@services/users/types'
 import type { PostFeedOptions } from '../../types.mts'
 import {
@@ -24,6 +25,15 @@ export type PostFeedEligibilityOptions = {
   hashtagTopicIds: PostFeedOptions['hashtag_topic_ids']
   hashtagAliasIds: PostFeedOptions['hashtag_alias_ids']
   hasUnknownHashtag: PostFeedOptions['has_unknown_hashtag']
+}
+
+export function appendEligiblePostsCTE(
+  query: SQLStatement,
+  options: PostFeedEligibilityOptions,
+): void {
+  query.append(sql`, eligible_posts AS NOT MATERIALIZED (`)
+  appendEligiblePostsSelect(query, options)
+  query.append(sql`)`)
 }
 
 export function appendEligiblePostsSelect(
@@ -53,6 +63,11 @@ export function appendEligiblePostsSelect(
         posts.broadcast,
         posts.votes_score_net,
         posts.votes_score_sort`)
+  if (sort === 'hot')
+    query
+      .append(sql`,\n        `)
+      .append(buildStablePostHotRankExpression('posts'))
+      .append(sql` AS hot_score`)
   query.append(sql`
       FROM posts
       JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)

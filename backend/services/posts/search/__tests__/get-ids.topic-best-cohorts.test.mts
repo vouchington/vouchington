@@ -12,9 +12,9 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { postsWorkConfig } from '../../work-limits.mts'
 import { getPostIds } from '../get-ids.mts'
 
-describe('topic-scoped data point best cohorts', () => {
+describe('topic-scoped data point best order', () => {
   it.each([true, false])(
-    'finishes the newest cohort before a higher scored older post with explicit type %s',
+    'ranks the topic by score before age with explicit type %s',
     async explicitType => {
       await postsWorkConfig.waitForInitialization()
       const user = await createTestUser()
@@ -47,7 +47,7 @@ describe('topic-scoped data point best cohorts', () => {
           limit: 1,
         }
         const first = await getPostIds(user, options)
-        expect(first.results.map(row => row.id)).toEqual([ids[2]])
+        expect(first.results.map(row => row.id)).toEqual([ids[0]])
         expect(first.page_info.has_next_page).toBe(true)
         const restoreCap = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
           post_search_filter_candidate_limit: 1,
@@ -57,13 +57,13 @@ describe('topic-scoped data point best cohorts', () => {
             ...options,
             after: first.page_info.end_cursor!,
           })
-          expect(second.results.map(row => row.id)).toEqual([ids[1]])
+          expect(second.results.map(row => row.id)).toEqual([ids[2]])
           expect(second.page_info.has_next_page).toBe(true)
           const third = await getPostIds(user, {
             ...options,
             after: second.page_info.end_cursor!,
           })
-          expect(third.results.map(row => row.id)).toEqual([ids[0]])
+          expect(third.results.map(row => row.id)).toEqual([ids[1]])
           await expect(
             getPostIds(user, {
               ...options,
@@ -119,11 +119,8 @@ describe('topic-scoped data point best cohorts', () => {
         limit: 1,
       }
       const first = await getPostIds(user, options)
-      expect(first.results).toEqual([])
-      expect(first.page_info.has_next_page).toBe(true)
-      expect(first.page_info.end_cursor).toEqual(expect.any(String))
-      const second = await getPostIds(user, { ...options, after: first.page_info.end_cursor! })
-      expect(second.results.map(row => row.id)).toEqual([ids[0]])
+      expect(first.results.map(row => row.id)).toEqual([ids[0]])
+      expect(first.page_info.has_next_page).toBe(false)
     } finally {
       restore()
     }

@@ -47,28 +47,19 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
 - Post-search hot and trending ranks use a fixed epoch, keeping order stable across requests
   when vote scores are unchanged. Future timestamps participate in the rank; near ties can differ
   from an age-decayed calculation. Their opaque cursor binds that ordering.
-- Personalized post feeds inspect a bounded delivery prefix before applying post visibility and
-  feed filters. A short or empty page can still have `has_next_page`; the cursor advances over
-  inspected deliveries so later eligible posts and shares remain reachable, including more shares
-  for the same post. REST and MCP clients continue with the returned `end_cursor` and preserve the
-  feed filters until `has_next_page` is false.
-- Post search inspects a bounded index-ordered prefix before applying visibility and other residual
-  filters. A short or empty page can have `has_next_page` true; clients continue with its cursor.
-  Newest topic searches use that same inspected-key walk, checking membership against each post
-  rather than collecting all posts across the topic's aliases. Sparse topics can therefore need
-  several continuation requests before returning a match.
-  Following-first search exhausts the followed phase before scanning the remaining authors, using
-  the viewer’s follow set as a subquery. Keyword relevance ranks only within each bounded newest-first
-  cohort. Its opaque cursor carries the cohort boundary and rank/ID position, so older posts enter
-  the next cohort rather than disappearing beyond the cap. Relevant posts in newer cohorts precede
-  higher-scoring posts in older cohorts. Data-point best sorting with a topic filter also ranks only
-  inside bounded newest-first topic cohorts. A higher-scoring older post can therefore appear in a
-  later cohort. Its cursor retains the cohort boundary, score and ID until that cohort is exhausted,
-  then advances to older topic keys; posts beyond the cap remain reachable. Resolved semantic search
-  retains its finite vector window.
-- Hacker News hot search fixes a bounded newest-first cohort before checking eligibility and ranking
-  by hot score. Continuations stay inside that cohort; older posts outside it do not enter later
-  pages. A sparse eligible subset can therefore end before filling a page.
+- Personalized post feeds walk the viewer's deliveries with the feed filters in the same statement:
+  a join for best, and each delivery arm ordered for new and hot. The inspected-row cap is the
+  walk's limit. A short page can still have `has_next_page` when that cap binds; the cursor names
+  the last returned delivery. REST and MCP clients continue with the returned `end_cursor` and
+  preserve the feed filters until `has_next_page` is false.
+- Post search applies visibility, topic membership, and other filters in `WHERE`, then orders by the
+  sort key and stops at the inspected-row cap. Topic membership is a keyed `EXISTS`. Best orders by
+  score, then id. Hot and trending order by the stored hot rank, then id. Keyword relevance matches
+  `search_vector` and orders by ranking score, then id. Each cursor is that keyset. A short page can
+  have `has_next_page` true when the cap binds before the page fills. Following-first search orders
+  followed authors ahead of the rest. Resolved semantic search retains its finite vector window.
+- Hacker News hot search uses the same hot-rank order. Its time filter is the requested window
+  capped at thirty elapsed days, and the inspected-row cap limits the walk.
 - Friend recommendation cursors use the exact
   `{"resource":"my-friend-recommendations","owner_id":"…","order":"id-asc"}` scope. Unscoped
   simple ID cursors are rejected.
@@ -200,10 +191,10 @@ response page; cursor predicates compare that text directly as `timestamptz`. Pu
 remain dates and cursors remain opaque strings. Numeric timestamp and `share:`-prefixed historical
 payloads are rejected under the current prelaunch contract.
 
-The public posts RSS document uses the same inspected-key continuation as post search. A short or
-empty document can still have more candidates; its Atom `rel="next"` link carries the opaque
-`after` cursor and preserves the feed filters. RSS generation does not scan additional pages to fill
-the current document.
+The public posts RSS document uses the same post-search walk. A short document can still carry an
+Atom `rel="next"` link when the inspected-row cap binds before the page fills. That link's `after`
+cursor is the last returned post and preserves the feed filters. RSS generation does not scan
+additional pages to fill the current document.
 
 Feed cursors include the direct/share tier and bind the viewer, administrator context, community,
 feed type, time range, score thresholds and effective filters. Recency cursors separately bind their

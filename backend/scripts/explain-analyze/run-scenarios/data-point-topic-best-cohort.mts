@@ -21,10 +21,6 @@ export async function runDataPointTopicBestCohortScenarios(): Promise<void> {
       undefined,
       queryOptions({ data_point_topic_ids: multiTopicIds }),
     )
-    if (!sparsePage.page_info.has_next_page)
-      throw new Error('Sparse topic-best EXPLAIN fixture did not retain a next cohort')
-    const afterSparsePage = requireCursor(sparsePage.page_info.end_cursor, 'sparse first page')
-
     await capture('search-data-points-topic-best-cohort-first')
     await capture('search-data-points-topic-best-cohort-within', {
       after: afterFirstPage,
@@ -33,7 +29,7 @@ export async function runDataPointTopicBestCohortScenarios(): Promise<void> {
       data_point_topic_ids: multiTopicIds,
     })
     await capture('search-data-points-topic-best-cohort-next', {
-      after: afterSparsePage,
+      ...(sparsePage.page_info.end_cursor ? { after: sparsePage.page_info.end_cursor } : {}),
       data_point_topic_ids: multiTopicIds,
     })
   } finally {

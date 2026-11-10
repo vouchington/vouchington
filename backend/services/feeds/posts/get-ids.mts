@@ -64,5 +64,5 @@ export async function getPostFeedIds(
     candidateLimit,
   })
   const { rows } = await read(query)
-  return mapPostFeedResponse(rows, safeLimit, sort, decisionInstant)
+  return mapPostFeedResponse(rows, safeLimit, sort, decisionInstant, candidateLimit)
 }

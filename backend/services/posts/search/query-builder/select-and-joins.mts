@@ -17,10 +17,6 @@ export function appendPostSearchSelectAndJoins(
     rankingScoreExpression,
     sort,
     useSemanticCandidates = false,
-    useBoundedCandidates = false,
-    includeBoundedPostRows = false,
-    useHackerNewsHotCandidates = false,
-    includeHotCandidateColumns = false,
   }: {
     currentUser?: BasicUser
     decisionInstant?: Date
@@ -31,10 +27,6 @@ export function appendPostSearchSelectAndJoins(
     rankingScoreExpression: SQLStatement | null
     sort: PostSearchSort
     useSemanticCandidates?: boolean
-    useBoundedCandidates?: boolean
-    includeBoundedPostRows?: boolean
-    useHackerNewsHotCandidates?: boolean
-    includeHotCandidateColumns?: boolean
   },
 ): void {
   query.append(sql`SELECT
@@ -48,28 +40,11 @@ export function appendPostSearchSelectAndJoins(
       posts.structured_data
     `)
   }
-  if (includeHotCandidateColumns) query.append(sql`, posts.votes_score_sort, posts.votes_score_net`)
   if (rankingScoreExpression) appendSelectExpression(query, rankingScoreExpression, 'ranking_score')
   if (followingRankExpression)
     appendSelectExpression(query, followingRankExpression, 'following_rank')
   query.append(sortSelectColumn(sort, decisionInstant))
-  if (useHackerNewsHotCandidates) {
-    query.append(sql`
-      FROM hacker_news_hot_candidates posts
-    `)
-  } else if (useBoundedCandidates) {
-    if (includeBoundedPostRows)
-      query.append(sql`\n      FROM bounded_post_search_candidates posts\n    `)
-    else
-      query.append(sql`
-      FROM bounded_post_search_candidates
-      CROSS JOIN LATERAL (
-        SELECT bounded_post.* FROM posts bounded_post
-        WHERE bounded_post.id = bounded_post_search_candidates.id
-        LIMIT 1
-      ) posts
-    `)
-  } else if (useSemanticCandidates) {
+  if (useSemanticCandidates) {
     // Keep ranking/filter distance work bounded even when a full-table join looks cheaper.
     query.append(sql`
       FROM semantic_post_candidates
