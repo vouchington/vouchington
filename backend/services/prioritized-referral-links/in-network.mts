@@ -39,20 +39,13 @@ export async function getInNetworkLinks(
     new Date(Date.now() - getVotedPostMaxAgeDays() * MILLISECONDS_PER_DAY),
   )
   const query = sql`/* getInNetworkReferralLinks */
-WITH recent_vote_events AS (
-  -- Keep the existing window over ballot events; repeated votes on one post still consume slots.
-  SELECT id, post_id, user_id
-  FROM post_votes
+WITH recent_votes AS (
+  -- Newest current ballots, read index-only from (user_id, id DESC) INCLUDE (post_id, score).
+  SELECT post_id, score
+  FROM post_vote_states
   WHERE user_id = ${viewerId} AND post_id >= ${minVotedPostId}
   ORDER BY id DESC
   LIMIT ${RECENT_VOTE_LIMIT}
-), recent_votes AS (
-  SELECT state.id, state.post_id, state.score
-  FROM recent_vote_events event
-  JOIN post_vote_states state
-    ON state.post_id = event.post_id
-   AND state.user_id = event.user_id
-   AND state.id = event.id
 ),
 rated_positively AS (
   SELECT DISTINCT p.created_by_id AS user_id

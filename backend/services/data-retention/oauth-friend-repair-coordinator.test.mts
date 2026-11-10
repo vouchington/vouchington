@@ -11,7 +11,12 @@ import {
   makeTestGithubRepairEdgeIds,
   observeTestGithubFriendRepairCoordinator,
 } from '@voucha/test-helpers/oauth-friend-repair'
-import { repairOAuthFriendEdges } from './cleanup-oauth-friend-repair.mts'
+import { beginTransaction } from '@data-stores/psql'
+import {
+  repairOAuthFriendEdges,
+  repairOAuthFriendEdgesInTransaction,
+} from './cleanup-oauth-friend-repair.mts'
+import { requestOAuthFriendRepairSweep } from '../oauth-accounts/request-friend-repair-sweep.mts'
 
 describe('OAuth friend repair coordinator', () => {
   it('advances owned pages and clears the finished cursor without touching an excluded edge', async () => {
@@ -68,5 +73,27 @@ describe('OAuth friend repair coordinator', () => {
 
   it('rejects a non-positive page size', async () => {
     await expect(repairOAuthFriendEdges('github', 0)).rejects.toThrow(RangeError)
+  })
+
+  it('starts no sweep until one is requested and ends it when the sweep completes', async () => {
+    await using query = await beginTransaction()
+    const countCursors = async () =>
+      (
+        await query<{ count: number }>(
+          `/* countTestRepairCursors */ SELECT count(*)::int AS count
+           FROM oauth_friend_reference_repair_cursors WHERE provider = 'github'`,
+        )
+      ).rows[0]!.count
+    await query(
+      `/* clearTestRepairCursor */ DELETE FROM oauth_friend_reference_repair_cursors WHERE provider = 'github'`,
+    )
+    expect(await repairOAuthFriendEdgesInTransaction(query, 'github', 1)).toMatchObject({
+      worked: false,
+      hasMore: false,
+    })
+    expect(await countCursors()).toBe(0)
+    await requestOAuthFriendRepairSweep(query, 'github')
+    expect(await countCursors()).toBe(1)
+    await query.rollback()
   })
 })

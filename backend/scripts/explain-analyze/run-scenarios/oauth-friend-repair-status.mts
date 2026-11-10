@@ -43,7 +43,6 @@ export async function runOAuthFriendRepairStatusScenarios(end: string): Promise<
       },
       undefined,
       [
-        'initializeOAuthFriendRepairCursor',
         'lockOAuthFriendRepairCursor',
         'findOAuthFriendRepairSweepEnd',
         'advanceOAuthFriendRepairCursor',

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { beginTransaction, write } from '@data-stores/psql'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { insertTestReview, insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
@@ -132,5 +133,28 @@ describe('landing page atomic item replacement', () => {
     ])
     expect(replaced.items).toMatchObject([{ type: 'review', review: { id: review } }])
     expect(await getTestLandingPageGroupMemberCount(page.id)).toBe(0)
+  })
+
+  it('refuses a topic retired after validation instead of writing a stale reference', async () => {
+    const user = await createTestUserDirect()
+    const page = await createMyLandingPage(user.id, { title: 'Merged topic', slug: 'merged' })
+    const sourceId = await insertTestTopic({
+      createdById: user.id,
+      name: `Landing source ${crypto.randomUUID()}`,
+      slug: `landing-source-${crypto.randomUUID()}`,
+    })
+    await write('/* retireLandingTestTopic */ UPDATE topics SET deleted_at = now() WHERE id = $1', [
+      sourceId,
+    ])
+    const rows = buildLandingPageInsertRows(
+      [{ type: 'topic_group', topic_id: sourceId, entries: [] }],
+      new Map(),
+    )
+    await using query = await beginTransaction()
+    await expect(
+      replaceLandingPageItemRows(query, page.id, rows.itemRows, rows.groupMemberRows),
+    ).rejects.toMatchObject({ status: 409 })
+    await query.rollback()
+    expect((await getMyLandingPage(user.id, page.id)).items).toEqual([])
   })
 })
