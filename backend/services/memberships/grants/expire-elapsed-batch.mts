@@ -19,18 +19,18 @@ export async function resumeExpireElapsedMemberships(
 }
 
 export async function readOrphanedQueuedGrantRepairCursor(): Promise<string | null> {
-  const { rows } = await write<{ cursor_user_id: string | null }>(
+  const { rows } = await write<{ cursor_id: string | null }>(
     sql`/* readOrphanedQueuedGrantRepairCursor */
-    SELECT cursor_user_id FROM membership_queued_grant_repair_cursors WHERE is_singleton`,
+    SELECT cursor_id FROM membership_queued_grant_repair_cursors WHERE is_singleton`,
   )
-  return rows[0]?.cursor_user_id ?? null
+  return rows[0]?.cursor_id ?? null
 }
 
 export async function saveOrphanedQueuedGrantRepairCursor(cursor: string | null): Promise<void> {
   await write(sql`/* saveOrphanedQueuedGrantRepairCursor */
-    INSERT INTO membership_queued_grant_repair_cursors (is_singleton, cursor_user_id)
+    INSERT INTO membership_queued_grant_repair_cursors (is_singleton, cursor_id)
     VALUES (TRUE, ${cursor}::uuid)
-    ON CONFLICT (is_singleton) DO UPDATE SET cursor_user_id = EXCLUDED.cursor_user_id`)
+    ON CONFLICT (is_singleton) DO UPDATE SET cursor_id = EXCLUDED.cursor_id`)
 }
 
 export async function expireElapsedMembershipsBatch(
