@@ -1,7 +1,6 @@
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { runWithTransaction, write } from '@data-stores/psql'
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PostStory, Story } from './types.mts'
 import { invalidateStories } from './cache-invalidation.mts'
@@ -53,7 +52,6 @@ export async function adminSetStoryOfficialItem(
   officialItemId: string,
 ): Promise<Story | null> {
   const story = await runWithTransaction(undefined, async query => {
-    await lockOfficialItemMembership(query, storyId, officialItemId)
     const { rows } = await write(
       sql`/* adminSetStoryOfficialItem */
     UPDATE stories
@@ -92,17 +90,6 @@ export async function adminSetStoryOfficialItem(
   return story
 }
 
-async function lockOfficialItemMembership(
-  query: TransactionQuery,
-  storyId: string,
-  officialItemId: string,
-): Promise<void> {
-  await query(
-    sql`/* adminSetStoryOfficialItem:lockItem */ SELECT id FROM rss_feed_items WHERE id = ${officialItemId} AND deleted_at IS NULL FOR UPDATE`,
-  )
-  await lockStoryLifecycles(query, [storyId])
-}
-
 export async function createPostStory(
   postId: string,
   storyId: string,
@@ -112,7 +99,8 @@ export async function createPostStory(
   const { rows } = await write(
     sql`/* createPostStory */
     INSERT INTO story_posts (post_id, story_id, initiated_by_id)
-    VALUES (${postId}, ${storyId}, ${initiatedById})
+    SELECT ${postId}, story.id, ${initiatedById}
+    FROM stories story WHERE story.id = ${storyId} AND story.deleted_at IS NULL
     ON CONFLICT (story_id) DO NOTHING
     RETURNING post_id, story_id, initiated_by_id, created_at
   `,
