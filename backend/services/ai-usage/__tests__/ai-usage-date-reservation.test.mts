@@ -80,7 +80,10 @@ describe('acquireTestAiUsageDateReservation', () => {
       id: timestampToUuidv7LowerBound(Date.now()),
       costMicrounits: 321,
     })
-    await expect(getDailyAiCostTotalMicrounits()).resolves.toMatchObject({ totalMicrounits: 321 })
+    // Refresh bypasses a stale entry that an earlier test left for this recycled day's fake noon.
+    await expect(refreshDailyAiCostTotalMicrounits()).resolves.toMatchObject({
+      totalMicrounits: 321,
+    })
     await first.release()
     // Slot choice follows Date. Acquiring again while the clock sits inside the reserved day
     // drops every slot that reaches that day, and the earliest day then has none left.
