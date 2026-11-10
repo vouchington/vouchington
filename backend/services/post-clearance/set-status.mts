@@ -1,7 +1,6 @@
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { reviveClassifierRunRequests } from '@services/classifier-run-revival'
-import { lockPostPublication } from '@services/post-publication'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 import {
   admitAutomatedPostModeration,
@@ -65,7 +64,6 @@ async function writePostClearanceStatus(
   const changeType = CLEARANCE_CHANGE_TYPES[status]
   const transactionOptions = options ?? {}
   const run = async (query: TransactionQuery) => {
-    await lockPostPublication(query, postId)
     if (decision.platformOverride) {
       await ensureCurrentPostModerationVersion(postId, { query })
     }

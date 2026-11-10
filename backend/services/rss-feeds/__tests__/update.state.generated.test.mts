@@ -1,10 +1,9 @@
-import { it, expect, beforeAll, describe, vi } from 'vitest'
+import { it, expect, beforeAll, describe } from 'vitest'
 import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
 import { updateRssFeedWithStateAsCurrentUser } from '../update-current-user.mts'
 import { getRssFeedById } from '../get.mts'
 import {
-  beginTransaction,
   createTestTopic,
   createTestUser,
   getRssFeedCrawlById,
@@ -14,7 +13,6 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { createHash, randomUUID } from 'node:crypto'
 import { persistRssFeedCrawlAndMetadata, searchRssFeedCrawls } from '../crawls.mts'
-import * as publicationLock from '@services/post-publication/lock'
 describe('update.generated (state)', () => {
   let sharedUser: PrivateUser
   beforeAll(async () => {
@@ -183,75 +181,5 @@ describe('update.generated (state)', () => {
     expect(crawl!.feed_data).toEqual(feedData)
     expect(Buffer.isBuffer(crawl!.feed_data_sha256)).toBe(true)
     expect(crawl!.feed_data_sha256?.equals(feedDataSha256)).toBe(true)
-  })
-  async function whileFeedRowHeld(
-    feedId: string,
-    entered: Promise<void>,
-    start: () => Promise<unknown>,
-    probe: () => Promise<void>,
-    restore: () => void,
-  ): Promise<unknown> {
-    const locked = Promise.withResolvers<void>()
-    const release = Promise.withResolvers<void>()
-    const holder = (async () => {
-      await using query = await beginTransaction()
-      await query(`/* testUpdate */ SELECT 1 FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`, [
-        feedId,
-      ])
-      locked.resolve()
-      await release.promise
-      await query.commit()
-    })()
-    await locked.promise
-    const pending = start()
-    let probeError: unknown
-    try {
-      await entered
-      await probe()
-    } catch (err) {
-      probeError = err
-    } finally {
-      release.resolve()
-      restore()
-    }
-    await holder
-    await pending
-    return probeError
-  }
-  it('takes the publication lock before waiting on the feed row', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTestTopic({
-      user: sharedUser,
-      hostname: `publication-lock-${random}.example.com`,
-    })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
-      title: `Publication lock ${random}`,
-    })
-    const lockScope = publicationLock.lockPostPublicationScope
-    const scopeHeld = Promise.withResolvers<void>()
-    const scopeSpy = vi
-      .spyOn(publicationLock, 'lockPostPublicationScope')
-      .mockImplementation(async (query, scope) => {
-        await lockScope(query, scope)
-        scopeHeld.resolve()
-      })
-    await expect(
-      whileFeedRowHeld(
-        feed.id,
-        scopeHeld.promise,
-        () => updateRssFeedById(feed.id, { title: `Updated ${random}` }),
-        async () => {
-          await using query = await beginTransaction()
-          await query(`/* testUpdate */ SET LOCAL lock_timeout = '50ms'`)
-          await lockScope(query, { type: 'rss_feed', rssFeedId: feed.id })
-          await query.commit()
-        },
-        () => scopeSpy.mockRestore(),
-      ),
-    ).resolves.toMatchObject({ code: '55P03' })
   })
 })

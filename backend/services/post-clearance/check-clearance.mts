@@ -4,7 +4,7 @@ import { enqueueClassifierRunDispatcher } from '@queues/ai-agents/enqueues/class
 import { requestClassifierRuns } from '@services/classifier-runs'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
@@ -41,7 +41,6 @@ async function applyClearanceDecision(
   postId: string,
   moderationSystemUserId: string,
 ) {
-  await lockPostPublication(query, postId)
   const { rows: updatedRows } = await query<{
     clearance_status: 'approved' | 'rejected' | 'in_review'
     community_id: string | null

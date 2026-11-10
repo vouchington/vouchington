@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
-  beginTransaction,
   createTestPost,
   createTestTopic,
   getEntityRelation,
@@ -15,73 +14,44 @@ import {
 } from '@voucha/test-helpers'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { capturePublisherFeedPublicationJobs } from '@voucha/test-helpers/publisher-feed-publication-jobs'
-import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { observeTestEntityRelationVoteStatsLock } from '@voucha/test-helpers/entity-relation-vote-stats-locks'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { getPublisherTypeTopics } from '../../topics/publisher-type-topics.mts'
 import { createEntityRelationElectionTarget } from './target.mts'
 import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from './vote-stats-batch.mts'
 
 describe('entity relation vote stats batch locking', () => {
-  it(
-    'locks overlapping relation batches in stable order without deadlocking',
-    { timeout: 3000 },
-    async () => {
-      const firstPost = await createTestPost()
-      const secondPost = await createTestPost()
-      const firstTopic = await createTestTopic()
-      const secondTopic = await createTestTopic()
-      const relation = getEntityRelationMetadataOrThrow({
-        subjectType: 'post',
-        objectType: 'topic',
-        predicate: 'category',
-      })
-      await Promise.all([
-        insertEntityRelation(relation.table_name, firstPost.id, firstTopic.id),
-        insertEntityRelation(relation.table_name, secondPost.id, secondTopic.id),
-      ])
-      const [[firstRow], [secondRow]] = (await Promise.all([
-        getEntityRelation(relation.table_name, firstPost.id, firstTopic.id),
-        getEntityRelation(relation.table_name, secondPost.id, secondTopic.id),
-      ])) as Array<Array<{ id: string }>>
-      if (!firstRow || !secondRow) throw new Error('Expected post topic relations')
-      const first = createEntityRelationElectionTarget(firstRow.id, relation.table_name)
-      const second = createEntityRelationElectionTarget(secondRow.id, relation.table_name)
-
-      await expect(
-        Promise.all([
-          updateEntityRelationElectionVoteStatsFromPrimaryBatch([first, second]),
-          updateEntityRelationElectionVoteStatsFromPrimaryBatch([second, first]),
-        ]),
-      ).resolves.toEqual([[], []])
-    },
-  )
-
-  it('locks post publication before waiting on a target relation row', async () => {
-    const post = await createTestPost()
-    const topic = await createTestTopic()
+  it('applies overlapping relation batches without deadlocking', { timeout: 3000 }, async () => {
+    const firstPost = await createTestPost()
+    const secondPost = await createTestPost()
+    const firstTopic = await createTestTopic()
+    const secondTopic = await createTestTopic()
     const relation = getEntityRelationMetadataOrThrow({
       subjectType: 'post',
       objectType: 'topic',
       predicate: 'category',
     })
-    await insertEntityRelation(relation.table_name, post.id, topic.id)
-    const [row] = (await getEntityRelation(relation.table_name, post.id, topic.id)) as Array<{
-      id: string
-    }>
-    if (!row) throw new Error('Expected post topic relation')
-    await setTestEntityRelationIdAndScore(relation.table_name, post.id, topic.id, row.id, 1)
-    const target = createEntityRelationElectionTarget(row.id, relation.table_name)
-    const proof = await observeTestEntityRelationVoteStatsLock(
-      target,
-      { type: 'post', postId: post.id },
-      query => updateEntityRelationElectionVoteStatsFromPrimaryBatch([target], { query }),
-    )
-    expect(proof.publicationLockHeld).toBe(true)
+    await Promise.all([
+      insertEntityRelation(relation.table_name, firstPost.id, firstTopic.id),
+      insertEntityRelation(relation.table_name, secondPost.id, secondTopic.id),
+    ])
+    const [[firstRow], [secondRow]] = (await Promise.all([
+      getEntityRelation(relation.table_name, firstPost.id, firstTopic.id),
+      getEntityRelation(relation.table_name, secondPost.id, secondTopic.id),
+    ])) as Array<Array<{ id: string }>>
+    if (!firstRow || !secondRow) throw new Error('Expected post topic relations')
+    const first = createEntityRelationElectionTarget(firstRow.id, relation.table_name)
+    const second = createEntityRelationElectionTarget(secondRow.id, relation.table_name)
+
+    await expect(
+      Promise.all([
+        updateEntityRelationElectionVoteStatsFromPrimaryBatch([first, second]),
+        updateEntityRelationElectionVoteStatsFromPrimaryBatch([second, first]),
+      ]),
+    ).resolves.toEqual([[], []])
   })
 
-  it('updates RSS alias relation stats and captures the item while alias scope is held', async () => {
+  it('updates RSS alias relation stats and captures the item', async () => {
     const suffix = randomUUID()
     const hostname = `vote-stats-lock-${suffix}.example.test`
     const feed = await createTestRssFeed({
@@ -113,8 +83,6 @@ describe('entity relation vote stats batch locking', () => {
     if (!row) throw new Error('Expected RSS item hashtag relation')
     await setTestEntityRelationIdAndScore(relation.table_name, itemId, aliasId, row.id, 1)
     const target = createEntityRelationElectionTarget(row.id, relation.table_name)
-    await using holder = await beginTransaction()
-    await lockTopicAliasPublicationScopes(holder, [aliasId])
     const jobs = await captureAddedPublicationEffectsForScope(aliasId, async () => {
       await expect(
         updateEntityRelationElectionVoteStatsFromPrimaryBatch([target]),
@@ -133,7 +101,7 @@ describe('entity relation vote stats batch locking', () => {
     expect(updated?.votes_score_net).toBe(0)
   })
 
-  it('updates publisher relation stats and captures the feed while its scope is held', async () => {
+  it('updates publisher relation stats and captures the feed', async () => {
     expect.hasAssertions()
     const sourceTopic = await createTestTopic({
       hostname: `batch-publisher-lock-${randomUUID()}.example.test`,

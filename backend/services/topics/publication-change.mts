@@ -1,8 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import {
-  recordPostPublicationChange,
-  lockTopicAliasPublicationScopes,
-} from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 
 type TopicAliasOwnershipChange = {
   aliasId: string
@@ -32,7 +29,6 @@ export async function recordTopicAliasPublicationChanges(
 
   const aliasIds = [...changesByAliasId.keys()].toSorted()
   if (aliasIds.length === 0) return
-  await lockTopicAliasPublicationScopes(query, aliasIds)
   for (const aliasId of aliasIds) {
     const retained = changesByAliasId.get(aliasId)!
     // oxlint-disable-next-line no-await-in-loop -- one captured alias scope per mutation.

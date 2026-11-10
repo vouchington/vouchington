@@ -4,7 +4,6 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { lockPostPublication } from '@services/post-publication'
 import {
   recordPublicationUnpublishedFeedback,
   type PublicationTrainingOptions,
@@ -40,7 +39,6 @@ export async function unpublishPost(
   assert(!publication.unpublished_at, 422, 'Post has already been unpublished')
 
   await using query = await beginTransaction()
-  await lockPostPublication(query, postId)
   const { rowCount } = await write(
     sql`/* unpublishPost */
       UPDATE community_post_reviews

@@ -1,11 +1,7 @@
 import { recomputeRegisteredPostHackerNewsFlags } from './post-hacker-news-flag-registry.mts'
 import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
 import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
-import {
-  isPostScopedPublicationRelationTable,
-  recordPostTopicRelationPublicationChanges,
-} from './post-topic-publication.mts'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
+import { recordPostTopicRelationPublicationChanges } from './post-topic-publication.mts'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import {
   getHostnamePolicyGroups,
@@ -47,13 +43,6 @@ export async function runRelationPublicationMutation<
     }
     await lockActiveUserSubjectsForMutation(query, activeUserSubjectIds)
     const capturePublication = options?.capturePublication !== false
-    const postScopeIds = [
-      ...((capturePublication || relationTable === 'relation__post__related__url') &&
-      isPostScopedPublicationRelationTable(relationTable)
-        ? subjectIds
-        : []),
-    ]
-    if (postScopeIds.length > 0) await lockPostPublicationPostScopes(query, postScopeIds)
     await options?.postMutationGuard?.assertAllowed(query)
     const changes = await mutation(query)
     if (!capturePublication && relationTable === 'relation__post__related__url') {

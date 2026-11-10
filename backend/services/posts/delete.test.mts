@@ -2,7 +2,6 @@ import { it, expect, describe, beforeAll, onTestFinished, vi } from 'vitest'
 import { deletePost } from './delete.mts'
 import { getPostByAny } from './get.mts'
 import {
-  beginTransaction,
   createTestUser,
   getPostDeletedById,
   getTestPostDeletedAt,
@@ -12,7 +11,6 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import * as postPublication from '@services/post-publication'
 import { ENTITY_LISTENERS_POST_DELETED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
@@ -183,71 +181,5 @@ describe('delete', () => {
         placement_revision: secondPlacement.placement_revision + 1,
       })
     })
-
-    it('takes the publication lock before waiting on the post row', async () => {
-      const random = Math.random().toString(36).slice(2, 15)
-      const postId = await insertTestPost({
-        title: `Publication lock ${random}`,
-        slug: `publication-lock-${random}`,
-        createdById: user.id,
-        markdown: 'Test content',
-      })
-      const post = await getPostByAny(postId)
-      if (!post) throw new Error('Expected test post')
-      const rowLocked = Promise.withResolvers<void>()
-      const releaseRow = Promise.withResolvers<void>()
-      const holder = holdPostRowLock({ postId, rowLocked, releaseRow })
-      await rowLocked.promise
-
-      const publicationLocked = Promise.withResolvers<void>()
-      const lockPublication = postPublication.lockPostPublication
-      const spy = vi
-        .spyOn(postPublication, 'lockPostPublication')
-        .mockImplementation(async (query, lockedPostId) => {
-          try {
-            return await lockPublication(query, lockedPostId)
-          } finally {
-            if (lockedPostId === postId) publicationLocked.resolve()
-          }
-        })
-      const deleting = deletePost(user, post)
-      try {
-        await publicationLocked.promise
-        await expect(acquirePostPublicationLockWithShortTimeout(postId)).rejects.toMatchObject({
-          code: '55P03',
-        })
-      } finally {
-        spy.mockRestore()
-        releaseRow.resolve()
-      }
-      await holder
-      await deleting
-    })
   })
 })
-
-async function holdPostRowLock({
-  postId,
-  rowLocked,
-  releaseRow,
-}: {
-  postId: string
-  rowLocked: PromiseWithResolvers<void>
-  releaseRow: PromiseWithResolvers<void>
-}): Promise<void> {
-  await using query = await beginTransaction()
-  await query(
-    `/* deletePost publication lock test */ SELECT 1 FROM posts WHERE id = $1 FOR UPDATE`,
-    [postId],
-  )
-  rowLocked.resolve()
-  await releaseRow.promise
-  await query.commit()
-}
-
-async function acquirePostPublicationLockWithShortTimeout(postId: string): Promise<void> {
-  await using query = await beginTransaction()
-  await query(`/* deletePost publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-  await postPublication.lockPostPublication(query, postId)
-  await query.commit()
-}

@@ -6,7 +6,6 @@ import {
   currentUserCanModifyRssFeedEnablement,
 } from './authorization.mts'
 import { recordRssFeedStatePublicationChange } from './publication-change.mts'
-import { lockPostPublicationScope } from '@services/post-publication/lock'
 import { applyCommittedRssFeedStateChangeEffects } from './state-effects.mts'
 import { runRssFeedStateTransaction } from './state-transaction.mts'
 import {
@@ -37,7 +36,6 @@ export async function setRssFeedStatesAsCurrentUser(
   if (changes.length === 0) return 'noop'
   for (const change of changes) assert(currentUserCanModify(currentUser, change), 403, 'Forbidden')
   const run = async (query: TransactionQuery): Promise<SetStatesResult> => {
-    await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId })
     const latest = await lockLatestRssFeedStates(
       query,
       rssFeedId,

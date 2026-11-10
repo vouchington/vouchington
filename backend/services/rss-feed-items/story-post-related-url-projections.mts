@@ -1,5 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
 import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 
 /**
@@ -16,7 +15,6 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
 
   const postIds = await lockStoriesAndFindStoryPostIds(query, uniqueStoryIds)
   if (postIds.length === 0) return false
-  await lockPostPublicationPostScopes(query, postIds)
 
   const { rows } = await query<{ post_id: string }>(
     `/* markStoryPostRelatedUrlProjectionsForStories */

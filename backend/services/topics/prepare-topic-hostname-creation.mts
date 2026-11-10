@@ -2,7 +2,6 @@ import type { TransactionQuery } from '@data-stores/psql'
 import type { CreateTopicUpdates } from './types.mts'
 import { prepareHostnameForOwnedMutation } from './resolve-hostname.mts'
 import sql from 'sql-template-strings'
-import { lockExistingTopicAliasPublicationScopes } from './alias-publication-locks.mts'
 
 export async function prepareTopicHostnameCreation(
   creatorId: string,
@@ -22,10 +21,5 @@ export async function prepareTopicHostnameCreation(
       ? await prepareHostnameForOwnedMutation(creatorId, updates.hostname, options.query)
       : undefined
 
-  await lockExistingTopicAliasPublicationScopes(
-    options.query,
-    [updates.slug],
-    updates.source_topic_alias_id ? [updates.source_topic_alias_id] : [],
-  )
   return { hostnameId, revivalIds }
 }

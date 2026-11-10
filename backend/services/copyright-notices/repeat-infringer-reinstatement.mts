@@ -3,7 +3,6 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { encryptSecret } from '@modules/token-secrets'
 import { isAdminUser } from '@services/users/authorization'
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import type { PrivateUser } from '@services/users/types'
 
 export async function recordCopyrightRepeatInfringerReinstatement(
@@ -18,7 +17,6 @@ export async function recordCopyrightRepeatInfringerReinstatement(
   assert(isAdminUser(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   await using transaction = await beginTransaction(transactionOptions)
-  await lockAuthorPublicationLifecycle(transaction, input.accountUserId)
   const { rows: blocked } = await transaction<{ id: string }>(sql`
     /* recordCopyrightRepeatInfringerReinstatement */
     SELECT account_user_id AS id FROM copyright_repeat_infringer_account_states

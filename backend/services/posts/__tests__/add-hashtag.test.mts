@@ -1,31 +1,26 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   WEB_PROVENANCE,
-  beginTransaction,
   CONTRIBUTING_USER_AGE_MS,
   approveTestPost,
   createRandomString,
   createTestUser,
   createTestUserWithAge,
   getPostHashtagSourcesForTest,
-  getTestPostgresBackendProcessId,
   getTopicAliasIdForTest,
   insertTestPost,
   insertTestTopic,
 } from '@voucha/test-helpers'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { POST_CONTENT_EDIT_WINDOW_EXPIRED, TAG_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { manualTagLimitConfig } from '@services/tag-limits'
 import { createUnlinkedTopicAlias } from '@services/topics'
-import { lockPostPublication } from '@services/post-publication'
 import type { PrivateUser } from '@services/users/types'
 import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-completion'
 import { addPostHashtag } from '../add-hashtag.mts'
 import { createPost } from '../create.mts'
 import { getPostByAny } from '../get.mts'
-import { updatePost } from '../update.mts'
 
 const firstParty = { kind: 'first_party' } as const
 
@@ -216,84 +211,5 @@ describe('addPostHashtag', () => {
     await expect(
       addPostHashtag(administrator, privatePost.id, `#admin-${suffix}`, firstParty),
     ).resolves.toMatchObject({ tag: `admin-${suffix}` })
-  })
-
-  it('serializes additive intent with a replacement category update', async () => {
-    const suffix = createRandomString(8).toLowerCase()
-    const post = await createPost(creator, WEB_PROVENANCE, {
-      title: `Race ${suffix}`,
-      categories: [{ type: 'hashtag', hashtag: `#initial-${suffix}` }],
-    })
-    await using holder = await beginTransaction()
-    await lockPostPublication(holder, post.id)
-    const holderPid = await getTestPostgresBackendProcessId(holder)
-    await withTestOwnedPostgresWait(
-      {
-        holderProcessId: holderPid,
-        pool: 'write',
-        lock: { kind: 'advisory', key: `post:${post.id.toLowerCase()}` },
-        queryMarker: 'lockPostPublicationScope',
-        releaseHolder: () => holder[Symbol.asyncDispose](),
-      },
-      async waitForLock => {
-        const additive = addPostHashtag(creator, post.id, `#added-${suffix}`, firstParty)
-        await waitForLock(additive)
-        const replacement = updatePost(creator, post, {
-          categories: [{ type: 'hashtag', hashtag: `#replacement-${suffix}` }],
-        })
-        await holder.commit()
-        await Promise.all([additive, replacement])
-      },
-    )
-
-    expect(await getPostHashtagSourcesForTest(post.id)).toEqual([
-      {
-        alias: `replacement-${suffix}`,
-        authored_token: `#replacement-${suffix}`,
-        source: 'explicit',
-      },
-    ])
-  })
-
-  it('unions against the locked replacement when the replacement wins first', async () => {
-    const suffix = createRandomString(8).toLowerCase()
-    const post = await createPost(creator, WEB_PROVENANCE, {
-      title: `Reverse race ${suffix}`,
-      categories: [{ type: 'hashtag', hashtag: `#initial-${suffix}` }],
-    })
-    await using holder = await beginTransaction()
-    await lockPostPublication(holder, post.id)
-    const holderPid = await getTestPostgresBackendProcessId(holder)
-    await withTestOwnedPostgresWait(
-      {
-        holderProcessId: holderPid,
-        pool: 'write',
-        lock: { kind: 'advisory', key: `post:${post.id.toLowerCase()}` },
-        queryMarker: 'lockPostPublicationScope',
-        releaseHolder: () => holder[Symbol.asyncDispose](),
-      },
-      async waitForLock => {
-        const replacement = updatePost(creator, post, {
-          categories: [{ type: 'hashtag', hashtag: `#replacement-${suffix}` }],
-        })
-        await waitForLock(replacement)
-        const additive = addPostHashtag(creator, post.id, `#added-${suffix}`, firstParty)
-        await holder.commit()
-        await Promise.all([replacement, additive])
-      },
-    )
-
-    expect(await getPostHashtagSourcesForTest(post.id)).toEqual([
-      {
-        alias: `added-${suffix}`,
-        authored_token: `#added-${suffix}`,
-        source: 'explicit',
-      },
-      {
-        alias: `replacement-${suffix}`,
-        authored_token: `#replacement-${suffix}`,
-        source: 'explicit',
-      },
-    ])
   })
 })

@@ -3,7 +3,6 @@ import type { RetentionWorkBudget } from './work-budget.mts'
 import { getDataRetentionLimits } from './config.mts'
 import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import {
-  lockAuthorPublicationLifecycle,
   processAuthorDeletionPublicationBatch,
   retainUserCascadeHardDeletedPosts,
 } from '@services/post-publication'
@@ -23,7 +22,6 @@ export async function cleanupSoftDeletedUser(
   if (budget.remainingRows === 0) return { deleted: 0, hasMore: true }
   await using query = await beginTransaction()
   await lockFinalUserPurge(query, targetId)
-  await lockAuthorPublicationLifecycle(query, targetId)
   if (
     !(await lockEligibleSoftDeletedUserForFinalPurge(query, targetId, cutoffDate, lowerBoundDate))
   ) {

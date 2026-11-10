@@ -27,8 +27,6 @@ import {
   type PendingRssFeedItemCategorySnapshot,
 } from './category-projection-result.mts'
 import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
-import { lockTopicAliasPublicationScopes } from '@services/post-publication'
-
 // Keeps per-call Valkey work below the client in-flight ceiling during large category imports.
 // Canonical definition lives in @voucha/types/entities/rss-feed-item (avoids a
 // @queues/rss-feed-maintenance <-> @services/rss-feed-items workspace cycle:
@@ -126,13 +124,6 @@ async function upsertRssFeedItemCategorySnapshots(
 
   await using query = await beginTransaction()
   {
-    await lockTopicAliasPublicationScopes(
-      query,
-      [
-        ...categoryData.flatMap(row => [row.existing_topic_alias_id, row.new_topic_alias_id]),
-        ...toUpdate.map(category => category.topicAliasId),
-      ].filter((id): id is string => id !== null && id !== undefined),
-    )
     const currentCategoryData: CategoryDataRow[] = []
     for (const batch of categorySqlBatches) {
       // oxlint-disable-next-line no-await-in-loop -- bounded chunks are rechecked before the category write.

@@ -5,7 +5,7 @@ import { sanitizeOAuthAccountPii } from './delete-oauth-pii.mts'
 import { withUserDeletionTransaction } from './delete-phase-transaction.mts'
 
 export async function processUserDeletionCredentialsBatch(userId: string, batchSize: number) {
-  return withUserDeletionTransaction(userId, async query => {
+  return withUserDeletionTransaction(async query => {
     const statements = [
       sql`/* processUserDeletionCredentials:facebookFriends */
         DELETE FROM facebook_friends WHERE (facebook_account_id, facebook_friend_id) IN (

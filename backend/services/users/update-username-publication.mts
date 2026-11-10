@@ -1,9 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import type { SQLStatement } from 'sql-template-strings'
-import {
-  lockAuthorPublicationLifecycle,
-  recordPostPublicationChange,
-} from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 
 export async function commitUserUpdateOperation(
   userId: string,
@@ -16,7 +13,6 @@ export async function commitUserUpdateOperation(
   if (kind === 'fields' && username === undefined)
     return write(`/* updateUserFields */ ${text}`, values).then(() => undefined)
   await using query = await beginTransaction()
-  await lockAuthorPublicationLifecycle(query, userId)
   let result: { rows: { previous_username: string | null }[] }
   switch (kind) {
     case 'fields':

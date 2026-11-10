@@ -1,14 +1,11 @@
 import { assertWhitelistedSqlIdentifier, beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import sql from 'sql-template-strings'
 
 export async function withUserDeletionTransaction<T>(
-  userId: string,
   operation: (query: TransactionQuery) => Promise<T>,
 ): Promise<T> {
   await using query = await beginTransaction()
-  await lockAuthorPublicationLifecycle(query, userId)
   const result = await operation(query)
   await query.commit()
   return result

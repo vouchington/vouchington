@@ -8,10 +8,7 @@ import {
   lockRssFeedItemsForStoryPublicationChanges,
   recordStoryPublicationChangesForCategoryTopics,
 } from './story-publication-change.mts'
-import {
-  lockTopicAliasPublicationScopes,
-  recordTopicAliasPublicationWork,
-} from '@services/post-publication'
+import { recordTopicAliasPublicationWork } from '@services/post-publication'
 
 export async function deleteStaleCategoriesAndRetractVotes(
   snapshots: readonly RssFeedItemCategorySnapshot[],
@@ -29,7 +26,6 @@ export async function deleteStaleCategoriesAndRetractVotes(
     categoryItemIds,
     categoryTexts,
   )
-  await lockTopicAliasPublicationScopes(query, staleTopicAliasIds)
   await lockRssFeedItemsForStoryPublicationChanges(query, itemIds)
   const { rows: staleCategories } = await query<StaleCategory>(
     `/* reconcileRssFeedItemCategorySnapshots */

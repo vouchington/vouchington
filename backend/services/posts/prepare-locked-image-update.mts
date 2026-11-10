@@ -1,5 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { lockPostPublication } from '@services/post-publication'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import { getLockedPostImagePublicationState } from './image-publication-state.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
@@ -42,7 +41,6 @@ export async function prepareLockedPostImageUpdate(
         imageIds,
         retainImageIds: imageIds,
       }),
-    () => lockPostPublication(query, postId),
     async () => {
       postState = await getLockedPostImagePublicationState(query, postId)
     },

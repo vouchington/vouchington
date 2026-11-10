@@ -13,7 +13,6 @@ import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqueues/types-elections'
 import sql from 'sql-template-strings'
 import { entityRelationElectionTables } from './target.mts'
-import { lockEntityRelationVoteStatsPostPublicationScopes } from './vote-stats-batch-publication-locks.mts'
 import { chunkRelationIds } from './vote-target-ids.mts'
 
 const topHashtagRelationTables = new Set([
@@ -95,8 +94,6 @@ async function refreshChunkAndCaptureInTransaction(
   relationTable: EntityRelationElectionTarget['relationTable'],
   relationIds: string[],
 ): Promise<UpdatedEntityRelationVoteStats[]> {
-  // ast-grep-ignore: no-three-sequential-awaits -- Publication-scope locks must precede relation score writes; the returned prior/next scores select the eligibility transitions captured afterward.
-  await lockEntityRelationVoteStatsPostPublicationScopes(query, relationTable, relationIds)
   const changes = await refreshChunk(relationTable, relationIds, query)
   await recordPostTopicRelationPublicationChanges(
     query,

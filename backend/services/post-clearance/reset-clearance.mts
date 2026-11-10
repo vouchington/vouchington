@@ -1,7 +1,7 @@
 import { beginTransaction, withTransactionOptions, type QueryOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 
 /**
  * Resets a post back to pending when content changes. Provider outcomes are immutable and remain
@@ -13,7 +13,6 @@ export async function resetPostClearance(
   options: QueryOptions = {},
 ): Promise<boolean> {
   const run = async (query: TransactionQuery): Promise<boolean> => {
-    await lockPostPublication(query, postId)
     const { rowCount } = await query(
       `/* resetPostClearance */
     WITH reset_post AS (

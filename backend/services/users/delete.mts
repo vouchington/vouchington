@@ -12,7 +12,6 @@ import {
   createUserDeletionRequest,
   type UserDeletionAttempt,
 } from '@services/user-deletions'
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { currentUserCanDeleteUser } from './authorization.mts'
 import { enqueueDeleteUserBookmarkBloomFilterBestEffort } from './enqueue-delete-user-bookmark-bloom-filter.mts'
 import {
@@ -38,7 +37,6 @@ async function lockUserDeletionLifecycle(query: TransactionQuery, userId: string
       SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
     `)
   }
-  await lockAuthorPublicationLifecycle(query, userId)
 }
 
 async function establishUserDeletionRequest(

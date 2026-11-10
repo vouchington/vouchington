@@ -290,7 +290,7 @@
   {
     "annotation": "getPrivateUserByAny",
     "maxCount": null,
-    "reason": "Delegated post mutations re-read the actor after lockAuthorPublicationLifecycle, the same fence ensureUserSuspendedInTransaction takes before writing user_suspensions (backend/services/users/suspension.mts:59), so a suspension that committed while this transaction waited is visible. A profile update reads the private projection in the next statement after its UPDATE (backend/services/users/update-fields.mts:141), because view_users_private scans users and cannot see that UPDATE in the same statement",
+    "reason": "Delegated post mutations re-read the actor after the user mutation fence, and ensureUserSuspendedInTransaction reads the user before writing user_suspensions (backend/services/users/suspension.mts:59), so a suspension that committed while this transaction waited is visible. A profile update reads the private projection in the next statement after its UPDATE (backend/services/users/update-fields.mts:141), because view_users_private scans users and cannot see that UPDATE in the same statement",
     "permanent": true,
     "code": "backend/services/posts/authorization.mts:162",
     "routes": [
@@ -409,39 +409,18 @@
   {
     "annotation": "lockCopyrightRepeatInfringerNoticeAccounts",
     "maxCount": null,
-    "reason": "Recording a disposition locks the notice owners before taking the incident row lock, then the incident resync recomputes the owner set after the disposition insert so an owner added since the first lock is locked too",
+    "reason": "Recording a disposition syncs incidents after the insert, and that sync reads notice-owner accounts before opening a review for accounts that still have two operative incidents.",
     "permanent": true,
     "code": "backend/services/copyright-notices/repeat-infringer-incidents.mts:138",
     "routes": ["POST /api/v1/copyright-repeat-infringer-incidents/:id/dispositions"]
   },
   {
-    "annotation": "lockEntityRelationVoteStatsPostPublicationScopes",
-    "maxCount": null,
-    "reason": "Publication scopes are locked before the relation FOR UPDATE, and the lookup is chunked with bounded iteration.",
-    "permanent": true,
-    "code": "backend/services/elections-votes/entity-relation/vote-stats-batch-publication-locks.mts:33",
-    "routes": ["POST /api/v1/posts"]
-  },
-  {
     "annotation": "lockExistingTopicAliasPublicationScopes",
     "maxCount": null,
-    "reason": "Alias claim re-reads alias rows after topic creation so the lock sees aliases inserted earlier in the transaction.",
+    "reason": "Alias claim reads existing alias ids before the alias row is updated, so a concurrent insert is visible to the conflict check.",
     "permanent": true,
-    "code": "backend/services/topics/alias-publication-locks.mts:16",
+    "code": "backend/services/topics/alias-publication-locks.mts:10",
     "routes": ["POST /api/v1/topic-recommendations/:id/approvals", "POST /api/v1/topics"]
-  },
-  {
-    "annotation": "lockPostPublicationScope",
-    "maxCount": null,
-    "reason": "Distinct scope families take separate advisory locks, and a nested author or feed change re-locks its own scope as its entry point.",
-    "permanent": true,
-    "code": "backend/services/post-publication/lock.mts:29",
-    "routes": [
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-items/:id/discussions"
-    ]
   },
   {
     "annotation": "lockSessionDeviceAuthority:userFence",
@@ -814,13 +793,5 @@
     "permanent": true,
     "code": "backend/services/totp/verify-setup.mts:14",
     "routes": ["POST /api/v1/auth/totp/setup/verification"]
-  },
-  {
-    "annotation": "lockTopicAliasPublicationCaptures",
-    "maxCount": 2,
-    "reason": "Approval captures the requested alias set in one ordered page and the canonical slug alias in a second page; per-alias capture reuses those held scope locks.",
-    "permanent": true,
-    "code": "backend/services/post-publication/capture-topic-alias.mts:39",
-    "routes": ["POST /api/v1/topic-recommendations/:id/approvals"]
   }
 ]

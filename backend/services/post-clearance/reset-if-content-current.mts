@@ -2,7 +2,6 @@ import { beginTransaction } from '@data-stores/psql'
 import { invalidate } from '@services/entity-cache/invalidate'
 import sql from 'sql-template-strings'
 import { resetPostClearance } from './reset-clearance.mts'
-import { lockPostPublication } from '@services/post-publication'
 
 export async function resetPostClearanceIfContentCurrent(
   postId: string,
@@ -17,7 +16,6 @@ export async function resetPostClearanceIfContentCurrent(
   return contentCurrent
 
   async function resetClearanceWhenContentCurrent(): Promise<boolean> {
-    await lockPostPublication(query, postId)
     const { rows } = await query(sql`/* resetPostClearanceIfContentCurrent */
       SELECT id
       FROM posts

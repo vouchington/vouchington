@@ -2,7 +2,6 @@ import { assertWhitelistedSqlIdentifier } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { recordPostRelatedUrlPublicationChanges } from '@services/entity-relations/post-topic-publication'
 import { getEntityRelationUrlTables } from '@services/entity-relations/url-tables'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
 import sql from 'sql-template-strings'
 
 const POST_RELATED_URL_TABLE = 'relation__post__related__url'
@@ -114,7 +113,6 @@ async function deletePostRelatedUrlPage(
   )
   if (candidates.length === 0) return { deleted: [], page: [] }
 
-  await lockPostPublicationPostScopes(query, [...new Set(candidates.map(row => row.subject_id))])
   const { rows } = await query<{
     object_id: string
     subject_id: string

@@ -12,7 +12,7 @@ type CategoryTopicChange = {
   topic_id: string | null
 }
 
-/** Establishes the item-row-first lock order shared with story assignment writers. */
+/** Locks the rss_feed_items rows this category writer updates. */
 export async function lockRssFeedItemsForStoryPublicationChanges(
   query: TransactionQuery,
   itemIds: readonly string[],

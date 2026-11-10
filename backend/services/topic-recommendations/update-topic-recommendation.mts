@@ -15,7 +15,7 @@ import {
   type MaterializedTopicRecommendationInput,
 } from './materialize-topic-recommendation.mts'
 import { replaceTopicRecommendationLandingPageUrls } from './replace-landing-page-urls.mts'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { lockTopicRecommendationForMutation } from './get-locked-topic-recommendation-approval.mts'
 
 export async function updateTopicRecommendation(
@@ -66,7 +66,7 @@ export async function updateTopicRecommendation(
     const lockedRecommendation = lockedRecommendationQuery.rows[0]
     assert(lockedRecommendation?.reviewed_at === null, 422, 'Recommendation is no longer editable')
 
-    // ast-grep-ignore: no-three-sequential-awaits -- Materialized recommendation values feed the extension write only after lockPostPublication fences the recommendation.
+    // ast-grep-ignore: no-three-sequential-awaits -- Materialized recommendation values feed the extension write in this transaction.
     const materialized = await materializeTopicRecommendationInput(
       currentUser.id,
       {
@@ -104,7 +104,6 @@ export async function updateTopicRecommendation(
       options,
     )
 
-    await lockPostPublication(query, recommendation.id)
     const extensionResult = await writeTopicRecommendationUpdate(
       currentUser.id,
       recommendation.id,

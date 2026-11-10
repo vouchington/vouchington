@@ -1,7 +1,6 @@
 import assert from 'http-assert'
 import { beginTransaction } from '@data-stores/psql'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { lockPostPublication } from '@services/post-publication'
 import {
   getAutomodFeedbackContext,
   hasExistingAutomodFeedback,
@@ -36,7 +35,6 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
     { query },
   )
   assert(context, 404, 'Automod action not found')
-  await lockPostPublication(query, context.post_id)
   assert(
     await lockAutomodFeedbackPostRow(context.post_id, query),
     409,

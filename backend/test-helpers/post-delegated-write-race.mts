@@ -25,22 +25,15 @@ export function withConcurrentCommunityArchiveForTest<T>(
     stageArchive,
   )
 }
-/** Commit suspension after a delegated write reaches the canonical author lifecycle fence. */
+/** Commit suspension, then run the writer. Publication writers no longer wait on an author scope lock. */
 export function withConcurrentActorSuspensionForTest<T>(
   userId: string,
   operation: () => Promise<T>,
 ): Promise<T> {
-  return withConcurrentDelegatedWriteChangeForTest(
-    operation,
-    'lockPostPublicationScope',
-    { kind: 'advisory', key: `author:${userId.toLowerCase()}` },
-    async query => {
-      await query(sql`/* withConcurrentActorSuspensionForTest.fence */
-        SELECT pg_advisory_xact_lock(hashtextextended(${`author:${userId.toLowerCase()}`}, 0))`)
-      await query(sql`/* withConcurrentActorSuspensionForTest */
-        INSERT INTO user_suspensions (user_id, suspended_by_id) VALUES (${userId}, ${userId})`)
-    },
-  )
+  return commitDelegatedWriteChangeThenRun(async query => {
+    await query(sql`/* withConcurrentActorSuspensionForTest */
+      INSERT INTO user_suspensions (user_id, suspended_by_id) VALUES (${userId}, ${userId})`)
+  }, operation)
 }
 
 /** Writers no longer take the active-user advisory, so the deletion commits before the write. */

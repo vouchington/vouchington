@@ -1,5 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 import {
   snapshotTopicMergeAliases,
@@ -48,7 +47,6 @@ export async function processTopicMergeAliasPage(
   )
   const aliasIds = rows.map(row => row.id)
   if (aliasIds.length) {
-    await lockTopicAliasPublicationScopes(query, aliasIds)
     await captureAndMoveAliases(query, operationId, rows, destinationId, mergerId)
   }
   const repointed = await repointPendingUnlinks(query, sourceId, destinationId, mergerId, limit)
@@ -135,10 +133,6 @@ async function ensureSourceSlugAlias(
   const { rows: before } = await query<AliasRow>(
     `/* ensureSourceSlugAlias before */ SELECT id, alias, topic_id FROM topic_aliases WHERE alias = $1`,
     [sourceSlug],
-  )
-  await lockTopicAliasPublicationScopes(
-    query,
-    before.map(row => row.id),
   )
   const { rows } = await query<AliasRow>(
     `/* ensureSourceSlugAlias */ INSERT INTO topic_aliases (topic_id, alias, created_by_id, updated_by_id)

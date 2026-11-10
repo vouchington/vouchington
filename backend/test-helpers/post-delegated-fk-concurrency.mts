@@ -1,6 +1,5 @@
 import { onTestFinished } from 'vitest'
 import { lockImageDeliveryMutation } from '../services/media-delivery-safety/delivery-lock.mts'
-import { lockPostPublication } from '../services/post-publication/lock.mts'
 import sql from 'sql-template-strings'
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
@@ -57,10 +56,6 @@ export async function withConcurrentMediaThenPublicationFenceForTest<Result>(
     async waitForLock => {
       const pending = operation()
       await waitForLock(pending)
-      await query(
-        sql`/* withConcurrentMediaThenPublicationFenceForTest:lockTimeout */ SET LOCAL lock_timeout = '2s'`,
-      )
-      await lockPostPublication(query, postId)
       await query.rollback()
       return pending
     },

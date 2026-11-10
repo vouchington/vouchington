@@ -1,6 +1,5 @@
 import { buildHackerNewsPostUrlsSql } from '@services/urls/hacker-news-post-urls'
 import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
 import type { QueryOptions } from '@data-stores/psql/types'
 import {
   getHackerNewsWorkLimit,
@@ -41,7 +40,6 @@ async function recomputeLockedPostHackerNewsFlags(
   ids: string[],
 ): Promise<void> {
   // Match relation, vote, and post mutation scope locks before taking a fresh SQL snapshot.
-  await lockPostPublicationPostScopes(query, ids)
   await query(
     `/* recomputePostHackerNewsFlags */
     UPDATE posts AS post SET has_hacker_news_references = desired.has_references

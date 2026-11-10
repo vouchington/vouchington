@@ -21,19 +21,13 @@ import { createPost, deletePost, updatePost } from '@services/posts'
 import { hardDeleteRssFeedById } from '@services/rss-feeds'
 import { hardDeleteRssFeedSourcePage } from '@services/rss-feeds/hard-delete-source-page'
 import { setRssFeedStatesAsCurrentUser } from '@services/rss-feeds/set-states-as-current-user'
-import { ensureUserSuspendedInTransaction } from '@services/users'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import {
   captureAddedPublicationEffectsForScope,
   captureAddedPublicationEffectsForScopes,
 } from '@voucha/test-helpers/publication-effect-jobs'
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { describe, expect, it } from 'vitest'
-import {
-  acquirePublicationLifecycleLockWithTimeout,
-  holdAuthorPublicationLifecycleLock,
-  recordAuthorDeletionWithLockTimeout,
-} from '@voucha/test-helpers/api/post-publication-lifecycle-test-support'
+import { recordAuthorDeletionWithLockTimeout } from '@voucha/test-helpers/api/post-publication-lifecycle-test-support'
 
 describe('post publication lifecycle capture integration', () => {
   it('captures an author and every authored post before user deletion reassignment', async () => {
@@ -71,33 +65,6 @@ describe('post publication lifecycle capture integration', () => {
     await first.commit()
   })
 
-  it('shares the author lifecycle lock with suspension', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const user = await createTestUser()
-    if (!admin || !user) throw new Error('Expected users')
-    let release!: () => void
-    const held = new Promise<void>(resolve => {
-      release = resolve
-    })
-    let ready!: () => void
-    const holderReady = new Promise<void>(resolve => {
-      ready = resolve
-    })
-    const holder = holdAuthorPublicationLifecycleLock(user.id, ready, held)
-    await holderReady
-    try {
-      await using suspension = await beginTransaction()
-      await suspension(
-        `/* suspension shares author lifecycle lock */ SET LOCAL lock_timeout = '50ms'`,
-      )
-      await expect(
-        ensureUserSuspendedInTransaction(suspension, { actorId: admin.id, userId: user.id }),
-      ).rejects.toMatchObject({ code: '55P03' })
-    } finally {
-      release()
-    }
-    await holder
-  })
   it('captures RSS enablement and former story posts before feed deletion cascades', async () => {
     const administrator = await createTestUser({ administrator: true })
     if (!administrator) throw new Error('Expected administrator')
@@ -222,36 +189,6 @@ describe('post publication lifecycle capture integration', () => {
       kind: 'impact_topic',
       uuidValue: firstTopic.id,
     })
-  })
-
-  it('serializes author and RSS lifecycle writers with transaction advisory locks', async () => {
-    const user = await createTestUser()
-    if (!user) throw new Error('Expected user')
-    await using authorLock = await beginTransaction()
-    await lockAuthorPublicationLifecycle(authorLock, user.id)
-    await expect(
-      acquirePublicationLifecycleLockWithTimeout('author', user.id),
-    ).rejects.toMatchObject({
-      code: '55P03',
-    })
-    await authorLock.commit()
-
-    const topic = await createTestTopic({ user })
-    const { id: rssFeedId } = await insertTestRssFeedWithUrlId({
-      topicId: topic.id,
-      title: `Publication feed lock ${createRandomString(8)}`,
-    })
-    await using rssLock = await beginTransaction()
-    await rssLock(
-      `/* postPublicationRssLock */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-      [rssFeedId],
-    )
-    await expect(
-      acquirePublicationLifecycleLockWithTimeout('rss-feed', rssFeedId),
-    ).rejects.toMatchObject({
-      code: '55P03',
-    })
-    await rssLock.commit()
   })
 
   it('emits work only for publication-relevant community and post state changes', async () => {

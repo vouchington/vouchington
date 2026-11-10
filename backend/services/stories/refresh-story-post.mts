@@ -8,7 +8,6 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort } from '@queues/story-post-related-url-projections/enqueues'
 import { getPostStoryByStoryId } from './get-post-stories.mts'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
 import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import { dispatchStoryPostRelationEffects } from './story-post-relation-effects.mts'
 import { lockStoryPostRelations } from './story-post-relation-locks.mts'
@@ -65,7 +64,6 @@ async function refreshStoryPostForStoryInTransaction(
   if (!postStory) return null
 
   const postId = postStory.post_id
-  await lockPostPublicationPostScopes(options.query, [postId])
   await lockStoryPostRelations(options.query, postId)
 
   // Category projection remains transaction-local. URL projection is durable and bounded;

@@ -1,7 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { uniquePublicationKeys } from './captured-keys.mts'
 import { listHardDeletedPostPublicationKeys } from './capture-hard-delete-keys.mts'
-import { lockPostPublicationPostScopes } from './capture-posts.mts'
 import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
 
 // The caller's author-deletion drain already reassigned every authored post in this transaction
@@ -39,7 +38,6 @@ export async function retainHardDeletedPostPublication(
 ): Promise<void> {
   const roots = [...new Set(rootPostIds.map(id => id.toLowerCase()))].toSorted()
   if (roots.length === 0) return
-  await lockPostPublicationPostScopes(query, roots)
   const listed = await listHardDeletedPostPublicationKeys(query, roots)
   const keysByRoot = new Map(roots.map(rootId => [rootId, [] as (typeof listed)[number]['key'][]]))
   for (const { rootId, key } of listed) keysByRoot.get(rootId.toLowerCase())?.push(key)

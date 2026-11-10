@@ -1,5 +1,4 @@
 import { read, write, type TransactionQuery } from '@data-stores/psql'
-import type { QueryInput } from '@data-stores/psql/types'
 
 export async function listExistingTestPostIds(postIds: readonly string[]): Promise<string[]> {
   const { rows } = await read<{ id: string }>(
@@ -133,20 +132,6 @@ export async function countTestFeedSources(feedId: string): Promise<number> {
     [feedId],
   )
   return rows[0]?.count ?? 0
-}
-
-export function gateTestTopicAliasPublicationLockQuery(
-  query: TransactionQuery,
-  locked: PromiseWithResolvers<void>,
-): TransactionQuery {
-  const gated = (async (input: QueryInput, values?: ReadonlyArray<unknown>) => {
-    const result = await query(input, values)
-    const text = typeof input === 'string' ? input : input.text
-    if (text.includes('lockTopicAliasPublicationCaptures')) locked.resolve()
-    return result
-  }) as TransactionQuery
-  gated.client = query.client
-  return gated
 }
 
 /** A retained alias can be claimed from an inactive owner by the normal link service. */

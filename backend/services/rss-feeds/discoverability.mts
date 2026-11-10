@@ -2,7 +2,6 @@ import { getRssFeedAutoUpdaterUserId } from '@services/users/system-users'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql'
 import { insertRssFeedStateChanges, type RssFeedStateKind } from './state-changes.mts'
 import { recordRssFeedStatePublicationChange } from './publication-change.mts'
-import { lockPostPublicationScope } from '@services/post-publication/lock'
 import { applyCommittedRssFeedStateChangeEffects } from './state-effects.mts'
 import { runRssFeedStateTransaction } from './state-transaction.mts'
 type ChangeKind = RssFeedStateKind
@@ -36,7 +35,6 @@ async function setStateAsSystem(
   const systemUserId = await getRssFeedAutoUpdaterUserId()
   const { overrideHumanLock, ...changeInput } = input
   const run = async (query: TransactionQuery): Promise<SetStateResult> => {
-    await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId: input.rssFeedId })
     const { rows } = await query(
       `/* setRssFeedStateAsSystem:latest */
         SELECT is_enabled, changed_by_id

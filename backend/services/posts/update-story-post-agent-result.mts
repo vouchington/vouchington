@@ -4,7 +4,7 @@ import { enqueueCreatePostEmbedding } from '@queues/bedrock-embeddings/enqueues'
 import { admitAutomatedPostModeration, resetPostClearance } from '@services/post-clearance'
 import sql from 'sql-template-strings'
 import { createPostTextEmbeddingContent, createPostModerationContent } from './content.mts'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 
 export async function updateStoryPostAgentResult(
   postId: string,
@@ -22,7 +22,6 @@ export async function updateStoryPostAgentResult(
   await invalidate.posts(postId)
 
   async function updatePostInTransaction(): Promise<boolean> {
-    await lockPostPublication(query, postId)
     const { rows: postRows } = await query<{
       title: string | null
       markdown: string | null

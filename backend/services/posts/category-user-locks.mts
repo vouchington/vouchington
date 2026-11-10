@@ -1,4 +1,3 @@
-import { lockAuthorPublicationLifecycle, lockPostPublication } from '@services/post-publication'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import { assertDelegatedPostActorActive } from './authorization.mts'
 import type { TransactionQuery } from '@data-stores/psql'
@@ -66,13 +65,10 @@ export async function lockPostUpdateMutationScopes(
   )
   if (delegated) {
     await runSequentially([
-      () => lockAuthorPublicationLifecycle(query, editorId),
       () => assertDelegatedPostActorActive(editorId, { query }),
-      () => lockPostPublication(query, postId),
       () => lockDelegatedPostThread(query, postId),
     ])
     return ownerId
   }
-  await lockPostPublication(query, postId)
   return ownerId
 }

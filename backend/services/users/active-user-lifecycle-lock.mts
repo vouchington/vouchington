@@ -1,7 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
-import { lockAuthorPublicationLifecycles } from '@services/post-publication'
 
 /** Retain account deletion and suspension writer fences before entity-specific locks. */
 export async function lockActiveUserLifecycleForMutation(
@@ -23,5 +22,4 @@ export async function lockActiveUserLifecyclesForMutation(
       throw createHttpError(401, 'User not found')
     throw err
   }
-  await lockAuthorPublicationLifecycles(query, userIds)
 }

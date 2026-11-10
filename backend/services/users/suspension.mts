@@ -10,10 +10,7 @@ import type { PrivateUser } from './types.mts'
 import sql from 'sql-template-strings'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import {
-  lockAuthorPublicationLifecycle,
-  recordPostPublicationChange,
-} from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { enqueueRecordedMembershipPauseCollectionBestEffort } from '@services/memberships/pause-collection/enqueue-recorded'
 import { recordMembershipPauseCollectionWork } from '@services/memberships/pause-collection/record'
 
@@ -56,7 +53,6 @@ export async function ensureUserSuspendedInTransaction(
   query: TransactionQuery,
   input: { actorId: string; userId: string; reason?: string },
 ): Promise<{ newlySuspended: boolean }> {
-  await lockAuthorPublicationLifecycle(query, input.userId)
   const { rows } = await query(sql`/* ensureUserSuspendedInTransaction:checkLocked */
       SELECT
         NOT EXISTS (SELECT 1 FROM users WHERE id = ${input.userId} AND deleted_at IS NULL) AS user_gone,
@@ -100,7 +96,6 @@ export async function unsuspendUser(
   if (!user.suspended_at) throw createCodedError(409, 'User is not suspended', CONFLICT)
 
   await using query = await beginTransaction(transactionOptions)
-  await lockAuthorPublicationLifecycle(query, userId)
 
   const { rows: check } = await query(sql`/* unsuspendUser:checkLocked */
       SELECT EXISTS (SELECT 1 FROM users WHERE id = ${userId} AND deleted_at IS NULL) AS user_exists

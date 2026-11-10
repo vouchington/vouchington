@@ -1,13 +1,10 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import {
-  beginTransaction,
   createTestUser,
   deleteTestMembershipPauseCollectionWork,
   getTestMembershipPauseCollectionRequestedAt,
   suspendTestUserGetId,
   getTestUserSuspension,
-  hardDeleteTestUserAndWaitBeforeCommit,
-  lockTestUserSuspension,
   getLatestTestAppealTrainingFeedback,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -15,8 +12,6 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 import { resolveModerationAppealAccept } from './resolve.mts'
-import { liftUserSuspensionById } from './lift-sanctions.mts'
-import * as postPublication from '@services/post-publication'
 import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
 import * as psqlEnqueues from '@queues/psql/enqueues'
 
@@ -61,113 +56,6 @@ describe('resolveModerationAppealAccept — suspension', () => {
     })
   })
 
-  it('takes the author lifecycle lock before waiting on a suspension row', async () => {
-    const suspensionUser = await createTestUser()
-    const suspensionId = await suspendTestUserGetId(suspensionUser.id, 'Test suspension')
-    const suspensionRowLocked = Promise.withResolvers<void>()
-    const releaseSuspensionRow = Promise.withResolvers<void>()
-    async function holdSuspensionRow() {
-      await using query = await beginTransaction()
-      await lockTestUserSuspension(query, suspensionId)
-      suspensionRowLocked.resolve()
-      await releaseSuspensionRow.promise
-      await query.commit()
-    }
-    const holder = holdSuspensionRow()
-    await suspensionRowLocked.promise
-
-    const authorLocked = Promise.withResolvers<void>()
-    const lockAuthorPublicationLifecycle = postPublication.lockAuthorPublicationLifecycle
-    vi.spyOn(postPublication, 'lockAuthorPublicationLifecycle').mockImplementation(
-      async (...args) => {
-        await lockAuthorPublicationLifecycle(...args)
-        authorLocked.resolve()
-      },
-    )
-    const lift = liftUserSuspensionById(admin.id, suspensionId, {})
-    try {
-      await Promise.race([
-        authorLocked.promise,
-        lift.then(() => {
-          throw new Error('suspension lift settled before the author lock')
-        }),
-      ])
-      await expect(
-        probeAuthorLifecycleLock(suspensionUser.id, lockAuthorPublicationLifecycle),
-      ).rejects.toMatchObject({ code: '55P03' })
-    } finally {
-      releaseSuspensionRow.resolve()
-    }
-    await holder
-    await lift
-
-    await expect(getTestUserSuspension(suspensionId)).resolves.toMatchObject({
-      lifted_at: expect.any(Date),
-    })
-  })
-
-  it('does not deadlock with user deletion while accepting a suspension appeal', async () => {
-    const suspensionUser = await createTestUser()
-    const suspensionId = await suspendTestUserGetId(suspensionUser.id, 'Test suspension')
-    const input = parseCreateModerationAppealInput({
-      target_type: 'suspension',
-      appeal_reason: 'I was suspended in error.',
-    })
-    const { appeal } = await createModerationAppeal(suspensionUser, WEB_PROVENANCE, input)
-    expect(appeal.user_suspension_id).toBe(suspensionId)
-    await deliverModerationAppealForTest(admin.id, appeal.id)
-
-    const deletionMayProceed = Promise.withResolvers<void>()
-    const deletionHoldsAuthorLifecycle = Promise.withResolvers<void>()
-    const appealWaitingForAuthorLock = Promise.withResolvers<void>()
-    const lockAuthorPublicationLifecycle = postPublication.lockAuthorPublicationLifecycle
-    let deletionInstalled = false
-    vi.spyOn(postPublication, 'lockAuthorPublicationLifecycle').mockImplementation(
-      async (...args) => {
-        if (!deletionInstalled) {
-          deletionInstalled = true
-          await lockAuthorPublicationLifecycle(...args)
-          return
-        }
-        const pending = lockAuthorPublicationLifecycle(...args)
-        appealWaitingForAuthorLock.resolve()
-        await pending
-      },
-    )
-    const deleting = hardDeleteTestUserAndWaitBeforeCommit(
-      suspensionUser.id,
-      Promise.resolve(),
-      undefined,
-      async query => {
-        await postPublication.lockAuthorPublicationLifecycle(query, suspensionUser.id)
-        deletionHoldsAuthorLifecycle.resolve()
-        await deletionMayProceed.promise
-      },
-    )
-    await deletionHoldsAuthorLifecycle.promise
-
-    const resolving = resolveModerationAppealAccept(admin.id, appeal.id, 'staff_or_user')
-    const resolvingRejection = resolving.catch((err: unknown) => err)
-    try {
-      await Promise.race([
-        appealWaitingForAuthorLock.promise,
-        resolvingRejection.then(result => {
-          throw result instanceof Error
-            ? result
-            : new Error('appeal settled before the author lock')
-        }),
-      ])
-      await expect(
-        probeAuthorLifecycleLock(suspensionUser.id, lockAuthorPublicationLifecycle),
-      ).rejects.toMatchObject({ code: '55P03' })
-    } finally {
-      deletionMayProceed.resolve()
-    }
-
-    await expect(deleting).resolves.toBeUndefined()
-    await expect(resolvingRejection).resolves.toMatchObject({ status: 404 })
-  })
-
   it('rejects suspension appeal acceptance from a non-admin staff member', async () => {
     const suspensionUser = await createTestUser()
     await suspendTestUserGetId(suspensionUser.id, 'Test suspension')
@@ -185,13 +73,3 @@ describe('resolveModerationAppealAccept — suspension', () => {
     })
   })
 })
-
-async function probeAuthorLifecycleLock(
-  userId: string,
-  lockAuthorPublicationLifecycle: typeof postPublication.lockAuthorPublicationLifecycle,
-): Promise<void> {
-  await using query = await beginTransaction()
-  await query(`/* author lifecycle lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-  await lockAuthorPublicationLifecycle(query, userId)
-  await query.commit()
-}

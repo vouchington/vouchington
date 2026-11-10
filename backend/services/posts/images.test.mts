@@ -7,7 +7,6 @@ import { createPostModerationContent } from '@services/posts/content'
 import { getPostByAny } from '@services/posts/get'
 import type { Post } from '@services/posts/types'
 import {
-  beginTransaction,
   createTestUser,
   countPostImageRevisions,
   getPostImageRevisionsForTest,
@@ -20,7 +19,6 @@ import {
   setPostAiSummaryMarkdownForTest,
 } from '@voucha/test-helpers'
 import { getTestPostModerationVersionOwner } from '@voucha/test-helpers/post-moderation-attempt-state'
-import { lockPostPublication } from '@services/post-publication'
 import { getPostImages, setPostImages } from './images.mts'
 import { rollbackPostImages } from './images-rollback.mts'
 import { createPostImageRollbackFixture } from '@voucha/test-helpers/services/posts/images.fixtures'
@@ -180,49 +178,6 @@ describe('setPostImages', () => {
       { image_id: currentImageId, order_index: 0, caption: '' },
     ])
   })
-  it('locks rollback images before the post publication scope', async () => {
-    const creator = await createTestUser()
-    const suffix = randomUUID()
-    const postId = await insertTestPost({
-      title: `Image rollback lock order ${suffix}`,
-      slug: `image-rollback-lock-order-${suffix}`,
-      createdById: creator.id,
-      markdown: '',
-      clearanceStatus: 'pending',
-    })
-    const imageId = await insertTestImage(creator.id)
-    const post = (await getPostByAny(postId, { readOnly: false })) as Post
-    await setPostImages(creator, post, [{ image_id: imageId, order_index: 0 }])
-    const current = (await getPostByAny(postId, { readOnly: false })) as Post
-    const moderationSha = createPostModerationContent({
-      ...current,
-      images: [{ image_id: imageId, order_index: 0 }],
-    }).content_sha256
-    const imageLocked = Promise.withResolvers<void>()
-    const releaseImage = Promise.withResolvers<void>()
-    const holder = holdImageRowLock(imageId, imageLocked, releaseImage)
-    await imageLocked.promise
-    const imageLockStarted = Promise.withResolvers<void>()
-    const rollingBack = rollbackPostImages(
-      postId,
-      createPostImageRollbackFixture({
-        revisionId: randomUUID(),
-        currentImages: [{ image_id: imageId, order_index: 0, caption: '' }],
-        images: [{ image_id: imageId, order_index: 0, caption: '' }],
-        currentLlmModerationContentSha256: moderationSha,
-        llmModerationContentSha256: moderationSha,
-      }),
-      { onImageLockQuery: () => imageLockStarted.resolve() },
-    )
-    try {
-      await imageLockStarted.promise
-      await expect(acquirePostPublicationLockWithShortTimeout(postId)).resolves.toBeUndefined()
-    } finally {
-      releaseImage.resolve()
-    }
-    await holder
-    await rollingBack
-  })
 })
 
 function watchContentChangedEnqueues(postId: string): {
@@ -249,23 +204,4 @@ function watchContentChangedEnqueues(postId: string): {
     },
   )
   return { spam: spam.promise, moderation: moderation.promise }
-}
-
-async function holdImageRowLock(
-  imageId: string,
-  imageLocked: PromiseWithResolvers<void>,
-  releaseImage: PromiseWithResolvers<void>,
-): Promise<void> {
-  await using query = await beginTransaction()
-  await query(`/* testImages */ SELECT id FROM images WHERE id = $1::uuid FOR UPDATE`, [imageId])
-  imageLocked.resolve()
-  await releaseImage.promise
-  await query.commit()
-}
-
-async function acquirePostPublicationLockWithShortTimeout(postId: string): Promise<void> {
-  await using query = await beginTransaction()
-  await query(`/* testImages */ SET LOCAL lock_timeout = '50ms'`)
-  await lockPostPublication(query, postId)
-  await query.commit()
 }

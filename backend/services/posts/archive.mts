@@ -1,6 +1,6 @@
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { terminalizeActiveReviewSuccessionForManualPost } from './review-successions/manual.mts'
 
 type ArchivePostOptions = QueryOptions & { capturePublication?: boolean }
@@ -12,7 +12,6 @@ export async function archivePost(
 ): Promise<void> {
   const { capturePublication = true, ...queryOptions } = options
   const run = async (query: TransactionQuery): Promise<void> => {
-    if (capturePublication) await lockPostPublication(query, postId)
     await terminalizeActiveReviewSuccessionForManualPost(postId, { query })
     const { rowCount } = await query(
       `/* archivePost */
@@ -43,7 +42,6 @@ export async function unarchivePost(
 ): Promise<void> {
   const { capturePublication = true, ...queryOptions } = options
   const run = async (query: TransactionQuery): Promise<void> => {
-    if (capturePublication) await lockPostPublication(query, postId)
     await terminalizeActiveReviewSuccessionForManualPost(postId, { query })
     const { rowCount } = await query(
       `/* unarchivePost */

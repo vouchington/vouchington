@@ -8,10 +8,7 @@ import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { enqueueRecordedMembershipPauseCollectionBestEffort } from '@services/memberships/pause-collection/enqueue-recorded'
 import { recordMembershipPauseCollectionWork } from '@services/memberships/pause-collection/record'
-import {
-  lockAuthorPublicationLifecycle,
-  recordPostPublicationChange,
-} from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 
 export async function lockSuspensionAppealAuthorLifecycle(
   query: TransactionQuery,
@@ -27,7 +24,6 @@ export async function lockSuspensionAppealAuthorLifecycle(
     LIMIT 1
   `)
   const suspension = rows[0]
-  if (suspension) await lockAuthorPublicationLifecycle(query, suspension.user_id)
 }
 
 // Appeal-level authorization permits lifting the target ban without a community-role check.
@@ -61,8 +57,6 @@ export async function liftUserSuspensionById(
     )
     const target = targets[0]
     if (!target) return
-
-    await lockAuthorPublicationLifecycle(query, target.user_id)
 
     const { rows } = await query<{ user_id: string }>(
       sql`/* liftUserSuspensionById:appealAccept */
