@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { v7 } from 'uuid'
 import { createTestUser, createRandomEmailAddress } from '@voucha/test-helpers'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { createEmailAddressLoginToken, verifyEmailAddressLoginToken } from './authentication.mts'
 
 describe('email authentication code purposes', () => {
+  installEmailDomainDnsMock()
+
   it('accepts only the latest unused code of the requested purpose', async () => {
     const user = await createTestUser()
     const actor = await createDeviceAndSessionTokens({

@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { exportJWK, generateKeyPair, SignJWT } from 'jose'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createNativeRequest } from '@voucha/test-helpers/native-api-request'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { ensureTestUnknownUserAgentString } from '@voucha/test-helpers/entities/user-sessions'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
 import { signSessionJwt, verifySessionJwt } from '@ts-shared/session-jwt'
 import { COOKIE_OPTIONS } from '@modules/api-utils'
@@ -56,6 +57,9 @@ function cookieTokens(headers: Record<string, unknown>): string[] {
 }
 
 describe('browser device-bound session protocol', () => {
+  // Registration refreshes the session without request metadata, which stores the unknown-agent
+  // row. Storing it first keeps the route's query shape independent of which file ran earlier.
+  beforeAll(ensureTestUnknownUserAgentString)
   beforeEach(() => {
     vi.stubEnv('SITE_ORIGIN', origin)
     vi.stubEnv('CF_WORKER_SECRET', 'synthetic-worker-secret-for-dbsc-tests')
