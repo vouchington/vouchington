@@ -16,7 +16,7 @@
     "oxfmt": "^0.77.0",
     "picomatch": "^4.0.4",
     "smol-toml": "^1.9.1",
-    "vouchington-tooling": "^0.87.0",
+    "vouchington-tooling": "^0.87.1",
     "yaml": "^2.9.1"
   },
   "devDependencies": {

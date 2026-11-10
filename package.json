@@ -166,12 +166,12 @@
     "oxlint-tsgolint": "^7.0.2006",
     "picomatch": "^4.0.4",
     "playwright": "^1.65.0",
-    "pr-shepherd": "^1.3.0",
+    "pr-shepherd": "^1.4.0",
     "squawk-cli": "^2.70.0",
     "syncpack": "^15.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.1.0",
-    "vouchington-tooling": "^0.87.0",
+    "vouchington-tooling": "^0.87.1",
     "yaml": "^2.9.1"
   },
   "engines": {
