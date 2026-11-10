@@ -81,7 +81,7 @@ async function lockRssFeedItemIdentities(
   const rows: Array<{ id: string; guid: string }> = []
   for (const guidChunk of chunkArray(guids, RSS_FEED_ITEM_SQL_BATCH_SIZE)) {
     // oxlint-disable-next-line no-await-in-loop -- ascending GUID batches preserve global identity lock order.
-    const result = await txQuery<{ id: string; guid: string }>(
+    const result = await txQuery<{ id: string; guid: string }>( // no-mistakes-disable-line query-reached-per-item: each iteration locks one sql_batch_size page with ANY, in guid order, not one query per item.
       `/* upsertRssFeedItems:lockIdentities */
         SELECT id, guid
         FROM rss_feed_item_guids
@@ -106,7 +106,7 @@ async function lockRssFeedItemsForUpsert(
   const rows: LockedRssFeedItemRow[] = []
   for (const ids of chunkArray(orderedIds, RSS_FEED_ITEM_SQL_BATCH_SIZE)) {
     // oxlint-disable-next-line no-await-in-loop -- ascending bounded batches preserve global item lock order.
-    const result = await txQuery<LockedRssFeedItemRow>(
+    const result = await txQuery<LockedRssFeedItemRow>( // no-mistakes-disable-line query-reached-per-item: each iteration locks one sql_batch_size page with ANY, in id order, not one query per item.
       `/* upsertRssFeedItems:lockExistingForUrlRevision */
         SELECT id, url_id, story_id
         FROM rss_feed_items
