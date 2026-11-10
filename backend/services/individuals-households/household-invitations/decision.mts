@@ -1,7 +1,6 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { beginTransaction, write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
 import { validateUUID } from '@modules/utils/ids'
 import { assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
