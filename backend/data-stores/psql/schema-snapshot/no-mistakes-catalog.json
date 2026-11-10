@@ -2039,7 +2039,7 @@
       "returnsSet": false
     },
     "fn_reject_media_placement()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (to_jsonb(NEW) - ARRAY['is_current_image_delivery_eligible', 'updated_at'])\n      = (to_jsonb(OLD) - ARRAY['is_current_image_delivery_eligible', 'updated_at'])\n    AND NEW.is_current_image_delivery_eligible IS DISTINCT FROM OLD.is_current_image_delivery_eligible THEN\n    RETURN NEW;\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.retired_at IS NOT NULL AND NEW.retired_at IS NULL THEN\n    NEW.activation_revision := NEW.revision;\n  ELSIF NEW.activation_revision IS DISTINCT FROM OLD.activation_revision THEN\n    RAISE EXCEPTION 'media placement activation revision is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.retired_at IS NOT NULL AND NEW.retired_at IS NULL THEN\n    NEW.activation_revision := NEW.revision;\n  ELSIF NEW.activation_revision IS DISTINCT FROM OLD.activation_revision THEN\n    RAISE EXCEPTION 'media placement activation revision is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_reject_membership_administrator_refund_request_context()": {
@@ -2131,7 +2131,7 @@
       "returnsSet": false
     },
     "fn_reject_ownerless_image_surface_retirement()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_ownerless_image_surface_retirement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_ownerless boolean;\nBEGIN\n  SELECT num_nonnulls(surface.user_id, surface.topic_id, surface.community_id, surface.user_profile_link_id) = 0\n  INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id\n  ;\n  IF v_ownerless AND (NEW.retired_at IS NULL OR NEW.retirement_reason IS DISTINCT FROM 'owner_removed') THEN\n    RAISE EXCEPTION 'ownerless image surface must remain retired for owner removal' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_ownerless_image_surface_retirement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_ownerless boolean;\nBEGIN\n  SELECT num_nonnulls(surface.user_id, surface.topic_id, surface.community_id, surface.user_profile_link_id) = 0\n  INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id;\n  IF v_ownerless AND (NEW.retired_at IS NULL OR NEW.retirement_reason IS DISTINCT FROM 'owner_removed') THEN\n    RAISE EXCEPTION 'ownerless image surface must remain retired for owner removal' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_reject_platform_account_kind_change()": {
@@ -2215,7 +2215,7 @@
       "returnsSet": false
     },
     "fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE v_placement_id uuid;\nBEGIN\n  -- The actual owner row has already changed. Its transaction retains these uncommitted\n  -- lifecycle changes and must claim concrete capacity before publishing any edge transition.\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed', revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT surface.placement_id INTO v_placement_id\n  FROM image_surface_placements surface\n  WHERE surface.surface_kind = p_surface_kind AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY surface.placement_id DESC LIMIT 1;\n  IF v_placement_id IS NULL THEN\n    v_placement_id := uuidv7();\n    INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)\n    VALUES (v_placement_id, p_image_id, 'surface');\n    INSERT INTO media_placements (id) VALUES (v_placement_id);\n    INSERT INTO image_surface_placements (\n      placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id\n    ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id,\n      p_community_id, p_user_profile_link_id);\n  ELSE\n    UPDATE media_placements SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL;\n  END IF;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ORDER BY placement.id, placement.revision, surface.image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE\n  SET desired_state = 'withheld',\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE\n      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING;\n\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_text_to_timestamptz(text_value text)": {
@@ -59021,38 +59021,6 @@
           "unique": true,
           "valid": true
         },
-        "image_placements_placement_id_post_id_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX image_placements_placement_id_post_id_key ON public.image_placements USING btree (placement_id, post_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "placement_id",
-              "descending": false,
-              "expression": "placement_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "image_placements_post_id_image_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -59097,9 +59065,6 @@
         }
       },
       "uniqueConstraints": {
-        "image_placements_placement_id_post_id_key": {
-          "columns": ["placement_id", "post_id"]
-        },
         "image_placements_post_id_image_id_key": {
           "columns": ["post_id", "image_id"]
         }
@@ -59977,16 +59942,6 @@
           "nullable": false,
           "ordinalPosition": 1
         },
-        "is_delivery_eligible": {
-          "comment": "Current upload, moderation and quarantine eligibility copied onto active placement publication authority.",
-          "dataType": "boolean",
-          "defaultExpression": null,
-          "generated": "stored",
-          "generatedExpression": "((deleted_at IS NULL) AND (upload_completed_at IS NOT NULL) AND (quarantine_pending_at IS NULL) AND (is_flagged_by_openai_omni_moderation IS FALSE) AND (openai_omni_moderation_results IS NOT NULL) AND (openai_omni_moderation_created_at IS NOT NULL))",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 26
-        },
         "is_flagged_by_openai_omni_moderation": {
           "comment": "Whether OpenAI moderation flagged this image.",
           "dataType": "boolean",
@@ -60441,38 +60396,6 @@
           "unique": false,
           "valid": true
         },
-        "images_id_is_delivery_eligible_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX images_id_is_delivery_eligible_key ON public.images USING btree (id, is_delivery_eligible)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "is_delivery_eligible",
-              "descending": false,
-              "expression": "is_delivery_eligible",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bool_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "images_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -60540,9 +60463,6 @@
         }
       },
       "uniqueConstraints": {
-        "images_id_is_delivery_eligible_key": {
-          "columns": ["id", "is_delivery_eligible"]
-        },
         "images_sha_256_key": {
           "columns": ["sha_256"]
         }
@@ -63723,7 +63643,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 6
         },
         "created_at": {
           "comment": null,
@@ -63733,7 +63653,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 7
         },
         "id": {
           "comment": null,
@@ -63745,16 +63665,6 @@
           "nullable": false,
           "ordinalPosition": 1
         },
-        "is_current_image_delivery_eligible": {
-          "comment": "Current image policy projected onto actual placement publication authority; policy changes do not advance availability revision.",
-          "dataType": "boolean",
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        },
         "retired_at": {
           "comment": "Placement is no longer attached to its host surface; retained so stale routes fail closed.",
           "dataType": "timestamp with time zone",
@@ -63763,7 +63673,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 4
         },
         "retirement_reason": {
           "comment": "Why the placement retired. Owner removal supersedes an asset retirement, fencing image-delete rollback from restoring a detached use.",
@@ -63773,7 +63683,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 5
         },
         "revision": {
           "comment": "Monotonic delivery revision; every availability change advances it exactly once.",
@@ -63793,7 +63703,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         }
       },
       "comment": "Durable image-use placements; exact binding and revision authority governs public delivery.",

@@ -17,7 +17,6 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `image_placements_placement_id_post_id_key`: `UNIQUE (placement_id, post_id)`
 - `image_placements_post_id_image_id_key`: `UNIQUE (post_id, image_id)`
 
 **Check constraints:**
@@ -34,7 +33,6 @@ Not partitioned — growth: unbounded.
 
 - `idx_image_placements__image`: `CREATE INDEX idx_image_placements__image ON public.image_placements USING btree (image_id, placement_id)`
 - `image_placements_pkey`: `CREATE UNIQUE INDEX image_placements_pkey ON public.image_placements USING btree (placement_id)`
-- `image_placements_placement_id_post_id_key`: `CREATE UNIQUE INDEX image_placements_placement_id_post_id_key ON public.image_placements USING btree (placement_id, post_id)`
 - `image_placements_post_id_image_id_key`: `CREATE UNIQUE INDEX image_placements_post_id_image_id_key ON public.image_placements USING btree (post_id, image_id)`
 
 **Triggers:**
