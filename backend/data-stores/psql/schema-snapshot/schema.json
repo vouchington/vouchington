@@ -142729,70 +142729,6 @@
       },
       "uniqueConstraints": {}
     },
-    "trending_community_member_count_caps": {
-      "checkConstraints": {
-        "trending_community_member_count_caps_is_singleton_check": "CHECK (is_singleton)",
-        "trending_community_member_count_caps_member_count_cap_check": "CHECK (((member_count_cap >= 1) AND (member_count_cap <= 10000)))"
-      },
-      "columns": {
-        "is_singleton": {
-          "collation": null,
-          "comment": "Checked singleton key. Exactly one cap row exists.",
-          "defaultExpression": "true",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "boolean"
-        },
-        "member_count_cap": {
-          "collation": null,
-          "comment": "Active members counted toward a community trending score. The refresh writes the dynamic-config value before it runs.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "integer"
-        }
-      },
-      "comment": "Singleton member-count cap for the trending communities refresh. The view probes LIMIT cap+1 active members per community.",
-      "foreignKeys": {},
-      "growth": "bounded",
-      "indexes": {
-        "trending_community_member_count_caps_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX trending_community_member_count_caps_pkey ON public.trending_community_member_count_caps USING btree (is_singleton)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "is_singleton",
-              "descending": false,
-              "expression": "is_singleton",
-              "nullsFirst": false,
-              "opclass": "bool_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["is_singleton"],
-        "definition": "PRIMARY KEY (is_singleton)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
     "url_crawl_states": {
       "checkConstraints": {},
       "columns": {
@@ -162456,7 +162392,7 @@
     },
     "mv_trending_communities": {
       "comment": "Rolling 30-day community scores, refreshed on the PostgreSQL materialized-view schedule.",
-      "definition": " WITH cap AS (\n         SELECT COALESCE(( SELECT stored.member_count_cap\n                   FROM trending_community_member_count_caps stored\n                  WHERE stored.is_singleton), 1000) AS member_count_cap\n        ), recent_posts AS (\n         SELECT candidate.community_id,\n            (count(*))::integer AS post_count\n           FROM posts candidate\n          WHERE ((candidate.community_id IS NOT NULL) AND (candidate.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (candidate.deleted_at IS NULL) AND (candidate.approved_at IS NOT NULL) AND (candidate.archived_at IS NULL) AND (NOT (EXISTS ( SELECT 1\n                   FROM user_suspensions candidate_suspension\n                  WHERE ((candidate_suspension.user_id = candidate.created_by_id) AND (candidate_suspension.lifted_at IS NULL))))) AND (EXISTS ( SELECT 1\n                   FROM posts root_post\n                  WHERE ((root_post.id = COALESCE(candidate.root_post_id, candidate.id)) AND (root_post.deleted_at IS NULL) AND (root_post.approved_at IS NOT NULL) AND (root_post.archived_at IS NULL) AND (root_post.privacy = 'public'::privacy_types) AND (root_post.broadcast = 'everyone'::broadcast_types) AND (NOT (EXISTS ( SELECT 1\n                           FROM user_suspensions root_suspension\n                          WHERE ((root_suspension.user_id = root_post.created_by_id) AND (root_suspension.lifted_at IS NULL))))) AND ((root_post.community_id IS NULL) OR (EXISTS ( SELECT 1\n                           FROM (communities publication_community\n                             JOIN community_post_reviews publication_review ON (((publication_review.community_id = publication_community.id) AND (publication_review.post_id = root_post.id) AND (publication_review.approved_at IS NOT NULL) AND (publication_review.rejected_at IS NULL) AND (publication_review.unpublished_at IS NULL))))\n                          WHERE ((publication_community.id = root_post.community_id) AND (publication_community.deleted_at IS NULL) AND (publication_community.archived_at IS NULL) AND (publication_community.visibility = 'public'::privacy_types))))) AND ((root_post.post_type <> 'story'::post_types) OR (EXISTS ( SELECT 1\n                           FROM ((story_posts post_story\n                             JOIN stories publication_story ON (((publication_story.id = post_story.story_id) AND (publication_story.deleted_at IS NULL))))\n                             JOIN rss_feed_items story_item ON (((story_item.story_id = publication_story.id) AND (story_item.deleted_at IS NULL))))\n                          WHERE ((post_story.post_id = root_post.id) AND (EXISTS ( SELECT 1\n                                   FROM (rss_feed_item_sources story_source\n                                     JOIN rss_feeds story_feed ON ((story_feed.id = story_source.rss_feed_id)))\n                                  WHERE ((story_source.rss_feed_item_id = story_item.id) AND (story_feed.deleted_at IS NULL) AND (story_feed.is_enabled = true) AND (story_feed.is_discoverable = true))))))))))) AND (EXISTS ( SELECT 1\n                   FROM community_post_reviews review\n                  WHERE ((review.community_id = candidate.community_id) AND (review.post_id = candidate.id) AND (review.approved_at IS NOT NULL) AND (review.unpublished_at IS NULL) AND (review.rejected_at IS NULL)))))\n          GROUP BY candidate.community_id\n        )\n SELECT community.id,\n    ((((\n        CASE\n            WHEN (member_probe.probed > cap.member_count_cap) THEN cap.member_count_cap\n            ELSE member_probe.probed\n        END + recent_posts.post_count) + follow_probe.follow_count) + mute_probe.mute_count))::double precision AS trending_score,\n    (member_probe.probed > cap.member_count_cap) AS members_capped\n   FROM (((((recent_posts\n     CROSS JOIN cap)\n     JOIN communities community ON ((community.id = recent_posts.community_id)))\n     CROSS JOIN LATERAL ( SELECT (count(*))::integer AS probed\n           FROM ( SELECT 1 AS \"?column?\"\n                   FROM community_members member\n                  WHERE ((member.community_id = recent_posts.community_id) AND (member.removed_at IS NULL))\n                 LIMIT (( SELECT probe_cap.member_count_cap\n                           FROM cap probe_cap) + 1)) limited) member_probe)\n     CROSS JOIN LATERAL ( SELECT (count(*))::integer AS follow_count\n           FROM relation__user__proxy_follow__community relation\n          WHERE ((relation.object_id = recent_posts.community_id) AND (relation.deleted_at IS NULL) AND (relation.created_at >= (CURRENT_TIMESTAMP - '30 days'::interval)))) follow_probe)\n     CROSS JOIN LATERAL ( SELECT (count(*))::integer AS mute_count\n           FROM relation__user__proxy_mute__community relation\n          WHERE ((relation.object_id = recent_posts.community_id) AND (relation.deleted_at IS NULL) AND (relation.created_at >= (CURRENT_TIMESTAMP - '30 days'::interval)))) mute_probe)\n  WHERE ((community.deleted_at IS NULL) AND (community.visibility = 'public'::privacy_types));",
+      "definition": " WITH recent_posts AS (\n         SELECT p.community_id,\n            (count(*))::integer AS post_count\n           FROM ((posts p\n             JOIN community_post_reviews review ON (((review.post_id = p.id) AND (review.community_id = p.community_id) AND (review.approved_at IS NOT NULL) AND (review.unpublished_at IS NULL) AND (review.rejected_at IS NULL))))\n             JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = p.id)))\n          WHERE ((p.community_id IS NOT NULL) AND (p.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))))\n          GROUP BY p.community_id\n        ), members AS (\n         SELECT member.community_id,\n            (count(*))::integer AS member_count\n           FROM (recent_posts recent_posts_1\n             JOIN community_members member ON ((member.community_id = recent_posts_1.community_id)))\n          WHERE (member.removed_at IS NULL)\n          GROUP BY member.community_id\n        ), recent_follows AS (\n         SELECT relation.object_id AS community_id,\n            (count(*))::integer AS follow_count\n           FROM (relation__user__proxy_follow__community relation\n             JOIN recent_posts recent_posts_1 ON ((recent_posts_1.community_id = relation.object_id)))\n          WHERE ((relation.deleted_at IS NULL) AND (relation.created_at >= (CURRENT_TIMESTAMP - '30 days'::interval)))\n          GROUP BY relation.object_id\n        ), recent_mutes AS (\n         SELECT relation.object_id AS community_id,\n            (count(*))::integer AS mute_count\n           FROM (relation__user__proxy_mute__community relation\n             JOIN recent_posts recent_posts_1 ON ((recent_posts_1.community_id = relation.object_id)))\n          WHERE ((relation.deleted_at IS NULL) AND (relation.created_at >= (CURRENT_TIMESTAMP - '30 days'::interval)))\n          GROUP BY relation.object_id\n        )\n SELECT community.id,\n    ((((COALESCE(members.member_count, 0) + recent_posts.post_count) + COALESCE(recent_follows.follow_count, 0)) + COALESCE(recent_mutes.mute_count, 0)))::double precision AS trending_score\n   FROM ((((recent_posts\n     JOIN communities community ON ((community.id = recent_posts.community_id)))\n     LEFT JOIN members ON ((members.community_id = community.id)))\n     LEFT JOIN recent_follows ON ((recent_follows.community_id = community.id)))\n     LEFT JOIN recent_mutes ON ((recent_mutes.community_id = community.id)))\n  WHERE ((community.deleted_at IS NULL) AND (community.visibility = 'public'::privacy_types));",
       "materialized": true
     },
     "mv_trending_rss_feeds": {

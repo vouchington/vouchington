@@ -17,7 +17,6 @@ import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.m
 import { SESSION_LIMIT_SCENARIO_IDS } from './session-limit-scenario-ids.mts'
 import { STORY_SCENARIO_IDS } from './story-scenario-ids.mts'
 import { TOP_URL_RANKING_SCENARIO_IDS } from './top-url-ranking-scenario-ids.mts'
-import { TRENDING_COMMUNITY_REFRESH_MANIFEST_IDS } from './materialized-view-scenarios.mts'
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...MODERATION_REPORT_DETAIL_SCENARIO_IDS,
   'mcp-admission-user',
@@ -28,7 +27,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'hostname-cache-invalidation-claim',
   ...(['mv-top-hashtags-refresh', 'mv-rss-feed-crawl-tiers-refresh'] as const),
   ...(['mv-platform-stats-refresh', 'mv-trending-rss-feeds-refresh'] as const),
-  ...TRENDING_COMMUNITY_REFRESH_MANIFEST_IDS,
+  ...(['mv-trending-communities-refresh', 'mv-revenue-changes-refresh'] as const),
   'mv-revenue-memberships-refresh',
   'mv-trending-topics-refresh',
   ...INGESTION_PAGE_SCENARIO_IDS,

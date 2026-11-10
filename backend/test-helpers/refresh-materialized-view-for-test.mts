@@ -1,4 +1,4 @@
-import { assertWhitelistedSqlIdentifier, type PoolClient, read, writePool } from '@data-stores/psql'
+import { assertWhitelistedSqlIdentifier, type PoolClient, writePool } from '@data-stores/psql'
 
 const REFRESH_ADVISORY_LOCK_NAME = 'refresh-materialized-view'
 
@@ -40,31 +40,6 @@ export async function refreshMaterializedViewForTest(viewName: string): Promise<
   }
   if (refreshError) throw refreshError
   if (unlockError) throw unlockError
-}
-
-export async function readTrendingCommunityMemberCountCapForTest(): Promise<number> {
-  const { rows } = await read<{ member_count_cap: number }>(
-    `/* readTrendingCommunityMemberCountCapForTest */
-     SELECT member_count_cap
-     FROM trending_community_member_count_caps
-     WHERE is_singleton`,
-  )
-  const cap = rows[0]?.member_count_cap
-  if (cap === undefined) throw new Error('Missing trending community member count cap')
-  return cap
-}
-
-export async function readTrendingCommunityScoresForTest(
-  ids: readonly string[],
-): Promise<{ id: string; trending_score: number; members_capped: boolean }[]> {
-  const { rows } = await read<{ id: string; trending_score: number; members_capped: boolean }>(
-    `/* readTrendingCommunityScoresForTest */
-     SELECT id, trending_score, members_capped
-     FROM mv_trending_communities
-     WHERE id = ANY($1::uuid[])`,
-    [ids],
-  )
-  return rows
 }
 
 function quoteAllowedView(viewName: string): string {

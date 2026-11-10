@@ -1,5 +1,4 @@
 import { write } from '@data-stores/psql'
-import { explainTrendingCommunitiesBeforeAnalyze } from '../trending-communities-blind-plan.mts'
 import { CRAWL_SEED_PREFIX, SEED_PREFIX } from './common.mts'
 import { printPlanDiagnostics } from './plan-diagnostics.mts'
 
@@ -105,8 +104,8 @@ export const ANALYZE_TARGETS = [
     'relation__topic__category__topic',
     'relation__post__category__topic_alias',
     'relation__rss_feed_item__category__topic_alias',
-    // mv_trending_communities counts these per community through an object_id lookup.
-    // Other scenarios read the same relations, so they stay in this ANALYZE list.
+    // mv_trending_communities counts these per community. Without statistics the planner
+    // rescans their aggregates for every trending community and its refresh times out.
     'relation__user__proxy_follow__community',
     'relation__user__proxy_mute__community',
     // Triggers populate counts while the community seed runs; it has no direct row-count target.
@@ -139,8 +138,6 @@ export async function printRowCounts(): Promise<void> {
   }
 }
 export async function runAnalyze(): Promise<void> {
-  // Prove the trending refresh while these tables still have no ANALYZE statistics.
-  await explainTrendingCommunitiesBeforeAnalyze()
   console.log('\nRunning VACUUM (ANALYZE) on seeded tables...')
   // Settle first-capture statistics and visibility before autovacuum can choose the plan.
   // PostgreSQL includes default children when vacuuming partitioned parents.

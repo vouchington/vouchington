@@ -63,7 +63,6 @@ export const REGISTRY_ORDER = [
   'entity-relations-work-config',
   'relation-limits-config',
   'profile-count-config',
-  'trending-communities-config',
   'session-limits-config',
   'elections-votes-work-config',
   'classifiers-work-config',

@@ -1,10 +1,3 @@
-/** Blind probe stays between the trending-communities refresh and the revenue-changes refresh. */
-export const TRENDING_COMMUNITY_REFRESH_MANIFEST_IDS = [
-  'mv-trending-communities-refresh',
-  'mv-trending-communities-refresh-blind',
-  'mv-revenue-changes-refresh',
-] as const
-
 /** Each materialized view's defining query is explained by the matching scenario. */
 export const MATERIALIZED_VIEW_SCENARIOS = [
   ['mv-top-hashtags-refresh', 'mv_top_hashtags'],
