@@ -103,13 +103,10 @@ export async function runMembershipReversalCollisionReviewStaffScenario(input: {
       },
       { kind: 'maxProcessedRows', relation: 'membership_provider_products', max: 1 },
       { kind: 'maxProcessedRows', relation: 'membership_provider_lineages', max: 1 },
+      { kind: 'noSeqScan', relation: 'membership_provider_lineages' },
       {
         kind: 'usesIndexes',
-        indexes: [
-          REVIEW_INDEX,
-          'idx_membership_provider_lineages__id_context',
-          'idx_membership_provider_products__provider_identity',
-        ],
+        indexes: [REVIEW_INDEX, 'idx_membership_provider_products__provider_identity'],
       },
       // The explain custom plan probes existing cases on originating_invoice_id.
       // The unique lineage/invoice index is the other bounded probe.

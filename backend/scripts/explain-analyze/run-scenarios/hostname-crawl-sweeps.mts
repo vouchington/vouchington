@@ -118,8 +118,8 @@ registerScenarioContract('boilerplate-removal-hostname-batch', {
       noSort: true,
     },
     {
-      kind: 'usesIndexes',
-      indexes: ['idx_urls__hostname_id'],
+      kind: 'noSeqScan',
+      relation: 'urls',
       queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
     },
     {
@@ -128,7 +128,7 @@ registerScenarioContract('boilerplate-removal-hostname-batch', {
       queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
     },
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 700 },
-    { kind: 'maxProcessedRows', relation: 'urls', max: 700 },
+    { kind: 'maxProcessedRows', relation: 'urls', max: 600 },
   ],
   crossPartition: {
     crawls:

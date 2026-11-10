@@ -40,3 +40,13 @@ export function baseRelationName(node: PlanNode): string {
       return parent
   return name
 }
+
+/** A scan that touched rows, including rows a filter rejected. An unexecuted scan did no work. */
+export function sequentiallyScanned(nodes: readonly PlanNode[], relation: string): boolean {
+  return nodes.some(
+    node =>
+      node['Node Type'] === 'Seq Scan' &&
+      baseRelationName(node) === relation &&
+      processedRows(node) > 0,
+  )
+}

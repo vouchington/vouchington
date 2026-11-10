@@ -7,6 +7,7 @@ import {
   collectPlanNodes,
   planNodeUsesIndex,
   processedRows,
+  sequentiallyScanned,
   baseRelationName,
   type PlanNode,
 } from './plan-nodes.mts'
@@ -74,6 +75,13 @@ function evaluateExpectation(
         throw new Error(
           `${result.name} processed ${total} bitmap index entries; expected at most ${expectation.max}`,
         )
+      return
+    }
+    case 'noSeqScan': {
+      if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
+        return
+      if (sequentiallyScanned(nodes, expectation.relation))
+        throw new Error(`${result.name} sequentially scanned ${expectation.relation}`)
       return
     }
     case 'usesIndexes': {

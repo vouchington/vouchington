@@ -20,13 +20,9 @@ export async function runHostnameBlockOwnershipLookupScenarios(): Promise<void> 
   registerScenarioContract('hostname-block-pending-ancestor-owner', {
     seededRows,
     expectations: [
-      {
-        kind: 'usesIndexes',
-        indexes: ['url_hostnames_hostname_key', 'idx_url_hostnames__hostname__text_pattern_ops'],
-        anyOf: true,
-      },
+      { kind: 'noSeqScan', relation: 'url_hostnames' },
       { kind: 'usesIndexes', indexes: ['idx_url_hostname_blocks__url_hostname_id'] },
-      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 32 },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 3 },
       { kind: 'maxProcessedRows', relation: 'url_hostname_blocks', max: 32 },
     ],
   })

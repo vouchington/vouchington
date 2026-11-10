@@ -71,8 +71,8 @@ export async function runMembershipProviderRecoveryScenarios(): Promise<void> {
   await seedMembershipVerificationRecovery(googleId)
   registerScenarioContract('membership-verification-recovery-upper', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_membership_verifications__pending'] },
-      { kind: 'maxProcessedRows', relation: 'membership_verifications', max: 2 },
+      { kind: 'noSeqScan', relation: 'membership_verifications' },
+      { kind: 'maxProcessedRows', relation: 'membership_verifications', max: 1 },
     ],
     seededRows: { membership_verifications: 100 },
   })

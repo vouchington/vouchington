@@ -158,8 +158,8 @@ export async function runPostModerationRetentionScenarios(): Promise<void> {
 
   registerScenarioContract('post-moderation-successor-retention-probe', {
     expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_post_moderation_versions__post_id__id'] },
-      { kind: 'maxProcessedRows', relation: 'post_moderation_versions', max: 500 },
+      { kind: 'noSeqScan', relation: 'post_moderation_versions' },
+      { kind: 'maxProcessedRows', relation: 'post_moderation_versions', max: 0 },
     ],
     allowEmptyResult: true,
     seededRows: { post_moderation_versions: POST_MODERATION_RETENTION_SEED_COUNT },
