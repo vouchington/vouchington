@@ -2,41 +2,6 @@
 
 [Schema index](README.md).
 
-## `mv_ai_usage_community_totals` (materialized)
-
-Lifetime AI provider-call totals per community from retained raw calls and folded monthly rollups, refreshed on the PostgreSQL materialized-view schedule.
-
-```sql
- WITH usage_totals AS (
-         SELECT ai_usage_records.community_id,
-            (count(*))::numeric AS request_count,
-            (sum(ai_usage_records.input_tokens))::numeric AS input_tokens,
-            (sum(ai_usage_records.output_tokens))::numeric AS output_tokens,
-            (count(*) FILTER (WHERE (ai_usage_records.pricing_status = 'unpriced'::ai_usage_record_pricing_statuses)))::numeric AS unpriced_request_count,
-            COALESCE(sum(ai_usage_records.cost_microunits), (0)::numeric) AS cost_microunits
-           FROM ai_usage_records
-          WHERE (ai_usage_records.community_id IS NOT NULL)
-          GROUP BY ai_usage_records.community_id
-        UNION ALL
-         SELECT ai_usage_community_monthly_rollups.community_id,
-            sum(ai_usage_community_monthly_rollups.request_count) AS sum,
-            sum(ai_usage_community_monthly_rollups.input_tokens) AS sum,
-            sum(ai_usage_community_monthly_rollups.output_tokens) AS sum,
-            sum(ai_usage_community_monthly_rollups.unpriced_request_count) AS sum,
-            sum(ai_usage_community_monthly_rollups.cost_microunits) AS sum
-           FROM ai_usage_community_monthly_rollups
-          GROUP BY ai_usage_community_monthly_rollups.community_id
-        )
- SELECT community_id,
-    sum(request_count) AS request_count,
-    sum(input_tokens) AS input_tokens,
-    sum(output_tokens) AS output_tokens,
-    sum(unpriced_request_count) AS unpriced_request_count,
-    sum(cost_microunits) AS cost_microunits
-   FROM usage_totals
-  GROUP BY community_id;
-```
-
 ## `mv_platform_stats` (materialized)
 
 Cached public platform counts, refreshed on the PostgreSQL materialized-view schedule.

@@ -20,7 +20,7 @@ export function aiUsageTotalsUnitCost(index: number): number | null {
   return index < 990 ? 1000 - Math.floor(index / 2) : index < 995 ? 0 : null
 }
 
-/** Fixture writes both real sources of the lifetime totals view: the raw tail and the monthly rollups. */
+/** Fixture writes both sources of the lifetime totals: the raw tail and the monthly rollups. */
 export async function seedAiUsageTotals(): Promise<void> {
   const anchor = resolveSeedAnchor(process.env[SEED_ANCHOR_DATE_ENV]).dayAnchorMs
   const communityIds = Array.from({ length: AI_USAGE_TOTAL_COMMUNITY_COUNT + 1 }, (_, index) =>

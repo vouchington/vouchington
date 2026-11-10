@@ -24,8 +24,6 @@ describe('explain materialized view maintenance', () => {
       'analyze:/* refreshExplainMaterializedViews */ ANALYZE "mv_trending_communities"',
       'refresh:mv_trending_topics',
       'analyze:/* refreshExplainMaterializedViews */ ANALYZE "mv_trending_topics"',
-      'refresh:mv_ai_usage_community_totals',
-      'analyze:/* refreshExplainMaterializedViews */ ANALYZE "mv_ai_usage_community_totals"',
       'refresh:mv_revenue_memberships',
       'analyze:/* refreshExplainMaterializedViews */ ANALYZE "mv_revenue_memberships"',
       'refresh:mv_revenue_changes',

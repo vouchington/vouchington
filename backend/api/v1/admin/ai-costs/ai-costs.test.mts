@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestAiUsageRecord, insertTestCommunity } from '@voucha/test-helpers'
-import { refreshMaterializedViewForTest } from '../../../../test-helpers/refresh-materialized-view-for-test.mts'
 import type { PrivateUser } from '@services/users/types'
 
 describe('GET /api/v1/admin/ai-costs', () => {
@@ -20,7 +19,6 @@ describe('GET /api/v1/admin/ai-costs', () => {
     await Promise.all(
       communities.map(community => insertTestAiUsageRecord({ communityId: community.id })),
     )
-    await refreshMaterializedViewForTest('mv_ai_usage_community_totals')
   })
 
   it('returns 401 when not authenticated', async () => {

@@ -22,7 +22,6 @@ const SCHEDULED_JOB_API_ORDER = [
   'refresh-trending-rss-feeds',
   'refresh-trending-communities',
   'refresh-trending-topics',
-  'refresh-ai-usage-community-totals',
   'refresh-revenue-memberships',
   'refresh-revenue-changes',
   'refresh-referral-program-link-counts',

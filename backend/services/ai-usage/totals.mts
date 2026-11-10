@@ -38,34 +38,54 @@ export async function getCommunityAiCostTotals(
   const cursor = options.after
     ? decodeUuidCursor(options.after, isCommunityAiCostTotalCursor, 'Invalid AI cost totals cursor')
     : null
-  // Totals are materialized, so they lag the ledger by up to one refresh. The ranking index walks
-  // (cost DESC, community_id DESC); the lateral probe applies live eligibility per walked row. The
-  // LIMIT 1 keeps the planner on that ranking walk instead of sorting the whole view for a merge join.
   const query = sql`/* getCommunityAiCostTotals */
+    WITH usage_totals AS (
+      -- The recent tail and folded pages are disjoint because each page folds and deletes in one
+      -- transaction. Old and recent calls can therefore share the same calendar month.
+      SELECT community_id, COUNT(*)::numeric AS request_count,
+        SUM(input_tokens)::numeric AS total_input_tokens,
+        SUM(output_tokens)::numeric AS total_output_tokens,
+        COUNT(*) FILTER (WHERE pricing_status = 'unpriced')::numeric AS unpriced_request_count,
+        COALESCE(SUM(cost_microunits), 0)::numeric AS total_cost_microunits
+      -- no-mistakes-disable-next-line postgres-required-predicates: the staff ranking sums the retention-bounded raw tail; LIMIT applies after that aggregate
+      FROM ai_usage_records
+      WHERE community_id IS NOT NULL
+      GROUP BY community_id
+      UNION ALL
+      SELECT community_id, SUM(request_count), SUM(input_tokens), SUM(output_tokens),
+        SUM(unpriced_request_count), SUM(cost_microunits)
+      FROM ai_usage_community_monthly_rollups
+      GROUP BY community_id
+    ), totals AS (
+      SELECT community_id, SUM(request_count) AS request_count,
+        SUM(total_input_tokens) AS total_input_tokens,
+        SUM(total_output_tokens) AS total_output_tokens,
+        SUM(unpriced_request_count) AS unpriced_request_count,
+        SUM(total_cost_microunits) AS total_cost_microunits
+      FROM usage_totals GROUP BY community_id
+    )
     SELECT
       c.id AS community_id,
       c.slug AS community_slug,
       totals.request_count::text AS request_count,
-      totals.input_tokens::text AS total_input_tokens,
-      totals.output_tokens::text AS total_output_tokens,
+      totals.total_input_tokens::text AS total_input_tokens,
+      totals.total_output_tokens::text AS total_output_tokens,
       totals.unpriced_request_count::text AS unpriced_request_count,
-      totals.cost_microunits::text AS total_cost_microunits
-    FROM mv_ai_usage_community_totals totals
-    CROSS JOIN LATERAL (
-      SELECT c.id, c.slug
-      FROM communities c
-      WHERE c.id = totals.community_id AND c.deleted_at IS NULL
-      LIMIT 1
-    ) c
+      totals.total_cost_microunits::text AS total_cost_microunits
+    FROM totals JOIN communities c ON c.id = totals.community_id
   `
   if (cursor) {
     query.append(sql`
-      WHERE (totals.cost_microunits, totals.community_id) <
-        (${cursor.total_cost_microunits}::NUMERIC, ${cursor.id}::UUID)
+      WHERE
+        totals.total_cost_microunits < ${cursor.total_cost_microunits}::NUMERIC
+        OR (
+          totals.total_cost_microunits = ${cursor.total_cost_microunits}::NUMERIC
+          AND c.id > ${cursor.id}::UUID
+        )
     `)
   }
   query.append(sql`
-    ORDER BY totals.cost_microunits DESC, totals.community_id DESC
+    ORDER BY totals.total_cost_microunits DESC, c.id ASC
     LIMIT ${limit + 1}
   `)
 

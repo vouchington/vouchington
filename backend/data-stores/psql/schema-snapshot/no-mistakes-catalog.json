@@ -170952,68 +170952,6 @@
     }
   },
   "views": {
-    "mv_ai_usage_community_totals": {
-      "comment": "Lifetime AI provider-call totals per community from retained raw calls and folded monthly rollups, refreshed on the PostgreSQL materialized-view schedule.",
-      "definition": " WITH usage_totals AS (\n         SELECT ai_usage_records.community_id,\n            count(*)::numeric AS request_count,\n            sum(ai_usage_records.input_tokens)::numeric AS input_tokens,\n            sum(ai_usage_records.output_tokens)::numeric AS output_tokens,\n            count(*) FILTER (WHERE ai_usage_records.pricing_status = 'unpriced'::ai_usage_record_pricing_statuses)::numeric AS unpriced_request_count,\n            COALESCE(sum(ai_usage_records.cost_microunits), 0::numeric) AS cost_microunits\n           FROM ai_usage_records\n          WHERE ai_usage_records.community_id IS NOT NULL\n          GROUP BY ai_usage_records.community_id\n        UNION ALL\n         SELECT ai_usage_community_monthly_rollups.community_id,\n            sum(ai_usage_community_monthly_rollups.request_count) AS sum,\n            sum(ai_usage_community_monthly_rollups.input_tokens) AS sum,\n            sum(ai_usage_community_monthly_rollups.output_tokens) AS sum,\n            sum(ai_usage_community_monthly_rollups.unpriced_request_count) AS sum,\n            sum(ai_usage_community_monthly_rollups.cost_microunits) AS sum\n           FROM ai_usage_community_monthly_rollups\n          GROUP BY ai_usage_community_monthly_rollups.community_id\n        )\n SELECT community_id,\n    sum(request_count) AS request_count,\n    sum(input_tokens) AS input_tokens,\n    sum(output_tokens) AS output_tokens,\n    sum(unpriced_request_count) AS unpriced_request_count,\n    sum(cost_microunits) AS cost_microunits\n   FROM usage_totals\n  GROUP BY community_id;",
-      "indexes": {
-        "idx_mv_ai_usage_community_totals__community_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_mv_ai_usage_community_totals__community_id ON public.mv_ai_usage_community_totals USING btree (community_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_mv_ai_usage_community_totals__ranking": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_mv_ai_usage_community_totals__ranking ON public.mv_ai_usage_community_totals USING btree (cost_microunits DESC, community_id DESC)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "cost_microunits",
-              "descending": true,
-              "expression": "cost_microunits",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.numeric_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "community_id",
-              "descending": true,
-              "expression": "community_id",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "materialized": true
-    },
     "mv_platform_stats": {
       "comment": "Cached public platform counts, refreshed on the PostgreSQL materialized-view schedule.",
       "definition": " WITH post_counts AS (\n         SELECT count(*)::integer AS post_count,\n            count(*) FILTER (WHERE view_public_post_eligibility.post_type = 'review'::post_types)::integer AS review_count,\n            count(*) FILTER (WHERE view_public_post_eligibility.post_type = 'data_point'::post_types)::integer AS data_point_count\n           FROM view_public_post_eligibility\n        )\n SELECT 1 AS singleton_id,\n    ( SELECT count(*)::integer AS count\n           FROM topics\n          WHERE topics.deleted_at IS NULL AND topics.merged_into_topic_id IS NULL) AS topic_count,\n    ( SELECT count(*)::integer AS count\n           FROM rss_feeds\n          WHERE rss_feeds.deleted_at IS NULL AND rss_feeds.is_enabled = true) AS rss_feed_count,\n    post_count,\n    review_count,\n    data_point_count,\n    ( SELECT count(*)::integer AS count\n           FROM url_hostnames\n          WHERE url_hostnames.votes_count_up > 0 AND NOT url_hostnames.is_blocked) AS hostname_count\n   FROM post_counts;",

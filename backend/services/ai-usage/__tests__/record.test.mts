@@ -14,7 +14,6 @@ import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/cla
 import type { PrivateUser } from '@services/users/types'
 import { type ModelUsage, openAIUsageToModelUsage } from '@vouchington/ai/providers'
 import { recordAiUsage } from '../record.mts'
-import { refreshMaterializedViewForTest } from '../../../test-helpers/refresh-materialized-view-for-test.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
 
 function usage(
@@ -75,7 +74,6 @@ describe('recordAiUsage', () => {
     // getCommunityAiCostTotals orders DESC by cost with no time bound, so a community can sort past
     // any fixed-size page once enough ambient DB pollution outranks its cost. Walk the cursor to the
     // end instead of assuming this row lands in the first page.
-    await refreshMaterializedViewForTest('mv_ai_usage_community_totals')
     let entry: Awaited<ReturnType<typeof getCommunityAiCostTotals>>['results'][number] | undefined
     let after: string | undefined
     for (;;) {
@@ -159,7 +157,6 @@ describe('recordAiUsage', () => {
     // getCommunityAiCostTotals orders DESC by cost, so a zero-cost community ties with every other
     // zero-cost community from ambient DB pollution and can sort past any fixed-size page. Walk the
     // cursor to the end instead of assuming this row lands in the first page.
-    await refreshMaterializedViewForTest('mv_ai_usage_community_totals')
     let entry: Awaited<ReturnType<typeof getCommunityAiCostTotals>>['results'][number] | undefined
     let after: string | undefined
     for (;;) {
