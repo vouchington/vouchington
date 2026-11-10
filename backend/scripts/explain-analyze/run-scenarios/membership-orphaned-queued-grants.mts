@@ -56,7 +56,8 @@ export async function runMembershipOrphanedQueuedGrantScenarios(): Promise<void>
           'idx_membership_grant_activation_periods__open_grant',
         ],
       },
-      { kind: 'maxProcessedRows', relation: 'membership_grants', max: 10 },
+      // The custom plan counts the index probe and the duration filter for each of the 10 users.
+      { kind: 'maxProcessedRows', relation: 'membership_grants', max: 20 },
       { kind: 'maxProcessedRows', relation: 'memberships', max: 10 },
       { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 10 },
       { kind: 'maxProcessedRows', relation: 'membership_grant_activation_periods', max: 10 },
@@ -88,7 +89,8 @@ export async function runMembershipOrphanedQueuedGrantScenarios(): Promise<void>
       { kind: 'usesIndexes', indexes: ['idx_membership_grants__user_id'] },
       { kind: 'usesIndexes', indexes: ['idx_memberships__effective_user'] },
       { kind: 'usesIndexes', indexes: ['membership_source_states_pkey'] },
-      { kind: 'maxProcessedRows', relation: 'membership_grants', max: 1 },
+      // The custom plan counts the index probe and the duration filter for the one grant.
+      { kind: 'maxProcessedRows', relation: 'membership_grants', max: 2 },
       { kind: 'maxProcessedRows', relation: 'memberships', max: 4 },
       { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 3 },
       { kind: 'maxProcessedRows', relation: 'membership_grant_activation_periods', max: 1 },
