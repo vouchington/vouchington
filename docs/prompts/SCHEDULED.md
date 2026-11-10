@@ -1,16 +1,14 @@
 # Scheduled Prompts
 
-Rotating maintenance prompts selected from [scheduled/](scheduled/) by
-[scheduled-prompts.yml](../../.github/workflows/scheduled-prompts.yml).
-The workflow renders the selected prompt through
-[scheduled-prompt.md](automation/scheduled-prompt.md) before calling
-[harness-dispatch.yml](https://github.com/vouchington/vouchington-tooling/blob/main/.github/workflows/harness-dispatch.yml).
-Prompts marked `harness-scheduled-completion: issue` use the issue wrapper in
+Rotating maintenance prompts in [scheduled/](scheduled/). The attended triage loop schedules them
+and runs each locally; there is no GitHub Actions scheduler. The loop renders the selected prompt
+through [scheduled-prompt.md](automation/scheduled-prompt.md). Prompts marked
+`harness-scheduled-completion: issue` use the issue wrapper in
 [automation/scheduled-issue.md](automation/scheduled-issue.md). Prompts additionally marked
 `harness-scheduled-scope: existing-issues` inspect one stable ascending page of at most 50 open
-issues per run; the caller supplies scope metadata, not an issue snapshot or cursor. The wrapper owns
-mutation limits, revalidation, and no-op reporting. These markers are consumed by
-[scheduled-prompts.yml](../../.github/workflows/scheduled-prompts.yml); keep their exact text stable.
+issues per run; the loop supplies scope metadata, not an issue snapshot or cursor. The wrapper owns
+mutation limits, revalidation, and no-op reporting. The triage loop consumes these markers; keep
+their exact text stable.
 
 ## Prompt Index
 
@@ -77,5 +75,5 @@ mutation limits, revalidation, and no-op reporting. These markers are consumed b
   product constraint (e.g. `UI locale` the concept vs. `ui_locale` the API field).
 - Verify linked source-of-truth docs are current before anchoring a prompt to them; if the doc is
   stale, fix the doc first, then add or update the prompt.
-- Keep operational rendering rules in [README.md](README.md) and workflow behavior in
-  [scheduled-prompts.yml](../../.github/workflows/scheduled-prompts.yml).
+- Keep operational rendering rules in [README.md](README.md) and scheduling in the
+  triage loop.

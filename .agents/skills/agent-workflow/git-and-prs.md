@@ -98,7 +98,7 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
 - One worker per native stack owns Shepherd polling and Git writes. The parent reconciles stacks,
   starts independent work when a lower stack is in [decent shape](../stacked-prs/SKILL.md#who-runs-the-stack),
   and carries merge decisions to the human. A terminal result on one layer does not stop other
-  owned layers. The single-PR `/shepherd` automation does not spawn another stack.
+  owned layers.
 - If dependencies fail freshness verification after a branch change, run `pnpm install` and retry.
   Resolve disputed CLI syntax against the pinned CLI's live help and actual behavior.
 

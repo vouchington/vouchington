@@ -7,7 +7,6 @@ import { parse as parseYaml } from 'yaml'
 
 import { trackedFiles } from './tracked-files.mts'
 import {
-  fixMainSubscriptionViolations,
   postgresWorkflowPolicyViolations,
   type CiPathFilters,
   type OpsWorkflow,
@@ -44,7 +43,6 @@ export function checkWorkflowOpsPolicy(root: string): string[] {
   ) as CiPathFilters
 
   return [
-    ...fixMainSubscriptionViolations(workflows as WorkflowDocuments),
     ...postgresWorkflowPolicyViolations(sources as WorkflowSources, workflows),
     ...prRevisionPairViolations(workflows as WorkflowDocuments, sources as WorkflowSources),
     ...workflowScriptOwnershipViolations(workflows as WorkflowDocuments, filters),

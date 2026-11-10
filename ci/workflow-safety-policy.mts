@@ -110,7 +110,7 @@ export function workflowSafetyViolations(
   return violations
 }
 
-/** The two base-owned dequeue handlers are the only privileged PR-target workflows. */
+/** The base-owned dequeue handler is the only privileged PR-target workflow. */
 export function privilegedWorkflowViolations(workflows: Record<string, SafetyWorkflow>): string[] {
   const actual = Object.entries(workflows)
     .flatMap(([path, workflow]) =>
@@ -119,11 +119,11 @@ export function privilegedWorkflowViolations(workflows: Record<string, SafetyWor
         : [],
     )
     .toSorted()
-  const expected = ['cancel-dequeued-merge-group-runs.yml', 'merge-queue-ejection.yml']
+  const expected = ['cancel-dequeued-merge-group-runs.yml']
   return actual.length === expected.length &&
     actual.every((path, index) => path === expected[index])
     ? []
     : [
-        `Privileged workflows must be cancel-dequeued-merge-group-runs.yml, merge-queue-ejection.yml; found ${actual.join(', ')}`,
+        `Privileged workflows must be cancel-dequeued-merge-group-runs.yml; found ${actual.join(', ')}`,
       ]
 }

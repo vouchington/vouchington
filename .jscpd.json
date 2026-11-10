@@ -24,7 +24,6 @@
       }
     ],
     "entry": [
-      ".pr-shepherd/classification/auto-harness-session.mts",
       "backend/data-stores/psql/config-driven/*.mts",
       "backend/entrypoints/api/executable.mts",
       "backend/entrypoints/api/verify-ipv6-egress.mts",

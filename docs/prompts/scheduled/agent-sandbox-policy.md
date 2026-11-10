@@ -18,8 +18,8 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   this prompt runs in (`PROTECTED_HOOK_DIR_PREFIXES` and `PROTECTED_HOOK_EXACT_FILES` in
   `dev/codex-hooks/policy/protected-hook-paths.mts`, the #8009 hook self-mutation gap; interactive
   sessions are unaffected). Pick the shippable change from `.claude/settings.json` or the docs. This
-  prompt carries no `<!-- harness-scheduled-completion: issue -->` marker, so `scheduled-prompts.yml`
-  dispatches it in `pr`-completion mode (`publish-contract: scheduled`). When the only genuine
+  prompt carries no `<!-- harness-scheduled-completion: issue -->` marker, so the triage loop
+  runs it in `pr`-completion mode (`publish-contract: scheduled`). When the only genuine
   improvement requires a protected path, stop and report the finding, per
   [scheduled-prompt.md](../automation/scheduled-prompt.md)'s "If no independently mergeable change
   is confidently ready, stop and report why."; a human reads that report and files the follow-up.

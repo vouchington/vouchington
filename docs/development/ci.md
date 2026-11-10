@@ -63,7 +63,7 @@ changed files.
 - Web-stack test jobs clear Next.js runtime output and Wrangler/Miniflare state before tests,
   because stale caches have caused false failures. Only explicit performance caches may be
   restored, and their keys must invalidate often.
-- Local development and the Harness dispatcher's reused worktree keep binaries and `node_modules`
+- Local development and reused agent worktrees keep binaries and `node_modules`
   across runs, so setup assumes a dirty workspace and reconciles it; GitHub-hosted runners start
   clean every job and have nothing to reconcile.
 - Tracked repository hook payloads exit immediately when `GITHUB_ACTIONS=true`: explicit workflow
@@ -164,23 +164,17 @@ works; the model-quality evals spend a call per fixture, so `evals-backend.yml` 
 
 ## Automation
 
-Repository automation dispatches fire-and-forget sessions through Auto Harness when the default-off
-master and per-surface gates are exactly `true`. Callers keep authorization, freshness, transient
-retry, deduplication, and failure reporting; the trusted-host agent owns its narrowly authorized
-draft PR, PR update, or comment, and every mutation-capable prompt revalidates live state
-immediately before writing. The contract is in
-[Auto Harness automation](ci/workflows/reference-harness-automation.md). Accepted residuals are not restated here.
+Repository automation no longer dispatches agent sessions from GitHub Actions. The
+hook-harness event relay and the attended
+`triage-loop` session own what the retired dispatch workflows did: ejections, `main` failures, and
+`/shepherd` handling. Agents shepherd their own PRs, and the triage loop runs the
+[prompts](../prompts/README.md) on its own schedule. Rerunning a transient failure follows
+[Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md).
 
-- **Fix Main** accepts push failures from the publisher workflows and schedule/manual failures only
-  from the same-repository `Nightly` workflow on `main`. It revalidates the completed source attempt
-  before prompt transfer and escalation, and a queued, running, or completed rerun suppresses
-  obsolete dispatch. Uncatalogued genuine transients still need a classifier with a real-log fixture
-  and counterfixtures; see
-  [Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md).
-- **Merge queue ejection** dispatches one queue-wide triage session that groups recent ejections by
+- **Merge queue ejection** is triaged by the attended triage loop, which groups recent ejections by
   root cause, fixes flaky tests in new PRs, files issues, or comments on ejected PRs, and never
   changes an ejected PR. Replaced or dequeued queue entries leave runs that nothing else cancels, so
-  two cancel workflows handle them; see
+  a cancel workflow handles them; see
   [merge queue run cancellation](ci/workflows/reference-merge-queue-run-cancellation.md) for why
   `concurrency:` cannot.
 - **Plan completion** ([`plan-completion.yml`](../../.github/workflows/plan-completion.yml)) is an

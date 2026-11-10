@@ -5,15 +5,9 @@ import {
   assertNoWorkflowViolations,
   assertShellSnippetsInOrder,
   assertWorkflowInvariant,
-  pushTriggerBranches,
-  pushTriggerBranchesIgnored,
   requiredNamedStep,
   requiredStepIf,
   requiredStepRun,
-  workflowHasMainPushTrigger,
-  workflowPushMatchesBranch,
-  workflowRunSubscriptions,
-  workflowTriggerNames,
   type WorkflowJob,
 } from '../test-helpers/workflow-fixtures.mts'
 
@@ -89,97 +83,9 @@ describe('workflow test helpers', () => {
     ])
   })
 
-  it('normalizes workflow trigger names across scalar, array, and mapping triggers', () => {
-    expect(workflowTriggerNames('workflow_call')).toEqual(['workflow_call'])
-    expect(workflowTriggerNames(['push', 'workflow_call'])).toEqual(['push', 'workflow_call'])
-    expect(workflowTriggerNames({ push: null, workflow_run: { workflows: ['CI'] } })).toEqual([
-      'push',
-      'workflow_run',
-    ])
+  it('detects a workflow trigger across scalar, array, and mapping triggers', () => {
     expect(workflowHasTrigger(['push', 'workflow_call'], 'workflow_call')).toBe(true)
     expect(workflowHasTrigger({ push: null }, 'workflow_call')).toBe(false)
-  })
-
-  it('extracts push branches and ignores branches from mapping triggers', () => {
-    expect(pushTriggerBranches({ branches: 'main' })).toEqual(['main'])
-    expect(pushTriggerBranches({ branches: ['main', 'release'] })).toEqual(['main', 'release'])
-    expect(pushTriggerBranches({ 'branches-ignore': ['main'] })).toEqual([])
-    expect(pushTriggerBranchesIgnored({ 'branches-ignore': 'release' })).toEqual(['release'])
-    expect(pushTriggerBranchesIgnored({ branches: ['main'] })).toEqual([])
-  })
-
-  it('detects main push triggers and workflow_run subscriptions', () => {
-    expect(workflowHasMainPushTrigger({ on: 'push' })).toBe(true)
-    expect(workflowHasMainPushTrigger({ on: ['pull_request', 'push'] })).toBe(true)
-    expect(workflowHasMainPushTrigger({ on: { push: null } })).toBe(true)
-    expect(workflowHasMainPushTrigger({ on: { push: { branches: ['main'] } } })).toBe(true)
-    expect(workflowHasMainPushTrigger({ on: { push: { branches: ['release'] } } })).toBe(false)
-    expect(workflowHasMainPushTrigger({ on: { push: { 'branches-ignore': ['main'] } } })).toBe(
-      false,
-    )
-    expect(workflowHasMainPushTrigger({ on: { push: { 'branches-ignore': ['release'] } } })).toBe(
-      true,
-    )
-    expect(workflowPushMatchesBranch({ on: { push: { branches: ['release'] } } }, 'release')).toBe(
-      true,
-    )
-    expect(
-      workflowPushMatchesBranch({ on: { push: { branches: ['release/**'] } } }, 'release/2026'),
-    ).toBe(true)
-    expect(
-      workflowPushMatchesBranch(
-        { on: { push: { branches: ['release/**', '!release/archive/**'] } } },
-        'release/archive/2025',
-      ),
-    ).toBe(false)
-    expect(
-      workflowPushMatchesBranch(
-        {
-          on: {
-            push: {
-              branches: ['release/**'],
-              'branches-ignore': ['release/archive/**'],
-            },
-          },
-        },
-        'release/archive/2025',
-      ),
-    ).toBe(false)
-    expect(
-      workflowPushMatchesBranch({ on: { push: { 'branches-ignore': ['release'] } } }, 'release'),
-    ).toBe(false)
-    expect(
-      workflowPushMatchesBranch(
-        { on: { push: { 'branches-ignore': ['release/archive/**'] } } },
-        'release/archive/2025',
-      ),
-    ).toBe(false)
-    expect(
-      workflowPushMatchesBranch(
-        { on: { push: { 'branches-ignore': ['release/**', '!release/2026/**'] } } },
-        'release/2026/preview',
-      ),
-    ).toBe(true)
-    expect(
-      workflowPushMatchesBranch(
-        { on: { push: { 'branches-ignore': ['release/**'], 'tags-ignore': ['v*'] } } },
-        'main',
-      ),
-    ).toBe(true)
-    expect(workflowPushMatchesBranch({ on: { push: { tags: ['v*'] } } }, 'main')).toBe(false)
-    expect(workflowPushMatchesBranch({ on: { push: { 'tags-ignore': ['v*'] } } }, 'main')).toBe(
-      false,
-    )
-    expect(workflowHasMainPushTrigger({ on: { workflow_run: { workflows: ['CI'] } } })).toBe(false)
-
-    expect(workflowRunSubscriptions({ workflow_run: null })).toEqual([])
-    expect(workflowRunSubscriptions({ workflow_run: { workflows: 'CI' } })).toEqual(['CI'])
-    expect(
-      workflowRunSubscriptions({
-        workflow_run: { workflows: ['Actionlint', 'Gitleaks'] },
-      }),
-    ).toEqual(['Actionlint', 'Gitleaks'])
-    expect(workflowRunSubscriptions(['push', 'workflow_run'])).toEqual([])
   })
 
   it('asserts shell snippets in logical-line order', () => {

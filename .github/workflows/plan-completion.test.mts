@@ -3,11 +3,6 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import {
-  workflowHasMainPushTrigger,
-  workflowTriggerNames,
-} from '../test-helpers/workflow-fixtures.mts'
-
 type Workflow = {
   concurrency?: { 'cancel-in-progress'?: unknown; group?: unknown }
   jobs?: Record<
@@ -32,8 +27,7 @@ function numberField(value: unknown, label: string): number {
 
 describe('plan completion advisory workflow', () => {
   it('runs one trusted snapshot on every main push with a retained global lock', () => {
-    expect(workflowTriggerNames(workflow.on)).toEqual(['push'])
-    expect(workflowHasMainPushTrigger(workflow)).toBe(true)
+    expect(workflow.on).toEqual({ push: { branches: ['main'] } })
     expect(workflow.concurrency).toEqual({
       'cancel-in-progress': false,
       group: 'plan-completion-main',

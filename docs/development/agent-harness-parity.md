@@ -76,9 +76,8 @@ flowchart LR
 | Folder trust  | Always loads project settings                                | Loads project hooks                                           | Project Claude hooks need `/hooks-trust`                          |
 | CI            | When the route selects it                                    | When the route selects it                                     | When the route selects it                                         |
 
-Scheduled prompts, fix and plan dispatch, and Shepherd are Auto Harness sessions. Organization
-variables select the Command and its fallbacks. See
-[Auto Harness automation](ci/workflows/reference-harness-automation.md).
+Scheduled prompts, ejection and `main`-failure triage, and shepherding run in attended or local
+sessions driven by the triage loop; the hook-harness event relay feeds them events.
 
 Ambient Blackboard identity is owned by
 `agent-blackboard`; transcript discovery

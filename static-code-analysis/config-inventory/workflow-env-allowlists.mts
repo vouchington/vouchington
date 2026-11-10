@@ -37,11 +37,8 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'COVERAGE_HEAD',
   'COVERAGE_PR',
   'COVERAGE_REPO',
-  // Read through the checkpoint CLI's typed environment parameter.
-  'CHECKPOINT_STATUS',
   'DOCKER_BUILD_SUMMARY',
   'DOCKER_CLI_EXPERIMENTAL',
-  'HARNESS_AGENT_DISPATCH_ENABLED',
   // Read by the lingua-rs package install script to skip its native binary download, not by repo
   // TypeScript.
   'LINGUA_RS_SKIP_DOWNLOAD',

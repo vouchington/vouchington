@@ -58,7 +58,6 @@ describe('detect-changes path filters', () => {
       'ci/build-infra/start-valkey.sh',
       'ci/run-repository-static-checks.sh',
       'ci/check-backend-query-profile-manifests.sh',
-      'ci/automation-inline/source-run-guard.sh',
     ]) {
       expect(filterMatches(shared, path)).toBe(true)
     }

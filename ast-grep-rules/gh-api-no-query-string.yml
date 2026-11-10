@@ -110,7 +110,7 @@ examples:
         [`repos/${repository}/check-runs/${job.id}/annotations?per_page=100`, '--paginate', '--slurp'],
       )
     isValid: false
-    file: 'ci/source-run-state.mts'
+    file: 'ci/ci-job-runtime-audit.mts'
   - code: |
       const result = await createGhApi({ run }).call(
         [
@@ -124,12 +124,12 @@ examples:
         ],
       )
     isValid: true
-    file: 'ci/source-run-state.mts'
+    file: 'ci/ci-job-runtime-audit.mts'
   - code: |
       await createGhApi({ run }).call(['repos/OWNER/REPO/labels?per_page=100'])
     isValid: false
-    file: 'ci/source-run-state.mts'
+    file: 'ci/ci-job-runtime-audit.mts'
   - code: |
       await createGhApi({ run }).call(['-X', 'GET', 'repos/OWNER/REPO/labels', '-F', 'per_page=100'])
     isValid: true
-    file: 'ci/source-run-state.mts'
+    file: 'ci/ci-job-runtime-audit.mts'

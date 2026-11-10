@@ -54,23 +54,6 @@ export const SECRET_INVENTORY = {
     provisioned: true,
     notes: 'PAT for Dependabot automerge and dependency-bump PR pushes (repo secret).',
   },
-  HARNESS_API_KEY: {
-    provisioned: true,
-    // Repo-scoped by design: workflow_call does not resolve Environment-scoped secrets. The
-    // auto-harness Environment is kept solely to enforce the main-only branch-policy gate below,
-    // tracked independently via requiredBranchPolicy rather than requiredEnvironment.
-    requiredBranchPolicy: 'auto-harness',
-    notes:
-      'Auto Harness operator API key (repo secret). Environment-scoped secrets do not resolve ' +
-      'inside a workflow_call-invoked job per live canary #10196 (docs claim job-level ' +
-      'environment is sufficient but empirically empty); each caller explicitly forwards this ' +
-      'one name via secrets: { HARNESS_API_KEY: ... }, never secrets: inherit. The dispatch job ' +
-      'still declares environment: auto-harness for its main-only branch-policy gate, ' +
-      'independent of secret scope. Operator rollout note: the auto-harness environment copy ' +
-      'of this secret must be deleted only after the repository copy is confirmed present ' +
-      '(verified 2026-08-26: environment copy already removed, repo copy is the sole source ' +
-      'of truth going forward).',
-  },
   LIGHTPANDA_TOKEN: {
     provisioned: true,
     notes:

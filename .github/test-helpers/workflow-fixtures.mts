@@ -4,15 +4,6 @@ export {
   shellLogicalLines,
   workflowHasTrigger,
 } from '../../ci/workflow-shell-policy.mts'
-export {
-  pushTriggerBranches,
-  pushTriggerBranchesIgnored,
-  workflowHasMainPushTrigger,
-  workflowPushMatchesBranch,
-  workflowRunSubscriptions,
-  workflowTriggerNames,
-  type WorkflowLike,
-} from '../../ci/workflow-trigger-policy.mts'
 
 export type WorkflowStep = {
   name?: string
