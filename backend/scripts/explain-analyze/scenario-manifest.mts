@@ -17,7 +17,6 @@ import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.m
 import { SESSION_LIMIT_SCENARIO_IDS } from './session-limit-scenario-ids.mts'
 import { STORY_SCENARIO_IDS } from './story-scenario-ids.mts'
 import { TOP_URL_RANKING_SCENARIO_IDS } from './top-url-ranking-scenario-ids.mts'
-import { MODERATION_RERUN_SCENARIO_IDS } from './moderation-rerun-scenario-ids.mts'
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...MODERATION_REPORT_DETAIL_SCENARIO_IDS,
   'mcp-admission-user',
@@ -113,7 +112,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'recommended-topics',
   'recommended-topics-long-vote-history',
   'report-judgement-contexts-batch',
-  ...MODERATION_RERUN_SCENARIO_IDS,
   'review-succession-candidates',
   'remote-follower-inbox-late-cursor',
   'rss-feed-item-feed',
