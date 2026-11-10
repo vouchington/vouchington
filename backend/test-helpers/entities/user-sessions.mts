@@ -3,6 +3,14 @@ import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
 
+/**
+ * Stores the empty "unknown agent" row a metadata-free session refresh references. A route that
+ * resolves it cold costs three user-agent statements; once any process has stored it, one.
+ */
+export async function ensureTestUnknownUserAgentString(): Promise<void> {
+  await upsertUserAgentString('')
+}
+
 export async function insertTestUserSession(options: {
   userId: string
   sessionId?: string

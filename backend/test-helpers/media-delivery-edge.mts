@@ -1,7 +1,7 @@
-import { vi } from 'vitest'
+import { onTestFinished, vi } from 'vitest'
 import * as provider from '../modules/aws/media-delivery-registry.mts'
 
-/** Condition-enforcing external edge double; AWS command construction is tested by its module. */
+/** Condition-enforcing external edge double, removed when the installing test finishes; AWS command construction is tested by its module. */
 export function installTestMediaDeliveryEdge() {
   vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
   vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
@@ -29,5 +29,12 @@ export function installTestMediaDeliveryEdge() {
   const invalidate = vi
     .spyOn(provider, 'invalidateMediaDeliveryPath')
     .mockResolvedValue({ $metadata: {} })
+  // isolate:false forks share process.env and the provider module across files, so a double that
+  // outlives its test makes the next file's unrelated writes reach the real AWS client.
+  onTestFinished(() => {
+    vi.unstubAllEnvs()
+    put.mockRestore()
+    invalidate.mockRestore()
+  })
   return { records, accept, put, invalidatePath: invalidate }
 }
