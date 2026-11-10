@@ -28,15 +28,16 @@ export async function runCategoryProjectionScenarios(): Promise<void> {
     const resultWrite = queryName === 'completeCategoryProjectionResults'
     const acknowledgement = queryName === 'acknowledgeRssFeedItemCategorySnapshot'
     registerScenarioContract(id, {
-      // Each new write/check addresses one item PK. The unchanged union fixture measures
-      // its seeded source fan-in rather than asserting a new production source cap.
+      // Each new write/check addresses one item PK. The source union reads one source row
+      // on green main; the snapshot and feed caps stay at the seeded fan-in.
       expectations: [
         ...(sourceUnion
           ? ['rss_feed_item_source_category_snapshots', 'rss_feed_item_sources', 'rss_feeds'].map(
               relation => ({
                 kind: 'maxProcessedRows' as const,
                 relation,
-                max: fixtureSourceCount,
+                // Green main reads one source row. The other two relations keep the fixture cap.
+                max: relation === 'rss_feed_item_sources' ? 1 : fixtureSourceCount,
               }),
             )
           : [
@@ -52,13 +53,11 @@ export async function runCategoryProjectionScenarios(): Promise<void> {
                 max: acknowledgement ? 2 : 1,
               },
             ]),
+        ...(sourceUnion ? [{ kind: 'noSeqScan' as const, relation: 'rss_feed_item_sources' }] : []),
         {
           kind: 'usesIndexes',
           indexes: sourceUnion
-            ? [
-                'idx_rss_feed_item_source_category_snapshots__item_feed',
-                'idx_rss_feed_item_sources__item_feed',
-              ]
+            ? ['idx_rss_feed_item_source_category_snapshots__item_feed']
             : [
                 queryName === 'isPendingCategorySnapshotCurrent' || acknowledgement
                   ? 'rss_feed_item_category_snapshot_reconciliations_pkey'

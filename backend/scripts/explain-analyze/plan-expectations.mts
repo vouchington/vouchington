@@ -14,6 +14,7 @@ export type PlanExpectation =
       noSort?: boolean
     }
   | { kind: 'queryBinds'; token: string; queryContains?: string }
+  | { kind: 'noSeqScan'; relation: string; queryContains?: string }
   | { kind: 'forbidCorrelatedAggregates' }
   | { kind: 'singleLeaf'; parent: string; key?: string }
   | { kind: 'maxFunctionCalls'; function: string; max: number }
@@ -93,6 +94,7 @@ function assertExpectationKinds(id: string, contract: ScenarioPlanContract): voi
     'maxBitmapIndexRows',
     'usesIndexes',
     'queryBinds',
+    'noSeqScan',
     'forbidCorrelatedAggregates',
     'singleLeaf',
     'maxFunctionCalls',
@@ -103,6 +105,8 @@ function assertExpectationKinds(id: string, contract: ScenarioPlanContract): voi
       throw new Error(`Unknown plan expectation kind: ${expectation.kind} in ${id}`)
     else if (expectation.kind === 'custom' && !isKnownCustomPlanCheck(expectation.name))
       throw new Error(`Unknown custom plan check: ${expectation.name} in ${id}`)
+    else if (expectation.kind === 'noSeqScan' && expectation.relation.trim() === '')
+      throw new Error(`${id} needs a relation for noSeqScan`)
     else if (
       expectation.kind === 'maxFunctionCalls' &&
       (expectation.function.trim() === '' ||
