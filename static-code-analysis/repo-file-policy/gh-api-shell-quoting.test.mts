@@ -85,7 +85,7 @@ describe('gh api shell-quoting guard', () => {
   })
 
   it('flags an unquoted `&` inside a `$(...)` substitution even when the substitution is quoted', () => {
-    // The .github/workflows/shepherd.yml:82 idiom: `VAR="$(gh api ...)"`. Double quotes around
+    // The retired shepherd workflow idiom: `VAR="$(gh api ...)"`. Double quotes around
     // the substitution do not quote what happens inside it — that context has its own,
     // independent quoting — so the unquoted `&` here still backgrounds the inner command.
     const source = 'PR_JSON="$(gh api repos/x/y?a=1&b=2)"\n'

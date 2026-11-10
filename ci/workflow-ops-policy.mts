@@ -1,9 +1,3 @@
-import {
-  workflowHasMainPushTrigger,
-  workflowRunSubscriptions,
-  workflowTriggerNames,
-} from './workflow-trigger-policy.mts'
-
 const pgvectorImagePattern = /ghcr\.io\/vouchington\/dependency-pgvector:[^\s'"\\)]+/g
 const pgvectorDigestPinnedPattern =
   /^ghcr\.io\/vouchington\/dependency-pgvector:[\w.-]+@sha256:[0-9a-f]{64}$/u
@@ -44,45 +38,6 @@ export type OpsWorkflow = {
 export type WorkflowSources = Readonly<Record<string, string>>
 export type WorkflowDocuments = Readonly<Record<string, OpsWorkflow>>
 export type CiPathFilters = Readonly<Record<string, readonly string[]>>
-
-function namesForMainPush(workflows: WorkflowDocuments): string[] {
-  return Object.entries(workflows).flatMap(([path, workflow]) =>
-    path.startsWith('.github/workflows/') && workflowHasMainPushTrigger(workflow) && workflow.name
-      ? [workflow.name]
-      : [],
-  )
-}
-
-function namesForNightlyRecovery(workflows: WorkflowDocuments): string[] {
-  return Object.entries(workflows).flatMap(([path, workflow]) => {
-    if (
-      !path.startsWith('.github/workflows/') ||
-      workflow.name !== 'Nightly' ||
-      !workflowTriggerNames(workflow.on).includes('schedule') ||
-      !workflowTriggerNames(workflow.on).includes('workflow_dispatch')
-    ) {
-      return []
-    }
-    return [workflow.name]
-  })
-}
-
-/** Match the fix-main subscriptions to the tracked main-push and Nightly workflows. */
-export function fixMainSubscriptionViolations(workflows: WorkflowDocuments): string[] {
-  const fixMain = workflows['.github/workflows/fix-main.yml']
-  if (!fixMain) return ['.github/workflows/fix-main.yml is missing']
-
-  const expected = [
-    ...namesForMainPush(workflows),
-    ...namesForNightlyRecovery(workflows),
-    'Dispatch completed deploy',
-  ].toSorted()
-  const subscribed = workflowRunSubscriptions(fixMain.on).toSorted()
-  if (expected.length > 0 && JSON.stringify(subscribed) === JSON.stringify(expected)) return []
-  return [
-    `.github/workflows/fix-main.yml workflow_run subscriptions differ: ${subscribed.join(', ')}`,
-  ]
-}
 
 /** Enforce the repository-wide postgres workflow image and service settings. */
 export function postgresWorkflowPolicyViolations(

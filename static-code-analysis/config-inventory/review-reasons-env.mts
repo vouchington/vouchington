@@ -33,18 +33,6 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
     'Security header deployment flag; keep environment-scoped with rollout controls.',
   ],
   [
-    'HARNESS_API_KEY',
-    'Auto Harness secret; repository-scoped and explicitly forwarded per caller ' +
-      '(auto-harness environment retained for branch-policy enforcement only, not secret storage).',
-  ],
-  ['HARNESS_FALLBACKS', 'Auto Harness fallbacks; operator-configurable via a repo variable.'],
-  ['HARNESS_REPOSITORY_ID', 'Auto Harness repo id; operator-configurable via a repo variable.'],
-  ['HARNESS_TARGET', 'Auto Harness dispatch target; operator-configurable via a repo variable.'],
-  [
-    'HARNESS_URL',
-    'Exact Auto Harness HTTPS origin; keep operator-configurable through a repository variable.',
-  ],
-  [
     'LAMBDA_FUNCTION_URL',
     'Deployment endpoint; keep environment-scoped with infrastructure wiring.',
   ],

@@ -1,16 +1,16 @@
 # Automation Prompts
 
-Automation prompt text lives here so workflow YAML stays focused on triggers, permissions, and context wiring.
+Automation prompt text lives here. The attended triage loop schedules and runs these prompts locally; no GitHub Actions workflow dispatches them.
 
 ## Prompt Surfaces
 
-| Surface                    | Source                                                             | Used by                                                                                                                                                                                                                              |
-| -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Code review inline overlay | [code-review-inline-comments.md](code-review-inline-comments.md)   | Default `inline_prompt_path` overlay for the `code-review` composite action; see the file itself for the full contract and consumers                                                                                                 |
-| Scheduled prompts          | [scheduled/](scheduled/) (indexed in [SCHEDULED.md](SCHEDULED.md)) | [scheduled-prompts.yml](../../.github/workflows/scheduled-prompts.yml) and the [workflow inventory](../../.github/workflows/README.md)                                                                                               |
-| Automation templates       | [automation templates](automation/README.md)                       | Templates rendered by the `jonathanong/auto-harness/actions/harness-render-prompt` action before calling [harness-dispatch.yml](https://github.com/vouchington/vouchington-tooling/blob/main/.github/workflows/harness-dispatch.yml) |
+| Surface                    | Source                                                             | Used by                                                                                                                              |
+| -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Code review inline overlay | [code-review-inline-comments.md](code-review-inline-comments.md)   | Default `inline_prompt_path` overlay for the `code-review` composite action; see the file itself for the full contract and consumers |
+| Scheduled prompts          | [scheduled/](scheduled/) (indexed in [SCHEDULED.md](SCHEDULED.md)) | The attended triage loop, which schedules and runs them locally                                                                      |
+| Automation templates       | [automation templates](automation/README.md)                       | Templates the triage loop and self-shepherding agents fill in and run locally                                                        |
 
-Automation templates use `{{UPPER_SNAKE_CASE}}` placeholders. Workflows render them with the `jonathanong/auto-harness/actions/harness-render-prompt` action, passing short values as `vars` lines (`NAME=value`) and multiline or user-provided values as `var-files` lines (`NAME=path`). The action prepends the Auto Harness session preamble and appends the CI merge-authority guard.
+Automation templates use `{{UPPER_SNAKE_CASE}}` placeholders. The caller substitutes short values inline and supplies multiline or user-provided values from files.
 
 The main-branch fix template is [fix-main.md](automation/fix-main.md), and merge-queue ejections
 are triaged with [merge-queue-ejection.md](automation/merge-queue-ejection.md). Both inject the

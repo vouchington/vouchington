@@ -21,10 +21,8 @@ parameters after reading it:
   `automation:scheduled`, or a title beginning `Automation` (ASCII case
   insensitive). `needs-human` marks intentionally PR-free backlog items.
 - **Ready and shepherd:** use [ready-and-shepherd](../ready-and-shepherd/SKILL.md)
-  with `--arm-auto-merge`. Its activation preflight requires both
-  `HARNESS_DISPATCH_ENABLED` and `HARNESS_SHEPHERD_ENABLED` to be exactly `true`
-  before any mutation. When either is disabled or unreadable, report
-  `activation disabled — unchanged`.
+  with `--arm-auto-merge`. Shepherding is local: the authoring session or a
+  triage-loop subagent runs pr-shepherd on the PR; never post a `/shepherd` comment.
 - **Feedback source and rubric:** only exact paths in `docs/prompts/**` can be
   changed by the bounded feedback flow. Apply
   [agent-authored PR creation feedback](../agent-workflow/code-review.md#agent-authored-pr-creation-feedback)

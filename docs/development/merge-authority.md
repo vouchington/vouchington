@@ -18,8 +18,7 @@ wording or the `Main` branch ruleset. The shared engine and hook CLI come from
 
 **Attended** means Claude Code set `CLAUDE_CODE_SESSION_ATTENDED=1` in the hook's environment.
 Claude Code sets it to `1` for an interactive session and `0` for `claude -p`, including a
-`claude -p` nested inside an interactive session and the Auto Harness `claude -p --permission-mode
-auto` command. That is observed behavior, not a documented contract, so the check fails safe: if
+`claude -p` nested inside an interactive session. That is observed behavior, not a documented contract, so the check fails safe: if
 Claude Code stops setting the variable, the allow disappears and the harness prompts.
 
 ## Contents

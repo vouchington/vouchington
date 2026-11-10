@@ -1,14 +1,7 @@
 export const workflow = '.github/workflows/'
 export const action = '.github/actions/'
 export const setup = 'vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@sha'
-const scriptFree = [
-  'fix-main-self-retry.yml#retry',
-  'fix-main.yml#classify-self-failure',
-  'fix-main.yml#related-candidates',
-  'fix-main.yml#render-prompt',
-  'fix-main.yml#triage-and-rerun',
-  'plan-completion.yml#audit',
-]
+const scriptFree = ['plan-completion.yml#audit']
 export const base = new Map<string, string>([
   ...scriptFree
     .map(owner => {

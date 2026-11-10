@@ -10,10 +10,9 @@ repository evidence confirms it.
 ## Action steps
 
 1. Scan every PR merged to `main` in the last two gaps between runs of this prompt. Derive the gap
-   from the workflow instead of assuming it: `.github/workflows/scheduled-prompts.yml` runs once per
-   `cron` entry each day and selects the next file of `docs/prompts/scheduled/` in rotation, so one
-   gap is the file count divided by the `cron` entry count, in days, and a skipped or failed run
-   doubles it. Cover two gaps, rounded up to whole days, so one missed run loses nothing, and
+   from the triage loop's schedule instead of assuming it: the loop runs the next file of
+   `docs/prompts/scheduled/` in rotation on its own cadence, so one gap is the file count divided by
+   the number of runs per day, in days, and a skipped or failed run doubles it. Cover two gaps, rounded up to whole days, so one missed run loses nothing, and
    report the two counts and the resulting cutoff. Search returns at most 1000 results and a gap of
    merges can approach that, so scan one slice of at most one gap at a time
    (`merged:<from>..<to>`, UTC dates), halving a slice whose `issueCount` is over 1000. Per slice,

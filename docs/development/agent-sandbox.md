@@ -21,7 +21,7 @@ would only move `rm` outside the sandbox. A project permission allow is
 not an OS sandbox exemption, but `decision="allow"` prefixes in `.codex/rules/default.rules` do run
 outside Codex's sandbox without a prompt, so keep them narrow. `git rebase`, `git stash`,
 `git cherry-pick`, `gh run`, `gh api`, and `gh workflow` are deliberately not pre-approved, so
-review sees the argv. Harness dispatch is fail-closed.
+review sees the argv.
 
 ## Two independent containment layers
 

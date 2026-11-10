@@ -3437,27 +3437,6 @@
       .github/workflows/evals-backend.yml: [backend-evals, prepare-postgres]
       .github/workflows/explain-analyze.yml:
         [explain-analyze, explain-analyze-gates, prepare-postgres]
-      .github/workflows/fix-dependabot.yml:
-        [
-          check-duplicates,
-          comment-session,
-          dispatch,
-          escalate,
-          render-prompt,
-          revalidate-dispatch,
-          triage-and-rerun,
-        ]
-      .github/workflows/fix-issue.yml: [comment-session, dispatch, escalate, gate, render-prompt]
-      .github/workflows/fix-main-self-retry.yml: [escalate-retry-failure, retry]
-      .github/workflows/fix-main.yml:
-        [
-          classify-self-failure,
-          dispatch,
-          escalate,
-          related-candidates,
-          render-prompt,
-          triage-and-rerun,
-        ]
       .github/workflows/ghcr-cleanup.yml: [cleanup]
       .github/workflows/gitleaks.yml: [gitleaks, gitleaks-scan]
       .github/workflows/initialize-smoke-test.yml: [initialize-smoke-test]
@@ -3472,19 +3451,14 @@
       .github/workflows/main-storybook.yml: [publish-storybook]
       .github/workflows/main-web.yml:
         [detect-image-publication, publish-web-images, web-deploy-intent]
-      .github/workflows/merge-queue-ejection.yml:
-        [comment-session, dispatch, escalate, render-prompt]
       .github/workflows/nightly.yml:
         [backend, backend-live-providers, cloudflare-worker, lambdas, static, tooling, web]
       .github/workflows/plan-completion.yml: [audit]
-      .github/workflows/plan.yml: [comment-session, dispatch, escalate, gate, render-prompt]
       .github/workflows/pnpm-dedupe.yml: [dedupe]
       .github/workflows/postgresql-snapshot-update.yml: [generate, prepare, publish]
       .github/workflows/prepare-postgres.yml: [prepare-postgres]
       .github/workflows/publish-backend-images.yml: [build, resolve-main-images]
       .github/workflows/publish-web-images.yml: [build, resolve-main-images]
-      .github/workflows/scheduled-prompts.yml: [dispatch, select-prompt]
-      .github/workflows/shepherd.yml: [checkpoint-dispatch, dispatch, escalate, gate, render-prompt]
       .github/workflows/static-code-analysis.yml: [no-mistakes, static-code-analysis]
       .github/workflows/static.yml: [static, static-code-analysis]
       .github/workflows/storybook.yml: [storybook]
@@ -3731,14 +3705,6 @@
         { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
       .github/workflows/docs-publish.yml:
         { pending: coalesce-latest, cancellation: retain-running, scope: [run] }
-      .github/workflows/fix-dependabot.yml:
-        { pending: coalesce-latest, cancellation: retain-running, scope: [ref, event] }
-      .github/workflows/fix-issue.yml:
-        { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
-      .github/workflows/fix-main-self-retry.yml:
-        { pending: coalesce-latest, cancellation: retain-running, scope: [run] }
-      .github/workflows/fix-main.yml:
-        { pending: coalesce-latest, cancellation: cancel-running, scope: [sha, event] }
       .github/workflows/ghcr-cleanup.yml:
         { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
       .github/workflows/gitleaks.yml:
@@ -3757,28 +3723,16 @@
         { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
       .github/workflows/main-web.yml:
         { pending: coalesce-latest, cancellation: retain-running, scope: [run] }
-      .github/workflows/merge-queue-ejection.yml:
-        { pending: coalesce-latest, cancellation: retain-running, scope: [pull-request, sha] }
       .github/workflows/nightly.yml:
         { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
       .github/workflows/plan-completion.yml:
         { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
-      .github/workflows/plan.yml:
-        { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
       .github/workflows/postgresql-snapshot-update.yml:
         {
           pending: coalesce-latest,
           cancellation: retain-running,
           scope: [run, event, input-resource],
         }
-      .github/workflows/scheduled-prompts.yml:
-        {
-          pending: coalesce-latest,
-          cancellation: retain-running,
-          scope: [sha, event, input-resource],
-        }
-      .github/workflows/shepherd.yml:
-        { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
       .github/workflows/static.yml:
         { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
       .github/workflows/storybook.yml:

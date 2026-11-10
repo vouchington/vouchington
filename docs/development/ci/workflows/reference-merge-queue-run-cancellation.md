@@ -55,10 +55,10 @@ The dequeued workflow runs from `main` and checks out no pull-request content. G
 2. **Merged pull request.** The script reads the pull request through the API and does nothing when
    it is merged, because merge-group-only jobs such as image publishing must finish for a merged
    group. `ROLL_BACK` is the ambiguous reason; this guard makes acting on it safe either way.
-3. **Failure evidence.** [Merge Queue Ejection](../../../../.github/workflows/merge-queue-ejection.yml)
-   dispatches a triage session for `CI_FAILURE` and `CI_TIMEOUT`, and its
-   [prompt](../../../prompts/automation/merge-queue-ejection.md) reads the group's runs because the
-   newest group's "failed or timed-out runs caused this ejection". Cancelling a run changes its
+3. **Failure evidence.** The attended triage loop triages `CI_FAILURE` and `CI_TIMEOUT` ejections
+   from the [merge-queue-ejection prompt](../../../prompts/automation/merge-queue-ejection.md),
+   which reads the group's runs because the newest group's "failed or timed-out runs caused this
+   ejection". Cancelling a run changes its
    run-level conclusion to `cancelled` even when one of its jobs failed. A `CI_TIMEOUT` removal
    leaves timed-out runs still active, so the reason is excluded. Any run that already holds a
    `failure` or `timed_out` job is kept for the same reason and reported as kept.

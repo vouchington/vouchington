@@ -25,7 +25,7 @@ only some fixes, drop those and keep looking for a root-cause fix that complies.
 For a dependency-owned failure, retain only the required dependency, lockfile, test, guard, and documentation changes. A rebase alone is not a dependency fix. If no code change is justified, post the blocked-status comment below and make no other change to the PR.
 
 The session summary is not visible on GitHub, so record every blocked or no-change outcome on the PR
-in exactly one blocked-status comment whose first line is `<!-- auto-harness-dependabot-status -->`.
+in exactly one blocked-status comment whose first line is `<!-- dependabot-fix-status -->`.
 Immediately before writing it, re-fetch PR #{{PR_NUMBER}} and its comments. Write nothing when the PR
 closed, its head is no longer `{{COMMIT_SHA}}`, the failure matched a catalogued transient, or you
 pushed a fix. When a comment containing the marker was authored by the authenticated `gh` user,

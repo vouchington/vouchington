@@ -13,7 +13,7 @@ const fixtureImage = `ghcr.io/vouchington/dependency-pgvector:synthetic-tag@sha2
 const postgresArgs = '-c max_connections=300 -c log_min_messages=log'
 
 describe('static workflow ops scan', () => {
-  it('passes a tracked workflow tree and rejects a broken fix-main subscription', async () => {
+  it('passes a tracked workflow tree and rejects broken workflow ops', async () => {
     const root = await mkdtemp(join(tmpdir(), 'workflow-ops-policy-fixture-'))
     onTestFinished(() => rm(root, { recursive: true, force: true }))
     await exec('git', ['init', '--quiet', root])
@@ -26,8 +26,6 @@ describe('static workflow ops scan', () => {
       '.github/workflows/main.yml': 'name: Main\non: push\njobs: {}\n',
       '.github/workflows/nightly.yml':
         'name: Nightly\non:\n  schedule: [{ cron: "0 0 * * *" }]\n  workflow_dispatch: {}\njobs: {}\n',
-      '.github/workflows/fix-main.yml':
-        'name: Fix Main\non:\n  workflow_run:\n    workflows: [Main, Nightly, "Dispatch completed deploy"]\njobs: {}\n',
       '.github/workflows/postgres.yml': `jobs:\n  test:\n    services:\n      postgres:\n        image: ${fixtureImage}\n        env:\n          POSTGRES_INITDB_ARGS: '${postgresArgs}'\n`,
       '.github/workflows/explain-analyze.yml':
         "jobs:\n  test:\n    services:\n      postgres:\n        env:\n          POSTGRES_INITDB_ARGS: '-c max_connections=300 -c log_min_messages=log -c work_mem=32MB'\n",
@@ -230,19 +228,5 @@ describe('static workflow ops scan', () => {
     )
     await exec('git', ['-C', root, 'add', '.github/workflows/ci-detect-changes'])
     expect(checkWorkflowOpsPolicy(root)).toEqual([])
-
-    await writeFile(
-      join(workflows, 'fix-main.yml'),
-      'name: Fix Main\non:\n  workflow_run:\n    workflows: [Nightly, "Dispatch completed deploy"]\njobs: {}\n',
-    )
-    await exec('git', ['-C', root, 'add', '.github/workflows/fix-main.yml'])
-    expect(checkWorkflowOpsPolicy(root)).toEqual([
-      '.github/workflows/fix-main.yml workflow_run subscriptions differ: Dispatch completed deploy, Nightly',
-    ])
-    await expect(exec(process.execPath, [checkerPath, root])).rejects.toMatchObject({
-      code: 1,
-      stderr:
-        '.github/workflows/fix-main.yml workflow_run subscriptions differ: Dispatch completed deploy, Nightly\n',
-    })
   })
 })

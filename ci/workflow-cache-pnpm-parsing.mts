@@ -25,14 +25,7 @@ const ACTION_CACHE_PATHS: Readonly<Record<string, readonly string[]>> = {
   ],
   [`${ACTION}setup-backend/action.yml`]: [LINGUA_RS_PATH],
 }
-export const SCRIPT_FREE = [
-  'fix-main-self-retry.yml#retry',
-  'fix-main.yml#classify-self-failure',
-  'fix-main.yml#related-candidates',
-  'fix-main.yml#render-prompt',
-  'fix-main.yml#triage-and-rerun',
-  'plan-completion.yml#audit',
-].map(owner => `${WORKFLOW}${owner}`)
+export const SCRIPT_FREE = ['plan-completion.yml#audit'].map(owner => `${WORKFLOW}${owner}`)
 
 export function runsPnpmInstall(body: string | undefined): boolean {
   if (!body) return false

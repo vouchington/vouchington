@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { SECRET_INVENTORY, type SecretInventoryEntry } from './workflow-secrets-inventory.mts'
+import { SECRET_INVENTORY } from './workflow-secrets-inventory.mts'
 import {
   collectSecretReferences,
   missingInventoryEntries,
@@ -83,17 +83,5 @@ describe('workflow secret inventory (fixtures)', () => {
     ])
 
     expect(output).not.toContain(decoy)
-  })
-})
-
-describe('workflow secret inventory (repo inventory)', () => {
-  it('keeps the auto-harness branch-policy check live-verified for the repo-scoped Harness key', () => {
-    // HARNESS_API_KEY is intentionally repository-scoped (workflow_call does not resolve
-    // Environment-scoped secrets), but dev/verify-workflow-secret-scopes.mts is trusted/local-only
-    // and only exercised against fixtures in its own test file — nothing in CI otherwise notices a
-    // silent regression if this field were ever deleted from the real inventory entry.
-    const harnessEntry: SecretInventoryEntry = SECRET_INVENTORY.HARNESS_API_KEY
-    expect(harnessEntry.requiredEnvironment).toBeUndefined()
-    expect(harnessEntry.requiredBranchPolicy).toBe('auto-harness')
   })
 })
