@@ -5,10 +5,10 @@
 const helperPath = '(?:^|/)test-helpers(?:/|$)|^@voucha/test-helpers(?:/|$)'
 const configConsumers = '^ci/(?:write-coverage-scope|check-storybook-browser-optimize-deps)\\.mts$'
 const fixturePath = '(?:^|/)api-fixtures(?:/|$)|^@voucha/api-fixtures(?:/|$)'
-const productionSources =
-  '^(?:backend/(?:api|services|workers|data-stores|modules|agents|mcp|queues|entrypoints|config|service-registrations|worker-runtime|rss|md|types)/|ts-shared/|email-templates/|cloudflare-worker/|web/|lambdas/|ci/check-[^/]+\\.mts$)'
-const runtimeSources =
-  '^(?:backend/(?:api|services|workers|data-stores|modules|agents|mcp|queues|entrypoints|config|service-registrations|worker-runtime|rss|md|types)/|ts-shared/|email-templates/|cloudflare-worker/|web/|lambdas/)'
+const runtimeInner =
+  'backend/(?:api|services|workers|data-stores|modules|agents|mcp|queues|entrypoints|config|service-registrations|worker-runtime|rss|md|types)/|ts-shared/|email-templates/|cloudflare-worker/|web/|lambdas/'
+const runtimeSources = `^(?:${runtimeInner})`
+const productionSources = `^(?:${runtimeInner}|ci/check-[^/]+\\.mts$)`
 const testPaths = [
   '(?:^|/)(?:test-helpers|__tests__|__fixtures__|storybook|\\.storybook)(?:/|$)',
   '\\.(?:test|spec|stories)\\.[cm]?[jt]sx?$',
