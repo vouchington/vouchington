@@ -132,7 +132,7 @@ async function populateRssFeedItemNotificationRecipients(
         )
     )
     INSERT INTO ${recipientTable} (user_id)
-    SELECT DISTINCT user_id
+    SELECT user_id
     FROM recipients
     WHERE user_id IS NOT NULL
       AND ($2::uuid IS NULL OR user_id > $2)

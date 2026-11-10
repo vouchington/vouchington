@@ -182,11 +182,12 @@ describe('metrics-batch', () => {
       markdown: 'Content 2',
       slug: slug2,
     })
-    const results = await getPostMetricsByAnyBatch([slug2, slug1])
+    const results = await getPostMetricsByAnyBatch([slug2, slug1, slug2])
 
-    expect(results).toHaveLength(2)
+    expect(results).toHaveLength(3)
     expect(results[0]?.id).toBe(post2.id)
     expect(results[1]?.id).toBe(post1.id)
+    expect(results[2]?.id).toBe(post2.id)
   })
 
   it('getPostMetricsByAnyBatch returns null for non-existent posts while preserving order', async () => {

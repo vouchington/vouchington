@@ -22,9 +22,6 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
   const query = sql`/* searchHostnameIdsNeedingCrawlerRefresh */
     SELECT h.id
     FROM url_hostnames h
-    LEFT JOIN hostname_crawler_configurations c
-      ON c.hostname_id = h.id
-      AND c.deleted_at IS NULL
     WHERE NOT h.is_blocked
       AND h.is_crawlable
   `
@@ -36,13 +33,11 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
     query.append(sql` AND h.id <= ${sweepMaxId}::uuid`)
   }
   query.append(sql`
-    GROUP BY h.id
-    HAVING (
-      NOT EXISTS (
-        SELECT 1 FROM hostname_crawler_configurations existing_crawler
-        WHERE existing_crawler.hostname_id = h.id AND existing_crawler.deleted_at IS NULL
-      )
-      OR MAX(c.updated_at) < date_trunc('week', ${sweepStartedAt}::timestamptz)
+    AND NOT EXISTS (
+      SELECT 1 FROM hostname_crawler_configurations existing_crawler
+      WHERE existing_crawler.hostname_id = h.id
+        AND existing_crawler.deleted_at IS NULL
+        AND existing_crawler.updated_at >= date_trunc('week', ${sweepStartedAt}::timestamptz)
     )
     ORDER BY h.id ASC
     LIMIT ${limit}

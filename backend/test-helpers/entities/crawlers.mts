@@ -78,3 +78,15 @@ export async function insertTestCrawler(options: {
 
   return result.rows[0].id
 }
+
+/** Inserts a crawler with a precise fixture timestamp without changing the updated-at trigger. */
+export async function insertCrawlerRefreshStateForTest(input: {
+  hostnameId: string
+  updatedAt: Date
+  deletedAt?: Date
+}): Promise<void> {
+  await write(sql`/* insertCrawlerRefreshStateForTest */
+    INSERT INTO hostname_crawler_configurations (hostname_id, crawler_type, updated_at, deleted_at)
+    VALUES (${input.hostnameId}, 'fetch', ${input.updatedAt}, ${input.deletedAt ?? null})
+  `)
+}

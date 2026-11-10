@@ -15,6 +15,7 @@ import {
   searchHostnameIdsNeedingCrawlerRefresh,
 } from '../refresh.mts'
 import type { PrivateUser } from '@services/users/types'
+import { insertCrawlerRefreshStateForTest } from '@voucha/test-helpers/entities/crawlers'
 
 // Uses insertTestUrlHostname/insertTestUrl (not addUrl from @services/urls) because
 // @services/urls already depends on @services/crawlers for real (getOrCreateCrawlerForHostname),
@@ -102,6 +103,40 @@ describe('refresh.generated', () => {
     await insertStaleFetchCrawlerForHostname(hostnameId!)
     const ids = await searchHostnameIdsNeedingCrawlerRefresh(10_000)
     expect(ids.filter(id => id === hostnameId)).toHaveLength(1)
+  })
+
+  it('uses the active configurations and the exact sweep-week boundary', async () => {
+    const suffix = randomUUID()
+    const cases = ['none', 'stale', 'boundary', 'mixed', 'deleted'] as const
+    const ids = await Promise.all(
+      cases.map(name =>
+        insertTestUrlHostname({
+          hostname: `refresh-week-${name}-${suffix}.example.com`,
+          is_crawlable: true,
+        }),
+      ),
+    )
+    const weekStart = new Date('2090-01-02T00:00:00.000Z')
+    const stale = new Date('2090-01-01T23:59:59.999Z')
+    await Promise.all([
+      insertCrawlerRefreshStateForTest({ hostnameId: ids[1]!, updatedAt: stale }),
+      insertCrawlerRefreshStateForTest({ hostnameId: ids[2]!, updatedAt: weekStart }),
+      insertCrawlerRefreshStateForTest({ hostnameId: ids[3]!, updatedAt: stale }),
+      insertCrawlerRefreshStateForTest({ hostnameId: ids[3]!, updatedAt: weekStart }),
+      insertCrawlerRefreshStateForTest({
+        hostnameId: ids[4]!,
+        updatedAt: weekStart,
+        deletedAt: weekStart,
+      }),
+    ])
+    const results = await Promise.all(
+      ids.map(hostnameId =>
+        searchHostnameIdsNeedingCrawlerRefresh(1, {}, hostnameId, {
+          sweepStartedAt: '2090-01-03T12:00:00.000Z',
+        }),
+      ),
+    )
+    expect(results).toEqual([[ids[0]], [ids[1]], [], [], [ids[4]]])
   })
 
   it('bounds a refresh sweep by its saved cursor and start time', async () => {

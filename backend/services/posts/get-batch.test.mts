@@ -61,12 +61,13 @@ describe('get-batch', () => {
       slug: slug3,
     })
     // Fetch by slugs in specific order
-    const results = await getPostsByAnyBatch([slug2, slug1, slug3])
+    const results = await getPostsByAnyBatch([slug2, slug1, slug3, slug2])
 
-    expect(results).toHaveLength(3)
+    expect(results).toHaveLength(4)
     expect(results[0]?.id).toBe(post2.id)
     expect(results[1]?.id).toBe(post1.id)
     expect(results[2]?.id).toBe(post3.id)
+    expect(results[3]?.id).toBe(post2.id)
   })
 
   it('getPostsByAnyBatch handles mixed IDs and slugs', async () => {

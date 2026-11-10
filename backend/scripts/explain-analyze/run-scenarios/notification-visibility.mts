@@ -19,6 +19,7 @@ import {
 import { cleanupNotificationVisibility } from '../seed-data/notification-visibility-cleanup.mts'
 import { runAnalyze } from '../seed-data/maintenance.mts'
 import { refreshExplainMaterializedViews } from '../seed-data/materialized-view-maintenance.mts'
+import { runNotificationPopulationScenarios } from './notification-population.mts'
 
 export async function runNotificationVisibilityScenarios(): Promise<void> {
   try {
@@ -26,6 +27,7 @@ export async function runNotificationVisibilityScenarios(): Promise<void> {
     await seedNotificationVisibility()
     await runAnalyze()
     await captureNotificationVisibility()
+    await runNotificationPopulationScenarios()
   } finally {
     await cleanupNotificationVisibility()
     await runAnalyze()

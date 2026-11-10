@@ -44,7 +44,7 @@ export const getTopicsBySlugBatch = async (
              unnest($2::int[]) AS input_order
     ),
     candidates AS (
-      SELECT t.id, input_data.input_order, 0 AS priority
+      SELECT t.id, input_data.input_order
       FROM topics t
       JOIN input_data ON t.slug = input_data.input_value
       WHERE t.deleted_at IS NULL
@@ -52,7 +52,7 @@ export const getTopicsBySlugBatch = async (
 
       UNION ALL
 
-      SELECT source_topic.merged_into_topic_id AS id, input_data.input_order, 1 AS priority
+      SELECT source_topic.merged_into_topic_id AS id, input_data.input_order
       FROM topics source_topic
       JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id
       JOIN input_data ON source_topic.slug = input_data.input_value
@@ -62,9 +62,8 @@ export const getTopicsBySlugBatch = async (
         AND destination_topic.merged_into_topic_id IS NULL
     ),
     topic_data AS (
-      SELECT DISTINCT ON (input_order) id, input_order
+      SELECT id, input_order
       FROM candidates
-      ORDER BY input_order, priority, id DESC
     )
     SELECT vt.*, topic_data.input_order
     FROM view_topics vt

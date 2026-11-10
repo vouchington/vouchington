@@ -16,6 +16,7 @@ import {
 } from '@voucha/test-helpers'
 import { createCommunityPostReview } from './add.mts'
 import { searchCommunityPosts } from './get.mts'
+import { assertCommunityPostTopicsNotMuted } from './muted-topics.mts'
 
 describe('community hashtag-topic mutes', () => {
   it('rejects a post whose linked hashtag topic is muted in its community', async () => {
@@ -24,6 +25,29 @@ describe('community hashtag-topic mutes', () => {
     await expect(createCommunityPostReview(owner.id, postId, community.id)).rejects.toMatchObject({
       status: 422,
     })
+  })
+
+  it('matches an authored muted alias for both vote states and ignores another community', async () => {
+    const { community, owner, postId } = await createCommunityPostWithMutedHashtag()
+    const other = await insertTestCommunity({ createdById: owner.id })
+    for (const state of ['finalized', 'unfinalized'] as const) {
+      await expect(
+        assertCommunityPostTopicsNotMuted(postId, community.id, { readOnly: false }, state),
+      ).rejects.toMatchObject({ status: 422 })
+      await expect(
+        assertCommunityPostTopicsNotMuted(postId, other.id, { readOnly: false }, state),
+      ).resolves.toBeUndefined()
+    }
+  })
+
+  it('requires an authored alias source only for unfinalized categories', async () => {
+    const { community, postId } = await createCommunityPostWithMutedHashtagNoSource()
+    await expect(
+      assertCommunityPostTopicsNotMuted(postId, community.id, { readOnly: false }, 'finalized'),
+    ).rejects.toMatchObject({ status: 422 })
+    await expect(
+      assertCommunityPostTopicsNotMuted(postId, community.id, { readOnly: false }, 'unfinalized'),
+    ).resolves.toBeUndefined()
   })
 
   it('hides an approved post whose linked hashtag topic is muted in its community', async () => {

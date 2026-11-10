@@ -8,6 +8,7 @@ import {
   type ExplainPlanCacheMode,
   type ExplainResult,
 } from '@data-stores/psql'
+import { captureNamedRawPoolQueries, selectCapturedSetupSql } from './raw-pool-query-capture.mts'
 import type { PrivateUser } from '@services/users/types'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -92,18 +93,25 @@ async function captureScenario(
     afterCapture?: () => Promise<void>
     exactCapturedNames?: readonly string[]
     useWallClock?: boolean
+    setupQueryNames?: readonly string[]
+    expectedSetupQueryCount?: number
+    captureRawPoolQueryNames?: readonly string[]
   } = {},
 ): Promise<void> {
   ensureScenarioContract(label)
   console.log(`Running: ${label}`)
   clearCapturedQueries()
   enableQueryCapture()
+  const restoreRawPool = explainOptions.captureRawPoolQueryNames
+    ? captureNamedRawPoolQueries(explainOptions.captureRawPoolQueryNames)
+    : undefined
 
   try {
     // Expiring authorization artifacts compare application time with PostgreSQL wall time.
     if (explainOptions.useWallClock) await fn()
     else await withSeedAnchorClock(fn)
   } finally {
+    restoreRawPool?.()
     disableQueryCapture()
   }
 
@@ -123,6 +131,12 @@ async function captureScenario(
     `  Captured ${captured.length}${captureQueryName ? `/${allCaptured.length} ${selectedNames?.join(',') ?? ''} queries` : ' queries'}`,
   )
   assertCapturedQueries(label, captured)
+  const setupSql = selectCapturedSetupSql(
+    label,
+    allCaptured,
+    explainOptions.setupQueryNames,
+    explainOptions.expectedSetupQueryCount,
+  )
 
   const modes = getExplainPlanCacheModes()
   const inputs = captured.flatMap((cq, captureIndex) => {
@@ -139,6 +153,7 @@ async function captureScenario(
         captureIndex,
         planCacheMode,
         localSettings: explainOptions.localSettings,
+        setupSql,
       }
     })
   })

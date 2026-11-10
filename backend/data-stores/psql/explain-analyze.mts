@@ -69,6 +69,8 @@ export async function explainAnalyze(
     planCacheMode?: ExplainPlanCacheMode
     localSettings?: Readonly<Record<string, string>>
     planOnly?: boolean // EXPLAIN without executing; callers read only plan costs
+    /** Recreate captured session-local objects before preparing the measured statement. */
+    setupSql?: string
   } = {},
 ): Promise<ExplainResult> {
   let text: string
@@ -107,6 +109,7 @@ export async function explainAnalyze(
         plan_cache_mode: planCacheMode,
         work_mem: EXPLAIN_WORK_MEM,
       })}::jsonb)`)
+    if (options.setupSql) await client.query(`/* explainAnalyze:setup */ ${options.setupSql}`)
     await client.query(`/* explainAnalyze */ ${prepareText}`)
     prepared = true
     const argumentSql = await buildPreparedArgumentSql(client, preparedStatementName, values ?? [])
