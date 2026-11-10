@@ -6,7 +6,7 @@ import type { MembershipsJobPayloads } from '@queues/memberships/types'
 import { reconcileAppleNotification } from '@services/memberships/apple/reconcile-notification'
 import {
   deliverPendingMembershipEntitlementEffects,
-  expireElapsedMembershipsBatch,
+  resumeExpireElapsedMemberships,
   reconcileStripeMembershipCatalog,
   dispatchDueRefundReconciliations,
   reconcileMembershipRefundOperation,
@@ -72,7 +72,7 @@ async function dispatchMembershipJob(job: MembershipJob): Promise<void> {
       await deliverPendingMembershipEntitlementEffects()
       return
     case 'expireElapsedMemberships':
-      await expireElapsedMembershipsBatch()
+      await resumeExpireElapsedMemberships()
       return
     case 'processMembershipVerification':
       await processMembershipVerificationJob(job)

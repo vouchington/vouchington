@@ -72452,6 +72452,108 @@
       },
       "uniqueConstraints": {}
     },
+    "membership_queued_grant_repair_cursors": {
+      "checkConstraints": {
+        "membership_queued_grant_repair_cursors_check": {
+          "definition": "CHECK (((cursor_id IS NULL) = (cursor_grant_id IS NULL)))",
+          "validated": true
+        },
+        "membership_queued_grant_repair_cursors_is_singleton_check": {
+          "definition": "CHECK (is_singleton)",
+          "validated": true
+        }
+      },
+      "columns": {
+        "created_at": {
+          "comment": "When this cursor row was first inserted.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "cursor_grant_id": {
+          "comment": "Grant id of the last inspected row. NULL, with cursor_id, starts at the first grant. It is not a reference to a surviving grant.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "cursor_id": {
+          "comment": "User id of the last inspected grant row. NULL, with cursor_grant_id, starts at the first grant. It is not a reference to a surviving user.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "is_singleton": {
+          "comment": "One repair cursor for the membership grant expiry job.",
+          "dataType": "boolean",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "updated_at": {
+          "comment": "When this repair pass last checkpointed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        }
+      },
+      "comment": "Durable (user, grant) keyset for the scheduled repair of queued grants behind a cancelled or expired projection.",
+      "foreignKeys": {},
+      "indexes": {
+        "membership_queued_grant_repair_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX membership_queued_grant_repair_cursors_pkey ON public.membership_queued_grant_repair_cursors USING btree (is_singleton)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_membership_queued_grant_repair_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_membership_queued_grant_repair_cursors_updated_at BEFORE UPDATE ON public.membership_queued_grant_repair_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "membership_refund_operation_attempt_metadata_scans": {
       "checkConstraints": {
         "chk_mem_ref_oper_atte_meta_scan__stable_head_provider_refund_id": {

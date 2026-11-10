@@ -73,6 +73,10 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
   ['post_publication_community_identities', sharedParentUuidv7('communities')],
   ['membership_google_play_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
   ['membership_microsoft_store_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
+  [
+    'membership_queued_grant_repair_cursors',
+    naturalOrProviderId('Singleton orphaned queued-grant repair scan.'),
+  ],
   ['community_agent_prompts', sharedParentUuidv7('agent_prompts')],
   ['remote_actors', sharedParentUuidv7('remote_actor_identities')],
   ['activitypub_post_likes', sharedParentUuidv7('activitypub_post_like_activities')],

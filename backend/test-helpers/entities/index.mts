@@ -104,6 +104,11 @@ export * from './oauth-token-ciphertexts.mts'
 export * from './follows.mts'
 export * from './friends.mts'
 export * from './memberships.mts'
+export {
+  commitMembershipGrantTransaction,
+  holdUncommittedQueuedMembershipGrant,
+  insertQueuedMembershipGrant,
+} from '../membership-queued-grant-hold.mts'
 export * from './membership-change-references.mts'
 export * from './memberships/provider-lineages.mts'
 export {

@@ -33,5 +33,13 @@ export const ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, stri
     'membership_microsoft_store_recovery_cursors.sweep_upper_bound_source_id',
     'Finite UUIDv7 high-water boundary for one recovery sweep; it is a cursor value, not a reference to a durable row.',
   ],
+  [
+    'membership_queued_grant_repair_cursors.cursor_id',
+    'User id of the last inspected grant row. It survives user deletion so a pass cannot rewind, and it is not a foreign key.',
+  ],
+  [
+    'membership_queued_grant_repair_cursors.cursor_grant_id',
+    'Grant id of the last inspected row. It survives grant deletion so a pass cannot rewind, and it is not a foreign key.',
+  ],
 ])
 /* v8 ignore stop */

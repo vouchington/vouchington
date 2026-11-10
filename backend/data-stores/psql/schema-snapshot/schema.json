@@ -68378,6 +68378,105 @@
       },
       "uniqueConstraints": {}
     },
+    "membership_queued_grant_repair_cursors": {
+      "checkConstraints": {
+        "membership_queued_grant_repair_cursors_check": "CHECK (((cursor_id IS NULL) = (cursor_grant_id IS NULL)))",
+        "membership_queued_grant_repair_cursors_is_singleton_check": "CHECK (is_singleton)"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": "When this cursor row was first inserted.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "cursor_grant_id": {
+          "collation": null,
+          "comment": "Grant id of the last inspected row. NULL, with cursor_id, starts at the first grant. It is not a reference to a surviving grant.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "cursor_id": {
+          "collation": null,
+          "comment": "User id of the last inspected grant row. NULL, with cursor_grant_id, starts at the first grant. It is not a reference to a surviving user.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "is_singleton": {
+          "collation": null,
+          "comment": "One repair cursor for the membership grant expiry job.",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "boolean"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "When this repair pass last checkpointed.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable (user, grant) keyset for the scheduled repair of queued grants behind a cancelled or expired projection.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "membership_queued_grant_repair_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX membership_queued_grant_repair_cursors_pkey ON public.membership_queued_grant_repair_cursors USING btree (is_singleton)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "bool_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"],
+        "definition": "PRIMARY KEY (is_singleton)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_membership_queued_grant_repair_cursors_updated_at": "CREATE TRIGGER trigger_membership_queued_grant_repair_cursors_updated_at BEFORE UPDATE ON public.membership_queued_grant_repair_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "membership_refund_operation_attempt_metadata_scans": {
       "checkConstraints": {
         "chk_mem_ref_oper_atte_meta_scan__stable_head_provider_refund_id": "CHECK (((stable_head_provider_refund_id IS NULL) OR (((char_length(stable_head_provider_refund_id) >= 1) AND (char_length(stable_head_provider_refund_id) <= 255)) AND (stable_head_provider_refund_id = TRIM(BOTH FROM stable_head_provider_refund_id)))))",
