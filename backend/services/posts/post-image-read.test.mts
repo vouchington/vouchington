@@ -10,11 +10,15 @@ import {
   setImageOpenAIModerationResults,
   completeTestMediaDeliveryRecord,
 } from '@voucha/test-helpers'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getPostImages } from './post-image-read.mts'
 import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 
 describe('getPostImages edge enforcement modes', () => {
-  afterEach(() => vi.unstubAllEnvs())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
 
   it.each([
     ['off', true],
@@ -42,11 +46,7 @@ describe('getPostImages edge enforcement modes', () => {
   })
 
   it('requires a usable image and completed current delivery for each exact placement', async () => {
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
-    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
+    installTestMediaDeliveryEdge()
     const user = await createTestUserDirect()
     const createPost = () =>
       insertTestPost({
@@ -67,7 +67,8 @@ describe('getPostImages edge enforcement modes', () => {
     await markImageModerationFlagged(imageId)
     expect(await getPostImages(first)).toEqual([])
     await setImageOpenAIModerationResults(imageId, [], false)
-    expect((await getPostImages(first)).map(image => image.image_id)).toEqual([imageId])
+    // Clearing the flag does not replace the denial this flag already published.
+    expect(await getPostImages(first)).toEqual([])
 
     const placement = await getTestPostImagePlacement(first, imageId)
     expect(placement).not.toBeNull()

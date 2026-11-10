@@ -115,12 +115,21 @@ export async function readTestCapacityBatch(imageIds: readonly string[]) {
   return rows
 }
 
+class TestSettlementDeadlock extends Error {
+  readonly code = '40P01'
+
+  constructor() {
+    super('settlement deadlock')
+    this.name = 'TestSettlementDeadlock'
+  }
+}
+
 /** Settlement errors roll back mutation SQL without rerunning externally visible settlement. */
 export async function failTestImageCapacitySettlement(imageId: string) {
   await using query = await beginTransaction()
   const { rows: before } = await query<{ s3_key: string }>(sql`/* readTestCapacityPhaseBefore */
     SELECT s3_key FROM images WHERE id = ${imageId}`)
-  const failure = Object.assign(new Error('settlement deadlock'), { code: '40P01' })
+  const failure = new TestSettlementDeadlock()
   let mutations = 0
   let settlements = 0
   const error = await withImagePlacementMutation(
