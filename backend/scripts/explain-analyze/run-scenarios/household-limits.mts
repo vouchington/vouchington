@@ -13,6 +13,9 @@ const memberInsertQuery = '/* insertHouseholdMember */'
 
 export async function runHouseholdLimitScenarios(): Promise<void> {
   registerScenarioContract('household-individual-bind', {
+    // EXPLAIN replays the captured update after the callback rolls back. The seeded user
+    // already has an individual, so the conditional update returns no row.
+    allowEmptyResult: true,
     expectations: [
       { kind: 'usesIndexes', indexes: ['users_pkey'], queryContains: '/* getIndividual */' },
       {
