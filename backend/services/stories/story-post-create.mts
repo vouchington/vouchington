@@ -16,11 +16,7 @@ import { getPostStoryByStoryId } from './get-post-stories.mts'
 import { createPostStory } from './update.mts'
 import type { PostStory, Story } from './types.mts'
 import type { Post } from '@services/posts/types'
-import {
-  lockAuthorPublicationLifecycle,
-  recordPostPublicationChange,
-} from '@services/post-publication'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { deliverStoryPost } from './story-post-delivery.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
 
@@ -82,14 +78,12 @@ export async function createStoryPostInTransaction(
   query: TransactionQuery,
 ): Promise<CreatedStoryPost> {
   const txOptions = { query }
-  await lockAuthorPublicationLifecycle(query, storyTellerUser.id)
   const { rows: activeAuthorRows } = await query<{ id: string }>(
     sql`/* createStoryPost:activeAuthor */
         SELECT id FROM users
         WHERE id = ${storyTellerUser.id} AND platform_account_kind = 'system' AND deleted_at IS NULL`,
   )
   assert(activeAuthorRows[0], 409, 'System user @story-teller is not active')
-  await lockStoryLifecycles(query, [storyId])
   const story = await getStoryById(storyId, txOptions)
   assert(story, 404, 'Story not found')
   const existingPostStory = await getPostStoryByStoryId(storyId, txOptions)

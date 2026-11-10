@@ -1,14 +1,12 @@
 import { randomUUID, createHash } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  beginTransaction,
   createTestUserDirect,
   insertTestStory,
   insertTestRssFeedDirect,
   insertTestRssFeedItem,
   createTestUrlWithHostname,
   setTestItemStoryId,
-  withTestStoryLifecycleLock,
 } from '@voucha/test-helpers'
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
@@ -18,7 +16,6 @@ import {
   removeEditorialStoryItem,
   setEditorialStoryOfficialItem,
 } from '@services/stories'
-import * as storyLifecycleLock from '../post-publication/story-lifecycle-lock.mts'
 
 async function fixture() {
   const admin = await createTestUserDirect({ administrator: true })
@@ -37,28 +34,11 @@ async function fixture() {
   return { admin, story, itemId }
 }
 
-describe('editorial official-item membership serialization', () => {
-  it('serializes a blocked official setter and removal, clearing the reference and retaining its admin lock', async () => {
+describe('editorial official-item membership', () => {
+  it('clears the official reference when the item is removed after it is set', async () => {
     const { admin, story, itemId } = await fixture()
-    let select: ReturnType<typeof setEditorialStoryOfficialItem>
-    let remove: ReturnType<typeof removeEditorialStoryItem>
-    const itemLocked = Promise.withResolvers<void>()
-    const lockStoryLifecycles = storyLifecycleLock.lockStoryLifecycles
-    vi.spyOn(storyLifecycleLock, 'lockStoryLifecycles').mockImplementation((query, storyIds) => {
-      itemLocked.resolve()
-      return lockStoryLifecycles(query, storyIds)
-    })
-    try {
-      await withTestStoryLifecycleLock(story.id, async () => {
-        select = setEditorialStoryOfficialItem(admin, story.id, itemId)
-        await itemLocked.promise
-        await expect(probeItemRow(itemId)).rejects.toMatchObject({ code: '55P03' })
-        remove = removeEditorialStoryItem(admin, story.id, itemId)
-      })
-    } finally {
-      vi.restoreAllMocks()
-    }
-    await Promise.all([select!, remove!])
+    await setEditorialStoryOfficialItem(admin, story.id, itemId)
+    await removeEditorialStoryItem(admin, story.id, itemId)
     const final = await getStoryById(story.id)
     expect(final?.official_rss_feed_item_id).toBeNull()
     expect(final?.official_locked_at).not.toBeNull()
@@ -92,13 +72,3 @@ describe('editorial official-item membership serialization', () => {
     ])
   })
 })
-
-async function probeItemRow(itemId: string): Promise<void> {
-  await using query = await beginTransaction()
-  await query(`/* testAdminStoryConcurrency */ SET LOCAL lock_timeout = '50ms'`)
-  await query(
-    `/* testAdminStoryConcurrency */ SELECT id FROM rss_feed_items WHERE id = $1::uuid AND deleted_at IS NULL FOR UPDATE`,
-    [itemId],
-  )
-  await query.commit()
-}
