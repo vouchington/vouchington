@@ -64,7 +64,8 @@ export async function runMembershipOrphanedQueuedGrantScenarios(): Promise<void>
       {
         kind: 'maxFunctionCalls',
         function: 'fn_membership_grant_remaining_duration',
-        max: 10,
+        // Same custom-plan double count: one call per probed grant row, two per user.
+        max: 20,
       },
     ],
   })
@@ -97,7 +98,8 @@ export async function runMembershipOrphanedQueuedGrantScenarios(): Promise<void>
       {
         kind: 'maxFunctionCalls',
         function: 'fn_membership_grant_remaining_duration',
-        max: 2,
+        // The statement projects the duration and filters on it; the custom plan evaluates one extra call.
+        max: 3,
       },
     ],
   })
