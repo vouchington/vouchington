@@ -493,16 +493,6 @@
           "core": 1000
         }
       },
-      "get_my_referral_links": {
-        "measured": {
-          "list": 1865,
-          "core": 546
-        },
-        "max": {
-          "list": 2000,
-          "core": 1000
-        }
-      },
       "search_web": {
         "measured": {
           "list": 1945,
@@ -655,12 +645,12 @@
       },
       "get_referral_links": {
         "measured": {
-          "list": 2030,
-          "core": 811
+          "list": 3756,
+          "core": 1046
         },
         "max": {
-          "list": 3000,
-          "core": 1000
+          "list": 4000,
+          "core": 2000
         }
       },
       "get_story": {

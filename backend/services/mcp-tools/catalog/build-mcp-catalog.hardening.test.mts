@@ -23,15 +23,15 @@ const names = [
 ]
 // Pin the exact-grant listing including explicit message and household grants.
 const PLUS_WITHOUT_MODERATION_DIGEST =
-  'c8aade7973184f3791f6eb5c39ec57d6ce1e38beb5373fa536ed658d07a4a4d9'
-const PRE_MESSAGE_DIGEST = '514448c8b32cfe33e6fcce0d33a23320502ec132b4f260b92003e76b160431f2'
-const UMBRELLA_ONLY_DIGEST = 'e859df207683fc037f6260a49ee0ccfca454f14ea5967e81c2bb31a7061ff665'
+  'dd2490c09f08512369f6b167e5baf31130c4e6e48be2c32a5a096aaa0173dd97'
+const PRE_MESSAGE_DIGEST = '4e87c1be51278cd08d01f479b25bc4cf430b7b6ca8b4680267477f263b1a952a'
+const UMBRELLA_ONLY_DIGEST = '886080eeddafdecef0cd91d6cfc8757492cc1f2fa1d88ac1122302199dc8a83f'
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
 describe('community moderation exact-grant catalog boundaries', () => {
   it('adds exact-grant tools to the existing Plus listing without moderation grants', () => {
     const tools = listMcpToolsForUser(plus, nonModerationScopes, USER_MCP_SERVER_CONFIG)
-    expect(tools).toHaveLength(78)
+    expect(tools).toHaveLength(77)
     expect(digest(tools)).toBe(PLUS_WITHOUT_MODERATION_DIGEST)
     expect(
       digest(
@@ -55,7 +55,7 @@ describe('community moderation exact-grant catalog boundaries', () => {
       ['mcp.user:read', 'mcp.user:write'],
       USER_MCP_SERVER_CONFIG,
     )
-    expect(tools).toHaveLength(70)
+    expect(tools).toHaveLength(69)
     expect(digest(tools)).toBe(UMBRELLA_ONLY_DIGEST)
     expect(tools.some(tool => names.includes(tool.name))).toBe(false)
   })
@@ -66,7 +66,7 @@ describe('community moderation exact-grant catalog boundaries', () => {
       membership_plan: 'pro' as const,
       roles: [...new Set(ALL_TOOLS.flatMap(tool => Object.keys(tool.roles ?? {})))],
     }
-    expect(listMcpToolsForUser(caller, allScopes, USER_MCP_SERVER_CONFIG, true)).toHaveLength(78)
+    expect(listMcpToolsForUser(caller, allScopes, USER_MCP_SERVER_CONFIG, true)).toHaveLength(77)
   })
 
   it('keeps moderation scopes off the user listing and serves the free reader on its audience', () => {

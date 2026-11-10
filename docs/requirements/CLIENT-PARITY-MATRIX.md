@@ -64,6 +64,15 @@ per `private_count` key with the same meaning as `count_capped`. The earlier `us
 `count.topics_following`, `count.users_following`, `count.users_followers` and
 `private_count.posts_following`. Swift and .NET drop those fields from their models and fixtures.
 
+## Referral-link reads
+
+REST and the no-topic mode of `get_referral_links` share the personal-link list contract. The same
+tool keeps prioritized topic reads when a topic is supplied. Swift and .NET send an explicit page
+size for the REST list and have no runtime callers of either referral-link MCP tool name, so this
+change needs no native request or response-model migration and makes no new UI parity claim.
+The clients-owned MCP facts inventory follows the consolidated catalog under
+[clients #398](https://github.com/vouchington/vouchington-clients/issues/398).
+
 ## Membership verification outcomes
 
 The billing feature's verification-outcomes row in `client-feature-parity.json` tracks native adoption.

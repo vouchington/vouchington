@@ -183,7 +183,7 @@ describe('generated MCP catalog contracts', () => {
       plusScopes,
       USER_MCP_SERVER_CONFIG,
     )
-    expect(paid).toHaveLength(74)
+    expect(paid).toHaveLength(73)
     expect(
       paid
         .filter(tool => participationNames.includes(tool.name))
@@ -191,7 +191,7 @@ describe('generated MCP catalog contracts', () => {
         .toSorted(),
     ).toEqual(participationNames.toSorted())
     expect(hash(paid.filter(tool => !participationNames.includes(tool.name)))).toBe(
-      'af78a6c8337f2d2cce63579a4c4a802a1088892a9f9760a5bc99746f30253d4c',
+      '87bad4ef062f2f00afe2bdb4978a052f8a44198745ba8bef8a18a5c5119c3fbc',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(

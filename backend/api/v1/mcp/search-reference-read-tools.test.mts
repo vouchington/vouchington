@@ -32,7 +32,7 @@ const TOOLS = [
   'discover_communities',
   'discover_topics',
   'read_topic',
-  'get_my_referral_links',
+  'get_referral_links',
   'search_web',
   'read_reference_data',
 ]
@@ -100,9 +100,14 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
         topic_id: program.referralProgramId,
       }),
     )
-    const mine = await readTool(token, 'get_my_referral_links', {
+    const mine = await readTool(token, 'get_referral_links', {
       referral_program_id: program.referralProgramId,
     })
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    const rest = await request
+      .get(`/api/v1/referral-links?referral_program_id=${program.referralProgramId}`)
+      .expect(200)
 
     expect(state).toMatchObject({
       success: true,
@@ -112,6 +117,7 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
       enabled_at: expect.any(String),
     })
     expect(resultIds(mine)).toEqual([link.id])
+    expect(mine).toEqual({ success: true, ...rest.body })
     expect(mine).toMatchObject({ page_info: { has_next_page: false } })
   })
 
@@ -207,7 +213,7 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
     const user = await createTestUser()
     const token = await issueCredential('api_key', user, ['reference-data:read'])
 
-    const response = await postMcp(token, toolCall('get_my_referral_links', {})).expect(200)
+    const response = await postMcp(token, toolCall('get_referral_links', {})).expect(200)
 
     expect(response.body).toMatchObject({ error: { code: -32600 } })
     expect(response.body).not.toHaveProperty('result')

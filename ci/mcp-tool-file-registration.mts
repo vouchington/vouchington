@@ -39,6 +39,7 @@ const NON_TOOL_FILES = new Set([
   'delegated-authority.mts',
   'get-domain-ratings-helpers.mts',
   'get-domain-ratings-output-schema.mts',
+  'get-referral-links-user-page.mts',
   'list-read-access.mts',
   'list-tool-support.mts',
   'mcp-case-output.mts',

@@ -5,9 +5,9 @@
     "user": {
       "all": {
         "on": {
-          "count": 78,
+          "count": 77,
           "list": 263000,
-          "core": 111000,
+          "core": 110000,
           "output": 246000
         }
       },
@@ -21,7 +21,7 @@
       },
       "Plus": {
         "on": {
-          "count": 70,
+          "count": 69,
           "list": 236000,
           "core": 110000,
           "output": 240000

@@ -1218,7 +1218,7 @@
     "I081": [["post_id"]],
     "I082": [["after", "limit", "post_id"]],
     "I083": [["limit"]],
-    "I084": [["after", "limit", "referral_program_id"]],
+    "I084": [["after", "limit", "referral_program_id", "user_id"]],
     "I085": [
       [
         "after",
@@ -3712,7 +3712,7 @@
         "inputFields": "I084",
         "requestBodyFields": null,
         "operation": {
-          "tool": "get_my_referral_links",
+          "tool": "get_referral_links",
           "option": null
         },
         "decision": false

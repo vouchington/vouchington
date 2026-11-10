@@ -15,6 +15,11 @@ import { createOfficialReferralLink } from '@services/official-referral-program-
 import { upsertSystemUser } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
 
+function topicPage(result: Awaited<ReturnType<ReturnType<typeof getReferralLinksTool.function>>>) {
+  if (!result.success || !('links' in result)) throw new Error('Expected a topic referral page')
+  return result
+}
+
 describe('get-referral-links', () => {
   async function createCardWithReferralProgram(user: PrivateUser) {
     const suffix = createRandomString(8)
@@ -82,9 +87,7 @@ describe('get-referral-links', () => {
       const result = await execute({ topic_id: cardTopicId })
 
       expect(result.success).toBe(true)
-      expect((result as Extract<typeof result, { success: true }>).referral_program_id).toBe(
-        referralProgramId,
-      )
+      expect(topicPage(result).referral_program_id).toBe(referralProgramId)
     })
 
     it('returns success with empty links when groups are all empty', async () => {
@@ -95,7 +98,7 @@ describe('get-referral-links', () => {
       const result = await execute({ topic_id: cardTopicId })
 
       expect(result.success).toBe(true)
-      const successResult = result as Extract<typeof result, { success: true }>
+      const successResult = topicPage(result)
       expect(successResult.links).toEqual([])
       expect(successResult.referral_program_id).toBe(referralProgramId)
     })
@@ -113,7 +116,7 @@ describe('get-referral-links', () => {
       const result = await execute({ topic_id: cardTopicId })
 
       expect(result.success).toBe(true)
-      const successResult = result as Extract<typeof result, { success: true }>
+      const successResult = topicPage(result)
       expect(successResult.links).toHaveLength(1)
       expect(successResult.links[0].id).toBe(link.id)
       expect(successResult.links[0].url).toBe(url)
@@ -137,7 +140,7 @@ describe('get-referral-links', () => {
 
       for (const args of [{ topic_id: cardTopicId }, { topic_id: cardTopicId, all: true }]) {
         const result = await execute(args)
-        const links = (result as Extract<typeof result, { success: true }>).links
+        const links = topicPage(result).links
         expect(
           links
             .map(l => [l.id, l.priority_group, l.is_official])
@@ -150,10 +153,7 @@ describe('get-referral-links', () => {
         )
       }
       const result = await execute({ topic_id: cardTopicId })
-      expect((result as Extract<typeof result, { success: true }>).links.map(l => l.id)).toEqual([
-        official.id,
-        link.id,
-      ])
+      expect(topicPage(result).links.map(l => l.id)).toEqual([official.id, link.id])
     })
 
     it('preserves null labels', async () => {
@@ -169,7 +169,7 @@ describe('get-referral-links', () => {
       const result = await execute({ topic_id: cardTopicId })
 
       expect(result.success).toBe(true)
-      const successResult = result as Extract<typeof result, { success: true }>
+      const successResult = topicPage(result)
       expect(successResult.links[0]).toMatchObject({ id: link.id, label: null })
     })
 
@@ -180,19 +180,18 @@ describe('get-referral-links', () => {
       const second = await createLinkForProgram({ referralProgramId, hostname })
       const execute = getReferralLinksTool.function(user)
 
-      const page1 = (await execute({ topic_id: cardTopicId, all: true, limit: 1 })) as Extract<
-        Awaited<ReturnType<typeof execute>>,
-        { success: true }
-      >
+      const page1 = topicPage(await execute({ topic_id: cardTopicId, all: true, limit: 1 }))
       expect(page1.links.map(l => l.id)).toEqual([second.link.id])
       expect(page1.page_info.has_next_page).toBe(true)
 
-      const page2 = (await execute({
-        topic_id: cardTopicId,
-        all: true,
-        limit: 1,
-        after: page1.page_info!.end_cursor!,
-      })) as Extract<Awaited<ReturnType<typeof execute>>, { success: true }>
+      const page2 = topicPage(
+        await execute({
+          topic_id: cardTopicId,
+          all: true,
+          limit: 1,
+          after: page1.page_info!.end_cursor!,
+        }),
+      )
       expect(page2.links.map(l => l.id)).toEqual([first.link.id])
       expect(page2.page_info.has_next_page).toBe(false)
     })
@@ -204,23 +203,24 @@ describe('get-referral-links', () => {
       for (let i = 0; i < 3; i++)
         created.push(await createLinkForProgram({ referralProgramId, hostname }))
       const execute = getReferralLinksTool.function(user)
-      type Success = Extract<Awaited<ReturnType<typeof execute>>, { success: true }>
 
-      const page1 = (await execute({ topic_id: cardTopicId, limit: 2 })) as Success
+      const page1 = topicPage(await execute({ topic_id: cardTopicId, limit: 2 }))
       expect(page1.links).toHaveLength(2)
       expect(page1.page_info.has_next_page).toBe(true)
-      const page2 = (await execute({
-        topic_id: cardTopicId,
-        limit: 2,
-        after: page1.page_info.end_cursor!,
-      })) as Success
+      const page2 = topicPage(
+        await execute({
+          topic_id: cardTopicId,
+          limit: 2,
+          after: page1.page_info.end_cursor!,
+        }),
+      )
       expect(page2.links).toHaveLength(1)
       expect(page2.page_info.has_next_page).toBe(false)
       expect(new Set([...page1.links, ...page2.links].map(l => l.id))).toEqual(
         new Set(created.map(c => c.link.id)),
       )
 
-      const oversized = (await execute({ topic_id: cardTopicId, limit: 1000 })) as Success
+      const oversized = topicPage(await execute({ topic_id: cardTopicId, limit: 1000 }))
       expect(oversized.links).toHaveLength(3)
     })
 
@@ -236,7 +236,7 @@ describe('get-referral-links', () => {
 
       const result = await getReferralLinksTool.function(user)({ topic_id: cardTopicId })
 
-      expect(result.success && result.links).toHaveLength(3)
+      expect(topicPage(result).links).toHaveLength(3)
     })
 
     it('rejects a limit below 1 or not an integer, with and without all', async () => {
