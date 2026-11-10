@@ -50,7 +50,6 @@
     "valkyries": "^0.15.0"
   },
   "devDependencies": {
-    "@ts-shared/url-signing": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
     "@vouchington/worker-runtime": "^0.3.1"
