@@ -12,30 +12,6 @@ function assertSafePostIdColumn(postIdColumn: string): void {
   }
 }
 
-/** Topic-side candidate ids for aggregate counts over direct and linked-alias relations. */
-export function buildTopicPostCandidateSelect(topicId: string): SQLStatement {
-  return sql`
-    SELECT rel.subject_id AS post_id
-    FROM `
-    .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
-    .append(sql` rel
-    WHERE (CASE WHEN rel.deleted_at IS NULL AND rel.votes_score_net > 0 THEN rel.object_id END) = ${topicId}
-      AND rel.deleted_at IS NULL
-      AND rel.votes_score_net > 0
-
-    UNION ALL
-
-    SELECT alias_relation.subject_id AS post_id
-    FROM topic_aliases alias
-    JOIN `)
-    .append(POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE).append(sql` alias_relation
-      ON (CASE WHEN alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0 THEN alias_relation.object_id END) = alias.id
-     AND alias_relation.deleted_at IS NULL
-     AND alias_relation.votes_score_net > 0
-    WHERE alias.topic_id = ${topicId}
-  `)
-}
-
 /** A keyed direct or linked-alias membership check for one topic. */
 export function buildTopicMembershipExists(postIdColumn: string, topicId: string): SQLStatement {
   assertSafePostIdColumn(postIdColumn)
