@@ -5388,6 +5388,8 @@
 {"id":"copy.native.swift.moderationReports.actionUnavailable","value":"This action is not available for this report."},
 {"id":"copy.native.swift.moderationReports.actioned","value":"Actioned"},
 {"id":"copy.native.swift.moderationReports.aiJudgement","value":"AI judgement: {action}"},
+{"id":"copy.native.swift.moderationReports.aiJudgementRunExpired","value":"AI judgement is taking longer than expected. Check again later."},
+{"id":"copy.native.swift.moderationReports.aiJudgementRunFailed","value":"AI judgement could not be completed. You can re-run it."},
 {"id":"copy.native.swift.moderationReports.aiJudgementUnavailable","value":"AI judgement unavailable"},
 {"id":"copy.native.swift.moderationReports.banEvasionSignal","value":"Ban-evasion signal"},
 {"id":"copy.native.swift.moderationReports.characterLimit","value":"{count}/{limit}"},

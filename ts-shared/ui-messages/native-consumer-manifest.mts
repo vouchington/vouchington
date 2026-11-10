@@ -38,6 +38,7 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_32_AUTHORED_POST } from './native-consu
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_33_DOTNET_MCP } from './native-consumer-manifest/claims-33-dotnet-mcp.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_34_MCP_WARNINGS } from './native-consumer-manifest/claims-34-mcp-warnings.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_35_QUEUE_DOMAINS } from './native-consumer-manifest/claims-35-queue-domains.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_36_JUDGEMENT_RUNS } from './native-consumer-manifest/claims-36-judgement-runs.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
 
 export type {
@@ -87,6 +88,7 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_33_DOTNET_MCP,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_34_MCP_WARNINGS,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_35_QUEUE_DOMAINS,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_36_JUDGEMENT_RUNS,
 ]
 
 export const NATIVE_CONSUMER_MANIFEST =

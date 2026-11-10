@@ -5388,6 +5388,8 @@
 {"id":"copy.native.swift.moderationReports.actionUnavailable","value":"Esta acción no está disponible para este informe."},
 {"id":"copy.native.swift.moderationReports.actioned","value":"Procesado"},
 {"id":"copy.native.swift.moderationReports.aiJudgement","value":"Criterio de IA: {action}"},
+{"id":"copy.native.swift.moderationReports.aiJudgementRunExpired","value":"El criterio de IA está tardando más de lo esperado. Vuelve a comprobarlo más tarde."},
+{"id":"copy.native.swift.moderationReports.aiJudgementRunFailed","value":"No se pudo completar el criterio de IA. Puedes volver a ejecutarlo."},
 {"id":"copy.native.swift.moderationReports.aiJudgementUnavailable","value":"Criterio de IA no disponible"},
 {"id":"copy.native.swift.moderationReports.banEvasionSignal","value":"Señal de evasión de bloqueo"},
 {"id":"copy.native.swift.moderationReports.characterLimit","value":"{count}/{limit}"},
