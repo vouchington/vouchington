@@ -253,7 +253,12 @@ describe('direct membership source authority', () => {
         ),
       )
     }
-    const rows = await Promise.all(fulfilled.map(outcome => getTestMembershipRaw(outcome.value.id)))
+    const rows = []
+    for (const outcome of fulfilled) {
+      const row = await getTestMembershipRaw(outcome.value.id)
+      if (!row) throw new Error('expected the created membership row')
+      rows.push(row)
+    }
     const open = rows.filter(row => row.projection_ended_at === null)
     expect(open).toHaveLength(1)
     const winner = open[0]
