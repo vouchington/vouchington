@@ -1,8 +1,8 @@
 import { encodeCursor } from '@modules/pagination'
 import { describe, expect, it } from 'vitest'
 
+import { postSearchCursorScope } from './get-ids-cursor.mts'
 import { decodePostSearchCursor } from './get-ids-page-info.mts'
-import { stableHotCursorScope } from './stable-hot-rank.mts'
 
 const postId = '00000000-0000-4000-8000-000000000001'
 
@@ -26,7 +26,7 @@ describe('post search page info', () => {
   it('decodes and validates hot cursors', () => {
     expect(
       decodePostSearchCursor(
-        { after: encodeCursor({ score: 42, id: postId, scope: stableHotCursorScope('hot') }) },
+        { after: encodeCursor({ score: 42, id: postId, scope: postSearchCursorScope('hot') }) },
         'hot',
         false,
       ),

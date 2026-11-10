@@ -15,7 +15,3 @@ export function buildStablePostHotRankExpression(alias = 'posts'): SQLStatement 
         / 259200.0 * LN(2.0)
       ELSE -1e300::DOUBLE PRECISION END)`)
 }
-
-export function stableHotCursorScope(sort: 'hot' | 'trending'): string {
-  return sort === 'hot' ? 'post-hot-stable-2026' : 'post-trending-stable-2026'
-}

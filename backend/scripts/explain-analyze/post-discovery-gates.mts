@@ -56,12 +56,11 @@ export async function registerPostDiscoveryGate(
   })
 }
 
-export async function registerNamedPostIndexGate(
+export function registerNamedPostIndexExpectations(
   id: string,
-  indexName: string,
+  leaves: readonly string[],
   options: { allowEmpty?: boolean; follows?: boolean; rowCap?: number | null } = {},
-): Promise<void> {
-  const leaves = indexName === '' ? [] : await partitionIndexLeaves(indexName)
+): void {
   const rowCap = options.rowCap === undefined ? POST_CAP : options.rowCap
   registerScenarioContract(id, {
     seededRows: POST_DISCOVERY_FIXTURE_SEEDED_ROWS,
@@ -87,4 +86,13 @@ export async function registerNamedPostIndexGate(
       posts: 'Unscoped post search walks the sort key across retained post history.',
     },
   })
+}
+
+export async function registerNamedPostIndexGate(
+  id: string,
+  indexName: string,
+  options: { allowEmpty?: boolean; follows?: boolean; rowCap?: number | null } = {},
+): Promise<void> {
+  const leaves = indexName === '' ? [] : await partitionIndexLeaves(indexName)
+  registerNamedPostIndexExpectations(id, leaves, options)
 }

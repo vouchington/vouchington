@@ -1,5 +1,6 @@
+import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import {
-  registerNamedPostIndexGate,
+  registerNamedPostIndexExpectations,
   registerPostDiscoveryGate,
   type PostDiscoveryScope,
   type PostDiscoverySort,
@@ -129,8 +130,22 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
       'idx_posts__post_type__votes_score_sort__id',
     ],
   ]
+  const [globalHotLeaves, typeHotLeaves, typeNewLeaves, typeBestLeaves] = await Promise.all([
+    partitionIndexLeaves('idx_posts__stable_hot_rank__id'),
+    partitionIndexLeaves('idx_posts__post_type__stable_hot_rank__id'),
+    partitionIndexLeaves('idx_posts__post_type__id'),
+    partitionIndexLeaves('idx_posts__post_type__votes_score_sort__id'),
+  ])
+  const leavesByIndex = new Map<string, readonly string[]>([
+    ['idx_posts__stable_hot_rank__id', globalHotLeaves],
+    ['idx_posts__post_type__stable_hot_rank__id', typeHotLeaves],
+    ['idx_posts__post_type__id', typeNewLeaves],
+    ['idx_posts__post_type__votes_score_sort__id', typeBestLeaves],
+  ])
   for (const [id, options, indexName] of globalScenarios) {
-    await registerNamedPostIndexGate(id, indexName)
+    const leaves = leavesByIndex.get(indexName)
+    if (!leaves) throw new Error(`${indexName} was not loaded before discovery registration`)
+    registerNamedPostIndexExpectations(id, leaves)
     // no-mistakes-disable-next-line query-reached-per-item: each fixed global/type case needs its own production query plan.
     await runCaptured(id, options)
   }
