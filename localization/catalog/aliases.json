@@ -731,7 +731,6 @@
 {"alias":"native.dotnet.csharpEditor.selectImage","consumer":"dotnet","copyId":"copy.native.dotnet.csharpEditor.selectImage"},
 {"alias":"native.dotnet.csharpEditor.suggestionWithDetail","consumer":"dotnet","copyId":"copy.native.dotnet.csharpEditor.suggestionWithDetail"},
 {"alias":"native.dotnet.csharpEditor.write","consumer":"dotnet","copyId":"copy.extracted.navbar.topbarActions.write_3f00927a"},
-{"alias":"native.dotnet.csharpStatus.mergedInto","consumer":"dotnet","copyId":"copy.native.dotnet.csharpStatus.mergedInto"},
 {"alias":"native.dotnet.csharpStatus.playbackFailed","consumer":"dotnet","copyId":"copy.native.dotnet.csharpStatus.playbackFailed"},
 {"alias":"native.dotnet.csharpStatus.saveTopicFirst","consumer":"dotnet","copyId":"copy.native.dotnet.csharpStatus.saveTopicFirst"},
 {"alias":"native.dotnet.csharpStatus.savedItem","consumer":"dotnet","copyId":"copy.native.dotnet.csharpStatus.savedItem"},

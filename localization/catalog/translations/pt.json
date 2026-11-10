@@ -4097,7 +4097,6 @@
 {"id":"copy.native.dotnet.csharpEditor.preview","value":"Pré-visualizar"},
 {"id":"copy.native.dotnet.csharpEditor.selectImage","value":"Selecionar imagem"},
 {"id":"copy.native.dotnet.csharpEditor.suggestionWithDetail","value":"{label}  {detail}"},
-{"id":"copy.native.dotnet.csharpStatus.mergedInto","value":"Combinado em {id}"},
 {"id":"copy.native.dotnet.csharpStatus.playbackFailed","value":"A reprodução falhou."},
 {"id":"copy.native.dotnet.csharpStatus.saveTopicFirst","value":"Guarde o tópico antes de gerir as definições."},
 {"id":"copy.native.dotnet.csharpStatus.savedItem","value":"Guardado {id}"},
