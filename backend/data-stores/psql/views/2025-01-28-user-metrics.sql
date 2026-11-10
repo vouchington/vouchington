@@ -1,2 +1,0 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- Profile metrics are built from the user id. This file defines no view.
