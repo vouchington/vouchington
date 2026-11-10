@@ -3,6 +3,9 @@ import { mediaDeliverySafetyWorkMaxValues } from '@services/media-delivery-safet
 import type { ImagePlacementCapacityReservation } from '@services/media-delivery-safety/placement-capacity-reservations'
 import { seedUuid } from './common.mts'
 const cap = mediaDeliverySafetyWorkMaxValues.max_placements_per_image
+// A few thousand analyzed rows make `id = ANY(cap ids)` a sequential scan of media_placements.
+// Production tables are much larger, and this corpus makes the primary key the cheaper plan.
+const POLICY_PLACEMENT_CORPUS = 80_000
 
 /** Each cohort owns at most the hard cap plus one retired candidate. */
 export async function seedImagePlacementCapacityCohort(
@@ -101,4 +104,28 @@ export async function seedImagePlacementCapacityCohort(
     current: reservation(0),
     candidate: reservation(active),
   }
+}
+
+/** Retired placements outside every capacity id list. A second run stops at the corpus size. */
+export async function seedImagePlacementCapacityPolicyCorpus(imageId: string): Promise<void> {
+  await using query = await beginTransaction()
+  await query(
+    `/* seedCapacityPolicyCorpus */
+    WITH noise AS (
+      SELECT uuidv7() AS id
+      FROM generate_series(1, (
+        SELECT GREATEST(0, $2::integer - count(*))::integer FROM media_placements
+      ))
+    ),
+    bindings AS (
+      INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)
+      SELECT id, $1::uuid, 'post' FROM noise
+      RETURNING placement_id
+    )
+    INSERT INTO media_placements (id, retired_at, retirement_reason)
+    SELECT placement_id, CURRENT_TIMESTAMP, 'owner_removed'::media_placement_retirement_reasons
+    FROM bindings`,
+    [imageId, POLICY_PLACEMENT_CORPUS],
+  )
+  await query.commit()
 }

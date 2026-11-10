@@ -11,7 +11,10 @@ import {
 } from '@services/media-delivery-safety/placement-capacity-reservations'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { seedImagePlacementCapacityCohort } from '../seed-data/image-placement-capacity.mts'
+import {
+  seedImagePlacementCapacityCohort,
+  seedImagePlacementCapacityPolicyCorpus,
+} from '../seed-data/image-placement-capacity.mts'
 import { runAndCapture } from '../run-support.mts'
 
 const cap = mediaDeliverySafetyWorkMaxValues.max_placements_per_image
@@ -37,6 +40,8 @@ export async function runImagePlacementCapacityScenarios(): Promise<void> {
     // then sorts a sequential scan of every reservation and reads past the per-image cap.
     await write('/* analyzeCapacity */ VACUUM (ANALYZE) image_placement_capacity_reservations')
     await write('/* analyzeCapacityImages */ ANALYZE images')
+    await seedImagePlacementCapacityPolicyCorpus(full.imageId)
+    await write('/* analyzeCapacityPlacements */ VACUUM (ANALYZE) media_placements')
     await capture('image-placement-capacity-at-cap', full.candidate, true)
     await capture('image-placement-capacity-empty', empty.candidate, false)
     await capture('image-placement-capacity-surface', surface.candidate, true)
