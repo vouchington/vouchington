@@ -3,6 +3,10 @@
 # Keep node_modules in sync after a branch switch that changes manifests (issue #10009).
 # $3=1 is a branch checkout; $3=0 is a file checkout and must not install.
 [ "$3" = "1" ] || exit 0
+# A rebase checks out intermediate commits; post-rewrite installs once it finishes (issue #5503).
+for rebase_state in rebase-merge rebase-apply; do
+  if [ -d "$(git rev-parse --git-path "$rebase_state" 2>/dev/null)" ]; then exit 0; fi
+done
 [ -n "$1" ] && [ -n "$2" ] || exit 0
 case "$1" in 0000000000000000000000000000000000000000) exit 0;; esac
 case "$2" in 0000000000000000000000000000000000000000) exit 0;; esac

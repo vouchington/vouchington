@@ -64,12 +64,16 @@ function runHook(options: {
   githubActions?: boolean
   omitPnpm?: boolean
   pnpmExit?: number
+  rebaseState?: 'rebase-merge' | 'rebase-apply'
   oldSha?: string
   newSha?: string
 }): { status: number | null; stdout: string; stderr: string; pnpmLog: string } {
   const repo = createManifestRepo(options.changeWorkspaceYaml)
   const bin = join(repo.dir, 'bin')
   mkdirSync(bin)
+  if (options.rebaseState) {
+    mkdirSync(join(repo.dir, '.git', options.rebaseState))
+  }
   const pnpmLog = join(repo.dir, 'pnpm.log')
   writeFileSync(join(bin, 'git'), `#!/bin/sh\nexec ${JSON.stringify(realGitPath())} "$@"\n`)
   chmodSync(join(bin, 'git'), 0o755)
@@ -136,6 +140,16 @@ describe('post-checkout', () => {
     expect(result.stdout).toMatch(/pnpm install completed in \d+s/)
     expect(result.pnpmLog.trim()).toBe('install')
   })
+
+  it.each(['rebase-merge', 'rebase-apply'] as const)(
+    'does not install while a %s rebase checks out a manifest change',
+    rebaseState => {
+      const result = runHook({ branchCheckout: true, changeWorkspaceYaml: true, rebaseState })
+      expect(result.status).toBe(0)
+      expect(result.stdout).toBe('')
+      expect(result.pnpmLog).toBe('')
+    },
+  )
 
   it('does not install on a file checkout even when manifests changed', () => {
     const result = runHook({ branchCheckout: false, changeWorkspaceYaml: true })
