@@ -38,7 +38,7 @@ export const processUserDeletionPhaseBatch: UserDeletionPhaseProcessor = async i
     case 'account-data':
       return processUserDeletionAccountDataBatch(input.userId, input.requestId, input.batchSize)
     case 'relation-impacts':
-      return processRelationImpacts(input.userId, input.requestId, input.batchSize)
+      return processRelationImpacts(input.requestId, input.batchSize)
     case 'external-work':
       return processUserDeletionExternalWork(input.requestId, input.processingAttemptId)
     case 'finalize':
@@ -119,7 +119,7 @@ async function processUserRelations(userId: string, batchSize: number) {
   })
 }
 
-async function processRelationImpacts(userId: string, requestId: string, batchSize: number) {
+async function processRelationImpacts(requestId: string, batchSize: number) {
   return withUserDeletionTransaction(async query => ({
     hasMore: (await recomputeUserDeletionRelationImpactsBatch(requestId, batchSize, query)) > 0,
   }))
