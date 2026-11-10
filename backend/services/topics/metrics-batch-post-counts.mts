@@ -65,31 +65,27 @@ export function topicCountLaterals(probeParam: string): string {
       ) data_point_posts
     ) data_point_counts ON TRUE
     LEFT JOIN LATERAL (
-      SELECT COUNT(*)::bigint AS count
+      SELECT COUNT(DISTINCT bounded.rss_feed_item_id)::bigint AS count
       FROM (
-        SELECT DISTINCT ON (category.rss_feed_item_id) category.rss_feed_item_id AS item_id
+        -- The LIMIT bounds the category rows read through the topic_id index. Eligibility
+        -- is then checked only on those rows, so the count is capped, not exact.
+        SELECT category.rss_feed_item_id
         FROM rss_feed_item_categories category
         WHERE category.topic_id = combined_ids.id
-          AND (
-            SELECT item.deleted_at IS NULL
-            FROM rss_feed_items item
-            WHERE item.id = category.rss_feed_item_id
-          ) IS TRUE
-          -- A scalar probe keeps the planner from pulling the source check into a semi-join
-          -- that scans every source row once per topic.
-          AND (
-            SELECT TRUE
-            FROM rss_feed_item_sources source
-            JOIN rss_feeds source_feed ON source_feed.id = source.rss_feed_id
-            WHERE source.rss_feed_item_id = category.rss_feed_item_id
-              AND source_feed.deleted_at IS NULL
-              AND source_feed.is_enabled
-              AND source_feed.is_discoverable
-            LIMIT 1
-          ) IS TRUE
         ORDER BY category.rss_feed_item_id DESC, category.category_identity_id DESC
         LIMIT ${probeParam}
-      ) page
+      ) bounded
+      WHERE EXISTS (
+        SELECT 1
+        FROM rss_feed_items item
+        JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id
+        JOIN rss_feeds source_feed ON source_feed.id = source.rss_feed_id
+        WHERE item.id = bounded.rss_feed_item_id
+          AND item.deleted_at IS NULL
+          AND source_feed.deleted_at IS NULL
+          AND source_feed.is_enabled
+          AND source_feed.is_discoverable
+      )
     ) news_counts ON TRUE
     LEFT JOIN LATERAL (
       SELECT COUNT(*)::bigint AS count
