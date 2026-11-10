@@ -13,6 +13,7 @@ import {
   POST_TOPIC_CATEGORY_RELATION_TABLE,
   POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE,
 } from '@services/entity-relations/metadata'
+import { appendUniversalTopicNewestSource } from '@services/posts/search/query-builder/universal-topic-walk'
 
 export type PostFeedWalkSort = 'new' | 'hot' | 'best'
 
@@ -31,9 +32,16 @@ export type PostFeedEligibilityOptions = {
 export function appendEligiblePostsCTE(
   query: SQLStatement,
   options: PostFeedEligibilityOptions,
+  pageLimit = 100,
+  newestPostIdLt?: string,
 ): void {
   query.append(sql`, eligible_posts AS NOT MATERIALIZED (`)
-  appendEligiblePostsSelect(query, options)
+  appendEligiblePostsSelect(
+    query,
+    options,
+    undefined,
+    options.sort === 'new' ? { limit: pageLimit, idLt: newestPostIdLt } : undefined,
+  )
   query.append(sql`)`)
 }
 
@@ -51,6 +59,7 @@ export function appendEligiblePostsSelect(
     hasUnknownHashtag,
   }: PostFeedEligibilityOptions,
   targetPostId?: SQLStatement,
+  walk?: { limit: number; idLt?: string },
 ): void {
   const discoveryEligibility = buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
     currentUserId: currentUser.id,
@@ -70,8 +79,16 @@ export function appendEligiblePostsSelect(
       .append(sql`,\n        `)
       .append(buildHotScoreExpression('posts', scoreReferenceDate))
       .append(sql` AS hot_score`)
+  const uniqueUniversalTopicIds = [...new Set(universalTopicIds ?? [])]
+  let walkedTopic = false
+  if (walk && !targetPostId && sort === 'new' && uniqueUniversalTopicIds.length > 0) {
+    appendUniversalTopicNewestSource(query, uniqueUniversalTopicIds, walk.idLt, walk.limit)
+    walkedTopic = true
+  } else {
+    query.append(sql`
+      FROM posts`)
+  }
   query.append(sql`
-      FROM posts
       JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
       WHERE 1 = 1`)
   if (targetPostId) query.append(sql` AND posts.id = `).append(targetPostId)
@@ -163,8 +180,7 @@ export function appendEligiblePostsSelect(
   for (const aliasId of [...new Set(hashtagAliasIds ?? [])]) {
     query.append(sql`\n      AND `).append(buildTopicAliasMembershipExists('posts.id', aliasId))
   }
-  const uniqueUniversalTopicIds = [...new Set(universalTopicIds)]
-  for (const topicId of uniqueUniversalTopicIds) {
+  for (const topicId of walkedTopic ? uniqueUniversalTopicIds.slice(1) : uniqueUniversalTopicIds) {
     query
       .append(sql`
       AND `)

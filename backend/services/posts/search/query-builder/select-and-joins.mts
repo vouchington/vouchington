@@ -64,7 +64,12 @@ export function appendPostSearchSelectAndJoins(
       ) posts
     `)
   } else if (walkUniversalTopic) {
-    appendUniversalTopicNewestSource(query, options.universal_topic_ids ?? [], options.id_lt)
+    appendUniversalTopicNewestSource(
+      query,
+      options.universal_topic_ids ?? [],
+      options.id_lt,
+      options.limit ?? 100,
+    )
   } else {
     query.append(sql`\n    FROM posts\n`)
   }

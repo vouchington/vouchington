@@ -17,7 +17,12 @@ export function buildPostFeedPageQuery(options: PostFeedPageQueryOptions): SQLSt
     communityId: options.communityId,
     currentUserId: options.currentUserId,
   })
-  appendEligiblePostsCTE(query, options.eligibilityOptions)
+  appendEligiblePostsCTE(
+    query,
+    options.eligibilityOptions,
+    options.safeLimit + 1,
+    options.cursor?.sort === 'new' ? options.cursor.id : undefined,
+  )
   if (options.eligibilityOptions.sort === 'best') appendBestWalk(query, options)
   else appendDeliveryWalk(query, options)
   return query

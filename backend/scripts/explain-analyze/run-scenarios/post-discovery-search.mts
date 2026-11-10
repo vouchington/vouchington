@@ -17,8 +17,8 @@ const PAGE_SIZE = 25
 const COMMUNITY_IDS = [seedUuid(100, '14'), seedUuid(101, '14')] as const
 const POST_SEARCH_QUERY = 'buildPostSearchQuery'
 const EMPTY_CURSOR_ID = '00000000-0000-0000-0000-000000000000'
-// Ordinal 599 of the 600-row recommendation cohort is pending and not deleted.
-const SPARSE_RECOMMENDATION_QUERY = 'post-discovery-fixture-599'
+// Ordinal 198 of the 200-row recommendation cohort is pending and not deleted.
+const SPARSE_RECOMMENDATION_QUERY = 'post-discovery-fixture-198'
 
 function exhaustedCommunityCursor(sort: PostDiscoverySort): string {
   const scope = postSearchCursorScope(sort, 'all')

@@ -144,7 +144,7 @@ export async function disableHackerNewsScaleReferenceAutovacuum(): Promise<void>
      SELECT 'relation__post__related__url',
        format('ALTER TABLE %s SET (autovacuum_enabled = false)', child.oid::regclass)
      FROM pg_partition_tree('relation__post__related__url'::regclass) tree
-     JOIN pg_class child ON child.oid = tree.relid AND child.relkind IN ('r', 'p')
+     JOIN pg_class child ON child.oid = tree.relid AND child.relkind = 'r'
      ORDER BY 1, 2 LIMIT 201`,
     [REFERENCE_AUTOVACUUM_ROOTS],
   )

@@ -1,6 +1,9 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import createHttpError from 'http-errors'
-import { buildPostSearchTimeRangeFilter } from '../hacker-news-hot-options.mts'
+import {
+  appendHackerNewsHotRankBound,
+  buildPostSearchTimeRangeFilter,
+} from '../hacker-news-hot-options.mts'
 import { buildStablePostHotRankExpression } from '../stable-hot-rank.mts'
 import type { PostSearchOptions } from '../types.mts'
 
@@ -58,8 +61,15 @@ function appendPaginationFilters(
     sort: string
   },
 ): void {
-  if (sort === 'new' && options.id_lt) filters.push(sql`posts.id < ${options.id_lt}`)
-  else if (sort === 'following_new' && (options.ranking_lt !== undefined || options.id_lt)) {
+  appendHackerNewsHotRankBound(filters, options)
+  if (sort === 'new' && options.id_lt) {
+    // An empty community cursor must stay on (community_id, id). A bare id bound uses the id index.
+    filters.push(
+      options.community_id
+        ? sql`(posts.community_id, posts.id) < (${options.community_id}, ${options.id_lt})`
+        : sql`posts.id < ${options.id_lt}`,
+    )
+  } else if (sort === 'following_new' && (options.ranking_lt !== undefined || options.id_lt)) {
     appendCompositePagination(filters, {
       expression: requiredFollowingRankExpression(followingRankExpression),
       idLt: options.id_lt,

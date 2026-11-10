@@ -6,7 +6,7 @@ const START_INDEX = 100_000
 const COMMUNITY_POSTS_PER_COMMUNITY = 10_000
 // Sparse community approval is a residual review lookup, so the cohort stays under both caps.
 const SPARSE_COMMUNITY_POSTS = 400
-const RECOMMENDATION_COUNT = 600
+const RECOMMENDATION_COUNT = 200
 const COMMUNITY_COUNT = 2
 const CLEANUP_BATCH_SIZE = 500
 

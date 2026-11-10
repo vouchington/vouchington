@@ -158,7 +158,25 @@ describe('query-builder (basic)', () => {
     expect(query.sql).toContain('post_review_topic_ratings')
     expect(query.sql).toContain('post_data_point_topics')
     expect(query.sql).toContain('ORDER BY rel.subject_id DESC')
+    expect(query.sql).toContain('CROSS JOIN LATERAL')
+    expect(query.sql).toContain('topic_aliases alias')
+    expect(query.sql).toContain('LIMIT ?')
     expect(query.values).toContain(topicId)
+  })
+
+  it('keeps an empty community cursor on the community id index', () => {
+    const communityId = '123e4567-e89b-12d3-a456-426614174010'
+    const testId = '00000000-0000-0000-0000-000000000000'
+    const query = buildPostSearchQuery(undefined, {
+      sort: 'new',
+      community_id: communityId,
+      id_lt: testId,
+    })
+
+    expect(query.sql).toContain('(posts.community_id, posts.id) < (?, ?)')
+    expect(query.sql).not.toContain('posts.id < ?')
+    expect(query.values).toContain(communityId)
+    expect(query.values).toContain(testId)
   })
 
   it('buildPostSearchQuery adds similar_post_id CTE and filter', () => {

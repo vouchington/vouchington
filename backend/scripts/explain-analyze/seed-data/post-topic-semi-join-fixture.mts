@@ -4,7 +4,8 @@ import sql from 'sql-template-strings'
 import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { seedUuid } from './common.mts'
 
-const ALIASES_PER_TOPIC = 300
+// Forty aliases times a 26-row page stays inside the 1,200 alias-relation cap.
+const ALIASES_PER_TOPIC = 40
 const SPARSE_POST_COUNT = 5
 const MIN_NEWEST_POST_COHORT_SIZE = 10_000
 const FIXTURE_ID_START = 800_000
