@@ -114,14 +114,6 @@
     "routes": ["POST /api/v1/auth/totp"]
   },
   {
-    "annotation": "deleteProfileLink",
-    "maxCount": null,
-    "reason": "The owned profile-link row is locked before its image placement is cleared and the row is deleted (backend/services/my/profile-links.mts:154-169)",
-    "permanent": true,
-    "code": "backend/services/my/profile-links.mts:154",
-    "routes": ["DELETE /api/v1/my/profile/links/:id"]
-  },
-  {
     "annotation": "disconnectOAuthAccount",
     "maxCount": null,
     "reason": "Lock users before the provider row, then check remaining auth methods before ordered display-name reset and provider detachment",
@@ -445,14 +437,6 @@
     "reason": "Completed broker replay checks original SID assurance before mint; mint reacquires the account fence to reject a revoked or changed durable device credential.",
     "permanent": true,
     "code": "backend/services/jwt-session/assurance.mts:41"
-  },
-  {
-    "annotation": "lockSurfaceOwnerDomains",
-    "maxCount": null,
-    "reason": "User deletion locks the user image-owner domain first (users/delete.mts:77), then locks the profile-link domains it discovers by reading user_profile_links under that lock (users/delete.mts:86-89); the second lock needs ids only readable after the first",
-    "permanent": true,
-    "code": "backend/services/users/delete.mts:77",
-    "routes": ["DELETE /api/v1/users/:idOrSlug"]
   },
   {
     "annotation": "maybeResolveCases",
