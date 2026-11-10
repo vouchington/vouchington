@@ -108,55 +108,42 @@ async function reserveColdWalUsers(ids: string[]): Promise<string[]> {
   return chosen
 }
 
-async function deleteColdWalUsers(ids: readonly string[]) {
-  for (let offset = 0; offset < ids.length; offset += 250) {
-    await write(`/* deleteColdWalUsers */ DELETE FROM users WHERE id = ANY($1::uuid[])`, [
-      ids.slice(offset, offset + 250),
-    ])
-  }
-}
-
 export async function createExplainWalCaptureFixture(scenarioId: string) {
+  // Fixture users are intentionally left behind: cascading deletes across
+  // every users FK table exceed the statement timeout under shard load, and
+  // the shared dirty database tolerates foreign rows.
   const ids: string[] = []
-  try {
-    // Every occupied slot on each sealed page belongs to this fixture. Foreign
-    // updates/deletes cannot warm these pages. Autovacuum visibility changes can
-    // still consume an FPI when checksums or wal_log_hints are enabled; this is
-    // a shared database fixture, not an exclusion lock against maintenance.
-    const userIds = await reserveColdWalUsers(ids)
-    const input = {
-      name: 'wal-condition-test',
-      text: `/* walConditionTest */ UPDATE users SET markdown = $2
-        WHERE id = ANY($1::uuid[]) AND current_setting('application_name') = $3 RETURNING id`,
-      values: [userIds, 'temporary change', 'wal-condition-test'],
-      scenarioId,
-      captureIndex: 0,
-      localSettings: { application_name: 'wal-condition-test' },
-    }
-    return {
-      input,
-      rowCount: userIds.length,
-      ownedPageCount: userIds.length,
-      async captureCold() {
-        await write('/* walConditionTestCheckpoint */ CHECKPOINT')
-        return explainAnalyze(input.name, input.text, input.values, {
-          localSettings: input.localSettings,
-          planCacheMode: 'force_custom_plan',
-        })
-      },
-      async readMarkdown() {
-        const { rows } = await write<{ markdown: string }>(
-          '/* walConditionTestRead */ SELECT markdown FROM users WHERE id = $1::uuid',
-          [userIds[0]],
-        )
-        return rows[0]?.markdown
-      },
-      async cleanup() {
-        await deleteColdWalUsers(ids)
-      },
-    }
-  } catch (err) {
-    await deleteColdWalUsers(ids)
-    throw err
+  // Every occupied slot on each sealed page belongs to this fixture. Foreign
+  // updates/deletes cannot warm these pages. Autovacuum visibility changes can
+  // still consume an FPI when checksums or wal_log_hints are enabled; this is
+  // a shared database fixture, not an exclusion lock against maintenance.
+  const userIds = await reserveColdWalUsers(ids)
+  const input = {
+    name: 'wal-condition-test',
+    text: `/* walConditionTest */ UPDATE users SET markdown = $2
+      WHERE id = ANY($1::uuid[]) AND current_setting('application_name') = $3 RETURNING id`,
+    values: [userIds, 'temporary change', 'wal-condition-test'],
+    scenarioId,
+    captureIndex: 0,
+    localSettings: { application_name: 'wal-condition-test' },
+  }
+  return {
+    input,
+    rowCount: userIds.length,
+    ownedPageCount: userIds.length,
+    async captureCold() {
+      await write('/* walConditionTestCheckpoint */ CHECKPOINT')
+      return explainAnalyze(input.name, input.text, input.values, {
+        localSettings: input.localSettings,
+        planCacheMode: 'force_custom_plan',
+      })
+    },
+    async readMarkdown() {
+      const { rows } = await write<{ markdown: string }>(
+        '/* walConditionTestRead */ SELECT markdown FROM users WHERE id = $1::uuid',
+        [userIds[0]],
+      )
+      return rows[0]?.markdown
+    },
   }
 }

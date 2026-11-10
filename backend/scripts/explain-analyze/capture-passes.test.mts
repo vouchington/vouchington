@@ -62,37 +62,33 @@ describe('EXPLAIN function-call capture', () => {
     registerScenarioContract(scenarioId, { expectations: [], walCaptureCondition: 'cold' })
     const fixture = await createExplainWalCaptureFixture(scenarioId)
     const { input } = fixture
-    try {
-      expect(fixture.ownedPageCount).toBe(3)
-      const cold = await fixture.captureCold()
-      const walFpi = (plan: unknown) => (plan as { Plan: { 'WAL FPI': number } }).Plan['WAL FPI']
-      const actualRows = (plan: unknown) =>
-        (plan as { Plan: { 'Actual Rows': number } }).Plan['Actual Rows']
-      expect(walFpi(cold.plan)).toBeGreaterThan(0)
-      expect(actualRows(cold.plan)).toBe(3)
-      const first: Awaited<ReturnType<typeof captureScenarioTwice>>[number][] = []
-      const second = await captureScenarioTwice(
-        [
-          { ...input, planCacheMode: 'force_custom_plan' },
-          { ...input, planCacheMode: 'force_generic_plan' },
-        ],
-        result => first.push(result),
-      )
-      expect(first).toHaveLength(2)
-      expect(second).toHaveLength(2)
-      for (const result of [...first, ...second]) {
-        expect(walFpi(result.plan)).toBeGreaterThan(0)
-        expect(actualRows(result.plan)).toBe(3)
-      }
-      expect([...first, ...second].map(result => result.plan_cache_mode)).toEqual([
-        'force_custom_plan',
-        'force_generic_plan',
-        'force_custom_plan',
-        'force_generic_plan',
-      ])
-      expect(await fixture.readMarkdown()).toBe('')
-    } finally {
-      await fixture.cleanup()
+    expect(fixture.ownedPageCount).toBe(3)
+    const cold = await fixture.captureCold()
+    const walFpi = (plan: unknown) => (plan as { Plan: { 'WAL FPI': number } }).Plan['WAL FPI']
+    const actualRows = (plan: unknown) =>
+      (plan as { Plan: { 'Actual Rows': number } }).Plan['Actual Rows']
+    expect(walFpi(cold.plan)).toBeGreaterThan(0)
+    expect(actualRows(cold.plan)).toBe(3)
+    const first: Awaited<ReturnType<typeof captureScenarioTwice>>[number][] = []
+    const second = await captureScenarioTwice(
+      [
+        { ...input, planCacheMode: 'force_custom_plan' },
+        { ...input, planCacheMode: 'force_generic_plan' },
+      ],
+      result => first.push(result),
+    )
+    expect(first).toHaveLength(2)
+    expect(second).toHaveLength(2)
+    for (const result of [...first, ...second]) {
+      expect(walFpi(result.plan)).toBeGreaterThan(0)
+      expect(actualRows(result.plan)).toBe(3)
     }
+    expect([...first, ...second].map(result => result.plan_cache_mode)).toEqual([
+      'force_custom_plan',
+      'force_generic_plan',
+      'force_custom_plan',
+      'force_generic_plan',
+    ])
+    expect(await fixture.readMarkdown()).toBe('')
   })
 })
