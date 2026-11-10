@@ -812,10 +812,10 @@
   {
     "annotation": "upsertUserAgentString",
     "maxCount": 3,
-    "reason": "Credential completion and DBSC registration persist a user-agent dictionary row once: a warm lookup pins the existing row in one statement, first use reads then inserts with RETURNING in two, and a concurrent insertion loser needs a third statement to see and pin the committed winner.",
+    "reason": "Email login persists a cold request user agent once: read, conflict-tolerant insert, and reread to observe a concurrent winner.",
     "permanent": true,
     "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
-    "routes": ["POST /api/v1/auth/email-address/login", "POST /api/v1/auth/device-bound-sessions"]
+    "routes": ["POST /api/v1/auth/email-address/login"]
   },
   {
     "annotation": "upsertUrlHostnames",
