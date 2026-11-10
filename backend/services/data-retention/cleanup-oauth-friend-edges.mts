@@ -2,6 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import type { DataRetentionLimits } from './config.mts'
 import { resolveFriendReferencePage } from '@services/oauth-accounts/resolve-friend-reference-page'
 import { repairOAuthFriendEdges } from './cleanup-oauth-friend-repair.mts'
+import { requestOAuthFriendRepairSweep } from '@services/oauth-accounts/request-friend-repair-sweep'
 
 import {
   hasPendingOAuthFriendEdgeWork,
@@ -128,6 +129,7 @@ async function cleanupOAuthFriendEdgePage(
          SET friend_edges_cleanup_completed_at = friend_edges_invalidated_at WHERE id = $1::uuid`,
         [account.id],
       )
+      await requestOAuthFriendRepairSweep(query, provider)
     }
     await query.commit()
     return {
@@ -157,6 +159,7 @@ async function cleanupOAuthFriendEdgePage(
        SET friend_references_resolve_pending_at = NULL WHERE id = $1::uuid`,
       [account.id],
     )
+    await requestOAuthFriendRepairSweep(query, provider)
   }
   await query.commit()
   return { deleted: 0, resolved: page.resolved, worked: true, hasMore: page.hasMore }

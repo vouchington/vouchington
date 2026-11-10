@@ -15,6 +15,7 @@ export const POST_VOTE_STATE_SCHEMA_SQL = `CREATE TABLE IF NOT EXISTS post_vote_
 );
 CREATE INDEX IF NOT EXISTS idx_post_vote_states__user_id_post_id
 ON post_vote_states (user_id, post_id);
+COMMENT ON INDEX idx_post_vote_states__user_id_post_id IS 'Post-ordered keyset walk of one voter''s current ballots (votes-by-user pages and the per-user election fan-out); the (post_id, user_id) primary key cannot serve user-first order.';
 CREATE INDEX IF NOT EXISTS idx_post_vote_states__user_id_id_post_id_score
 ON post_vote_states (user_id, id DESC) INCLUDE (post_id, score);
 COMMENT ON INDEX idx_post_vote_states__user_id_id_post_id_score IS 'Newest-first index-only walk of one viewer''s current ballots (recommended topics); id is the UUIDv7 of the latest cast, so a re-cast moves the ballot to the front.';

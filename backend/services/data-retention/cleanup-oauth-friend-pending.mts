@@ -41,7 +41,7 @@ export async function hasPendingOAuthFriendEdgeWork(
           ? 'FALSE'
           : `EXISTS (
         SELECT 1 FROM oauth_friend_reference_repair_cursors
-        WHERE provider = ANY($${scope.accountId ? 3 : 2}::oauth_friend_repair_providers[]) AND cursor_upper_edge_id IS NOT NULL
+        WHERE provider = ANY($${scope.accountId ? 3 : 2}::oauth_friend_repair_providers[])
       )`
       }) AS pending`,
     scope.accountId

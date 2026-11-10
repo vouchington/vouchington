@@ -71,7 +71,11 @@ export async function repairOAuthFriendEdgePage(
   }
 }
 
-/** Commits each cursor page; later sweeps revisit late commits behind the prior position. */
+/**
+ * Commits each cursor page. A sweep exists only while its cursor row does: finishing an account's
+ * erase or resolve marker requests one, and completing it deletes the row, so repair runs only
+ * while repair markers are pending.
+ */
 export async function repairOAuthFriendEdges(provider: FriendRepairProvider, batchSize: number) {
   assertRepairArguments(provider, batchSize)
   await using query = await beginTransaction()
@@ -86,11 +90,6 @@ export async function repairOAuthFriendEdgesInTransaction(
   batchSize: number,
 ) {
   assertRepairArguments(provider, batchSize)
-  await query(
-    `/* initializeOAuthFriendRepairCursor */ INSERT INTO oauth_friend_reference_repair_cursors (provider)
-     VALUES ($1) ON CONFLICT (provider) DO NOTHING`,
-    [provider],
-  )
   const { rows } = await query<Cursor>(
     `/* lockOAuthFriendRepairCursor */ SELECT cursor_edge_id, cursor_upper_edge_id
      FROM oauth_friend_reference_repair_cursors WHERE provider = $1 FOR UPDATE`,
