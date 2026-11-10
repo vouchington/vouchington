@@ -1,8 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   beginTransaction,
   createTestUserDirect,
-  getTestPostgresBackendProcessId,
   getTestAgentModerationTransparencyStamp,
   insertTestAgentModeration,
   insertTestPost,
@@ -27,7 +26,8 @@ import {
   getTestReleasedModerationTransparencyRollupCount,
 } from '@voucha/test-helpers/entities/moderation-transparency-rollups'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
+import { setTestRetentionPostHashWithLockTimeout } from '@voucha/test-helpers/agent-moderation-retention-concurrency'
 import { reconsiderChangedPost } from '../cleanup-agent-moderation-hash-work.mts'
 import {
   cleanupObsoleteAgentModerations,
@@ -214,37 +214,25 @@ describe('agent moderation retention', () => {
     expect(await testAgentModerationExists(secondPostId, secondId)).toBe(false)
   })
 
-  it('rechecks the current input hash after a concurrent post update wins', async () => {
+  it('rechecks the current input hash at deletion after a post update', async () => {
     const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
     const fixture = await createTestAgentModerationRetentionFixture()
     await setTestAgentDeletedAt(fixture.agentId, new Date())
     const revertedResult = await insertTestAgentModeration({ ...fixture, occurredAt: at(95) })
     await insertTestAgentModeration({ ...fixture, occurredAt: at(1) })
 
-    await using holder = await beginTransaction()
-    await setTestPostCurrentModerationInputHashFromResult(fixture.postId, revertedResult, holder)
-    const holderProcessId = await getTestPostgresBackendProcessId(holder)
-    const result = await withTestOwnedPostgresWait(
-      {
-        holderProcessId,
-        pool: 'write',
-        lock: { kind: 'transaction' },
-        queryMarker: 'lockAgentModerationCleanupPosts',
-        releaseHolder: () => holder[Symbol.asyncDispose](),
-      },
-      async waitForLock => {
-        const cleanup = cleanupObsoleteAgentModerations({
-          postIds: [fixture.postId],
-          now,
-          lowerBoundDate,
-          batchSize: 1,
-          maxBatches: 1,
-        })
-        await waitForLock(cleanup)
-        await holder.commit()
-        return cleanup
-      },
+    onTestFinished(
+      runBeforePostgresStatementForTest('deleteObsoleteAgentModerations', () =>
+        setTestRetentionPostHashWithLockTimeout(fixture.postId, revertedResult),
+      ),
     )
+    const result = await cleanupObsoleteAgentModerations({
+      postIds: [fixture.postId],
+      now,
+      lowerBoundDate,
+      batchSize: 1,
+      maxBatches: 1,
+    })
     expect(result).toMatchObject({ scanned: 1, deleted: 0 })
     expect(await testAgentModerationExists(fixture.postId, revertedResult)).toBe(true)
   })

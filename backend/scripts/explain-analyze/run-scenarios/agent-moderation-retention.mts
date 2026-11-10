@@ -15,7 +15,6 @@ const DAY_MS = 24 * 60 * 60 * 1_000
 const CAPTURED_NAMES = [
   'listChangedAgentModerationRetentionPost',
   'listAgentModerationCleanupCandidates',
-  'lockAgentModerationCleanupPosts',
   'lockAgentModerationCleanupSources',
   'deleteObsoleteAgentModerations',
   'blockAgentModerationRetentionCandidates',
@@ -69,14 +68,6 @@ export async function runAgentModerationRetentionScenarios(): Promise<void> {
     },
   )
 
-  await runAgentModerationRetentionLockScenario(
-    'agent-moderation-retention-post-lock',
-    'lockAgentModerationCleanupPosts',
-    ['posts__default_pkey'],
-    'posts',
-    continuation,
-    seededRows,
-  )
   await runAgentModerationRetentionLockScenario(
     'agent-moderation-retention-source-lock',
     'lockAgentModerationCleanupSources',

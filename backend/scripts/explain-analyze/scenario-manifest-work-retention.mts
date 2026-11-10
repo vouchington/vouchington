@@ -42,7 +42,6 @@ export const RETENTION_WORK_SCENARIOS = [
   'agent-moderation-retention-idle',
   'agent-moderation-retention-live-predecessor',
   'agent-moderation-retention-page',
-  'agent-moderation-retention-post-lock',
   'agent-moderation-retention-source-lock',
   'agent-moderation-retention-delete',
   'account-data-export-expiry',

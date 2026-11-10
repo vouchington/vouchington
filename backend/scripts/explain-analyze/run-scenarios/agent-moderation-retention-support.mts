@@ -17,7 +17,6 @@ const DAY_MS = 24 * 60 * 60 * 1_000
 const CAPTURED_NAMES = [
   'listChangedAgentModerationRetentionPost',
   'listAgentModerationCleanupCandidates',
-  'lockAgentModerationCleanupPosts',
   'lockAgentModerationCleanupSources',
   'deleteObsoleteAgentModerations',
   'blockAgentModerationRetentionCandidates',
@@ -97,9 +96,9 @@ export async function runAgentModerationRetentionProgressScenarios(
 
 export async function runAgentModerationRetentionLockScenario(
   scenarioId: string,
-  queryName: (typeof CAPTURED_NAMES)[2] | (typeof CAPTURED_NAMES)[3],
+  queryName: (typeof CAPTURED_NAMES)[2],
   indexNames: readonly string[],
-  relation: 'posts' | 'agent_moderations',
+  relation: 'agent_moderations',
   continuation: Awaited<ReturnType<typeof cleanupObsoleteAgentModerations>>['continuation'],
   seededRows: Record<string, number>,
 ): Promise<void> {

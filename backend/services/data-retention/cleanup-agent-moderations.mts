@@ -154,12 +154,6 @@ async function cleanupAgentModerationPage(
   )
   const page = candidates.slice(0, batchSize)
   if (page.length > 0) {
-    // Serialize with post hash writes before locking source rows and checking eligibility.
-    await transaction(
-      `/* lockAgentModerationCleanupPosts */
-       SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id FOR SHARE`,
-      [[...new Set(page.map(row => row.post_id))].toSorted()],
-    )
     await transaction(
       `/* lockAgentModerationCleanupSources */
        SELECT moderation.id, moderation.post_id FROM agent_moderations moderation
