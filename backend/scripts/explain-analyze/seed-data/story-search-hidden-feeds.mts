@@ -7,7 +7,8 @@ const STORY_COUNT = HIDDEN_STORY_COUNT + VISIBLE_STORY_COUNT
 
 /**
  * Newest and highest-scored story posts whose only source is a hidden feed, then a
- * smaller visible set behind them. stories and story_posts stay out of ANALYZE.
+ * smaller visible set behind them. The subsequent padding fixture analyzes story_posts
+ * after the complete search corpus is committed; stories stays out of ANALYZE.
  */
 export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<void> {
   const hostnameId = seedUuid(0, 'b7')
