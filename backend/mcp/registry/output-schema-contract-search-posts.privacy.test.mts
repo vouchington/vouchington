@@ -117,14 +117,23 @@ describe('read_posts.search discovery visibility — real DB', () => {
   )
 
   it('uses REST discovery visibility when a similar-post source is private or pending', async () => {
-    for (const caller of [author, admin, stranger]) {
-      for (const label of ['followers-only post', 'post awaiting review']) {
-        const seed = fixtures.hidden.find(post => post.label === label)!
-        const mcpIds = await search(caller, { similar_post_id: seed.id })
-        const restIds = await restSearch(caller, { similar_post_id: seed.id })
-        expect(mcpIds).toEqual([])
-        expect(restIds).toEqual([])
-      }
+    // Each surface scans the default type and comments. The caller and label pairs are independent
+    // empty-page checks, so they run together and stay inside the five-second cap.
+    const pages = await Promise.all(
+      [author, admin, stranger].flatMap(caller =>
+        ['followers-only post', 'post awaiting review'].map(async label => {
+          const seed = fixtures.hidden.find(post => post.label === label)!
+          const [mcpIds, restIds] = await Promise.all([
+            search(caller, { similar_post_id: seed.id }),
+            restSearch(caller, { similar_post_id: seed.id }),
+          ])
+          return { mcpIds, restIds }
+        }),
+      ),
+    )
+    for (const { mcpIds, restIds } of pages) {
+      expect(mcpIds).toEqual([])
+      expect(restIds).toEqual([])
     }
   })
 
