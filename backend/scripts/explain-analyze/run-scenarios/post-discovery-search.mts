@@ -11,6 +11,7 @@ import { getPostIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { runPostDiscoveryUnscopedScenarios } from './post-discovery-unscoped.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import { oldestPostDiscoveryCommunityPostId } from '../seed-data/post-discovery-search.mts'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 
 const PAGE_SIZE = 25
@@ -22,7 +23,8 @@ const SPARSE_RECOMMENDATION_QUERY = 'post-discovery-fixture-198'
 
 function exhaustedCommunityCursor(sort: PostDiscoverySort): string {
   const scope = postSearchCursorScope(sort, 'all')
-  if (sort === 'new') return encodeCursor({ id: EMPTY_CURSOR_ID, scope })
+  // A nil id is below every uuidv7, so a custom plan proves the range empty from an id index.
+  if (sort === 'new') return encodeCursor({ id: oldestPostDiscoveryCommunityPostId(), scope })
   return encodeCursor({ id: EMPTY_CURSOR_ID, score: -1e300, scope })
 }
 

@@ -16,6 +16,11 @@ function fixturePostId(index: number): string {
   return seedUuidAtTimestamp(postSeedTimestampMs(0) + 1000, index)
 }
 
+/** Oldest id in the first discovery community. It sits above the main corpus. */
+export function oldestPostDiscoveryCommunityPostId(): string {
+  return fixturePostId(START_INDEX)
+}
+
 export async function seedPostDiscoverySearchFixture(): Promise<void> {
   console.log('Seeding the post-discovery search cohort...')
   await seedPosts(

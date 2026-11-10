@@ -3,6 +3,7 @@ import { postSearchCursorScope } from '@services/posts/search/get-ids-cursor'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import { oldestPostDiscoveryCommunityPostId } from '../seed-data/post-discovery-search.mts'
 import { getPostIds } from '../run-services.mts'
 import { registerNamedPostIndexGate, registerPostDiscoveryGate } from '../post-discovery-gates.mts'
 import { runPostDiscoveryFiniteWindowScenario } from './post-discovery-finite-window.mts'
@@ -126,7 +127,8 @@ export async function runPostDiscoveryUnscopedScenarios(): Promise<void> {
     limit: PAGE_SIZE,
     community_id: seedUuid(999_999, '14'),
     after: encodeCursor({
-      id: '00000000-0000-0000-0000-000000000000',
+      // Same non-nil bound as the empty community page: nil never reaches the community index.
+      id: oldestPostDiscoveryCommunityPostId(),
       scope: postSearchCursorScope('new', 'all'),
     }),
   }
