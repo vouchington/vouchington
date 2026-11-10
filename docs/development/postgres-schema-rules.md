@@ -263,6 +263,14 @@ correctness, and the prohibition on periodic recount remain unenforced.
   `(count DESC, id DESC)`, refreshed on a schedule, with live eligibility joined at read time. It is
   not a counter column.
 
+## No unnecessary locks; caps and guards are best effort
+
+Lock only to stop a concurrent write corrupting data the transaction writes: row locks on written
+rows only, no advisory locks. Per-user and per-entity caps and "last X" guards check a capped count
+and then write, with no lock, counter row, slot table, or admission-only constraint; overshoot under
+a true race is accepted. Removing a lock deletes it rather than swapping in another serializer. Why
+and owner words: [lock scope](postgresql/reference-transactions.md#lock-scope). Unenforced.
+
 ## No per-row queries while holding locks
 
 Inside a transaction that holds row or advisory locks, a check over many rows is one set-based
