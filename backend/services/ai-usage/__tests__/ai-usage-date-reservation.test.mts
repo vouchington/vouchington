@@ -102,6 +102,29 @@ describe('acquireTestAiUsageDateReservation', () => {
     })
   })
 
+  it('drops a released day from the daily total cache at the same faked noon', async () => {
+    const reservation = await acquireTestAiUsageDateReservation()
+    onTestFinished(() => reservation.release())
+    const day = reservation.day
+    const noon = Date.parse(`${day}T12:00:00.000Z`)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(noon)
+    await insertTestAiUsageRecord({
+      id: timestampToUuidv7LowerBound(noon),
+      costMicrounits: 1,
+    })
+    const cached = getDailyAiCostTotalMicrounits()
+    await expect(cached).resolves.toEqual({ totalMicrounits: 1, day })
+
+    await reservation.release()
+    // The cache TTL is this noon plus 60s. A later test that fakes the same noon must not be
+    // handed the deleted row's total.
+    vi.setSystemTime(noon)
+    const reread = getDailyAiCostTotalMicrounits()
+    expect(reread).not.toBe(cached)
+    await reread
+  })
+
   it('cleans owned rows on release and starts a reused control month empty', async () => {
     const initial = await acquireTestAiUsageDateReservationControlSlot()
     onTestFinished(() => initial.release())

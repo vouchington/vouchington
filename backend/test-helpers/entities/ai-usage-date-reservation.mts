@@ -1,6 +1,7 @@
 import { randomInt } from 'node:crypto'
 import { advisoryLockPool, type PoolClient } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { forgetDailyAiCostTotalCache } from '../../services/ai-usage/daily-total.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const SLOT_DAYS = 3
@@ -107,9 +108,12 @@ async function clearSlot(client: PoolClient, slot: number): Promise<void> {
 }
 
 function createReservation(client: PoolClient, slot: number): TestAiUsageDateReservation {
+  const day = getSlotDay(slot)
+  // Drop a total cached for this day; its TTL is still open at the faked noon.
+  forgetDailyAiCostTotalCache(day)
   let releasePromise: Promise<void> | undefined
   return {
-    day: getSlotDay(slot),
+    day,
     release(): Promise<void> {
       releasePromise ??= releaseReservation(client, slot)
       return releasePromise
@@ -120,6 +124,7 @@ function createReservation(client: PoolClient, slot: number): TestAiUsageDateRes
 async function releaseReservation(client: PoolClient, slot: number): Promise<void> {
   try {
     await clearSlot(client, slot)
+    forgetDailyAiCostTotalCache(getSlotDay(slot))
     await releaseSlotLock(client, slot)
     client.release()
   } catch (err) {
