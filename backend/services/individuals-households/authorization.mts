@@ -53,7 +53,11 @@ export async function readHouseholdMemberManageAccess(
   householdId: string,
   individualId: string | null = null,
   options: QueryOptions = {},
-): Promise<{ access: HouseholdMemberManageAccess; individualExists: boolean }> {
+): Promise<{
+  access: HouseholdMemberManageAccess
+  individualExists: boolean
+  ownerUserId: string | null
+}> {
   const isAdministrator = currentUser.roles.includes('administrator')
   // A caller inside a writer transaction must read its own snapshot, not a lagging replica.
   const runQuery = options.query ? write : read
@@ -61,6 +65,7 @@ export async function readHouseholdMemberManageAccess(
     can_view: boolean
     can_manage: boolean
     individual_exists: boolean
+    owner_user_id: string | null
   }>(
     sql`/* readHouseholdMemberManageAccess */
       SELECT
@@ -90,7 +95,8 @@ export async function readHouseholdMemberManageAccess(
           OR EXISTS (
             SELECT 1 FROM individuals individual_row WHERE individual_row.id = ${individualId}::uuid
           )
-        ) AS individual_exists
+        ) AS individual_exists,
+        h.owner_user_id
       FROM (VALUES (TRUE)) AS singleton(singleton_value)
       LEFT JOIN households h ON h.id = ${householdId}
     `,
@@ -98,7 +104,9 @@ export async function readHouseholdMemberManageAccess(
   )
   const row = rows[0]
   const individualExists = row?.individual_exists ?? false
-  if (!row?.can_view) return { access: 'hidden', individualExists }
-  if (!row.can_manage) return { access: 'forbidden', individualExists }
-  return { access: 'allowed', individualExists }
+  // A hidden household stays hidden: do not return its owner with the denial.
+  const ownerUserId = row?.can_view ? (row.owner_user_id ?? null) : null
+  if (!row?.can_view) return { access: 'hidden', individualExists, ownerUserId }
+  if (!row.can_manage) return { access: 'forbidden', individualExists, ownerUserId }
+  return { access: 'allowed', individualExists, ownerUserId }
 }
