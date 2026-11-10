@@ -5220,7 +5220,6 @@
 {"id":"copy.native.swift.integrity.penalties","value":"Penalidades"},
 {"id":"copy.native.swift.integrity.penaltyId","value":"ID da penalidade"},
 {"id":"copy.native.swift.integrity.pending","value":"Pendentes"},
-{"id":"copy.native.swift.integrity.postCommentId","value":"ID da publicação ou comentário {id}"},
 {"id":"copy.native.swift.integrity.postId","value":"ID da publicação {id}"},
 {"id":"copy.native.swift.integrity.reconcile","value":"Recarregar resultado"},
 {"id":"copy.native.swift.integrity.reconciliationFailed","value":"Não foi possível recarregar o resultado. Tente novamente."},

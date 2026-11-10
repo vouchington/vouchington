@@ -5220,7 +5220,6 @@
 {"descriptor":null,"id":"copy.native.swift.integrity.penalties"},
 {"descriptor":null,"id":"copy.native.swift.integrity.penaltyId"},
 {"descriptor":null,"id":"copy.native.swift.integrity.pending"},
-{"descriptor":null,"id":"copy.native.swift.integrity.postCommentId"},
 {"descriptor":null,"id":"copy.native.swift.integrity.postId"},
 {"descriptor":null,"id":"copy.native.swift.integrity.reconcile"},
 {"descriptor":null,"id":"copy.native.swift.integrity.reconciliationFailed"},

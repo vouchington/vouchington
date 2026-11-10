@@ -5220,7 +5220,6 @@
 {"id":"copy.native.swift.integrity.penalties","value":"Penalties"},
 {"id":"copy.native.swift.integrity.penaltyId","value":"Penalty ID"},
 {"id":"copy.native.swift.integrity.pending","value":"Pending"},
-{"id":"copy.native.swift.integrity.postCommentId","value":"Post or comment ID {id}"},
 {"id":"copy.native.swift.integrity.postId","value":"Post ID {id}"},
 {"id":"copy.native.swift.integrity.reconcile","value":"Reload result"},
 {"id":"copy.native.swift.integrity.reconciliationFailed","value":"The result could not be reloaded. Try again."},
