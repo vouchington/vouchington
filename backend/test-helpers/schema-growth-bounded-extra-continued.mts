@@ -47,4 +47,8 @@ export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
     'rss_feed_item_source_category_snapshots',
     'One current snapshot per RSS feed-to-item source row; the source primary key bounds cardinality to live RSS feed item sources.',
   ],
+  [
+    'membership_queued_grant_repair_cursors',
+    'One durable user keyset for the scheduled orphaned queued-grant repair.',
+  ],
 ])

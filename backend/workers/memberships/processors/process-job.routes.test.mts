@@ -30,7 +30,7 @@ const sweepRoutes: [string, () => SweepSpy][] = [
     'expireElapsedMemberships',
     () =>
       vi
-        .spyOn(membershipsService, 'expireElapsedMembershipsBatch')
+        .spyOn(membershipsService, 'resumeExpireElapsedMemberships')
         .mockResolvedValue(undefined as never),
   ],
   [
@@ -109,7 +109,7 @@ describe('processMembershipJob routes', () => {
 
   it('defers a Postgres connection timeout from a routed job', async () => {
     const timeout = new Error('Connection terminated due to connection timeout')
-    vi.spyOn(membershipsService, 'expireElapsedMembershipsBatch').mockRejectedValueOnce(timeout)
+    vi.spyOn(membershipsService, 'resumeExpireElapsedMemberships').mockRejectedValueOnce(timeout)
 
     await expect(processMembershipJob(job('expireElapsedMemberships'))).rejects.toMatchObject({
       name: 'RateLimitError',

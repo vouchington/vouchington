@@ -18,7 +18,7 @@ export async function activateOrphanedQueuedGrant(
   query: QueryExecutor,
 ): Promise<MembershipChangeInput | null> {
   const { rows } = await query<ActivatedOrphanedGrantRow>(sql`/* repairOrphanedQueuedGrant */
-    WITH candidate AS MATERIALIZED (
+    WITH candidate AS (
       SELECT grant_row.id, grant_row.membership_source_id, grant_row.membership_product_id,
         grant_row.created_at, grant_row.granted_by_id, grant_row.note,
         fn_membership_grant_remaining_duration(grant_row.id) AS remaining_duration
@@ -36,14 +36,9 @@ export async function activateOrphanedQueuedGrant(
         )
       ORDER BY grant_row.id
       LIMIT 1
-    ), current_projection AS MATERIALIZED (
-      SELECT id FROM memberships
-      WHERE user_id = ${userId} AND projection_ended_at IS NULL
-        AND (cancelled_at IS NOT NULL OR expired_at IS NOT NULL)
     ), ended AS (
       UPDATE memberships SET projection_ended_at = CURRENT_TIMESTAMP
-      WHERE id = (SELECT id FROM current_projection)
-        AND user_id = ${userId} AND projection_ended_at IS NULL
+      WHERE user_id = ${userId} AND projection_ended_at IS NULL
         AND (cancelled_at IS NOT NULL OR expired_at IS NOT NULL)
         AND EXISTS (SELECT 1 FROM candidate)
       RETURNING id, membership_product_id, cancelled_at, expired_at

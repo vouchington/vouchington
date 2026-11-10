@@ -24,12 +24,12 @@ export async function repairOrphanedQueuedGrantsBatch(
     throw new RangeError('Membership orphan repair batch size must be a positive integer')
   if (userIds && userIds.length === 0) return { repaired: 0, hasMore: false, nextCursor: cursor }
   const inspected = await readOrphanedQueuedGrantUserPage(cursor, batchSize, userIds)
-  const repaired = await repairOrphanedQueuedGrantUsers(matchingUserIds(inspected))
-  // The cap counts grant rows read, not matches. The next page starts after the last inspected user.
+  const repaired = await repairOrphanedQueuedGrantUsers(matchingUserIds(inspected.rows))
+  // The cap counts grant rows read. hasMore means a later user_id remains after this page.
   return {
     repaired,
-    hasMore: inspected.length === batchSize,
-    nextCursor: inspected.at(-1)?.user_id ?? null,
+    hasMore: inspected.hasMore,
+    nextCursor: inspected.rows.at(-1)?.user_id ?? null,
   }
 }
 
@@ -37,11 +37,30 @@ async function readOrphanedQueuedGrantUserPage(
   cursor: string | null,
   batchSize: number,
   userIds?: readonly string[],
-): Promise<InspectedGrantRow[]> {
+): Promise<{ rows: InspectedGrantRow[]; hasMore: boolean }> {
   await using query = await beginTransaction()
-  const inspected = await readOrphanedQueuedGrantRows(cursor, batchSize, query, userIds)
+  const rows = await readOrphanedQueuedGrantRows(cursor, batchSize, query, userIds)
+  const lastUserId = rows.at(-1)?.user_id
+  const hasMore =
+    rows.length === batchSize &&
+    lastUserId !== undefined &&
+    (await orphanedQueuedGrantRemainsAfter(lastUserId, query, userIds))
   await query.commit()
-  return inspected
+  return { rows, hasMore }
+}
+
+async function orphanedQueuedGrantRemainsAfter(
+  cursor: string,
+  query: QueryExecutor,
+  userIds?: readonly string[],
+): Promise<boolean> {
+  const statement = sql`/* repairOrphanedQueuedGrantsBatch: hasMore */
+    SELECT 1 FROM membership_grants grant_row
+    WHERE grant_row.user_id > ${cursor}::uuid`
+  if (userIds) statement.append(sql` AND grant_row.user_id = ANY(${[...userIds]}::uuid[])`)
+  statement.append(' LIMIT 1')
+  const { rows } = await query(statement)
+  return rows.length > 0
 }
 
 export async function readOrphanedQueuedGrantUserIds(

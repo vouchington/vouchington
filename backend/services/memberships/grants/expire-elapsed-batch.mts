@@ -5,16 +5,53 @@ import sql from 'sql-template-strings'
 import { expireElapsedMemberships, type MembershipExpiryResult } from './expire-elapsed.mts'
 import { repairOrphanedQueuedGrantsBatch } from './repair-orphaned-queued.mts'
 
-export async function expireElapsedMembershipsBatch(
+type MembershipExpiryBatchResult = MembershipExpiryResult & { repairNextCursor: string | null }
+
+export async function resumeExpireElapsedMemberships(
   batchSize = getMembershipWorkLimits().batchSize,
-): Promise<MembershipExpiryResult> {
-  const limits = getMembershipWorkLimits()
-  const result = await expireSelectedMembershipUsers(batchSize, limits)
-  const hasMore = await elapsedOrOrphanedMembershipWorkRemains(batchSize)
-  return { ...result, hasMore: result.hasMore || hasMore }
+  repairUserIds?: readonly string[],
+): Promise<MembershipExpiryBatchResult> {
+  const repairCursor = await readOrphanedQueuedGrantRepairCursor()
+  const result = await expireElapsedMembershipsBatch(batchSize, repairCursor, repairUserIds)
+  // A finished pass stores null so the next scheduled run revisits changed eligibility.
+  await saveOrphanedQueuedGrantRepairCursor(result.repairNextCursor)
+  return result
 }
 
-async function elapsedOrOrphanedMembershipWorkRemains(batchSize: number): Promise<boolean> {
+export async function readOrphanedQueuedGrantRepairCursor(): Promise<string | null> {
+  const { rows } = await write<{ cursor_user_id: string | null }>(
+    sql`/* readOrphanedQueuedGrantRepairCursor */
+    SELECT cursor_user_id FROM membership_queued_grant_repair_cursors WHERE is_singleton`,
+  )
+  return rows[0]?.cursor_user_id ?? null
+}
+
+export async function saveOrphanedQueuedGrantRepairCursor(cursor: string | null): Promise<void> {
+  await write(sql`/* saveOrphanedQueuedGrantRepairCursor */
+    INSERT INTO membership_queued_grant_repair_cursors (is_singleton, cursor_user_id)
+    VALUES (TRUE, ${cursor}::uuid)
+    ON CONFLICT (is_singleton) DO UPDATE SET cursor_user_id = EXCLUDED.cursor_user_id`)
+}
+
+export async function expireElapsedMembershipsBatch(
+  batchSize = getMembershipWorkLimits().batchSize,
+  repairCursor: string | null = null,
+  repairUserIds?: readonly string[],
+): Promise<MembershipExpiryBatchResult> {
+  const limits = getMembershipWorkLimits()
+  const [result, repair] = await Promise.all([
+    expireSelectedMembershipUsers(batchSize, limits),
+    repairOrphanedQueuedGrantsBatch(repairCursor, batchSize, repairUserIds),
+  ])
+  const elapsedRemains = await elapsedMembershipWorkRemains()
+  return {
+    ...result,
+    hasMore: result.hasMore || elapsedRemains || repair.hasMore,
+    repairNextCursor: repair.hasMore ? repair.nextCursor : null,
+  }
+}
+
+async function elapsedMembershipWorkRemains(): Promise<boolean> {
   const { rows } = await write(sql`/* expireElapsedMembershipsBatch:hasMore */
     SELECT 1 FROM memberships membership
     JOIN membership_sources source ON source.id = membership.membership_source_id
@@ -23,8 +60,7 @@ async function elapsedOrOrphanedMembershipWorkRemains(batchSize: number): Promis
       AND membership.expired_at IS NULL AND membership.expires_at IS NOT NULL
       AND membership.expires_at <= CURRENT_TIMESTAMP
     LIMIT 1`)
-  const repair = await repairOrphanedQueuedGrantsBatch(null, batchSize)
-  return rows.length > 0 || repair.hasMore
+  return rows.length > 0
 }
 
 async function expireSelectedMembershipUsers(

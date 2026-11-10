@@ -7,9 +7,15 @@ import {
   holdUncommittedQueuedMembershipGrant,
   insertQueuedMembershipGrant,
 } from '@voucha/test-helpers'
+import { acquireTestPostgresAdvisoryLock } from '../../../test-helpers/postgres-advisory-lock.mts'
 import { describe, expect, it } from 'vitest'
 import { getMembershipByUserId } from '../get.mts'
 import { grantMembership } from '../grant.mts'
+import {
+  readOrphanedQueuedGrantRepairCursor,
+  resumeExpireElapsedMemberships,
+  saveOrphanedQueuedGrantRepairCursor,
+} from './expire-elapsed-batch.mts'
 import {
   activateOrphanedQueuedGrant,
   readOrphanedQueuedGrantUserIds,
@@ -117,7 +123,7 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
     })
     await expect(
       repairOrphanedQueuedGrantsBatch(page.nextCursor, 2, [lower.id, higher.id]),
-    ).resolves.toMatchObject({ repaired: 1, nextCursor: higher.id })
+    ).resolves.toMatchObject({ repaired: 1, hasMore: false, nextCursor: higher.id })
     await expect(getMembershipByUserId(higher.id)).resolves.toMatchObject({ status: 'active' })
   })
 
@@ -137,7 +143,7 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
     })
     await expect(
       repairOrphanedQueuedGrantsBatch(page.nextCursor, 2, [lower.id, higher.id]),
-    ).resolves.toMatchObject({ repaired: 1, nextCursor: higher.id })
+    ).resolves.toMatchObject({ repaired: 1, hasMore: false, nextCursor: higher.id })
     await expect(getMembershipByUserId(higher.id)).resolves.toMatchObject({ status: 'active' })
     await expect(getTestMembershipGrant(lowerGrantId)).resolves.toMatchObject({
       activation_started_at: null,
@@ -145,6 +151,57 @@ describe('repairOrphanedQueuedGrantsBatch', () => {
     await expect(getTestMembershipGrant(higherGrantId)).resolves.toMatchObject({
       activation_started_at: expect.any(Date),
     })
+  })
+
+  it('resumes the orphan repair from the saved cursor and wraps to null', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const first = await createTestUser()
+    const second = await createTestUser()
+    const outsider = await createTestUser()
+    const [lower, higher] = [first, second].toSorted((left, right) => (left.id < right.id ? -1 : 1))
+    const outsiderGrantId = await createOrphanedQueuedGrant(admin.id, outsider.id)
+    await createOrphanedQueuedGrant(admin.id, higher.id)
+    const lowerGrantId = await createOrphanedQueuedGrant(admin.id, lower.id)
+    const owned = [lower.id, higher.id]
+    const reservation = await acquireTestPostgresAdvisoryLock({
+      namespace: 5_437_076,
+      key: 1,
+      timeout: '20s',
+    })
+
+    try {
+      await saveOrphanedQueuedGrantRepairCursor(null)
+      const firstPage = await resumeExpireElapsedMemberships(1, owned)
+
+      expect(firstPage.repairNextCursor).toBe(lower.id)
+      expect(await readOrphanedQueuedGrantRepairCursor()).toBe(lower.id)
+      await expect(getTestMembershipGrant(lowerGrantId)).resolves.toMatchObject({
+        activation_started_at: null,
+      })
+      await expect(getTestMembershipGrant(outsiderGrantId)).resolves.toMatchObject({
+        activation_started_at: null,
+      })
+
+      const secondPage = await resumeExpireElapsedMemberships(2, owned)
+
+      expect(secondPage.repairNextCursor).toBeNull()
+      expect(await readOrphanedQueuedGrantRepairCursor()).toBeNull()
+      await expect(getMembershipByUserId(higher.id)).resolves.toMatchObject({ status: 'active' })
+      await expect(getTestMembershipGrant(lowerGrantId)).resolves.toMatchObject({
+        activation_started_at: null,
+      })
+      await expect(getTestMembershipGrant(outsiderGrantId)).resolves.toMatchObject({
+        activation_started_at: null,
+      })
+
+      const wrapped = await resumeExpireElapsedMemberships(1, owned)
+
+      expect(wrapped.repairNextCursor).toBe(lower.id)
+      expect(await readOrphanedQueuedGrantRepairCursor()).toBe(lower.id)
+    } finally {
+      await saveOrphanedQueuedGrantRepairCursor(null)
+      await reservation.release()
+    }
   })
 })
 
