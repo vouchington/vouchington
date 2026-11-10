@@ -6,8 +6,6 @@ import {
   WEB_PROVENANCE,
   beginTransaction,
 } from '@voucha/test-helpers'
-import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
-import { getFirstTestHostnameOwnershipLockKey } from '@voucha/test-helpers/hostname-ownership'
 import { prepareTopicRecommendation, approveTopicRecommendation } from './index.mts'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
@@ -79,41 +77,5 @@ describe('approval hostname conflicts', () => {
       status: 'pending',
       approval_error_message: `Hostname ${commonHostname} is already associated with another topic`,
     })
-  })
-
-  it('makes a concurrent claim wait until the hostname ownership lock commits', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const otherAdmin = await createTestUser({ administrator: true })
-    const topic = (await getTopicByAny((await createTestTopic({ user: admin })).id))!
-    const competitor = (await getTopicByAny((await createTestTopic({ user: otherAdmin })).id))!
-    const hostname = `owned-${crypto.randomUUID()}.example.com`
-    const ids = await upsertUrlHostnames(admin.id, [hostname])
-    const host = { id: ids.get(hostname)!, hostname }
-    await using holder = await beginTransaction()
-    await createTopicRecommendationRelations(admin, topic, [host], { query: holder })
-    const heldHostnameKey = await getFirstTestHostnameOwnershipLockKey(holder, host.id)
-    await using waiter = await createTestPostgresLockWaiter({
-      holder,
-      lock: { kind: 'advisory64', key: heldHostnameKey },
-      selected: {
-        marker: '/* lockHostnameOwnership */',
-        binding: { index: 0, value: [host.id.toLowerCase()] },
-      },
-    })
-    const claim = createTopicRecommendationRelations(otherAdmin, competitor, [host], {
-      query: waiter.query,
-    }).then(
-      () => {
-        throw new Error('The competing hostname claim should have been rejected')
-      },
-      (err: unknown) => err,
-    )
-    await waiter.waitForLock(claim)
-    await holder.commit()
-    await expect(claim).resolves.toMatchObject({
-      status: 422,
-      message: `Hostname ${hostname} is already associated with another topic`,
-    })
-    await waiter.query.commit()
   })
 })

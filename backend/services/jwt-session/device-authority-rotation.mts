@@ -2,6 +2,7 @@ import { assertDeviceBoundRefreshAllowed } from './dbsc-proof.mts'
 import type { DbscAuthorization } from './types.mts'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import { signDeviceJwt, verifyDeviceJwt } from '@ts-shared/session-jwt'
@@ -33,7 +34,7 @@ export async function rotateAuthenticatedDeviceToken(options: {
   )
     throw sessionReloginRequired()
   await using query = await beginTransaction()
-  await lockSessionDeviceAuthority(query, options.uid, options.sid)
+  await lockSessionRotationWillWrite(query, options.uid, options.sid)
   const row = await readSessionDeviceAuthority(options.sid, query, true)
   assertActiveDeviceAuthority(row, options)
   if (!row.device_token_digest || !row.device_token_binding || !row.device_token_issued_at)
@@ -134,4 +135,21 @@ export async function rotateAuthenticatedDeviceToken(options: {
     WHERE id = ${options.sid} AND user_id = ${options.uid} AND revoked_at IS NULL`)
   await query.commit()
   return token
+}
+
+/**
+ * Locks the session row this rotation updates. A lost-response replay waits for that row, then
+ * returns the credential the first writer stored. The written columns are not `id`, so the lock is
+ * `FOR NO KEY UPDATE`.
+ */
+async function lockSessionRotationWillWrite(
+  query: TransactionQuery,
+  uid: string,
+  sid: string,
+): Promise<void> {
+  await lockSessionDeviceAuthority(query, uid, sid)
+  await query(sql`/* rotateAuthenticatedDeviceToken:lockSession */
+    SELECT id FROM user_sessions
+    WHERE id = ${sid} AND user_id = ${uid}
+    FOR NO KEY UPDATE`)
 }

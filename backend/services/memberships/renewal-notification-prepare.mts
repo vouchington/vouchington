@@ -47,7 +47,7 @@ export async function prepareRenewalPriceIncreaseNotification(
       AND observation.renewal_effective_at <= COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP) + INTERVAL '30 days'
       AND observation.renewal_price_currency_code = observation.observed_price_currency_code
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
-      FOR UPDATE OF m
+
     )
     INSERT INTO membership_renewal_price_increase_notification_work_items AS work (
       membership_id, membership_provider_observation_id

@@ -6,7 +6,7 @@ import { getPrivateUserByAny } from '@services/users/get'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
 import type { CommunityWithOwner } from '../get.mts'
 import { getCommunityWithViewer } from '../load-with-viewer.mts'
-import { lockAndAssertNotBanned } from '../bans/lock.mts'
+import { assertNotBanned } from '../bans/get.mts'
 import { getApplication } from './get.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { enqueueSendCommunityApplicationDecisionEmail } from '@queues/emails/enqueues'
@@ -41,9 +41,7 @@ export async function approveApplication(
   await using query = await beginTransaction()
   const options = { query }
 
-  // Serialize against a concurrent ban for the applicant so the ban check + membership
-  // insert below are atomic.
-  await lockAndAssertNotBanned(application.community_id, application.user_id, options)
+  await assertNotBanned(application.community_id, application.user_id, options)
 
   const { rowCount } = await write(
     sql`/* approveApplication */

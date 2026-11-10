@@ -5,7 +5,6 @@ import {
   type PublicationCapturedKey,
 } from '@services/post-publication/captured-keys'
 import { enqueueCapturedPublicationChangeAfterCommit } from '@services/post-publication/direct-capture'
-import { lockPostPublicationRssFeedScopes } from '@services/post-publication/capture-rss-feeds'
 import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import type { RssFeedHardDeleteChildPhase } from '@queues/rss-feed-maintenance/types'
 import { lockHardDeleteRssFeedChildRows } from './hard-delete-child-rows.mts'
@@ -104,7 +103,6 @@ export async function hardDeleteRssFeedChildPage(
       async () => {},
     )
   }
-  await lockPostPublicationRssFeedScopes(query, [rssFeedId])
   const feed = await query<{ id: string; topic_id: string }>(
     `/* hardDeleteRssFeedChildPage:feed */
     SELECT id, topic_id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL FOR UPDATE`,

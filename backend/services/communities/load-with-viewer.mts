@@ -88,7 +88,7 @@ export async function lockCommunityWithViewer(
   const statement = selectCommunityWithOwner(
     sql`/* lockCommunityRestrictionWrites */ SELECT `,
     viewerExtra(viewerId, false),
-  ).append(sql` WHERE c.id = ${communityId} AND c.deleted_at IS NULL FOR NO KEY UPDATE OF c`)
+  ).append(sql` WHERE c.id = ${communityId} AND c.deleted_at IS NULL`)
   const { rows } = await query(statement.text, statement.values)
   return mapViewerRow(rows[0] as ViewerRow | undefined)
 }

@@ -142,7 +142,7 @@ export function buildGetStripeCollisionWinnerEffectiveAtQuery(
   return sql`/* getStripeCollisionWinnerEffectiveAt */
         SELECT effective_at AS "effectiveAt" FROM memberships
         WHERE id = ${membershipId} AND user_id = ${userId}
-        FOR SHARE`
+`
 }
 
 function hasElapsedFiniteMembership(membership: Membership | null): boolean {

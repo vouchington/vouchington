@@ -734,7 +734,7 @@ CREATE OR REPLACE FUNCTION fn_reject_role_user_is_not_system()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE account_kind platform_account_kinds;
 BEGIN
-  SELECT platform_account_kind INTO account_kind FROM users WHERE id = NEW.user_id FOR UPDATE;
+  SELECT platform_account_kind INTO account_kind FROM users WHERE id = NEW.user_id;
   IF account_kind = 'system' THEN
     RAISE EXCEPTION 'System accounts cannot hold roles' USING ERRCODE = '23514';
   END IF;

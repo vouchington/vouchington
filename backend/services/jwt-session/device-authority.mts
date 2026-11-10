@@ -28,7 +28,7 @@ export interface SessionDeviceAuthorityRow {
 export async function readSessionDeviceAuthority(
   sid: string,
   query: QueryExecutor = write,
-  lock = false,
+  _lock = false,
 ): Promise<SessionDeviceAuthorityRow | null> {
   const statement = sql`/* readSessionDeviceAuthority */
     SELECT s.id, s.user_id, s.device_id, s.authentication_origin, s.expires_at, s.revoked_at,
@@ -38,7 +38,6 @@ export async function readSessionDeviceAuthority(
       s.device_bound_session_binding
     FROM user_sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ${sid} AND u.deleted_at IS NULL`
-  if (lock) statement.append(' FOR UPDATE OF s')
   const { rows } = await query<SessionDeviceAuthorityRow>(statement)
   const row = rows[0] ?? null
   if (row?.device_token_binding)
@@ -52,14 +51,11 @@ export async function readSessionDeviceAuthority(
 export async function lockSessionDeviceAuthority(
   query: QueryExecutor,
   uid: string,
-  sid: string,
+  _sid: string,
 ): Promise<void> {
-  // The user fence is shared with deletion and user-wide revocation; the SID fence also
-  // serializes revocation before an initial session row exists.
+  // Rejects a missing or deleted user. The statement that writes a session locks that row.
   await query(sql`/* lockSessionDeviceAuthority:userFence */
     SELECT fn_lock_active_user_for_mutation(${uid})`)
-  await query(sql`/* lockSessionDeviceAuthority:sessionFence */
-    SELECT pg_advisory_xact_lock(hashtextextended(${sid}, 1))`)
 }
 
 export function assertActiveDeviceAuthority(

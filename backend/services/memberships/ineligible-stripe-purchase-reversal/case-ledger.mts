@@ -30,7 +30,7 @@ export async function getReversalCaseTargetAllocations(
     INNER JOIN membership_operations operation ON operation.id = case_operation.membership_operation_id
     WHERE case_operation.membership_ineligible_purchase_reversal_case_id = ${caseId}
     ORDER BY operation.id
-    FOR SHARE OF operation
+
   `)
   return new Map(
     (rows as Array<{ idempotencyKey: string; qualifyingAllocationMinorUnits: string }>).map(row => [
@@ -72,7 +72,7 @@ export async function getLockedIneligiblePurchaseReversalCase(
       AND binding.source_kind = 'direct'
       AND reversal_case.originating_invoice_id = ${options.originatingInvoiceId}
       AND NOT fn_membership_reversal_case_expired(reversal_case.id)
-    FOR UPDATE OF reversal_case, binding, lineage
+
   `)
   if (rows.length > 1)
     throw new Error('Stripe reversal case lookup matched more than one immutable case')

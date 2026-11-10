@@ -7,7 +7,6 @@ import { enqueueDetectBanEvasionOnJoin } from '@queues/moderation-signals/enqueu
 import onError from '@modules/on-error'
 import { createCodedError } from '@vouchington/sentry'
 import { COMMUNITY_BANNED } from '@modules/on-error/error-codes'
-import { lockCommunityUser } from '../bans/lock.mts'
 import { deletePendingInvitesForMember } from '../invites/delete-pending-for-member.mts'
 import type { Community, CommunityMember } from '../types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
@@ -29,8 +28,6 @@ export async function joinCommunity(
   await using query = await beginTransaction()
   const options = { query }
 
-  // Serialize against a concurrent ban for this user so the check + insert are atomic.
-  await lockCommunityUser(communityId, currentUserId, options)
   const member = await insertJoinedCommunityMember(communityId, currentUserId, options)
 
   await query.commit()
@@ -94,7 +91,7 @@ async function insertJoinedCommunityMember(
     'This community is temporarily limited to approved members',
   )
 
-  // ast-grep-ignore: no-three-sequential-awaits -- The membership admission lock and capacity check must reject an exceeded quota before inserting a member; pending invitations are consumed only after admission succeeds.
+  // ast-grep-ignore: no-three-sequential-awaits -- The capacity count must reject an exceeded quota before the member insert; pending invitations are consumed only after that insert.
   await assertCommunityMembershipCapacity(currentUserId, communityId, options)
   const { rows } = await writeCommunityMembershipMutation(
     sql`/* joinCommunity */

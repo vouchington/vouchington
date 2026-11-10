@@ -1,9 +1,6 @@
 import { assessUrls } from '@services/urls/upsert'
 import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
-import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import { beginTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
 import { getMembershipByUserId } from '@services/memberships'
 import { hasPlusTier } from '@modules/membership-helpers'
@@ -20,13 +17,6 @@ import {
 import { getAmexCardSlugCatalog, constructChildUrls } from './construct-amex-children.mts'
 import { clearPrioritizedLinksCache } from '@services/user-referral-program-links/prioritized-links-cache'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
-
-/** Serializes concurrent unfurls of the same parent so their reconcile passes can't race. */
-async function lockParentForUnfurl(parentLinkId: string, query: TransactionQuery): Promise<void> {
-  await query(sql`/* lockParentForUnfurl */
-    SELECT pg_advisory_xact_lock(hashtextextended(${parentLinkId}, 0))
-  `)
-}
 
 /**
  * Idempotent unfurl processor body (queue-authoring rule: every retry must be safe). Re-crawls
@@ -100,14 +90,11 @@ export async function runReferralLinkUnfurl(parentLinkId: string): Promise<void>
 
   const assessedUrls = await assessUrls(validCandidates.map(candidate => candidate.url))
   await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- Resolved hostname ids select ownership locks; those locks must precede the referral parent row lock before replacing child links.
-  const resolved = await prepareUrlHostnamesForOwnedMutation(
+  await prepareUrlHostnamesForOwnedMutation(
     parent.user_id,
     assessedUrls.map(url => url.hostname),
     query,
   )
-  await lockHostnameOwnership(query, [...resolved.values()])
-  await lockParentForUnfurl(parentLinkId, query)
   const children = await createChildReferralLinks(
     parent.user_id,
     SYSTEM_PROVENANCE,

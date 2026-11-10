@@ -4,7 +4,6 @@ import assert from 'http-assert'
 import { lockActiveUserLifecycleForMutation } from '@services/users/active-user-lifecycle-lock'
 import { getPrivateUserByAny } from '@services/users/get'
 import { assertNotSuspended } from '@services/users'
-import { lockCommunityUser } from '../bans/lock.mts'
 import { lockCommunityWithViewer } from '../load-with-viewer.mts'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
 import { runSequentially } from '@modules/utils/run-sequentially'
@@ -17,12 +16,11 @@ export async function lockCommunityRestrictionWrites(
 ): Promise<{ archived_at: Date | null }> {
   await runSequentially([
     () => lockActiveUserLifecycleForMutation(query, actorId),
-    () => lockCommunityUser(communityId, actorId, { query }),
     () =>
       query(sql`/* lockCommunityRestrictionWrites.membership */
     SELECT id FROM community_members
     WHERE community_id = ${communityId} AND user_id = ${actorId} AND removed_at IS NULL
-    FOR NO KEY UPDATE`),
+`),
   ])
   const actor = await getPrivateUserByAny(actorId, { query })
   assert(actor, 401, 'User not found')

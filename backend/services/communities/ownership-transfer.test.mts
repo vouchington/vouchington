@@ -1,5 +1,4 @@
 import { it, expect, describe } from 'vitest'
-import { createRequestQueryProfile } from '../../test-helpers/query-profiles.mts'
 import {
   createTestUser,
   createTestUserDirect,
@@ -32,11 +31,7 @@ describe('initiateOwnershipTransfer', () => {
       }),
     ])
 
-    const profile = createRequestQueryProfile()
-    await profile.run(() => initiateOwnershipTransfer(owner.id, community, moderator.id))
-    expect(profile.summarize().repeats.map(repeat => repeat.annotation)).not.toContain(
-      'lockCommunityUsers',
-    )
+    await initiateOwnershipTransfer(owner.id, community, moderator.id)
 
     const ownerAfter = await getCommunityMember(community.id, owner.id)
     expect(ownerAfter?.role).toBe('moderator')

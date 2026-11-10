@@ -1,6 +1,5 @@
 import { getFollowerDistributionsWorkLimit } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import type { FollowerDistributionProcessResult } from './types.mts'
 import type { ProcessOptions } from './process-types.mts'
 import {
@@ -17,10 +16,6 @@ export async function processFollowerDistributionChunk(
 ): Promise<FollowerDistributionProcessResult> {
   const chunkSize = options.chunkSize ?? getFollowerDistributionsWorkLimit('recipient_chunk_size')
   await using query = await beginTransaction()
-
-  await query(sql`/* processFollowerDistributionChunk */
-      SELECT pg_advisory_xact_lock(hashtext(${distributionId}))
-    `)
 
   const distribution = await getDistributionForUpdate(distributionId, query)
   if (!distribution || distribution.completed_at || distribution.failed_at) {
@@ -66,10 +61,6 @@ export async function advanceFollowerDistributionChunkCursor(
   completed: boolean,
 ): Promise<void> {
   await using query = await beginTransaction()
-
-  await query(sql`/* advanceFollowerDistributionChunkCursor */
-      SELECT pg_advisory_xact_lock(hashtext(${distributionId}))
-    `)
 
   const distribution = await getDistributionForUpdate(distributionId, query)
   if (!distribution || distribution.completed_at || distribution.failed_at) {

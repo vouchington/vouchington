@@ -48,10 +48,7 @@ export async function runCommunityMembershipCapScenarios(): Promise<void> {
     undefined,
     'assertCommunityMembershipCapacity',
     {
-      exactCapturedNames: [
-        'assertCommunityMembershipCapacity:lock',
-        'assertCommunityMembershipCapacity',
-      ],
+      exactCapturedNames: ['assertCommunityMembershipCapacity'],
     },
   )
 

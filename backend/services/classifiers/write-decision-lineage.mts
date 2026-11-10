@@ -73,7 +73,7 @@ export async function loadClassifierDecisionPromptThresholds(
       AND prompt.activated_at IS NOT NULL
       AND prompt.deactivated_at IS NULL
       AND prompt.deleted_at IS NULL
-    FOR SHARE OF classifier, prompt
+
   `)
   const row = rows[0]
   if (!row) throw new Error('Classifier prompt version is not active for its classifier')
@@ -96,7 +96,7 @@ export async function loadReservedClassifierDecisionPromptThresholds(
     FROM classifier_prompt_versions prompt
     JOIN classifiers classifier ON classifier.id = prompt.classifier_id
     WHERE prompt.id = ${input.promptVersionId} AND prompt.classifier_id = ${input.classifierId}
-    FOR SHARE OF classifier, prompt
+
   `)
   const row = rows[0]
   if (!row) throw new Error('Reserved classifier decision prompt version disappeared')

@@ -18,7 +18,7 @@ export async function getCurrentPostClassifierLabelToggles(
       AND agent.agent_type = 'moderator'
       AND agent.activated_at IS NOT NULL AND agent.deactivated_at IS NULL
       AND agent.deleted_at IS NULL
-    FOR SHARE OF toggle, agent, moderator
+
   `)
   return rows
 }
@@ -29,7 +29,7 @@ export async function getCurrentPostClassifierActorId(
   const { rows } = await query<{ id: string }>(sql`/* getCurrentPostClassifierActorId */
     SELECT id FROM users WHERE username = 'post-classifier'
       AND platform_account_kind = 'system' AND deleted_at IS NULL
-    FOR SHARE
+
   `)
   if (!rows[0]) throw new Error('post classifier system actor is missing')
   return rows[0].id
@@ -42,7 +42,7 @@ export async function getCurrentPostClassifierLocalTopicId(
   const { rows } = await query<{ id: string }>(sql`/* getCurrentPostClassifierLocalTopicId */
     SELECT id FROM topics WHERE slug = ${topicSlug} AND topic_type = 'topic'
       AND deleted_at IS NULL AND merged_into_topic_id IS NULL
-    FOR SHARE
+
   `)
   if (!rows[0]) throw new Error('post classifier local topic is missing or inactive')
   return rows[0].id
@@ -91,7 +91,7 @@ export async function getCurrentPostClassifierRemoteRows(
       AND classifier.activated_at IS NOT NULL AND classifier.deactivated_at IS NULL
       AND classifier.deleted_at IS NULL
       AND topic.slug = ANY(${[...topicSlugs]}::text[])
-    FOR SHARE OF classifier, prompt, candidate, topic, threshold
+
   `)
   return rows
 }

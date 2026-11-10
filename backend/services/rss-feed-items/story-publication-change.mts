@@ -2,7 +2,6 @@
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import {
-  lockPostPublicationRssFeedScopes,
   recordRssFeedTopicPublicationChanges,
   recordStoryTopicPublicationChanges,
 } from '@services/post-publication'
@@ -20,22 +19,7 @@ export async function lockRssFeedItemsForStoryPublicationChanges(
 ): Promise<void> {
   const STORY_CATEGORY_ITEM_BATCH_SIZE = getRssFeedItemsWorkLimit('story_category_item_batch_size')
   const ids = [...new Set(itemIds)].toSorted()
-  // Retain these writer lock helpers for category backfill callers.
-  // Alias unlink only records effects and does not call this helper.
-  // Input chunks keep every discovery and lock statement bounded.
-  const rssFeedIds = new Set<string>()
-  for (let offset = 0; offset < ids.length; offset += STORY_CATEGORY_ITEM_BATCH_SIZE) {
-    const batch = ids.slice(offset, offset + STORY_CATEGORY_ITEM_BATCH_SIZE)
-    // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.
-    const { rows } = await query<{ rss_feed_id: string }>(
-      `/* getRssFeedScopesForCategoryPublicationLocks */
-      SELECT DISTINCT rss_feed_id FROM rss_feed_item_sources
-      WHERE rss_feed_item_id = ANY($1::uuid[]) ORDER BY rss_feed_id`,
-      [batch],
-    )
-    for (const row of rows) rssFeedIds.add(row.rss_feed_id)
-  }
-  await lockPostPublicationRssFeedScopes(query, [...rssFeedIds])
+  // Input chunks keep every item lock statement bounded.
   for (let offset = 0; offset < ids.length; offset += STORY_CATEGORY_ITEM_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + STORY_CATEGORY_ITEM_BATCH_SIZE)
     // no-mistakes-disable-next-line query-reached-per-item: each input chunk is capped by runtime configuration; combining chunks would exceed that bound.

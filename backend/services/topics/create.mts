@@ -5,7 +5,6 @@ import type { CreateTopicUpdates, Topic } from './types.mts'
 import { createTopicEmbeddingContent } from './content.mts'
 import { setTopicHostnameLink } from './hostname-link.mts'
 import { prepareTopicHostnameCreation } from './prepare-topic-hostname-creation.mts'
-import { registerCreatedTopicsForHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import type { PrivateUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { QueryOptions } from '@data-stores/psql/types'
@@ -167,8 +166,6 @@ async function createTopicInDatabase(
   )
 
   const topicId = rows[0].id as string
-  if (!revivalIds.includes(topicId))
-    registerCreatedTopicsForHostnameOwnership(options.query, [topicId])
   if (updates.source_topic_alias_id) {
     await linkTopicAlias(topicId, updates.source_topic_alias_id, {
       ...options,

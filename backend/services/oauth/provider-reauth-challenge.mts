@@ -79,7 +79,7 @@ export async function lockLinkedProviderReAuthSubject(
   const config = providerTableConfigs[provider]
   const { rows } = await query<{ provider_user_id: string }>(
     `/* lockLinkedProviderReAuthSubject */ SELECT ${config.providerUserIdColumn} AS provider_user_id
-     FROM ${config.table} WHERE user_id = $1 FOR UPDATE`,
+     FROM ${config.table} WHERE user_id = $1`,
     [currentUserId],
   )
   if (!rows[0]) throw createHttpError(422, 'Provider account is not linked to this user')

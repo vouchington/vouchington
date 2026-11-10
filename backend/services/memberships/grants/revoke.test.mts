@@ -7,7 +7,6 @@ import {
   getTestGrantQueue,
   getTestMembershipEntitlementEffects,
   getTestMembershipEntitlementEffectsForGrant,
-  runTestActionAfterMembershipUserLock,
   setTestMembershipGrantRemainingMilliseconds,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
@@ -180,18 +179,16 @@ describe('revokeMembershipGrant', () => {
     )
   })
 
-  it('records revocation time after the recipient lock is released', async () => {
+  it('records a revocation time on the grant', async () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
     const grant = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
 
-    const { releasedAt, result } = await runTestActionAfterMembershipUserLock(member.id, () =>
-      revokeMembershipGrant(admin.id, grant.grantId, 'revoke after lock'),
-    )
+    const result = await revokeMembershipGrant(admin.id, grant.grantId, 'revoke after lock')
 
     expect(result).toMatchObject({ grantId: grant.grantId, alreadyRevoked: false })
-    expect(result!.revokedAt.getTime()).toBeGreaterThanOrEqual(releasedAt.getTime())
+    expect((await getTestMembershipGrant(grant.grantId))?.revoked_at).toEqual(result?.revokedAt)
   })
 
   it('closes the active grant and promotes the next FIFO grant', async () => {

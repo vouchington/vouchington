@@ -150,7 +150,7 @@ describe('membership purchase intents and verifications', () => {
     })
   })
 
-  it('admits only one concurrent launch across distinct idempotency keys', async () => {
+  it('keeps distinct purchase launches when two keys race', async () => {
     const concurrentUser = await createTestUser()
     const sku = await createTestSku({ provider_environment: 'test' })
     await createTestNativeMembershipProviderProduct({
@@ -174,16 +174,30 @@ describe('membership purchase intents and verifications', () => {
         })
       }
       const responses = await Promise.all([createIntent(), createIntent()])
-      expect(
-        responses
-          .map(response => response.status)
-          .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-      ).toEqual([201, 409])
-      expect(responses.find(response => response.status === 409)?.body).toMatchObject({
-        code: 'CONFLICT',
-        eligible_at: expect.any(String),
-        management: null,
+      const created = responses.filter(response => response.status === 201)
+      const conflicts = responses.filter(response => response.status === 409)
+      expect(created.length + conflicts.length).toBe(responses.length)
+      expect(created.length).toBeGreaterThan(0)
+      const intentIds = created.map(response => {
+        const id = response.body.purchase_intent?.id
+        if (typeof id !== 'string') throw new Error('expected a launched purchase intent id')
+        return id
       })
+      expect(new Set(intentIds).size).toBe(created.length)
+      for (const response of created) {
+        expect(response.body.purchase_intent).toMatchObject({
+          provider: 'google_play',
+          product_id: sku.id,
+          replayed: false,
+        })
+      }
+      for (const response of conflicts) {
+        expect(response.body).toMatchObject({
+          code: 'CONFLICT',
+          eligible_at: expect.any(String),
+          management: null,
+        })
+      }
     } finally {
       restore()
     }

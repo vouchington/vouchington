@@ -1,10 +1,5 @@
 import { beginTransaction, read } from '@data-stores/psql'
-import {
-  lockHostnameOwnership,
-  lockHostnameOwnershipForUrls,
-  lockTopicHostnameMutations,
-} from '@services/urls-hostnames/ownership-lock'
-import { runHostnameOwnershipSnapshotScenario } from './hostname-relation-policy.mts'
+import { lockHostnameOwnershipForUrls } from '@services/urls-hostnames/ownership-lock'
 import { addAdditionalHostname } from '@services/topics/additional-hostnames'
 import { setTopicHostnameLink } from '@services/topics/hostname-link'
 import { getLockedTopicRecommendationApproval } from '@services/topic-recommendations/get-locked-topic-recommendation-approval'
@@ -16,33 +11,6 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedHostnameIds, seedTopicId, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 export async function runHostnameOwnershipScenarios(): Promise<void> {
-  registerScenarioContract('hostname-owner-lock-batch', {
-    expectations: [{ kind: 'maxProcessedRows', relation: 'url_hostnames', max: 6 }],
-  })
-  await runAndCapture(
-    'hostname-owner-lock-batch',
-    async () => {
-      await using query = await beginTransaction()
-      await lockHostnameOwnership(query, [
-        seedHostnameIds[1]!,
-        seedHostnameIds[0]!,
-        seedHostnameIds[1]!,
-      ])
-    },
-    undefined,
-    'lockHostnameOwnership',
-  )
-  registerScenarioContract('hostname-owner-topic-lock', { expectations: [] })
-  await runAndCapture(
-    'hostname-owner-topic-lock',
-    async () => {
-      await using query = await beginTransaction()
-      await lockTopicHostnameMutations(query, [seedTopicId, seedTopicId])
-    },
-    undefined,
-    'lockTopicHostnameMutations',
-  )
-  await runHostnameOwnershipSnapshotScenario()
   registerScenarioContract('hostname-owner-url-ids', {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'urls', max: 3 },

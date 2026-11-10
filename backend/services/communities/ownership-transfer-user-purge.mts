@@ -1,8 +1,5 @@
 import { read, type TransactionQuery } from '@data-stores/psql'
-import {
-  lockActiveUserLifecyclesForMutation,
-  lockUserSubjectMutationFences,
-} from '@services/users/active-user-lifecycle-lock'
+import { lockActiveUserLifecyclesForMutation } from '@services/users/active-user-lifecycle-lock'
 import { enqueueBulkSendCommunityOwnershipTransferEmails } from '@queues/emails/enqueues'
 import {
   createCommunityLifecycleNotifications,
@@ -11,7 +8,6 @@ import {
 import { getSiteUrl } from '@modules/utils'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
-import { lockCommunityMembershipRoles, lockCommunityUserPairs } from './bans/lock.mts'
 import { transferLockedCommunitiesOwnership } from './ownership-transfer-core.mts'
 import { buildOwnershipTransferNotifications } from './ownership-transfer-notifications.mts'
 import type { Community } from './types.mts'
@@ -21,21 +17,17 @@ type PurgeOwnershipCandidate = { communityId: string; successorId: string }
 type PurgeOwnershipTransfer = { community: PurgeCommunity; successorId: string }
 
 /**
- * Takes every fence a purge page needs, in one order: each successor's lifecycle fences (ascending
- * user id), then role fences for the whole page, then member fences (ascending user id), so the
- * community rows locked afterwards never precede a user fence. The SQL active-user guard raises for
- * an inactive subject, which would poison the caller-owned transaction, so only active users get it.
+ * Reads the page's active successors, then takes their lifecycle fences. The active-user guard
+ * raises for an inactive subject, which would poison the caller-owned transaction, so only active
+ * users get it.
  */
 export async function lockUserPurgeOwnership(
   query: TransactionQuery,
-  ownerUserId: string,
-  communityIds: readonly string[],
   candidates: readonly PurgeOwnershipCandidate[],
 ): Promise<void> {
   const successorIds = [...new Set(candidates.map(candidate => candidate.successorId))]
   let activeIds: string[] = []
   await runSequentially([
-    () => lockUserSubjectMutationFences(query, successorIds),
     async () => {
       if (successorIds.length === 0) return
       const { rows } = await query<{ id: string }>(sql`/* lockUserPurgeOwnership:active */
@@ -43,15 +35,6 @@ export async function lockUserPurgeOwnership(
       activeIds = rows.map(row => row.id)
     },
     () => lockActiveUserLifecyclesForMutation(query, activeIds),
-    () => lockCommunityMembershipRoles(query, communityIds),
-    () =>
-      lockCommunityUserPairs(
-        query,
-        candidates.flatMap(({ communityId, successorId }) => [
-          { communityId, userId: ownerUserId },
-          { communityId, userId: successorId },
-        ]),
-      ),
   ])
 }
 

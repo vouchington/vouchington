@@ -80,7 +80,7 @@ export async function ingestGooglePlayRtdnPush(options: {
     SELECT id FROM membership_provider_evidence_records
     WHERE membership_provider_context_id = ${contextId}::UUID
       AND provider_event_id = ${rtdn.messageId} AND evidence_lookup_sha256 = ${lookup}
-    FOR KEY SHARE`)
+`)
     ).rows[0]?.id
   if (!evidenceId) throw new InvalidGooglePlayRtdnError()
   await query.commit()

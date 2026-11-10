@@ -5,7 +5,6 @@ import assert from 'http-assert'
 import { getActiveCommunityMembersForUsers } from './batch.mts'
 import type { Community } from '../types.mts'
 import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listeners/enqueues'
-import { lockCommunityUsers } from '../bans/lock.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
@@ -22,8 +21,6 @@ export async function removeMember(
   await using query = await beginTransaction()
 
   const options = { query }
-
-  await lockCommunityUsers(communityId, [currentUserId, targetUserId], options)
 
   const members = await getActiveCommunityMembersForUsers(
     communityId,

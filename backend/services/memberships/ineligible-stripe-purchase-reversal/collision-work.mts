@@ -118,7 +118,7 @@ export function buildGetDisplacedStripeSourceForCollisionQuery(userId: string) {
       AND membership.cancelled_at IS NULL AND membership.expired_at IS NULL
       AND membership.paused_at IS NULL
       AND source.source_kind = 'direct' AND context.provider = 'stripe'
-    LIMIT 1 FOR SHARE OF membership, source, lineage
+    LIMIT 1
   `
 }
 

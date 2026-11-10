@@ -105,9 +105,7 @@ export async function addPostRating(
 }
 
 async function lockPostRatingMutation(query: TransactionQuery, postId: string) {
-  await query(
-    sql`/* lockPostRatingMutation */ SELECT id FROM posts WHERE id = ${postId} FOR UPDATE`,
-  )
+  await query(sql`/* lockPostRatingMutation */ SELECT id FROM posts WHERE id = ${postId}`)
 }
 
 async function assertRatingCountBelowLimit(

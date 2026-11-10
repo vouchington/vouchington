@@ -12,7 +12,6 @@ import {
   getNewPublicHostnamesInheritedBlockedIds,
   insertMissingUrlHostnames,
 } from './insert-missing.mts'
-import { lockHostnameOwnership } from './ownership-lock.mts'
 
 export type HostnameProvenance = 'public' | 'private_email'
 export function normalizeUrlHostname(value: string): string {
@@ -149,7 +148,6 @@ async function promotePublicUrlHostnames(
   options: QueryOptions,
 ): Promise<Array<{ id: string; hostname: string }>> {
   if (hostnameIds.length === 0) return []
-  await withTransactionOptions(options, query => lockHostnameOwnership(query, hostnameIds))
   const result = await write<{ id: string; hostname: string }>(
     `/* upsertUrlHostnames:promotePublic */
     UPDATE url_hostnames

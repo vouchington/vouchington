@@ -83,12 +83,6 @@ async function createTopicRecommendationInStore(
   input: CreateTopicRecommendationInput,
   options: CreateTopicRecommendationOptions,
 ): Promise<TopicRecommendationPost> {
-  const slugKey = `topic-recommendation:${(input.topic_slug?.toLowerCase().trim() ?? createSlugFromTitle(input.topic_title)) || input.topic_title}`
-  await write(
-    sql`/* createTopicRecommendationInStore */ SELECT pg_advisory_xact_lock(hashtext(${slugKey}))`,
-    options,
-  )
-
   const { exact_topic, pending_recommendations } = await findTopicRecommendationDuplicates(
     {
       topic_title: input.topic_title,

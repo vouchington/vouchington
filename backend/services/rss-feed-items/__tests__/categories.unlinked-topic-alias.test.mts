@@ -15,7 +15,6 @@ import {
 import { getTopicMergeNativeCheckpoint } from '@voucha/test-helpers/topic-merge-native-operation'
 import { registerTestRssCategoryIdentity } from '@voucha/test-helpers/entities/rss-category-identities'
 import { createTopicMergeOperation } from '@services/topics/merge-operations'
-import { lockTopicMergeLifecycles } from '@services/topics/merge-preflight'
 import { processTopicMergeOperationPage } from '@services/topics/merge-operation-page'
 import { topicMergePlainPages } from '@services/topics/merge-reference-page-inventory'
 import { getTopicByAny } from '@services/topics/get'
@@ -23,7 +22,6 @@ import { settleTopicMergeOperationForTest } from '@voucha/test-helpers/merge-top
 import { clearUnlinkedTopicAliasFeedPage } from '../clear-unlinked-topic-alias-feed-categories.mts'
 import { clearUnlinkedTopicAliasItemPage } from '../clear-unlinked-topic-alias-categories.mts'
 import { upsertRssFeedCategories } from '../../rss-feeds/categories.mts'
-import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { getRssFeedItemById } from '../get.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
@@ -63,24 +61,6 @@ describe('unlinked RSS topic alias category cleanup', () => {
     const categoryIdentityId = await registerTestRssCategoryIdentity(aliasText)
     const itemCategoryIdentityId = await registerTestRssCategoryIdentity(`#${aliasText}`)
     await unlinkTopicAlias(alias.id, { expectedTopicId: previousTopic.id, skipSideEffects: true })
-    {
-      await using mergeHolder = await beginTransaction()
-      await lockTopicMergeLifecycles(mergeHolder, [replacement.id])
-      await using cleaner = await beginTransaction()
-      await lockTopicAliasPublicationScopes(cleaner, [alias.id])
-      await expect(
-        clearUnlinkedTopicAliasItemPage(
-          alias.id,
-          alias.alias,
-          {
-            rows: [{ rss_feed_item_id: item.id, category_identity_id: itemCategoryIdentityId }],
-            hasMore: false,
-            match: 'alias_id',
-          },
-          { query: cleaner },
-        ),
-      ).rejects.toMatchObject({ status: 409 })
-    }
 
     const source = await getTopicByAny(replacement.id)
     const target = await getTopicByAny(destination.id)

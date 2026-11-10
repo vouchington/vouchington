@@ -44,7 +44,7 @@ async function setStateAsSystem(
         WHERE rss_feed_id = $1 AND change_type = $2
         ORDER BY id DESC
         LIMIT 1
-        FOR UPDATE`,
+`,
       [input.rssFeedId, kind],
     )
     const latest = rows[0] as { is_enabled: boolean; changed_by_id: string | null } | undefined

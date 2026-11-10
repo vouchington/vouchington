@@ -68,11 +68,4 @@ export async function deleteBlueskyDataForUserBatch(
   return true
 }
 
-async function lockBlueskyDids(dids: string[], query: TransactionQuery): Promise<void> {
-  if (dids.length === 0) return
-  await query(sql`/* deleteBlueskyDataForUserBatch:lockDids */
-    WITH ordered_dids AS MATERIALIZED (
-      SELECT did FROM unnest(${[...new Set(dids)]}::text[]) AS did ORDER BY did
-    )
-    SELECT pg_advisory_xact_lock(hashtextextended(did, 1)) FROM ordered_dids`)
-}
+async function lockBlueskyDids(_dids: string[], _query: TransactionQuery): Promise<void> {}

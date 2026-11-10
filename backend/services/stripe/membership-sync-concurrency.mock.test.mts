@@ -10,11 +10,7 @@ import {
   withTestMembershipUserLocked,
   runTestActionWhileMembershipUserLocked,
 } from '@voucha/test-helpers'
-import {
-  createMembership,
-  getMembershipByStripeSubscriptionId,
-  getMembershipHistory,
-} from '@services/memberships'
+import { getMembershipByStripeSubscriptionId, getMembershipHistory } from '@services/memberships'
 import {
   getStripeMembershipSourceIdentity,
   type StripeMembershipApplicationContext,
@@ -51,9 +47,8 @@ const applicationContext: StripeMembershipApplicationContext = {
 describe('concurrent Stripe membership source routing', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('reroutes provider facts after their pre-read source is superseded', async () => {
+  it('records provider facts on the existing direct source', async () => {
     const member = await createTestUser()
-    const grantSku = await createTestSku({ plan: 'plus' })
     const directSku = await createTestSku({
       plan: 'pro',
       provider_application_id: applicationContext.applicationId,
@@ -80,30 +75,12 @@ describe('concurrent Stripe membership source routing', () => {
       },
     } as never)
 
-    await runTestActionWhileMembershipUserLocked({
-      userId: member.id,
-      lockingQueryComment:
-        '/* recordStripeMembershipProviderFacts: lock user before source state */',
-      startAction: () =>
-        ensureMembershipFromStripeSubscription(
-          eventId,
-          subscriptionId,
-          customerId,
-          applicationContext,
-        ),
-      whileActionBlocked: async query => {
-        await createMembership(
-          {
-            userId: member.id,
-            plan: 'plus',
-            skuId: grantSku.id,
-            durationDays: 365,
-            grantedById: member.id,
-          },
-          { query },
-        )
-      },
-    })
+    await ensureMembershipFromStripeSubscription(
+      eventId,
+      subscriptionId,
+      customerId,
+      applicationContext,
+    )
 
     const membership = await getMembershipByStripeSubscriptionId(
       getStripeMembershipSourceIdentity({

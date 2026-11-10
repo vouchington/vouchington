@@ -3,7 +3,6 @@ import type { RssFeedItemWithHash } from './upsert-prepare.mts'
 import { upsertRssFeedItemIdentities } from './upsert-identities.mts'
 import { chunkArray } from './processing-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockPostPublicationRssFeedScopes } from '@services/post-publication/capture-rss-feeds'
 
 export type LockedRssFeedItemRow = {
   id: string
@@ -21,7 +20,6 @@ export async function lockRssFeedItemWriteScopes(
   txQuery: TransactionQuery,
   rssFeedId: string,
 ): Promise<void> {
-  await lockPostPublicationRssFeedScopes(txQuery, [rssFeedId])
   await txQuery(
     `/* upsertRssFeedItems:lockSources */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
     [rssFeedId],

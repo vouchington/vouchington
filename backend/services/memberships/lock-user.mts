@@ -17,9 +17,6 @@ export async function lockMembershipUser(
     }
     throw err
   }
-  await query(
-    sql`/* lockMembershipUser:row */ SELECT id FROM users WHERE id = ${userId} FOR UPDATE`,
-  )
 }
 
 function isInvalidGrantTargetPostgresError(error: unknown): boolean {

@@ -52,11 +52,10 @@ export async function reserveIdentityVerificationAttempt(
             )
           ORDER BY entitlement.id
           LIMIT 1
-          /* deadlock-safe: SKIP LOCKED plus ORDER BY id */
-          FOR UPDATE SKIP LOCKED
         )
         INSERT INTO identity_verification_attempts (user_id, source, grant_entitlement_attempt_id)
         SELECT user_id, 'support_grant', id FROM candidate
+        ORDER BY id ASC NULLS LAST
         ON CONFLICT (grant_entitlement_attempt_id) WHERE grant_entitlement_attempt_id IS NOT NULL AND released_at IS NULL
         DO NOTHING
         RETURNING id, source

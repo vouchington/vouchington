@@ -32,8 +32,7 @@ export async function ensureGooglePlayTokenAlias(
     fetched_at: Date | null
   }>(sql`/* getGooglePlayTokenAliasForUpdate */
     SELECT id, membership_provider_lineage_id, fetched_at FROM membership_google_play_purchase_tokens
-    WHERE membership_provider_context_id = ${contextId} AND purchase_token_lookup_sha256 = ${digest}
-    FOR UPDATE`)
+    WHERE membership_provider_context_id = ${contextId} AND purchase_token_lookup_sha256 = ${digest}`)
   if (existing[0]?.membership_provider_lineage_id !== lineageId)
     throw new GooglePlayLineageConflictError()
   return { id: existing[0].id, fetchedAt: existing[0].fetched_at }

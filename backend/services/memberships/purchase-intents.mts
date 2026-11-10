@@ -97,8 +97,6 @@ export async function createMembershipPurchaseIntent(options: {
 
   const providerContext = getMembershipProviderContext(options.provider)
   await using query = await beginTransaction()
-  await query(sql`/* createMembershipPurchaseIntent.lockUser */
-    SELECT id FROM users WHERE id = ${options.userId} FOR UPDATE`)
   const lockedExisting = await getPurchaseIntent(options.userId, options.idempotencyKey, query)
   if (!lockedExisting) {
     const conflictingIntent = await getConflictingPurchaseIntent(options.userId, query)

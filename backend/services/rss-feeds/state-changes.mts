@@ -56,7 +56,7 @@ export async function lockLatestRssFeedStates(
         WHERE rss_feed_id = $1 AND change_type = kind.change_type
         ORDER BY id DESC
         LIMIT 1
-        FOR UPDATE
+
       ) latest`,
     [rssFeedId, kinds],
   )

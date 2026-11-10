@@ -11,7 +11,6 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
-import { lockTopicHostnameOwnership } from './hostname-ownership-lock.mts'
 import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication'
 type TopicHostnameLinkValidation = {
   topic_exists: boolean
@@ -129,8 +128,7 @@ export async function linkHostnameToSourceTopic(
   options: QueryOptions = {},
 ): Promise<void> {
   return withTopicHostnameTransaction(options, async query => {
-    // ast-grep-ignore: no-three-sequential-awaits -- Topic/hostname ownership locks must precede the RSS attachment lifecycle fence; clearing the previous claim and setting the primary hostname follow both.
-    await lockTopicHostnameOwnership(query, [topicId], [hostnameId])
+    // ast-grep-ignore: no-three-sequential-awaits -- The RSS attachment lifecycle fence precedes clearing the previous claim and setting the primary hostname.
     await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     await clearOtherHostnameLinks(topicId, hostnameId, { query })
     await updateTopicHostnameId(topicId, hostnameId, query)
@@ -144,7 +142,6 @@ export async function setTopicHostnameLink(
   options: QueryOptions = {},
 ): Promise<void> {
   return withTopicHostnameTransaction(options, async query => {
-    await lockTopicHostnameOwnership(query, [topicId], hostnameId ? [hostnameId] : [])
     await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     const transaction = { query }
     if (hostnameId) await assertTopicHostnameLinkIsValid(topicId, hostnameId, transaction)

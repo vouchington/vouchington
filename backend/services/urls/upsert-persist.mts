@@ -4,7 +4,6 @@ import {
   withTransactionOptions,
   registerPostCommitAction,
 } from '@data-stores/psql'
-import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import { prepareUrlHostnamesForOwnedMutation, upsertUrlHostnames } from '@services/urls-hostnames'
 import {
   getHostnamePolicyGroups,
@@ -57,13 +56,12 @@ async function persistInTransaction(
     preserveHttp: _preserveHttp,
     ...queryOptions
   } = options
-  // ast-grep-ignore: no-three-sequential-awaits -- Resolved hostname ids select ownership locks; the fresh local-policy recheck must reject blocked hostnames before URL persistence.
-  const resolved = await prepareUrlHostnamesForOwnedMutation(
+  // ast-grep-ignore: no-three-sequential-awaits -- Hostname rows are prepared before the fresh local-policy recheck rejects blocked hostnames and URL persistence writes them.
+  await prepareUrlHostnamesForOwnedMutation(
     userId,
     uniqueUrls.map(url => url.hostname),
     options.query,
   )
-  await lockHostnameOwnership(options.query, [...resolved.values()])
   const policies = await getLocalHostnamePolicies(
     getHostnamePolicyGroups(uniqueUrls.map(url => url.hostname)),
     queryOptions,

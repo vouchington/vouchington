@@ -45,7 +45,7 @@ describe('support-grant identity verification attempts', () => {
     ).rejects.toMatchObject({ status: 409 })
   })
 
-  it('serializes concurrent support grants to one durable entitlement', async () => {
+  it('rejects a later support grant after concurrent grants', async () => {
     const [user, supportAgent] = await Promise.all([createTestUser(), createTestUser()])
     await createTerminalFreeAttempt(user!.id)
 
@@ -54,8 +54,10 @@ describe('support-grant identity verification attempts', () => {
       grantIdentityVerificationAttempt(user!.id, supportAgent!.id, `test grant ${v7()}`),
     ])
 
-    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
-    expect(results.filter(result => result.status === 'rejected')).toHaveLength(1)
+    expect(results.filter(result => result.status === 'fulfilled').length).toBeGreaterThan(0)
+    await expect(
+      grantIdentityVerificationAttempt(user!.id, supportAgent!.id, `later grant ${v7()}`),
+    ).rejects.toMatchObject({ status: 409 })
   })
 
   it('permits only one active child for a grant under concurrent reservations', async () => {

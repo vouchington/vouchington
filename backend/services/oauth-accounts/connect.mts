@@ -110,10 +110,9 @@ export async function lockOAuthAccountConnectionUser(
       throw createHttpError(404, 'User not found', { cause: err })
     throw err
   }
-  await query(
-    '/* lockOAuthAccountConnectionUserRow */ SELECT id FROM users WHERE id = $1 FOR UPDATE',
-    [userId],
-  )
+  await query('/* lockOAuthAccountConnectionUserRow */ SELECT id FROM users WHERE id = $1', [
+    userId,
+  ])
   return Object.freeze({ [lockedConnectionUser]: true as const, query, userId })
 }
 

@@ -49,8 +49,7 @@ export async function getContext(id: string, query: QueryExecutor): Promise<Cont
     FROM membership_verifications verification
     INNER JOIN membership_provider_contexts provider_context ON provider_context.id = verification.membership_provider_context_id
     INNER JOIN membership_provider_evidence_records evidence ON evidence.id = verification.membership_provider_evidence_record_id
-    WHERE verification.id = ${id} AND provider_context.provider = 'microsoft_store' AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL AND verification.rejected_at IS NULL
-    FOR UPDATE OF verification, evidence`)
+    WHERE verification.id = ${id} AND provider_context.provider = 'microsoft_store' AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL AND verification.rejected_at IS NULL`)
   return rows[0] ?? null
 }
 
@@ -161,8 +160,7 @@ export async function persistLineage(
   }>(sql`/* findMicrosoftStoreLineage */
     SELECT id, provider_account_id AS "providerAccountId" FROM membership_provider_lineages
     WHERE membership_provider_context_id = ${contextId}
-      AND provider_lineage_id = ${observation.providerLineageId}
-    FOR UPDATE`)
+      AND provider_lineage_id = ${observation.providerLineageId}`)
   if (!existing[0] || existing[0].providerAccountId !== observation.providerAccountId)
     throw new ProviderMembershipSourceConflictError('Microsoft Store lineage account changed')
   return existing[0].id

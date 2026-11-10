@@ -89,7 +89,7 @@ export async function acceptObservation(
       SELECT id, membership_provider_product_id FROM membership_provider_observations
       WHERE membership_provider_evidence_record_id = ${context.evidenceId}
         AND membership_provider_context_id = ${context.providerContextId}::UUID
-        AND membership_provider_lineage_id = ${lineageId} FOR KEY SHARE`)
+        AND membership_provider_lineage_id = ${lineageId}`)
     const existingObservation = existingEvidenceObservation[0]
     if (existingObservation) {
       if (
@@ -140,7 +140,7 @@ export async function acceptObservation(
   )
   if (rows[0]) return rows[0].id
   const { rows: existing } = await query<{ id: string }>(
-    sql`/* insertGooglePlayVerificationObservation.existing */ SELECT id FROM membership_provider_observations WHERE membership_provider_lineage_id = ${lineageId} AND provider_revision = ${observation.providerRevision} AND provider_order = ${observation.providerOrder} FOR KEY SHARE`,
+    sql`/* insertGooglePlayVerificationObservation.existing */ SELECT id FROM membership_provider_observations WHERE membership_provider_lineage_id = ${lineageId} AND provider_revision = ${observation.providerRevision} AND provider_order = ${observation.providerOrder}`,
   )
   if (!existing[0]) throw new Error('Google Play observation was not returned')
   return existing[0].id

@@ -431,14 +431,6 @@
     "routes": ["POST /api/v1/topic-recommendations/:id/approvals", "POST /api/v1/topics"]
   },
   {
-    "annotation": "lockHostnameOwnership",
-    "maxCount": 2,
-    "reason": "Two independently committed transactions each need their own transaction-scoped ownership key: createInstanceFromHostname resolves and commits public introduction here; createInstanceInTransaction reacquires ownership before source writes (backend/services/fediverse-instances/create-instance-helpers.mts:73).",
-    "permanent": true,
-    "code": "backend/services/fediverse-instances/create-instance.mts:34",
-    "routes": ["POST /api/v1/fediverse/instances"]
-  },
-  {
     "annotation": "lockPostPublicationScope",
     "maxCount": null,
     "reason": "Distinct scope families take separate advisory locks, and a nested author or feed change re-locks its own scope as its entry point.",
@@ -451,38 +443,6 @@
       "POST /api/v1/rss-feed-items/:id/discussions",
       "POST /api/v1/stories/:storyId/discussions"
     ]
-  },
-  {
-    "annotation": "lockSessionDeviceAuthority:sessionFence",
-    "routes": ["POST /api/v1/app-attestation/attest"],
-    "maxCount": 2,
-    "reason": "Atomic first-native upgrade locks the old browser SID before revocation and the replacement native SID before minting, so exactly two distinct session admissions share one transaction.",
-    "permanent": true,
-    "code": "backend/services/jwt-session/native-upgrade.mts:20"
-  },
-  {
-    "annotation": "lockSessionDeviceAuthority:sessionFence",
-    "routes": ["POST /api/v1/auth/device-bound-sessions"],
-    "maxCount": 2,
-    "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
-    "permanent": true,
-    "code": "backend/services/jwt-session/dbsc-state.mts:75"
-  },
-  {
-    "annotation": "lockSessionDeviceAuthority:sessionFence",
-    "routes": ["POST /api/v1/auth/device-bound-sessions/refreshes"],
-    "maxCount": 2,
-    "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
-    "permanent": true,
-    "code": "backend/services/jwt-session/dbsc-state.mts:75"
-  },
-  {
-    "annotation": "lockSessionDeviceAuthority:sessionFence",
-    "routes": ["POST /api/v1/auth/oauth/authorizations/:flowId/complete"],
-    "maxCount": 2,
-    "reason": "Completed broker replay checks the original issued SID for preserved assurance, then canonical mint reacquires its reentrant SID fence before checking the stored device credential and issuing the response.",
-    "permanent": true,
-    "code": "backend/services/jwt-session/assurance.mts:41"
   },
   {
     "annotation": "lockSessionDeviceAuthority:userFence",

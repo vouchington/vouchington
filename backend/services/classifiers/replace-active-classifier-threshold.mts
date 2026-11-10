@@ -51,7 +51,7 @@ export async function replaceActiveClassifierThreshold(
       AND candidate.classifier_id = $2
       AND candidate.deleted_at IS NULL
       AND classifier.deleted_at IS NULL
-    FOR NO KEY UPDATE OF candidate`,
+   `,
     [scope.candidateId, scope.classifierId],
   )
   const candidate = locked[0]

@@ -10,8 +10,6 @@ import { enqueueOnTopicUpdated } from '@queues/entity-listeners/enqueues'
 import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { setTopicHostnameLink } from './hostname-link.mts'
 import { prepareHostnameForOwnedMutation } from './resolve-hostname.mts'
-import { lockTopicHostnameMutations } from '@services/urls-hostnames/ownership-lock'
-import { lockTopicHostnameOwnership } from './hostname-ownership-lock.mts'
 import sql from 'sql-template-strings'
 import { createTopicRevision } from '@services/topic-revisions'
 import { buildTopicRevisionChanges } from './update-revision-changes.mts'
@@ -51,17 +49,10 @@ export const updateTopic = async (
       let resolvedHostnameId: string | null | undefined
       if (changes.hostname !== undefined) {
         const query = options.query!
-        // ast-grep-ignore: no-three-sequential-awaits -- Take topic ownership before resolving the prospective hostname id, then lock both old/new hostname identities before updating the topic.
-        await lockTopicHostnameMutations(query, [topic.id])
         resolvedHostnameId = await prepareHostnameForOwnedMutation(
           updater.id,
           changes.hostname,
           query,
-        )
-        await lockTopicHostnameOwnership(
-          query,
-          [topic.id],
-          resolvedHostnameId ? [resolvedHostnameId] : [],
         )
       }
       const preparedPublicationScopes =

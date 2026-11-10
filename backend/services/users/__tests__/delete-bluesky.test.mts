@@ -199,7 +199,7 @@ describe('deleteUser Bluesky cleanup', () => {
     expect(await countTestBlueskyFollowReceiptsForUser(user.id)).toBe(0)
   })
 
-  it('serializes deletion against native completion consumption', async () => {
+  it('rejects native completion after the user deletion commits', async () => {
     const user = await createTestUser()
     const actor = await createTestAccountChangeActor(user.id)
     const flowId = v7()
@@ -217,8 +217,9 @@ describe('deleteUser Bluesky cleanup', () => {
       handle: `${v7()}.bsky.social`,
     })
 
-    const [deletion, completion] = await Promise.allSettled([
-      deleteUser(user, user),
+    const deletion = await deleteUser(user, user)
+    await drainUserDeletionForTest(deletion)
+    await expect(
       finalizeNativeBlueskyAccountLink(
         user.id,
         actor.session,
@@ -227,12 +228,7 @@ describe('deleteUser Bluesky cleanup', () => {
         getTestBlueskyCompletionProofVerifier(flowId),
         () => new Date(),
       ),
-    ])
-
-    expect(deletion.status).toBe('fulfilled')
-    if (deletion.status === 'fulfilled') await drainUserDeletionForTest(deletion.value)
-    const completionStatus = completion.status === 'fulfilled' ? 204 : completion.reason?.status
-    expect([204, 404]).toContain(completionStatus)
+    ).rejects.toMatchObject({ status: 404 })
     expect(await getPrivateUserByAny(user.id)).toBeNull()
     expect(await getTestBlueskyLinkedAccountRow(pending.bluesky_did)).toBeNull()
     expect(await testBlueskyLinkCompletionExists(flowId)).toBe(false)

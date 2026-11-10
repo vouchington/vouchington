@@ -5,10 +5,6 @@ import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/up
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import {
-  lockHostnameOwnership,
-  lockTopicHostnameMutations,
-} from '@services/urls-hostnames/ownership-lock'
 import { normalizeUrlForUrlTable } from '@modules/utils/urls'
 import type { Topic } from '@services/topics/types'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -39,13 +35,7 @@ export async function createTopicRecommendationRelations(
   const hrefs = [...hostnames.map(hostname => `https://${hostname.hostname}/`), ...typedUrls]
   if (hrefs.length === 0) return []
   const assessed = options.assessedUrls ?? (await assessUrls(hrefs))
-  // ast-grep-ignore: no-three-sequential-awaits -- Topic ownership must precede resolving private hostname ids; those ids select hostname ownership locks before conflict checks and URL writes.
-  await lockTopicHostnameMutations(options.query, [topic.id])
-  const resolved = await prepareUrlHostnamesForOwnedMutation(currentUser.id, hrefs, options.query)
-  await lockHostnameOwnership(options.query, [
-    ...hostnames.map(hostname => hostname.id),
-    ...resolved.values(),
-  ])
+  await prepareUrlHostnamesForOwnedMutation(currentUser.id, hrefs, options.query)
 
   const existingRelationQuery = await options.query<{
     subject_id: string

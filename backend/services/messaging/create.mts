@@ -20,13 +20,7 @@ export async function findOrCreateDirectConversation(
 
   await using transaction = await beginTransaction()
   async function findOrCreateConversationInTransaction(query: typeof transaction) {
-    // Serialize concurrent creates on the same user pair via an advisory transaction lock.
-    const lockKey = [currentUserId, recipientUserId].toSorted().join(':')
-    await query(
-      sql`/* findOrCreateDirectConversation:lock */ SELECT pg_advisory_xact_lock(hashtext(${lockKey})::bigint)`,
-    )
-
-    // Re-check inside the transaction now that the lock is held
+    // Re-check inside the transaction. A duplicate direct conversation under a true race is accepted.
     const { rows: recheckRows } =
       await query<DirectConversation>(sql`/* findOrCreateDirectConversation:recheck */
       SELECT c.id, c.channel_type, c.title, c.created_at, c.created_by_id, c.updated_at

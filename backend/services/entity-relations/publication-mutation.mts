@@ -13,10 +13,7 @@ import {
 } from '@services/urls-hostnames/policies'
 import { getEntityRelationUrlTables } from './url-tables.mts'
 import assert from 'http-assert'
-import {
-  lockHostnameOwnershipForUrls,
-  lockTopicHostnameMutations,
-} from '@services/urls-hostnames/ownership-lock'
+import { lockHostnameOwnershipForUrls } from '@services/urls-hostnames/ownership-lock'
 
 type PublicationMutationOptions = UpsertEntityRelationsOptions
 
@@ -32,9 +29,6 @@ export async function runRelationPublicationMutation<
   mutation: (query: TransactionQuery) => Promise<T[]>,
 ): Promise<T[]> {
   const run = async (query: TransactionQuery): Promise<T[]> => {
-    if (relationTable === 'relation__topic__landing_page__url') {
-      await lockTopicHostnameMutations(query, subjectIds)
-    }
     if (
       mutationKind === 'activate' &&
       getEntityRelationUrlTables().includes(relationTable) &&

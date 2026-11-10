@@ -1,6 +1,5 @@
 import { insertRssFeedStateChanges } from './state-changes.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { lockPostPublicationRssFeedScopes } from '@services/post-publication/capture-rss-feeds'
 import { enqueueCapturedPublicationChangeAfterCommit } from '@services/post-publication/direct-capture'
 import type { RssFeedHardDeleteChildPhase } from '@queues/rss-feed-maintenance/types'
 import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
@@ -20,7 +19,6 @@ export async function finalizeHardDeleteRssFeed(
   if (footprint[0]) {
     await withTopicReferenceAttachmentFences([footprint[0].topic_id], { query }, async () => {})
   }
-  await lockPostPublicationRssFeedScopes(query, [rssFeedId])
   const { rows: feeds } = await query<{ topic_id: string }>(
     `/* finalizeHardDeleteRssFeed:feed */
      SELECT topic_id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL FOR UPDATE`,

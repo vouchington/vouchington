@@ -99,7 +99,7 @@ export async function updateMembershipFromEvent(
     await transaction(sql`/* updateMembershipFromEvent:lockUser */
       SELECT users.id FROM memberships membership
       INNER JOIN users ON users.id = membership.user_id
-      WHERE membership.id = ${options.membershipId} FOR UPDATE OF users
+      WHERE membership.id = ${options.membershipId}
     `)
     await options.afterUserLock?.()
     if (options.membershipSourceId !== undefined && options.status === 'cancelled') {

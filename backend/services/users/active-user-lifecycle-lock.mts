@@ -3,8 +3,6 @@ import createHttpError from 'http-errors'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import { lockAuthorPublicationLifecycles } from '@services/post-publication'
 
-export { lockUserSubjectMutationFences } from '@services/user-deletions/active-user-mutation-lock'
-
 /** Retain account deletion and suspension writer fences before entity-specific locks. */
 export async function lockActiveUserLifecycleForMutation(
   query: TransactionQuery,

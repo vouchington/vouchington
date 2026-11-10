@@ -3,10 +3,7 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { isUUID, isUsername } from '@modules/utils'
 import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
-import {
-  lockActiveUserSubjectsForMutation,
-  lockUserSubjectMutationFences,
-} from '@services/user-deletions/active-user-mutation-lock'
+import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import { enqueueReferralClickNotification } from '@queues/notifications/enqueues'
 
 export async function createSessionReferralAttribution({
@@ -60,9 +57,8 @@ export async function createSessionReferralAttribution({
       (id): id is string => typeof id === 'string',
     ),
   )
-  // Every candidate's deletion fence is taken in user-id order; the new owner must be active (the
-  // lock raises otherwise) while a prior owner that has since been deleted is simply skipped.
-  await lockUserSubjectMutationFences(query, [...candidateUserIds])
+  // The new owner must be active (the mutation check raises otherwise). A prior owner that has
+  // since been deleted is skipped by the active-owner read below.
   if (typeof userId === 'string') await lockActiveUserSubjectsForMutation(query, [userId])
   const { rows: activeRows } = await query<{ id: string }>(
     sql`/* createSessionReferralAttribution: read active owners */

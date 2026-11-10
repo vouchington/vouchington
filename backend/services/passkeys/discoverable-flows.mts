@@ -95,10 +95,9 @@ async function readAdmittedPasskey(
     '/* admitDiscoverablePasskeyLogin:userFence */ SELECT fn_lock_active_user_for_mutation($1)',
     [verification.userId],
   )
-  await query(
-    '/* admitDiscoverablePasskeyLogin:userRow */ SELECT id FROM users WHERE id = $1 FOR UPDATE',
-    [verification.userId],
-  )
+  await query('/* admitDiscoverablePasskeyLogin:userRow */ SELECT id FROM users WHERE id = $1', [
+    verification.userId,
+  ])
   return getPasskeyByCredentialId(credentialId, {
     query,
     owner: { currentUserId: verification.userId, passkeyId: verification.passkeyId },

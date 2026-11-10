@@ -12,10 +12,9 @@ export async function assertUserHasSignInMethod(
     '/* assertUserHasSignInMethod:userFence */ SELECT fn_lock_active_user_for_mutation($1)',
     [currentUserId],
   )
-  await query(
-    '/* assertUserHasSignInMethod:lockUser */ SELECT id FROM users WHERE id = $1 FOR UPDATE',
-    [currentUserId],
-  )
+  await query('/* assertUserHasSignInMethod:lockUser */ SELECT id FROM users WHERE id = $1', [
+    currentUserId,
+  ])
   const checks = [
     'SELECT 1 FROM user_email_addresses WHERE user_id = $1',
     ...getConfiguredOAuthProviders().map(

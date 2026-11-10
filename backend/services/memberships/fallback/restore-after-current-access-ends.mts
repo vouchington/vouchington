@@ -39,7 +39,7 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
   options: { membershipSourceId?: string } = {},
 ): Promise<boolean> {
   await query(sql`/* restoreFallbackAfterCurrentAccessEnds: lock user */
-    SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
+    SELECT id FROM users WHERE id = ${userId}`)
   const change = await restoreFallbackAfterCurrentAccessEndsForLockedUser(
     userId,
     membershipId,
@@ -142,7 +142,7 @@ async function getTerminalCurrentMembership(
           membership.cancelled_at IS NOT NULL OR membership.expired_at IS NOT NULL
         ))
       )
-    FOR UPDATE OF membership`)
+`)
   return rows[0] as CurrentMembership | undefined
 }
 async function getHighestPriorityFallbackSource(
@@ -192,7 +192,7 @@ async function getHighestPriorityFallbackSource(
           AND fn_membership_grant_remaining_duration(grant_row.id) >= INTERVAL '1 millisecond'
         )
       )
-    FOR UPDATE OF source_state`)
+`)
   return selectHighestPriorityMembershipSource(
     retainOldestQueuedGrantPerPlan(rows as ValidFallbackSource[]),
   )

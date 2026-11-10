@@ -11,7 +11,6 @@ import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostnam
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { ensureHostnameBlockCleanupOperation } from './cleanup-operation.mts'
-import { hostnameBlockStripeAdvisoryLock } from './hostname-block-lock.mts'
 import {
   toHostnameBlockOperationResult,
   type HostnameBlockOperationResult,
@@ -48,16 +47,10 @@ export async function blockHostnameInTransaction(
   query: TransactionQuery,
   options: BlockHostnameOptions = {},
 ): Promise<BlockHostnameResult> {
-  // The stripe CTE finishes before the per-id advisory lock, and both hash uuid::text.
-  // Projection locks only that stripe, so a block cannot pass a projection that already holds it.
   const { rows } = await query<{ hostname: string }>(
     `/* blockHostname_lockAndGetHostname */
-      WITH stripe_lock AS MATERIALIZED (
-        SELECT ${hostnameBlockStripeAdvisoryLock('$1::uuid')} AS locked
-      )
-      SELECT hostname, pg_advisory_xact_lock(hashtextextended($1::uuid::text, 0))
+      SELECT hostname
       FROM url_hostnames
-      CROSS JOIN stripe_lock
       WHERE id = $1::uuid
       FOR NO KEY UPDATE`,
     [hostnameId],

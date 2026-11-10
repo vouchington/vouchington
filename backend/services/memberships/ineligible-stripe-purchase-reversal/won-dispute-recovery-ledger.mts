@@ -58,7 +58,6 @@ export async function claimWonStripeDisputeRecovery(
     WHERE case_operation.membership_ineligible_purchase_reversal_case_id = ${reversalCase.id}
       AND operation.idempotency_key = ${originalKey}
       AND operation.completed_at IS NOT NULL
-    FOR UPDATE OF operation
   `)
   const original = originalRows[0] as
     | {

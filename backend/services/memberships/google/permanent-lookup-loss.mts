@@ -41,7 +41,7 @@ export async function terminalizeKnownGooglePlaySource(options: {
   const { rows: lockedLineage } = await query<{
     id: string
   }>(sql`/* lockGooglePlayPermanentLookupLineage */
-    SELECT id FROM membership_provider_lineages WHERE id = ${initialKnown.lineageId} FOR UPDATE`)
+    SELECT id FROM membership_provider_lineages WHERE id = ${initialKnown.lineageId}`)
   if (!lockedLineage[0]) throw new Error('Google Play canonical lineage was not returned')
   // A fetched successor can have been waiting to persist while this lookup failed. Recheck the
   // leaf after serializing with its alias write, rather than closing a stale predecessor.

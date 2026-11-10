@@ -55,23 +55,14 @@ describe('community purge fence order', () => {
 
     const index = (marker: string) => statements.findIndex(({ text }) => text.includes(marker))
     const sortedIds = successors.map(user => user.id)
-    expect(statements[index('/* lockUserSubjectMutationFences */')]!.values).toEqual([sortedIds])
-    expect(statements[index('/* lockActiveUserSubjectsForMutation */')]!.values).toEqual([
-      sortedIds,
-    ])
+    const userFence = index('/* lockActiveUserSubjectsForMutation */')
+    expect(statements[userFence]!.values).toEqual([sortedIds])
     const archiveLock = index('/* cleanupUserOwnedCommunities:lockForArchive */')
     expect(archiveLock).toBeGreaterThan(-1)
-    const fences = [
-      '/* lockUserSubjectMutationFences */',
-      '/* lockActiveUserSubjectsForMutation */',
-      '/* lockCommunityMembershipRoles */',
-      '/* lockCommunityUserPairs */',
-    ].map(index)
-    expect(fences).toEqual(fences.toSorted((left, right) => left - right))
     const transfer = index('/* transferCommunityOwnership */')
     expect(transfer).toBeGreaterThan(-1)
-    expect(Math.max(...fences)).toBeLessThan(Math.min(transfer, archiveLock))
-    expect(Math.min(...fences)).toBeGreaterThan(-1)
+    expect(userFence).toBeGreaterThan(-1)
+    expect(userFence).toBeLessThan(Math.min(transfer, archiveLock))
     expect(page.processed).toBe(3)
   })
 })

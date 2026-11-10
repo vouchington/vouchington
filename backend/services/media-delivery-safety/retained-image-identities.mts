@@ -15,7 +15,7 @@ export async function ensureImagePlacementBinding(
   input: ImagePlacementBinding,
 ): Promise<void> {
   const { rowCount: imageCount } = await query(sql`/* ensureImagePlacementBinding:image */
-    SELECT id FROM retained_image_identities WHERE id = ${input.imageId} FOR KEY SHARE
+    SELECT id FROM retained_image_identities WHERE id = ${input.imageId}
   `)
   if (imageCount !== 1) throw new Error('Missing retained image identity for placement')
 
@@ -29,7 +29,7 @@ export async function ensureImagePlacementBinding(
     WHERE placement_id = ${input.placementId}
       AND image_id = ${input.imageId}
       AND binding_family = ${input.bindingFamily}
-    FOR KEY SHARE
+
   `)
   if (bindingCount !== 1) {
     throw new Error('Image placement identity is already bound to another image or family')

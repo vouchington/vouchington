@@ -30,7 +30,7 @@ export async function finalizeAppleVerificationFromPriorAttempt(
       (verified_at IS NOT NULL) DESC,
       id ASC
     LIMIT 1
-    FOR KEY SHARE`)
+`)
   const prior = rows[0] as
     | {
         user_id: string

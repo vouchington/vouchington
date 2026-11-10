@@ -5,11 +5,7 @@ import {
   type QueryOptions,
   type TransactionQuery,
 } from '@data-stores/psql'
-import {
-  lockPostPublicationRssFeedScopes,
-  recordPostPublicationChange,
-} from '@services/post-publication'
-import { lockTopicHostnameOwnership } from '@services/topics/hostname-ownership-lock'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { getRssFeedAutoUpdaterUserId } from '@services/users/system-users'
 import { invalidate } from '@services/entity-cache/invalidate'
 
@@ -39,9 +35,7 @@ async function hideSource(rssFeedId: string, query: TransactionQuery): Promise<v
     [rssFeedId],
   )
   const topicIds = sourceRows.map(row => row.topic_id)
-  await lockTopicHostnameOwnership(query, topicIds, [])
-  // ast-grep-ignore: no-three-sequential-awaits -- The RSS-feed publication lock must follow topic ownership and precede enablement/discoverability writes and their publication capture.
-  await lockPostPublicationRssFeedScopes(query, [rssFeedId])
+  // ast-grep-ignore: no-three-sequential-awaits -- Enablement, publication capture, and discoverability record one hide; the topic soft-delete uses the topic ids read above.
   await query(
     `/* disableAndHideSource:rss_feed */
        INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, changed_by_id, reason)

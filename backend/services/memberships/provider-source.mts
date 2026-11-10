@@ -67,7 +67,7 @@ async function createOrLockProviderLineage(
     SELECT id, provider_account_id FROM membership_provider_lineages
     WHERE membership_provider_context_id = ${contextId}
       AND provider_lineage_id = ${sourceIdentity.providerLineageId}
-    FOR KEY SHARE`)
+`)
   return rows[0] as { id: string; provider_account_id: string | null }
 }
 
@@ -101,8 +101,7 @@ async function createOrLockProviderLineageBinding(
     WHERE membership_provider_lineage_id = ${lineageId}
       AND source_kind = ${options.sourceKind}
       AND released_at IS NULL
-      AND (${options.sourceKind} = 'direct' OR user_id = ${options.userId})
-    FOR UPDATE`)
+      AND (${options.sourceKind} = 'direct' OR user_id = ${options.userId})`)
   const binding = rows[0] as { id: string; user_id: string } | undefined
   if (binding?.user_id !== options.userId)
     throw new ProviderMembershipSourceConflictError('Provider lineage is bound to another account')

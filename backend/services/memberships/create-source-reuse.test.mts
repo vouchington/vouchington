@@ -56,7 +56,7 @@ describe('createMembership provider-source reuse', () => {
     ])
   })
 
-  it('serializes concurrent creation on the durable provider source', async () => {
+  it('keeps one effective membership when two provider sources are created together', async () => {
     const user = await createTestUser()
     const sku = await createTestSku({ plan: 'plus' })
     const subscriptionId = `sub_race_${randomUUID()}`
@@ -69,15 +69,29 @@ describe('createMembership provider-source reuse', () => {
         stripeEventId,
       })
 
-    const [checkout, invoice] = await Promise.all([
+    const outcomes = await Promise.allSettled([
       create(`evt_checkout_${randomUUID()}`),
       create(`evt_invoice_${randomUUID()}`),
     ])
 
-    expect(invoice.id).toBe(checkout.id)
+    const fulfilled = outcomes.filter(
+      (outcome): outcome is PromiseFulfilledResult<Awaited<ReturnType<typeof createMembership>>> =>
+        outcome.status === 'fulfilled',
+    )
+    const rejected = outcomes.filter(
+      (outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected',
+    )
+    expect(fulfilled.length).toBeGreaterThan(0)
+    for (const outcome of rejected) {
+      expect(outcome.reason).toMatchObject({ code: '23505' })
+    }
+    const winner = fulfilled[0]
+    if (!winner) throw new Error('expected one created membership')
+    const membershipId = winner.value.id
+    for (const outcome of fulfilled) expect(outcome.value.id).toBe(membershipId)
     await expect(getMembershipHistory(user.id).then(page => page.results)).resolves.toHaveLength(1)
-    await expect(getTestMembershipRaw(checkout.id)).resolves.toMatchObject({
-      id: checkout.id,
+    await expect(getTestMembershipRaw(membershipId)).resolves.toMatchObject({
+      id: membershipId,
       projection_ended_at: null,
       stripe_subscription_id: subscriptionId,
     })

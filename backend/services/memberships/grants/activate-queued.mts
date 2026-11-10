@@ -17,7 +17,7 @@ export async function activateOldestQueuedGrant(
   membershipSourceId?: string,
 ): Promise<boolean> {
   const { rows: users } = await query(sql`/* activateOldestQueuedGrant: lock user */
-    SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
+    SELECT id FROM users WHERE id = ${userId}`)
   if (users.length === 0) return false
   const change = await activateOldestQueuedGrantForLockedUser(
     userId,

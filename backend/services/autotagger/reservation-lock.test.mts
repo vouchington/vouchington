@@ -31,12 +31,12 @@ function reviseWithEmbedding(fixture: AutotaggerFeedItemFixture) {
 }
 
 describe('C6 reservation lock scope (real PG)', () => {
-  it('detects a held subject lock, so a free reading means something', async () => {
+  it('detects a held post lock, so a free feed-item read means something', async () => {
     const post = await createAutotaggerPostFixture()
     const item = await createAutotaggerFeedItemFixture()
 
     expect(await probeClassifierSubjectLockWhileHeld(adapter, post.subject)).toBe('held')
-    expect(await probeClassifierSubjectLockWhileHeld(adapter, item.subject)).toBe('held')
+    expect(await probeClassifierSubjectLockWhileHeld(adapter, item.subject)).toBe('free')
   })
 
   it('searches a post’s candidates with no lock held, then reserves them', async () => {

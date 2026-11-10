@@ -3,19 +3,12 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import sql from 'sql-template-strings'
 
-async function lockUserDeletionPhase(query: TransactionQuery, userId: string): Promise<void> {
-  await query(sql`/* processUserDeletionPhase:lockUser */
-    SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
-  `)
-  await lockAuthorPublicationLifecycle(query, userId)
-}
-
 export async function withUserDeletionTransaction<T>(
   userId: string,
   operation: (query: TransactionQuery) => Promise<T>,
 ): Promise<T> {
   await using query = await beginTransaction()
-  await lockUserDeletionPhase(query, userId)
+  await lockAuthorPublicationLifecycle(query, userId)
   const result = await operation(query)
   await query.commit()
   return result

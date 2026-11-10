@@ -176,7 +176,7 @@ async function upsertVerifiedEvidence(
       AND evidence.provider_event_id = ${eventId}
       AND evidence.membership_provider_lineage_id = ${fact.membership_provider_lineage_id}
       AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL
-    FOR KEY SHARE OF evidence
+
   `)
   const existing = existingRows[0] as { id: string; observation_id: string | null } | undefined
   if (!existing)

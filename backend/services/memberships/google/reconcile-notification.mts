@@ -81,7 +81,7 @@ export async function reconcileGooglePlayRtdnNotification(options: {
     user_id: string
   }>(sql`/* reconcileGooglePlayRtdnNotification.binding */
     SELECT user_id FROM membership_lineage_bindings WHERE membership_provider_lineage_id = ${lineageId}
-      AND source_kind = 'direct' AND released_at IS NULL FOR KEY SHARE`)
+      AND source_kind = 'direct' AND released_at IS NULL`)
   const userId = rows[0]?.user_id
   if (!userId) {
     // Retain the trigger for a later signed-in proof, but keep the canonical token alias.

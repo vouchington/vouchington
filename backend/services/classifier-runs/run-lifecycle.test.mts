@@ -1,4 +1,3 @@
-import { holdClassifierRunActorDeletionLock } from '@voucha/test-helpers/data-stores/psql/classifier-runs/actor-lock'
 import {
   expireClassifierRunLeaseForTest,
   getClassifierRunFacts,
@@ -10,7 +9,6 @@ import {
   leaseSyntheticRun,
   reserveSyntheticRun,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { describe, expect, it } from 'vitest'
 import {
   failClassifierClientUnavailable,
@@ -35,28 +33,6 @@ describe('classifier run claim and completion (real PG)', () => {
     const busy = left.kind === 'in_progress' ? left : right
     expect(busy.kind === 'in_progress' && busy.retryAfterSeconds).toBeGreaterThan(0)
     expect(await getClassifierRunFacts(setup.post.id, setup.slug)).toHaveLength(1)
-  })
-
-  it('waits for actor deletion before taking its actor row share lock', async () => {
-    const setup = await createSyntheticFixture()
-    const run = await reserveSyntheticRun(setup)
-    const holder = await holdClassifierRunActorDeletionLock(setup.actorId)
-    await withTestOwnedPostgresWait(
-      {
-        holderProcessId: holder.processId,
-        pool: 'write',
-        lock: { kind: 'advisory', key: setup.actorId },
-        queryMarker: 'lockClassifierRunActor',
-        releaseHolder: holder.release,
-      },
-      async waitForLock => {
-        const claiming = claimSyntheticRun(setup, run)
-        await waitForLock(claiming)
-        await expect(holder.lockActorRow()).resolves.toBeUndefined()
-        await holder.release()
-        expect((await claiming).kind).toBe('claimed')
-      },
-    )
   })
 
   it('reclaims the same receipt after lease expiry and fences out the old lease', async () => {

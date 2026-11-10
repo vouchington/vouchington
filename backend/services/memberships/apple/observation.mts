@@ -48,6 +48,6 @@ export async function acceptAndInsertAppleObservation(
       AND provider_order = ${providerOrder}
       AND source_kind = ${observation.sourceKind}
       AND membership_product_id = ${mapping.membershipProductId}
-    FOR KEY SHARE`)
+`)
   return (existingRows[0] as { id: string } | undefined)?.id ?? null
 }

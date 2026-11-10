@@ -4,7 +4,6 @@ import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import { getActiveCommunityMembersForUsers } from './members/batch.mts'
 import type { Community } from './types.mts'
-import { lockCommunityRoleMutation } from './bans/lock.mts'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueSendCommunityOwnershipTransferEmail } from '@queues/emails/enqueues'
@@ -26,8 +25,6 @@ export async function initiateOwnershipTransfer(
 
   await using query = await beginTransaction()
   const opts = { query }
-
-  await lockCommunityRoleMutation(query, communityId, [currentUserId, targetUserId])
 
   const members = await getActiveCommunityMembersForUsers(
     communityId,

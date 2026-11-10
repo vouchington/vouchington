@@ -73,7 +73,7 @@ export async function ensureGooglePlayAcknowledgement(options: {
       AND context.environment = ${options.environment}
       AND context.application_id = ${options.applicationId}
       AND acknowledgement.purchase_token_lookup_sha256 = ${lookup}
-    FOR KEY SHARE OF acknowledgement`)
+`)
   const { rows } = await selectIdentity(query)
   if (
     rows[0]?.membership_provider_lineage_id !== options.lineageId ||

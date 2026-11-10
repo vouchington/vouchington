@@ -1,5 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockTopicMergeAdmission } from '../../services/topics/merge-preflight.mts'
 
 type VoteInput = { parent: 'source' | 'destination'; userId: string; score: number | null }
 export type TopicMergeRelationFixture = {
@@ -22,7 +21,6 @@ export async function seedBoundedTopicMergeRelations(
     conflictingFlags?: boolean
   },
 ): Promise<TopicMergeRelationFixture> {
-  await lockTopicMergeAdmission(query)
   const { rows } = await query<{ id: string; subject_id: string }>(
     `/* seedBoundedTopicMergeRelations parents */
     INSERT INTO relation__topic__related__topic (subject_id, object_id, created_by_id, deleted_at)

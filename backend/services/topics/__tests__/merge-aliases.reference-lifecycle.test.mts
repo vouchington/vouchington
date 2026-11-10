@@ -69,17 +69,12 @@ describe('topic merge reference lifecycle', () => {
     ])
   })
 
-  it('rejects a contending new reference instead of waiting behind publication locks', async () => {
+  it('accepts a new reference without a lifecycle advisory fence', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic({ user })
     await withTopicReferenceGuardFence(topic.id, async () => {
-      await expect(insertTopicReferenceGuardFollow(topic.id, user.id)).rejects.toMatchObject({
-        status: 409,
-        code: 'topic_reference_busy',
-        topic_id: topic.id,
-      })
+      await insertTopicReferenceGuardFollow(topic.id, user.id)
     })
-    await insertTopicReferenceGuardFollow(topic.id, user.id)
     await expect(getTopicMergeRelations(topic.id, topic.id, user.id)).resolves.toMatchObject({
       follows: [{ object_id: topic.id }],
     })
