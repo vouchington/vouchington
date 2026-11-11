@@ -4,6 +4,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
 import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-deletions'
+import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { purgeCacheTags } from '@services/entity-cache/purge'
 import {
@@ -139,6 +140,8 @@ export async function deleteUser(
     'User deletion follow-ups failed',
   )
   await enqueueDeleteUserBookmarkBloomFilterBestEffort(user.id)
+  // Delivery denial is post-commit: the scheduled reconciliation repairs a missed enqueue.
+  void enqueueReconcileMediaDeliveryRegistry()
   try {
     await enqueueUserDeletion({
       requestId: deletion.request.id,

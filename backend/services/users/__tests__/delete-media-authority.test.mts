@@ -1,3 +1,4 @@
+import * as notificationEnqueues from '@queues/notifications/enqueues'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
@@ -11,6 +12,7 @@ import { createProfileLink } from '../../my/profile-links.mts'
 import { deleteUser } from '../delete.mts'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { processMediaDeliveryRegistryRecord } from '../../media-delivery-safety/index.mts'
+import { processReconcileMediaDeliveryRegistry } from '../../../workers/notifications/processors/media-delivery-registry.mts'
 
 describe('user deletion media authority', () => {
   afterEach(() => {
@@ -38,7 +40,10 @@ describe('user deletion media authority', () => {
     const edge = installTestMediaDeliveryEdge()
     await processMediaDeliveryRegistryRecord(recordId!)
     expect(edge.records.get(key)?.state).toBe('allow')
+    const reconcile = vi.spyOn(notificationEnqueues, 'enqueueReconcileMediaDeliveryRegistry')
     await deleteUser(user, user)
+    expect(reconcile).toHaveBeenCalledTimes(1)
+    await processReconcileMediaDeliveryRegistry({}, { recordIds: [recordId!], imageIds: [imageId] })
     await processMediaDeliveryRegistryRecord(recordId!)
     expect(edge.records.get(key)?.state).toBe('withheld')
     expect((await getTestUserRaw(user.id))?.deleted_at).toBeInstanceOf(Date)
