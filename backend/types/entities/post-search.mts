@@ -7,9 +7,6 @@ export type PostSearchSort = 'new' | 'best' | 'hot' | 'trending' | 'relevance' |
 // Result type for post search responses
 export type PostSearchResult = PaginatedResult<'post'> & {
   post_type: string
-  title?: string
-  data_point_vertical?: string | null
-  structured_data?: unknown
   trending_score?: number
 }
 
@@ -115,8 +112,6 @@ type PostSearchPaginationOptions =
 type PostSearchQueryOptions = {
   // Pre-computed embedding for semantic search (computed before SQL)
   semanticSearchEmbedding?: number[]
-  // Data-point search returns title, vertical, and structured_data from this read.
-  hydrateDataPointPage?: boolean
   // First-page instant for an explicit finite time_range. Omitted and `all` leave this unset.
   time_range_as_of?: Date
   // Internal cursor parameters (decoded from 'after', used by query builder)

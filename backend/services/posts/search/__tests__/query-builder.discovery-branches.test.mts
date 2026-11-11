@@ -21,7 +21,7 @@ describe('discovery search branches', () => {
     )
   })
 
-  it('selects community page columns for best, trending, and hydrated data points', () => {
+  it('selects community page columns for best and trending', () => {
     const best = buildPostSearchQuery(undefined, { community_id: COMMUNITY_ID, sort: 'best' })
     expect(best.sql).toContain('candidate_posts.vote_score')
     expect(best.sql).toContain('candidate_posts AS NOT MATERIALIZED')
@@ -36,15 +36,6 @@ describe('discovery search branches', () => {
     expect(trending.sql).toContain('candidate_posts.trending_score')
     expect(trending.sql).toContain('relation__post__category__topic trending_topic')
     expect(trending.values).toContain(1)
-
-    const hydrated = buildPostSearchQuery(undefined, {
-      community_id: COMMUNITY_ID,
-      sort: 'new',
-      hydrateDataPointPage: true,
-    })
-    expect(hydrated.sql).toContain('candidate_posts.title')
-    expect(hydrated.sql).toContain('candidate_posts.data_point_vertical')
-    expect(hydrated.sql).toContain('candidate_posts.structured_data')
   })
 
   it('keeps pending and rejected recommendation filters on the keyed lookup', () => {

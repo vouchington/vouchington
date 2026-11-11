@@ -112,7 +112,6 @@ export function buildPostSearchQuery(
       followingRankExpression,
       hasSemanticSearch,
       hasTextSearch,
-      hydrate: options.hydrateDataPointPage === true,
       ranking: rankingScoreExpression !== null,
       sort,
     })
@@ -128,7 +127,6 @@ function appendCommunityCandidatePage(
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
-    hydrate,
     ranking,
     sort,
   }: {
@@ -136,7 +134,6 @@ function appendCommunityCandidatePage(
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
     hasTextSearch: boolean
-    hydrate: boolean
     ranking: boolean
     sort: PostSearchSort
   },
@@ -145,12 +142,6 @@ function appendCommunityCandidatePage(
     SELECT
       candidate_posts.id,
       candidate_posts.post_type`)
-  if (hydrate) {
-    query.append(sql`,
-      candidate_posts.title,
-      candidate_posts.data_point_vertical,
-      candidate_posts.structured_data`)
-  }
   if (ranking) query.append(sql`,\n      candidate_posts.ranking_score`)
   if (followingRankExpression) query.append(sql`,\n      candidate_posts.following_rank`)
   query.append(communitySortColumns(sort))
