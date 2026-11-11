@@ -1,4 +1,5 @@
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
+import { readCopyrightEmailPromotionEffects } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -61,7 +62,7 @@ describe('copyright email promotion graph bound', () => {
     }
   })
 
-  it('leaves a reply unlinked when reference tokens exceed the graph budget', async () => {
+  it('keeps the same case and unlinked reply when an over-budget promotion is replayed', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()
     const root = await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
@@ -74,11 +75,25 @@ describe('copyright email promotion graph bound', () => {
     })
     const log = vi.spyOn(console, 'info').mockImplementation(() => {})
     try {
-      const promoted = await promoteCopyrightEmailIntake(
-        await copyrightEmailPromotionInput(moderator, root.intakeId),
+      const input = await copyrightEmailPromotionInput(moderator, root.intakeId)
+      const promoted = await promoteCopyrightEmailIntake(input)
+      const before = await readCopyrightEmailPromotionEffects(
+        root.intakeId,
+        input.targets[0]!.placementId,
       )
+      const replayed = await promoteCopyrightEmailIntake(input)
+      const after = await readCopyrightEmailPromotionEffects(
+        root.intakeId,
+        input.targets[0]!.placementId,
+      )
+      expect(replayed).toEqual(promoted)
+      expect(after).toEqual(before)
       expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
       expect(log.mock.calls).toEqual([
+        [
+          'copyright_email_thread_token_lock_overflow',
+          { noticeId: promoted.noticeId, observedRows: 4 },
+        ],
         [
           'copyright_email_thread_token_lock_overflow',
           { noticeId: promoted.noticeId, observedRows: 4 },
