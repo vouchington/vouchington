@@ -22,25 +22,29 @@ export function createRssFeedImportBatchForTest(
   )
 }
 
-/** An oldest-first recovery fixture with one pending or terminal row and no completed batch marker. */
+/** A recently stale recovery fixture that stays outside the worker's default cutoff. */
 export async function createStaleRssFeedImportBatchForTest(
   userId: string,
-  inputUrl: string,
+  inputUrls: string[],
   terminalError = false,
 ): Promise<string> {
   const { rows } = await write<{ batch_id: string }>(sql`/* createStaleRssFeedImportBatchForTest */
     WITH import_batch AS (
       INSERT INTO user_rss_feed_import_batches (user_id, created_via, total_rows, updated_at)
-      VALUES (${userId}, 'web', 1, '-infinity'::timestamptz)
+      VALUES (${userId}, 'web', ${inputUrls.length}, CURRENT_TIMESTAMP - INTERVAL '2 seconds')
       RETURNING id
     )
     INSERT INTO user_rss_feed_import_rows
       (batch_id, row_index, input_url, outcome, failed_at, error_message)
-    SELECT import_batch.id, 0, ${inputUrl},
+    SELECT import_batch.id, input.row_index, input.input_url,
       CASE WHEN ${terminalError} THEN 'error'::user_rss_feed_import_row_outcomes END,
       CASE WHEN ${terminalError} THEN CURRENT_TIMESTAMP END,
       CASE WHEN ${terminalError} THEN 'RELATION_LIMIT_REACHED' END
     FROM import_batch
+    CROSS JOIN UNNEST(
+      ${inputUrls.map((_, index) => index)}::int[],
+      ${inputUrls}::text[]
+    ) AS input(row_index, input_url)
     RETURNING batch_id
   `)
   return rows[0]!.batch_id
