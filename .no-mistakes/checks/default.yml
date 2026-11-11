@@ -3,6 +3,18 @@ commands:
     command: [pnpm, exec, tsc, --noEmit, --incremental, --project, backend/tsconfig.json]
     fileArgs: none
     always: true
+  - name: patch-coverage
+    command: [pnpm, run, impacted-checks:coverage]
+    fileArgs: append
+    include:
+      - 'backend/**'
+      - 'email-templates/**'
+      - 'web/**'
+      - 'lambdas/**'
+      - 'cloudflare-worker/**'
+      - 'ts-shared/**'
+      - .coverage-rules.yml
+      - 'ci/vitest/project-ownership*.mts'
   - name: typecheck-backend-email
     command: [pnpm, exec, tsc, --noEmit, --incremental, --project, email-templates/tsconfig.json]
     fileArgs: none
@@ -29,6 +41,7 @@ commands:
     command: [bash, -c, 'pnpm run backend-row-contracts:check && pnpm run api-fixtures:check']
     fileArgs: none
     include:
+      - 'backend/**/*.mts'
       - 'api-contracts/**'
       - 'api-fixtures/**'
       - 'backend/test-helpers/api-fixtures/**'
@@ -38,9 +51,10 @@ commands:
       - 'backend/services/queue-monitoring/scheduled-job-manifests.mts'
   # Needs the worktree backend env (`./dev/initialize backend`): the registry loads data stores.
   - name: mcp-catalog
-    command: [bash, -c, 'if [ -f .env ]; then source .env; fi; pnpm run mcp:catalog -- --check']
+    command: [node, backend/scripts/generate-mcp-catalog.mts, --check]
     fileArgs: none
     include:
+      - 'backend/**/*.mts'
       - 'backend/mcp/**'
       - 'backend/services/mcp-tools/**'
       - 'backend/scripts/*mcp*'
@@ -48,6 +62,14 @@ commands:
       - 'api-contracts/**'
       - 'api-fixtures/v1/mcp*.json'
       - docs/overview/architecture/mcp/catalog.md
+  - name: backend-contract-inventories
+    command: [bash, -e, .github/workflows/checks-static-backend-contracts.sh]
+    fileArgs: none
+    include:
+      - 'backend/**'
+      - 'api-contracts/**'
+      - 'api-fixtures/**'
+      - '.github/workflows/checks-static-backend-contracts.sh'
   - name: web-route-selector-map
     command:
       [node, static-code-analysis/i18n-extract/route-selector-map.mts, --check, --diagnostics]
@@ -58,6 +80,26 @@ commands:
       - 'web/**/*.mts'
       - 'localization/catalog/**'
       - 'static-code-analysis/i18n-extract/**'
+  - name: web-route-localization-bounds
+    command: [node, ci/check-live-web-route-localization.mts]
+    fileArgs: none
+    include:
+      - 'web/**'
+      - 'localization/catalog/**'
+      - 'static-code-analysis/i18n-extract/**'
+  - name: storybook-component-coverage
+    command: [bash, .github/workflows/static-code-analysis-story-coverage.sh]
+    fileArgs: none
+    include:
+      - 'web/**'
+      - '.github/workflows/static-code-analysis-story-coverage.sh'
+  - name: storybook-play-functions
+    command: [pnpm, run, test:web-storybook-browser]
+    fileArgs: none
+    include:
+      - 'web/**'
+      - 'ts-shared/**'
+      - 'test-helpers/vitest-config/storybook-browser-optimize-deps.mts'
   # Compares the live schema with the committed snapshot; migrate the worktree database first.
   - name: postgresql-schema-snapshot
     command: [pnpm, run, db:snapshot:check]
@@ -67,6 +109,30 @@ commands:
       - 'backend/data-stores/psql/config-driven/**'
       - 'backend/data-stores/psql/views/**'
       - 'backend/data-stores/psql/schema-snapshot/**'
+  - name: postgresql-squawk
+    command: [pnpm, run, squawk]
+    fileArgs: none
+    include:
+      - 'backend/data-stores/psql/migrations/**'
+      - 'backend/data-stores/psql/config-driven/**'
+      - 'backend/data-stores/psql/views/**'
+      - .squawk.toml
+  - name: native-materialized-view-contracts
+    command:
+      [
+        node,
+        --experimental-test-module-mocks,
+        backend/scripts/check-materialized-view-contracts.mts,
+      ]
+    fileArgs: none
+    include:
+      - 'backend/**'
+  - name: postgresql-schema-tests
+    command: [pnpm, run, test:backend:postgres-schema]
+    fileArgs: none
+    include:
+      - 'backend/data-stores/psql/**'
+      - 'backend/scripts/check-materialized-view-contracts.mts'
   - name: typecheck-ts-shared
     command: [pnpm, exec, tsc, --noEmit, --incremental, --project, ts-shared/tsconfig.json]
     fileArgs: none
@@ -124,6 +190,24 @@ commands:
       - 'ts-shared/**'
       - package.json
       - pnpm-lock.yaml
+  - name: dependency-cruise-lambdas
+    command: [pnpm, run, dep-cruise:lambdas]
+    fileArgs: none
+    include:
+      - 'lambdas/**'
+      - 'ts-shared/**'
+      - package.json
+      - pnpm-lock.yaml
+  - name: dependency-cruise-scripts
+    command: [pnpm, run, dep-cruise:scripts]
+    fileArgs: none
+    include:
+      - 'dev/**'
+      - 'ci/**'
+      - 'static-code-analysis/**'
+      - 'playwright/**'
+      - package.json
+      - pnpm-lock.yaml
   # Mirrors the vouchington-tooling actionlint workflow's zizmor step (#4018); .mise.toml pins it.
   - name: zizmor
     command: [zizmor, --offline, --min-severity, high, --min-confidence, high, .]
@@ -139,6 +223,14 @@ commands:
     always: true
   - name: knip-unused-files
     command: [pnpm, exec, knip, --treat-config-hints-as-errors]
+    fileArgs: none
+    always: true
+  - name: jscpd-clone-size
+    command: [pnpm, run, jscpd]
+    fileArgs: none
+    always: true
+  - name: jscpd-dead-code
+    command: [pnpm, run, jscpd:dead-code]
     fileArgs: none
     always: true
   - name: no-mistakes-rules
@@ -183,21 +275,22 @@ commands:
     fileArgs: none
     always: true
   - name: live-repository-policies
-    command: [node, ci/check-repository-policy-scans.mts]
+    command:
+      [
+        bash,
+        -c,
+        'pnpm exec vouchington workspace-registry-check && node ci/check-repository-policy-scans.mts',
+      ]
     fileArgs: none
     always: true
   - name: backend-dependency-boundaries
     command: [pnpm, run, dep-cruise:backend]
     fileArgs: none
     include:
-      - 'backend/**/*.mts'
-      - 'backend/**/*.cjs'
-      - 'ts-shared/**/*.ts'
+      - 'backend/**'
+      - 'ts-shared/**'
       - '**/package.json'
       - pnpm-lock.yaml
-    exclude:
-      - '**/*.test.mts'
-      - '**/test-helpers/**'
   - name: knip-production-exports
     command: [pnpm, run, knip:production-exports]
     fileArgs: none
@@ -205,14 +298,10 @@ commands:
       - 'backend/**/*.mts'
       - '**/package.json'
       - knip.jsonc
-    exclude:
-      - '**/*.test.mts'
-      - '**/test-helpers/**'
-  # CI lints the whole repository (#3505); appending only the changed files keeps the listed
-  # local command cheap. It cannot append their dependents, which before-pushing adds.
+  # CI lints the whole repository; this also reaches unchanged callers and test line caps.
   - name: oxlint-type-aware
-    command: [pnpm, exec, oxlint, --type-aware, --deny-warnings]
-    fileArgs: append
+    command: [pnpm, run, oxlint]
+    fileArgs: none
     include:
       - '**/*.ts'
       - '**/*.tsx'
