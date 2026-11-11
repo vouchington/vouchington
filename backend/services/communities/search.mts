@@ -141,16 +141,22 @@ export async function searchCommunities(
   searchQuery.append(sql`,
       vm.member_count,
       vm.post_count,
-      vm.list_item_count,
+      selected.list_item_count,
       vm.proxy_follow_count,
       vm.proxy_mute_count,
       vm.virtual_subscription_count`)
   searchQuery.append(sql`
     FROM candidate_communities selected
-    JOIN communities c ON c.id = selected.id
-    LEFT JOIN users u ON u.id = c.created_by_id`)
+    JOIN communities c ON c.id = selected.id`)
+  // Each candidate carries the maintained list count from its keyed count row.
+  searchQuery.append(sql` LEFT JOIN users u ON u.id = c.created_by_id`)
+  // The transactionally maintained list count matches the metrics view. Avoid recounting
+  // every item in that view for each hydrated community.
   searchQuery.append(sql` JOIN LATERAL (
-    WITH keyed_metrics AS MATERIALIZED (SELECT * FROM view_community_metrics WHERE id = selected.id)
+    WITH keyed_metrics AS MATERIALIZED (
+      SELECT id, member_count, post_count, proxy_follow_count, proxy_mute_count,
+        virtual_subscription_count
+      FROM view_community_metrics WHERE id = selected.id)
     SELECT * FROM keyed_metrics
   ) vm ON TRUE`)
   searchQuery.append(communitySelectedSortOrder(sort))
