@@ -33,14 +33,9 @@ export async function beginTransaction(
 ): Promise<OwnedTransaction> {
   const { serializable, ...adapterOptions } = options
   const transaction = ownTransaction(await psql.beginTransaction(adapterOptions))
-  if (!serializable) return transaction
-  try {
-    // Must run before the transaction's first query so its snapshot is SERIALIZABLE.
+  // Must run before the transaction's first query so its snapshot is SERIALIZABLE.
+  if (serializable)
     await transaction('/* beginSerializable */ SET TRANSACTION ISOLATION LEVEL SERIALIZABLE')
-  } catch (err) {
-    await transaction.rollback()
-    throw err
-  }
   return transaction
 }
 
