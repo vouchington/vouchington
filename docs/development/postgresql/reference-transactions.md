@@ -48,6 +48,12 @@ used.
   accepted.
 - **Removing a lock means deleting it**, not replacing it with another serialization mechanism such
   as a counter table, projection row, or claim table.
+- **Write skew that must hold runs at SERIALIZABLE.** Where best effort is not acceptable, such as
+  an administrator keeping an MFA method, the conflicting transactions run at SERIALIZABLE and a
+  serialization failure (SQLSTATE `40001`) returns 409. There is no retry, and no lock, advisory
+  lock, or conflict-forcing column. The owner's words (2026-11-10): "409s instead of locks and for
+  simplicity are usually fine, especially for rare scenarios". The cost is a rare 409 the caller
+  can resubmit; the benefit is no lock set that grows or deadlocks.
 
 **Why:**
 
