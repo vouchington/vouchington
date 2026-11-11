@@ -12,6 +12,9 @@ import {
   resolveCopyrightLegalHold,
 } from './index.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+import { claimCopyrightActionIntent } from './action-delivery-state.mts'
+import { completeCopyrightActionIntentInTransaction } from './action-delivery-locking.mts'
+import { beginTransaction } from '@data-stores/psql'
 import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold as recordHold,
@@ -22,6 +25,28 @@ describe('ordinary copyright hold restoration', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
+  })
+
+  it('blocks a restore a worker already claimed, so its completion matches no row', async () => {
+    installTestMediaDeliveryEdge()
+    const scene = await openHeldCounterNoticeRestore()
+    const claimed = await claimCopyrightActionIntent(scene.restore.id, scene.restorationAt)
+    expect(claimed).not.toBeNull()
+    await recordHold(scene)
+    const aggregate = await getCopyrightNoticePrivateAggregate(scene.notice.id)
+    expect(aggregate?.actionIntents.find(intent => intent.id === scene.restore.id)?.state).toBe(
+      'blocked',
+    )
+    await using transaction = await beginTransaction()
+    await expect(
+      completeCopyrightActionIntentInTransaction({
+        intentId: scene.restore.id,
+        leaseToken: claimed!.lease_token,
+        outcome: 'completed',
+        completedAt: scene.restorationAt,
+        query: transaction,
+      }),
+    ).rejects.toThrow('lease expired')
   })
 
   it('reopens the original statutory restore only after both ordinary holds resolve', async () => {
