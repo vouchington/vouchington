@@ -73,13 +73,11 @@ export function insertCopyrightEmailManualAssociationEvent(
   `)
 }
 
-/** Hold the case row as the retention sweep does before recording erasure. */
+/** Record the erasure fact with the same written-row lock as the final evidence marker. */
 export async function markTestCopyrightNoticeErased(
   noticeId: string,
   transaction: TransactionQuery,
 ): Promise<void> {
-  await transaction(sql`/* markTestCopyrightNoticeErased:lock */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`)
   await transaction(sql`/* markTestCopyrightNoticeErased:fact */
     UPDATE copyright_notices SET evidence_erased_at = clock_timestamp()
     WHERE id = ${noticeId}`)
@@ -111,6 +109,7 @@ export async function searchTestCopyrightAssociationsInTimeZone(
 export async function associateCopyrightEmailAfterErasure<Result>(
   noticeId: string,
   associate: () => Promise<Result>,
+  queryMarker = 'associateCopyrightEmailIntakeWithNotice:link',
 ): Promise<Result> {
   await using erasure = await beginTransaction()
   await markTestCopyrightNoticeErased(noticeId, erasure)
@@ -120,7 +119,7 @@ export async function associateCopyrightEmailAfterErasure<Result>(
       holderProcessId: processId,
       pool: 'write',
       lock: { kind: 'transaction' },
-      queryMarker: 'associateCopyrightEmailIntakeWithNotice:link',
+      queryMarker,
       releaseHolder: () => erasure[Symbol.asyncDispose](),
     },
     async waitForLock => {
