@@ -12,18 +12,27 @@ interface GetOptions {
 export const getTopicRecommendations = cache(function getTopicRecommendations(
   options: GetOptions = {},
 ): Promise<PostsResponseBody> {
-  return serverApi.get('/api/v1/topic-recommendations', options)
+  const { searchParams, ...requestOptions } = options
+  const { status, ...otherSearchParams } = searchParams ?? {}
+  return serverApi.get('/api/v1/posts', {
+    ...requestOptions,
+    searchParams: {
+      ...otherSearchParams,
+      post_types: 'topic_recommendation',
+      topic_recommendation_status: status,
+    },
+  })
 })
 
 export const getTopHashtags = cache(function getTopHashtags(
   options: GetOptions = {},
 ): Promise<TopHashtagsResponseBody> {
-  return serverApi.get('/api/v1/topic-recommendations/top-hashtags', options)
+  return serverApi.get('/api/v1/topics/top-hashtags', options)
 })
 
 export const getTopicRecommendation = cache(function getTopicRecommendation(
   id: string,
   options?: { headers?: Record<string, string> },
 ): Promise<PostResponseBody | null> {
-  return returnNullForMissingEntity(serverApi.get(`/api/v1/topic-recommendations/${id}`, options))
+  return returnNullForMissingEntity(serverApi.get(`/api/v1/posts/${id}`, options))
 })

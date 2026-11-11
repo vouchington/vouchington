@@ -1,3 +1,4 @@
+import { getRecommendationReviewerUsers } from '@services/topic-recommendations/reviewer-users'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getPostElectionVotesByUser } from '@services/elections-votes/post'
@@ -164,6 +165,7 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
     post_hacker_news_references: getPostHackerNewsDetails([post.id]),
   }
 
+  output.users = getRecommendationReviewerUsers([post])
   if (currentUser) {
     output.bookmarks = getBookmarksForEntities(currentUser, 'post', [post.id]).then(b =>
       Object.keys(b).length > 0 ? b : undefined,

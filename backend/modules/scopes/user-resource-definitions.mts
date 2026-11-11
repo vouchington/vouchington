@@ -28,7 +28,6 @@ const USER_RESOURCE_SCOPES = {
   'rss-feed-items': ['read', 'write'],
   'rewards-statuses': ['read', 'write'],
   spending: ['read', 'write'],
-  'topic-recommendations': ['write'],
   topics: ['read'],
   users: ['read'],
   votes: ['write'],
@@ -54,11 +53,9 @@ export function userResourceDefinitions(): Record<string, ScopeDefinition> {
         {
           action: action as ScopeAction,
           audience: 'user',
-          ...(action === 'write' && resource === 'topic-recommendations'
-            ? { requires: 'posts:read' }
-            : action === 'write' && actions.some(candidate => candidate === 'read')
-              ? { requires: `${resource}:read` }
-              : {}),
+          ...(action === 'write' && actions.some(candidate => candidate === 'read')
+            ? { requires: `${resource}:read` }
+            : {}),
           ...(SENSITIVE_DESCRIPTIONS[`${resource}:${action}`]
             ? {
                 descriptionKey: SENSITIVE_DESCRIPTIONS[`${resource}:${action}`],

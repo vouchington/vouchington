@@ -11,11 +11,15 @@ import { createCodedError } from '@vouchington/sentry'
 import { IDENTITY_REQUIRED } from '@modules/on-error/error-codes'
 import {
   admitDelegatedContribution,
-  contributionPolicySourceForPostType,
   executePreparedContribution,
 } from '@services/contribution-gating'
 import { preparePostWithCommunityReviews, type CreatePostInput, type Post } from '@services/posts'
-import { validateCreatePostInput } from '@services/posts/create/validation'
+import {
+  preparePostWrite,
+  validatePostWriteInput,
+  postWriteAdmission,
+  assertPostWriteBeforeCommit,
+} from '@services/post-writes'
 import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
 import {
   assertOfficialAccountCanCreatePost,
@@ -28,51 +32,27 @@ import {
   canonicalEntityIds,
   MISSING_REFERENCE_ID,
 } from './resolve-entity-reference.mts'
-import {
-  communityReferenceSchema,
-  postReferenceSchema,
-  topicReferenceSchema,
-} from './entity-reference-schema.mts'
+
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requireActiveToolUser } from './private-user.mts'
-import { toWrittenMcpPost, type McpPost } from './mcp-post-output.mts'
+import { toWrittenMcpPost, type McpPostSummary as McpPost } from './mcp-post-output.mts'
 import {
   loadWritablePost,
-  postWriteParameters,
+  postCreateParameters,
   POST_WRITE_SCOPES,
   POST_WRITE_RESULT_SCHEMA,
 } from './post-write-tool-support.mts'
 
 type AdmittedPost = Post | Awaited<ReturnType<typeof preparePostWithCommunityReviews>>['response']
 type Args = CreatePostInput & { idempotency_key: string }
-const parameters = postWriteParameters('POST:/api/v1/posts')
-const postProperties = parameters.properties as Record<string, Record<string, unknown>>
-if (postProperties.community_id) {
-  const { format: _communityFormat, ...community } = postProperties.community_id
-  postProperties.community_id = { ...community, description: communityReferenceSchema.description }
-}
-if (postProperties.parent_post_id) {
-  const { format: _parentFormat, ...parent } = postProperties.parent_post_id
-  postProperties.parent_post_id = { ...parent, description: postReferenceSchema.description }
-}
-for (const field of Object.values(postProperties)) loosenTopicIdentifiers(field)
-
-function loosenTopicIdentifiers(value: unknown): void {
-  if (!value || typeof value !== 'object') return
-  const record = value as Record<string, unknown>
-  if (record.topic_id && typeof record.topic_id === 'object' && !Array.isArray(record.topic_id)) {
-    const { format: _format, ...topic } = record.topic_id as Record<string, unknown>
-    record.topic_id = { ...topic, description: topicReferenceSchema.description }
-  }
-  for (const child of Object.values(record)) loosenTopicIdentifiers(child)
-}
+const parameters = postCreateParameters()
 
 const tool: Tool<Args, { success: true; post: McpPost }> = {
   schema: {
     name: 'create_post',
     type: 'function',
     description:
-      'Create a post, or reply with post_type comment and parent_post_id. Send community_id for a community root post. Story and topic recommendation posts use dedicated workflows. Reuse the UUID idempotency_key with the same body to retry safely.',
+      'Create a post, or reply with post_type comment and parent_post_id. Send community_id for a community root post. Use story_id with post_type story, rss_feed_item_id with post_type link, and topic proposal fields with post_type topic_recommendation. Reuse the UUID idempotency_key with the same body to retry safely.',
     parameters: {
       ...parameters,
       properties: {
@@ -136,12 +116,12 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
     if (communityId) {
       assert(isCommunityRootPostType(postType), 422, 'Unsupported community post_type')
     }
+    let rssFeedItem: Awaited<ReturnType<typeof validatePostWriteInput>>
     const admitted = await admitDelegatedContribution<AdmittedPost>({
       authority,
       currentUser: user,
       membershipPlan,
-      source: contributionPolicySourceForPostType(postType, isAdminUser(user)),
-      scope: communityId ? `community:${communityId}` : 'global',
+      ...postWriteAdmission(body, isAdminUser(user)),
       postType,
       idempotencyKey: idempotency_key,
       intent: communityId
@@ -173,17 +153,18 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
         assert(body.slug === undefined || isAdminUser(user), 403, 'Only admins can set a post slug')
         assertCanCreateAdminOnlyPostType(user, postType)
         assertOfficialAccountCanCreatePost(user, body.post_type)
-        await validateCreatePostInput(user, body, membershipPlan)
+        rssFeedItem = await validatePostWriteInput(user, body, membershipPlan)
         if (body.parent_post_id) await loadWritablePost(user, body.parent_post_id, 'reply')
       },
+      beforeCommit: () => assertPostWriteBeforeCommit(body),
       execute: query =>
         executePreparedContribution<AdmittedPost>(query, async () => {
-          const prepared = await preparePostWithCommunityReviews(
+          const prepared = await preparePostWrite(
             user,
             getRequestContentProvenance(),
             body,
             membershipPlan,
-            { query, delegated: true },
+            { query, delegated: true, rssFeedItem },
           )
           if (communityId) return prepared
           return {

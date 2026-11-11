@@ -1,3 +1,4 @@
+import { getRecommendationReviewerUsers } from '@services/topic-recommendations/reviewer-users'
 import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 
@@ -109,6 +110,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
     results: result.results,
     page_info: result.page_info,
     posts: postsWithRootsPromise.then(indexById),
+    users: postsPromise.then(getRecommendationReviewerUsers),
     posts_metrics: getPostMetricsByAnyCachedBatch(postIds).then(indexById),
     post_elections: electionsPromise
       .then(groups => groups.post)

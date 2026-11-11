@@ -9,7 +9,11 @@ import { getPostsOrDeletedCommentStubs, type Post } from '@services/posts'
 import type { BasicUser } from '@services/users/types'
 import createHttpError from 'http-errors'
 import { resolveReadableThread } from './mcp-post-access.mts'
-import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
+import {
+  mcpPostSchema,
+  toMcpPostSummaries as toMcpPosts,
+  type McpPostSummary as McpPost,
+} from './mcp-post-output.mts'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
 import { parseCommentDescendantPagination } from '@services/search-params/comment-descendant-pagination'
 
@@ -28,7 +32,7 @@ const { min, max, default: defaultLimit } = COMMENT_DESCENDANTS_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Page direct-child heads with bounded previews. IDs sort per page. Follow opaque end_cursor on empty pages; it may skip unseen heads. has_next_page means more heads, not all replies. Expand returned comments via post_id. Deleted or unmoderated replies are placeholders.',
+      'Page child heads with bounded previews; follow end_cursor even on empty pages. has_next_page means more heads, not replies. Expand via post_id. Deleted/unmoderated replies are placeholders.',
     parameters: {
       type: 'object',
       properties: {

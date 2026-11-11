@@ -59,8 +59,8 @@ export const directStaffExclusions = [
   ),
   ...admin('currentUserCanTriggerCrawl', ['POST /urls/:id/crawl']),
   ...admin('currentUserCanManageRecommendations', [
-    'POST /topic-recommendations/:id/approvals',
-    'POST /topic-recommendations/:id/rejections',
+    'POST /posts/:idOrSlug/approvals',
+    'POST /posts/:idOrSlug/rejections',
   ]),
   ...admin('currentUserCanModifyFediverseInstanceIntegrationStatus', [
     'POST /fediverse/instances/:id/integration-changes',

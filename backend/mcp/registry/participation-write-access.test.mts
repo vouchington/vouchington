@@ -44,18 +44,6 @@ const cases = [
     { rss_feed_url: 'https://example.com/feed.xml' },
     ['rss-feeds:read', 'rss-feeds:write'],
   ],
-  [
-    'start_discussion',
-    'rss_feed_item',
-    { rss_feed_item_id: id, idempotency_key: id },
-    ['posts:read', 'posts:write'],
-  ],
-  [
-    'start_discussion',
-    'story',
-    { story_id: id, idempotency_key: id },
-    ['posts:read', 'posts:write'],
-  ],
 ] as const satisfies readonly (readonly [
   string,
   string,
@@ -88,7 +76,6 @@ describe('participation writes: merged option authorization', () => {
     ['set_rss_feed_item_read', 'read', { rss_feed_item_id: id }, { choice: 'like' }],
     ['share_rss_feed_item', 'share', { rss_feed_item_id: id }, { audience: 'all_followers' }],
     ['submit_rss_feed', 'submit', { rss_feed_url: 'https://example.com/feed.xml' }, { id }],
-    ['start_discussion', 'story', { story_id: id, idempotency_key: id }, { rss_feed_item_id: id }],
   ] as const)(
     '%s rejects unknown, extra, and wrong-option arguments before dispatch',
     async (tool, option, args, wrong) => {

@@ -262,7 +262,6 @@
           {
             "id": "0198ffff-0000-7000-8000-000000000002",
             "title": "Example post",
-            "markdown": "Example post text",
             "post_type": "link",
             "hacker_news_references": {
               "story_count": 2,

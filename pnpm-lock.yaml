@@ -176,6 +176,9 @@ importers:
       '@services/moderation-appeals':
         specifier: workspace:^
         version: link:services/moderation-appeals
+      '@services/post-writes':
+        specifier: workspace:^
+        version: link:services/post-writes
       '@services/referral-program-link-validations':
         specifier: workspace:^
         version: link:services/referral-program-link-validations
@@ -1118,6 +1121,9 @@ importers:
       '@services/post-clearance':
         specifier: workspace:^
         version: link:../services/post-clearance
+      '@services/post-writes':
+        specifier: workspace:^
+        version: link:../services/post-writes
       '@services/posts':
         specifier: workspace:^
         version: link:../services/posts
@@ -1644,6 +1650,9 @@ importers:
       '@services/post-classifier':
         specifier: workspace:^
         version: link:../../services/post-classifier
+      '@services/post-writes':
+        specifier: workspace:^
+        version: link:../../services/post-writes
       '@services/queue-monitoring':
         specifier: workspace:^
         version: link:../../services/queue-monitoring
@@ -2081,6 +2090,9 @@ importers:
       '@services/post-clearance':
         specifier: workspace:^
         version: link:../services/post-clearance
+      '@services/post-writes':
+        specifier: workspace:^
+        version: link:../services/post-writes
       '@services/posts':
         specifier: workspace:^
         version: link:../services/posts
@@ -9747,6 +9759,43 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/services/post-writes:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@services/contribution-gating':
+        specifier: workspace:^
+        version: link:../contribution-gating
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../posts
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../rss-feed-items
+      '@services/stories':
+        specifier: workspace:^
+        version: link:../stories
+      '@services/topic-recommendations':
+        specifier: workspace:^
+        version: link:../topic-recommendations
+      '@services/users':
+        specifier: workspace:^
+        version: link:../users
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/services/posts:
     dependencies:
       '@data-stores/psql':
@@ -11484,6 +11533,9 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@services/entity-fetch':
+        specifier: workspace:^
+        version: link:../entity-fetch
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -11527,9 +11579,6 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
-      '@services/entity-fetch':
-        specifier: workspace:^
-        version: link:../entity-fetch
       '@services/web-risk':
         specifier: workspace:^
         version: link:../web-risk

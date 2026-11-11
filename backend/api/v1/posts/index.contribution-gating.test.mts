@@ -28,8 +28,8 @@ describe('topic recommendation contribution gates', () => {
     await request.authenticateAs(user)
 
     const response = await request
-      .post('/api/v1/topic-recommendations')
-      .send({ topic_title: 'Missing email gate' })
+      .post('/api/v1/posts')
+      .send({ post_type: 'topic_recommendation', topic_title: 'Missing email gate' })
       .expect(403)
 
     expect(response.body.code).toBe(EMAIL_VERIFICATION_REQUIRED)
@@ -43,8 +43,9 @@ describe('topic recommendation contribution gates', () => {
     const unique = randomUUID()
 
     const response = await request
-      .post('/api/v1/topic-recommendations')
+      .post('/api/v1/posts')
       .send({
+        post_type: 'topic_recommendation',
         markdown: 'Paid members bypass the Free contribution gate.',
         topic_title: `Plus Topic ${unique}`,
         topic_slug: `plus-topic-${unique}`,
@@ -62,7 +63,7 @@ describe('topic recommendation contribution gates', () => {
       await request.authenticateAs(user)
 
       const response = await request
-        .post('/api/v1/topic-recommendations')
+        .post('/api/v1/posts')
         .set('Content-Type', 'application/json')
         .send('not-json')
         .expect(403)

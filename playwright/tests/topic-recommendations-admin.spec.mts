@@ -8,9 +8,7 @@ import {
 
 async function submitTopicRecommendation(page: Page): Promise<void> {
   const createResponse = page.waitForResponse(
-    response =>
-      response.url().endsWith('/api/v1/topic-recommendations') &&
-      response.request().method() === 'POST',
+    response => response.url().endsWith('/api/v1/posts') && response.request().method() === 'POST',
   )
 
   await page.getByTestId('topic-recommendation-form-submit').click()

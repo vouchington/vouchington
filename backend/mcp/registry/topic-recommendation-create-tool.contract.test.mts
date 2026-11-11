@@ -11,15 +11,20 @@ import { getTestOAuthClientRowId } from '@voucha/test-helpers/entities/oauth-cli
 import { createTestPendingOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { runWithCredentialRequestContext } from '@modules/request-client-info'
 import { admitDelegatedContribution } from '@services/contribution-gating'
-import createTool from '../create-topic-recommendation.mts'
+import createTool from '../create-post.mts'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { createRequest } from '@voucha/test-helpers/api/server'
 
-const SCOPES = ['posts:read', 'topic-recommendations:write'] as const
-const TOOL = 'create_topic_recommendation'
+const SCOPES = ['posts:read', 'posts:write'] as const
+const TOOL = 'create_post'
 const body = () => {
   const slug = `mcp-topic-${crypto.randomUUID()}`
-  return { markdown: 'A useful topic', topic_title: slug, topic_slug: slug }
+  return {
+    post_type: 'topic_recommendation' as const,
+    markdown: 'A useful topic',
+    topic_title: slug,
+    topic_slug: slug,
+  }
 }
 const args = () => ({ ...body(), idempotency_key: crypto.randomUUID() })
 async function caller() {
@@ -76,7 +81,7 @@ describe('MCP recommendation creation — real admission', () => {
       scope: 'topic_recommendation',
       postType: 'topic_recommendation',
       idempotencyKey: idempotency_key,
-      intent: { route: 'topic-recommendations.create', body: requestBody },
+      intent: { route: 'posts.create', body: requestBody },
       beforeCapacity: async () => {
         started.resolve()
         await release.promise
@@ -107,7 +112,8 @@ describe('MCP recommendation creation — real admission', () => {
     const user = await caller()
     const input = args()
     const first = await callStructuredMcpTool(user, TOOL, input, SCOPES)
-    expect(first.post).toMatchObject({ post_type: 'topic_recommendation', created_by_id: user.id })
+    expect(first.post).toMatchObject({ post_type: 'topic_recommendation' })
+    expect(first.post).not.toHaveProperty('created_by_id')
     expect(await readTestContentProvenance('posts', (first.post as { id: string }).id)).toEqual({
       createdVia: 'mcp',
       oauthClientId: null,
@@ -117,7 +123,7 @@ describe('MCP recommendation creation — real admission', () => {
     const request = createRequest()
     await request.authenticateAs(user)
     const rest = await request
-      .post('/api/v1/topic-recommendations')
+      .post('/api/v1/posts')
       .set('Idempotency-Key', idempotency_key)
       .send(requestBody)
       .expect(201)

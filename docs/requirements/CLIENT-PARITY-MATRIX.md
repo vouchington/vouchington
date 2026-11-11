@@ -702,3 +702,13 @@ Personalized RSS returns the recent publication horizon, including when callers 
 ## Community ban moderation
 
 Community ban history uses paged summaries; moderators open a ban to read its reason and lift it individually. The explicit confirmed lift-all action can refuse protected issuers or a bounded batch, in which case permitted bans can be lifted individually. REST and MCP share these operations and outcomes. Native adoption is tracked in [clients #555](https://github.com/vouchington/vouchington-clients/issues/555); the producer lands first and this change makes no native UI parity claim.
+
+## Unified post writes
+
+Topic recommendations, story discussions, and RSS link discussions use the post write contract.
+Their specialized validation and preparation still run behind that contract; recommendation edits
+retain ownership and pending-state rules, and story creation retains source discoverability.
+Web submits these sources through post creation and uses the ordinary post mutation response.
+Swift and .NET adoption is tracked in
+[vouchington-clients#544](https://github.com/vouchington/vouchington-clients/issues/544) and follows
+the producer without gating this repository.

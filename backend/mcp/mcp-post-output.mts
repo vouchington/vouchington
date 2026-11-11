@@ -8,7 +8,7 @@ import type {
 } from '@services/urls/hacker-news-references-types'
 import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import { attachPostProvenance, attachWrittenPostProvenance } from '@services/content-provenance'
+import { attachPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch } from '@services/entity-fetch'
 import { maskCommentPlaceholders, type Post } from '@services/posts'
 import {
@@ -16,24 +16,41 @@ import {
   PUBLIC_POST_FIELDS,
   type PublicPost,
 } from '@services/posts/public-post-projection'
+import { projectMcpRecommendation } from './topic-recommendation-read-output.mts'
+import type { TopicRecommendationPost } from '@services/topic-recommendations'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 
 /** The post fields the MCP read tools return, in output order. */
 const MCP_POST_FIELDS = PUBLIC_POST_FIELDS
+const SUMMARY_FIELDS = [
+  'id',
+  'slug',
+  'post_type',
+  'title',
+  'parent_post_id',
+  'root_post_id',
+  'placeholder_state',
+] as const
 
 /** One post as an MCP client receives it. */
 export type McpPost = PublicPost & {
+  topic_recommendation?: Post['topic_recommendation']
   hacker_news_references?: HackerNewsReferenceCounts | HackerNewsReferenceDetail
+}
+
+export type McpPostSummary = Pick<McpPost, (typeof SUMMARY_FIELDS)[number]> & {
+  hacker_news_references?: HackerNewsReferenceCounts
 }
 
 /** The published schema of an `McpPost`, from the generated `Post` contract. */
 export function mcpPostSchema(details = false) {
   return closedObject(
     {
-      ...pickProperties('Post', MCP_POST_FIELDS),
+      ...pickProperties('Post', details ? MCP_POST_FIELDS : SUMMARY_FIELDS),
+      ...(details ? pickProperties('Post', ['topic_recommendation']) : {}),
       hacker_news_references: mcpHackerNewsReferenceSchema(details),
     },
-    ['provenance', 'placeholder_state', 'hacker_news_references'],
+    ['provenance', 'placeholder_state', 'hacker_news_references', 'topic_recommendation'],
   )
 }
 
@@ -44,7 +61,9 @@ export function mcpPostSchema(details = false) {
  * from every caller, including the author and administrators, so the answer never depends on who
  * asks.
  */
-async function toMcpPost(post: Post): Promise<McpPost> {
+async function toMcpPost(post: Post, details = false): Promise<McpPost> {
+  if (details && post.post_type === 'topic_recommendation' && post.topic_recommendation)
+    return projectMcpRecommendation(post as TopicRecommendationPost)
   const publicPost = projectPublicPost(post)
   // A placeholder has no user text, so there is nothing to sanitize or wrap as external content.
   if (publicPost.placeholder_state) return publicPost
@@ -75,7 +94,7 @@ export async function toMcpPosts(
   return Promise.all(
     maskedPosts.map(async post => {
       return {
-        ...(await toMcpPost(post)),
+        ...(await toMcpPost(post, details)),
         ...(!post.placeholder_state &&
           references[post.id] && { hacker_news_references: references[post.id] }),
       }
@@ -88,15 +107,45 @@ export async function toMcpPosts(
  * signed-out one, so an anonymous post never names its OAuth client even to its author. The row is
  * read from the primary because it was committed an instant ago.
  */
-export async function toWrittenMcpPost(post: Post): Promise<McpPost> {
-  return toMcpPost(await attachWrittenPostProvenance(post, null))
+export async function toWrittenMcpPost(post: Post): Promise<McpPostSummary> {
+  return (await toMcpPostSummaries([post], { readOnly: false }))[0]!
+}
+
+async function toPostSummary(post: Post): Promise<McpPostSummary> {
+  return {
+    id: post.id,
+    slug: post.slug ?? null,
+    post_type: post.post_type,
+    title: await sanitizePromptInjection(post.title, { isTitle: true }),
+    parent_post_id: post.parent_post_id ?? null,
+    root_post_id: post.root_post_id ?? null,
+    ...(post.placeholder_state && { placeholder_state: post.placeholder_state }),
+  }
+}
+
+export async function toMcpPostSummaries(
+  posts: Post[],
+  options: { readOnly?: boolean } = {},
+): Promise<McpPostSummary[]> {
+  const masked = maskCommentPlaceholders(posts, null).map(post => post as Post)
+  const references = await getPostHackerNewsSummaries(
+    masked.flatMap(post => (post.placeholder_state ? [] : [post.id])),
+    options,
+  )
+  return Promise.all(
+    masked.map(async post => ({
+      ...(await toPostSummary(post)),
+      ...(!post.placeholder_state &&
+        references[post.id] && { hacker_news_references: references[post.id] }),
+    })),
+  )
 }
 
 /**
  * The posts among `ids` that exist, mapped for MCP, in the order of `ids`. The caller has already
  * decided that each id is readable: this only hydrates, it does not check access.
  */
-export async function loadMcpPosts(ids: string[]): Promise<McpPost[]> {
+export async function loadMcpPosts(ids: string[]): Promise<McpPostSummary[]> {
   const posts = await getPostByAnyCachedBatch(ids)
-  return toMcpPosts(posts.filter((post): post is Post => Boolean(post)))
+  return toMcpPostSummaries(posts.filter((post): post is Post => Boolean(post)))
 }

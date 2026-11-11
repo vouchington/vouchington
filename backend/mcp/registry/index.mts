@@ -56,8 +56,6 @@ import requestReferralLinkUnfurlTool from '../request-referral-link-unfurl.mts'
 import updateListTool from '../update-list.mts'
 import updateMyFinancialProfileTool from '../update-my-financial-profile.mts'
 import updateReferralLinkTool from '../update-referral-link.mts'
-import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
-import withdrawTopicRecommendationTool from '../withdraw-topic-recommendation.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { communityListMembershipReadTools } from './community-list-membership-read-tools.mts'
 import { entityRelationWriteTools } from './entity-relation-write-tools.mts'
@@ -133,8 +131,6 @@ export const ALL_TOOLS: readonly Tool[] = [
   updateListTool,
   updateMyFinancialProfileTool,
   updateReferralLinkTool,
-  updateTopicRecommendationTool,
-  withdrawTopicRecommendationTool,
 ] as unknown as Tool[]
 
 export function getRegisteredToolByName(name: string): Tool | undefined {

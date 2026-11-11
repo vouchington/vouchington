@@ -5,7 +5,11 @@ import { getPostsOrDeletedCommentStubs } from '@services/posts'
 import type { BasicUser } from '@services/users/types'
 import createHttpError from 'http-errors'
 import { resolveReadableThread } from './mcp-post-access.mts'
-import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
+import {
+  mcpPostSchema,
+  toMcpPostSummaries as toMcpPosts,
+  type McpPostSummary as McpPost,
+} from './mcp-post-output.mts'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 
@@ -31,7 +35,7 @@ const LIMIT = COMMENT_ANCESTOR_PAGE_MAX_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. A deleted or unmoderated parent is a placeholder (placeholder_state, no text or author). A missing or not fully public comment returns Post not found.",
+      "Page a comment's root and nearest parents, root first; the root repeats. Pass end_cursor as after for older parents. Root posts have none. Deleted/unmoderated parents are placeholders; nonpublic/missing comments return Post not found.",
     parameters: {
       type: 'object',
       properties: {

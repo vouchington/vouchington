@@ -1,3 +1,4 @@
+import type { PublicUser } from '@services/users/types'
 import type { ViewAgentModerationElection } from '@services/elections-votes/agent-moderation'
 import type { ElectionVote } from '@services/elections-votes/shared'
 import type { AgentModerationResult } from '@services/moderation'
@@ -10,6 +11,7 @@ import type { StreamJsonObjectInput } from '@jongleberry/api-server'
 export type PostsResponseBody = {
   results: PostSearchResult[]
   page_info: PageInfo
+  users?: Record<string, PublicUser>
   posts: Record<string, Post>
   posts_metrics: Record<string, PostMetrics>
   post_elections: Record<string, PostElection>

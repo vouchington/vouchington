@@ -2,14 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createTestTopic } from '@voucha/test-helpers'
 
-describe('GET /api/v1/topic-recommendations/duplicates', () => {
+describe('GET /api/v1/topics/duplicates', () => {
   it('returns 401 without authentication', async () => {
     const request = createRequest()
 
     await request
-      .get(
-        `/api/v1/topic-recommendations/duplicates?topic_title=Test+Topic&topic_slug=test-topic-${Date.now()}`,
-      )
+      .get(`/api/v1/topics/duplicates?topic_title=Test+Topic&topic_slug=test-topic-${Date.now()}`)
       .expect(401)
   })
 
@@ -21,7 +19,7 @@ describe('GET /api/v1/topic-recommendations/duplicates', () => {
     const random = `no-match-route-${Date.now()}`
     const response = await request
       .get(
-        `/api/v1/topic-recommendations/duplicates?topic_title=No+Match+Route+Topic+${random}&topic_slug=no-match-route-topic-${random}`,
+        `/api/v1/topics/duplicates?topic_title=No+Match+Route+Topic+${random}&topic_slug=no-match-route-topic-${random}`,
       )
       .expect(200)
 
@@ -40,7 +38,7 @@ describe('GET /api/v1/topic-recommendations/duplicates', () => {
 
     const response = await request
       .get(
-        `/api/v1/topic-recommendations/duplicates?topic_title=${encodeURIComponent(topic.name)}&topic_slug=${encodeURIComponent(topic.slug)}`,
+        `/api/v1/topics/duplicates?topic_title=${encodeURIComponent(topic.name)}&topic_slug=${encodeURIComponent(topic.slug)}`,
       )
       .expect(200)
 
@@ -59,7 +57,7 @@ describe('GET /api/v1/topic-recommendations/duplicates', () => {
     const random = `aliases-route-${Date.now()}`
     const response = await request
       .get(
-        `/api/v1/topic-recommendations/duplicates?topic_title=Alias+Route+Topic+${random}&topic_slug=alias-route-topic-${random}&topic_aliases=alias-one-${random},alias-two-${random}`,
+        `/api/v1/topics/duplicates?topic_title=Alias+Route+Topic+${random}&topic_slug=alias-route-topic-${random}&topic_aliases=alias-one-${random},alias-two-${random}`,
       )
       .expect(200)
 

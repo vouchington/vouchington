@@ -14,8 +14,7 @@ import {
   resolvePostsSearchParams,
   validateTopicSearchTerms,
 } from '@services/search-params'
-import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import type { SearchPostType } from '@ts-shared/feed-capabilities'
+import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import {
   EMPTY_PAGE_INFO,
   findPageOrNull,
@@ -23,7 +22,6 @@ import {
   type InvalidCursorResult,
   pagedSearchQuery,
   pagedSearchSchemaProperties,
-  type PagedSearchArgs,
   type SearchPageInfo,
 } from './paged-search.mts'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
@@ -31,26 +29,10 @@ import { resolvedTopicFilters } from './resolve-topic.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
-import { POST_SORTS, postSearchFilterSchemaProperties } from './search-post-input.mts'
-type ToolArgs = PagedSearchArgs & {
-  sort?: (typeof POST_SORTS)[number]
-  post_type?: SearchPostType
-  post_types?: SearchPostType[]
-  categories?: string[]
-  category?: string
-  creator?: string
-  community_id?: string
-  trending_min_score?: number
-  data_point_topic?: string
-  data_point_vertical?: string
-  review_topic?: string
-  story_id?: string
-  has_hacker_news_references?: boolean
-  time_range?: '1d' | '1w' | '1m' | '1y' | 'all'
-  topic?: string
-  topics?: string[]
-  url?: string
-}
+import {
+  postSearchFilterSchemaProperties,
+  type SearchPostArgs as ToolArgs,
+} from './search-post-input.mts'
 
 type ToolResult =
   | {
@@ -58,7 +40,6 @@ type ToolResult =
       results: Array<{
         id: string
         title: string
-        markdown: string
         post_type: string
         hacker_news_references?: HackerNewsReferenceCounts
       }>
@@ -66,7 +47,7 @@ type ToolResult =
     }
   | InvalidCursorResult
 
-// The REST twin returns post ids plus hydration maps; this tool returns the sanitized post text
+// The REST twin returns post ids plus hydration maps; this tool returns sanitized post summaries
 // instead, so it owns the schema. The test pins `id`, `post_type` and `page_info` to the OpenAPI
 // document. A malformed or foreign cursor is the one failure variant.
 const OUTPUT_SCHEMA = outcomeSchema('success', {
@@ -77,7 +58,6 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
         hacker_news_references: mcpHackerNewsReferenceSchema(),
         id: { type: 'string' },
         title: { type: 'string' },
-        markdown: { type: 'string' },
         post_type: { type: 'string' },
       },
       ['hacker_news_references'],
@@ -144,6 +124,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
             ...(args.data_point_vertical && { data_point_vertical: args.data_point_vertical }),
             ...(topics.review_topic && { review_topic: topics.review_topic }),
             ...(args.story_id && { story_id: args.story_id }),
+            ...(args.topic_recommendation_status && {
+              topic_recommendation_status: args.topic_recommendation_status,
+            }),
             ...(args.has_hacker_news_references !== undefined && {
               has_hacker_news_references: args.has_hacker_news_references,
             }),
@@ -183,10 +166,6 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
             id: post.id,
             ...(references[post.id] && { hacker_news_references: references[post.id] }),
             title: await sanitizePromptInjection(post.title, { isTitle: true }),
-            markdown: wrapExternalContent(await sanitizePromptInjection(post.markdown), {
-              source: 'post',
-              contentType: 'user_post',
-            }),
             post_type: post.post_type,
           })),
         ),

@@ -1859,7 +1859,7 @@
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   ]
                 },
@@ -1894,7 +1894,7 @@
                                 "type": "string"
                               },
                               "label": {
-                                "$ref": "#/$defs/S3"
+                                "$ref": "#/$defs/S2"
                               }
                             },
                             "required": [
@@ -1909,14 +1909,14 @@
                           }
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S3"
                         }
                       },
                       "required": ["success", "results", "page_info"],
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   ]
                 },
@@ -1938,7 +1938,7 @@
                                 "type": "string"
                               },
                               "username": {
-                                "$ref": "#/$defs/S3"
+                                "$ref": "#/$defs/S2"
                               },
                               "role": {
                                 "enum": ["member", "moderator", "owner"],
@@ -1953,14 +1953,14 @@
                           }
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S3"
                         }
                       },
                       "required": ["success", "results", "page_info"],
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   ]
                 },
@@ -1982,7 +1982,7 @@
                                 "type": "string"
                               },
                               "slug": {
-                                "$ref": "#/$defs/S3"
+                                "$ref": "#/$defs/S2"
                               },
                               "post_type": {
                                 "enum": [
@@ -2001,29 +2001,11 @@
                               "title": {
                                 "type": "string"
                               },
-                              "markdown": {
-                                "type": "string"
-                              },
                               "parent_post_id": {
-                                "$ref": "#/$defs/S3"
+                                "$ref": "#/$defs/S2"
                               },
                               "root_post_id": {
-                                "$ref": "#/$defs/S3"
-                              },
-                              "created_by_id": {
-                                "$ref": "#/$defs/S3"
-                              },
-                              "is_anonymous": {
-                                "type": "boolean"
-                              },
-                              "created_at": {
-                                "type": "string"
-                              },
-                              "updated_at": {
-                                "type": "string"
-                              },
-                              "provenance": {
-                                "$ref": "#/$defs/S1"
+                                "$ref": "#/$defs/S2"
                               },
                               "placeholder_state": {
                                 "enum": ["deleted", "unmoderated"],
@@ -2048,13 +2030,8 @@
                               "slug",
                               "post_type",
                               "title",
-                              "markdown",
                               "parent_post_id",
-                              "root_post_id",
-                              "created_by_id",
-                              "is_anonymous",
-                              "created_at",
-                              "updated_at"
+                              "root_post_id"
                             ],
                             "additionalProperties": false
                           }
@@ -2064,7 +2041,7 @@
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   ]
                 },
@@ -2090,10 +2067,10 @@
                               "type": "string"
                             },
                             "markdown": {
-                              "$ref": "#/$defs/S3"
+                              "$ref": "#/$defs/S2"
                             },
                             "rules_markdown": {
-                              "$ref": "#/$defs/S3"
+                              "$ref": "#/$defs/S2"
                             },
                             "member_roster_visibility": {
                               "enum": ["members", "moderators", "public", "users"],
@@ -2119,7 +2096,7 @@
                               "type": "boolean"
                             },
                             "archived_at": {
-                              "$ref": "#/$defs/S3"
+                              "$ref": "#/$defs/S2"
                             },
                             "created_at": {
                               "type": "string"
@@ -2128,7 +2105,64 @@
                               "type": "string"
                             },
                             "provenance": {
-                              "$ref": "#/$defs/S1"
+                              "additionalProperties": false,
+                              "properties": {
+                                "app": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "client_id": {
+                                          "type": "string"
+                                        },
+                                        "client_name": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "const": "verified"
+                                        }
+                                      },
+                                      "required": ["client_id", "client_name", "kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "hostname": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "const": "hostname"
+                                        }
+                                      },
+                                      "required": ["hostname", "kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "key": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "const": "known"
+                                        }
+                                      },
+                                      "required": ["key", "kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "via": {
+                                  "enum": ["api", "mcp"],
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["app", "via"],
+                              "type": "object"
                             }
                           },
                           "required": [
@@ -2159,7 +2193,7 @@
                                   "type": "string"
                                 },
                                 "username": {
-                                  "$ref": "#/$defs/S3"
+                                  "$ref": "#/$defs/S2"
                                 }
                               },
                               "required": ["id", "username"],
@@ -2211,73 +2245,13 @@
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   ]
                 }
               ],
               "$defs": {
                 "S1": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "app": {
-                      "anyOf": [
-                        {
-                          "additionalProperties": false,
-                          "properties": {
-                            "client_id": {
-                              "type": "string"
-                            },
-                            "client_name": {
-                              "type": "string"
-                            },
-                            "kind": {
-                              "const": "verified"
-                            }
-                          },
-                          "required": ["client_id", "client_name", "kind"],
-                          "type": "object"
-                        },
-                        {
-                          "additionalProperties": false,
-                          "properties": {
-                            "hostname": {
-                              "type": "string"
-                            },
-                            "kind": {
-                              "const": "hostname"
-                            }
-                          },
-                          "required": ["hostname", "kind"],
-                          "type": "object"
-                        },
-                        {
-                          "additionalProperties": false,
-                          "properties": {
-                            "key": {
-                              "type": "string"
-                            },
-                            "kind": {
-                              "const": "known"
-                            }
-                          },
-                          "required": ["key", "kind"],
-                          "type": "object"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "via": {
-                      "enum": ["api", "mcp"],
-                      "type": "string"
-                    }
-                  },
-                  "required": ["app", "via"],
-                  "type": "object"
-                },
-                "S2": {
                   "type": "object",
                   "properties": {
                     "success": {
@@ -2290,7 +2264,7 @@
                   "required": ["success", "error"],
                   "additionalProperties": false
                 },
-                "S3": {
+                "S2": {
                   "anyOf": [
                     {
                       "type": "null"
@@ -2300,17 +2274,17 @@
                     }
                   ]
                 },
-                "S4": {
+                "S3": {
                   "type": "object",
                   "properties": {
                     "has_next_page": {
                       "type": "boolean"
                     },
                     "start_cursor": {
-                      "$ref": "#/$defs/S3"
+                      "$ref": "#/$defs/S2"
                     },
                     "end_cursor": {
-                      "$ref": "#/$defs/S3"
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["has_next_page", "start_cursor", "end_cursor"],
@@ -5858,7 +5832,7 @@
           "tool": {
             "name": "read_posts",
             "title": "Read Posts",
-            "description": "ancestors: Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. A deleted or unmoderated parent is a placeholder (placeholder_state, no text or author). A missing or not fully public comment returns Post not found.\ndescendants: Page direct-child heads with bounded previews. IDs sort per page. Follow opaque end_cursor on empty pages; it may skip unseen heads. has_next_page means more heads, not all replies. Expand returned comments via post_id. Deleted or unmoderated replies are placeholders.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; a comment needs a fully public thread root. A deleted or unmoderated comment with a valid reply below it is a placeholder (placeholder_state, no text or author). Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\nsearch: Search posts with keyword, semantic, or similar-item signals. Follow the opaque end_cursor while has_next_page is true.",
+            "description": "ancestors: Page a comment's root and nearest parents, root first; the root repeats. Pass end_cursor as after for older parents. Root posts have none. Deleted/unmoderated parents are placeholders; nonpublic/missing comments return Post not found.\ndescendants: Page child heads with bounded previews; follow end_cursor even on empty pages. has_next_page means more heads, not replies. Expand via post_id. Deleted/unmoderated replies are placeholders.\ndetails: Read by id or slug: public posts/comments, or signed-in topic recommendations under REST access rules. Hidden, missing, or deleted posts return Post not found. A comment needs a public root; deleted/unmoderated comments with valid replies are placeholders.\nsearch: Search posts with keyword, semantic, or similar-item signals. Follow the opaque end_cursor while has_next_page is true.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -6035,6 +6009,10 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "topic_recommendation_status": {
+                          "type": "string",
+                          "enum": ["pending", "approved", "rejected"]
+                        },
                         "has_hacker_news_references": {
                           "type": "boolean",
                           "description": "Only items whose URL is seen or mentioned on Hacker News (true) or not (false)."
@@ -6117,14 +6095,14 @@
                           "$ref": "#/$defs/S1"
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["success", "ancestors", "page_info"],
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S3"
                     }
                   ]
                 },
@@ -6141,14 +6119,14 @@
                           "$ref": "#/$defs/S1"
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["success", "descendants", "page_info"],
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S3"
                     }
                   ]
                 },
@@ -6168,7 +6146,7 @@
                               "type": "string"
                             },
                             "slug": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S2"
                             },
                             "post_type": {
                               "enum": [
@@ -6191,13 +6169,13 @@
                               "type": "string"
                             },
                             "parent_post_id": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S2"
                             },
                             "root_post_id": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S2"
                             },
                             "created_by_id": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S2"
                             },
                             "is_anonymous": {
                               "type": "boolean"
@@ -6271,6 +6249,110 @@
                             "placeholder_state": {
                               "enum": ["deleted", "unmoderated"],
                               "type": "string"
+                            },
+                            "topic_recommendation": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "aliases": {
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "type": "array"
+                                    },
+                                    "approval_error_message": {
+                                      "$ref": "#/$defs/S2"
+                                    },
+                                    "created_topic_id": {
+                                      "$ref": "#/$defs/S2"
+                                    },
+                                    "created_topic_slug": {
+                                      "$ref": "#/$defs/S2"
+                                    },
+                                    "example_referral_link": {
+                                      "$ref": "#/$defs/S2"
+                                    },
+                                    "hostname": {
+                                      "anyOf": [
+                                        {
+                                          "$ref": "#/$defs/S5"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "hostname_id": {
+                                      "$ref": "#/$defs/S2"
+                                    },
+                                    "hostnames": {
+                                      "items": {
+                                        "$ref": "#/$defs/S5"
+                                      },
+                                      "type": "array"
+                                    },
+                                    "landing_page_urls": {
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "type": "array"
+                                    },
+                                    "post_id": {
+                                      "type": "string"
+                                    },
+                                    "rejection_reason": {
+                                      "$ref": "#/$defs/S2"
+                                    },
+                                    "reviewed_at": {
+                                      "$ref": "#/$defs/S2"
+                                    },
+                                    "reviewed_by_id": {
+                                      "$ref": "#/$defs/S2"
+                                    },
+                                    "status": {
+                                      "enum": ["approved", "pending", "rejected"],
+                                      "type": "string"
+                                    },
+                                    "topic_markdown": {
+                                      "$ref": "#/$defs/S2"
+                                    },
+                                    "topic_slug": {
+                                      "type": "string"
+                                    },
+                                    "topic_title": {
+                                      "type": "string"
+                                    },
+                                    "topic_type": {
+                                      "enum": ["card", "referral_program", "topic"],
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "aliases",
+                                    "approval_error_message",
+                                    "created_topic_id",
+                                    "example_referral_link",
+                                    "hostname",
+                                    "hostname_id",
+                                    "hostnames",
+                                    "landing_page_urls",
+                                    "post_id",
+                                    "rejection_reason",
+                                    "reviewed_at",
+                                    "reviewed_by_id",
+                                    "status",
+                                    "topic_markdown",
+                                    "topic_slug",
+                                    "topic_title",
+                                    "topic_type"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "hacker_news_references": {
                               "type": "object",
@@ -6356,7 +6438,7 @@
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S3"
                     }
                   ]
                 },
@@ -6393,14 +6475,11 @@
                               "title": {
                                 "type": "string"
                               },
-                              "markdown": {
-                                "type": "string"
-                              },
                               "post_type": {
                                 "type": "string"
                               }
                             },
-                            "required": ["id", "title", "markdown", "post_type"],
+                            "required": ["id", "title", "post_type"],
                             "additionalProperties": false
                           }
                         },
@@ -6408,13 +6487,13 @@
                           "additionalProperties": false,
                           "properties": {
                             "end_cursor": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S2"
                             },
                             "has_next_page": {
                               "type": "boolean"
                             },
                             "start_cursor": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S2"
                             }
                           },
                           "required": ["end_cursor", "has_next_page", "start_cursor"],
@@ -6425,7 +6504,7 @@
                       "additionalProperties": false
                     },
                     {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S3"
                     }
                   ]
                 }
@@ -6466,9 +6545,6 @@
                       "title": {
                         "type": "string"
                       },
-                      "markdown": {
-                        "type": "string"
-                      },
                       "parent_post_id": {
                         "anyOf": [
                           {
@@ -6488,85 +6564,6 @@
                             "type": "string"
                           }
                         ]
-                      },
-                      "created_by_id": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "is_anonymous": {
-                        "type": "boolean"
-                      },
-                      "created_at": {
-                        "type": "string"
-                      },
-                      "updated_at": {
-                        "type": "string"
-                      },
-                      "provenance": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "app": {
-                            "anyOf": [
-                              {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "client_id": {
-                                    "type": "string"
-                                  },
-                                  "client_name": {
-                                    "type": "string"
-                                  },
-                                  "kind": {
-                                    "const": "verified"
-                                  }
-                                },
-                                "required": ["client_id", "client_name", "kind"],
-                                "type": "object"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "hostname": {
-                                    "type": "string"
-                                  },
-                                  "kind": {
-                                    "const": "hostname"
-                                  }
-                                },
-                                "required": ["hostname", "kind"],
-                                "type": "object"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "key": {
-                                    "type": "string"
-                                  },
-                                  "kind": {
-                                    "const": "known"
-                                  }
-                                },
-                                "required": ["key", "kind"],
-                                "type": "object"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "via": {
-                            "enum": ["api", "mcp"],
-                            "type": "string"
-                          }
-                        },
-                        "required": ["app", "via"],
-                        "type": "object"
                       },
                       "placeholder_state": {
                         "enum": ["deleted", "unmoderated"],
@@ -6591,18 +6588,23 @@
                       "slug",
                       "post_type",
                       "title",
-                      "markdown",
                       "parent_post_id",
-                      "root_post_id",
-                      "created_by_id",
-                      "is_anonymous",
-                      "created_at",
-                      "updated_at"
+                      "root_post_id"
                     ],
                     "additionalProperties": false
                   }
                 },
                 "S2": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "S3": {
                   "type": "object",
                   "properties": {
                     "success": {
@@ -6615,45 +6617,37 @@
                   "required": ["success", "error"],
                   "additionalProperties": false
                 },
-                "S3": {
+                "S4": {
                   "type": "object",
                   "properties": {
                     "has_next_page": {
                       "type": "boolean"
                     },
                     "start_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "$ref": "#/$defs/S2"
                     },
                     "end_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["has_next_page", "start_cursor", "end_cursor"],
                   "additionalProperties": false
                 },
-                "S4": {
-                  "anyOf": [
-                    {
-                      "type": "null"
+                "S5": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "__entity_type": {
+                      "const": "hostname"
                     },
-                    {
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "id": {
                       "type": "string"
                     }
-                  ]
+                  },
+                  "required": ["__entity_type", "hostname", "id"],
+                  "type": "object"
                 }
               }
             },
@@ -10916,7 +10910,7 @@
           "tool": {
             "name": "create_post",
             "title": "Create Post or Comment",
-            "description": "Create a post, or reply with post_type comment and parent_post_id. Send community_id for a community root post. Story and topic recommendation posts use dedicated workflows. Reuse the UUID idempotency_key with the same body to retry safely.",
+            "description": "Create a post, or reply with post_type comment and parent_post_id. Send community_id for a community root post. Use story_id with post_type story, rss_feed_item_id with post_type link, and topic proposal fields with post_type topic_recommendation. Reuse the UUID idempotency_key with the same body to retry safely.",
             "inputSchema": {
               "additionalProperties": false,
               "properties": {
@@ -11009,7 +11003,9 @@
                     "discussion",
                     "review",
                     "data_point",
+                    "topic_recommendation",
                     "comment",
+                    "story",
                     "link",
                     "article",
                     "blog_post"
@@ -11048,6 +11044,42 @@
                 "url_id": {
                   "type": "string"
                 },
+                "example_referral_link": {
+                  "type": "string"
+                },
+                "landing_page_urls": {
+                  "$ref": "#/$defs/S2"
+                },
+                "topic_aliases": {
+                  "$ref": "#/$defs/S2"
+                },
+                "topic_hostname": {
+                  "type": "string"
+                },
+                "topic_hostnames": {
+                  "$ref": "#/$defs/S2"
+                },
+                "topic_markdown": {
+                  "type": "string"
+                },
+                "topic_slug": {
+                  "type": "string"
+                },
+                "topic_title": {
+                  "type": "string"
+                },
+                "topic_type": {
+                  "enum": ["card", "referral_program", "topic"],
+                  "type": "string"
+                },
+                "story_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "rss_feed_item_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
                 "idempotency_key": {
                   "type": "string",
                   "format": "uuid"
@@ -11059,6 +11091,12 @@
                 "S1": {
                   "type": "string",
                   "description": "Topic id, slug, or exact name"
+                },
+                "S2": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
                 }
               }
             },
@@ -11094,86 +11132,11 @@
                     "title": {
                       "type": "string"
                     },
-                    "markdown": {
-                      "type": "string"
-                    },
                     "parent_post_id": {
                       "$ref": "#/$defs/S1"
                     },
                     "root_post_id": {
                       "$ref": "#/$defs/S1"
-                    },
-                    "created_by_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "is_anonymous": {
-                      "type": "boolean"
-                    },
-                    "created_at": {
-                      "type": "string"
-                    },
-                    "updated_at": {
-                      "type": "string"
-                    },
-                    "provenance": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "app": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "client_id": {
-                                  "type": "string"
-                                },
-                                "client_name": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "verified"
-                                }
-                              },
-                              "required": ["client_id", "client_name", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "hostname": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "hostname"
-                                }
-                              },
-                              "required": ["hostname", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "key": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "known"
-                                }
-                              },
-                              "required": ["key", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "via": {
-                          "enum": ["api", "mcp"],
-                          "type": "string"
-                        }
-                      },
-                      "required": ["app", "via"],
-                      "type": "object"
                     },
                     "placeholder_state": {
                       "enum": ["deleted", "unmoderated"],
@@ -11198,13 +11161,8 @@
                     "slug",
                     "post_type",
                     "title",
-                    "markdown",
                     "parent_post_id",
-                    "root_post_id",
-                    "created_by_id",
-                    "is_anonymous",
-                    "created_at",
-                    "updated_at"
+                    "root_post_id"
                   ],
                   "additionalProperties": false
                 }
@@ -11334,6 +11292,34 @@
                         },
                         "structured_data": {},
                         "title": {
+                          "type": "string"
+                        },
+                        "example_referral_link": {
+                          "type": "string"
+                        },
+                        "landing_page_urls": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "topic_aliases": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "topic_hostname": {
+                          "type": "string"
+                        },
+                        "topic_hostnames": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "topic_markdown": {
+                          "type": "string"
+                        },
+                        "topic_slug": {
+                          "type": "string"
+                        },
+                        "topic_title": {
+                          "type": "string"
+                        },
+                        "topic_type": {
+                          "enum": ["card", "referral_program", "topic"],
                           "type": "string"
                         },
                         "id": {
@@ -11543,6 +11529,12 @@
                 "S3": {
                   "type": "string",
                   "description": "Topic id, slug, or exact name"
+                },
+                "S4": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
                 }
               }
             },
@@ -11581,86 +11573,11 @@
                         "title": {
                           "type": "string"
                         },
-                        "markdown": {
-                          "type": "string"
-                        },
                         "parent_post_id": {
                           "$ref": "#/$defs/S1"
                         },
                         "root_post_id": {
                           "$ref": "#/$defs/S1"
-                        },
-                        "created_by_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "is_anonymous": {
-                          "type": "boolean"
-                        },
-                        "created_at": {
-                          "type": "string"
-                        },
-                        "updated_at": {
-                          "type": "string"
-                        },
-                        "provenance": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "app": {
-                              "anyOf": [
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "client_id": {
-                                      "type": "string"
-                                    },
-                                    "client_name": {
-                                      "type": "string"
-                                    },
-                                    "kind": {
-                                      "const": "verified"
-                                    }
-                                  },
-                                  "required": ["client_id", "client_name", "kind"],
-                                  "type": "object"
-                                },
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "hostname": {
-                                      "type": "string"
-                                    },
-                                    "kind": {
-                                      "const": "hostname"
-                                    }
-                                  },
-                                  "required": ["hostname", "kind"],
-                                  "type": "object"
-                                },
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "key": {
-                                      "type": "string"
-                                    },
-                                    "kind": {
-                                      "const": "known"
-                                    }
-                                  },
-                                  "required": ["key", "kind"],
-                                  "type": "object"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "via": {
-                              "enum": ["api", "mcp"],
-                              "type": "string"
-                            }
-                          },
-                          "required": ["app", "via"],
-                          "type": "object"
                         },
                         "placeholder_state": {
                           "enum": ["deleted", "unmoderated"],
@@ -11685,13 +11602,8 @@
                         "slug",
                         "post_type",
                         "title",
-                        "markdown",
                         "parent_post_id",
-                        "root_post_id",
-                        "created_by_id",
-                        "is_anonymous",
-                        "created_at",
-                        "updated_at"
+                        "root_post_id"
                       ],
                       "additionalProperties": false
                     }
@@ -11834,350 +11746,6 @@
             {
               "method": "DELETE",
               "path": "/api/v1/posts/:idOrSlug"
-            }
-          ]
-        },
-        {
-          "tool": {
-            "name": "create_topic_recommendation",
-            "title": "Create Topic Recommendation",
-            "description": "Submit a pending topic recommendation. Reuse the same UUID idempotency_key and body to safely retry; a moderator decides whether to approve it.",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "title": {
-                  "type": "string"
-                },
-                "markdown": {
-                  "type": "string",
-                  "description": "The reason for the recommendation, as Markdown."
-                },
-                "topic_title": {
-                  "type": "string"
-                },
-                "topic_slug": {
-                  "type": "string"
-                },
-                "topic_markdown": {
-                  "type": "string",
-                  "description": "The description of the topic, as Markdown."
-                },
-                "topic_hostname": {
-                  "type": "string",
-                  "description": "The primary hostname of the topic."
-                },
-                "topic_hostnames": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "Every hostname of the topic."
-                },
-                "topic_aliases": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "Other names the topic goes by."
-                },
-                "topic_type": {
-                  "type": "string",
-                  "enum": ["card", "referral_program", "topic"]
-                },
-                "example_referral_link": {
-                  "type": "string"
-                },
-                "landing_page_urls": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "Landing page URLs for the topic."
-                },
-                "idempotency_key": {
-                  "type": "string",
-                  "format": "uuid"
-                }
-              },
-              "required": ["idempotency_key", "markdown", "topic_title", "topic_slug"],
-              "additionalProperties": false
-            },
-            "outputSchema": {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "const": true
-                },
-                "post": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "created_at": {
-                      "type": "string"
-                    },
-                    "created_by_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "id": {
-                      "type": "string"
-                    },
-                    "is_anonymous": {
-                      "type": "boolean"
-                    },
-                    "markdown": {
-                      "type": "string"
-                    },
-                    "parent_post_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "post_type": {
-                      "const": "topic_recommendation"
-                    },
-                    "provenance": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "app": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "client_id": {
-                                  "type": "string"
-                                },
-                                "client_name": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "verified"
-                                }
-                              },
-                              "required": ["client_id", "client_name", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "hostname": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "hostname"
-                                }
-                              },
-                              "required": ["hostname", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "key": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "known"
-                                }
-                              },
-                              "required": ["key", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "via": {
-                          "enum": ["api", "mcp"],
-                          "type": "string"
-                        }
-                      },
-                      "required": ["app", "via"],
-                      "type": "object"
-                    },
-                    "root_post_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "slug": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "topic_recommendation": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "aliases": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "approval_error_message": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "created_topic_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "created_topic_slug": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "example_referral_link": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "hostname": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/$defs/S2"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "hostname_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "hostnames": {
-                          "items": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "type": "array"
-                        },
-                        "landing_page_urls": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "post_id": {
-                          "type": "string"
-                        },
-                        "rejection_reason": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "reviewed_at": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "reviewed_by_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "status": {
-                          "enum": ["approved", "pending", "rejected"],
-                          "type": "string"
-                        },
-                        "topic_markdown": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "topic_slug": {
-                          "type": "string"
-                        },
-                        "topic_title": {
-                          "type": "string"
-                        },
-                        "topic_type": {
-                          "enum": ["card", "referral_program", "topic"],
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "aliases",
-                        "approval_error_message",
-                        "created_topic_id",
-                        "example_referral_link",
-                        "hostname",
-                        "hostname_id",
-                        "hostnames",
-                        "landing_page_urls",
-                        "post_id",
-                        "rejection_reason",
-                        "reviewed_at",
-                        "reviewed_by_id",
-                        "status",
-                        "topic_markdown",
-                        "topic_slug",
-                        "topic_title",
-                        "topic_type"
-                      ],
-                      "type": "object"
-                    },
-                    "updated_at": {
-                      "type": "string"
-                    },
-                    "hacker_news_references": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "comment_count": {
-                          "type": "number"
-                        },
-                        "story_count": {
-                          "type": "number"
-                        }
-                      },
-                      "required": ["comment_count", "story_count"],
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "created_at",
-                    "created_by_id",
-                    "id",
-                    "is_anonymous",
-                    "markdown",
-                    "parent_post_id",
-                    "post_type",
-                    "root_post_id",
-                    "slug",
-                    "title",
-                    "topic_recommendation",
-                    "updated_at"
-                  ],
-                  "type": "object"
-                }
-              },
-              "required": ["success", "post"],
-              "additionalProperties": false,
-              "$defs": {
-                "S1": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "S2": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "__entity_type": {
-                      "const": "hostname"
-                    },
-                    "hostname": {
-                      "type": "string"
-                    },
-                    "id": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["__entity_type", "hostname", "id"],
-                  "type": "object"
-                }
-              }
-            },
-            "annotations": {
-              "readOnlyHint": false,
-              "destructiveHint": false,
-              "idempotentHint": true
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["posts:read", "topic-recommendations:write"]
-            }
-          },
-          "plan": "plus",
-          "roles": null,
-          "api": [
-            {
-              "method": "POST",
-              "path": "/api/v1/topic-recommendations"
             }
           ]
         },
@@ -13974,255 +13542,6 @@
             {
               "method": "GET",
               "path": "/api/v1/my/import/rss-feeds/:importId"
-            }
-          ]
-        },
-        {
-          "tool": {
-            "name": "start_discussion",
-            "title": "Start Discussion",
-            "description": "rss_feed_item: Start a link discussion from an RSS item. Reuse the UUID idempotency_key with the same input to retry safely.\nstory: Start a discussion from a discoverable story. Reuse the UUID idempotency_key with the same input to retry safely.",
-            "inputSchema": {
-              "type": "object",
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
-                      "enum": ["rss_feed_item"]
-                    },
-                    "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "rss_feed_item_id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "idempotency_key": {
-                          "type": "string",
-                          "format": "uuid"
-                        }
-                      },
-                      "required": ["rss_feed_item_id", "idempotency_key"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
-                      "enum": ["story"]
-                    },
-                    "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "story_id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "idempotency_key": {
-                          "type": "string",
-                          "format": "uuid"
-                        }
-                      },
-                      "required": ["story_id", "idempotency_key"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                }
-              ],
-              "$defs": {}
-            },
-            "outputSchema": {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "const": true
-                },
-                "post": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "slug": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "post_type": {
-                      "enum": [
-                        "article",
-                        "blog_post",
-                        "comment",
-                        "data_point",
-                        "discussion",
-                        "link",
-                        "review",
-                        "story",
-                        "topic_recommendation"
-                      ],
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "markdown": {
-                      "type": "string"
-                    },
-                    "parent_post_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "root_post_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "created_by_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "is_anonymous": {
-                      "type": "boolean"
-                    },
-                    "created_at": {
-                      "type": "string"
-                    },
-                    "updated_at": {
-                      "type": "string"
-                    },
-                    "provenance": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "app": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "client_id": {
-                                  "type": "string"
-                                },
-                                "client_name": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "verified"
-                                }
-                              },
-                              "required": ["client_id", "client_name", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "hostname": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "hostname"
-                                }
-                              },
-                              "required": ["hostname", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "key": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "known"
-                                }
-                              },
-                              "required": ["key", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "via": {
-                          "enum": ["api", "mcp"],
-                          "type": "string"
-                        }
-                      },
-                      "required": ["app", "via"],
-                      "type": "object"
-                    },
-                    "placeholder_state": {
-                      "enum": ["deleted", "unmoderated"],
-                      "type": "string"
-                    },
-                    "hacker_news_references": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "comment_count": {
-                          "type": "number"
-                        },
-                        "story_count": {
-                          "type": "number"
-                        }
-                      },
-                      "required": ["comment_count", "story_count"],
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "slug",
-                    "post_type",
-                    "title",
-                    "markdown",
-                    "parent_post_id",
-                    "root_post_id",
-                    "created_by_id",
-                    "is_anonymous",
-                    "created_at",
-                    "updated_at"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "required": ["success", "post"],
-              "additionalProperties": false,
-              "$defs": {
-                "S1": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              }
-            },
-            "annotations": {
-              "readOnlyHint": false,
-              "destructiveHint": false,
-              "idempotentHint": true
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["posts:read", "posts:write"],
-              "voucha/optionOutputPointers": {
-                "rss_feed_item": "#",
-                "story": "#"
-              }
-            }
-          },
-          "plan": "plus",
-          "roles": null,
-          "api": [
-            {
-              "method": "POST",
-              "path": "/api/v1/rss-feed-items/:id/discussions"
-            },
-            {
-              "method": "POST",
-              "path": "/api/v1/stories/:storyId/discussions"
             }
           ]
         },
@@ -18647,394 +17966,6 @@
             {
               "method": "PATCH",
               "path": "/api/v1/referral-links/:linkId"
-            }
-          ]
-        },
-        {
-          "tool": {
-            "name": "update_topic_recommendation",
-            "title": "Update Topic Recommendation",
-            "description": "Edit a topic recommendation you submitted while it is still pending. Send only the fields to change. A recommendation that was approved, rejected or withdrawn can no longer be edited. This does not approve it; a moderator does that.",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "description": "Post id or slug"
-                },
-                "title": {
-                  "type": "string"
-                },
-                "markdown": {
-                  "type": "string",
-                  "description": "The reason for the recommendation, as Markdown."
-                },
-                "topic_title": {
-                  "type": "string"
-                },
-                "topic_slug": {
-                  "type": "string"
-                },
-                "topic_markdown": {
-                  "type": "string",
-                  "description": "The description of the topic, as Markdown."
-                },
-                "topic_hostname": {
-                  "type": "string",
-                  "description": "The primary hostname of the topic."
-                },
-                "topic_hostnames": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "Every hostname of the topic."
-                },
-                "topic_aliases": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "Other names the topic goes by."
-                },
-                "topic_type": {
-                  "type": "string",
-                  "enum": ["card", "referral_program", "topic"]
-                },
-                "example_referral_link": {
-                  "type": "string"
-                },
-                "landing_page_urls": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "Landing page URLs for the topic."
-                }
-              },
-              "required": ["id"],
-              "additionalProperties": false
-            },
-            "outputSchema": {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "const": true
-                },
-                "post": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "created_at": {
-                      "type": "string"
-                    },
-                    "created_by_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "id": {
-                      "type": "string"
-                    },
-                    "is_anonymous": {
-                      "type": "boolean"
-                    },
-                    "markdown": {
-                      "type": "string"
-                    },
-                    "parent_post_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "post_type": {
-                      "const": "topic_recommendation"
-                    },
-                    "provenance": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "app": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "client_id": {
-                                  "type": "string"
-                                },
-                                "client_name": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "verified"
-                                }
-                              },
-                              "required": ["client_id", "client_name", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "hostname": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "hostname"
-                                }
-                              },
-                              "required": ["hostname", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "key": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "known"
-                                }
-                              },
-                              "required": ["key", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "via": {
-                          "enum": ["api", "mcp"],
-                          "type": "string"
-                        }
-                      },
-                      "required": ["app", "via"],
-                      "type": "object"
-                    },
-                    "root_post_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "slug": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "topic_recommendation": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "aliases": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "approval_error_message": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "created_topic_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "created_topic_slug": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "example_referral_link": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "hostname": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/$defs/S2"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "hostname_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "hostnames": {
-                          "items": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "type": "array"
-                        },
-                        "landing_page_urls": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "post_id": {
-                          "type": "string"
-                        },
-                        "rejection_reason": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "reviewed_at": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "reviewed_by_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "status": {
-                          "enum": ["approved", "pending", "rejected"],
-                          "type": "string"
-                        },
-                        "topic_markdown": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "topic_slug": {
-                          "type": "string"
-                        },
-                        "topic_title": {
-                          "type": "string"
-                        },
-                        "topic_type": {
-                          "enum": ["card", "referral_program", "topic"],
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "aliases",
-                        "approval_error_message",
-                        "created_topic_id",
-                        "example_referral_link",
-                        "hostname",
-                        "hostname_id",
-                        "hostnames",
-                        "landing_page_urls",
-                        "post_id",
-                        "rejection_reason",
-                        "reviewed_at",
-                        "reviewed_by_id",
-                        "status",
-                        "topic_markdown",
-                        "topic_slug",
-                        "topic_title",
-                        "topic_type"
-                      ],
-                      "type": "object"
-                    },
-                    "updated_at": {
-                      "type": "string"
-                    },
-                    "hacker_news_references": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "comment_count": {
-                          "type": "number"
-                        },
-                        "story_count": {
-                          "type": "number"
-                        }
-                      },
-                      "required": ["comment_count", "story_count"],
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "created_at",
-                    "created_by_id",
-                    "id",
-                    "is_anonymous",
-                    "markdown",
-                    "parent_post_id",
-                    "post_type",
-                    "root_post_id",
-                    "slug",
-                    "title",
-                    "topic_recommendation",
-                    "updated_at"
-                  ],
-                  "type": "object"
-                }
-              },
-              "required": ["success", "post"],
-              "additionalProperties": false,
-              "$defs": {
-                "S1": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "S2": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "__entity_type": {
-                      "const": "hostname"
-                    },
-                    "hostname": {
-                      "type": "string"
-                    },
-                    "id": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["__entity_type", "hostname", "id"],
-                  "type": "object"
-                }
-              }
-            },
-            "annotations": {
-              "readOnlyHint": false,
-              "destructiveHint": true,
-              "idempotentHint": false
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["posts:read", "topic-recommendations:write"]
-            }
-          },
-          "plan": "plus",
-          "roles": null,
-          "api": [
-            {
-              "method": "PATCH",
-              "path": "/api/v1/topic-recommendations/:id"
-            }
-          ]
-        },
-        {
-          "tool": {
-            "name": "withdraw_topic_recommendation",
-            "title": "Withdraw Topic Recommendation",
-            "description": "Withdraw a topic recommendation you submitted while it is still pending. It is removed and can no longer be edited. A recommendation that was already approved or rejected cannot be withdrawn.",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "description": "Post id or slug"
-                }
-              },
-              "required": ["id"],
-              "additionalProperties": false
-            },
-            "outputSchema": {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "const": true
-                }
-              },
-              "required": ["success"],
-              "additionalProperties": false
-            },
-            "annotations": {
-              "readOnlyHint": false,
-              "destructiveHint": true,
-              "idempotentHint": true
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["posts:read", "topic-recommendations:write"]
-            }
-          },
-          "plan": "plus",
-          "roles": null,
-          "api": [
-            {
-              "method": "DELETE",
-              "path": "/api/v1/topic-recommendations/:id"
             }
           ]
         }

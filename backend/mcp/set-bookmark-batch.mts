@@ -57,10 +57,9 @@ export async function setBookmarkTargets(
   const recommend = args.recommend_unknown_topics === true && args.predicate === 'follow'
   if (args.recommend_unknown_topics === true) {
     assert(
-      authority.kind === 'delegated' &&
-        authority.grantedScopes.includes('topic-recommendations:write'),
+      authority.kind === 'delegated' && authority.grantedScopes.includes('posts:write'),
       403,
-      'Tool requires scopes topic-recommendations:write',
+      'Tool requires scopes posts:write',
     )
     assert(args.idempotency_key, 400, 'Idempotency-Key must be a UUID')
   }

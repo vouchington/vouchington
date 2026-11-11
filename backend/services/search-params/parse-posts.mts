@@ -1,3 +1,4 @@
+import { postRecommendationFilters } from './post-recommendation-filters.mts'
 import { isUUID } from '@modules/utils'
 import { parseBooleanish } from '@ts-shared/utils/query'
 import { withQueryContract } from '@vouchington/pagination'
@@ -60,6 +61,7 @@ export function preparePostsSearchParams(
     drafts: query.drafts,
     hasHackerNewsReferences: query.has_hacker_news_references,
     dataPointVertical: query.data_point_vertical,
+    topicRecommendationStatus: query.topic_recommendation_status,
     q: query.q,
   }
 }
@@ -85,6 +87,7 @@ export async function resolvePostsSearchParams(
     drafts,
     hasHackerNewsReferences,
     dataPointVertical,
+    topicRecommendationStatus,
     q,
   } = prepared
   const hashtagSearch = await resolveHashtagTopicSearch(q, {
@@ -155,6 +158,7 @@ export async function resolvePostsSearchParams(
     ...(q && !paginationOptions.text_search_query && hashtagSearch.textSearchQuery
       ? { text_search_query: hashtagSearch.textSearchQuery }
       : {}),
+    ...postRecommendationFilters(postTypes, q, topicRecommendationStatus),
     ...(urlId && { url_id: urlId }),
     ...(creatorId && { user_id: creatorId }),
     ...(communityIdRaw && isUUID(communityIdRaw) && { community_id: communityIdRaw }),

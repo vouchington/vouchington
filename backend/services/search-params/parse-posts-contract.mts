@@ -40,4 +40,5 @@ export const postsQueryContract = defineQueryContract({
   has_hacker_news_references: queryBoolean(),
   data_point_vertical: queryString(),
   story_id: queryUuid(),
+  topic_recommendation_status: queryEnum(['pending', 'approved', 'rejected'] as const),
 })

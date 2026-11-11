@@ -44,13 +44,17 @@ export async function resolveReadableThread(
 ): Promise<ReadableThread | null> {
   if (!isUUID(idOrSlug) && !isSlug(idOrSlug)) return null
   const [post] = await getPostsOrDeletedCommentStubs([idOrSlug])
-  if (!post || BLOCKED_POST_TYPES.has(post.post_type)) return null
+  if (!post) return null
   const root = post.root_post_id ? await getPostByAnyCached(post.root_post_id) : post
-  if (!root || BLOCKED_POST_TYPES.has(root.post_type)) return null
+  if (!root) return null
 
   // Anonymous access is a subset of authenticated access; still verify the credential owner exists.
-  await requirePrivateToolUser(currentUser)
-  const state = await getRequestedPostReadState(null, post, post.root_post_id ? root : null)
+  const viewer = await requirePrivateToolUser(currentUser)
+  const state = await getRequestedPostReadState(
+    post.post_type === 'topic_recommendation' ? viewer : null,
+    post,
+    post.root_post_id ? root : null,
+  )
   return state ? { post, root, state } : null
 }
 

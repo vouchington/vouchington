@@ -45,7 +45,7 @@ describe('topic-recommendations client', () => {
 
       await withdrawTopicRecommendation('recommendation-1')
 
-      expect(mockDelete).toHaveBeenCalledWith('/api/v1/topic-recommendations/recommendation-1')
+      expect(mockDelete).toHaveBeenCalledWith('/api/v1/posts/recommendation-1')
     })
   })
 
@@ -60,7 +60,7 @@ describe('topic-recommendations client', () => {
         limit: 10,
       })
 
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/topic-recommendations/top-hashtags', {
+      expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/top-hashtags', {
         searchParams: {
           q: 'credit.cards',
           mapping: 'unlinked',
@@ -89,8 +89,8 @@ describe('topic-recommendations client', () => {
         response: makeTopicRecommendationMutationResponse(),
         call: () => createTopicRecommendation(data),
         expectedArgs: [
-          '/api/v1/topic-recommendations',
-          data,
+          '/api/v1/posts',
+          { ...data, post_type: 'topic_recommendation' },
           { headers: { 'Idempotency-Key': expect.any(String) } },
         ],
       })
@@ -104,7 +104,7 @@ describe('topic-recommendations client', () => {
         mock: mockPatch,
         response: makeTopicRecommendationMutationResponse(),
         call: () => updateTopicRecommendation('recommendation-1', data),
-        expectedArgs: ['/api/v1/topic-recommendations/recommendation-1', data],
+        expectedArgs: ['/api/v1/posts/recommendation-1', data],
       })
     })
   })
@@ -115,10 +115,7 @@ describe('topic-recommendations client', () => {
 
       await approveTopicRecommendation('recommendation-1')
 
-      expect(mockPost).toHaveBeenCalledWith(
-        '/api/v1/topic-recommendations/recommendation-1/approvals',
-        {},
-      )
+      expect(mockPost).toHaveBeenCalledWith('/api/v1/posts/recommendation-1/approvals', {})
     })
   })
 
@@ -128,10 +125,9 @@ describe('topic-recommendations client', () => {
 
       await rejectTopicRecommendation('recommendation-1', 'Not relevant')
 
-      expect(mockPost).toHaveBeenCalledWith(
-        '/api/v1/topic-recommendations/recommendation-1/rejections',
-        { reason: 'Not relevant' },
-      )
+      expect(mockPost).toHaveBeenCalledWith('/api/v1/posts/recommendation-1/rejections', {
+        reason: 'Not relevant',
+      })
     })
 
     it('POSTs with undefined reason when no reason is provided', async () => {
@@ -139,10 +135,9 @@ describe('topic-recommendations client', () => {
 
       await rejectTopicRecommendation('recommendation-1')
 
-      expect(mockPost).toHaveBeenCalledWith(
-        '/api/v1/topic-recommendations/recommendation-1/rejections',
-        { reason: undefined },
-      )
+      expect(mockPost).toHaveBeenCalledWith('/api/v1/posts/recommendation-1/rejections', {
+        reason: undefined,
+      })
     })
   })
 
@@ -161,7 +156,7 @@ describe('topic-recommendations client', () => {
         topic_markdown: 'A description.',
       })
 
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/topic-recommendations/duplicates', {
+      expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/duplicates', {
         searchParams: {
           topic_title: 'My Topic',
           topic_slug: 'my-topic',
@@ -185,7 +180,7 @@ describe('topic-recommendations client', () => {
         topic_aliases: ['alias-one', 'alias-two'],
       })
 
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/topic-recommendations/duplicates', {
+      expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/duplicates', {
         searchParams: {
           topic_title: 'My Topic',
           topic_slug: 'my-topic',
@@ -209,7 +204,7 @@ describe('topic-recommendations client', () => {
         topic_aliases: [],
       })
 
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/topic-recommendations/duplicates', {
+      expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/duplicates', {
         searchParams: {
           topic_title: 'My Topic',
           topic_slug: 'my-topic',

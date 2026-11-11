@@ -70,7 +70,6 @@ export const sdkMergedSuccessNames = {
     'set_rss_feed_item_read',
     'share_rss_feed_item',
     'submit_rss_feed',
-    'start_discussion',
   ],
   communityModerationFixture: [
     'read_community_moderation',

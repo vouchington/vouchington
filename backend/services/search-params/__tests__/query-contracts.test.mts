@@ -100,6 +100,7 @@ describe('search parameter query contracts', () => {
         'similar_topic',
         'sort',
         'story_id',
+        'topic_recommendation_status',
         'text_search_query',
         'time_range',
         'trending_min_score',

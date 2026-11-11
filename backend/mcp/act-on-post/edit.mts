@@ -1,11 +1,11 @@
 import assert from 'http-assert'
 import { isAdminUser, getLoadedMembershipPlan } from '@services/users'
-import { updatePost, type UpdatePostChanges } from '@services/posts'
-import { assertPostUpdatePreflight } from '@services/posts/update/validation'
+import type { UpdatePostChanges } from '@services/posts'
+import { assertPostWriteUpdatePreflight, updatePostWrite } from '@services/post-writes'
 import type { MergedToolSource } from '../create-merged-tool.mts'
 import { postActionMeta } from './meta.mts'
 import { requireActiveToolUser } from '../private-user.mts'
-import { toWrittenMcpPost, type McpPost } from '../mcp-post-output.mts'
+import { toWrittenMcpPost, type McpPostSummary as McpPost } from '../mcp-post-output.mts'
 import {
   loadWritablePost,
   postWriteParameters,
@@ -40,7 +40,7 @@ export const updatePostSource: MergedToolSource<Args, { success: true; post: Mcp
       422,
       'Comments inherit their thread audience',
     )
-    assertPostUpdatePreflight(user, post, changes)
+    assertPostWriteUpdatePreflight(user, post, changes)
     const membershipPlan =
       changes.structured_data !== undefined ||
       changes.categories !== undefined ||
@@ -51,7 +51,7 @@ export const updatePostSource: MergedToolSource<Args, { success: true; post: Mcp
     return {
       success: true,
       post: await toWrittenMcpPost(
-        await updatePost(user, post, changes, membershipPlan, undefined, true),
+        await updatePostWrite(user, post, changes, membershipPlan, true),
       ),
     }
   },

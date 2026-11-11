@@ -3,15 +3,13 @@ import { getCommunityMember } from '@services/communities/members/get'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { attachWrittenPostProvenance } from '@services/content-provenance'
 import { setPostLock } from '@services/posts/lock-action'
-import {
-  canViewPost,
-  currentUserCanUpdatePost,
-  deletePost,
-  updatePost,
-  type UpdatePostChanges,
-} from '@services/posts'
+import { canViewPost, currentUserCanUpdatePost, type UpdatePostChanges } from '@services/posts'
 import { assertNotSuspended, isAdminUser } from '@services/users'
-import { assertPostUpdatePreflight } from '@services/posts/update/validation'
+import {
+  assertPostWriteUpdatePreflight,
+  updatePostWrite,
+  deletePostWrite,
+} from '@services/post-writes'
 import app from '../../../app.mts'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiRequestContract } from '@vouchington/utils/api-response-contract'
@@ -42,7 +40,7 @@ app.route('/api/v1/posts/:idOrSlug').patch(async (ctx: Context) => {
     403,
     'Only admins can set a post slug',
   )
-  assertPostUpdatePreflight(currentUser, post, changes)
+  assertPostWriteUpdatePreflight(currentUser, post, changes)
   validateRequestContract(ctx, 'PATCH:/api/v1/posts/:idOrSlug', { body: changes, path: ctx.params })
   const membershipPlan =
     changes.structured_data !== undefined ||
@@ -51,7 +49,7 @@ app.route('/api/v1/posts/:idOrSlug').patch(async (ctx: Context) => {
     changes.markdown !== undefined
       ? (currentUser.membership_plan ?? null)
       : null
-  const updated = await updatePost(currentUser, post, changes, membershipPlan)
+  const updated = await updatePostWrite(currentUser, post, changes, membershipPlan)
 
   ctx.json({ post: await attachWrittenPostProvenance(updated, currentUser) })
 })
@@ -80,7 +78,7 @@ app.route('/api/v1/posts/:idOrSlug').delete(async (ctx: Context) => {
   ctx.assert(privacyPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
 
-  await deletePost(currentUser, post, { communityMemberRole })
+  await deletePostWrite(currentUser, post, { communityMemberRole })
   ctx.setStatus(204)
 })
 

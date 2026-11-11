@@ -133,10 +133,6 @@ describe('read_posts.details and read_posts.ancestors — real DB', () => {
         },
       ],
       ['the owner’s own post awaiting review', user => pendingPost(user)],
-      [
-        'a topic recommendation',
-        user => createTestPost({ user, post_type: 'topic_recommendation' }),
-      ],
     ]
 
     it.each(hidden)('answers %s as not found, even to its author', async (_label, build) => {

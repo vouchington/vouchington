@@ -122,7 +122,7 @@ describe('search-posts tool', () => {
     expect(result.results.length).toBeGreaterThan(0)
     expect(result.results[0]).toHaveProperty('id')
     expect(result.results[0]).toHaveProperty('title')
-    expect(result.results[0]).toHaveProperty('markdown')
+    expect(result.results[0]).not.toHaveProperty('markdown')
     expect(result.results[0]).toHaveProperty('post_type')
     expect(result.results.map(row => row.id).toSorted()).toEqual(matchingIds.toSorted())
     expect(result.results.map(row => row.id)).not.toContain(gardeningId)
@@ -253,7 +253,7 @@ describe('search-posts tool', () => {
     expect(dataPointResult.results.every(r => r.post_type === 'data_point')).toBe(true)
     expect(dataPointResult.results.map(row => row.id)).toEqual([dataPoint.id])
   })
-  it('should sanitize content to prevent prompt injection', async () => {
+  it('returns a summary without the stored body', async () => {
     const uniqueMarker = `sanitize${crypto.randomUUID().replaceAll('-', '')}`
     const maliciousPost = await publishPost({
       title: uniqueMarker,
@@ -264,27 +264,6 @@ describe('search-posts tool', () => {
     const { results } = await tool({ text_search_query: uniqueMarker })
     const match = results.find(r => r.id === maliciousPost.id)
     expect(match).toBeDefined()
-    // Should have removed HTML tags and injection patterns
-    expect(match!.markdown).not.toContain('<script>')
-    expect(match!.markdown).not.toContain('</script>')
-  })
-  it('should wrap external content with context boundaries', async () => {
-    const wrapToken = `wrap${crypto.randomUUID().replaceAll('-', '')}`
-    const post = await publishPost({
-      title: `${wrapToken} Sample Post`,
-      markdown: 'This is sample content',
-      post_type: 'discussion',
-    })
-    const tool = searchPage(testUser)
-    const { results } = await tool({ text_search_query: wrapToken })
-    const match = results.find(r => r.id === post.id)
-    expect(match).toBeDefined()
-    // Should be wrapped with external-content tags
-    expect(match!.markdown).toContain('<external-content')
-    expect(match!.markdown).toContain('source="post"')
-    expect(match!.markdown).toContain('contentType="user_post"')
-    expect(match!.markdown).toContain('</external-content>')
-    // Should contain the actual content
-    expect(match!.markdown).toContain('This is sample content')
+    expect(match).not.toHaveProperty('markdown')
   })
 })

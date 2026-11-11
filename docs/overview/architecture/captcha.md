@@ -20,7 +20,7 @@ Voucha runs two complementary anti-abuse mechanisms on content-creation actions:
 | Submit report             | `POST /api/v1/reports`                                             | ✅        | ❌                    |
 | Submit dispute            | `POST /api/v1/disputes`                                            | ✅        | ❌                    |
 | Submit appeal             | `POST /api/v1/appeals`                                             | ✅        | ❌                    |
-| Recommend topic           | `POST /api/v1/topic-recommendations`                               | ✅        | ❌                    |
+| Recommend topic           | `POST /api/v1/posts` (topic recommendation)                        | ✅        | ❌                    |
 | Request email login token | `POST /api/v1/auth/email-address/tokens`                           | ✅        | ❌                    |
 
 reCAPTCHA is intentionally scoped narrowly (post/comment creation) because it is billed per

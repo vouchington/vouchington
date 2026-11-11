@@ -47,8 +47,6 @@ const PLUS_GATED_WRITE_TOOL_NAMES = [
   'edit_my_preferences',
   'update_my_financial_profile',
   'update_referral_link',
-  'update_topic_recommendation',
-  'withdraw_topic_recommendation',
 ]
 
 // Union of every scope required by the tools above, so a listing call is never denied by the
@@ -88,7 +86,7 @@ const PLUS_GATED_WRITE_SCOPES: ApiScope[] = [
   'appeals:read',
   'appeals:write',
   'posts:read',
-  'topic-recommendations:write',
+  'posts:write',
 ]
 
 describe('user-mcp write tool plan gating', () => {

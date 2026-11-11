@@ -12,3 +12,5 @@ export type {
   UpdatePostChanges,
   CreatePostInput,
 } from '@voucha/types/entities/post'
+
+export type { CreateCommunityPostInput } from '@voucha/types/entities/community-post-input'

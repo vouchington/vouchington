@@ -1,3 +1,5 @@
+import { callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import { countTestPostsCreatedBy } from '@voucha/test-helpers/entities/posts-deletion'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -6,6 +8,7 @@ import {
   createTestUserWithAge,
   insertTestCommunity,
   insertTestCommunityMember,
+  createTestMembership,
 } from '@voucha/test-helpers'
 
 // An authenticated JSON null used to throw inside isHoneypotTriggered before
@@ -70,4 +73,32 @@ describe('POST /api/v1/communities/:idOrSlug/posts request contract validation',
       .send({ hp_website: 'http://spam.com', unrecognized: true })
       .expect(422)
   })
+  it.each([{ topic_title: 'Unused proposal' }, { rss_feed_item_id: crypto.randomUUID() }])(
+    'rejects global-only fields on community creation in both protocols',
+    async fields => {
+      const owner = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+      await createTestMembership({ user_id: owner.id, plan: 'plus' })
+      const community = await insertTestCommunity({
+        createdById: owner.id,
+        slug: `parity-${crypto.randomUUID()}`,
+      })
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: owner.id,
+        role: 'owner',
+      })
+      const request = createRequest()
+      await request.authenticateAs(owner)
+      const body = { title: 'Community discussion', post_type: 'discussion', ...fields }
+      await request.post(`/api/v1/communities/${community.id}/posts`).send(body).expect(422)
+      const rejection = await callRejectedMcpTool(
+        { ...owner, membership_plan: 'plus' },
+        'create_post',
+        { ...body, community_id: community.id, idempotency_key: crypto.randomUUID() },
+        ['posts:read', 'posts:write'],
+      )
+      expect(JSON.parse(rejection).error.status).toBe(422)
+      expect(await countTestPostsCreatedBy(owner.id)).toBe(0)
+    },
+  )
 })

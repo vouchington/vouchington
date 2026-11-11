@@ -155,7 +155,6 @@ describe('read_posts.descendants — real DB', () => {
           id: pending.id,
           placeholder_state: 'unmoderated',
           title: '',
-          created_by_id: null,
         })
       }
     })
@@ -187,9 +186,8 @@ describe('read_posts.descendants — real DB', () => {
 
       expect(body.descendants?.[0]).toMatchObject({
         id: anonymous.id,
-        is_anonymous: true,
-        created_by_id: null,
       })
+      expect(body.descendants?.[0]).not.toHaveProperty('created_by_id')
       expect(text).not.toContain(author.id)
     })
   })

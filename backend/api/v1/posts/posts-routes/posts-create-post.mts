@@ -1,3 +1,4 @@
+import { executeCreatePostContribution } from '@services/post-writes/execute'
 import type { Context } from '@jongleberry/api-server'
 import {
   CONTRIBUTION_ADMISSION_IN_PROGRESS,
@@ -6,14 +7,15 @@ import {
 import { verifyCaptchaOrAttestation } from '@services/captcha'
 import { attachWrittenPostProvenance } from '@services/content-provenance'
 import { assessRecaptchaToken } from '@services/recaptcha'
-import {
-  admitRouteContribution,
-  contributionPolicySourceForPostType,
-} from '@services/contribution-gating'
+import { admitRouteContribution } from '@services/contribution-gating'
 import { isHoneypotTriggered } from '@services/honeypot'
 import type { CreatePostInput } from '@services/posts'
-import { executeCreatePostContribution } from '@services/posts/execute-contribution'
-import { isSupportedPostType, validateCreatePostInput } from '@services/posts/create/validation'
+import {
+  validatePostWriteInput,
+  postWriteAdmission,
+  assertPostWriteBeforeCommit,
+} from '@services/post-writes'
+import { isSupportedPostType } from '@services/posts/create/validation'
 import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
 import {
   assertOfficialAccountCanCreatePost,
@@ -112,12 +114,12 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
     'Use the community posts endpoint to create community posts',
   )
   const admissionPostType = isSupportedPostType(body.post_type) ? body.post_type : 'discussion'
+  let rssFeedItem: Awaited<ReturnType<typeof validatePostWriteInput>>
   let isBareOneClickLink = false
   const admission = await admitRouteContribution({
     currentUser,
     membershipPlan,
-    source: contributionPolicySourceForPostType(admissionPostType, isAdminUser(currentUser)),
-    scope: 'global',
+    ...postWriteAdmission(body, isAdminUser(currentUser)),
     postType: admissionPostType,
     idempotencyKeyHeader: ctx.req.headers['idempotency-key'],
     intent: { route: 'posts.create', body },
@@ -141,19 +143,24 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
         !body.title?.trim() &&
         !body.markdown?.trim() &&
         !body.images?.length
-      await validateCreatePostInput(currentUser, body, membershipPlan)
+      rssFeedItem = await validatePostWriteInput(currentUser, body, membershipPlan)
+      isBareOneClickLink ||= rssFeedItem !== undefined
       if (!isBareOneClickLink)
         await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'posts.create' })
     },
-    beforeCommit: () =>
-      assessRecaptchaToken({
+    beforeCommit: async () => {
+      await assertPostWriteBeforeCommit(body)
+      await assessRecaptchaToken({
         currentUser,
         token: body.recaptcha_token,
         expectedAction: body.post_type === 'comment' ? 'create_comment' : 'create_post',
         ip: ctx.ip,
-      }),
+      })
+    },
     execute: query =>
-      executeCreatePostContribution(query, currentUser, provenance, body, membershipPlan),
+      executeCreatePostContribution(query, currentUser, provenance, body, membershipPlan, {
+        rssFeedItem,
+      }),
   })
   if (admission.kind === 'in_progress') {
     ctx.set('Retry-After', String(admission.retryAfterSeconds))

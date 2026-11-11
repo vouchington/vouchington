@@ -1,5 +1,9 @@
 import contracts from '@voucha/api-contracts/v1/request-contracts.json' with { type: 'json' }
-import { postReferenceSchema } from './entity-reference-schema.mts'
+import {
+  postReferenceSchema,
+  communityReferenceSchema,
+  topicReferenceSchema,
+} from './entity-reference-schema.mts'
 import { inlineSchemaReferences, successSchema } from '@vouchington/mcp-server/schema'
 import { mcpPostSchema } from './mcp-post-output.mts'
 
@@ -39,9 +43,48 @@ export function postWriteParameters(
   if (operation.startsWith('POST:'))
     fields['post_type'] = {
       type: 'string',
-      enum: ['discussion', 'review', 'data_point', 'comment', 'link', 'article', 'blog_post'],
+      enum: [
+        'discussion',
+        'review',
+        'data_point',
+        'topic_recommendation',
+        'comment',
+        'story',
+        'link',
+        'article',
+        'blog_post',
+      ],
     }
   return { ...schema, type: 'object', properties: fields, additionalProperties: false }
 }
 
 export { loadWritablePost } from '@services/posts/authorization'
+
+export function postCreateParameters() {
+  const parameters = postWriteParameters('POST:/api/v1/posts')
+  const postProperties = parameters.properties as Record<string, Record<string, unknown>>
+  if (postProperties.community_id) {
+    const { format: _communityFormat, ...community } = postProperties.community_id
+    postProperties.community_id = {
+      ...community,
+      description: communityReferenceSchema.description,
+    }
+  }
+  if (postProperties.parent_post_id) {
+    const { format: _parentFormat, ...parent } = postProperties.parent_post_id
+    postProperties.parent_post_id = { ...parent, description: postReferenceSchema.description }
+  }
+  for (const field of Object.values(postProperties)) loosenTopicIdentifiers(field)
+
+  return parameters
+}
+
+function loosenTopicIdentifiers(value: unknown): void {
+  if (!value || typeof value !== 'object') return
+  const record = value as Record<string, unknown>
+  if (record.topic_id && typeof record.topic_id === 'object' && !Array.isArray(record.topic_id)) {
+    const { format: _format, ...topic } = record.topic_id as Record<string, unknown>
+    record.topic_id = { ...topic, description: topicReferenceSchema.description }
+  }
+  for (const child of Object.values(record)) loosenTopicIdentifiers(child)
+}

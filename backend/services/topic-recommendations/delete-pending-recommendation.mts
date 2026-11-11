@@ -1,3 +1,4 @@
+import { assertDelegatedPostActorActive } from '@services/posts/authorization'
 import assert from 'http-assert'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -21,12 +22,14 @@ function getWithdrawRejectionReason(
 export async function deletePendingRecommendation(
   currentUser: PrivateUser,
   recommendation: TopicRecommendationPost,
+  context: { delegated?: boolean } = {},
 ): Promise<void> {
   assert(currentUserCanWithdrawTopicRecommendation(currentUser, recommendation), 403, 'Forbidden')
   assert(recommendation.topic_recommendation.status === 'pending', 403, 'Forbidden')
   const rejectionReason = getWithdrawRejectionReason(currentUser, recommendation)
 
   await using query = await beginTransaction()
+  if (context.delegated) await assertDelegatedPostActorActive(currentUser.id, { query })
   // The conditional UPDATE supplies the same reviewed-state fence, before publication locks.
   const reviewed = await query(sql`/* deletePendingRecommendation:review */
     UPDATE post_topic_recommendations

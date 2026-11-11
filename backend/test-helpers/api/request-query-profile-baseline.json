@@ -5,14 +5,7 @@
     "reason": "A preflight check before beforeCommit and execute, then a re-check inside the mutation transaction; the per-user admission claim keeps same-user admissions from interleaving between them, so the re-check sees all prior consumption without an actor row lock (admission.mts:70 and :85)",
     "permanent": true,
     "code": "backend/services/contribution-gating/admission.mts:70",
-    "routes": [
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations"
-    ]
+    "routes": ["POST /api/v1/communities/:idOrSlug/posts", "POST /api/v1/mcp", "POST /api/v1/posts"]
   },
   {
     "annotation": "assertPostMutationAccess",
@@ -103,7 +96,7 @@
     "reason": "Approval records topic-create and alias-link revisions as distinct documents.",
     "permanent": true,
     "code": "backend/services/topics/aliases.mts:createTopicRevision",
-    "routes": ["POST /api/v1/topic-recommendations/:id/approvals"]
+    "routes": ["POST /api/v1/posts/:idOrSlug/approvals"]
   },
   {
     "annotation": "createTotpAuthenticator",
@@ -175,7 +168,7 @@
       "POST /api/v1/my/profile/links",
       "POST /api/v1/referral-links",
       "POST /api/v1/referral-programs/:id/official-referral-links",
-      "POST /api/v1/topic-recommendations/:id/approvals"
+      "POST /api/v1/posts/:idOrSlug/approvals"
     ]
   },
   {
@@ -236,11 +229,10 @@
     "code": "backend/services/posts/update.mts:63",
     "routes": [
       "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/topic-recommendations/:id",
       "POST /api/v1/mcp",
       "POST /api/v1/posts",
       "POST /api/v1/posts/:idOrSlug/sends",
-      "POST /api/v1/topic-recommendations/:id/approvals",
+      "POST /api/v1/posts/:idOrSlug/approvals",
       "PUT /api/v1/posts/:id/vote"
     ]
   },
@@ -404,7 +396,7 @@
     "reason": "Alias claim reads existing alias ids before the alias row is updated, so a concurrent insert is visible to the conflict check.",
     "permanent": true,
     "code": "backend/services/topics/alias-publication-locks.mts:10",
-    "routes": ["POST /api/v1/topic-recommendations/:id/approvals"]
+    "routes": ["POST /api/v1/posts/:idOrSlug/approvals"]
   },
   {
     "annotation": "lockSessionDeviceAuthority:userFence",
@@ -640,10 +632,7 @@
       "POST /api/v1/mcp",
       "POST /api/v1/mcp tools/call create_content_report",
       "POST /api/v1/my/import/topics",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations"
+      "POST /api/v1/posts"
     ]
   },
   {
@@ -705,7 +694,7 @@
     "reason": "The read after the recommendation mutation fence sees the previous holder's hostname commit before materialization; the folded write remains a separate statement.",
     "permanent": true,
     "code": "backend/services/topic-recommendations/update-topic-recommendation.mts:37",
-    "routes": ["PATCH /api/v1/topic-recommendations/:id"]
+    "routes": ["PATCH /api/v1/posts/:idOrSlug"]
   },
   {
     "annotation": "updateSessionRevocationRegistry",
@@ -742,7 +731,7 @@
       "POST /api/v1/my/profile/links",
       "POST /api/v1/referral-links",
       "POST /api/v1/referral-programs/:id/official-referral-links",
-      "POST /api/v1/topic-recommendations/:id/approvals",
+      "POST /api/v1/posts/:idOrSlug/approvals",
       "POST /api/v1/topics/:idOrSlug/additional-hostnames"
     ]
   },

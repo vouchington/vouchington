@@ -717,15 +717,6 @@
       "surfaces": ["api-key", "oauth"]
     },
     {
-      "action": "write",
-      "audience": "user",
-      "description_key": null,
-      "requires": "posts:read",
-      "resource": "topic-recommendations",
-      "scope": "topic-recommendations:write",
-      "surfaces": ["api-key", "oauth"]
-    },
-    {
       "action": "read",
       "audience": "user",
       "description_key": null,
