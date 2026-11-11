@@ -5,14 +5,11 @@ import { unassessedCourtFilingSql } from './unassessed-court-filing-sql.mts'
 type CopyrightQuery = TransactionQuery
 
 /** A court or CCB filing has no target scope until its assessment exists, so the
- * whole case stays unrestorable. The notice lock serializes that check with admission. */
+ * whole case stays unrestorable. Admission preempts pending restorations, so the check takes no lock. */
 export async function noticeHasUnassessedCourtOrCcbFiling(
   noticeId: string,
   query: CopyrightQuery,
 ): Promise<boolean> {
-  await query(sql`/* noticeHasUnassessedCourtOrCcbFiling:lockNotice */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
-  `)
   const { rows } = await query<{ blocked: boolean }>(
     sql`
     /* noticeHasUnassessedCourtOrCcbFiling */

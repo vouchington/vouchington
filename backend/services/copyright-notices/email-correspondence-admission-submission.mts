@@ -11,6 +11,7 @@ import type {
 } from './email-correspondence-guards.mts'
 import { createGuestTerritorialComplaintFromEmail } from './territorial-complaint-email.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
+import { preemptCopyrightRestorations } from './restore-preemption.mts'
 
 type AdmittedEmailCorrespondencePending = {
   id: string
@@ -38,6 +39,10 @@ export async function insertAdmittedCopyrightEmailSubmission(
   pending: AdmittedEmailCorrespondencePending,
 ): Promise<{ submissionId: string; correspondenceId: string }> {
   const submissionId = uuidv7()
+  // Preempt before anything the delivery worker also writes: the worker takes the work item row,
+  // then the case's blocker generation, so this order cannot form a cycle.
+  if (input.kind === 'court_or_ccb_hold')
+    await preemptCopyrightRestorations(pending.notice_id, transaction)
   const { rows: submissions } = await transaction<{
     id: string
   }>(sql`/* admitCopyrightEmailCorrespondence:submission */

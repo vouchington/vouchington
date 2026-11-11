@@ -7,7 +7,6 @@ import {
   advanceCopyrightLastLegalActivityAt,
   lockCopyrightNoticeForLegalWrite,
 } from './last-legal-activity.mts'
-import { getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightHumanReviewAction, CopyrightRestrictionRecord } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
@@ -44,9 +43,6 @@ export async function completeCopyrightMandatoryHumanReview(
   )
   const placement = placementRows[0]
   assert(placement, 409, 'Copyright restriction is not awaiting mandatory human review')
-  await transaction(sql`/* completeCopyrightMandatoryHumanReview:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(placement.placement_id)}, 0))
-  `)
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, input.noticeId)
   assert(lockedNotice, 409, 'Copyright restriction is not awaiting mandatory human review')
   const { rows: locks } = await transaction<{ id: string }>(

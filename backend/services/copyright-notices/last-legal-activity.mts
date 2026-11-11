@@ -20,7 +20,7 @@ export async function lockCopyrightNoticeForLegalWrite(
   noticeId: string,
 ): Promise<LockedCopyrightNotice | null> {
   const { rows } = await query<{ jurisdiction: string }>(sql`/* lockCopyrightNoticeForLegalWrite */
-    SELECT jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`)
+    SELECT jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR NO KEY UPDATE`)
   return rows[0]
     ? ({ noticeId, jurisdiction: rows[0].jurisdiction } as LockedCopyrightNotice)
     : null

@@ -82,7 +82,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
     SELECT notice.jurisdiction FROM copyright_notice_email_intake_notice_links link
     JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
     WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
-    FOR UPDATE OF notice
+    FOR NO KEY UPDATE OF notice
   `)
   assert(notices[0], 404, 'Matched copyright email correspondence not found')
   const { rows } =

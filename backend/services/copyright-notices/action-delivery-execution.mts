@@ -8,21 +8,16 @@ import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safe
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import { compensateCopyrightActionFailure } from './action-delivery-compensation.mts'
 import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
-import {
-  finalizeCopyrightActionAfterDelivery,
-  lockCopyrightActionPlacement,
-} from './action-delivery-finalization.mts'
+import { finalizeCopyrightActionAfterDelivery } from './action-delivery-finalization.mts'
 import {
   completeCopyrightActionIntentInTransaction,
-  getCopyrightActionPlacementKey,
   hasCopyrightActionBlocker,
   lockCopyrightActionDelivery,
-  lockCopyrightActionClaim,
   type CopyrightClaimedActionIntent,
 } from './action-delivery-state.mts'
 import {
   authorizeRestoreBeforeDelivery,
-  completeRestoreRetainingPlacement,
+  retainRestoreWhenOtherRestrictionsActive,
   completeUnavailableRestore,
 } from './action-delivery-restore.mts'
 import {
@@ -73,6 +68,7 @@ export async function executeCopyrightActionIntent(
 async function prepareCopyrightAction(
   intent: CopyrightClaimedActionIntent,
   now: Date,
+  retainChecked = false,
 ): Promise<
   | 'applied'
   | 'stale'
@@ -85,13 +81,6 @@ async function prepareCopyrightAction(
     }
 > {
   await using transaction = await beginTransaction()
-  await lockCopyrightActionClaim(intent.id, transaction)
-  const placementId = await getCopyrightActionPlacementKey(
-    intent.id,
-    intent.lease_token,
-    transaction,
-  )
-  if (placementId) await lockCopyrightActionPlacement(placementId, transaction)
   const legal = await lockCopyrightActionDelivery(intent.id, intent.lease_token, transaction)
   if (!legal) return await commitOutcome(transaction, 'not_claimed')
   if (legal.action === 'withhold' && legal.restriction_lifted_at !== null) {
@@ -148,14 +137,13 @@ async function prepareCopyrightAction(
     return await commitOutcome(transaction, 'blocked')
   }
   await prepublishWithholdIfNeeded({ legal, placement: current, query: transaction })
-  if (legal.action === 'restore') {
-    const retained = await completeRestoreRetainingPlacement({
-      intentId: intent.id,
-      legal,
-      now,
-      query: transaction,
-    })
-    if (retained) return await commitOutcome(transaction, 'applied')
+  if (legal.action === 'restore' && !retainChecked) {
+    // The intent lock is released first: the short SERIALIZABLE retention transaction
+    // completes the work item by lease, then the rest of the preparation runs again.
+    await transaction.commit()
+    if (await retainRestoreWhenOtherRestrictionsActive({ intentId: intent.id, legal, now }))
+      return 'applied'
+    return await prepareCopyrightAction(intent, now, true)
   }
   const mutation = await mutateCopyrightPlacement({
     intentId: intent.id,

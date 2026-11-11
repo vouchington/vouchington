@@ -7,6 +7,7 @@ import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { copyrightGuestCapabilityPurpose } from './guest-capabilities.mts'
 import { revokeCopyrightGuestCapabilitiesForWithdrawal } from './guest-capability-withdrawal.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
+import { preemptCopyrightRestorations } from './restore-preemption.mts'
 
 const guestFilingKinds = ['supplement', 'withdrawal', 'court_or_ccb_hold'] as const
 type GuestFilingKind = (typeof guestFilingKinds)[number]
@@ -66,6 +67,10 @@ export async function appendCopyrightGuestFiling(input: {
   await using transaction = await beginTransaction()
   const capabilityId = await lockGuestCapability(transaction, input)
   if (input.kind === 'court_or_ccb_hold') await assertNoGuestCourtHold(transaction, capabilityId)
+  // Preempt before the filing writes anything the delivery worker also writes: the worker takes
+  // the work item row, then the case's blocker generation, so this order cannot form a cycle.
+  if (input.kind === 'court_or_ccb_hold')
+    await preemptCopyrightRestorations(input.noticeId, transaction)
   const { rows } = await transaction<{ id: string; kind: GuestFilingKind; received_at: Date }>(
     sql`/* appendCopyrightGuestFiling */
     INSERT INTO copyright_notice_submissions (

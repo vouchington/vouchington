@@ -18,10 +18,6 @@ export type CopyrightImagePlacementMutation =
   | { status: 'stale' | 'deleted'; placement: CopyrightImagePlacement }
   | { status: 'not_found' }
 
-export function getImagePlacementKey(placementId: string): string {
-  return `image-placement:${placementId}`
-}
-
 export async function retireImagePlacementsForDeletedImage(
   imageId: string,
   query: TransactionQuery,

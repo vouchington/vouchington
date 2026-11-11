@@ -1,10 +1,11 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { withTestOwnedPostgresWait } from '../../postgres-client-lock-observer.mts'
-import { lockCopyrightNoticeHoldPlacements } from '../../../services/copyright-notices/hold-placement-locks.mts'
-import { replayFailedCopyrightActionIntent } from '../../../services/copyright-notices/action-delivery-state.mts'
-import { replayEligibleCopyrightRestoreIntentsInTransaction } from '../../../services/copyright-notices/court-hold-restore-replay.mts'
+import {
+  completeCopyrightActionIntentInTransaction,
+  lockCopyrightActionDelivery,
+} from '../../../services/copyright-notices/action-delivery-locking.mts'
 import { getTestPostgresBackendProcessId } from '../../postgres-lock-wait.mts'
+import { replayEligibleCopyrightRestoreIntentsInTransaction } from '../../../services/copyright-notices/court-hold-restore-replay.mts'
 
 /** Supplies an owned candidate directly, proving the locked automatic replay rechecks its state. */
 export async function replayTestAutomaticCopyrightRestore(input: {
@@ -13,7 +14,6 @@ export async function replayTestAutomaticCopyrightRestore(input: {
   now: Date
 }): Promise<string[]> {
   await using transaction = await beginTransaction()
-  await lockCopyrightNoticeHoldPlacements(input.noticeId, transaction)
   await transaction(
     sql`/* replayTestAutomaticCopyrightRestore */ SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE`,
   )
@@ -23,47 +23,6 @@ export async function replayTestAutomaticCopyrightRestore(input: {
     now: input.now,
     query: transaction,
   })
-}
-
-/** Proves manual replay waits at the placement fence while its intent row remains independently lockable. */
-export async function replayTestFailedCopyrightActionBehindHoldFence(input: {
-  intentId: string
-  noticeId: string
-  actorUserId: string
-}): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  await lockCopyrightNoticeHoldPlacements(input.noticeId, transaction)
-  await transaction(
-    sql`/* replayTestFailedCopyrightActionBehindHoldFence */ SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE`,
-  )
-  const { rows: targets } = await transaction<{ placement_id: string }>(sql`
-    /* replayTestFailedCopyrightActionBehindHoldFence:placement */
-    SELECT target.placement_id FROM copyright_notice_action_work_items work
-    JOIN copyright_restrictions restriction ON restriction.id = work.copyright_restriction_id
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE work.id = ${input.intentId} AND target.copyright_notice_id = ${input.noticeId}
-  `)
-  if (targets.length !== 1 || !targets[0])
-    throw new Error('Copyright replay fixture did not resolve one held placement')
-  const pid = await getTestPostgresBackendProcessId(transaction)
-  return await withTestOwnedPostgresWait(
-    {
-      holderProcessId: pid,
-      pool: 'write',
-      lock: { kind: 'advisory', key: `image-placement:${targets[0].placement_id}` },
-      queryMarker: 'replayFailedCopyrightActionIntent:placementLock',
-      releaseHolder: () => transaction[Symbol.asyncDispose](),
-    },
-    async waitForLock => {
-      const replay = replayFailedCopyrightActionIntent(input)
-      await waitForLock(replay)
-      await transaction(
-        sql`/* replayTestFailedCopyrightActionBehindHoldFence */ SELECT id FROM copyright_notice_action_work_items WHERE id = ${input.intentId} FOR UPDATE NOWAIT`,
-      )
-      await transaction.commit()
-      return replay
-    },
-  )
 }
 
 export async function cancelTestCopyrightRestorationDeadline(deadlineId: string): Promise<void> {
@@ -109,4 +68,51 @@ export async function supersedeTestCopyrightRestorationPlacementRevision(
     WHERE id = ${placementId}`,
   )
   await transaction.commit()
+}
+
+/** Completes an intent with a previously claimed lease, in its own transaction. */
+export async function completeTestClaimedCopyrightAction(input: {
+  intentId: string
+  leaseToken: string
+  completedAt: Date
+}): Promise<void> {
+  await using transaction = await beginTransaction()
+  await completeCopyrightActionIntentInTransaction({
+    intentId: input.intentId,
+    leaseToken: input.leaseToken,
+    outcome: 'completed',
+    completedAt: input.completedAt,
+    query: transaction,
+  })
+  await transaction.commit()
+}
+
+export async function isTestCopyrightPlacementWithheld(placementId: string): Promise<boolean> {
+  const { rows } = await read<{ withheld: boolean }>(
+    sql`/* isTestCopyrightPlacementWithheld */ SELECT copyright_withheld_at IS NOT NULL AS withheld FROM media_placements WHERE id = ${placementId}`,
+  )
+  return rows[0]!.withheld
+}
+
+/** Holds a claimed restore's work item the way finalization does, until `complete` or `release`. */
+export async function holdTestCopyrightActionDelivery(claimed: {
+  id: string
+  lease_token: string
+}) {
+  const holder = await beginTransaction()
+  await lockCopyrightActionDelivery(claimed.id, claimed.lease_token, holder)
+  return {
+    processId: await getTestPostgresBackendProcessId(holder),
+    release: () => holder[Symbol.asyncDispose](),
+    async complete(completedAt: Date) {
+      await completeCopyrightActionIntentInTransaction({
+        intentId: claimed.id,
+        leaseToken: claimed.lease_token,
+        outcome: 'completed',
+        completedAt,
+        query: holder,
+      })
+      await holder.commit()
+    },
+  }
 }

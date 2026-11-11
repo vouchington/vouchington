@@ -1,7 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
-import { getImagePlacementKey } from '@services/images/placements'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -30,9 +29,6 @@ export async function liftCopyrightRestrictionWithoutSetter(input: {
   `)
   const placement = placementRows[0]
   assert(placement, 404, 'Copyright restriction not found')
-  await transaction(sql`/* liftCopyrightRestrictionWithoutSetter:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(placement.placement_id)}, 0))
-  `)
   const { rows: locked } = await transaction<{
     target_id: string
     lifted_at: Date | null

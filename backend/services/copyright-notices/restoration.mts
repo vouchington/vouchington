@@ -5,7 +5,7 @@ import {
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/images/placements'
+import { getImagePlacementForCopyright } from '@services/images/placements'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { recordCounterNoticeRestoration } from './claimant-misuse-ledger.mts'
 import { noticeHasUnassessedCourtOrCcbFiling } from './court-hold-assessment-gate.mts'
@@ -29,9 +29,6 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   )
   const target = targetKeys[0]
   assert(target, 404, 'Copyright notice restoration record not found')
-  await transaction(sql`/* createEligibleCopyrightRestoreIntent:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(target.placement_id)}, 0))
-  `)
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, input.noticeId)
   assert(lockedNotice, 404, 'Copyright notice restoration record not found')
   const { rows } = await transaction<{
