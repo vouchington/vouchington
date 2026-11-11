@@ -13,13 +13,12 @@ import {
 } from './index.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { claimCopyrightActionIntent } from './action-delivery-state.mts'
-import { completeCopyrightActionIntentInTransaction } from './action-delivery-locking.mts'
-import { beginTransaction } from '@data-stores/psql'
 import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold as recordHold,
 } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { completeTestClaimedCopyrightAction } from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
 
 describe('ordinary copyright hold restoration', () => {
   afterEach(() => {
@@ -37,14 +36,11 @@ describe('ordinary copyright hold restoration', () => {
     expect(aggregate?.actionIntents.find(intent => intent.id === scene.restore.id)?.state).toBe(
       'blocked',
     )
-    await using transaction = await beginTransaction()
     await expect(
-      completeCopyrightActionIntentInTransaction({
+      completeTestClaimedCopyrightAction({
         intentId: scene.restore.id,
         leaseToken: claimed!.lease_token,
-        outcome: 'completed',
         completedAt: scene.restorationAt,
-        query: transaction,
       }),
     ).rejects.toThrow('lease expired')
   })

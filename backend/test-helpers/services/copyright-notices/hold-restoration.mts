@@ -1,5 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { completeCopyrightActionIntentInTransaction } from '../../../services/copyright-notices/action-delivery-locking.mts'
 import { replayEligibleCopyrightRestoreIntentsInTransaction } from '../../../services/copyright-notices/court-hold-restore-replay.mts'
 
 /** Supplies an owned candidate directly, proving the locked automatic replay rechecks its state. */
@@ -63,4 +64,20 @@ export async function supersedeTestCopyrightRestorationPlacementRevision(
     WHERE id = ${placementId}`,
   )
   await transaction.commit()
+}
+
+/** Completes an intent with a previously claimed lease, in its own transaction. */
+export async function completeTestClaimedCopyrightAction(input: {
+  intentId: string
+  leaseToken: string
+  completedAt: Date
+}): Promise<void> {
+  await using transaction = await beginTransaction()
+  await completeCopyrightActionIntentInTransaction({
+    intentId: input.intentId,
+    leaseToken: input.leaseToken,
+    outcome: 'completed',
+    completedAt: input.completedAt,
+    query: transaction,
+  })
 }
