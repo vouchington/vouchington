@@ -1,4 +1,4 @@
-import { postRecommendationFilters } from './post-recommendation-filters.mts'
+import { postRecommendationFilters, isRecommendationOnly } from './post-recommendation-filters.mts'
 import { isUUID } from '@modules/utils'
 import { parseBooleanish } from '@ts-shared/utils/query'
 import { withQueryContract } from '@vouchington/pagination'
@@ -30,7 +30,9 @@ export function preparePostsSearchParams(
   query: Record<string, unknown>,
   runtimeLimits?: PaginationRuntimeLimitBounds,
 ) {
-  validateTopicSearchTerms(query, ['topic', 'topics'], true)
+  const postTypes = validatePostTypes(query.post_types, VALID_SEARCH_POST_TYPES)
+  const literalQuery = isRecommendationOnly(postTypes)
+  validateTopicSearchTerms(query, ['topic', 'topics'], !literalQuery)
   validateTopicSearchTerms(query, ['category', 'categories'])
   const validationQuery = prepareQueryForValidation(query, {
     ...postsParser.queryContract,
@@ -41,7 +43,7 @@ export function preparePostsSearchParams(
   return {
     validationQuery,
     paginationOptions: pagination,
-    postTypes: validatePostTypes(query.post_types, VALID_SEARCH_POST_TYPES),
+    postTypes,
     creatorIdentifier: extractIdentifier(query, 'creator'),
     communityIdRaw: typeof query.community_id === 'string' ? query.community_id : undefined,
     trendingMinScore: query.trending_min_score,
@@ -90,10 +92,10 @@ export async function resolvePostsSearchParams(
     topicRecommendationStatus,
     q,
   } = prepared
-  const hashtagSearch = await resolveHashtagTopicSearch(q, {
-    maxMentions: MAX_TOPIC_SEARCH_TERMS,
-    limitStatus: 400,
-  })
+  const hashtagSearch = await resolveHashtagTopicSearch(
+    isRecommendationOnly(postTypes) ? undefined : q,
+    { maxMentions: MAX_TOPIC_SEARCH_TERMS, limitStatus: 400 },
+  )
 
   const [
     creatorId,
@@ -148,9 +150,7 @@ export async function resolvePostsSearchParams(
       ...hashtagSearch.topicIds,
     ]),
   ]
-  const relatedTopicIds = [
-    ...new Set(resolvedCategoryIds.filter((id): id is string => id !== null)),
-  ]
+  const relatedIds = [...new Set(resolvedCategoryIds.filter((id): id is string => id !== null))]
 
   const searchOptions = {
     ...paginationOptions,
@@ -171,7 +171,7 @@ export async function resolvePostsSearchParams(
       similar_rss_feed_item_id: similarRssFeedItemIdentifier,
     }),
     ...(universalTopicIds.length > 0 && { universal_topic_ids: universalTopicIds }),
-    ...(relatedTopicIds.length > 0 && { related_topic_ids: relatedTopicIds }),
+    ...(relatedIds.length > 0 && { related_topic_ids: relatedIds }),
     ...(hashtagSearch.filters.some(filter => filter.kind === 'exact_alias') && {
       hashtag_alias_ids: hashtagSearch.filters.flatMap(filter =>
         filter.kind === 'exact_alias' ? [filter.aliasId] : [],

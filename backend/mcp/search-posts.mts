@@ -1,3 +1,4 @@
+import { isRecommendationOnly } from '@services/search-params/post-recommendation-filters'
 import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import type { HackerNewsReferenceCounts } from '@services/urls/hacker-news-references-types'
 import { mcpHackerNewsReferenceSchema } from './mcp-hacker-news-output.mts'
@@ -93,7 +94,8 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const viewer = currentUser ? await requirePrivateToolUser(currentUser) : undefined
-      validateTopicSearchTerms(args, ['topic', 'topics'], true)
+      const postTypes = args.post_types ?? (args.post_type ? [args.post_type] : undefined)
+      validateTopicSearchTerms(args, ['topic', 'topics'], !isRecommendationOnly(postTypes))
       validateTopicSearchTerms(args, ['category', 'categories'])
       const page = await findPageOrNull(args.after, async () => {
         const [topics, creator] = await Promise.all([
@@ -111,8 +113,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           {
             ...pagedSearchQuery(args),
             ...(args.sort && { sort: args.sort }),
-            ...(args.post_types && { post_types: args.post_types }),
-            ...(!args.post_types && args.post_type && { post_types: args.post_type }),
+            ...(postTypes && { post_types: postTypes }),
             ...(args.categories && { categories: args.categories }),
             ...(args.category && { category: args.category }),
             ...(creator && { creator }),
