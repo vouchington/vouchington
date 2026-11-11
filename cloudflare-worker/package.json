@@ -50,7 +50,7 @@
     "@vouchington/rate-limit": "^0.4.0",
     "@vouchington/session-jwt": "^0.0.3",
     "@vouchington/utils": "^0.12.0",
-    "isbot": "^5.2.2"
+    "isbot": "^5.2.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261108.1",
