@@ -39,6 +39,16 @@ export async function seedSemanticPosts(): Promise<void> {
       [ids.slice(offset, offset + 1_000), offset],
     )
   }
+  // This exact pair also sits inside the dense, low-noise (ordinal % 20 = 0) cluster, rather
+  // than probing one of the sparse sine vectors. Its self-distance is exactly zero.
+  // Posts 0 and 2 are recent and belong to users 0 and 2, rather than the excluded user 1.
+  await transaction(
+    `/* seedSemanticPosts */ UPDATE posts
+     SET bedrock_nova_multimodal_v1_embedding =
+       (ARRAY[1::real, 1::real] || array_fill(0::real, ARRAY[1022]))::vector(1024)
+     WHERE id = ANY($1::uuid[])`,
+    [[seedUuid(0, '05'), seedUuid(2, '05')]],
+  )
   await transaction(`/* seedSemanticPosts */ SET LOCAL maintenance_work_mem = '512MB'`)
   await transaction(`/* seedSemanticPosts */ SET LOCAL max_parallel_maintenance_workers = 0`)
   await transaction(

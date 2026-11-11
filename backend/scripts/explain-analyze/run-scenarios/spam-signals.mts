@@ -48,13 +48,14 @@ export async function runSpamSignalScenarios(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'posts', max: SIMILARITY_MAX_SCAN_TUPLES },
     ],
   })
-  // The probe embedding must have a zero self-distance; some seeded vectors round to a tiny
-  // nonzero value, which the probe-side NaN guard rejects.
+  // seedSemanticPosts gives this fixed source a recent, other-author exact-vector duplicate.
+  // Selecting any self-distance-zero row does not guarantee a qualifying neighbour.
   const { rows: probes } = await read<{ id: string }>(
     `/* explainAnalyzeRun */ SELECT id FROM posts
-     WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL
-       AND (bedrock_nova_multimodal_v1_embedding <=> bedrock_nova_multimodal_v1_embedding) = 0
-     ORDER BY id DESC LIMIT 1`,
+     WHERE id = $1
+       AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
+       AND (bedrock_nova_multimodal_v1_embedding <=> bedrock_nova_multimodal_v1_embedding) = 0`,
+    [seedPostId],
   )
   const probeId = probes[0]?.id
   assert.ok(probeId, 'Spam signal scenarios require an embedded seeded post')
