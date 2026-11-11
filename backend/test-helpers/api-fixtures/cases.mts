@@ -73,10 +73,7 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
     'backend/test-helpers/api-fixtures/native-oauth-broker-cases.mts',
     nativeOAuthBrokerApiFixtureCases,
   ),
-  ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/native-session-mcp-cases.mts',
-    nativeSessionMcpApiFixtureCases,
-  ),
+  ...fromCaseFile(`${caseRoot}native-session-mcp-cases.mts`, nativeSessionMcpApiFixtureCases),
   ...fromCaseFile(`${caseRoot}native-reauth-cases.mts`, nativeReAuthApiFixtureCases),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/oauth-management-cases.mts',
