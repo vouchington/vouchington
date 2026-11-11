@@ -16,6 +16,14 @@ export const CLASSIFIER_RUN_TABLES_WITHOUT_CREATED_AT = new Map<string, string>(
 
 export const CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
+    'classifier_run_requests.cursor_community_prompt_id',
+    'A retention cascade can delete the source prompt while the request remains open; this cursor is a position, not a relation.',
+  ],
+  [
+    'classifier_run_requests.sweep_upper_bound_community_prompt_id',
+    'A retention cascade can delete the source prompt while the request remains open; this sweep bound is a position, not a relation.',
+  ],
+  [
     'classifier_retention_cursors.cursor_id',
     'Deletion-stable classifier retention keyset position, not a relationship.',
   ],
