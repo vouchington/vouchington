@@ -4,6 +4,13 @@ import {
   resolveSeedAnchor,
   SEED_ANCHOR_DATE_ENV,
 } from './seed-anchor.mts'
+import {
+  INELIGIBLE_COLLECTION_ITEM_SPACING_MS,
+  INELIGIBLE_COLLECTION_NOISE_COMMUNITY_COUNT,
+  INELIGIBLE_COLLECTION_PAGE_COUNT,
+  INELIGIBLE_COLLECTION_RELATION_OFFSET_MS,
+} from './ineligible-collection-pages.mts'
+import { STORY_COUNT, STORY_POST_SPACING_MS } from './story-search-hidden-feeds.mts'
 
 // UUIDv7 prefixes (top 32 bits of the ms timestamp) of 12:00Z on each pinned day.
 const OCTOBER_05_PREFIX = '01a10bef'
@@ -113,10 +120,10 @@ describe('resolveSeedAnchor', () => {
     expect(() => resolveSeedAnchor('2027-02-29')).toThrow(SEED_ANCHOR_DATE_ENV)
   })
 
-  it('falls back to the latest day whose noon has passed when no day is pinned', () => {
+  it('falls back to the latest day whose newest seeded post has passed when no day is pinned', () => {
     const late = new Date('2026-03-05T23:50:00.000Z')
-    const afterNoon = new Date('2026-03-05T12:15:00.000Z')
-    const beforeNoon = new Date('2026-03-05T12:14:59.999Z')
+    const afterNoon = new Date('2026-03-05T16:00:00.000Z')
+    const beforeNoon = new Date('2026-03-05T15:59:59.999Z')
     const early = new Date('2026-03-05T00:05:00.000Z')
 
     expect(resolveSeedAnchor(undefined, late)).toEqual(resolveSeedAnchor('2026-03-05'))
@@ -164,12 +171,12 @@ describe('seed rows are never dated after the run', () => {
 
   const instants = [
     '2026-10-31T00:00:00.000Z',
-    '2026-10-31T12:14:59.999Z',
-    '2026-10-31T12:15:00.000Z',
-    '2026-10-31T12:15:00.001Z',
+    '2026-10-31T15:59:59.999Z',
+    '2026-10-31T16:00:00.000Z',
+    '2026-10-31T16:00:00.001Z',
     '2026-10-31T23:59:59.999Z',
     '2026-11-01T00:00:00.000Z',
-    '2026-11-01T12:14:59.999Z',
+    '2026-11-01T15:59:59.999Z',
   ].map(iso => new Date(iso))
 
   it.each(instants.map(instant => [instant.toISOString(), instant]))(
@@ -177,9 +184,9 @@ describe('seed rows are never dated after the run', () => {
     (_iso, now) => {
       const { dayAnchorMs } = resolveSeedAnchor(undefined, now)
 
-      expect(dayAnchorMs + 15 * 60_000).toBeLessThanOrEqual(now.getTime())
+      expect(dayAnchorMs + 240 * 60_000).toBeLessThanOrEqual(now.getTime())
       expect(now.getTime() - dayAnchorMs).toBeLessThan(
-        12 * 60 * 60_000 + 15 * 60_000 + 24 * 60 * 60_000,
+        12 * 60 * 60_000 + 240 * 60_000 + 24 * 60 * 60_000,
       )
       expect(() => assertSeedAnchorNotFuture(undefined, now)).not.toThrow()
     },
@@ -194,10 +201,20 @@ describe('seed rows are never dated after the run', () => {
     expect(() => assertSeedAnchorNotFuture('2026-10-19', morning)).not.toThrow()
   })
 
+  it('rejects a pinned day before its newest story post and accepts it at that instant', () => {
+    const beforeLatestPost = new Date('2026-10-20T15:59:59.999Z')
+    const atLatestPost = new Date('2026-10-20T16:00:00.000Z')
+
+    expect(() => assertSeedAnchorNotFuture('2026-10-20', beforeLatestPost)).toThrow(
+      SEED_ANCHOR_DATE_ENV,
+    )
+    expect(() => assertSeedAnchorNotFuture('2026-10-20', atLatestPost)).not.toThrow()
+  })
+
   it('keeps every forward-offset seed helper inside the margin', async () => {
     vi.useFakeTimers()
     vi.stubEnv(SEED_ANCHOR_DATE_ENV, '2026-10-31')
-    const common = await loadCommonAt('2026-10-31T12:15:00.000Z')
+    const common = await loadCommonAt('2026-10-31T16:00:00.000Z')
     const anchor = common.postSeedTimestampMs(0)
     const uuidMs = (uuid: string) => Number.parseInt(uuid.slice(0, 8) + uuid.slice(9, 13), 16)
     const latest = [
@@ -206,10 +223,17 @@ describe('seed rows are never dated after the run', () => {
       uuidMs(common.crawlSeedUuid(0xffff_ffff_ffff, 'ff')),
       common.commentSeedTimestampMs(0, 3),
       anchor + 2_400 * 100,
+      // seedHiddenFeedStorySearch stamps its newest post this far beyond the anchor.
+      anchor + STORY_COUNT * STORY_POST_SPACING_MS,
+      // The last ineligible-collection noise membership uses the producer's final offset.
+      anchor +
+        INELIGIBLE_COLLECTION_RELATION_OFFSET_MS +
+        (INELIGIBLE_COLLECTION_PAGE_COUNT * (2 + INELIGIBLE_COLLECTION_NOISE_COMMUNITY_COUNT) - 1) *
+          INELIGIBLE_COLLECTION_ITEM_SPACING_MS,
     ]
 
     for (const timestamp of latest) {
-      expect(timestamp - anchor).toBeLessThanOrEqual(15 * 60_000)
+      expect(timestamp - anchor).toBeLessThanOrEqual(240 * 60_000)
     }
   })
 })

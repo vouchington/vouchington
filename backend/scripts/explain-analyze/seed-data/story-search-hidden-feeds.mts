@@ -3,7 +3,8 @@ import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts
 
 const HIDDEN_STORY_COUNT = 200
 const VISIBLE_STORY_COUNT = 40
-const STORY_COUNT = HIDDEN_STORY_COUNT + VISIBLE_STORY_COUNT
+export const STORY_COUNT = HIDDEN_STORY_COUNT + VISIBLE_STORY_COUNT
+export const STORY_POST_SPACING_MS = 60_000
 
 /**
  * Newest and highest-scored story posts whose only source is a hidden feed, then a
@@ -32,7 +33,12 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
   const itemUrlIds: string[] = []
   for (let index = 0; index < STORY_COUNT; index += 1) {
     const hidden = index < HIDDEN_STORY_COUNT
-    postIds.push(seedUuidAtTimestamp(anchorMs + (STORY_COUNT - index) * 60_000, 910_000 + index))
+    postIds.push(
+      seedUuidAtTimestamp(
+        anchorMs + (STORY_COUNT - index) * STORY_POST_SPACING_MS,
+        910_000 + index,
+      ),
+    )
     // Current ids stay after the fixture's oldest rss item, which the rate-limit seed reads.
     itemIds.push(seedUuidAtTimestamp(Date.now(), 930_000 + index))
     storyIds.push(seedUuid(index, 'bc'))

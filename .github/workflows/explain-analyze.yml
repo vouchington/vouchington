@@ -98,11 +98,11 @@ jobs:
         id: anchor
         # seed.mts and run.mts are separate node processes, now in separate jobs, that must derive
         # the same seeded ids. Choose the day once and pass it to every shard so a boundary falling
-        # between them cannot give them different ids (#2110). The day is the UTC day 735 minutes
-        # ago (SEED_ANCHOR_LAG_MS): its noon has passed, so no seeded row is dated after the run.
+        # between them cannot give them different ids (#2110). The day is the UTC day 960 minutes
+        # ago (SEED_ANCHOR_LAG_MS): its noon plus the largest seed offset has passed.
         timeout-minutes: 1
         run: |
-          day="$(date -u -d '-735 minutes' +%Y-%m-%d)"
+          day="$(date -u -d '-960 minutes' +%Y-%m-%d)"
           echo "EXPLAIN_SEED_ANCHOR_DATE=$day" >> "$GITHUB_ENV"
           echo "date=$day" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

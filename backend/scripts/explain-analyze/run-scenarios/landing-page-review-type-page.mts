@@ -8,7 +8,7 @@ import { LANDING_PAGE_REVIEW_OWNER_ID } from '../seed-data/landing-page-candidat
 const OTHER_POST_COUNT = 2_000
 
 function newerDiscussionId(index: number): string {
-  return seedUuidAtTimestamp(postSeedTimestampMs(0) + (index + 1) * 60_000, 810_000 + index)
+  return seedUuidAtTimestamp(postSeedTimestampMs(0) + (index + 1) * 1000, 810_000 + index)
 }
 
 /** Newer non-review posts by the heavy author must stay outside the review candidate page. */

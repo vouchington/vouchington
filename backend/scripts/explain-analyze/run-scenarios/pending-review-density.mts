@@ -13,7 +13,7 @@ const APPROVED_COUNT = 2_000
 const PENDING_COUNT = 5
 
 function pendingDensityPostId(index: number): string {
-  return seedUuidAtTimestamp(postSeedTimestampMs(0) + (index + 1) * 60_000, 800_000 + index)
+  return seedUuidAtTimestamp(postSeedTimestampMs(0) + (index + 1) * 1000, 800_000 + index)
 }
 
 /** Many approved reviews and a handful of pending ones, so the keyset cannot walk the approved index. */
