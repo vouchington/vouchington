@@ -3,8 +3,32 @@ import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createRssFeed } from '../create.mts'
 import { searchRssFeeds } from '../search.mts'
 import { updateRssFeedById } from '../update.mts'
+import { softDeleteRssFeedById } from '../delete.mts'
 
 describe('searchRssFeeds topic filter intersections', () => {
+  it('finds the live feed when a deleted feed retains the same descendant topic', async () => {
+    const random = Math.random().toString(36).slice(2, 15)
+    const topic = await createTestTopic({ hostname: `replacement-feed-${random}.example.com` })
+    const deletedFeed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
+      skipRemoteValidation: true,
+      rss_feed_url: `https://example.com/deleted-feed-${random}.xml`,
+      topic_id: topic.id,
+    })
+    await softDeleteRssFeedById(deletedFeed.id)
+    const liveFeed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
+      skipRemoteValidation: true,
+      rss_feed_url: `https://example.com/live-feed-${random}.xml`,
+      topic_id: topic.id,
+    })
+    await updateRssFeedById(liveFeed.id, { is_enabled: true })
+
+    const results = await searchRssFeeds({ topic_id: topic.id, include_descendants: true })
+
+    expect(results.map(feed => feed.id)).toEqual([liveFeed.id])
+  })
+
   it('intersects explicit topic filters with hashtag topics', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const [singularTopic, hashtagTopic] = await Promise.all([
