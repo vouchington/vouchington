@@ -69,7 +69,7 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Search posts with keyword, semantic, or similar-item signals. Follow the opaque end_cursor while has_next_page is true.',
+      'Search by keyword, meaning or similar item. Follow opaque end_cursor while has_next_page.',
     parameters: {
       type: 'object',
       properties: {

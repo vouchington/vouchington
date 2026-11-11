@@ -1,3 +1,5 @@
+import { createRequest } from '@voucha/test-helpers/api/server'
+import { callStructuredMcpTool, optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, expect, it } from 'vitest'
 import {
   createTestPost,
@@ -31,6 +33,31 @@ async function thread() {
 }
 
 describe('MCP reads of placeholder comments', () => {
+  it('matches REST creator and outsider access to a pending private post', async () => {
+    const creator = await createTestUser()
+    const outsider = await createTestUser()
+    const post = await createTestPost({ user: creator, privacy: 'private', broadcast: 'users' })
+    await setTestPostClearanceStatus(post.id, 'pending', creator.id)
+    for (const [viewer, status] of [
+      [creator, 200],
+      [outsider, 404],
+    ] as const) {
+      const request = createRequest()
+      await request.authenticateAs(viewer)
+      await request.get(`/api/v1/posts/${post.id}`).expect(status)
+      const result = await callStructuredMcpTool(
+        { ...viewer, membership_plan: null },
+        'read_posts',
+        optionArgs('details', { post_id: post.id }),
+        ['posts:read'],
+      )
+      expect(result.success).toBe(status === 200)
+      expect((result.post as { id: string } | undefined)?.id).toBe(
+        status === 200 ? post.id : undefined,
+      )
+    }
+  })
+
   it('opens a deleted comment as a placeholder only when a valid reply sits below it', async () => {
     const { user, root, reply, remove } = await thread()
     const withReply = await reply(root)
@@ -46,16 +73,32 @@ describe('MCP reads of placeholder comments', () => {
     expect(await resolveReadableThread(user, empty.id)).toBeNull()
   })
 
-  it('opens an unmoderated comment as a placeholder, even to its author', async () => {
+  it('opens an unmoderated comment for its author and a placeholder for other viewers', async () => {
     const { user, root, reply } = await thread()
     const author = await createTestUser()
     const pending = await reply(root, author)
     await reply(pending)
     await setTestPostClearanceStatus(pending.id, 'pending', author.id)
 
-    // MCP reads as a signed-out caller, so the author's own uncleared comment is a placeholder.
     expect(await resolveReadableThread(user, pending.id)).toMatchObject({ state: 'placeholder' })
-    expect(await resolveReadableThread(author, pending.id)).toMatchObject({ state: 'placeholder' })
+    expect(await resolveReadableThread(author, pending.id)).toMatchObject({ state: 'readable' })
+    for (const viewer of [author, user]) {
+      const request = createRequest()
+      await request.authenticateAs(viewer)
+      const rest = await request.get(`/api/v1/posts/${pending.id}`).expect(200)
+      const mcp = await callStructuredMcpTool(
+        { ...viewer, membership_plan: null },
+        'read_posts',
+        optionArgs('details', { post_id: pending.id }),
+        ['posts:read'],
+      )
+      expect((mcp.post as { placeholder_state?: string }).placeholder_state).toBe(
+        rest.body.post.placeholder_state,
+      )
+      expect((mcp.post as { markdown: string }).markdown.includes(pending.markdown)).toBe(
+        viewer.id === author.id,
+      )
+    }
   })
 
   it('walks with a null viewer, so it never returns less than the signed-out REST page', async () => {

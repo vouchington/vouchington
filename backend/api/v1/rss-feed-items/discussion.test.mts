@@ -1,9 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
+  createTestUserWithAge,
+  CONTRIBUTING_USER_AGE_MS,
   insertTestRssFeedItem,
   createTestUrlWithHostname,
   softDeleteRssFeedItemsForTest,
@@ -32,6 +34,8 @@ describe('discussion', () => {
     urlId = await createTestUrlWithHostname()
   })
 
+  afterEach(() => vi.unstubAllEnvs())
+
   async function makeItem(title?: string) {
     const random = Math.random().toString(36).slice(2, 10)
     const itemData = { title: title ?? `Item ${random}`, link: `https://example.com/${random}` }
@@ -45,7 +49,19 @@ describe('discussion', () => {
     return { itemId, itemTitle: itemData.title }
   }
 
-  describe('POST /api/v1/rss-feed-items/:id/discussions', () => {
+  describe('POST /api/v1/posts RSS item discussion', () => {
+    it('creates an RSS discussion without a token while CAPTCHA verification is enabled', async () => {
+      vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
+      const actor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+      const { itemId } = await makeItem()
+      const request = createRequest()
+      await request.authenticateAs(actor)
+      const response = await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
+        .expect(201)
+      expect(response.body.post).toMatchObject({ post_type: 'link', url_id: urlId })
+    })
     it('returns 401 when unauthenticated', async () => {
       const { itemId } = await makeItem()
       const request = createRequest()

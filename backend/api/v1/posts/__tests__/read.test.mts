@@ -1,4 +1,5 @@
-import { describe, it, beforeAll } from 'vitest'
+import { readStateExists } from '@voucha/test-helpers/entities/read-states'
+import { describe, it, beforeAll, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createRandomString, insertTestPost } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
@@ -81,7 +82,7 @@ describe('DELETE /api/v1/posts/:id/read', () => {
 })
 
 describe('/api/v1/posts/:id/read for topic recommendations', () => {
-  it('returns 404 for the creator on the recommendation and a comment beneath it', async () => {
+  it('marks the recommendation and its comment read and unread for their creator', async () => {
     const user = await createTestUser()
     const postId = await insertTestPost({
       title: `Read Recommendation ${createRandomString(8)}`,
@@ -89,11 +90,22 @@ describe('/api/v1/posts/:id/read for topic recommendations', () => {
       createdById: user.id,
       markdown: 'content',
       postType: 'topic_recommendation',
+      privacy: 'private',
+      broadcast: 'users',
+      clearanceStatus: 'pending',
     })
+    const stranger = await createTestUser()
+    const outsider = createRequest()
+    await outsider.authenticateAs(stranger)
+    await outsider.put(`/api/v1/posts/${postId}/read`).expect(404)
+    await outsider.delete(`/api/v1/posts/${postId}/read`).expect(404)
+    expect(await readStateExists(stranger.id, 'post', postId)).toBe(false)
     const request = createRequest()
     await request.authenticateAs(user)
-    await request.put(`/api/v1/posts/${postId}/read`).expect(404)
-    await request.delete(`/api/v1/posts/${postId}/read`).expect(404)
+    await request.put(`/api/v1/posts/${postId}/read`).expect(204)
+    expect(await readStateExists(user.id, 'post', postId)).toBe(true)
+    await request.delete(`/api/v1/posts/${postId}/read`).expect(204)
+    expect(await readStateExists(user.id, 'post', postId)).toBe(false)
 
     const commentId = await insertTestPost({
       title: `Read Recommendation Comment ${createRandomString(8)}`,
@@ -104,7 +116,9 @@ describe('/api/v1/posts/:id/read for topic recommendations', () => {
       rootId: postId,
       parentId: postId,
     })
-    await request.put(`/api/v1/posts/${commentId}/read`).expect(404)
-    await request.delete(`/api/v1/posts/${commentId}/read`).expect(404)
+    await request.put(`/api/v1/posts/${commentId}/read`).expect(204)
+    expect(await readStateExists(user.id, 'post', commentId)).toBe(true)
+    await request.delete(`/api/v1/posts/${commentId}/read`).expect(204)
+    expect(await readStateExists(user.id, 'post', commentId)).toBe(false)
   })
 })

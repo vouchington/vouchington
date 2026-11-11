@@ -115,7 +115,7 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
   )
   const admissionPostType = isSupportedPostType(body.post_type) ? body.post_type : 'discussion'
   let rssFeedItem: Awaited<ReturnType<typeof validatePostWriteInput>>
-  let isBareOneClickLink = false
+  let isCaptchaExemptCreation = false
   const admission = await admitRouteContribution({
     currentUser,
     membershipPlan,
@@ -136,7 +136,7 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
       assertOfficialAccountCanCreatePost(currentUser, body.post_type)
       validateRequestContract(ctx, 'POST:/api/v1/posts', { body })
       // The generated contract establishes string/array shape before inspecting user text.
-      isBareOneClickLink =
+      isCaptchaExemptCreation =
         body.post_type === 'link' &&
         !!body.url_id &&
         !body.url &&
@@ -144,18 +144,19 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
         !body.markdown?.trim() &&
         !body.images?.length
       rssFeedItem = await validatePostWriteInput(currentUser, body, membershipPlan)
-      isBareOneClickLink ||= rssFeedItem !== undefined
-      if (!isBareOneClickLink)
+      isCaptchaExemptCreation ||= rssFeedItem !== undefined || body.post_type === 'story'
+      if (!isCaptchaExemptCreation)
         await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'posts.create' })
     },
     beforeCommit: async () => {
       await assertPostWriteBeforeCommit(body)
-      await assessRecaptchaToken({
-        currentUser,
-        token: body.recaptcha_token,
-        expectedAction: body.post_type === 'comment' ? 'create_comment' : 'create_post',
-        ip: ctx.ip,
-      })
+      if (body.post_type !== 'story' && rssFeedItem === undefined)
+        await assessRecaptchaToken({
+          currentUser,
+          token: body.recaptcha_token,
+          expectedAction: body.post_type === 'comment' ? 'create_comment' : 'create_post',
+          ip: ctx.ip,
+        })
     },
     execute: query =>
       executeCreatePostContribution(query, currentUser, provenance, body, membershipPlan, {

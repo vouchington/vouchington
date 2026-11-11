@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   CONTRIBUTING_USER_AGE_MS,
@@ -40,6 +40,8 @@ describe('discussion', () => {
     await import('../posts/index.mts')
   })
 
+  afterEach(() => vi.unstubAllEnvs())
+
   async function makeStoryWithItem(title?: string, rssFeedId = feedId) {
     const story = await insertTestStory({ title: title ?? 'Discussion API Test' })
     const random = Math.random().toString(36).slice(2, 10)
@@ -65,7 +67,18 @@ describe('discussion', () => {
     return { story, itemId, itemId2 }
   }
 
-  describe('POST /api/v1/stories/:storyId/discussions', () => {
+  describe('POST /api/v1/posts story discussion', () => {
+    it('creates a story discussion without a token while CAPTCHA verification is enabled', async () => {
+      vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
+      const { story } = await makeStoryWithItem()
+      const request = createRequest()
+      await request.authenticateAs(user)
+      const response = await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: story.id })
+        .expect(201)
+      expect(response.body.post.post_type).toBe('story')
+    })
     it('returns 401 when unauthenticated', async () => {
       const { story } = await makeStoryWithItem()
       const request = createRequest()

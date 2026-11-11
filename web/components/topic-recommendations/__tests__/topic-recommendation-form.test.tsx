@@ -1,3 +1,4 @@
+import * as turnstile from '@/hooks/use-turnstile-token'
 import {
   makeRecommendationPost,
   mockCreateTopicRecommendation,
@@ -25,7 +26,10 @@ describe('TopicRecommendationForm', () => {
   it('submits a new recommendation payload', async () => {
     mockCreateTopicRecommendation.mockResolvedValue(makeTopicRecommendationMutationResponse())
 
+    const challenge = vi.spyOn(turnstile, 'useTurnstileToken')
     render(<TopicRecommendationForm />)
+    expect(challenge).toHaveBeenCalledWith('posts.create')
+    challenge.mockRestore()
 
     fireEvent.change(screen.getByLabelText('Proposed Topic Title'), {
       target: { value: 'Test Topic' },

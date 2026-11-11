@@ -5,13 +5,6 @@ export function currentUserCanManageRecommendations(currentUser: PrivateUser | n
   return currentUser?.roles.includes('administrator') ?? false
 }
 
-export function currentUserCanViewTopicRecommendation(
-  currentUser: PrivateUser | null,
-  recommendation: TopicRecommendationPost | null,
-): boolean {
-  return Boolean(currentUser && recommendation)
-}
-
 export function currentUserCanEditTopicRecommendation(
   currentUser: PrivateUser | null,
   recommendation: TopicRecommendationPost | null,

@@ -23,6 +23,10 @@ Voucha runs two complementary anti-abuse mechanisms on content-creation actions:
 | Recommend topic           | `POST /api/v1/posts` (topic recommendation)                        | ✅        | ❌                    |
 | Request email login token | `POST /api/v1/auth/email-address/tokens`                           | ✅        | ❌                    |
 
+Story and RSS-item discussions reuse existing source content, so their creation does not require
+Turnstile, device attestation, or a reCAPTCHA assessment. Topic recommendation forms use the same `posts.create` challenge
+action as other authored posts.
+
 reCAPTCHA is intentionally scoped narrowly (post/comment creation) because it is billed per
 assessment. The service helper (`@services/recaptcha`) is built to extend to other actions later.
 
@@ -123,37 +127,6 @@ The assessment is skipped — failing open — when any of these hold:
    - If `blocking_enabled` is `false` (default), the request proceeds (monitor mode).
 
 Every failure path fails open: reCAPTCHA must never break content creation.
-
-## Configuration
-
-Runtime knobs live in Valkey **DynamicConfig** (admin-editable + audited via
-`/api/v1/dynamic-config/namespaces/…`; edited through `/admin/dynamic-config`).
-They are DynamicConfig values, **not feature flags** — backend behaviour must never be gated by a
-feature flag (`backend/api/AGENTS.md`).
-
-### Turnstile
-
-| Field            | Type    | Default | Meaning                                                                                        |
-| ---------------- | ------- | ------- | ---------------------------------------------------------------------------------------------- |
-| `always_approve` | boolean | `false` | Staging-only skip of missing-token and siteverify. Production ignores it. Administrators only. |
-
-Credentials stay env-backed (`CLOUDFLARE_TURNSTILE_SECRET_KEY`,
-`NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY`). Toggle procedure:
-[staging Turnstile always-approve](../../operations/staging-turnstile-always-approve.md).
-
-### reCAPTCHA
-
-Runtime knobs live in the `recaptcha-config` namespace.
-
-| Field              | Type    | Default | Meaning                                            |
-| ------------------ | ------- | ------- | -------------------------------------------------- |
-| `enabled`          | boolean | `false` | Call the paid assessment API at all                |
-| `blocking_enabled` | boolean | `false` | Enforce (reject low scores) vs monitor (log only)  |
-| `block_threshold`  | number  | `0.5`   | Score below which a request is low-trust (`0`–`1`) |
-
-Secrets/keys come from env: `GOOGLE_RECAPTCHA_PROJECT_ID`, `GOOGLE_RECAPTCHA_API_KEY`,
-`GOOGLE_RECAPTCHA_SITE_KEY` (the public site key, same value the web app reads via
-runtime-public config such as `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY`). Names and sensitivity are in the typed `@ts-shared/env-contract`.
 
 ## Testing
 

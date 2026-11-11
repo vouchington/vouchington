@@ -1,3 +1,4 @@
+import type { PrivateUser } from '@services/users/types'
 import {
   getPostHackerNewsSummaries,
   getPostHackerNewsDetails,
@@ -83,10 +84,10 @@ async function toMcpPost(post: Post, details = false): Promise<McpPost> {
  */
 export async function toMcpPosts(
   posts: Post[],
-  { details = false }: { details?: boolean } = {},
+  { details = false, viewer = null }: { details?: boolean; viewer?: PrivateUser | null } = {},
 ): Promise<McpPost[]> {
   const labeled = await attachPostProvenance(posts, null)
-  const maskedPosts = maskCommentPlaceholders(labeled, null).map(post => post as Post)
+  const maskedPosts = maskCommentPlaceholders(labeled, viewer).map(post => post as Post)
   // Placeholders must not expose links or admit provider work for their hidden content.
   const references = await (details ? getPostHackerNewsDetails : getPostHackerNewsSummaries)(
     maskedPosts.flatMap(post => (post.placeholder_state ? [] : [post.id])),

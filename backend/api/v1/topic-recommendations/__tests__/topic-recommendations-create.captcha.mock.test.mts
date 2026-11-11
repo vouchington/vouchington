@@ -31,7 +31,7 @@ function recommendationBody(random: string): Record<string, unknown> {
   }
 }
 
-describe('POST /api/v1/topic-recommendations CAPTCHA', () => {
+describe('POST /api/v1/posts topic recommendation CAPTCHA', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')

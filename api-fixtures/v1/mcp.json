@@ -5832,7 +5832,7 @@
           "tool": {
             "name": "read_posts",
             "title": "Read Posts",
-            "description": "ancestors: Page a comment's root and nearest parents, root first; the root repeats. Pass end_cursor as after for older parents. Root posts have none. Deleted/unmoderated parents are placeholders; nonpublic/missing comments return Post not found.\ndescendants: Page child heads with bounded previews; follow end_cursor even on empty pages. has_next_page means more heads, not replies. Expand via post_id. Deleted/unmoderated replies are placeholders.\ndetails: Read by id or slug: public posts/comments, or signed-in topic recommendations under REST access rules. Hidden, missing, or deleted posts return Post not found. A comment needs a public root; deleted/unmoderated comments with valid replies are placeholders.\nsearch: Search posts with keyword, semantic, or similar-item signals. Follow the opaque end_cursor while has_next_page is true.",
+            "description": "ancestors: Page root and nearest parents, root first/repeated. Use end_cursor as after for older parents. Roots have none. Deleted/unmoderated parents: placeholders; nonpublic/missing: Post not found.\ndescendants: Page child heads with bounded previews; follow end_cursor even on empty pages. has_next_page means more heads, not replies. Expand via post_id. Deleted/unmoderated replies are placeholders.\ndetails: Read id/slug with REST viewer access. Hidden/missing/deleted: Post not found. Deleted/unmoderated comments with replies are placeholders unless viewer access permits their content.\nsearch: Search by keyword, meaning or similar item. Follow opaque end_cursor while has_next_page.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -5880,7 +5880,7 @@
                         "limit": {
                           "type": "integer",
                           "minimum": 1,
-                          "description": "Maximum replies returned per page, clamped to the runtime limit up to 200 (static default: 100). A preview may return fewer."
+                          "description": "Replies/page, runtime-clamped to 200 (default 100); previews may be shorter."
                         },
                         "after": {
                           "type": "string"

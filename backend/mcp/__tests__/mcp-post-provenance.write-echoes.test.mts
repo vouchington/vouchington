@@ -44,27 +44,45 @@ const createArgs = (body: Record<string, unknown> = {}) => ({
   idempotency_key: crypto.randomUUID(),
   title: `MCP ${crypto.randomUUID()}`,
   markdown: 'My experience with this topic was useful.',
+  privacy: 'public',
   ...body,
 })
+async function readWrittenPost(user: typeof author, summary: WrittenPost): Promise<WrittenPost> {
+  expect(summary).not.toHaveProperty('provenance')
+  const detail = await callStructuredMcpTool(
+    user,
+    'read_posts',
+    { option: 'details', arguments: { post_id: summary.id } },
+    SCOPES,
+  )
+  return detail.post as WrittenPost
+}
+
 const createPost = async (
   user: typeof author,
   body: Record<string, unknown> = {},
   origin?: CredentialRequestOrigin,
 ) =>
-  (await callStructuredMcpTool(user, 'create_post', createArgs(body), SCOPES, origin))
-    .post as WrittenPost
+  readWrittenPost(
+    user,
+    (await callStructuredMcpTool(user, 'create_post', createArgs(body), SCOPES, origin))
+      .post as WrittenPost,
+  )
 const updatePost = async (user: typeof author, id: string) =>
-  (
-    await callStructuredMcpTool(
-      user,
-      'act_on_post',
-      { option: 'edit', arguments: { id, title: `Edited ${randomBytes(4).toString('hex')}` } },
-      SCOPES,
-      oauthOrigin(),
-    )
-  ).post as WrittenPost
+  readWrittenPost(
+    user,
+    (
+      await callStructuredMcpTool(
+        user,
+        'act_on_post',
+        { option: 'edit', arguments: { id, title: `Edited ${randomBytes(4).toString('hex')}` } },
+        SCOPES,
+        oauthOrigin(),
+      )
+    ).post as WrittenPost,
+  )
 
-describe('MCP post provenance on write tools', () => {
+describe('MCP written post provenance through canonical details', () => {
   beforeAll(async () => {
     ;[author, admin] = await Promise.all([caller(), caller(true)])
     clientRowId = await insertContentProvenanceOAuthClient({
@@ -110,8 +128,11 @@ describe('MCP post provenance on write tools', () => {
       const publicId = await getTestOAuthClientPublicId(rowId)
       const args = createArgs()
       const send = async () =>
-        (await callStructuredMcpTool(author, 'create_post', args, SCOPES, oauthOrigin(rowId)))
-          .post as WrittenPost
+        readWrittenPost(
+          author,
+          (await callStructuredMcpTool(author, 'create_post', args, SCOPES, oauthOrigin(rowId)))
+            .post as WrittenPost,
+        )
       const first = await send()
       expect(first.provenance).toEqual({
         via: 'mcp',
@@ -129,7 +150,11 @@ describe('MCP post provenance on write tools', () => {
 
   describe('act_on_post edit', () => {
     it('labels an edited post written through an OAuth client', async () => {
-      const seeded = await createTestPost({ user: author, provenance: mcpFact() })
+      const seeded = await createTestPost({
+        privacy: 'public',
+        user: author,
+        provenance: mcpFact(),
+      })
       expect((await updatePost(author, seeded.id)).provenance).toEqual({
         via: 'mcp',
         app: verifiedApp(),
@@ -138,6 +163,7 @@ describe('MCP post provenance on write tools', () => {
 
     it('labels an edited API post without an app', async () => {
       const seeded = await createTestPost({
+        privacy: 'public',
         user: author,
         provenance: { createdVia: 'api', oauthClientId: null },
       })
@@ -146,6 +172,7 @@ describe('MCP post provenance on write tools', () => {
 
     it('leaves the label off an edited post written on the web', async () => {
       const seeded = await createTestPost({
+        privacy: 'public',
         user: author,
         provenance: { createdVia: 'web', oauthClientId: null },
       })
@@ -154,6 +181,7 @@ describe('MCP post provenance on write tools', () => {
 
     it('never names the client behind an edited anonymous post', async () => {
       const seeded = await createTestPost({
+        privacy: 'public',
         user: author,
         is_anonymous: true,
         provenance: mcpFact(),
@@ -164,7 +192,7 @@ describe('MCP post provenance on write tools', () => {
     })
 
     it('never returns the staff detail, even to an administrator editing their own post', async () => {
-      const seeded = await createTestPost({ user: admin, provenance: mcpFact() })
+      const seeded = await createTestPost({ privacy: 'public', user: admin, provenance: mcpFact() })
       const post = await updatePost(admin, seeded.id)
       expect(post).not.toHaveProperty('staff_provenance')
       expect(post.provenance).toEqual({ via: 'mcp', app: verifiedApp() })

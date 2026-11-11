@@ -176,9 +176,6 @@ importers:
       '@services/moderation-appeals':
         specifier: workspace:^
         version: link:services/moderation-appeals
-      '@services/post-writes':
-        specifier: workspace:^
-        version: link:services/post-writes
       '@services/referral-program-link-validations':
         specifier: workspace:^
         version: link:services/referral-program-link-validations
@@ -9791,10 +9788,6 @@ importers:
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/services/posts:
     dependencies:

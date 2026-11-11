@@ -71,15 +71,24 @@ describe('client-content-routes', () => {
   })
 
   describe('stories client routes', () => {
-    it('createStoryPostFromStory returns 200', async () => {
+    it('creates a story post and exposes its source through the story read', async () => {
       const result = await harness.withClientRuntime(
         () => clientRoutes.createStoryPostFromStory(harness.storyId),
         harness.adminCookieHeader,
       )
       expect(result).toMatchObject({
-        story: expect.objectContaining({ id: harness.storyId }),
-        post: expect.objectContaining({ id: expect.any(String) }),
+        post: expect.objectContaining({ id: expect.any(String), post_type: 'story' }),
       })
+      expect(result).not.toHaveProperty('story')
+      const page = await harness.withClientRuntime(
+        () =>
+          clientRoutes.getStoryMemberPage(harness.storyId, {
+            excludeItemId: harness.rssFeedItemId,
+          }),
+        harness.adminCookieHeader,
+      )
+      expect(page.story.id).toBe(harness.storyId)
+      expect(page.story_post_ids[harness.storyId]).toBe(result.post.id)
     })
 
     it('createLinkPostFromRssFeedItem returns 200', async () => {

@@ -40,7 +40,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         limit: {
           type: 'integer',
           minimum: min,
-          description: `Maximum replies returned per page, clamped to the runtime limit up to ${max} (static default: ${defaultLimit}). A preview may return fewer.`,
+          description: `Replies/page, runtime-clamped to ${max} (default ${defaultLimit}); previews may be shorter.`,
         },
         after: { type: 'string' },
       },

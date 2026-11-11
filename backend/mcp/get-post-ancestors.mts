@@ -35,7 +35,7 @@ const LIMIT = COMMENT_ANCESTOR_PAGE_MAX_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Page a comment's root and nearest parents, root first; the root repeats. Pass end_cursor as after for older parents. Root posts have none. Deleted/unmoderated parents are placeholders; nonpublic/missing comments return Post not found.",
+      'Page root and nearest parents, root first/repeated. Use end_cursor as after for older parents. Roots have none. Deleted/unmoderated parents: placeholders; nonpublic/missing: Post not found.',
     parameters: {
       type: 'object',
       properties: {
