@@ -31,8 +31,11 @@ case "${1:-}" in
       tar -C "$data_root" -xpf -
     rm -f "$archive"
     # The data directory exists, so the entrypoint skips initdb and starts the server.
+    # The seed already settled the statistics. Without autovacuum, an analyze of a table the seed
+    # left unanalyzed (a refreshed materialized view, a dev-seed table) cannot move a near-tie
+    # plan mid-run, so every shard plans against the same frozen state.
     docker run -d --name explain-postgres -p 127.0.0.1::5432 -v "explain-pgdata:$data_root" \
-      "$PG_IMAGE" >/dev/null
+      "$PG_IMAGE" postgres -c autovacuum=off >/dev/null
     readiness_command='until docker exec "$0" pg_isready -U postgres -h 127.0.0.1 >/dev/null 2>&1; do sleep 0.5; done'
     if ! timeout 60 sh -c "$readiness_command" explain-postgres; then
       echo "::error::PostgreSQL did not accept connections within 60s"
