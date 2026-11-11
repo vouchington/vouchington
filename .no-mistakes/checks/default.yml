@@ -294,16 +294,9 @@ commands:
   - name: knip-production-exports
     command: [pnpm, run, knip:production-exports]
     fileArgs: none
-    include:
-      - 'backend/**/*.mts'
-      - '**/package.json'
-      - knip.jsonc
+    always: true
   # CI lints the whole repository; this also reaches unchanged callers and test line caps.
   - name: oxlint-type-aware
     command: [pnpm, run, oxlint]
     fileArgs: none
-    include:
-      - '**/*.ts'
-      - '**/*.tsx'
-      - '**/*.mts'
-      - '**/*.cts'
+    always: true
