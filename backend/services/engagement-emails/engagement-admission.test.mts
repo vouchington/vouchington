@@ -30,6 +30,7 @@ describe('owned engagement admission lifecycle', () => {
     off = onEnqueueAdmission(event => {
       if (event.queue === emailDigests && event.inputs.some(input => owns(input, user.id))) {
         admissions.push(event.completion)
+        // oxlint-disable-next-line promise/prefer-catch -- set completed before owner result resumes
         void event.completion.then(
           () => {
             completed = true

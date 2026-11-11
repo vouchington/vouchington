@@ -50,13 +50,11 @@ export async function insertPostElectionVoteAndWaitBeforeCommit(options: {
   inserted: () => void
   waitBeforeCommit: Promise<void>
 }): Promise<void> {
-  {
-    await using transaction = await beginTransaction()
-    await insertPostElectionVoteWithQuery(transaction, options)
-    options.inserted()
-    await options.waitBeforeCommit
-    await transaction.commit()
-  }
+  await using transaction = await beginTransaction()
+  await insertPostElectionVoteWithQuery(transaction, options)
+  options.inserted()
+  await options.waitBeforeCommit
+  await transaction.commit()
 }
 
 export async function lockTestPostAndWaitBeforeCommit(
@@ -64,15 +62,13 @@ export async function lockTestPostAndWaitBeforeCommit(
   locked: () => void,
   waitBeforeCommit: Promise<void>,
 ): Promise<void> {
-  {
-    await using transaction = await beginTransaction()
-    await transaction(sql`/* lockTestPostAndWaitBeforeCommit */
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* lockTestPostAndWaitBeforeCommit */
         SELECT id FROM posts WHERE id = ${postId} FOR UPDATE
       `)
-    locked()
-    await waitBeforeCommit
-    await transaction.commit()
-  }
+  locked()
+  await waitBeforeCommit
+  await transaction.commit()
 }
 
 export async function insertPostElectionVoteAt(

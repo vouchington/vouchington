@@ -66,10 +66,9 @@ describe('completeImageUpload utility failures', () => {
       ),
     )
 
-    const failure = await completeImageUpload(user, imageId).then(
-      () => null,
-      (err: unknown) => err,
-    )
+    const failure = await completeImageUpload(user, imageId)
+      .then(() => null)
+      .catch((err: unknown) => err)
 
     expect(failure).toBeInstanceOf(MediaSizeLimitError)
     const image = await getImageById(imageId)

@@ -138,13 +138,9 @@ describe('processReconcileCopyrightAgentDispatches', () => {
       )
       const ids = [headId, tailId]
 
-      const failure = await processReconcileCopyrightAgentDispatches(
-        {},
-        { ids, batchSize: 1 },
-      ).then(
-        () => null,
-        (err: unknown) => err,
-      )
+      const failure = await processReconcileCopyrightAgentDispatches({}, { ids, batchSize: 1 })
+        .then(() => null)
+        .catch((err: unknown) => err)
 
       expect(failure).toBeInstanceOf(AggregateError)
       expect((failure as AggregateError).errors).toEqual([headFailure])
@@ -200,13 +196,9 @@ describe('processReconcileCopyrightAgentDispatches', () => {
         nextEmailId,
       ]
 
-      const failure = await processReconcileCopyrightAgentDispatches(
-        {},
-        { ids, batchSize: 1 },
-      ).then(
-        () => null,
-        (err: unknown) => err,
-      )
+      const failure = await processReconcileCopyrightAgentDispatches({}, { ids, batchSize: 1 })
+        .then(() => null)
+        .catch((err: unknown) => err)
 
       expect(failure).toBeInstanceOf(AggregateError)
       expect((failure as AggregateError).errors).toEqual([enqueueFailure, effectFailure])

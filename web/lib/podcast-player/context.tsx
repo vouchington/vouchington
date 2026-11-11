@@ -46,6 +46,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
               Sentry.captureException(err)
             })
           : Promise.resolve()
+      // oxlint-disable-next-line promise/prefer-catch -- Run each report once after either prior outcome; catch would retry a failed report.
       const nextReport = reportChainRef.current.then(report, report)
       reportChainRef.current = nextReport.catch((err: unknown) => {
         Sentry.captureException(err)

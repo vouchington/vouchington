@@ -83,16 +83,15 @@ describe('delegated create ledger — real store', () => {
         const pending = realRenew(reservationId, leaseToken)
         if (!captureIntervalRenewal) return pending
         captureIntervalRenewal = false
-        return pending.then(
-          value => {
+        return pending
+          .then(value => {
             intervalRenewal.resolve(value)
             return value
-          },
-          (err: unknown) => {
+          })
+          .catch((err: unknown) => {
             intervalRenewal.reject(err)
             throw err
-          },
-        )
+          })
       })
     try {
       const { user, base, key, createIn } = await setup()
@@ -195,12 +194,7 @@ describe('delegated create ledger — real store', () => {
         const retry = admitDelegatedCreate({ ...base, execute: createIn })
         await waitForLock(retry)
         await lock.deleteAndRelease()
-        expect(
-          await retry.then(
-            () => 'created',
-            (err: unknown) => err,
-          ),
-        ).toBeInstanceOf(Error)
+        expect(await retry.then(() => 'created').catch((err: unknown) => err)).toBeInstanceOf(Error)
       },
     )
     expect(await countTestCommunitiesCreatedBy(user.id)).toBe(0)

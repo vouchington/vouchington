@@ -35,10 +35,9 @@ async function git(cwd: string, ...args: string[]) {
 }
 
 async function exists(path: string) {
-  return stat(path).then(
-    () => true,
-    () => false,
-  )
+  return stat(path)
+    .then(() => true)
+    .catch(() => false)
 }
 
 async function writeStub(root: string, name: string, body: string) {

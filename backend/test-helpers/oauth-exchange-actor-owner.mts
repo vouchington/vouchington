@@ -108,16 +108,15 @@ export function ownOAuthActors(
     },
     async run<T>(operation: () => Promise<T>): Promise<T> {
       assertOpen()
-      const pending = operation().then(
-        value => {
+      const pending = operation()
+        .then(value => {
           settledOperations += 1
           return value
-        },
-        (err: unknown) => {
+        })
+        .catch((err: unknown) => {
           settledOperations += 1
           throw err
-        },
-      )
+        })
       operations.push(pending)
       const result = await pending
       assertOpen()

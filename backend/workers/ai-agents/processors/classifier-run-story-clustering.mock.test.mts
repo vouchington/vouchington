@@ -223,10 +223,9 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
     const data = toClassifierRunJobData(SLUG, await reserveStoryClusteringRun(incoming))
     provider.mockRejectedValue(new Error('provider unreachable'))
     const attempt = () =>
-      processClassifierRun(classifierRunJobFor(data)).then(
-        result => result.kind,
-        () => 'threw',
-      )
+      processClassifierRun(classifierRunJobFor(data))
+        .then(result => result.kind)
+        .catch(() => 'threw')
 
     const outcomes = await drain(attempt, CLASSIFIER_RUN_ATTEMPTS + 1)
 

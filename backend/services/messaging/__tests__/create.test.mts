@@ -153,10 +153,7 @@ describe('createConversationMessage', () => {
       expect(
         await Promise.race([
           gate.entered.then(() => 'admission-entered'),
-          operation.then(
-            () => 'creation-settled',
-            () => 'creation-rejected',
-          ),
+          operation.then(() => 'creation-settled').catch(() => 'creation-rejected'),
         ]),
       ).toBe('admission-entered')
       const persisted = await getConversationMessages(conversation.id)

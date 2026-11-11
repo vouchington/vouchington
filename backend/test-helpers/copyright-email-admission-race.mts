@@ -63,23 +63,21 @@ export async function admitCopyrightEmailWithConcurrentRecommendation(
       model: 'test-model',
       structuredOutput: { summary: 'Agent output concurrent with staff admission.' },
     })
-    void recommendation.then(
-      () => {
+    void recommendation
+      .then(() => {
         if (!held) noticeHeld.reject(new Error('Recommendation never locked the notice'))
-      },
-      (err: unknown) => noticeHeld.reject(err),
-    )
+      })
+      .catch((err: unknown) => noticeHeld.reject(err))
     let admission: ReturnType<typeof admitCopyrightEmailCorrespondence> | undefined
     try {
       await noticeHeld.promise
       admission = admitCopyrightEmailCorrespondence(admissionInput)
-      void admission.then(
-        () => {
+      void admission
+        .then(() => {
           if (!requested)
             admissionAtNotice.reject(new Error('Admission never requested the notice lock'))
-        },
-        (err: unknown) => admissionAtNotice.reject(err),
-      )
+        })
+        .catch((err: unknown) => admissionAtNotice.reject(err))
       const [result, stored] = await Promise.all([admission, recommendation])
       return { admission: result, recommendationStored: stored }
     } finally {

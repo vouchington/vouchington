@@ -66,10 +66,7 @@ export async function getCachedElectionGroups<K extends Family>(
     })
     const result = get(ids)
     // A full cache hit (including a cached null) also completes discovery without SQL.
-    void result.then(
-      () => discovered.resolve(),
-      () => discovered.resolve(),
-    )
+    void result.then(() => discovered.resolve()).catch(() => discovered.resolve())
     return result.then(rows => [family, rows] as const)
   })
   const completion = Promise.allSettled(results)

@@ -62,10 +62,9 @@ describe('copyright email promotion and threading serialization', () => {
     })
     const input = await copyrightEmailPromotionInput(moderator, root.intakeId)
     try {
-      const promotion = promoteCopyrightEmailIntake(input).then(
-        () => null,
-        (err: unknown) => err,
-      )
+      const promotion = promoteCopyrightEmailIntake(input)
+        .then(() => null)
+        .catch((err: unknown) => err)
       await reachedGraphRead
       const edge = recordCopyrightEmailAncestorEdges(ingestion, claimant.id)
       const first = await Promise.race([
@@ -133,10 +132,9 @@ describe('copyright email promotion and threading serialization', () => {
     })
     const input = await copyrightEmailPromotionInput(moderator, intake.id)
     try {
-      const promotion = promoteCopyrightEmailIntake(input).then(
-        () => new Error('Thread-linked intake was unexpectedly promoted'),
-        (err: unknown) => err,
-      )
+      const promotion = promoteCopyrightEmailIntake(input)
+        .then(() => new Error('Thread-linked intake was unexpectedly promoted'))
+        .catch((err: unknown) => err)
       await reachedGraphRead
       await threading.commit()
       expect(await promotion).toMatchObject({ status: 409 })

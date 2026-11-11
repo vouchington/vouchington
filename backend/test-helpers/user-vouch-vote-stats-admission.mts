@@ -72,18 +72,17 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
         )
       }
       signal.addEventListener('abort', expired, { once: true })
-      void promise.then(
-        value => {
+      void promise
+        .then(value => {
           signal.removeEventListener('abort', expired)
           resolve(value)
-        },
-        (err: unknown) => {
+        })
+        .catch((err: unknown) => {
           signal.removeEventListener('abort', expired)
           reject(
             err instanceof Error ? err : new Error('Native observation failed', { cause: err }),
           )
-        },
-      )
+        })
       if (signal.aborted) expired()
     })
   }
@@ -136,58 +135,56 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
   } catch (err) {
     failures.push(err)
   }
-  {
-    // Settle admissions first; retry bounds saturation only, not native-operation wall time.
-    try {
-      for (const item of admissions) {
-        try {
-          const jobs = await item.jobs
-          if (!Array.isArray(jobs)) throw new Error('Owned admission did not return job array')
-          for (const job of jobs as Array<Job | null>) {
-            if (job === null) {
-              if (!ownedJobs.size) throw new Error('Deduplication lacks a real prior owned job')
-            } else if (!job || !owns(job) || !job.id) {
-              throw new Error('Admission returned an unexpected or unidentified owned job')
-            } else ownedJobs.set(job.id, job)
-          }
-        } catch (err) {
-          failures.push(err)
-        }
-      }
-      deadline = AbortSignal.timeout(25_000)
-      const observed = await Promise.allSettled(
-        [...ownedJobs.values()].map(async job => {
-          const end = await wait(job.id)
-          if (end.failed) throw end.reason
-        }),
-      )
-      for (const item of observed) if (item.status === 'rejected') failures.push(item.reason)
+  // Settle admissions first; retry bounds saturation only, not native-operation wall time.
+  try {
+    for (const item of admissions) {
       try {
-        await bounded(Promise.all([...stateReads]))
+        const jobs = await item.jobs
+        if (!Array.isArray(jobs)) throw new Error('Owned admission did not return job array')
+        for (const job of jobs as Array<Job | null>) {
+          if (job === null) {
+            if (!ownedJobs.size) throw new Error('Deduplication lacks a real prior owned job')
+          } else if (!job || !owns(job) || !job.id) {
+            throw new Error('Admission returned an unexpected or unidentified owned job')
+          } else ownedJobs.set(job.id, job)
+        }
       } catch (err) {
         failures.push(err)
       }
-      if (unfinished().length)
-        failures.push(
-          new Error(
-            `Unfinished owned native jobs: ${unfinished().join(', ')}. Canonical worker teardown owns remaining work; this observer did not cancel or drain it.`,
-          ),
-        )
-    } finally {
-      // Remove case observers even on expiry; expiry is failure, not proof native jobs drained.
-      for (const cleanup of [
-        () => worker.off('active', active),
-        () => worker.off('completed', completed),
-        () => worker.off('failed', failed),
-        () => worker.off('error', sdkError),
-        () => retrySpy?.mockRestore(),
-        () => bulkSpy?.mockRestore(),
-      ]) {
-        try {
-          cleanup()
-        } catch (err) {
-          failures.push(err)
-        }
+    }
+    deadline = AbortSignal.timeout(25_000)
+    const observed = await Promise.allSettled(
+      [...ownedJobs.values()].map(async job => {
+        const end = await wait(job.id)
+        if (end.failed) throw end.reason
+      }),
+    )
+    for (const item of observed) if (item.status === 'rejected') failures.push(item.reason)
+    try {
+      await bounded(Promise.all([...stateReads]))
+    } catch (err) {
+      failures.push(err)
+    }
+    if (unfinished().length)
+      failures.push(
+        new Error(
+          `Unfinished owned native jobs: ${unfinished().join(', ')}. Canonical worker teardown owns remaining work; this observer did not cancel or drain it.`,
+        ),
+      )
+  } finally {
+    // Remove case observers even on expiry; expiry is failure, not proof native jobs drained.
+    for (const cleanup of [
+      () => worker.off('active', active),
+      () => worker.off('completed', completed),
+      () => worker.off('failed', failed),
+      () => worker.off('error', sdkError),
+      () => retrySpy?.mockRestore(),
+      () => bulkSpy?.mockRestore(),
+    ]) {
+      try {
+        cleanup()
+      } catch (err) {
+        failures.push(err)
       }
     }
   }

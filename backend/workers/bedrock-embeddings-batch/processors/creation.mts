@@ -91,14 +91,13 @@ export async function processEmbeddingCreationJob(
       await lease.release()
       return job.moveToDelayed(Date.now() + (err.delayMs || contentionDelayMs()))
     }
-  })().then(
-    value => ({ status: 'fulfilled' as const, value }),
-    (err: unknown) => ({ status: 'rejected' as const, reason: err }),
-  )
-  const released = await lease.release().then(
-    () => ({ status: 'fulfilled' as const }),
-    (err: unknown) => ({ status: 'rejected' as const, reason: err }),
-  )
+  })()
+    .then(value => ({ status: 'fulfilled' as const, value }))
+    .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
+  const released = await lease
+    .release()
+    .then(() => ({ status: 'fulfilled' as const }))
+    .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
   if (work.status === 'rejected') {
     if (released.status === 'rejected')
       onError(

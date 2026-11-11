@@ -68,7 +68,7 @@ describe('createInstanceFromHostname — queued NodeInfo classification', () => 
     const add = vi.spyOn(background, 'add').mockImplementation((name, data, options) => {
       const job = originalAdd.call(background, name, data, options)
       if (name === FEDIVERSE_INSTANCES_CLASSIFY_JOB.name) {
-        void job.then(admission.resolve, admission.reject)
+        void job.then(admission.resolve).catch(admission.reject)
       }
       return job
     })

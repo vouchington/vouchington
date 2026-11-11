@@ -141,16 +141,14 @@ export async function withTestStoryLifecycleLock<T>(
   storyId: string,
   callback: () => Promise<T>,
 ): Promise<T> {
-  {
-    await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
-      `/* withTestStoryLifecycleLock */
+  await using transaction = await beginTransaction()
+  const query = transaction
+  await query(
+    `/* withTestStoryLifecycleLock */
           SELECT pg_advisory_xact_lock(hashtextextended('story-lifecycle:' || $1::text, 0))`,
-      [storyId],
-    )
-    const result = await callback()
-    await transaction.commit()
-    return result
-  }
+    [storyId],
+  )
+  const result = await callback()
+  await transaction.commit()
+  return result
 }

@@ -13,15 +13,14 @@ export function useReAuthMethods(open: boolean) {
   useEffect(() => {
     if (!open) return undefined
     let current = true
-    void getReAuthMethods().then(
-      methods => {
+    void getReAuthMethods()
+      .then(methods => {
         if (current) setResult({ attempt, methods })
-      },
-      (err: unknown) => {
+      })
+      .catch((err: unknown) => {
         if (current)
           setResult({ attempt, error: err instanceof Error ? err : new Error(String(err)) })
-      },
-    )
+      })
     return () => {
       current = false
     }

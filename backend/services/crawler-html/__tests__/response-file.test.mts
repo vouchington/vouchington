@@ -49,4 +49,22 @@ describe('writeResponseToTemporaryFile', () => {
     expect(cancel).toHaveBeenCalledOnce()
     expect(body.locked).toBe(false)
   })
+
+  it('destroys the readable when reader cleanup fails after EOF', async () => {
+    const releaseLock = vi.fn<() => void>(() => {
+      throw new Error('release failed')
+    })
+    const body = {
+      getReader: () => ({
+        read: async () => ({ done: true as const, value: undefined }),
+        releaseLock,
+        cancel: async () => undefined,
+      }),
+    } as unknown as ReadableStream<Uint8Array>
+
+    await expect(
+      writeResponseToTemporaryFile({ body } as Response, 'https://example.test/', 100),
+    ).rejects.toThrow('release failed')
+    expect(releaseLock).toHaveBeenCalledOnce()
+  })
 })

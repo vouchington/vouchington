@@ -174,10 +174,9 @@ describe('sync-db', () => {
       { highWaterMark: 0 },
     )
 
-    const completion = syncDomainsWithDatabase(sourceId, new Response(body), 'url').then(
-      () => ({ status: 'completed' as const }),
-      (err: unknown) => ({ status: 'rejected' as const, error: err }),
-    )
+    const completion = syncDomainsWithDatabase(sourceId, new Response(body), 'url')
+      .then(() => ({ status: 'completed' as const }))
+      .catch((err: unknown) => ({ status: 'rejected' as const, error: err }))
     await requested
     await createTestBlacklistSource({
       type: 'email',

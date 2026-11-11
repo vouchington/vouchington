@@ -38,10 +38,9 @@ export const preparePostWithCommunityReviews = async (
   const shouldValidateResolvedLinkCategories = defaults.postType === 'link' && !input.title?.trim()
   const assessment =
     defaults.postType === 'link' && input.url && !input.url_id
-      ? await assessUrls([input.url]).then(
-          value => ({ value }),
-          (err: unknown) => ({ err }),
-        )
+      ? await assessUrls([input.url])
+          .then(value => ({ value }))
+          .catch((err: unknown) => ({ err }))
       : undefined
   let communityReviews: CommunityPostReview[] = []
   let resolvedUrlStrings: string[] = []

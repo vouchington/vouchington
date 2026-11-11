@@ -28,19 +28,17 @@ export async function deleteUserReferralLink(
   // soft-delete must explicitly cascade to soft-delete its unfurled children too.
   await using query = await beginTransaction()
   let childProgramIds: string[] = []
-  {
-    await write(
-      sql`/* deleteUserReferralLink */
+  await write(
+    sql`/* deleteUserReferralLink */
         UPDATE user_referral_program_links
         SET deleted_at = CURRENT_TIMESTAMP
         WHERE id = ${linkId}
           AND deleted_at IS NULL
       `,
-      { query },
-    )
+    { query },
+  )
 
-    childProgramIds = await softDeleteChildrenOfParent(linkId, { query })
-  }
+  childProgramIds = await softDeleteChildrenOfParent(linkId, { query })
   await query.commit()
   // Children live in other programs than the parent; their cached lists hold them too.
   await clearPrioritizedLinksCache([...new Set([link.referral_program_id, ...childProgramIds])])

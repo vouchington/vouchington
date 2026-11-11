@@ -120,10 +120,9 @@ describe('upload cleanup effect checkpoints', () => {
             )
       const failure = await cleanupAbandonedUploads(sweep, async next => {
         saved.push(next)
-      }).then(
-        () => null,
-        (err: unknown) => err as Error,
-      )
+      })
+        .then(() => null)
+        .catch((err: unknown) => err as Error)
       restore()
       const expectedError = expect.objectContaining({ message })
       expect(failure).toMatchObject(phase === 'staged' ? { errors: [expectedError] } : { message })

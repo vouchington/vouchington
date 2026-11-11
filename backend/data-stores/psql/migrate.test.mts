@@ -178,10 +178,9 @@ describe('applyAllMigrations', () => {
     const logger = { error: vi.fn<() => void>(), log: vi.fn<() => void>() }
     const operation = applyAllMigrations(fixture.root, { logger, platform: fixture.platform })
     // Observe rejection immediately, while the fixed phase is deliberately gated.
-    const settled = operation.then(
-      () => ({ status: 'fulfilled' as const }),
-      (err: unknown) => ({ status: 'rejected' as const, reason: err }),
-    )
+    const settled = operation
+      .then(() => ({ status: 'fulfilled' as const }))
+      .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
     let primary: unknown
     let failed = false
     try {

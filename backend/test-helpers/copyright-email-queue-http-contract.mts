@@ -67,10 +67,8 @@ export async function readOwnedCopyrightEmailQueue(
     observed = request
       .get(`/api/v1/copyright-email-intakes/review-queue?${query.toString()}`)
       .expect(200)
-      .then(
-        response => ({ response }),
-        (err: unknown) => ({ err }),
-      )
+      .then(response => ({ response }))
+      .catch((err: unknown) => ({ err }))
     const outcome = await observed
     if ('err' in outcome) throw outcome.err
     const { response } = outcome

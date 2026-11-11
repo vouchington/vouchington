@@ -83,7 +83,7 @@ describe('weekly hostname refresh cap through real GlideMQ', () => {
     const pausedAtActive = Promise.withResolvers<void>()
     // Pause before the processor defers this job, so its immediate continuation cannot run.
     worker.once('active', () => {
-      void worker.pause(true).then(pausedAtActive.resolve, pausedAtActive.reject)
+      void worker.pause(true).then(pausedAtActive.resolve).catch(pausedAtActive.reject)
     })
 
     try {
@@ -169,7 +169,7 @@ describe('crawl cleanup retained work', () => {
       worker = cleanupWorker
       const paused = Promise.withResolvers<void>()
       cleanupWorker.once('active', () => {
-        void cleanupWorker.pause(true).then(paused.resolve, paused.reject)
+        void cleanupWorker.pause(true).then(paused.resolve).catch(paused.reject)
       })
       await Promise.all([events.waitUntilReady(), cleanupWorker.waitUntilReady()])
       const delayed = once(events, 'delay-changed')

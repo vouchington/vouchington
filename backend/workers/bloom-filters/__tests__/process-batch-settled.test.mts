@@ -7,10 +7,9 @@ function fakeJob(name: string): Job {
 }
 
 async function captureBatchError(run: () => Promise<unknown>): Promise<BatchError> {
-  const thrown = await run().then(
-    () => undefined,
-    (err: unknown) => err,
-  )
+  const thrown = await run()
+    .then(() => undefined)
+    .catch((err: unknown) => err)
   expect(thrown).toBeInstanceOf(BatchError)
   return thrown as BatchError
 }

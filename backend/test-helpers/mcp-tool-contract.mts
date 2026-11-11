@@ -51,10 +51,7 @@ export async function callRejectedMcpTool(
 ): Promise<string> {
   const outcome = await runWithCredentialRequestContext(MCP_API_KEY_ORIGIN, () =>
     callMcpTool(name, args, caller, scopes, mcpConfigForTool(name)),
-  ).then(
-    result => result,
-    (err: unknown) => err,
-  )
+  ).catch((err: unknown) => err)
   if (outcome instanceof Error) return outcome.message
   const result = outcome as Awaited<ReturnType<typeof callMcpTool>>
   expect(result.isError).toBe(true)

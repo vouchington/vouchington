@@ -48,14 +48,9 @@ describe('owned private identity cache fill', () => {
     })
     void operation.catch(() => {})
     const requirePending = (phase: string) =>
-      operation!.then(
-        () => {
-          throw new Error(`Cache operation finished before ${phase}`)
-        },
-        (err: unknown) => {
-          throw err
-        },
-      )
+      operation!.then(() => {
+        throw new Error(`Cache operation finished before ${phase}`)
+      })
     await Promise.race([writeStarted.promise, requirePending('owned write admission')])
     await Promise.race([readFinished.promise, requirePending('identity response')])
     expect(await cache.get(user.id)).toBeNull()

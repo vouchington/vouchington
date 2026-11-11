@@ -140,10 +140,9 @@ describe('durable hostname cache invalidation', () => {
         throw new Error('old eviction failed')
       },
     })
-    const outcome = first.then(
-      () => ({ ok: true as const, error: null }),
-      (err: unknown) => ({ ok: false as const, error: err }),
-    )
+    const outcome = first
+      .then(() => ({ ok: true as const, error: null }))
+      .catch((err: unknown) => ({ ok: false as const, error: err }))
     await claimed.promise
     await enqueue(id)
     const fresh = await getHostnameCacheInvalidationWorkForTest(id)

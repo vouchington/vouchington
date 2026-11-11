@@ -228,10 +228,9 @@ describe('C6 classifier run through the shared lifecycle (real PG, mocked provid
     const data = toClassifierRunJobData(TAGGING_CLASSIFIER_SLUG, await reserveRun(fixture))
     provider.mockRejectedValue(new Error('provider unreachable'))
     const attempt = () =>
-      processClassifierRun(classifierRunJobFor(data)).then(
-        result => result.kind,
-        () => 'threw',
-      )
+      processClassifierRun(classifierRunJobFor(data))
+        .then(result => result.kind)
+        .catch(() => 'threw')
 
     const outcomes = await drain(attempt, CLASSIFIER_RUN_ATTEMPTS + 1)
 

@@ -73,10 +73,7 @@ describe('web integration build phases', () => {
     })
 
     const loading = import('./setup-web-integration.mts')
-    const outcome = loading.then(
-      () => undefined,
-      (err: unknown) => err,
-    )
+    const outcome = loading.then(() => undefined).catch((err: unknown) => err)
     try {
       const worker = await workerStarted.promise
       expect(held.size).toBe(1)

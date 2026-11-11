@@ -72,10 +72,9 @@ describe('Microsoft Store provider verification outcomes', () => {
     const rejection = await processWithMicrosoftStore(
       verification.id,
       failingClient(new MicrosoftStoreResponseError(429, false)),
-    ).then(
-      () => null,
-      (err: unknown) => err,
     )
+      .then(() => null)
+      .catch((err: unknown) => err)
 
     expect(rejection).toBeInstanceOf(Worker.RateLimitError)
     expect(rejection).toMatchObject({ cause: { status: 429 } })

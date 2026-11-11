@@ -42,14 +42,13 @@ export function observeTestModerationTransparencyRollupRelease<Result>(
             released.reject(new Error('Owned autocommit release did not return a pg promise'))
           } else {
             observations.push(
-              actual.then(
-                () => {
+              actual
+                .then(() => {
                   observed = true
                   released.resolve()
                   return undefined
-                },
-                (err: unknown) => released.reject(err),
-              ),
+                })
+                .catch((err: unknown) => released.reject(err)),
             )
           }
         }

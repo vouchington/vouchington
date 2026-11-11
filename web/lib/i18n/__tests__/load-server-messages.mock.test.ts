@@ -131,16 +131,21 @@ describe('loadServerMessages', () => {
     })
     expect(mockGetBatch).toHaveBeenCalledTimes(2)
   })
-  it('evicts a failed initial load so the next request retries', async () => {
+  it('evicts failed initial loads so the next request retries', async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     mockHeadersGet.mockReturnValue('/my')
     mockGetBatch
       .mockRejectedValueOnce(new Error('localization unavailable'))
       .mockResolvedValueOnce(localizationBatch('Recovered'))
-
     await expect(loadServerMessages('es')).rejects.toThrow('localization unavailable')
     await expect(loadServerMessages('es')).resolves.toEqual({ nav: { home: 'Recovered' } })
     expect(mockGetBatch).toHaveBeenCalledTimes(2)
+    mockGetBatch
+      .mockResolvedValueOnce({ ...localizationBatch('Invalid'), messages: null })
+      .mockResolvedValueOnce(localizationBatch('Recovered again'))
+    await expect(loadServerMessages('pt')).rejects.toThrow(TypeError)
+    await expect(loadServerMessages('pt')).resolves.toEqual({ nav: { home: 'Recovered again' } })
+    expect(mockGetBatch).toHaveBeenCalledTimes(4)
   })
   it('treats a non-finite API TTL as immediately expired', async () => {
     vi.stubEnv('ENVIRONMENT', 'production')

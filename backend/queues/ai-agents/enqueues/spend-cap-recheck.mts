@@ -43,7 +43,7 @@ export async function enqueueSpendCapRecheckBestEffort(
     onError(err instanceof Error ? err : new Error(String(err), { cause: err }))
     return
   }
-  await enqueued.then(() => undefined, onError)
+  await enqueued.then(() => undefined).catch(onError)
 }
 
 function spendCapRecheckDeduplicationId(day: string, generation: string): string {

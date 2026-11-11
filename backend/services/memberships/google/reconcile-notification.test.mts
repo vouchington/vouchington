@@ -163,10 +163,9 @@ describe('Google Play RTDN reconciliation failures', () => {
       }
       const failed = await withGooglePlay(client, () =>
         reconcileGooglePlayRtdnNotification({ evidenceId }),
-      ).then(
-        () => false,
-        () => true,
       )
+        .then(() => false)
+        .catch(() => true)
       expect(failed).toBe(status === 503)
       await expect(
         getTestMembershipProviderEvidenceTerminalState(evidenceId),

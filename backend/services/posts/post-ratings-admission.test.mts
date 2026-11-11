@@ -124,10 +124,7 @@ describe.each(['entity', 'rss'] as const)('post-rating %s admission', port => {
         expect(
           await Promise.race([
             gate.entered.then(() => 'admission-entered'),
-            operation.then(
-              () => 'mutation-settled',
-              () => 'mutation-rejected',
-            ),
+            operation.then(() => 'mutation-settled').catch(() => 'mutation-rejected'),
           ]),
         ).toBe('admission-entered')
         const committed = await getPostByAny(post.id)

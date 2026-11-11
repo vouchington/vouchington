@@ -23,10 +23,9 @@ describe('post seed diagnostics', () => {
     const diagnostics = new PostSeedDiagnostics(path)
     const lockKey = randomUUID()
     const observedLockWait = Promise.withResolvers<void>()
-    const observation = observedLockWait.promise.then(
-      () => ({ status: 'fulfilled' as const }),
-      (err: unknown) => ({ status: 'rejected' as const, error: asError(err) }),
-    )
+    const observation = observedLockWait.promise
+      .then(() => ({ status: 'fulfilled' as const }))
+      .catch((err: unknown) => ({ status: 'rejected' as const, error: asError(err) }))
     const writeSpy = vi.spyOn(diagnostics, 'write').mockImplementation(record => {
       PostSeedDiagnostics.prototype.write.call(diagnostics, record)
       if (

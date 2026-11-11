@@ -181,6 +181,7 @@ export async function promoteDelayedJobs(
     candidates.map(async job => {
       if ((await job.getState()) !== 'delayed') return 0
       // The delay timer can fire between the state read and this call; the job is then already out.
+      // oxlint-disable-next-line promise/prefer-catch -- only promote rejection is recoverable
       return job.promote().then(
         () => {
           endThrottleWindow(queue.name, job)

@@ -26,10 +26,9 @@ export function enqueueReconcileStoryPostRelatedUrlProjections(
 export function enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort(
   options: { deduplicationId?: string } = {},
 ): Promise<void> {
-  return Promise.resolve(enqueueReconcileStoryPostRelatedUrlProjections(options)).then(
-    () => undefined,
-    onError,
-  )
+  return Promise.resolve(enqueueReconcileStoryPostRelatedUrlProjections(options))
+    .then(() => undefined)
+    .catch(onError)
 }
 
 export function enqueueContinueStoryPostRelatedUrlProjectionReconciliation(): EnqueueReturnType {

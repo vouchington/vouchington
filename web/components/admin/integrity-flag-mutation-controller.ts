@@ -80,6 +80,7 @@ export class IntegrityFlagMutationController<F> {
 
     const reconciliation = this.reconcileOnce(flagId, kind)
     this.reconciliationPromises.set(flagId, reconciliation)
+    // oxlint-disable-next-line promise/prefer-catch -- Clear on the original rejection microtask so an immediate retry cannot reuse a stale promise.
     void reconciliation.then(
       () => this.clearReconciliationPromise(flagId, reconciliation),
       () => this.clearReconciliationPromise(flagId, reconciliation),

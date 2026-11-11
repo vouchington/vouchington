@@ -109,10 +109,9 @@ describe('copyright email promotion graph bound', () => {
     })
     const input = await copyrightEmailPromotionInput(moderator, root.id)
     try {
-      const promotion = promoteCopyrightEmailIntake(input).then(
-        () => new Error('Promotion unexpectedly succeeded during a graph change'),
-        (err: unknown) => err,
-      )
+      const promotion = promoteCopyrightEmailIntake(input)
+        .then(() => new Error('Promotion unexpectedly succeeded during a graph change'))
+        .catch((err: unknown) => err)
       await reachedGraphRead
       await ingestion.commit()
       expect(await promotion).toMatchObject({

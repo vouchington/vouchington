@@ -67,7 +67,8 @@ export const refundReconciliationSchedule = {
 export function enqueueDispatchMembershipRefundReconciliationBestEffort(): Promise<void> {
   return Promise.resolve()
     .then(() => enqueueDispatchMembershipRefundReconciliation())
-    .then(() => undefined, onError)
+    .then(() => undefined)
+    .catch(onError)
 }
 
 export function enqueueReconcileMembershipRefundOperation(
@@ -87,5 +88,6 @@ export function enqueueReconcileMembershipRefundOperationBestEffort(
 ): Promise<void> {
   return Promise.resolve()
     .then(() => enqueueReconcileMembershipRefundOperation(data))
-    .then(() => undefined, onError)
+    .then(() => undefined)
+    .catch(onError)
 }

@@ -51,16 +51,14 @@ export function createRetainedBindingCleanupLifetime<Result>(
     if (root || finishing) throw new Error('Retained cleanup fixture root may only start once')
     root = Promise.resolve()
       .then(action)
-      .then<Outcome<Result>, Outcome<Result>>(
-        result => ({ ok: true, result }),
-        (err: unknown) => {
-          if (err instanceof OperationFailure) {
-            err.entry.primary = true
-            return { ok: false, error: err.reason }
-          }
-          return { ok: false, error: err }
-        },
-      )
+      .then<Outcome<Result>>(result => ({ ok: true, result }))
+      .catch((err: unknown): Outcome<Result> => {
+        if (err instanceof OperationFailure) {
+          err.entry.primary = true
+          return { ok: false, error: err.reason }
+        }
+        return { ok: false, error: err }
+      })
     return root.then(outcome => {
       if (!outcome.ok) throw outcome.error
       return outcome.result

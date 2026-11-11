@@ -159,10 +159,9 @@ describe('hostname ownership serialization against approval', () => {
         admin,
         [{ subject, object: { id: urlId } }],
         { vote: false },
-      ).then(
-        () => null,
-        (err: unknown) => err,
       )
+        .then(() => null)
+        .catch((err: unknown) => err)
       expect(pending).toBeNull()
       const relations = await getEntityRelations('topic', subject.id, 'landing_page', 'url', {
         viewer: { kind: 'anonymous' },

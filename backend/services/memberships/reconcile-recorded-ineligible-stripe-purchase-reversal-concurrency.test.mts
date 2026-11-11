@@ -118,10 +118,9 @@ describe('recorded ineligible Stripe purchase reconciliation concurrency', () =>
         listSubscriptionInvoices,
         listRefundsForPaymentPage,
       },
-    }).then(
-      () => null,
-      (err: unknown) => err,
-    )
+    })
+      .then(() => null)
+      .catch((err: unknown) => err)
 
     await siblingsInFlight
     expect(failedRefund).toBe(true)

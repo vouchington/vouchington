@@ -86,10 +86,9 @@ export async function startTestCopyrightScreeningBeforeAdmission<T>(
       releaseHolder,
     },
     () =>
-      claimCopyrightFormScreening(intakeId).then(
-        value => ({ value, error: null }),
-        (err: unknown) => ({ value: null, error: err }),
-      ),
+      claimCopyrightFormScreening(intakeId)
+        .then(value => ({ value, error: null }))
+        .catch((err: unknown) => ({ value: null, error: err })),
   )
   await screening.waitForLock()
   const admission = await waits.start(
@@ -101,10 +100,9 @@ export async function startTestCopyrightScreeningBeforeAdmission<T>(
       releaseHolder,
     },
     () =>
-      admit().then(
-        value => ({ value, error: null }),
-        (err: unknown) => ({ value: null, error: err }),
-      ),
+      admit()
+        .then(value => ({ value, error: null }))
+        .catch((err: unknown) => ({ value: null, error: err })),
   )
   await admission.waitForLock()
   await transaction.commit()

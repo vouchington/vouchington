@@ -25,10 +25,9 @@ describe('withSetupPhaseDeadline', () => {
       'dynamic-config:example',
       () => new Promise(() => {}),
       1,
-    ).then(
-      () => undefined,
-      (err_: unknown) => err_,
     )
+      .then(() => undefined)
+      .catch((err_: unknown) => err_)
 
     expect(err).toBeInstanceOf(SetupPhaseDeadlineError)
     expect(err).toHaveProperty(

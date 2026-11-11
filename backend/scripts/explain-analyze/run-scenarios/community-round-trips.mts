@@ -46,9 +46,11 @@ async function runPostReviewLoad(communityId: string): Promise<void> {
     'community-post-review-load',
     async () => {
       await using transaction = await beginTransaction()
-      await createCommunityPostReview(seedUser.id, seedPostId, communityId, {
+      const reviewWrite = createCommunityPostReview(seedUser.id, seedPostId, communityId, {
         query: transaction,
-      }).then(
+      })
+      // oxlint-disable-next-line promise/prefer-catch -- Success deliberately throws; only the review write's rejection may satisfy this assertion.
+      await reviewWrite.then(
         () => {
           throw new Error('The seeded post must not belong to the seeded community')
         },

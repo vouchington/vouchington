@@ -30,10 +30,7 @@ export async function deleteForeignKeyTargetDuringInsertForTest<Result>(input: {
         await waitForLock(operation)
         await input.deleteTarget(query)
         await query.commit()
-        return operation.then(
-          value => ({ value }),
-          (err: unknown) => ({ error: err }),
-        )
+        return operation.then(value => ({ value })).catch((err: unknown) => ({ error: err }))
       },
     )
   } catch (err) {

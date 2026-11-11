@@ -72,10 +72,9 @@ export async function closeRoutingObserverDuringPoolFaultForTest(
     started.resolve()
     await proceed.promise
     await read('/* routingPoolFaultOverlap */ SELECT 1')
-  }).then(
-    () => undefined,
-    (err: unknown) => err,
-  )
+  })
+    .then(() => undefined)
+    .catch((err: unknown) => err)
   try {
     await started.promise
     const closing = mode === 'parallel' ? observer.close() : Promise.resolve()

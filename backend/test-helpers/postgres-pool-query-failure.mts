@@ -56,10 +56,7 @@ export async function withPostgresPoolQueryFailureForTest<Result>(
       // Register before release: pg-pool destroys errored clients without awaiting their end.
       const ended = once(client, 'end', { signal: AbortSignal.timeout(5_000) })
       // Observe rejection immediately even if SQL fails before cleanup awaits this promise.
-      const settledEnd = ended.then(
-        () => undefined,
-        (err: unknown) => err,
-      )
+      const settledEnd = ended.then(() => undefined).catch((err: unknown) => err)
       let result: unknown
       let failure: unknown
       try {

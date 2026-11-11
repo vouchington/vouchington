@@ -5,22 +5,21 @@ export async function updateTestMembershipExpiresAt(
   membershipId: string,
   expiresAt: Date,
 ): Promise<void> {
-  {
-    await using transaction = await beginTransaction()
-    const query = transaction
-    await query(sql`/* updateTestMembershipExpiresAt */
+  await using transaction = await beginTransaction()
+  const query = transaction
+  await query(sql`/* updateTestMembershipExpiresAt */
         UPDATE memberships
         SET effective_at = LEAST(effective_at, ${expiresAt}), expires_at = ${expiresAt}
         WHERE id = ${membershipId}
       `)
-    await query(sql`/* updateTestMembershipExpiresAt: mirror source state */
+  await query(sql`/* updateTestMembershipExpiresAt: mirror source state */
         UPDATE membership_source_states state
         SET effective_at = LEAST(state.effective_at, ${expiresAt}), expires_at = ${expiresAt}
         FROM memberships membership
         WHERE membership.id = ${membershipId}
           AND state.membership_source_id = membership.membership_source_id
       `)
-    await query(sql`/* updateTestMembershipExpiresAt: close backdated grant activation */
+  await query(sql`/* updateTestMembershipExpiresAt: close backdated grant activation */
         UPDATE membership_grant_activation_periods activation
         SET ended_at = activation.started_at
         FROM memberships membership
@@ -31,8 +30,7 @@ export async function updateTestMembershipExpiresAt(
           AND activation.ended_at IS NULL
           AND ${expiresAt} < activation.started_at
       `)
-    await transaction.commit()
-  }
+  await transaction.commit()
 }
 
 export async function ageTestMembershipRenewalPriceIncreaseClaim(

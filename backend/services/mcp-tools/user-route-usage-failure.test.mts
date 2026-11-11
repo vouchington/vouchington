@@ -38,10 +38,9 @@ function trackClosedUsageSettlement(): Promise<void>[] {
     closed.push(done.promise)
     return once.call(this, event, (...args: unknown[]) => {
       listener(...args)
-      void Promise.all(settled).then(
-        () => done.resolve(),
-        () => done.resolve(),
-      )
+      void Promise.all(settled)
+        .then(() => done.resolve())
+        .catch(() => done.resolve())
     })
   })
   return closed

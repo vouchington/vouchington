@@ -150,10 +150,10 @@ export const EMPTY_PAGE_INFO: PageInfo = {
   start_cursor: null,
 }
 function captureSignatureVerificationError(ctx: Context): Promise<unknown> {
-  return ctx.verifyAttestedRequestSignature().then(
-    () => null,
-    (err: unknown) => err,
-  )
+  return ctx
+    .verifyAttestedRequestSignature()
+    .then(() => null)
+    .catch((err: unknown) => err)
 }
 async function requireUserAfterAnonRateLimit(ctx: Context, routeId: string): Promise<PrivateUser> {
   const currentUser = await ctx.getCurrentUser()

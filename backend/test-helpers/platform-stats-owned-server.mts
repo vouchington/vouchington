@@ -15,10 +15,9 @@ export async function withOwnedPlatformStatsServer<Result>(
   registerCleanup: (cleanup: () => Promise<void>) => void,
 ): Promise<Result> {
   const settle = (task: Promise<unknown>) =>
-    task.then(
-      value => ({ status: 'fulfilled' as const, value }),
-      (err: unknown) => ({ status: 'rejected' as const, reason: err }),
-    )
+    task
+      .then(value => ({ status: 'fulfilled' as const, value }))
+      .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
   const responses: Promise<PromiseSettledResult<unknown>>[] = []
   const handlers: Promise<PromiseSettledResult<unknown>>[] = []
   const ownedWork: Promise<PromiseSettledResult<unknown>>[] = []

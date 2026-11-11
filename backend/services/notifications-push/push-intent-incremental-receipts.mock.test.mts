@@ -244,13 +244,12 @@ describe('incremental notification push receipts', () => {
         ...shortLeasePolicy,
         endpointConcurrency: 1,
       })
-      const settled = await delivery.then(
-        value => ({ value, errorMessage: undefined }),
-        (err: unknown) => ({
+      const settled = await delivery
+        .then(value => ({ value, errorMessage: undefined }))
+        .catch((err: unknown) => ({
           value: undefined,
           errorMessage: err instanceof Error ? err.message : undefined,
-        }),
-      )
+        }))
       expect(settled).toEqual(
         renewal instanceof Error
           ? { value: undefined, errorMessage: 'renew failed' }

@@ -38,10 +38,9 @@ exit 2
             CURL_EXIT: String(curlExit),
           },
         },
-      ).then(
-        () => 0,
-        (err: unknown) => (err as Error & { code: number }).code,
       )
+        .then(() => 0)
+        .catch((err: unknown) => (err as Error & { code: number }).code)
 
       expect(result).toBe(curlExit || 1)
       await expect(access(target, constants.X_OK)).rejects.toMatchObject({

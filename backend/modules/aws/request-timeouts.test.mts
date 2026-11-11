@@ -102,10 +102,10 @@ describe('AWS request timeouts', () => {
       region: 'us-west-2',
       requestHandler: handler,
     })
-    const outcome = client.send(new ListBucketsCommand({})).then(
-      () => 'resolved' as const,
-      () => 'rejected' as const,
-    )
+    const outcome = client
+      .send(new ListBucketsCommand({}))
+      .then(() => 'resolved' as const)
+      .catch(() => 'rejected' as const)
     const checkpoint = new Promise<'checkpoint'>(resolve => {
       AbortSignal.timeout(AFTER_DEFERRED_SOCKET_REGISTRATION_MS).addEventListener(
         'abort',
@@ -184,12 +184,14 @@ async function captureRejectionBeforeDeadline(request: Promise<unknown>): Promis
   })
 
   return Promise.race([
-    request.then(
-      async () => {
-        throw new Error('Expected the stalled AWS request to reject')
-      },
-      (err: unknown) => err,
-    ),
+    (async () => {
+      try {
+        await request
+      } catch (err) {
+        return err
+      }
+      throw new Error('Expected the stalled AWS request to reject')
+    })(),
     deadlineExceeded,
   ])
 }
