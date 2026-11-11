@@ -108,7 +108,7 @@ The assessment is skipped — failing open — when any of these hold:
 - The process is not a deployed environment (`isDeployedEnvironment()` from
   `@ts-shared/deploy-environment`, i.e. `ENVIRONMENT` is not `staging` or `production`) — dev and
   test never call the paid API.
-- credentials are not fully configured (see [env vars](#configuration)).
+- credentials are not fully configured (see [provider credentials](../../development/local-env-vars.md#credentials)).
 - the user is **high-trust** (an administrator; there is no other trust tier today).
 - no `recaptcha_token` was supplied by the client.
 - the daily **429 lockout** is in effect.
