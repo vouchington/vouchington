@@ -14844,10 +14844,10 @@
     "classifier_run_requests": {
       "checkConstraints": {
         "chk_classifier_run_requests__community_prompt_completion": "CHECK (((community_prompt_completed_at IS NULL) OR (run_settled_at IS NOT NULL)))",
+        "chk_classifier_run_requests__community_prompt_cursor_pair": "CHECK (((community_prompt_cursor_activated_at IS NULL) = (community_prompt_cursor_prompt_id IS NULL)))",
+        "chk_classifier_run_requests__community_prompt_end_cursor_pair": "CHECK (((community_prompt_end_cursor_activated_at IS NULL) = (community_prompt_end_cursor_prompt_id IS NULL)))",
         "chk_classifier_run_requests__one_settlement": "CHECK (((num_nonnulls(run_settled_at, no_work_at, stale_at) <= 1) AND ((run_identity_id IS NULL) OR (run_settled_at IS NOT NULL))))",
         "chk_classifier_run_requests__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
-        "classifier_run_requests_community_prompt_cursor_check": "CHECK (((community_prompt_cursor IS NULL) OR (jsonb_typeof(community_prompt_cursor) = 'object'::text)))",
-        "classifier_run_requests_community_prompt_end_cursor_check": "CHECK (((community_prompt_end_cursor IS NULL) OR (jsonb_typeof(community_prompt_end_cursor) = 'object'::text)))",
         "classifier_run_requests_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))"
       },
       "columns": {
@@ -14870,30 +14870,52 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
-        "community_prompt_cursor": {
+        "community_prompt_cursor_activated_at": {
           "collation": null,
-          "comment": "Activation-order position after the last completed candidate page for this post request.",
+          "comment": "Activation timestamp after the last completed candidate page for this post request.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 7,
-          "type": "jsonb"
+          "type": "timestamp with time zone"
         },
-        "community_prompt_end_cursor": {
+        "community_prompt_cursor_prompt_id": {
           "collation": null,
-          "comment": "Activation-order upper position fixed when the community prompt traversal starts.",
+          "comment": "Tie-break key for the last completed candidate page; retained after prompt deletion, never joined to or used to authorize the prompt.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 8,
-          "type": "jsonb"
+          "type": "uuid"
+        },
+        "community_prompt_end_cursor_activated_at": {
+          "collation": null,
+          "comment": "Activation timestamp of the upper position fixed when community prompt traversal starts.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "community_prompt_end_cursor_prompt_id": {
+          "collation": null,
+          "comment": "Tie-break key for the fixed upper position; retained after prompt deletion, never joined to or used to authorize the prompt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
         },
         "created_at": {
           "collation": null,
@@ -14903,7 +14925,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "has_flagged_community_prompt": {
@@ -14914,7 +14936,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "boolean"
         },
         "has_new_community_prompt_decision": {
@@ -14925,7 +14947,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "boolean"
         },
         "id": {
@@ -14958,7 +14980,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "post_id": {
@@ -15002,7 +15024,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "stale_at": {
@@ -15013,7 +15035,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -15024,7 +15046,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         }
       },

@@ -15826,20 +15826,20 @@
           "definition": "CHECK (((community_prompt_completed_at IS NULL) OR (run_settled_at IS NOT NULL)))",
           "validated": true
         },
+        "chk_classifier_run_requests__community_prompt_cursor_pair": {
+          "definition": "CHECK (((community_prompt_cursor_activated_at IS NULL) = (community_prompt_cursor_prompt_id IS NULL)))",
+          "validated": true
+        },
+        "chk_classifier_run_requests__community_prompt_end_cursor_pair": {
+          "definition": "CHECK (((community_prompt_end_cursor_activated_at IS NULL) = (community_prompt_end_cursor_prompt_id IS NULL)))",
+          "validated": true
+        },
         "chk_classifier_run_requests__one_settlement": {
           "definition": "CHECK (((num_nonnulls(run_settled_at, no_work_at, stale_at) <= 1) AND ((run_identity_id IS NULL) OR (run_settled_at IS NOT NULL))))",
           "validated": true
         },
         "chk_classifier_run_requests__one_subject": {
           "definition": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
-          "validated": true
-        },
-        "classifier_run_requests_community_prompt_cursor_check": {
-          "definition": "CHECK (((community_prompt_cursor IS NULL) OR (jsonb_typeof(community_prompt_cursor) = 'object'::text)))",
-          "validated": true
-        },
-        "classifier_run_requests_community_prompt_end_cursor_check": {
-          "definition": "CHECK (((community_prompt_end_cursor IS NULL) OR (jsonb_typeof(community_prompt_end_cursor) = 'object'::text)))",
           "validated": true
         },
         "classifier_run_requests_input_sha256_check": {
@@ -15866,11 +15866,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 13
         },
-        "community_prompt_cursor": {
-          "comment": "Activation-order position after the last completed candidate page for this post request.",
-          "dataType": "jsonb",
+        "community_prompt_cursor_activated_at": {
+          "comment": "Activation timestamp after the last completed candidate page for this post request.",
+          "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -15878,15 +15878,35 @@
           "nullable": true,
           "ordinalPosition": 7
         },
-        "community_prompt_end_cursor": {
-          "comment": "Activation-order upper position fixed when the community prompt traversal starts.",
-          "dataType": "jsonb",
+        "community_prompt_cursor_prompt_id": {
+          "comment": "Tie-break key for the last completed candidate page; retained after prompt deletion, never joined to or used to authorize the prompt.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 8
+        },
+        "community_prompt_end_cursor_activated_at": {
+          "comment": "Activation timestamp of the upper position fixed when community prompt traversal starts.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
+        },
+        "community_prompt_end_cursor_prompt_id": {
+          "comment": "Tie-break key for the fixed upper position; retained after prompt deletion, never joined to or used to authorize the prompt.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10
         },
         "created_at": {
           "comment": null,
@@ -15896,7 +15916,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 17
         },
         "has_flagged_community_prompt": {
           "comment": "Whether a completed page in this community prompt traversal flagged the post.",
@@ -15906,7 +15926,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 11
         },
         "has_new_community_prompt_decision": {
           "comment": "Whether this traversal completed a newly evaluated community prompt decision; replayed receipts do not set it.",
@@ -15916,7 +15936,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 12
         },
         "id": {
           "comment": null,
@@ -15946,7 +15966,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 15
         },
         "post_id": {
           "comment": "Retained post identity in the request deduplication key; deleting the live post does not erase it or authorize replay.",
@@ -15986,7 +16006,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 14
         },
         "stale_at": {
           "comment": "Time the request was superseded by a newer content version of the same subject.",
@@ -15996,7 +16016,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 16
         },
         "updated_at": {
           "comment": null,
@@ -16006,7 +16026,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16
+          "ordinalPosition": 18
         }
       },
       "comment": "Durable per-subject request for a classifier run, written in the same transaction as the fact that makes a subject eligible so the sweep can recover a subject that never got a run receipt; independent of classifier configuration.",
