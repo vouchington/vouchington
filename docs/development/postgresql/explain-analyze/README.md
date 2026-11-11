@@ -194,20 +194,22 @@ Add service calls through `runAndCapture()` and register the new stable scenario
 ## CI
 
 The `EXPLAIN ANALYZE` workflow is called by `test-explain-analyze` in `backend.yml`, gated by the
-`explain-analyze:` path filter. The `seed-explain` job seeds the corpus once and dumps it, so a
-slow runner can fail only one seed and the shards do not each pay for it. Three parallel shards
-each restore that seeded dump into their own PostgreSQL instance. A restore carries neither the
-visibility map nor planner statistics, so each shard runs a database-wide `VACUUM (ANALYZE)`
-before its first capture. `main` runs every scenario except the partitioned comment fixture and
-the million-post Hacker News fixture, `partition` runs only the comment fixture plus the pruning
-proof, and `hn-scale` runs only the Hacker News fixture (`explain-shards.mts` declares the split).
-Both fixtures are additive, so no other scenario reads them. A scenario listed in no shard or in
-two fails the manifest checks. The `explain-analyze-gates` job merges the shard artifacts,
-requires every manifest scenario once, and enforces the plan gates, baselines and native coverage
-over the merged results. It uploads them as `explain-analyze-results`; a failed shard leaves only
-its `explain-analyze-results-main`, `-partition` or `-hn-scale` artifact. Unsharded `explain:run`
-runs everything in the original order. The seed records per-batch timing and resource samples to
-the `explain-seed-diagnostics` artifact so a seed that hits the CI step limit
+`explain-analyze:` path filter. The `seed-explain` job seeds the corpus once, so a slow runner can
+fail only one seed and the shards do not each pay for it. It then stops PostgreSQL cleanly and
+archives the data directory, and each of the three parallel shards starts its own PostgreSQL on a
+copy. Plans depend on the seeded server's physical state as much as its rows: page counts, the
+visibility map, index creation order (which breaks cost ties) and the statistics the seed collected
+on only the relations it fills. A `pg_dump` restore rebuilds all of that and flipped near-tie plans,
+so the shards never restore or re-analyze the corpus. `main` runs every scenario except
+the partitioned comment fixture and the million-post Hacker News fixture, `partition` runs only the
+comment fixture plus the pruning proof, and `hn-scale` runs only the Hacker News fixture
+(`explain-shards.mts` declares the split). Both fixtures are additive, so no other scenario reads
+them. A scenario listed in no shard or in two fails the manifest checks. The `explain-analyze-gates`
+job merges the shard artifacts, requires every manifest scenario once, and enforces the plan gates,
+baselines and native coverage over the merged results. It uploads them as `explain-analyze-results`;
+a failed shard leaves only its `explain-analyze-results-main`, `-partition` or `-hn-scale` artifact.
+Unsharded `explain:run` runs everything in the original order. The seed records per-batch timing and
+resource samples to the `explain-seed-diagnostics` artifact so a seed that hits the CI step limit
 shows which operation was interrupted. The capture step leaves bounded headroom for fixture setup
 and both plan modes; the enclosing job budget also reserves time for plan gates, pruning and
 artifact publication. Diagnose scenario timings before changing a deadline.

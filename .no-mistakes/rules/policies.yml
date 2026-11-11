@@ -3278,12 +3278,12 @@
       # Healthy max was 381 seconds (the test step 337) across 1,552 GitHub-hosted successes in #2260.
       - job: '.github/workflows/tests-web.yml#web-tests'
         maxMinutes: 30
-      # The main shard needs about 6m of setup, restore and VACUUM plus up to 20m of scenarios on a
-      # slow runner; the partition shard (comment fixture, about 5m measured) fits the same cap.
+      # The main shard needs about 6m of setup and seeded data directory transfer plus up to 20m of
+      # scenarios on a slow runner; the partition shard (comment fixture, about 5m measured) fits the same cap.
       - job: '.github/workflows/explain-analyze.yml#explain-analyze'
         maxMinutes: 30
-      # Setup, restore, the crawl-tier check, both seeds (up to 9m), the dump and its uploads; steps
-      # sum to 36m, cap 20m is below it.
+      # Setup, restore, the crawl-tier check, both seeds (up to 9m), the data directory archive and
+      # its uploads; steps sum to 38m, cap 20m is below it.
       - job: '.github/workflows/explain-analyze.yml#seed-explain'
         maxMinutes: 20
       # Dispatch-only evals; steps sum to 27m, cap 20m is below it. The two eval steps are

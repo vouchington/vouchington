@@ -27,14 +27,14 @@ jobs:
       actions: read
       contents: read
 
-  # Seed the shared corpus once and hand every shard the same seeded dump. Each shard used to
+  # Seed the shared corpus once and hand every shard a copy of its data directory. Each shard used to
   # reseed the identical corpus itself (136s to 243s per shard on 2026-11-09), so one slow runner
   # could fail any shard and every shard paid for the seed.
   seed-explain:
     needs: [prepare-postgres]
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
-    # Setup, restore, the crawl-tier check, both seeds, the dump and its uploads.
+    # Setup, restore, the crawl-tier check, both seeds, the data directory archive and its uploads.
     timeout-minutes: 20
     outputs:
       anchor-date: ${{ steps.anchor.outputs.date }}
@@ -56,8 +56,28 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_DB: postgres
           POSTGRES_HOST_AUTH_METHOD: trust
-          # The seed plans its writes under the same server settings the shards capture with; the
-          # shard job documents why work_mem is pinned.
+          # work_mem is intentionally undeclared everywhere else in this repo — Aurora Serverless
+          # v2 (production) auto-tunes it from live ACU capacity, so there is no fixed production
+          # value to mirror. This gate is the one place that needs a *fixed* value: it asserts a
+          # zero-tolerance disk-spill/temp-I/O baseline, and until now it ran against Postgres's
+          # stock 4MB default instead of a value this harness chose. Pinning work_mem removes that
+          # one undeclared input; it does not claim to control every input that decides
+          # spill-vs-no-spill (seed-data volume and planner statistics still vary run to run). 32MB
+          # is picked from real evidence, not target-fit to make the gate pass: the actual failing
+          # run (workflow run 33651571167) recorded getPostFeedIds:heavy* external-merge disk sorts
+          # of 4504-5688kB — 32MB is ~6x that observed worst case, enough margin for seed-data
+          # growth, while staying trivially safe against max_connections=300 (work_mem is per
+          # sort/hash node, not per connection, and this harness runs scenarios serially through a
+          # small pool). Raising work_mem reduces spill pressure for a given plan, but it also feeds
+          # the planner's cost model, so it is possible in principle for a higher work_mem to make a
+          # different plan cheaper; a new resource-pressure fingerprint after this change would be a
+          # real finding to investigate, not assumed impossible.
+          #
+          # explain-analyze.mts also issues `SET LOCAL work_mem` per capture (EXPLAIN_WORK_MEM),
+          # before PREPARE, so planning and execution agree even for a forced generic plan. This
+          # server-level default still matters: it covers db:migrate, explain:seed, and any
+          # planning outside the capture transaction, which the per-capture SET LOCAL does not
+          # reach. Keep the two values equal — see #11081.
           POSTGRES_INITDB_ARGS: '-c max_connections=300 -c log_min_messages=log -c work_mem=32MB'
         ports:
           - 5432
@@ -127,26 +147,29 @@ jobs:
         # Ten seeds on 2026-11-09 (runs 42592728690 to 42597072815) took 136s to 243s, and the
         # slow runners clustered at 233s to 240s. Runs 42595278183 and 42597072815 were killed by
         # the 4 minute limit at 243s after "Seed complete." printed. Six minutes is about 1.5
-        # times the slow-runner time. This job seeds once; each shard restores the dump.
+        # times the slow-runner time. This job seeds once; each shard starts on a copy of its data
+        # directory.
         timeout-minutes: 6
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
         run: source "$GITHUB_WORKSPACE/.github/workflows/explain-analyze-seed-with-resource-samples.sh"
-      - name: Dump seeded PostgreSQL database
-        timeout-minutes: 3
+      - name: Stop and archive seeded PostgreSQL data directory
+        # Stops the service container; no later step in this job uses the database.
+        timeout-minutes: 4
         env:
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
           PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
-        run: .github/workflows/explain-analyze-restore-seeded.sh dump
-      - name: Upload seeded PostgreSQL database
-        timeout-minutes: 2
+        run: .github/workflows/explain-analyze-seeded-data-directory.sh save
+      - name: Upload seeded PostgreSQL data directory
+        timeout-minutes: 3
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           overwrite: true
           name: explain-seeded-postgres-${{ github.run_id }}
-          path: ${{ runner.temp }}/explain-seeded/explain-seeded.dump
+          path: ${{ runner.temp }}/explain-seeded/explain-seeded-pgdata.tar.zst
           if-no-files-found: error
-          # The custom-format dump is already compressed.
+          # The archive is already zstd-compressed.
           compression-level: 0
           retention-days: 1
       - name: Upload crawl tier check coverage
@@ -174,7 +197,8 @@ jobs:
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
 
-  # Every shard restores the same seeded dump, so the shared corpus is identical.
+  # Every shard starts PostgreSQL on a copy of the seeded data directory, so the shared corpus,
+  # its physical layout and its planner statistics are identical.
   # `main` runs every scenario except the two fixtures below, `partition` runs only the
   # partitioned comment fixture and `hn-scale` runs only the million-post Hacker News fixture
   # (backend/scripts/explain-analyze/explain-shards.mts), so the slowest scenario groups no
@@ -185,8 +209,8 @@ jobs:
     needs: [seed-explain]
     if: ${{ !cancelled() && needs.seed-explain.result == 'success' }}
     runs-on: ubuntu-latest
-    # Main: about 6 minutes of setup, restore and VACUUM plus up to 20 minutes of scenarios on a
-    # slow runner. The partition shard needs less than the main shard's budget (see its steps).
+    # Main: about 6 minutes of setup and data directory transfer plus up to 20 minutes of scenarios
+    # on a slow runner. The partition shard needs less than the main shard's budget (see its steps).
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -204,58 +228,7 @@ jobs:
       S3_BUCKET_BEDROCK_BATCH: test-bedrock-batch
       EXPLAIN_SEED_ANCHOR_DATE: ${{ needs.seed-explain.outputs.anchor-date }}
 
-    services:
-      postgres:
-        image: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_DB: postgres
-          POSTGRES_HOST_AUTH_METHOD: trust
-          # work_mem is intentionally undeclared everywhere else in this repo — Aurora Serverless
-          # v2 (production) auto-tunes it from live ACU capacity, so there is no fixed production
-          # value to mirror. This gate is the one place that needs a *fixed* value: it asserts a
-          # zero-tolerance disk-spill/temp-I/O baseline, and until now it ran against Postgres's
-          # stock 4MB default instead of a value this harness chose. Pinning work_mem removes that
-          # one undeclared input; it does not claim to control every input that decides
-          # spill-vs-no-spill (seed-data volume and planner statistics still vary run to run). 32MB
-          # is picked from real evidence, not target-fit to make the gate pass: the actual failing
-          # run (workflow run 33651571167) recorded getPostFeedIds:heavy* external-merge disk sorts
-          # of 4504-5688kB — 32MB is ~6x that observed worst case, enough margin for seed-data
-          # growth, while staying trivially safe against max_connections=300 (work_mem is per
-          # sort/hash node, not per connection, and this harness runs scenarios serially through a
-          # small pool). Raising work_mem reduces spill pressure for a given plan, but it also feeds
-          # the planner's cost model, so it is possible in principle for a higher work_mem to make a
-          # different plan cheaper; a new resource-pressure fingerprint after this change would be a
-          # real finding to investigate, not assumed impossible.
-          #
-          # explain-analyze.mts also issues `SET LOCAL work_mem` per capture (EXPLAIN_WORK_MEM),
-          # before PREPARE, so planning and execution agree even for a forced generic plan. This
-          # server-level default still matters: it covers db:migrate, explain:seed, and any
-          # planning outside the capture transaction, which the per-capture SET LOCAL does not
-          # reach. Keep the two values equal — see #11081.
-          POSTGRES_INITDB_ARGS: '-c max_connections=300 -c log_min_messages=log -c work_mem=32MB'
-        ports:
-          - 5432
-        # The full partition fixture exceeds the former 4GiB tmpfs. Use the image's
-        # disk-backed ephemeral /var/lib/postgresql volume for data and WAL; resource
-        # samples still capture usage on the same ubuntu-latest runner.
-        # Parallel pg_restore builds indexes together. One HNSW build asked for a 61MB
-        # shared-memory segment and the default 64MB /dev/shm could not hold it
-        # (run 42681706863). 1g covers four of those builds at once.
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 30s
-          --health-start-interval 1s
-          --shm-size=1g
-
     steps:
-      - name: Set service ports
-        timeout-minutes: 1
-        run: |
-          echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
       - uses: ./.github/actions/start-valkey
@@ -264,32 +237,19 @@ jobs:
         id: setup-backend
         timeout-minutes: 5
       - uses: ./.github/actions/download-artifact
-        timeout-minutes: 2
+        timeout-minutes: 3
         with:
           name: explain-seeded-postgres-${{ github.run_id }}
           path: ${{ runner.temp }}/explain-seeded
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           run-id: ${{ github.run_id }}
-      - name: Restore seeded PostgreSQL database
-        # Materialized view data waits for the refresh step below; the script records why.
+      - name: Start PostgreSQL on the seeded data directory
+        # A step container, not a service: services start before any step can supply the data.
         timeout-minutes: 4
         env:
           PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
-        run: .github/workflows/explain-analyze-restore-seeded.sh data
-      - name: Settle restored statistics and visibility
-        # The dump carries the seed's planner statistics. Index-only scan costs also depend on the
-        # visibility map, which a restore does not carry, so vacuum the tables the seed analyzed.
-        timeout-minutes: 3
-        env:
-          PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
-        run: .github/workflows/explain-analyze-restore-seeded.sh settle
-      - name: Refresh restored materialized views
-        # Runs in dump order, once every source table carries the seed's statistics.
-        timeout-minutes: 2
-        env:
-          PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
-        run: .github/workflows/explain-analyze-restore-seeded.sh materialized-views
+        run: .github/workflows/explain-analyze-seeded-data-directory.sh start
       - name: Add crawl tier check coverage
         # The seed job ran the check against the unseeded database; one shard carries its coverage.
         if: ${{ matrix.shard == 'main' }}
@@ -363,6 +323,12 @@ jobs:
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
+      - name: Print PostgreSQL logs
+        # A step container prints nothing at teardown, unlike the former service container.
+        if: failure()
+        continue-on-error: true
+        timeout-minutes: 1
+        run: docker logs explain-postgres 2>&1 | tail -n 200
 
   # Plan gates, the seq-scan and resource-pressure baselines, and native coverage need every
   # scenario, so they run once over the merged shard results.
