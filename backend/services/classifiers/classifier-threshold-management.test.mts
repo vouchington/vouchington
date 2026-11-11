@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import {
   appliedThreshold,
   createThresholdManagementCase,
@@ -138,6 +140,61 @@ describe('setClassifierCandidateThreshold', () => {
     expect(results.map(result => result.outcome)).toEqual(['changed', 'changed'])
     const rows = await readCandidateThresholdRows(fixture.topicCandidateId)
     expect(rows).toHaveLength(3)
+    expect(rows.filter(row => row.active)).toHaveLength(1)
+  })
+
+  it('returns one conflict when two first revisions read the empty active slot', async () => {
+    const { fixture, actor } = await createThresholdManagementCase()
+    const other = await createTestUser()
+    await fixture.deactivateCommunityThreshold()
+    const scope = {
+      classifierId: fixture.classifierId,
+      candidateId: fixture.communityCandidateId,
+    }
+    let second: Awaited<ReturnType<typeof setClassifierCandidateThreshold>> | undefined
+    onTestFinished(
+      afterPostgresTransactionQueryForTest(
+        '/* readActiveClassifierThresholdForChange */',
+        values => values[0] === scope.candidateId,
+        async () => {
+          second = await setClassifierCandidateThreshold(other.id, scope, {
+            lower: 0.2,
+            upper: null,
+          })
+        },
+      ),
+    )
+
+    const first = await setClassifierCandidateThreshold(actor.id, scope, {
+      lower: 0.1,
+      upper: null,
+    })
+
+    expect(new Set([first.outcome, second?.outcome])).toEqual(new Set(['changed', 'conflict']))
+    const rows = await readCandidateThresholdRows(scope.candidateId)
+    expect(rows.filter(row => row.active)).toHaveLength(1)
+    expect(rows.find(row => row.active)).toMatchObject({
+      lower: 0.2,
+      createdById: other.id,
+    })
+  })
+
+  it('does not translate a unique violation from another constraint', async () => {
+    const { fixture, actor, scope } = await createThresholdManagementCase()
+    const unrelated = Object.assign(new Error('unrelated unique violation'), {
+      code: '23505',
+      constraint: 'another_unique_constraint',
+    })
+    onTestFinished(
+      runBeforePostgresStatementForTest('/* insertClassifierCandidateThreshold */', async () => {
+        throw unrelated
+      }),
+    )
+
+    await expect(
+      setClassifierCandidateThreshold(actor.id, scope, { lower: 0.1, upper: null }),
+    ).rejects.toBe(unrelated)
+    const rows = await readCandidateThresholdRows(fixture.topicCandidateId)
     expect(rows.filter(row => row.active)).toHaveLength(1)
   })
 

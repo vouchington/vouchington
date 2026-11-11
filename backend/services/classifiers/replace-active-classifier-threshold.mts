@@ -15,7 +15,7 @@ export type ClassifierThresholdChangeTarget =
   | { kind: 'set'; override: ClassifierThresholdOverride }
   | { kind: 'rollback'; revisionId: string }
 
-type LockedCandidate = {
+type Candidate = {
   prompt_version_id: string | null
   default_lower: number | null
   default_upper: number | null
@@ -25,9 +25,8 @@ type StoredOverride = { id: string; lower: number | null; upper: number | null }
 
 /**
  * Replaces a candidate's active threshold revision for the classifier's active prompt version. The
- * candidate row is locked first, so concurrent staff changes (and decision snapshots, which share
- * the lock) serialize. The prior revision is deactivated and a NEW revision is inserted in the same
- * transaction, which is what keeps exactly one active revision for every captured candidate.
+ * prior revision is deactivated and a new revision is inserted in the same transaction. The active
+ * candidate/prompt unique index rejects competing first revisions when no active row can be locked.
  */
 export async function replaceActiveClassifierThreshold(
   transaction: OwnedTransaction,
@@ -35,8 +34,8 @@ export async function replaceActiveClassifierThreshold(
   scope: { classifierId: string; candidateId: string },
   target: ClassifierThresholdChangeTarget,
 ): Promise<ClassifierThresholdChangeResult> {
-  const { rows: locked } = await transaction<LockedCandidate>(
-    `/* lockClassifierCandidateForThresholdChange */
+  const { rows: candidates } = await transaction<Candidate>(
+    `/* readClassifierCandidateForThresholdChange */
     SELECT prompt.id AS prompt_version_id,
       prompt.default_lower_threshold::float8 AS default_lower,
       prompt.default_upper_threshold::float8 AS default_upper
@@ -54,7 +53,7 @@ export async function replaceActiveClassifierThreshold(
    `,
     [scope.candidateId, scope.classifierId],
   )
-  const candidate = locked[0]
+  const candidate = candidates[0]
   if (!candidate) return { outcome: 'not_found' }
   if (candidate.prompt_version_id === null) {
     return { outcome: 'conflict', reason: 'Classifier has no active prompt version' }
@@ -84,7 +83,7 @@ export async function replaceActiveClassifierThreshold(
   }
   if (active) {
     // CURRENT_TIMESTAMP is frozen at transaction start. A change that waits on the
-    // candidate lock can start before the revision it supersedes, and the lifecycle
+    // active-revision lock can start before the revision it supersedes, and the lifecycle
     // check rejects a deactivation earlier than activated_at.
     await transaction(
       `/* deactivateClassifierCandidateThreshold */
