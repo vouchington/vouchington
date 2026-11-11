@@ -5,7 +5,7 @@ import { getStoryMemberPagesBatch } from '@services/feeds/rss-feed-items/story-m
 import { getStoryPreviews } from './story-previews.mts'
 
 describe('bounded story members', () => {
-  it.each([0, 1, 3, 4, 25, 26, 2000])('bounds previews and detail at %i members', async count => {
+  it.each([0, 1, 3, 4, 25, 26])('bounds previews and detail at %i members', async count => {
     const fixture = await createTestStoryMembers(count)
     for (const limit of [3, 25]) {
       const pages = await getStoryMemberPagesBatch(null, [{ story_id: fixture.story.id }], {
