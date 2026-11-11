@@ -16,6 +16,8 @@ export const TOP_URL_TOPIC = seedUuid(0, 'f5')
 export const TOP_URL_INSERT_ITEM = seedUuid(TOP_URL_COUNT, 'f3')
 export const TOP_URL_EMPTY_HOST = seedUuid(TOP_URL_HOST_COUNT, 'f1')
 const OLD_YEARS = [2001, 2002] as const
+// A maximum-sized mutation batch selects one tenth of a populated monthly partition.
+const OLD_PARTITION_ITEM_COUNT = TOP_URL_BATCH * 10
 export const TOP_URL_PARTITION_COUNT = 1 + OLD_YEARS.length
 
 export function topUrlHostId(index: number): string {
@@ -129,8 +131,10 @@ async function seedTopUrlItems(): Promise<void> {
   )
   for (const year of OLD_YEARS) {
     // UUIDv7 identity timestamps place each cohort in its owned monthly partition.
-    const ids = Array.from({ length: TOP_URL_BATCH }, (_, index) => topUrlOldItemId(year, index))
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed historical partitions each receive one set-based batch capped by the RSS SQL batch maximum.
+    const ids = Array.from({ length: OLD_PARTITION_ITEM_COUNT }, (_, index) =>
+      topUrlOldItemId(year, index),
+    )
+    // no-mistakes-disable-next-line query-reached-per-item: two fixed historical partitions each receive one bounded, set-based fixture cohort.
     await write(
       `/* seedTopUrlRanking.oldGuids */ INSERT INTO rss_feed_item_guids
         (id, url_hostname_id, guid)
@@ -139,7 +143,7 @@ async function seedTopUrlItems(): Promise<void> {
         ON CONFLICT (id) DO NOTHING`,
       [ids, topUrlHostId(0), year],
     )
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed historical partitions each receive one set-based batch capped by the RSS SQL batch maximum.
+    // no-mistakes-disable-next-line query-reached-per-item: two fixed historical partitions each receive one bounded, set-based fixture cohort.
     await write(
       `/* seedTopUrlRanking.oldItems */ INSERT INTO rss_feed_items
         (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
@@ -167,7 +171,7 @@ export async function cleanupTopUrlRanking(): Promise<void> {
   const itemIds = [
     ...Array.from({ length: TOP_URL_COUNT }, (_, index) => topUrlItemId(index)),
     ...OLD_YEARS.flatMap(year =>
-      Array.from({ length: TOP_URL_BATCH }, (_, index) => topUrlOldItemId(year, index)),
+      Array.from({ length: OLD_PARTITION_ITEM_COUNT }, (_, index) => topUrlOldItemId(year, index)),
     ),
   ]
   await write(
