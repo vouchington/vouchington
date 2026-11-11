@@ -7,6 +7,8 @@ import { join, resolve } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { promisify } from 'node:util'
+import { fetch } from 'undici'
+import { createAwsEmulatorDownloadDispatcher } from './aws-emulator-dispatchers.mts'
 
 const execFileAsync = promisify(execFile)
 
@@ -53,11 +55,19 @@ export async function ensureAwsEmulatorBinary(target: DebArch = debArch()): Prom
   try {
     const deb = join(staging, 'aws-emulator.deb')
     const url = `https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/aws-emulator_${AWS_EMULATOR_PACKAGE.version}-1_${target}.deb`
-    const response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_DEADLINE_MS) })
-    if (!response.ok || !response.body) {
-      throw new Error(`AWS Emulator download failed: ${response.status} ${url}`)
+    const dispatcher = createAwsEmulatorDownloadDispatcher()
+    try {
+      const response = await fetch(url, {
+        dispatcher,
+        signal: AbortSignal.timeout(DOWNLOAD_DEADLINE_MS),
+      })
+      if (!response.ok || !response.body) {
+        throw new Error(`AWS Emulator download failed: ${response.status} ${url}`)
+      }
+      await pipeline(Readable.fromWeb(response.body), createWriteStream(deb))
+    } finally {
+      await dispatcher.close()
     }
-    await pipeline(Readable.fromWeb(response.body), createWriteStream(deb))
 
     const digest = await sha256File(deb)
     const expected = AWS_EMULATOR_PACKAGE.sha256[target]

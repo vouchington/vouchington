@@ -11,6 +11,8 @@ import {
   S3Client,
   type PutObjectCommandInput,
 } from '@aws-sdk/client-s3'
+import { fetch } from 'undici'
+import { createAwsEmulatorLoopbackDispatcher } from './aws-emulator-dispatchers.mts'
 
 // Reads the endpoint and keys that `vitest.setup.aws-emulator.mts` exported, independently of the
 // application's clients, so a test can seed and inspect emulator state without going through the
@@ -118,4 +120,23 @@ export async function listS3Versions(
 
 export async function deleteS3Object(Bucket: string, Key: string): Promise<void> {
   await emulatorS3().send(new DeleteObjectCommand({ Bucket, Key }))
+}
+
+/** Sends a request to a presigned URL the way a browser would, straight to the emulator. */
+export async function sendToPresignedS3Url(
+  url: string,
+  init: { method: 'GET' | 'PUT'; contentType?: string; body?: Uint8Array },
+): Promise<{ status: number; body: string }> {
+  const dispatcher = createAwsEmulatorLoopbackDispatcher()
+  try {
+    const response = await fetch(url, {
+      dispatcher,
+      method: init.method,
+      ...(init.contentType ? { headers: { 'content-type': init.contentType } } : {}),
+      ...(init.body ? { body: init.body } : {}),
+    })
+    return { status: response.status, body: await response.text() }
+  } finally {
+    await dispatcher.close()
+  }
 }

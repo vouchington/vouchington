@@ -5,6 +5,7 @@ import { getImageById } from './get.mts'
 import { deriveUploadStatus } from './get-upload-state.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
+import { sendToPresignedS3Url } from '@voucha/test-helpers/aws-emulator-s3'
 import { S3Buckets, S3ImageUploadsClient } from '@modules/aws'
 
 const NOW = Date.UTC(2026, 0, 31, 23, 59, 59)
@@ -61,9 +62,9 @@ describe('createImageUploadUrl', () => {
       contentLength: body.length,
     })
 
-    const response = await fetch(result.upload_url, {
+    const response = await sendToPresignedS3Url(result.upload_url, {
       method: 'PUT',
-      headers: { 'content-type': result.content_type },
+      contentType: result.content_type,
       body,
     })
     expect(response.status).toBe(200)
