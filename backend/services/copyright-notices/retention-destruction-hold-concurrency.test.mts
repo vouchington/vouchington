@@ -13,7 +13,10 @@ import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright
 import { eraseTestCopyrightEmailIntakeOriginal } from '@voucha/test-helpers/copyright-email-intake-retention'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
-import { placeUserPreservationHold } from '../users/preservation-holds.mts'
+import {
+  placeUserPreservationHold,
+  releaseUserPreservationHold,
+} from '../users/preservation-holds.mts'
 import { createCopyrightEmailIntake } from './email-intakes.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import {
@@ -96,22 +99,33 @@ describe('account preservation at destructive copyright page admission', () => {
             : branch === 'email_links'
               ? COPYRIGHT_CASE_EMAIL_LINK_PHASE_INDEX
               : 0
-      const result = await holdCopyrightCaseAfterPurgeProof(
-        noticeId,
-        () => placeUserPreservationHold(admin, party.id, `before-${branch}-admission`),
-        () =>
-          runCopyrightCasePurgePage({ ...first.data, phase, phaseIndex, afterId: null }, purgeNow),
-      )
-      expect(result).toMatchObject({
-        hasMore: true,
-        deferred: true,
-        data: { phase: 'parties', phaseIndex: 0, afterId: null },
-      })
-      expect({
-        aggregate: await getCopyrightNoticePrivateAggregate(noticeId),
-        links: intakeId ? await readCopyrightEmailIntakeNoticeLinks(intakeId) : null,
-      }).toEqual(before)
-      expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(true)
+      let holdPlaced = false
+      try {
+        const result = await holdCopyrightCaseAfterPurgeProof(
+          noticeId,
+          async () => {
+            await placeUserPreservationHold(admin, party.id, `before-${branch}-admission`)
+            holdPlaced = true
+          },
+          () =>
+            runCopyrightCasePurgePage(
+              { ...first.data, phase, phaseIndex, afterId: null },
+              purgeNow,
+            ),
+        )
+        expect(result).toMatchObject({
+          hasMore: true,
+          deferred: true,
+          data: { phase: 'parties', phaseIndex: 0, afterId: null },
+        })
+        expect({
+          aggregate: await getCopyrightNoticePrivateAggregate(noticeId),
+          links: intakeId ? await readCopyrightEmailIntakeNoticeLinks(intakeId) : null,
+        }).toEqual(before)
+        expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(true)
+      } finally {
+        if (holdPlaced) await releaseUserPreservationHold(admin, party.id)
+      }
     },
   )
 })

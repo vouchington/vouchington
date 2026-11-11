@@ -1,5 +1,8 @@
 import { createTestUser } from '@voucha/test-helpers'
-import { placeUserPreservationHold } from '../users/preservation-holds.mts'
+import {
+  placeUserPreservationHold,
+  releaseUserPreservationHold,
+} from '../users/preservation-holds.mts'
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
@@ -74,18 +77,26 @@ describe('copyright thread proof and correspondence admission', () => {
     await linkTestCopyrightEmailIntake(reply.id, notice.noticeId, 'thread', notice.moderator.id)
     const before = await readCopyrightThreadReferenceState(reply.id)
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
-    const result = await holdCopyrightCaseBeforeThreadEligibility(
-      notice.noticeId,
-      () => placeUserPreservationHold(admin, notice.posterId, 'hold-before-thread-retirement'),
-      () =>
-        sweepCopyrightCaseThreads({
-          now: new Date(Date.now() + 181 * day),
-          replyDays: 180,
-          batchSize: 10,
-          maxBatches: 100,
-        }),
-    )
-    expect(result.deleted).toBe(0)
-    expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(before)
+    let holdPlaced = false
+    try {
+      const result = await holdCopyrightCaseBeforeThreadEligibility(
+        notice.noticeId,
+        async () => {
+          await placeUserPreservationHold(admin, notice.posterId, 'hold-before-thread-retirement')
+          holdPlaced = true
+        },
+        () =>
+          sweepCopyrightCaseThreads({
+            now: new Date(Date.now() + 181 * day),
+            replyDays: 180,
+            batchSize: 10,
+            maxBatches: 100,
+          }),
+      )
+      expect(result.deleted).toBe(0)
+      expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(before)
+    } finally {
+      if (holdPlaced) await releaseUserPreservationHold(admin, notice.posterId)
+    }
   })
 })
