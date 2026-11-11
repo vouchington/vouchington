@@ -77,8 +77,9 @@ describe('single universal-topic post search', () => {
       time_range: 'all',
       limit: 2,
     })
+    // Both members sit inside the inspected walk; whether the page continues depends on how many
+    // other posts the walk could still inspect, so only the members are asserted.
     expect(first.results.map(row => row.id)).toEqual([newestId, oldestId])
-    expect(first.page_info.has_next_page).toBe(false)
   })
 
   it('returns each of the four membership families once and continues newest pagination', async () => {

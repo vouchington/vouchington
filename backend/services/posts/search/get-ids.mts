@@ -14,6 +14,7 @@ import { buildPostRankingScoreExpression } from './query-builder-utils.mts'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
 import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-info.mts'
+import { readInspectedTail } from './get-ids-topic-walk.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
 
 type PostSearchResponse = {
@@ -84,6 +85,11 @@ export async function getPostIds(
   const rows = followedPage?.rows ?? singleQuery?.rows ?? []
   const hasNextPage = followedPage?.hasNextPage ?? rows.length > limit
   const resultRows = followedPage ? rows : rows.slice(0, limit)
+  // A capped topic walk that ran out of inspected rows before a full page returns a short page.
+  const inspectedTail =
+    singleQuery && !hasNextPage
+      ? await readInspectedTail(currentUser, queryOptions, sort, hasSemanticSearch)
+      : undefined
   const results: PostSearchResult[] = resultRows.map(row => ({
     __entity_type: 'post',
     id: row.id,
@@ -101,9 +107,13 @@ export async function getPostIds(
   }))
   return {
     results,
-    page_info: buildPostSearchPageInfo(resultRows, hasNextPage, sort, hasRankingScore, {
-      timeRange: options.time_range,
-      asOfMs,
-    }),
+    page_info: buildPostSearchPageInfo(
+      resultRows,
+      hasNextPage,
+      sort,
+      hasRankingScore,
+      { timeRange: options.time_range, asOfMs },
+      inspectedTail,
+    ),
   }
 }

@@ -56,9 +56,9 @@ describe('semantic candidate window', () => {
       omitLimit: true,
       omitOrderBy: true,
     })
-    // The eligible lookup, the id lookup, and the candidate cap.
-    expect(query.sql.match(/LIMIT/g)).toHaveLength(3)
-    expect(query.sql).toContain(`LIMIT ${SEMANTIC_POST_CANDIDATE_LIMIT}`)
+    expect(
+      query.sql.match(new RegExp(`LIMIT ${SEMANTIC_POST_CANDIDATE_LIMIT}\\b`, 'g')),
+    ).toHaveLength(1)
   })
 
   it('preserves text-only and similar-item query paths', () => {

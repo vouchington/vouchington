@@ -15,7 +15,7 @@ import { appendBaseFilters } from './base-filters.mts'
 import { appendPartitionAndPaginationFilters } from './pagination-filters.mts'
 import { appendSearchAndSimilarityFilters } from './search-filters.mts'
 import { appendPostSearchSpecialFilters } from './special-filters.mts'
-import { appendTopicFilters } from './topic-filters.mts'
+import { appendTopicFilters, appendTopicMembershipFilters } from './topic-filters.mts'
 
 export function appendPostSearchWhereClause(
   query: SQLStatement,
@@ -47,6 +47,7 @@ export function appendPostSearchWhereClause(
   if (!paginationOnly) {
     appendBaseFilters(filters, currentUser, options)
     appendTopicFilters(filters, options)
+    appendTopicMembershipFilters(filters, options, options.topicMembershipColumn ?? 'posts.id')
     appendSimpleColumnFilters(filters, options)
     appendPostSearchSpecialFilters(filters, options, decisionInstant)
     appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })

@@ -57,6 +57,8 @@ type BasePaginationOptions = {
   limit?: number // Default 25, max 100
   omitLimit?: boolean // Skip LIMIT clause entirely (for facets)
   omitOrderBy?: boolean // Skip ORDER BY clause (for count queries)
+  topicMembershipColumn?: string // Internal: the id column the topic membership probes key on
+  inspectedTail?: boolean // Internal: return only the last row the capped topic walk inspected
 }
 
 // Pagination for sort='new' (default when not searching)

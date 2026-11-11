@@ -2,7 +2,7 @@ import { encodeCursor } from '@modules/pagination'
 import { describe, expect, it } from 'vitest'
 
 import { postSearchCursorScope } from './get-ids-cursor.mts'
-import { decodePostSearchCursor } from './get-ids-page-info.mts'
+import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-info.mts'
 
 const postId = '00000000-0000-4000-8000-000000000001'
 
@@ -51,5 +51,17 @@ describe('post search page info', () => {
     expect(
       decodePostSearchCursor({ after: encodeCursor({ id: postId }) }, 'unsupported', false),
     ).toEqual({})
+  })
+
+  it('continues a short capped topic walk from the last inspected row', () => {
+    const matched = { id: postId, post_type: 'discussion' }
+    const tail = { id: '00000000-0000-4000-8000-000000000002', post_type: 'discussion' }
+    const empty = buildPostSearchPageInfo([], false, 'new', false, {}, tail)
+    const short = buildPostSearchPageInfo([matched], false, 'new', false, {}, tail)
+    expect(empty).toMatchObject({ has_next_page: true, start_cursor: null })
+    expect(empty.end_cursor).not.toBeNull()
+    expect(short.has_next_page).toBe(true)
+    expect(short.start_cursor).not.toBeNull()
+    expect(short.end_cursor).toBe(empty.end_cursor)
   })
 })

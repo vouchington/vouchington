@@ -74,8 +74,9 @@ async function captureTopicPair(
   // Five alias members plus the direct feed post that both topics share.
   if (topic === 'sparse' && firstPage.results.length !== 6)
     throw new Error(`${prefix} sparse first page must return its five alias posts and feed post`)
-  if (topic === 'sparse' && firstPage.page_info.has_next_page)
-    throw new Error(`${prefix} sparse page must be exhausted`)
+  // The walk stops at its inspected-row cap, so a sparse topic's short page still continues.
+  if (topic === 'sparse' && !firstPage.page_info.has_next_page)
+    throw new Error(`${prefix} sparse page must keep a continuation cursor`)
 
   const firstId = `${prefix}-first`
   registerTopicSemiJoinScenario(firstId, false, aliasRelationLeaves)
@@ -127,13 +128,16 @@ function registerMultiTopicFeedScenario(id: string): void {
 }
 
 export async function runPostTopicSemiJoinScenarios(): Promise<void> {
-  const positiveLeaves = await partitionIndexLeaves(
-    'idx_relation__post__category__topic_alias__positive_object',
-  )
-  const newestLeaves = await partitionIndexLeaves(
-    'idx_relation__post__category__topic_alias__subject__newest',
-  )
-  const aliasRelationLeaves = [...positiveLeaves, ...newestLeaves]
+  // Each page probes the alias relation by post id: the key-led leaves, not a topic-side read.
+  const aliasRelationLeaves = (
+    await Promise.all(
+      [
+        'relation__post__category__topic_alias_pkey',
+        'relation__post__category__topic_alias_subject_id_id_key',
+        'idx_relation__post__category__topic_alias__subject__newest',
+      ].map(partitionIndexLeaves),
+    )
+  ).flat()
   await captureTopicPair('sparse', aliasRelationLeaves)
   await captureTopicPair('dense', aliasRelationLeaves)
 

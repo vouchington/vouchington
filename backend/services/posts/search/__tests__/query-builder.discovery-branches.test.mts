@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import { getPostIds } from '../get-ids.mts'
 import { buildPostSearchQuery } from '../query-builder.mts'
+import { TOPIC_WALK_ROW_CAP } from '../query-builder/topic-walk.mts'
 import { appendPostSearchOrderAndLimit } from '../query-builder/order-and-limit.mts'
 
 const COMMUNITY_ID = '019e0000-1400-7000-8000-000000000064'
@@ -84,5 +85,29 @@ describe('discovery search branches', () => {
     expect(() => buildPostSearchQuery(USER, { sort: 'following_new', ranking_lt: 1 })).toThrow(
       'following_new cursor requires id_lt',
     )
+  })
+
+  it('caps a topic walk at its inspected rows and probes membership per row outside', () => {
+    const walk = buildPostSearchQuery(USER, { universal_topic_ids: [COMMUNITY_ID], limit: 25 })
+    expect(walk.sql).toContain('candidate_posts AS NOT MATERIALIZED')
+    expect(walk.values).toContain(TOPIC_WALK_ROW_CAP)
+    expect(walk.sql).toContain('JOIN posts ON posts.id = candidate_posts.id')
+    expect(walk.sql).toContain('direct_relation.subject_id = candidate_posts.id')
+    expect(walk.sql).not.toContain(' IN (SELECT')
+    const tail = buildPostSearchQuery(USER, {
+      universal_topic_ids: [COMMUNITY_ID],
+      limit: 25,
+      inspectedTail: true,
+    })
+    expect(tail.sql).toMatch(/OFFSET \?\s+LIMIT 1/)
+    expect(tail.sql).not.toContain('JOIN posts ON posts.id = candidate_posts.id')
+  })
+
+  it('keeps text-search and facet topic reads uncapped', () => {
+    for (const options of [
+      { universal_topic_ids: [COMMUNITY_ID], text_search_query: 'rates' },
+      { universal_topic_ids: [COMMUNITY_ID], omitLimit: true, omitOrderBy: true },
+    ])
+      expect(buildPostSearchQuery(USER, options).sql).not.toContain('candidate_posts')
   })
 })

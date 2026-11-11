@@ -6,11 +6,11 @@ import {
 } from './topic-post-candidates.mts'
 
 describe('topic membership column validation', () => {
-  it('binds one topic from its relation before probing posts', () => {
+  it('probes a hashtag topic by the post id, never from a topic-side pool', () => {
     const membership = buildTopicMembershipExists('candidate_post.id', 'topic-id')
-    expect(membership.text).toContain('candidate_post.id IN (')
-    expect(membership.text).toContain('rel.subject_id')
-    expect(membership.text).toContain('alias_relation.subject_id')
+    expect(membership.text).toContain('direct_relation.subject_id = candidate_post.id')
+    expect(membership.text).toContain('alias_relation.subject_id = candidate_post.id')
+    expect(membership.text).not.toContain(' IN (')
     expect(membership.values).toEqual(['topic-id', 'topic-id'])
   })
 

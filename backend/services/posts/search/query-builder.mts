@@ -13,17 +13,22 @@ import { appendPostSearchOrderAndLimit } from './query-builder/order-and-limit.m
 import { appendPostSearchSelectAndJoins } from './query-builder/select-and-joins.mts'
 import { appendPostSearchWhereClause } from './query-builder/where-clause.mts'
 import { buildSemanticPostCandidates } from './query-builder/semantic-candidates.mts'
+import { TOPIC_WALK_ROW_CAP, usesCappedTopicWalk } from './query-builder/topic-walk.mts'
 
 export function buildPostSearchQuery(
   currentUser?: BasicUser,
-  options: PostSearchOptions = {},
+  requestedOptions: PostSearchOptions = {},
 ): SQLStatement {
-  const decisionInstant = options.time_range_as_of ?? new Date()
-  const { limit, omitLimit = false, omitOrderBy = false, semanticSearchEmbedding } = options
-  const hasTextSearch = hasTextSearchFn(options)
-  const hasSemanticSearch = hasSemanticSearchFn(options) && semanticSearchEmbedding !== undefined
-  const rawSort = detectSearchSort(options)
+  const decisionInstant = requestedOptions.time_range_as_of ?? new Date()
+  const { omitLimit = false, omitOrderBy = false, semanticSearchEmbedding } = requestedOptions
+  const hasTextSearch = hasTextSearchFn(requestedOptions)
+  const hasSemanticSearch =
+    hasSemanticSearchFn(requestedOptions) && semanticSearchEmbedding !== undefined
+  const rawSort = detectSearchSort(requestedOptions)
   const sort = rawSort === 'following_new' && !currentUser ? 'new' : rawSort
+  const capped = usesCappedTopicWalk(requestedOptions, sort)
+  const options = requestedOptions
+  const limit = capped ? TOPIC_WALK_ROW_CAP : options.limit
   const rankingScoreExpression = buildPostRankingScoreExpression({
     hasTextSearch,
     hasSemanticSearch,
@@ -36,8 +41,9 @@ export function buildPostSearchQuery(
         : sort === 'following_new' && currentUser
           ? sql`CASE WHEN viewer_following.object_id IS NULL THEN 0 ELSE 1 END`
           : null
-  const query = sql`/* buildPostSearchQuery */
-  `
+  const query = sql``.append(
+    `/* ${capped && options.inspectedTail ? 'buildTopicWalkTailQuery' : 'buildPostSearchQuery'} */\n  `,
+  )
 
   const ctes = buildPostSearchCtes({
     ...options,
@@ -48,7 +54,8 @@ export function buildPostSearchQuery(
     ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch, decisionInstant))
   appendCtes(query, ctes)
   // Community lists keep the checked candidate_posts name: one sort-key walk, then the page.
-  if (options.community_id !== undefined) {
+  const candidateWalk = options.community_id !== undefined || capped
+  if (candidateWalk) {
     query.append(
       ctes.length > 0
         ? sql`,\n candidate_posts AS NOT MATERIALIZED (`
@@ -66,8 +73,7 @@ export function buildPostSearchQuery(
     rankingScoreExpression,
     sort,
   })
-  appendPostSearchWhereClause(query, {
-    paginationOnly: false,
+  const whereArgs = {
     decisionInstant,
     currentUser,
     followingRankExpression,
@@ -76,7 +82,9 @@ export function buildPostSearchQuery(
     options,
     rankingScoreExpression,
     sort,
-  })
+  }
+  // A capped walk reads only the sort key and cursor; eligibility and membership run per row outside.
+  appendPostSearchWhereClause(query, { ...whereArgs, paginationOnly: capped })
   appendPostSearchOrderAndLimit(query, {
     followingRankExpression,
     hasSemanticSearch,
@@ -87,8 +95,20 @@ export function buildPostSearchQuery(
     // A phase walk has a constant rank, so its order is the id key alone.
     sort: options.following_phase === undefined ? sort : 'new',
   })
-  if (options.community_id !== undefined) {
+  if (candidateWalk) {
     appendCommunityCandidatePage(query, {
+      outerPage: capped
+        ? {
+            tail: options.inspectedTail === true,
+            limit: options.limit ?? 100,
+            appendWhere: () =>
+              appendPostSearchWhereClause(query, {
+                ...whereArgs,
+                paginationOnly: false,
+                options: { ...options, topicMembershipColumn: 'candidate_posts.id' },
+              }),
+          }
+        : null,
       followingRankExpression,
       hasSemanticSearch,
       hasTextSearch,
@@ -104,6 +124,7 @@ export function buildPostSearchQuery(
 function appendCommunityCandidatePage(
   query: SQLStatement,
   {
+    outerPage,
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
@@ -111,6 +132,7 @@ function appendCommunityCandidatePage(
     ranking,
     sort,
   }: {
+    outerPage: { tail: boolean; limit: number; appendWhere: () => void } | null
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
     hasTextSearch: boolean
@@ -134,6 +156,10 @@ function appendCommunityCandidatePage(
   query.append(communitySortColumns(sort))
   query.append(sql`
     FROM candidate_posts`)
+  if (outerPage && !outerPage.tail) {
+    query.append(sql`\n    JOIN posts ON posts.id = candidate_posts.id`)
+    outerPage.appendWhere()
+  }
   appendPostSearchOrderAndLimit(query, {
     followingRankExpression,
     hasSemanticSearch,
@@ -144,6 +170,8 @@ function appendCommunityCandidatePage(
     idRelation: 'candidate_posts',
     outputColumns: true,
   })
+  if (outerPage?.tail) query.append(sql`\n    OFFSET ${TOPIC_WALK_ROW_CAP - 1} LIMIT 1`)
+  else if (outerPage) query.append(sql`\n    LIMIT ${outerPage.limit}`)
 }
 
 function communitySortColumns(sort: PostSearchSort): SQLStatement {

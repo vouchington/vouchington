@@ -9,32 +9,37 @@ import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/m
 
 export function appendTopicFilters(
   filters: SQLStatement[],
-  {
-    data_point_topic_ids,
-    hashtag_alias_ids,
-    hashtag_topic_ids,
-    related_topic_ids,
-    review_topic_ids,
-    universal_topic_ids,
-    url_id,
-  }: PostSearchOptions,
+  { data_point_topic_ids, related_topic_ids, review_topic_ids, url_id }: PostSearchOptions,
 ): void {
   if (url_id) appendUrlFilter(filters)
   if (related_topic_ids?.length) appendRelatedTopicFilters(filters, related_topic_ids)
-  if (hashtag_topic_ids?.length) {
-    for (const topicId of new Set(hashtag_topic_ids))
-      filters.push(buildTopicMembershipExists('posts.id', topicId))
-  }
-  if (hashtag_alias_ids?.length) {
-    for (const aliasId of new Set(hashtag_alias_ids))
-      filters.push(buildTopicAliasMembershipExists('posts.id', aliasId))
-  }
   if (review_topic_ids?.length) appendReviewTopicFilters(filters, review_topic_ids)
   if (data_point_topic_ids?.length) appendDataPointTopicFilters(filters, data_point_topic_ids)
-  if (universal_topic_ids?.length) {
-    for (const topicId of new Set(universal_topic_ids))
-      filters.push(buildUniversalTopicMembershipExists('posts.id', topicId))
-  }
+}
+
+/** True when the options carry hashtag or universal topic membership filters. */
+export function hasTopicMembershipFilters({
+  hashtag_alias_ids,
+  hashtag_topic_ids,
+  universal_topic_ids,
+}: PostSearchOptions): boolean {
+  return Boolean(
+    hashtag_alias_ids?.length || hashtag_topic_ids?.length || universal_topic_ids?.length,
+  )
+}
+
+/** Keyed per-row membership probes on `postIdColumn`: one EXISTS group per topic or alias. */
+export function appendTopicMembershipFilters(
+  filters: SQLStatement[],
+  { hashtag_alias_ids, hashtag_topic_ids, universal_topic_ids }: PostSearchOptions,
+  postIdColumn: string,
+): void {
+  for (const topicId of new Set(hashtag_topic_ids ?? []))
+    filters.push(buildTopicMembershipExists(postIdColumn, topicId))
+  for (const aliasId of new Set(hashtag_alias_ids ?? []))
+    filters.push(buildTopicAliasMembershipExists(postIdColumn, aliasId))
+  for (const topicId of new Set(universal_topic_ids ?? []))
+    filters.push(buildUniversalTopicMembershipExists(postIdColumn, topicId))
 }
 
 function appendUrlFilter(filters: SQLStatement[]): void {
