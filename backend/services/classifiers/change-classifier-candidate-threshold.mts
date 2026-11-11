@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation } from '@data-stores/psql'
 import {
   replaceActiveClassifierThreshold,
   type ClassifierThresholdChangeTarget,
@@ -38,6 +38,21 @@ async function changeClassifierCandidateThreshold(
   scope: ClassifierCandidateScope,
   target: ClassifierThresholdChangeTarget,
 ): Promise<ClassifierThresholdChangeResult> {
-  await using transaction = await beginTransaction()
-  return await replaceActiveClassifierThreshold(transaction, actorId, scope, target)
+  try {
+    await using transaction = await beginTransaction()
+    return await replaceActiveClassifierThreshold(transaction, actorId, scope, target)
+  } catch (err) {
+    if (isCompetingFirstRevision(err)) {
+      return { outcome: 'conflict', reason: 'Active threshold changed concurrently' }
+    }
+    throw err
+  }
+}
+
+function isCompetingFirstRevision(error: unknown): boolean {
+  return (
+    isUniqueViolation(error) &&
+    'constraint' in error &&
+    error.constraint === 'idx_classifier_candidate_thresholds__active_candidate_prompt'
+  )
 }
