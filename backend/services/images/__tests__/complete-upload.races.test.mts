@@ -172,7 +172,9 @@ describe('completeImageUpload - duplicate recovery and races', () => {
   it('marks a claimed upload as failed when its staged source is missing', async () => {
     const imageId = await insertPendingTestImage(user.id)
 
-    const error = await completeImageUpload(user, imageId).catch((err: unknown) => err as Error)
+    const error = await completeImageUpload(user, imageId)
+      .then(() => undefined)
+      .catch((err: unknown) => err as Error)
 
     expect(error).toMatchObject({ name: 'NoSuchKey' })
     const failed = await getImageById(imageId)
