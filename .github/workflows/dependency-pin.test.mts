@@ -4,7 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 import { assertWorkflowInvariant } from '../test-helpers/workflow-fixtures.mts'
 
-const WORKFLOW_VALKEY_FILES = ['.github/actions/start-valkey/action.yml']
+const WORKFLOW_VALKEY_FILES = [
+  '.github/actions/start-valkey/action.yml',
+  '.github/workflows/initialize-smoke-test.yml',
+]
 
 const DEV_VALKEY_FILES = ['dev/initialize']
 
