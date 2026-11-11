@@ -34,7 +34,7 @@ type ToolResult =
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: 'Recent public data-point statistics (capped).',
+    description: 'Capped recent public counts, approval rate, median limits and credit-score bins.',
     parameters: {
       type: 'object',
       properties: {

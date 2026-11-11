@@ -87,7 +87,7 @@ type ToolResult =
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: 'Read topic details and hierarchy.',
+    description: 'Aliases, hierarchy and per-type fields.',
     parameters: {
       type: 'object',
       properties: {

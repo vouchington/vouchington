@@ -28,7 +28,7 @@ type ToolResult = { success: true; post: DetailedPost } | { success: false; erro
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Read details/structured data by id/slug with REST viewer access. Hidden/missing/deleted: Post not found. Deleted/unmoderated comments with replies are placeholders unless viewer access permits their content.',
+      'Details: data_point_vertical, structured_data. REST id/slug access. Hidden/missing/deleted: Post not found. Unreadable deleted/unmoderated comments with replies: placeholders. Threads: ancestors/descendants.',
     parameters: {
       type: 'object',
       properties: {

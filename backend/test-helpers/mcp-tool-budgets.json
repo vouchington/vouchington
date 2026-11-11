@@ -65,8 +65,8 @@
       },
       "read_topic": {
         "measured": {
-          "list": 7679,
-          "core": 1966
+          "list": 7682,
+          "core": 1969
         },
         "max": {
           "list": 8000,

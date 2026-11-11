@@ -2927,7 +2927,7 @@
           "tool": {
             "name": "read_topic",
             "title": "Read Topic",
-            "description": "compare: Compare recent public data-point statistics (capped).\ndetails: Read topic details and hierarchy.\nmetrics: Topic post/follower counts and star ratings.\ndata_point_insights: Recent public data-point statistics (capped).",
+            "description": "compare: Compare recent public data-point statistics (capped).\ndetails: Aliases, hierarchy and per-type fields.\nmetrics: Topic post/follower counts and star ratings.\ndata_point_insights: Capped recent public counts, approval rate, median limits and credit-score bins.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -2972,16 +2972,16 @@
                         "hierarchy": {
                           "type": "string",
                           "enum": ["parents", "children", "both"],
-                          "description": "Parents, paged children, or both."
+                          "description": "Parents, paged children or both."
                         },
                         "children_after": {
                           "type": "string",
-                          "description": "Children cursor: children_page_info.end_cursor (children/both)."
+                          "description": "children_page_info.end_cursor (children/both)."
                         },
                         "children_limit": {
                           "type": "integer",
                           "minimum": 1,
-                          "description": "Children per page: default 25, clamped to 100 (children/both)."
+                          "description": "Children/both: default 25, clamped to 100."
                         }
                       },
                       "required": ["topic_id"],
@@ -5934,7 +5934,7 @@
           "tool": {
             "name": "read_posts",
             "title": "Read Posts",
-            "description": "ancestors: Page root and nearest parents, root first/repeated. Use end_cursor as after for older parents. Roots have none. Deleted/unmoderated parents: placeholders; nonpublic/missing: Post not found.\ndescendants: Page child heads/previews. Follow end_cursor even for empty pages. has_next_page signals more heads, not replies; expand via post_id. Hidden replies are placeholders.\ndetails: Read details/structured data by id/slug with REST viewer access. Hidden/missing/deleted: Post not found. Deleted/unmoderated comments with replies are placeholders unless viewer access permits their content.\nsearch: Search posts; follow opaque end_cursor while has_next_page.",
+            "description": "ancestors: Page root and nearest parents, root first/repeated. Use end_cursor as after for older parents. Roots have none. Deleted/unmoderated parents: placeholders; nonpublic/missing: Post not found.\ndescendants: Page child heads/previews. Follow end_cursor even for empty pages. has_next_page signals more heads, not replies; expand via post_id. Hidden replies are placeholders.\ndetails: Details: data_point_vertical, structured_data. REST id/slug access. Hidden/missing/deleted: Post not found. Unreadable deleted/unmoderated comments with replies: placeholders. Threads: ancestors/descendants.\nsearch: Search posts; follow opaque end_cursor while has_next_page.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
