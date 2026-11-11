@@ -5,14 +5,16 @@ import {
   type EmailTranslator,
 } from '@vouchington/email'
 import { existsSync } from 'node:fs'
-import { createRequire } from 'node:module'
 import { basename, dirname, join } from 'node:path'
 import type { CatalogMessage, LocalizationLeaf } from '@vouchington/localization'
-import type { LocalizationDatabase } from '@vouchington/localization-compiler'
+import {
+  openLocalizationDatabase,
+  resolveLocalizationBatch,
+  type LocalizationDatabase,
+} from '@vouchington/localization-compiler'
 
 const EMAIL_SELECTOR = 'email.*'
 const EMAIL_CATALOG_DIRECTORY = resolveEmailCatalogDirectory()
-const require = createRequire(import.meta.url)
 
 const batches = new Map<string, Readonly<Record<string, LocalizationLeaf>>>()
 let jsonMessages: CatalogMessage[] | undefined
@@ -51,13 +53,9 @@ function sqliteLeaves(path: string, locale: string): Readonly<Record<string, Loc
   }
   if (databasePath !== path || database === undefined) {
     database?.close()
-    const { openLocalizationDatabase } =
-      require('@vouchington/localization-compiler') as typeof import('@vouchington/localization-compiler')
     database = openLocalizationDatabase(path)
     databasePath = path
   }
-  const { resolveLocalizationBatch } =
-    require('@vouchington/localization-compiler') as typeof import('@vouchington/localization-compiler')
   return resolveLocalizationBatch(database, {
     consumer: 'email',
     locales: locale === 'en' ? ['en'] : [locale, 'en'],

@@ -32,14 +32,14 @@ export type SeedCsvsResult = {
   errors: Array<{ slug: string; error: unknown }>
 }
 
-export function readSeedCsvRows(): Record<string, string>[] {
-  const csvFiles = readdirSync(SEED_DIR)
+export function readSeedCsvRows(directory = SEED_DIR): Record<string, string>[] {
+  const csvFiles = readdirSync(directory)
     .filter(f => f.endsWith('-topics.csv'))
     .toSorted()
 
   const allRows: Record<string, string>[] = []
   for (const file of csvFiles) {
-    const content = readFileSync(join(SEED_DIR, file), 'utf8')
+    const content = readFileSync(join(directory, file), 'utf8')
     allRows.push(...parseCsvRows(content))
   }
   return allRows

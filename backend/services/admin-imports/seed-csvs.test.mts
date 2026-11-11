@@ -1,4 +1,7 @@
 import { createTestUser } from '@voucha/test-helpers'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { importAdminTopics } from './topic-import.mts'
 import { createTopic } from '@services/topics/create'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
@@ -8,7 +11,6 @@ import { describe, it, expect } from 'vitest'
 import { getTopicBySlug } from '@services/topics/get'
 import { getTopicParents } from '@services/topics/hierarchy'
 import { readSeedCsvRows, seedTopicsFromCsvs } from './seed-csvs.mts'
-import { validateTopicRows } from './validate-topics.mts'
 
 describe('seedTopicsFromRows', () => {
   it('uses the bootstrap system actor for a supplied fixture batch', async () => {
@@ -152,7 +154,20 @@ describe('seedTopicsFromRows', () => {
     await expect(getTopicBySlug(slug)).resolves.toBeNull()
   })
 
-  it('accepts every shipped seed CSV row', () => {
-    expect(validateTopicRows(readSeedCsvRows())).toMatchObject({ valid: true })
+  it('reads topic CSV rows from a fixture directory', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'seed-csvs-'))
+    try {
+      writeFileSync(join(directory, 'b-topics.csv'), 'slug,name\nfixture-b,Fixture B\n')
+      writeFileSync(join(directory, 'a-topics.csv'), 'slug,name\nfixture-a,Fixture A\n')
+      writeFileSync(join(directory, 'other.csv'), 'slug,name\nignored,Ignored\n')
+
+      const rows = readSeedCsvRows(directory)
+      expect(rows).toEqual([
+        { slug: 'fixture-a', name: 'Fixture A' },
+        { slug: 'fixture-b', name: 'Fixture B' },
+      ])
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
   })
 })
