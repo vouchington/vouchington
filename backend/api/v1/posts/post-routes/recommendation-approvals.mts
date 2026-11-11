@@ -6,19 +6,21 @@ import {
   asTopicRecommendationPost,
   currentUserCanManageRecommendations,
 } from '@services/topic-recommendations'
+import { assertNotSuspended } from '@services/users'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
-app.route('/api/v1/topic-recommendations/:id/approvals').post(async (ctx: Context) => {
+app.route('/api/v1/posts/:idOrSlug/approvals').post(async (ctx: Context) => {
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-  const currentUser = await requireAuth(ctx, 'POST:/api/v1/topic-recommendations/:id/approvals')
+  const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts/:idOrSlug/approvals')
   const provenance = getRequestContentProvenance()
+  assertNotSuspended(currentUser)
   ctx.assert(currentUserCanManageRecommendations(currentUser), 403, 'Admin access required')
-  validateRequestContract(ctx, 'POST:/api/v1/topic-recommendations/:id/approvals', {
+  validateRequestContract(ctx, 'POST:/api/v1/posts/:idOrSlug/approvals', {
     path: ctx.params,
   })
 
-  const post = asTopicRecommendationPost(await getPostByAnyCached(ctx.params.id!))
+  const post = asTopicRecommendationPost(await getPostByAnyCached(ctx.params.idOrSlug!))
   ctx.assert(post, 404, 'Recommendation not found')
 
   const result = await approveTopicRecommendation(currentUser, provenance, post)

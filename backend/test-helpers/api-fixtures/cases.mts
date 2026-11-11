@@ -1,3 +1,4 @@
+import { nativeTopicRecommendationCreateApiFixtureCases as createCases } from './native-topic-recommendation-create-cases.mts'
 import { nativeChatApiFixtureCases } from './native-chat-cases.mts'
 import { nativeContentContractApiFixtureCases as contentCases } from './native-content-contract-cases.mts'
 import { nativeCommentDescendantContinuationApiFixtureCases as descendantCases } from './native-comment-descendant-continuation-cases.mts'
@@ -51,6 +52,7 @@ import { webApiFixtureCases } from './web-cases.mts'
 import { webHostnameBlockingApiFixtureCases } from './web-hostname-blocking-cases.mts'
 const caseRoot = 'backend/test-helpers/api-fixtures/'
 export const apiFixtureCases: ResolvedApiFixtureCase[] = [
+  ...fromCaseFile(`${caseRoot}native-topic-recommendation-create-cases.mts`, createCases),
   ...fromCaseFile(`${caseRoot}native-content-contract-cases.mts`, contentCases),
   ...fromCaseFile(`${caseRoot}native-comment-descendant-continuation-cases.mts`, descendantCases),
   ...fromCaseFile(`${caseRoot}native-async-content-contract-cases.mts`, asyncCases),
@@ -192,8 +194,5 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
     'backend/test-helpers/api-fixtures/web-copyright-email-intake-cases.mts',
     webCopyrightEmailIntakeApiFixtureCases,
   ),
-  ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/engineering-ops-cases.mts',
-    engineeringOpsApiFixtureCases,
-  ),
+  ...fromCaseFile(`${caseRoot}engineering-ops-cases.mts`, engineeringOpsApiFixtureCases),
 ]

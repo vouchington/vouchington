@@ -15,7 +15,7 @@ import {
   getTopicFollowExistsForTest,
 } from '@voucha/test-helpers'
 
-const SCOPES = ['bookmarks:read', 'bookmarks:write', 'topic-recommendations:write'] as const
+const SCOPES = ['bookmarks:read', 'bookmarks:write', 'posts:write'] as const
 
 describe('set_bookmark batch — real DB', () => {
   it('returns a status for each target when one entity is missing', async () => {

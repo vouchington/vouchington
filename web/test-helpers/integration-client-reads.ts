@@ -37,10 +37,11 @@ export function createIntegrationClientReads(clientApi: Pick<ClientRequest, 'get
         signal?: AbortSignal
       } = {},
     ): Promise<PostsResponseBody> {
-      return clientApi.get('/api/v1/topic-recommendations', {
+      return clientApi.get('/api/v1/posts', {
         searchParams: {
           q: options.q,
-          status: options.status,
+          post_types: 'topic_recommendation',
+          topic_recommendation_status: options.status,
           limit: options.limit,
         },
         signal: options.signal,

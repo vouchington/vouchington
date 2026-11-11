@@ -44,6 +44,7 @@
     "@services/fediverse-instances": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/post-classifier": "workspace:^",
+    "@services/post-writes": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/users": "workspace:^",

@@ -3,7 +3,7 @@ import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { getPinnedPosts } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
 import { COMMUNITY_NOT_FOUND, loadPublicCommunity } from './mcp-community-output.mts'
-import { loadMcpPosts, mcpPostSchema, type McpPost } from './mcp-post-output.mts'
+import { loadMcpPosts, mcpPostSchema, type McpPostSummary as McpPost } from './mcp-post-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 
 type ToolArgs = {

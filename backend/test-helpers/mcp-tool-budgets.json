@@ -45,7 +45,7 @@
       },
       "read_community": {
         "measured": {
-          "list": 8846,
+          "list": 8553,
           "core": 3092
         },
         "max": {
@@ -135,12 +135,12 @@
       },
       "read_posts": {
         "measured": {
-          "list": 11594,
-          "core": 5336
+          "list": 11558,
+          "core": 4882
         },
         "max": {
           "list": 12000,
-          "core": 6000
+          "core": 5000
         }
       },
       "read_hostnames": {
@@ -295,18 +295,18 @@
       },
       "create_post": {
         "measured": {
-          "list": 3956,
-          "core": 1978
+          "list": 3681,
+          "core": 2598
         },
         "max": {
-          "list": 5000,
+          "list": 4000,
           "core": 3000
         }
       },
       "act_on_post": {
         "measured": {
-          "list": 6828,
-          "core": 4330
+          "list": 6350,
+          "core": 4747
         },
         "max": {
           "list": 7000,
@@ -321,16 +321,6 @@
         "max": {
           "list": 1000,
           "core": 1000
-        }
-      },
-      "create_topic_recommendation": {
-        "measured": {
-          "list": 4446,
-          "core": 1197
-        },
-        "max": {
-          "list": 5000,
-          "core": 2000
         }
       },
       "vote": {
@@ -437,16 +427,6 @@
         "measured": {
           "list": 3431,
           "core": 1460
-        },
-        "max": {
-          "list": 4000,
-          "core": 2000
-        }
-      },
-      "start_discussion": {
-        "measured": {
-          "list": 3077,
-          "core": 1041
         },
         "max": {
           "list": 4000,
@@ -740,26 +720,6 @@
         },
         "max": {
           "list": 2000,
-          "core": 1000
-        }
-      },
-      "update_topic_recommendation": {
-        "measured": {
-          "list": 4487,
-          "core": 1238
-        },
-        "max": {
-          "list": 5000,
-          "core": 2000
-        }
-      },
-      "withdraw_topic_recommendation": {
-        "measured": {
-          "list": 723,
-          "core": 397
-        },
-        "max": {
-          "list": 1000,
           "core": 1000
         }
       }

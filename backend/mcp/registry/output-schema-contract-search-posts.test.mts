@@ -15,7 +15,7 @@ import type { PrivateUser } from '@services/users/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Page = {
-  results: { id: string; title: string; markdown: string; post_type: string }[]
+  results: { id: string; title: string; post_type: string }[]
   page_info: { has_next_page: boolean; start_cursor: string | null; end_cursor: string | null }
 }
 
@@ -76,11 +76,18 @@ describe('MCP output schema contract for read_posts.search — real DB', () => {
     expect(ids.toSorted()).toEqual(textIds.toSorted())
   })
 
-  it('matches q like the REST query and wraps the post text', async () => {
+  it('returns search summaries and keeps full text wrapping in by-id reads', async () => {
     const page = await search({ q: token })
 
     expect(page.results.map(result => result.id).toSorted()).toEqual(textIds.toSorted())
-    expect(page.results[0]!.markdown).toContain('<external-content')
+    expect(page.results[0]).not.toHaveProperty('markdown')
+    const detail = await callStructuredMcpTool(
+      caller,
+      'read_posts',
+      optionArgs('details', { post_id: page.results[0]!.id }),
+      SCOPES,
+    )
+    expect((detail.post as { markdown: string }).markdown).toContain('<external-content')
   })
 
   it('forwards the REST creator and post_types filters', async () => {

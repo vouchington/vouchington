@@ -9,7 +9,11 @@ import { getPostsOrDeletedCommentStubs, type Post } from '@services/posts'
 import type { BasicUser } from '@services/users/types'
 import createHttpError from 'http-errors'
 import { resolveReadableThread } from './mcp-post-access.mts'
-import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
+import {
+  mcpPostSchema,
+  toMcpPostSummaries as toMcpPosts,
+  type McpPostSummary as McpPost,
+} from './mcp-post-output.mts'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
 import { parseCommentDescendantPagination } from '@services/search-params/comment-descendant-pagination'
 
@@ -28,7 +32,7 @@ const { min, max, default: defaultLimit } = COMMENT_DESCENDANTS_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Page direct-child heads with bounded previews. IDs sort per page. Follow opaque end_cursor on empty pages; it may skip unseen heads. has_next_page means more heads, not all replies. Expand returned comments via post_id. Deleted or unmoderated replies are placeholders.',
+      'Page child heads with bounded previews; follow end_cursor even on empty pages. has_next_page means more heads, not replies. Expand via post_id. Deleted/unmoderated replies are placeholders.',
     parameters: {
       type: 'object',
       properties: {
@@ -36,7 +40,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         limit: {
           type: 'integer',
           minimum: min,
-          description: `Maximum replies returned per page, clamped to the runtime limit up to ${max} (static default: ${defaultLimit}). A preview may return fewer.`,
+          description: `Replies/page, runtime-clamped to ${max} (default ${defaultLimit}); previews may be shorter.`,
         },
         after: { type: 'string' },
       },
@@ -61,14 +65,13 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     async (args: ToolArgs): Promise<ToolResult> => {
       const thread = await resolveReadableThread(currentUser, args.post_id)
       if (!thread) return { success: false, error: 'Post not found' }
-      // The signed-out page is the owner's page minus what private visibility adds (see
-      // resolveReadableThread), and its cursors are scoped to the thread, never to a viewer.
+      // Match REST viewer visibility; cursors remain scoped to the thread, not the viewer.
       const page = await (async () => {
         const pagination = parseCommentDescendantPagination({
           limit: args.limit,
           after: args.after,
         })
-        return getCommentDescendantsPage(null, thread.post, pagination)
+        return getCommentDescendantsPage(thread.viewer ?? null, thread.post, pagination)
       })().catch((err: unknown) => {
         if (createHttpError.isHttpError(err) && err.status === 400) return null
         throw err
@@ -77,7 +80,10 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       const posts = await getPostsOrDeletedCommentStubs(page.ids)
       return {
         success: true,
-        descendants: await toMcpPosts(posts.filter((post): post is Post => Boolean(post))),
+        descendants: await toMcpPosts(
+          posts.filter((post): post is Post => Boolean(post)),
+          { viewer: thread.viewer },
+        ),
         page_info: page.pageInfo,
       }
     },

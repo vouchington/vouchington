@@ -20,7 +20,7 @@ async function input() {
     scope: 'topic_recommendation',
     postType: 'topic_recommendation',
     idempotencyKey: crypto.randomUUID(),
-    intent: { route: 'topic-recommendations.create', body: { title: crypto.randomUUID() } },
+    intent: { route: 'posts.create', body: { title: crypto.randomUUID() } },
     execute: executeTestAdmittedPost,
   }
 }

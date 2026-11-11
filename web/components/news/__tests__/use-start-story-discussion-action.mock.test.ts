@@ -81,7 +81,7 @@ describe('useStartStoryDiscussionAction', () => {
 
   it('redirects to story post path on success', async () => {
     const post = makePost({ post_type: 'story', slug: 'story-slug-abc' })
-    mockCreateStoryPost.mockResolvedValue({ post, story: { id: 'story-1' } })
+    mockCreateStoryPost.mockResolvedValue({ post })
 
     const { result } = renderHook(() => useStartStoryDiscussionAction(defaultProps))
 

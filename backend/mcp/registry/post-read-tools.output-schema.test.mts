@@ -48,15 +48,23 @@ function branches(tool: { meta?: Tool['meta'] }): JsonSchema[] {
 
 describe('post and story read tool output schemas', () => {
   it('takes every post field from the Post contract', () => {
-    const properties = propertiesOf(mcpPostSchema())
+    const properties = propertiesOf(mcpPostSchema(true))
 
-    expect(Object.keys(properties)).toEqual([...PUBLIC_POST_FIELDS, 'hacker_news_references'])
-    expect(properties['hacker_news_references']).toEqual(
+    expect(Object.keys(properties)).toEqual([
+      ...PUBLIC_POST_FIELDS,
+      'topic_recommendation',
+      'hacker_news_references',
+    ])
+    expect(properties['topic_recommendation']).toEqual(documented('Post', 'topic_recommendation'))
+    const referenceProperties = propertiesOf(properties['hacker_news_references'] as JsonSchema)
+    const counts = propertiesOf(
       inlineSchemaReferences(
         contracts.components['HackerNewsReferenceCounts']!,
         contracts.components,
       ),
     )
+    for (const [field, schema] of Object.entries(counts))
+      expect(referenceProperties[field]).toEqual(schema)
     for (const field of PUBLIC_POST_FIELDS) {
       expect(properties[field]).toEqual(documented('Post', field))
     }

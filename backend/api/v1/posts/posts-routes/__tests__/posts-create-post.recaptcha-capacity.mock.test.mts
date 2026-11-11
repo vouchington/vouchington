@@ -3,7 +3,15 @@ import testPrivateKey from '@ts-shared/session-jwt/test-jwt-private-key'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
-import { CONTRIBUTING_USER_AGE_MS, createTestUserWithAge } from '@voucha/test-helpers'
+import {
+  CONTRIBUTING_USER_AGE_MS,
+  createTestUserWithAge,
+  createTestTopic,
+  createTestRssFeedWithTiming,
+  createTestRssFeedItemWithUrl,
+  insertTestStory,
+  setTestItemStoryId,
+} from '@voucha/test-helpers'
 import {
   overrideDynamicConfigFieldsForTest,
   snapshotDynamicConfigFieldsForTest,
@@ -30,6 +38,54 @@ describe('POST /api/v1/posts reCAPTCHA capacity ordering', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
   })
+
+  it.each(['story', 'rss'] as const)(
+    'never purchases a challenge assessment for a %s discussion even with a bad token',
+    async source => {
+      const restoreConfig = snapshotDynamicConfigFieldsForTest([recaptchaConfig])
+      vi.stubEnv('ENVIRONMENT', 'staging')
+      vi.stubEnv('VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64', encodeJwkSetForEnv([testPrivateKey]))
+      vi.stubEnv(
+        'VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64',
+        encodeJwkSetForEnv([derivePublicJwk(testPrivateKey)]),
+      )
+      vi.stubEnv('GOOGLE_RECAPTCHA_PROJECT_ID', 'test-project')
+      vi.stubEnv('GOOGLE_RECAPTCHA_API_KEY', 'test-api-key')
+      vi.stubEnv('GOOGLE_RECAPTCHA_SITE_KEY', 'test-site-key')
+      overrideDynamicConfigFieldsForTest(recaptchaConfig, { enabled: true, blocking_enabled: true })
+      mockFetch.mockResolvedValue(
+        new UndiciResponse(
+          JSON.stringify({
+            tokenProperties: { valid: true, action: 'create_post' },
+            riskAnalysis: { score: 0, reasons: [] },
+          }),
+        ),
+      )
+      try {
+        const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+        const topic = await createTestTopic({ user })
+        const feed = await createTestRssFeedWithTiming(topic.id)
+        const item = await createTestRssFeedItemWithUrl(feed)
+        const story = await insertTestStory({ title: `Discussion ${crypto.randomUUID()}` })
+        await setTestItemStoryId(item.id, story.id)
+        const secondItem = await createTestRssFeedItemWithUrl(feed)
+        await setTestItemStoryId(secondItem.id, story.id)
+        const body =
+          source === 'story'
+            ? { post_type: 'story', story_id: story.id }
+            : { post_type: 'link', rss_feed_item_id: item.id }
+        const request = createRequest()
+        await request.authenticateAs(user)
+        await request
+          .post('/api/v1/posts')
+          .send({ ...body, recaptcha_token: 'bad-low-score-token' })
+          .expect(201)
+        expect(mockFetch).not.toHaveBeenCalled()
+      } finally {
+        restoreConfig()
+      }
+    },
+  )
 
   it('rejects exhausted PostgreSQL capacity before purchasing another assessment', async () => {
     const restoreConfig = snapshotDynamicConfigFieldsForTest([

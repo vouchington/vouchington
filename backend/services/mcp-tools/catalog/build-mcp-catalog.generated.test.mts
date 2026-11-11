@@ -59,7 +59,6 @@ const participationNames = [
   'set_rss_feed_item_read',
   'share_rss_feed_item',
   'submit_rss_feed',
-  'start_discussion',
 ]
 const plusScopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
   scope =>
@@ -175,15 +174,15 @@ describe('generated MCP catalog contracts', () => {
 
   it('pins Reader and Plus participation-discovery snapshots', () => {
     const reader = listMcpToolsForUser(customer, readerScopes, USER_MCP_SERVER_CONFIG)
-    expect(JSON.stringify(reader)).toHaveLength(55963)
-    expect(hash(reader)).toBe('a9b3428de9cb461ac9718e26e1f1109ee424b19af5889d46702b920cf2dcd757')
+    expect(JSON.stringify(reader)).toHaveLength(55927)
+    expect(hash(reader)).toBe('80334625b51f33f12e1b1e620bf3d88fac9fba3768746a48aa8ad94553b6ef53')
 
     const paid = listMcpToolsForUser(
       { ...customer, membership_plan: 'plus' },
       plusScopes,
       USER_MCP_SERVER_CONFIG,
     )
-    expect(paid).toHaveLength(72)
+    expect(paid).toHaveLength(68)
     expect(
       paid
         .filter(tool => participationNames.includes(tool.name))
@@ -191,7 +190,7 @@ describe('generated MCP catalog contracts', () => {
         .toSorted(),
     ).toEqual(participationNames.toSorted())
     expect(hash(paid.filter(tool => !participationNames.includes(tool.name)))).toBe(
-      '53aade03e2ab2701743807b89cffd0dc5e46c43ec7f7ba8b251daffc25ff2e9c',
+      '1ab28589370d5e5809886b13c254e515293a4ae5d9f41fd06850fb59de72fecd',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(

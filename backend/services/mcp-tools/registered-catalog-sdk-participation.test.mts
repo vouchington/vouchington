@@ -40,11 +40,6 @@ describe('registered participation write catalog SDK', () => {
         ['set_rss_feed_item_read', 'read', { rss_feed_item_id: item.id }],
         ['share_rss_feed_item', 'share', { rss_feed_item_id: item.id }],
         ['submit_rss_feed', 'submit', { rss_feed_url: feedUrl, follow: false }],
-        [
-          'start_discussion',
-          'rss_feed_item',
-          { rss_feed_item_id: item.id, idempotency_key: crypto.randomUUID() },
-        ],
       ] as const) {
         await catalog.callAndValidate(name, option, args)
         names.add(name)

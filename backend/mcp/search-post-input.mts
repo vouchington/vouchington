@@ -1,7 +1,8 @@
+import type { PagedSearchArgs } from './paged-search.mts'
 import { MAX_TOPIC_SEARCH_TERMS } from '@services/search-params'
 import type { PostSearchSort } from '@services/posts/search/types'
 import { topicReferenceSchema, userReferenceSchema } from './entity-reference-schema.mts'
-import { VALID_SEARCH_POST_TYPES } from '@ts-shared/feed-capabilities'
+import { VALID_SEARCH_POST_TYPES, type SearchPostType } from '@ts-shared/feed-capabilities'
 
 export const POST_SORTS = [
   'new',
@@ -55,6 +56,7 @@ export function postSearchFilterSchemaProperties() {
     data_point_vertical: { type: 'string' },
     review_topic: topicReferenceSchema,
     story_id: { type: 'string', format: 'uuid' },
+    topic_recommendation_status: { type: 'string', enum: ['pending', 'approved', 'rejected'] },
     has_hacker_news_references: {
       type: 'boolean',
       description:
@@ -75,4 +77,25 @@ export function postSearchFilterSchemaProperties() {
       ],
     },
   }
+}
+
+export type SearchPostArgs = PagedSearchArgs & {
+  sort?: (typeof POST_SORTS)[number]
+  post_type?: SearchPostType
+  post_types?: SearchPostType[]
+  categories?: string[]
+  category?: string
+  creator?: string
+  community_id?: string
+  trending_min_score?: number
+  data_point_topic?: string
+  data_point_vertical?: string
+  review_topic?: string
+  topic_recommendation_status?: 'pending' | 'approved' | 'rejected'
+  story_id?: string
+  has_hacker_news_references?: boolean
+  time_range?: '1d' | '1w' | '1m' | '1y' | 'all'
+  topic?: string
+  topics?: string[]
+  url?: string
 }

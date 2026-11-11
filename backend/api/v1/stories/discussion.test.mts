@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   CONTRIBUTING_USER_AGE_MS,
@@ -37,8 +37,10 @@ describe('discussion', () => {
     user = testUser!
     feedId = feed.id
     urlId = testUrlId
-    await import('./discussion.mts')
+    await import('../posts/index.mts')
   })
+
+  afterEach(() => vi.unstubAllEnvs())
 
   async function makeStoryWithItem(title?: string, rssFeedId = feedId) {
     const story = await insertTestStory({ title: title ?? 'Discussion API Test' })
@@ -65,16 +67,31 @@ describe('discussion', () => {
     return { story, itemId, itemId2 }
   }
 
-  describe('POST /api/v1/stories/:storyId/discussions', () => {
+  describe('POST /api/v1/posts story discussion', () => {
+    it('creates a story discussion without a token while CAPTCHA verification is enabled', async () => {
+      vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
+      const { story } = await makeStoryWithItem()
+      const request = createRequest()
+      await request.authenticateAs(user)
+      const response = await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: story.id })
+        .expect(201)
+      expect(response.body.post.post_type).toBe('story')
+    })
     it('returns 401 when unauthenticated', async () => {
       const { story } = await makeStoryWithItem()
       const request = createRequest()
-      await request.post(`/api/v1/stories/${story.id}/discussions`).expect(401)
+      await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: story.id })
+        .expect(401)
     })
 
     it('returns 401 without a validation diagnostic for a malformed unauthenticated call', async () => {
       const response = await createRequest()
-        .post('/api/v1/stories/not-a-uuid/discussions')
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: 'not-a-uuid' })
         .set('Idempotency-Key', 'not-a-uuid')
         .expect(401)
       expect(response.body.message).toBe('Unauthorized')
@@ -83,29 +100,39 @@ describe('discussion', () => {
     it('returns 400 for invalid UUID', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
-      await request.post('/api/v1/stories/not-a-uuid/discussions').expect(400)
+      await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: 'not-a-uuid' })
+        .expect(422)
     })
 
-    it('returns 422 for a malformed Idempotency-Key before any story lookup', async () => {
+    it('returns 400 for a malformed Idempotency-Key before any story lookup', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
       await request
-        .post(`/api/v1/stories/${randomUUID()}/discussions`)
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: randomUUID() })
         .set('Idempotency-Key', 'not-a-uuid')
-        .expect(422)
+        .expect(400)
     })
 
     it('returns 404 for unknown story', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
-      await request.post(`/api/v1/stories/${randomUUID()}/discussions`).expect(404)
+      await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: randomUUID() })
+        .expect(404)
     })
 
     it('returns 200 with post and story on success', async () => {
       const { story } = await makeStoryWithItem('Story with Discussion')
       const request = createRequest()
       await request.authenticateAs(user)
-      const response = await request.post(`/api/v1/stories/${story.id}/discussions`).expect(200)
+      const response = await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: story.id })
+        .expect(201)
 
       expect(response.body.post).toBeDefined()
       expect(response.body.post.post_type).toBe('story')
@@ -113,17 +140,16 @@ describe('discussion', () => {
       expect(response.body.post.title).toBe('Story with Discussion')
       // Agent has not run yet — summary is empty
       expect(response.body.post.ai_summary_markdown).toBe('')
-      expect(response.body.story).toBeDefined()
-      expect(response.body.postStory).toBeDefined()
-      expect(response.body.postStory.post_id).toBe(response.body.post.id)
-      expect(response.body.postStory.story_id).toBe(story.id)
     })
 
     it('post is immediately visible to the creator (regression: no 404 after redirect)', async () => {
       const { story } = await makeStoryWithItem('Immediate Visibility Test')
       const request = createRequest()
       await request.authenticateAs(user)
-      const response = await request.post(`/api/v1/stories/${story.id}/discussions`).expect(200)
+      const response = await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: story.id })
+        .expect(201)
       const postSlug = response.body.post.slug
 
       await request.get(`/api/v1/posts/${postSlug}`).expect(200)
@@ -135,10 +161,16 @@ describe('discussion', () => {
       await request.authenticateAs(user)
 
       // First call succeeds
-      await request.post(`/api/v1/stories/${story.id}/discussions`).expect(200)
+      await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: story.id })
+        .expect(201)
 
       // Second call returns 409
-      await request.post(`/api/v1/stories/${story.id}/discussions`).expect(409)
+      await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: story.id })
+        .expect(409)
     })
 
     it('replays a committed response after the source feed becomes undiscoverable', async () => {
@@ -148,9 +180,10 @@ describe('discussion', () => {
       await request.authenticateAs(user)
       const key = randomUUID()
       const first = await request
-        .post(`/api/v1/stories/${story.id}/discussions`)
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: story.id })
         .set('Idempotency-Key', key)
-        .expect(200)
+        .expect(201)
 
       await setRssFeedDiscoverabilityAsSystem({
         rssFeedId: replayFeed.id,
@@ -158,9 +191,10 @@ describe('discussion', () => {
         reason: 'test: mutable eligibility changed after commit',
       })
       const replay = await request
-        .post(`/api/v1/stories/${story.id}/discussions`)
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: story.id })
         .set('Idempotency-Key', key)
-        .expect(200)
+        .expect(201)
 
       expect(replay.body).toEqual(first.body)
     })
@@ -175,7 +209,7 @@ describe('discussion', () => {
       const pendingAdmission = runContributionAdmission({
         actorId: user.id,
         idempotencyKey: key,
-        intent: { route: 'stories.discussions.create', story_id: story.id },
+        intent: { route: 'posts.create', body: { post_type: 'story', story_id: story.id } },
         beforeCommit: async () => {
           claimed.resolve()
           await release.promise
@@ -186,7 +220,8 @@ describe('discussion', () => {
 
       try {
         const response = await request
-          .post(`/api/v1/stories/${story.id}/discussions`)
+          .post('/api/v1/posts')
+          .send({ post_type: 'story', story_id: story.id })
           .set('Idempotency-Key', key)
           .expect(409)
         expect(response.body.code).toBe('CONTRIBUTION_ADMISSION_IN_PROGRESS')
@@ -221,7 +256,10 @@ describe('discussion', () => {
 
       const request = createRequest()
       await request.authenticateAs(user)
-      const response = await request.post(`/api/v1/stories/${story.id}/discussions`).expect(403)
+      const response = await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'story', story_id: story.id })
+        .expect(403)
       expect(response.body.code).toBe(FEED_NOT_DISCOVERABLE)
     })
   })

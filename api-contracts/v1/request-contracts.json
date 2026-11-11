@@ -18411,6 +18411,43 @@
         },
         "url_id": {
           "type": "string"
+        },
+        "example_referral_link": {
+          "type": "string"
+        },
+        "landing_page_urls": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "topic_aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "topic_hostname": {
+          "type": "string"
+        },
+        "topic_hostnames": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "topic_markdown": {
+          "type": "string"
+        },
+        "topic_slug": {
+          "type": "string"
+        },
+        "topic_title": {
+          "type": "string"
+        },
+        "topic_type": {
+          "enum": ["card", "referral_program", "topic"],
+          "type": "string"
         }
       },
       "type": "object"
@@ -26908,6 +26945,43 @@
           "type": "string"
         },
         "url_id": {
+          "type": "string"
+        },
+        "example_referral_link": {
+          "type": "string"
+        },
+        "landing_page_urls": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "topic_aliases": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "topic_hostname": {
+          "type": "string"
+        },
+        "topic_hostnames": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "topic_markdown": {
+          "type": "string"
+        },
+        "topic_slug": {
+          "type": "string"
+        },
+        "topic_title": {
+          "type": "string"
+        },
+        "topic_type": {
+          "enum": ["card", "referral_program", "topic"],
           "type": "string"
         }
       },
@@ -35412,6 +35486,9 @@
               "type": "array"
             }
           ]
+        },
+        "users": {
+          "$ref": "#/components/schemas/Record_string_PublicUser"
         }
       },
       "required": [
@@ -41351,6 +41428,290 @@
     "ModerationAiRerunStatus": {
       "type": "string",
       "enum": ["active", "succeeded", "failed", "expired"]
+    },
+    "CreatedStandardPost": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "slug": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "markdown": {
+          "type": "string"
+        },
+        "post_type": {
+          "type": "string",
+          "enum": [
+            "article",
+            "blog_post",
+            "comment",
+            "data_point",
+            "discussion",
+            "link",
+            "review",
+            "story"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "created_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "parent_post_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "root_post_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "is_anonymous": {
+          "type": "boolean"
+        },
+        "community_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "broadcast": {
+          "$ref": "#/components/schemas/PostBroadcast"
+        },
+        "privacy": {
+          "$ref": "#/components/schemas/PostPrivacy"
+        },
+        "ai_summary_markdown": {
+          "type": "string"
+        },
+        "updated_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "provenance": {
+          "$ref": "#/components/schemas/PublicContentProvenance"
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": true
+            }
+          ]
+        },
+        "updated_by": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": true
+            }
+          ]
+        }
+      },
+      "required": [
+        "ai_summary_markdown",
+        "broadcast",
+        "community_id",
+        "created_at",
+        "created_by_id",
+        "id",
+        "is_anonymous",
+        "markdown",
+        "post_type",
+        "privacy",
+        "root_post_id",
+        "title",
+        "updated_at",
+        "updated_by_id"
+      ],
+      "additionalProperties": true
+    },
+    "HoneypotPost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "post_type": {
+          "$ref": "#/components/schemas/PostType"
+        },
+        "title": {
+          "type": "string"
+        },
+        "markdown": {
+          "type": "string"
+        },
+        "ai_summary_markdown": {
+          "const": ""
+        },
+        "parent_post_id": {
+          "type": "null"
+        },
+        "root_post_id": {
+          "type": "null"
+        },
+        "community_id": {
+          "type": "null"
+        },
+        "created_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "broadcast": {
+          "$ref": "#/components/schemas/PostBroadcast"
+        },
+        "privacy": {
+          "$ref": "#/components/schemas/PostPrivacy"
+        },
+        "is_anonymous": {
+          "type": "boolean"
+        },
+        "deleted_at": {
+          "type": "null"
+        },
+        "deleted_by_id": {
+          "type": "null"
+        },
+        "archived_at": {
+          "type": "null"
+        },
+        "archived_by_id": {
+          "type": "null"
+        },
+        "updated_by_id": {
+          "type": "null"
+        },
+        "clearance_status": {
+          "const": "pending"
+        },
+        "clearance_updated_at": {
+          "type": "null"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ai_summary_markdown",
+        "archived_at",
+        "archived_by_id",
+        "broadcast",
+        "clearance_status",
+        "clearance_updated_at",
+        "community_id",
+        "created_at",
+        "created_by_id",
+        "deleted_at",
+        "deleted_by_id",
+        "id",
+        "is_anonymous",
+        "markdown",
+        "parent_post_id",
+        "post_type",
+        "privacy",
+        "root_post_id",
+        "title",
+        "updated_at",
+        "updated_by_id"
+      ]
+    },
+    "CreatePostResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "post": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/CreatedStandardPost"
+            },
+            {
+              "$ref": "#/components/schemas/PublicTopicRecommendationPost"
+            },
+            {
+              "$ref": "#/components/schemas/HoneypotPost"
+            }
+          ]
+        },
+        "post_election": {
+          "$ref": "#/components/schemas/PostElection"
+        },
+        "election_vote": {
+          "$ref": "#/components/schemas/ElectionVote"
+        }
+      },
+      "required": ["post"]
     }
   },
   "operations": {
@@ -42474,17 +42835,6 @@
           }
         },
         "required": ["storyId", "itemId"],
-        "type": "object"
-      }
-    },
-    "DELETE:/api/v1/topic-recommendations/:id": {
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"],
         "type": "object"
       }
     },
@@ -45986,6 +46336,10 @@
                 "type": "string"
               }
             ]
+          },
+          "topic_recommendation_status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"]
           }
         },
         "type": "object"
@@ -46754,81 +47108,6 @@
             "maximum": 25,
             "minimum": 1,
             "type": "integer"
-          }
-        },
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/topic-recommendations": {
-      "query": {
-        "properties": {
-          "after": {
-            "type": "string"
-          },
-          "limit": {
-            "default": 25,
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "q": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/topic-recommendations/:id": {
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"],
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/topic-recommendations/duplicates": {
-      "query": {
-        "properties": {
-          "topic_aliases": {
-            "type": "string"
-          },
-          "topic_markdown": {
-            "type": "string"
-          },
-          "topic_slug": {
-            "type": "string"
-          },
-          "topic_title": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/topic-recommendations/top-hashtags": {
-      "query": {
-        "properties": {
-          "after": {
-            "type": "string"
-          },
-          "limit": {
-            "default": 25,
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "mapping": {
-            "enum": ["all", "linked", "unlinked"],
-            "type": "string"
-          },
-          "q": {
-            "type": "string"
           }
         },
         "type": "object"
@@ -48450,6 +48729,43 @@
           },
           "url_id": {
             "type": "string"
+          },
+          "example_referral_link": {
+            "type": "string"
+          },
+          "landing_page_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "topic_aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "topic_hostname": {
+            "type": "string"
+          },
+          "topic_hostnames": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "topic_markdown": {
+            "type": "string"
+          },
+          "topic_slug": {
+            "type": "string"
+          },
+          "topic_title": {
+            "type": "string"
+          },
+          "topic_type": {
+            "enum": ["card", "referral_program", "topic"],
+            "type": "string"
           }
         },
         "type": "object"
@@ -48576,20 +48892,6 @@
     "PATCH:/api/v1/stories/:id": {
       "body": {
         "$ref": "#/components/schemas/UpdateStoryTitleRequest"
-      },
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"],
-        "type": "object"
-      }
-    },
-    "PATCH:/api/v1/topic-recommendations/:id": {
-      "body": {
-        "$ref": "#/components/schemas/Partial_CreateTopicRecommendationInput"
       },
       "path": {
         "properties": {
@@ -51374,6 +51676,51 @@
           },
           "url_id": {
             "type": "string"
+          },
+          "example_referral_link": {
+            "type": "string"
+          },
+          "landing_page_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "topic_aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "topic_hostname": {
+            "type": "string"
+          },
+          "topic_hostnames": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "topic_markdown": {
+            "type": "string"
+          },
+          "topic_slug": {
+            "type": "string"
+          },
+          "topic_title": {
+            "type": "string"
+          },
+          "topic_type": {
+            "enum": ["card", "referral_program", "topic"],
+            "type": "string"
+          },
+          "story_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rss_feed_item_id": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "type": "object"
@@ -51588,26 +51935,6 @@
         "$ref": "#/components/schemas/RejectionBody"
       }
     },
-    "POST:/api/v1/rss-feed-items/:id/discussions": {
-      "header": {
-        "properties": {
-          "idempotency-key": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"],
-        "type": "object"
-      }
-    },
     "POST:/api/v1/rss-feed-items/:id/views": {
       "path": {
         "properties": {
@@ -51685,121 +52012,6 @@
           }
         },
         "required": ["rssFeedId"],
-        "type": "object"
-      }
-    },
-    "POST:/api/v1/stories/:storyId/discussions": {
-      "header": {
-        "properties": {
-          "idempotency-key": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "path": {
-        "properties": {
-          "storyId": {
-            "type": "string"
-          }
-        },
-        "required": ["storyId"],
-        "type": "object"
-      }
-    },
-    "POST:/api/v1/topic-recommendations": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "cf_turnstile_response": {
-            "type": "string"
-          },
-          "example_referral_link": {
-            "type": "string"
-          },
-          "landing_page_urls": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "markdown": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "topic_aliases": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "topic_hostname": {
-            "type": "string"
-          },
-          "topic_hostnames": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "topic_markdown": {
-            "type": "string"
-          },
-          "topic_slug": {
-            "type": "string"
-          },
-          "topic_title": {
-            "type": "string"
-          },
-          "topic_type": {
-            "enum": ["card", "referral_program", "topic"],
-            "type": "string"
-          }
-        },
-        "required": ["markdown", "topic_slug", "topic_title"],
-        "type": "object"
-      },
-      "header": {
-        "properties": {
-          "idempotency-key": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      }
-    },
-    "POST:/api/v1/topic-recommendations/:id/approvals": {
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"],
-        "type": "object"
-      }
-    },
-    "POST:/api/v1/topic-recommendations/:id/rejections": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "reason": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"],
         "type": "object"
       }
     },
@@ -52597,6 +52809,79 @@
         "required": ["id", "runId"],
         "type": "object"
       }
+    },
+    "GET:/api/v1/topics/duplicates": {
+      "query": {
+        "properties": {
+          "topic_aliases": {
+            "type": "string"
+          },
+          "topic_markdown": {
+            "type": "string"
+          },
+          "topic_slug": {
+            "type": "string"
+          },
+          "topic_title": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/topics/top-hashtags": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mapping": {
+            "enum": ["all", "linked", "unlinked"],
+            "type": "string"
+          },
+          "q": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/posts/:idOrSlug/approvals": {
+      "path": {
+        "properties": {
+          "idOrSlug": {
+            "type": "string"
+          }
+        },
+        "required": ["idOrSlug"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/posts/:idOrSlug/rejections": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "idOrSlug": {
+            "type": "string"
+          }
+        },
+        "required": ["idOrSlug"],
+        "type": "object"
+      }
     }
   },
   "responses": {
@@ -52956,15 +53241,6 @@
     "GET:/api/v1/stories/:id": {
       "$ref": "#/components/schemas/StoryPageResponse"
     },
-    "GET:/api/v1/topic-recommendations": {
-      "$ref": "#/components/schemas/Record_string_unknown"
-    },
-    "GET:/api/v1/topic-recommendations/:id": {
-      "$ref": "#/components/schemas/Record_string_unknown"
-    },
-    "GET:/api/v1/topic-recommendations/duplicates": {
-      "$ref": "#/components/schemas/FindTopicRecommendationDuplicatesResult"
-    },
     "GET:/api/v1/topics": {
       "$ref": "#/components/schemas/Record_string_unknown"
     },
@@ -53044,9 +53320,6 @@
       },
       "required": ["participant_add_policy"],
       "type": "object"
-    },
-    "PATCH:/api/v1/topic-recommendations/:id": {
-      "$ref": "#/components/schemas/TopicRecommendationMutationResponse"
     },
     "POST:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold/rollback": {
       "$ref": "#/components/schemas/AppliedThresholdChange"
@@ -53169,12 +53442,6 @@
         }
       },
       "required": ["import", "status_url"]
-    },
-    "POST:/api/v1/stories/:storyId/discussions": {
-      "$ref": "#/components/schemas/StoryPostResult"
-    },
-    "POST:/api/v1/topic-recommendations": {
-      "$ref": "#/components/schemas/TopicRecommendationMutationResponse"
     },
     "POST:/api/v1/topics/:idOrSlug/claims": {
       "additionalProperties": false,
@@ -53379,6 +53646,12 @@
         }
       },
       "required": ["run_id", "status", "ai_drafted_at", "latest_lifecycle_change_id"]
+    },
+    "GET:/api/v1/topics/duplicates": {
+      "$ref": "#/components/schemas/FindTopicRecommendationDuplicatesResult"
+    },
+    "POST:/api/v1/posts": {
+      "$ref": "#/components/schemas/CreatePostResponse"
     }
   },
   "source": "checked-in-request-contracts",

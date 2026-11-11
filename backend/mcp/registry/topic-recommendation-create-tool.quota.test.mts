@@ -31,14 +31,15 @@ describe('MCP recommendation capacity envelope', () => {
     const result = JSON.parse(
       await callRejectedMcpTool(
         user,
-        'create_topic_recommendation',
+        'create_post',
         {
           idempotency_key: crypto.randomUUID(),
+          post_type: 'topic_recommendation',
           markdown: 'Topic',
           topic_title: slug,
           topic_slug: slug,
         },
-        ['posts:read', 'topic-recommendations:write'],
+        ['posts:read', 'posts:write'],
       ),
     )
     expect(result.error).toMatchObject({

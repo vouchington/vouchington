@@ -13,7 +13,7 @@ import {
 
 import { countTestPostsCreatedBy } from '@voucha/test-helpers/entities/posts-deletion'
 
-const SCOPES = ['posts:read', 'topic-recommendations:write'] as const
+const SCOPES = ['posts:read', 'posts:write'] as const
 
 describe('delegated recommendation author lifecycle', () => {
   it.each(['suspension', 'deletion'] as const)(
@@ -31,9 +31,10 @@ describe('delegated recommendation author lifecycle', () => {
         const result = await race(user.id, () =>
           callRejectedMcpTool(
             { ...user, membership_plan: 'plus' },
-            'create_topic_recommendation',
+            'create_post',
             {
               idempotency_key: idempotencyKey,
+              post_type: 'topic_recommendation',
               markdown: 'Refused',
               topic_title: slug,
               topic_slug: slug,

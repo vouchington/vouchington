@@ -812,7 +812,7 @@
         "native.users.profile.posts.reviews",
         "native.users.profile.posts.staff-provenance"
       ],
-      "hash": "8d18deeeb134507a2d180d6f5307302f73a0257e521fdfe8ad393d47300f3c26"
+      "hash": "d13aa47eaf18c3daa66dd338a3f356fd50cfb49dedbddb84d10f33753868c2ce"
     },
     "GET:/api/v1/posts/:idOrSlug/ancestors": {
       "fixtureIds": [
@@ -838,7 +838,11 @@
       "hash": "75b05a8f6061c99e3b2ce53db88c71a6cb927708d2dfe55c97f0a47420650bdf"
     },
     "GET:/api/v1/posts/:postIdOrSlug": {
-      "fixtureIds": ["native.comments.post-detail.default", "native.posts.hacker-news.detail"],
+      "fixtureIds": [
+        "native.comments.post-detail.default",
+        "native.posts.hacker-news.detail",
+        "native.topic-recommendation.detail.default"
+      ],
       "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
     },
     "GET:/api/v1/posts/review-queue": {
@@ -968,14 +972,6 @@
       "fixtureIds": ["native.stories.get.after", "native.stories.get.default"],
       "hash": "21e9fd834244bca3efc7a74a74f7ae7e01ad7e4ce186844205c7dc6301d6ccd4"
     },
-    "GET:/api/v1/topic-recommendations/:id": {
-      "fixtureIds": ["native.topic-recommendation.detail.default"],
-      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
-    },
-    "GET:/api/v1/topic-recommendations/top-hashtags": {
-      "fixtureIds": ["native.topic-recommendations.top-hashtags.default"],
-      "hash": "263611951610d7217e488757e488ecebdaa5e67f086f51a39056ea30a1d0e089"
-    },
     "GET:/api/v1/topics": {
       "fixtureIds": [
         "entity-provenance.topics",
@@ -1014,6 +1010,10 @@
     "GET:/api/v1/topics/publisher-types": {
       "fixtureIds": ["web.topics.publisher-types.default"],
       "hash": "df88ebf1c8aa79aed7344fc7c0c85bdb8fc70fa6086ef935a08eebd61e578ee9"
+    },
+    "GET:/api/v1/topics/top-hashtags": {
+      "fixtureIds": ["native.topic-recommendations.top-hashtags.default"],
+      "hash": "263611951610d7217e488757e488ecebdaa5e67f086f51a39056ea30a1d0e089"
     },
     "GET:/api/v1/topics/user-tags": {
       "fixtureIds": ["native.topics.user-tags.default"],
@@ -1643,6 +1643,10 @@
     "POST:/api/v1/oauth/native-session-tokens": {
       "fixtureIds": ["native.oauth.session-mcp-token.ios"],
       "hash": "2ab31fc6f4d71ab892e4ec8a344977480c0dc3c7a5f13be991e20435eadc0760"
+    },
+    "POST:/api/v1/posts#topic-recommendation": {
+      "fixtureIds": ["native.posts.topic-recommendation.create"],
+      "hash": "d0a22543b0fffd9f92af1f4f96a2aabbeb8d8a85bb2a17240b8746d16a878c10"
     },
     "POST:/api/v1/posts/:idOrSlug/clearances": {
       "fixtureIds": [
@@ -3061,6 +3065,10 @@
     "native.posts.time-range.explicit-week": {
       "fixtureIds": ["native.posts.time-range.explicit-week"],
       "hash": "4bf6a2916388f3b0471b7db4973a6f33bb6286b05966c8ac7e5d2915d40a8f86"
+    },
+    "native.posts.topic-recommendation.create": {
+      "fixtureIds": ["native.posts.topic-recommendation.create"],
+      "hash": "927c03e60e3df14ab8e4a092f008c7f4aa9137e600114e48568c3bbdaf942040"
     },
     "native.rewards-program-status-topics.search.default": {
       "fixtureIds": ["native.rewards-program-status-topics.search.default"],

@@ -98,14 +98,12 @@ describe('MCP post provenance read tools', () => {
       expect(JSON.stringify(post)).not.toContain('metadata_url')
     })
 
-    it('labels the posts that read_posts.ancestors and read_posts.descendants return', async () => {
+    it('omits provenance from ancestor and descendant summaries', async () => {
       const { ancestors } = await read('ancestors', posts.api!.id)
-      expect(ancestors).toEqual([
-        expect.objectContaining({ id: root.id, provenance: { via: 'mcp', app: verifiedApp() } }),
-      ])
+      expect(ancestors).toEqual([expect.objectContaining({ id: root.id })])
       const { descendants } = await read('descendants', root.id)
       const byId = new Map((descendants as { id: string }[]).map(post => [post.id, post]))
-      expect(byId.get(posts.api!.id)).toMatchObject({ provenance: { via: 'api', app: null } })
+      expect(byId.get(posts.api!.id)).not.toHaveProperty('provenance')
       expect(byId.get(posts.web!.id)).not.toHaveProperty('provenance')
     })
   })

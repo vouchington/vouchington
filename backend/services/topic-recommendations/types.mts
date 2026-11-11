@@ -1,6 +1,4 @@
-import type { Post, TopicRecommendationStatus } from '@services/posts/types'
-
-export type { TopicRecommendationStatus }
+import type { Post } from '@services/posts/types'
 
 export type TopicRecommendationPost = Post & {
   post_type: 'topic_recommendation'

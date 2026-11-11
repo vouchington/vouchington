@@ -19,6 +19,7 @@ vi.mock<typeof import('undici')>(import('undici'), () => createCaptchaUndiciMock
 
 function recommendationBody(random: string): Record<string, unknown> {
   return {
+    post_type: 'topic_recommendation',
     title: 'Need this topic',
     markdown: 'People keep discussing this but there is no topic yet.',
     topic_title: `Captcha Topic Recommendation ${random}`,
@@ -30,7 +31,7 @@ function recommendationBody(random: string): Record<string, unknown> {
   }
 }
 
-describe('POST /api/v1/topic-recommendations CAPTCHA', () => {
+describe('POST /api/v1/posts topic recommendation CAPTCHA', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
@@ -49,7 +50,7 @@ describe('POST /api/v1/topic-recommendations CAPTCHA', () => {
     await request.authenticateAs(user)
 
     const response = await request
-      .post('/api/v1/topic-recommendations')
+      .post('/api/v1/posts')
       .send(recommendationBody(`${Date.now()}-notoken`))
       .expect(422)
 
@@ -59,19 +60,23 @@ describe('POST /api/v1/topic-recommendations CAPTCHA', () => {
     ).resolves.toBe(0)
   })
 
-  it('runs the contribution gate before parsing or CAPTCHA verification', async () => {
-    const user = await createTestUserWithAge(60_000)
-    const request = createRequest()
-    await request.authenticateAs(user)
+  it.each([false, true])(
+    'runs the contribution gate before body parsing and CAPTCHA verification (noUsername=%s)',
+    async noUsername => {
+      const user = await createTestUserWithAge(60_000, { noUsername })
+      const request = createRequest()
+      await request.authenticateAs(user)
 
-    await request
-      .post('/api/v1/topic-recommendations')
-      .set('Content-Type', 'application/json')
-      .send('not-json')
-      .expect(403)
+      const response = await request
+        .post('/api/v1/posts')
+        .set('Content-Type', 'application/json')
+        .send('not-json')
+        .expect(403)
 
-    expect(mockFetch).not.toHaveBeenCalled()
-  })
+      expect(response.body.code).toBe('CONTRIBUTION_GATED')
+      expect(mockFetch).not.toHaveBeenCalled()
+    },
+  )
 
   it('creates the recommendation and forwards the token when verification passes', async () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -79,8 +84,9 @@ describe('POST /api/v1/topic-recommendations CAPTCHA', () => {
     await request.authenticateAs(user)
 
     const response = await request
-      .post('/api/v1/topic-recommendations')
+      .post('/api/v1/posts')
       .send({
+        post_type: 'topic_recommendation',
         ...recommendationBody(`${Date.now()}-token`),
         cf_turnstile_response: TEST_CAPTCHA_TOKEN,
       })
@@ -102,9 +108,10 @@ describe('POST /api/v1/topic-recommendations CAPTCHA', () => {
     const key = crypto.randomUUID()
 
     const response = await request
-      .post('/api/v1/topic-recommendations')
+      .post('/api/v1/posts')
       .set('Idempotency-Key', key)
       .send({
+        post_type: 'topic_recommendation',
         ...recommendationBody(`invalid-${Date.now()}`),
         cf_turnstile_response: TEST_CAPTCHA_TOKEN,
         topic_hostnames: 'not-an-array',
@@ -135,7 +142,7 @@ describe('POST /api/v1/topic-recommendations CAPTCHA', () => {
     const pendingAdmission = runContributionAdmission({
       actorId: user.id,
       idempotencyKey: key,
-      intent: normalizeRouteAdmissionIntent({ route: 'topic-recommendations.create', body }),
+      intent: normalizeRouteAdmissionIntent({ route: 'posts.create', body }),
       beforeCommit: async () => {
         claimed.resolve()
         await release.promise
@@ -146,7 +153,7 @@ describe('POST /api/v1/topic-recommendations CAPTCHA', () => {
 
     try {
       const response = await request
-        .post('/api/v1/topic-recommendations')
+        .post('/api/v1/posts')
         .set('Idempotency-Key', key)
         .send(body)
         .expect(409)

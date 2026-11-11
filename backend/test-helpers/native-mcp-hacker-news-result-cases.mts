@@ -32,7 +32,6 @@ export const hackerNewsMcpResultCases: readonly McpResultFixtureCase[] = [
         {
           id,
           title: 'Example post',
-          markdown: 'Example post text',
           post_type: 'link',
           hacker_news_references: counts,
         },

@@ -10,7 +10,6 @@ const applicationTags = [
   'reports.create',
   'appeals.create',
   'disputes.create',
-  'topic-recommendations.create',
   'copyright-notices.create',
   'copyright-notices.appeal',
   'copyright-notices.counter-notice',

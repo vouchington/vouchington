@@ -37,7 +37,7 @@ describe('topic recommendation suspension guards', () => {
   })
 
   it.each(calls)(
-    '%s /api/v1/topic-recommendations/:id refuses a suspended author without changing the recommendation',
+    '%s /api/v1/posts/:idOrSlug refuses a suspended author without changing the recommendation',
     async (_method, call) => {
       const suffix = createRandomString(8).toLowerCase()
       const author = await createTestUser()
@@ -56,7 +56,7 @@ describe('topic recommendation suspension guards', () => {
       const request = createRequest()
       await request.authenticateAs(author)
 
-      const response = await call(request, `/api/v1/topic-recommendations/${recommendation.id}`)
+      const response = await call(request, `/api/v1/posts/${recommendation.id}`)
 
       expect(response.status).toBe(403)
       expect(response.body.code).toBe(ACCOUNT_SUSPENDED)
@@ -64,7 +64,7 @@ describe('topic recommendation suspension guards', () => {
     },
   )
 
-  it('PATCH /api/v1/topic-recommendations/:id still lets an active author edit', async () => {
+  it('PATCH /api/v1/posts/:idOrSlug still lets an active author edit', async () => {
     const suffix = createRandomString(8).toLowerCase()
     const author = await createTestUser()
     const recommendation = await createTestTopicRecommendation(
@@ -81,7 +81,7 @@ describe('topic recommendation suspension guards', () => {
     await request.authenticateAs(author)
 
     await request
-      .patch(`/api/v1/topic-recommendations/${recommendation.id}`)
+      .patch(`/api/v1/posts/${recommendation.id}`)
       .send({ topic_title: `Edited topic ${suffix}` })
       .expect(200)
 

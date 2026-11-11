@@ -149,7 +149,15 @@ describe('read_community.posts and read_community.pinned_posts — real DB', () 
         const { pinned_posts } = await listPinned(caller)
 
         expect(idsOf(pinned_posts)).toEqual([posts.one, posts.pinnedAnon, posts.three])
-        expect(pinned_posts[1]).toMatchObject({ is_anonymous: true, created_by_id: null })
+        expect(pinned_posts[1]).not.toHaveProperty('created_by_id')
+        expect(pinned_posts[1]).not.toHaveProperty('is_anonymous')
+        const details = await callStructuredMcpTool(
+          caller,
+          'read_posts',
+          optionArgs('details', { post_id: posts.pinnedAnon }),
+          ['posts:read'],
+        )
+        expect(details.post).toMatchObject({ is_anonymous: true, created_by_id: null })
         expect(JSON.stringify(pinned_posts)).not.toContain(author.id)
       }
     })

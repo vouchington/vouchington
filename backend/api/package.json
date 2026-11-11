@@ -180,6 +180,7 @@
     "@services/podcast-playback-positions": "workspace:^",
     "@services/post-classifier": "workspace:^",
     "@services/post-clearance": "workspace:^",
+    "@services/post-writes": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
     "@services/psql-admin": "workspace:^",

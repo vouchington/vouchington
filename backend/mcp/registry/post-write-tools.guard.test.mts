@@ -38,22 +38,18 @@ async function caller() {
 }
 
 describe('post MCP write guards — real services', () => {
-  it.each([
-    {},
-    { idempotency_key: 'invalid' },
-    { post_type: 'story' },
-    { post_type: 'topic_recommendation' },
-    { hp_website: 'trap' },
-    { markdown: 7 },
-  ])('rejects malformed creation before mutation: %j', async fields => {
-    const args =
-      'idempotency_key' in fields || Object.keys(fields).length
-        ? input(fields)
-        : { title: 'Missing key' }
-    expect(await callRejectedMcpTool(await caller(), 'create_post', args, SCOPES)).toContain(
-      'Invalid tool arguments',
-    )
-  })
+  it.each([{}, { idempotency_key: 'invalid' }, { hp_website: 'trap' }, { markdown: 7 }])(
+    'rejects malformed creation before mutation: %j',
+    async fields => {
+      const args =
+        'idempotency_key' in fields || Object.keys(fields).length
+          ? input(fields)
+          : { title: 'Missing key' }
+      expect(await callRejectedMcpTool(await caller(), 'create_post', args, SCOPES)).toContain(
+        'Invalid tool arguments',
+      )
+    },
+  )
 
   it.each([
     [{ post_type: 'article' }, 'Only administrators'],
@@ -220,47 +216,48 @@ describe('post MCP write guards — real services', () => {
     const args = editArgs(name, { id })
     expect(await callRejectedMcpTool(user, name, args, SCOPES)).toContain('Post not found')
   })
-  it('rejects recommendation roots and comments in their dedicated workflow', async () => {
+  it('allows pending recommendation owners to write through the normal post tools', async () => {
     const user = await caller()
-    const root = await insertTestPost({
-      postType: 'topic_recommendation',
-      title: 'Recommendation',
-      slug: crypto.randomUUID(),
-      markdown: 'Recommendation rationale',
-      createdById: user.id,
-      clearanceStatus: 'approved',
+    const suffix = crypto.randomUUID()
+    const created = await callStructuredMcpTool(
+      user,
+      'create_post',
+      input({
+        post_type: 'topic_recommendation',
+        topic_title: `Proposal ${suffix}`,
+        topic_slug: `proposal-${suffix}`,
+      }),
+      SCOPES,
+    )
+    const root = (created.post as { id: string }).id
+    const reply = await callStructuredMcpTool(
+      user,
+      'create_post',
+      input({ post_type: 'comment', parent_post_id: root }),
+      SCOPES,
+    )
+    const comment = (reply.post as { id: string }).id
+    await callStructuredMcpTool(
+      user,
+      'act_on_post',
+      optionArgs('edit', { id: comment, markdown: 'Changed reply' }),
+      SCOPES,
+    )
+    expect((await getPostByAny(comment))?.markdown).toBe('Changed reply')
+    await callStructuredMcpTool(user, 'delete_post', { id: comment }, SCOPES)
+    expect(await getPostByAny(comment)).toBeNull()
+    await callStructuredMcpTool(
+      user,
+      'act_on_post',
+      optionArgs('edit', { id: root, topic_title: `Edited ${suffix}` }),
+      SCOPES,
+    )
+    expect((await getPostByAny(root))?.topic_recommendation).toMatchObject({
+      status: 'pending',
+      topic_title: `Edited ${suffix}`,
     })
-    const comment = await insertTestPost({
-      postType: 'comment',
-      title: '',
-      slug: crypto.randomUUID(),
-      markdown: 'Workflow comment',
-      createdById: user.id,
-      rootId: root,
-      parentId: root,
-      clearanceStatus: 'approved',
-    })
-    for (const id of [root, comment]) {
-      expect(
-        await callRejectedMcpTool(
-          user,
-          'create_post',
-          input({ post_type: 'comment', parent_post_id: id }),
-          SCOPES,
-        ),
-      ).toContain('Post not found')
-      expect(
-        await callRejectedMcpTool(
-          user,
-          'act_on_post',
-          { option: 'edit', arguments: { id, markdown: 'Changed' } },
-          SCOPES,
-        ),
-      ).toContain('Post not found')
-      expect(await callRejectedMcpTool(user, 'delete_post', { id }, SCOPES)).toContain(
-        'Post not found',
-      )
-    }
+    await callStructuredMcpTool(user, 'delete_post', { id: root }, SCOPES)
+    expect(await getPostByAny(root)).toBeNull()
   })
   it.each(['create_post', 'act_on_post', 'delete_post'])(
     'checks %s thread access after the root privacy change commits',

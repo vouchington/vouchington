@@ -96,6 +96,14 @@ export const allowedWorkspaceIgnoreDependencies = new Map<
         evidenceFiles: ['backend/workers/ai-agents/processors/classifier-run-post-classifier.mts'],
         evidencePattern: /\bfrom '@services\/post-classifier'/,
       },
+      {
+        dependency: '@services/post-writes',
+        evidenceFiles: [
+          'backend/api/v1/posts/posts-routes/posts-create-post.mts',
+          'backend/mcp/create-post.mts',
+        ],
+        evidencePattern: /\bfrom '@services\/post-writes(?:\/[^']*)?'/,
+      },
     ],
   ],
   [

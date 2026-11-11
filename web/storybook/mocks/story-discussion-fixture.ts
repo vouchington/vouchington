@@ -15,11 +15,10 @@ function storyDiscussionResponse() {
   return {
     post: {
       id: 'discussion-transfer-bonus',
-      post_type: 'discussion',
+      post_type: 'story',
       slug: 'transfer-bonus-discussion',
       title: 'Discuss the transfer bonus',
     },
-    story: { id: 'story-transfer-bonus' },
   }
 }
 
@@ -28,7 +27,11 @@ ClientRequest.prototype.post = function storybookClientRequestPost<T>(
   body?: unknown,
   options?: Parameters<ClientRequest['post']>[2],
 ): Promise<T> {
-  if (storyDiscussionFixture && /\/api\/v1\/stories\/[^/]+\/discussions$/.test(endpoint)) {
+  if (
+    storyDiscussionFixture &&
+    endpoint === '/api/v1/posts' &&
+    (body as { post_type?: string } | undefined)?.post_type === 'story'
+  ) {
     return Promise.resolve(storyDiscussionResponse() as T)
   }
   return clientRequestPost.call(this, endpoint, body, options) as Promise<T>

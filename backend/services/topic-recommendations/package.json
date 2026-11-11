@@ -29,6 +29,7 @@
     "@queues/entity-listeners": "workspace:^",
     "@queues/rss-feed-maintenance": "workspace:^",
     "@services/entity-cache": "workspace:^",
+    "@services/entity-fetch": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/post-publication": "workspace:^",
@@ -45,7 +46,6 @@
   },
   "devDependencies": {
     "@services/elections-votes": "workspace:^",
-    "@services/entity-fetch": "workspace:^",
     "@services/web-risk": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.12.3"

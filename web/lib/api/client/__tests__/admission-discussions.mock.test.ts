@@ -17,13 +17,13 @@ describe('admission-controlled discussion clients', () => {
   afterEach(() => vi.clearAllMocks())
 
   it('sends an idempotency key for story discussions', async () => {
-    mockPost.mockResolvedValueOnce({ post: {}, story: {} })
+    mockPost.mockResolvedValueOnce({ post: {} })
 
     await createStoryPostFromStory('story-1')
 
     expect(mockPost).toHaveBeenCalledWith(
-      '/api/v1/stories/story-1/discussions',
-      {},
+      '/api/v1/posts',
+      { post_type: 'story', story_id: 'story-1' },
       { headers: { 'Idempotency-Key': expect.any(String) } },
     )
   })

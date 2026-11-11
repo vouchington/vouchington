@@ -198,15 +198,12 @@ describe('validateScopeSet', () => {
   })
 
   it('requires post read consent for topic recommendation writes', () => {
-    expect(SCOPE_DEFINITIONS['topic-recommendations:write']).toMatchObject({
+    expect(SCOPE_DEFINITIONS['posts:write']).toMatchObject({
       requires: 'posts:read',
-      resource: 'topic-recommendations',
+      resource: 'posts',
     })
-    expect(withScopePrerequisites(['topic-recommendations:write'])).toEqual([
-      'posts:read',
-      'topic-recommendations:write',
-    ])
-    expect(hasScope(['posts:read'], 'topic-recommendations:write')).toBe(false)
+    expect(withScopePrerequisites(['posts:write'])).toEqual(['posts:read', 'posts:write'])
+    expect(hasScope(['posts:read'], 'posts:write')).toBe(false)
   })
 
   it.each([['bookmarks'], ['lists'], ['notifications'], ['preferences'], ['profile']] as const)(

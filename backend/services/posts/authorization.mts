@@ -119,10 +119,11 @@ export async function loadWritablePost(
   options: QueryOptions = { readOnly: false },
   knownPost?: Post,
 ): Promise<{ post: Post; communityMemberRole: CommunityMemberRole | null }> {
-  const { post, nodes, posts } = await loadPostWriteThread(id, options, knownPost)
-  if (nodes.some(node => node.post_type === 'topic_recommendation'))
-    throw createHttpError(404, 'Post not found')
-  const visible = await canViewDelegatedPostsBatch(user, posts, options)
+  const { post, posts } = await loadPostWriteThread(id, options, knownPost)
+  const visible =
+    post.post_type === 'topic_recommendation' && operation !== 'reply'
+      ? new Map([[post.id, await canViewPost(user, post)]])
+      : await canViewDelegatedPostsBatch(user, posts, options)
   if (!posts.every(node => visible.get(node.id))) throw createHttpError(404, 'Post not found')
   const communityMemberRole = await getDelegatedDeleteCommunityMemberRole(
     user,
@@ -162,7 +163,7 @@ function canModerateCommunityPost(
   return Boolean(currentUser && post.community_id && (role === 'owner' || role === 'moderator'))
 }
 
-/** Recheck the delegated actor while its author lifecycle fence is held. */
+/** Recheck that the delegated actor still exists and is active before mutating posts. */
 export async function assertDelegatedPostActorActive(
   userId: string,
   options: QueryOptions,

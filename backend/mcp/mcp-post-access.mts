@@ -8,10 +8,11 @@ import {
 } from '@services/posts'
 import { canViewPostsBatch } from '@services/posts/check-privacy-access'
 import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
-import type { BasicUser } from '@services/users/types'
+import type { BasicUser, PrivateUser } from '@services/users/types'
 import { requirePrivateToolUser } from './private-user.mts'
 
 type ReadableThread = {
+  viewer?: PrivateUser
   /** The requested post. */
   post: Post
   /** Its thread root, which is `post` itself for a root post. */
@@ -23,14 +24,8 @@ type ReadableThread = {
 /**
  * Resolves the post an MCP caller may read, or null when it answers as not found.
  *
- * MCP is "parity minus private data". A reply is readable when it and its thread root pass the
- * shared direct-read policy (`canViewPostsBatch`, the policy behind the REST routes) as a
- * signed-out reader. Every rule in that policy only ever adds access for a signed-in viewer (the
- * author, audience members, community members, staff), so the signed-out answer is exactly the
- * owner's answer minus what is visible through private visibility: a private post, a private share
- * or community membership, and the author's own not-yet-cleared posts all answer as not found, even
- * to their author. A comment between the root and the post does not matter: a deleted or
- * unmoderated one is a placeholder in the thread, never a reason to hide a valid reply.
+ * Uses the same authenticated viewer and shared direct-read policy as REST, including
+ * creator access to pending/private posts. Anonymous author fields remain masked by projection.
  *
  * A deleted or unmoderated requested comment is a `placeholder` when a valid reply sits below it
  * within the look-down limits, and not found otherwise, as in the REST twin.
@@ -44,20 +39,18 @@ export async function resolveReadableThread(
 ): Promise<ReadableThread | null> {
   if (!isUUID(idOrSlug) && !isSlug(idOrSlug)) return null
   const [post] = await getPostsOrDeletedCommentStubs([idOrSlug])
-  if (!post || BLOCKED_POST_TYPES.has(post.post_type)) return null
+  if (!post) return null
   const root = post.root_post_id ? await getPostByAnyCached(post.root_post_id) : post
-  if (!root || BLOCKED_POST_TYPES.has(root.post_type)) return null
+  if (!root) return null
 
-  // Anonymous access is a subset of authenticated access; still verify the credential owner exists.
-  await requirePrivateToolUser(currentUser)
-  const state = await getRequestedPostReadState(null, post, post.root_post_id ? root : null)
-  return state ? { post, root, state } : null
+  const viewer = await requirePrivateToolUser(currentUser)
+  const state = await getRequestedPostReadState(viewer, post, post.root_post_id ? root : null)
+  return state ? { post, root, state, viewer } : null
 }
 
 /**
- * Resolves many posts at once with exactly the visibility `resolveReadableThread` gives each one,
- * in the order of `postIds`, except that a placeholder answers null: the post itself, not a
- * stand-in. A page runs one cached post read, one cached root read, one `requirePrivateToolUser`
+ * Resolves public list-item posts in `postIds` order; placeholders answer null rather than
+ * returning a stand-in. Authenticated by-id reads use `resolveReadableThread`. A page runs one cached post read, one cached root read, one `requirePrivateToolUser`
  * and one `canViewPostsBatch`, however many posts it holds. Takes post ids only; an entry that is
  * not a UUID is not found.
  */

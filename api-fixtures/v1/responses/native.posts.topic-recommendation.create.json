@@ -1,0 +1,35 @@
+{
+  "post": {
+    "created_at": "2026-07-14T00:00:00Z",
+    "created_by_id": "user-abc",
+    "id": "70000000-0000-7000-8000-000000005597",
+    "is_anonymous": false,
+    "markdown": "Recommendation body",
+    "parent_post_id": null,
+    "post_type": "topic_recommendation",
+    "root_post_id": null,
+    "slug": "native-topic",
+    "title": "Native recommendation",
+    "topic_recommendation": {
+      "aliases": ["native topic"],
+      "approval_error_message": null,
+      "created_topic_id": null,
+      "created_topic_slug": null,
+      "example_referral_link": null,
+      "hostname": null,
+      "hostname_id": null,
+      "hostnames": [],
+      "landing_page_urls": [],
+      "post_id": "70000000-0000-7000-8000-000000005597",
+      "rejection_reason": null,
+      "reviewed_at": null,
+      "reviewed_by_id": null,
+      "status": "pending",
+      "topic_markdown": "Recommendation body",
+      "topic_slug": "native-topic",
+      "topic_title": "Native Topic",
+      "topic_type": "topic"
+    },
+    "updated_at": "2026-07-14T00:00:00Z"
+  }
+}

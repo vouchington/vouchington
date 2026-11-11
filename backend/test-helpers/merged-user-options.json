@@ -433,7 +433,12 @@
       "option": "set",
       "args": {
         "predicate": "save",
-        "targets": [{ "entity_type": "post", "entity": "00000000-0000-4000-8000-000000000001" }]
+        "targets": [
+          {
+            "entity_type": "post",
+            "entity": "00000000-0000-4000-8000-000000000001"
+          }
+        ]
       },
       "routes": ["PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate"]
     },
@@ -481,25 +486,37 @@
     {
       "target": "read_community",
       "option": "list_items",
-      "args": { "community_id": "sample", "item_type": "rss_feed" },
+      "args": {
+        "community_id": "sample",
+        "item_type": "rss_feed"
+      },
       "routes": ["GET:/api/v1/communities/:idOrSlug/list-items/rss-feeds"]
     },
     {
       "target": "read_community",
       "option": "list_items",
-      "args": { "community_id": "sample", "item_type": "post" },
+      "args": {
+        "community_id": "sample",
+        "item_type": "post"
+      },
       "routes": ["GET:/api/v1/communities/:idOrSlug/list-items/posts"]
     },
     {
       "target": "read_community",
       "option": "list_items",
-      "args": { "community_id": "sample", "item_type": "url_hostname" },
+      "args": {
+        "community_id": "sample",
+        "item_type": "url_hostname"
+      },
       "routes": ["GET:/api/v1/communities/:idOrSlug/list-items/domains"]
     },
     {
       "target": "read_community",
       "option": "list_items",
-      "args": { "community_id": "sample", "item_type": "url" },
+      "args": {
+        "community_id": "sample",
+        "item_type": "url"
+      },
       "routes": ["GET:/api/v1/communities/:idOrSlug/list-items/urls"]
     },
     {

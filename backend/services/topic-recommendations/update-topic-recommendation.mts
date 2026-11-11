@@ -1,3 +1,4 @@
+import { assertDelegatedPostActorActive } from '@services/posts/authorization'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import onError from '@modules/on-error'
 import { currentUserCanEditTopicRecommendation } from './authorization.mts'
@@ -22,6 +23,7 @@ export async function updateTopicRecommendation(
   currentUser: PrivateUser,
   recommendation: TopicRecommendationPost,
   changes: UpdateTopicRecommendationInput,
+  context: { delegated?: boolean } = {},
 ): Promise<TopicRecommendationPost> {
   try {
     assert(currentUserCanEditTopicRecommendation(currentUser, recommendation), 403, 'Forbidden')
@@ -33,6 +35,7 @@ export async function updateTopicRecommendation(
     assertValidTopicRecommendationInput(changes)
 
     await using query = await beginTransaction()
+    if (context.delegated) await assertDelegatedPostActorActive(currentUser.id, { query })
     const options = { query }
     await lockTopicRecommendationForMutation(query, recommendation.id)
     const lockedRecommendationQuery = await query(sql`/* updateTopicRecommendation */

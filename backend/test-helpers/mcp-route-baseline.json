@@ -473,16 +473,6 @@
         "idempotentHint": true
       }
     },
-    "F46": {
-      "scopes": ["posts:read", "topic-recommendations:write"],
-      "roles": null,
-      "plan": "plus",
-      "annotations": {
-        "readOnlyHint": false,
-        "destructiveHint": true,
-        "idempotentHint": true
-      }
-    },
     "F47": {
       "scopes": ["communities:read"],
       "roles": null,
@@ -636,15 +626,6 @@
         "idempotentHint": true
       }
     },
-    "F64": {
-      "scopes": ["posts:read"],
-      "roles": null,
-      "plan": "free",
-      "annotations": {
-        "readOnlyHint": true,
-        "idempotentHint": true
-      }
-    },
     "F65": {
       "scopes": ["topics:read"],
       "roles": null,
@@ -744,16 +725,6 @@
     },
     "F75": {
       "scopes": ["referral-links:read", "referral-links:write"],
-      "roles": null,
-      "plan": "plus",
-      "annotations": {
-        "readOnlyHint": false,
-        "destructiveHint": true,
-        "idempotentHint": false
-      }
-    },
-    "F76": {
-      "scopes": ["posts:read", "topic-recommendations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -863,16 +834,6 @@
         "idempotentHint": true
       }
     },
-    "F87": {
-      "scopes": ["posts:read", "topic-recommendations:write"],
-      "roles": null,
-      "plan": "plus",
-      "annotations": {
-        "readOnlyHint": false,
-        "destructiveHint": false,
-        "idempotentHint": true
-      }
-    },
     "F88": {
       "scopes": ["financial-profile:read", "financial-profile:write"],
       "roles": null,
@@ -930,16 +891,6 @@
       "annotations": {
         "readOnlyHint": true,
         "idempotentHint": true
-      }
-    },
-    "F94": {
-      "scopes": ["community-moderation:read", "community-moderation:write"],
-      "roles": null,
-      "plan": "plus",
-      "annotations": {
-        "readOnlyHint": false,
-        "destructiveHint": false,
-        "idempotentHint": false
       }
     },
     "F95": {
@@ -1110,7 +1061,6 @@
     ],
     "I048": [["action", "body_text", "id"]],
     "I049": [["csv"]],
-    "I050": [["name"]],
     "I051": [["id", "private_note", "reason_code", "status"]],
     "I052": [["category_text", "topic_id"]],
     "I053": [["body", "community_id", "userId"]],
@@ -1154,7 +1104,6 @@
     "I068": [["after", "limit", "q", "sort"]],
     "I069": [["after", "community_id", "item_type", "limit"]],
     "I070": [["after", "community_id", "limit", "role"]],
-    "I071": [["after", "community_id", "limit", "q", "sort"]],
     "I072": [
       [
         "after",
@@ -1187,7 +1136,6 @@
       ]
     ],
     "I075": [["after", "hostname", "limit", "query", "sort", "topic"]],
-    "I076": [["after", "limit", "topic"]],
     "I077": [["after", "limit", "list_id", "media_type"]],
     "I078": [["entity_id", "item_type"]],
     "I079": [
@@ -1253,7 +1201,6 @@
     "I090": [["after", "limit", "rss_feed_id"]],
     "I091": [["crawl_id", "rss_feed_id"]],
     "I092": [["after", "limit", "source"]],
-    "I093": [["after", "limit", "min_score", "time_range"]],
     "I094": [
       [
         "after",
@@ -1270,7 +1217,6 @@
     "I095": [["topic_id"]],
     "I096": [["children_after", "children_limit", "hierarchy", "topic_id"]],
     "I097": [["topic_id_a", "topic_id_b", "vertical"]],
-    "I098": [["after", "limit", "post_type", "time_range", "topic_id"]],
     "I099": [["after", "limit", "time_range"]],
     "I100": [["after", "limit", "q"]],
     "I101": [["user_id"]],
@@ -1304,22 +1250,14 @@
         "categories",
         "data_point_vertical",
         "declared_language",
+        "example_referral_link",
         "id",
         "is_anonymous",
+        "landing_page_urls",
         "markdown",
         "privacy",
         "slug",
         "structured_data",
-        "title"
-      ]
-    ],
-    "I111": [["label", "link_id"]],
-    "I112": [
-      [
-        "example_referral_link",
-        "id",
-        "landing_page_urls",
-        "markdown",
         "title",
         "topic_aliases",
         "topic_hostname",
@@ -1330,6 +1268,7 @@
         "topic_type"
       ]
     ],
+    "I111": [["label", "link_id"]],
     "I113": [
       [
         "community_memberships_visibility",
@@ -1372,17 +1311,28 @@
         "community_id",
         "data_point_vertical",
         "declared_language",
+        "example_referral_link",
         "idempotency_key",
         "images",
         "is_anonymous",
+        "landing_page_urls",
         "markdown",
         "parent_post_id",
         "post_type",
         "privacy",
         "review_topic_ratings",
+        "rss_feed_item_id",
         "slug",
+        "story_id",
         "structured_data",
         "title",
+        "topic_aliases",
+        "topic_hostname",
+        "topic_hostnames",
+        "topic_markdown",
+        "topic_slug",
+        "topic_title",
+        "topic_type",
         "url",
         "url_id"
       ]
@@ -1392,22 +1342,6 @@
     "I120": [["handle", "link_type", "name", "url"]],
     "I121": [["label", "referral_program_id", "url"]],
     "I122": [["entity_id", "entity_type", "idempotency_key", "note", "reason"]],
-    "I123": [
-      [
-        "example_referral_link",
-        "idempotency_key",
-        "landing_page_urls",
-        "markdown",
-        "title",
-        "topic_aliases",
-        "topic_hostname",
-        "topic_hostnames",
-        "topic_markdown",
-        "topic_slug",
-        "topic_title",
-        "topic_type"
-      ]
-    ],
     "I124": [
       [
         "credit_score_range",
@@ -1424,8 +1358,6 @@
       ["audience", "rss_feed_item_id"]
     ],
     "I128": [["follow", "rss_feed_url"]],
-    "I129": [["idempotency_key", "rss_feed_item_id"]],
-    "I130": [["idempotency_key", "story_id"]],
     "I131": [["domain", "name", "reason"]],
     "I132": [["domain", "name"]],
     "I133": [["domains_of"]],
@@ -1445,7 +1377,6 @@
     ],
     "I136": [["after", "community", "limit"]],
     "I137": [["community", "range"]],
-    "I138": [["community", "window"]],
     "I139": [["community"]],
     "I140": [["action_type", "after", "community", "limit"]],
     "I141": [["after", "community", "limit", "sort"]],
@@ -3165,19 +3096,6 @@
         "decision": false
       }
     ],
-    "DELETE:/api/v1/topic-recommendations/:id": [
-      {
-        "audience": "user",
-        "facts": "F46",
-        "inputFields": "I001",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "withdraw_topic_recommendation",
-          "option": null
-        },
-        "decision": false
-      }
-    ],
     "GET:/api/v1/communities": [
       {
         "audience": "user",
@@ -4128,19 +4046,6 @@
         "decision": false
       }
     ],
-    "PATCH:/api/v1/topic-recommendations/:id": [
-      {
-        "audience": "user",
-        "facts": "F76",
-        "inputFields": "I112",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "update_topic_recommendation",
-          "option": null
-        },
-        "decision": false
-      }
-    ],
     "PATCH:/api/v1/users/:idOrSlug": [
       {
         "audience": "user",
@@ -4427,19 +4332,6 @@
         "decision": false
       }
     ],
-    "POST:/api/v1/topic-recommendations": [
-      {
-        "audience": "user",
-        "facts": "F87",
-        "inputFields": "I123",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "create_topic_recommendation",
-          "option": null
-        },
-        "decision": false
-      }
-    ],
     "PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate": [
       {
         "audience": "user",
@@ -4717,38 +4609,6 @@
           },
           "decision": false,
           "inputFields": "I181",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/rss-feed-items/:id/discussions": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F80",
-          "operation": {
-            "tool": "start_discussion",
-            "option": "rss_feed_item"
-          },
-          "decision": false,
-          "inputFields": "I129",
-          "requestBodyFields": null
-        }
-      ]
-    },
-    "POST:/api/v1/stories/:storyId/discussions": {
-      "pullRequest": 2966,
-      "contracts": [
-        {
-          "audience": "user",
-          "facts": "F80",
-          "operation": {
-            "tool": "start_discussion",
-            "option": "story"
-          },
-          "decision": false,
-          "inputFields": "I130",
           "requestBodyFields": null
         }
       ]

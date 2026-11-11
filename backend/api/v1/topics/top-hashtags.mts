@@ -11,10 +11,10 @@ import {
   type TopHashtagCursor,
   type TopHashtagMapping,
 } from '@services/topics'
-import app from '../../../app.mts'
-import { apiQuery } from '../../../api-query-contract.mts'
-import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import app from '../../app.mts'
+import { apiQuery } from '../../api-query-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
+import { requireAuth } from '../../response-helpers.mts'
 
 const parser = createPaginationParser({
   cursor: { type: 'score' },
@@ -25,12 +25,12 @@ const filterQuery = defineQueryContract({
   mapping: queryEnum(['all', 'linked', 'unlinked'] as const),
 })
 
-app.route('/api/v1/topic-recommendations/top-hashtags').get(async (ctx: Context) => {
-  apiQuery('GET:/api/v1/topic-recommendations/top-hashtags', parser, filterQuery)
-  const currentUser = await requireAuth(ctx, 'GET:/api/v1/topic-recommendations/top-hashtags')
+app.route('/api/v1/topics/top-hashtags').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/topics/top-hashtags', parser, filterQuery)
+  const currentUser = await requireAuth(ctx, 'GET:/api/v1/topics/top-hashtags')
   const pagination = parseAndValidatePaginatedRequest(
     ctx,
-    'GET:/api/v1/topic-recommendations/top-hashtags',
+    'GET:/api/v1/topics/top-hashtags',
     parser,
     // A repeated `q` has always been ignored rather than rejected.
     {

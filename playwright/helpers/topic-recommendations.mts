@@ -32,7 +32,7 @@ export async function seedTopicRecommendations(browser: Browser, testInfo: TestI
     // Create pending recommendation
     await page.evaluate(
       async data => {
-        const res = await fetch('/api/v1/topic-recommendations', {
+        const res = await fetch('/api/v1/posts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -41,6 +41,7 @@ export async function seedTopicRecommendations(browser: Browser, testInfo: TestI
         if (!res.ok) throw new Error(`Create rec1 failed: ${res.status} ${await res.text()}`)
       },
       {
+        post_type: 'topic_recommendation',
         title: `Recommend ${topicTitle}`,
         markdown: 'Playwright test recommendation for E2E coverage.',
         topic_title: topicTitle,
@@ -51,7 +52,7 @@ export async function seedTopicRecommendations(browser: Browser, testInfo: TestI
     // Create recommendation to be approved
     const rec2 = await page.evaluate(
       async data => {
-        const res = await fetch('/api/v1/topic-recommendations', {
+        const res = await fetch('/api/v1/posts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -61,6 +62,7 @@ export async function seedTopicRecommendations(browser: Browser, testInfo: TestI
         return res.json() as Promise<{ post: { id: string } }>
       },
       {
+        post_type: 'topic_recommendation',
         title: `Recommend ${approvedTopicTitle}`,
         markdown: 'Playwright approved recommendation.',
         topic_title: approvedTopicTitle,
@@ -72,7 +74,7 @@ export async function seedTopicRecommendations(browser: Browser, testInfo: TestI
     // Create recommendation to be rejected
     const rec3 = await page.evaluate(
       async data => {
-        const res = await fetch('/api/v1/topic-recommendations', {
+        const res = await fetch('/api/v1/posts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -82,6 +84,7 @@ export async function seedTopicRecommendations(browser: Browser, testInfo: TestI
         return res.json() as Promise<{ post: { id: string } }>
       },
       {
+        post_type: 'topic_recommendation',
         title: `Recommend ${rejectedTopicTitle}`,
         markdown: 'Playwright rejected recommendation.',
         topic_title: rejectedTopicTitle,
@@ -92,7 +95,7 @@ export async function seedTopicRecommendations(browser: Browser, testInfo: TestI
 
     // Approve rec2 (test user is admin)
     await page.evaluate(async id => {
-      const res = await fetch(`/api/v1/topic-recommendations/${id}/approvals`, {
+      const res = await fetch(`/api/v1/posts/${id}/approvals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -103,7 +106,7 @@ export async function seedTopicRecommendations(browser: Browser, testInfo: TestI
     // Reject rec3
     await page.evaluate(
       async args => {
-        const res = await fetch(`/api/v1/topic-recommendations/${args.id}/rejections`, {
+        const res = await fetch(`/api/v1/posts/${args.id}/rejections`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

@@ -1,4 +1,4 @@
-import { deletePost } from '@services/posts'
+import { deletePostWrite } from '@services/post-writes'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { requireActiveToolUser } from './private-user.mts'
 import { loadWritablePost, POST_ID_SCHEMA, POST_WRITE_SCOPES } from './post-write-tool-support.mts'
@@ -39,7 +39,7 @@ const tool: Tool<{ id: string }, { success: true }> = {
 
 async function deleteAuthorizedPost(user: PrivateUser, id: string): Promise<void> {
   const { post, communityMemberRole } = await loadWritablePost(user, id, 'delete')
-  await deletePost(user, post, { communityMemberRole, delegated: true })
+  await deletePostWrite(user, post, { communityMemberRole, delegated: true })
 }
 
 export default tool

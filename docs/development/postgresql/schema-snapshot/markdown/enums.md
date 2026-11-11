@@ -146,7 +146,6 @@
 - `spending:write`
 - `topic-claims:read`
 - `topic-claims:write`
-- `topic-recommendations:write`
 - `topics:read`
 - `users:read`
 - `votes:write`
@@ -1508,9 +1507,6 @@
 - `authored.create`
 - `posts.create`
 - `communities.posts.create`
-- `rss-feed-items.discussions.create`
-- `stories.discussions.create`
-- `topic-recommendations.create`
 - `my.import.topics.recommendation`
 - `communities.create`
 - `reports.create`

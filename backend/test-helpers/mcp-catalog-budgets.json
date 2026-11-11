@@ -5,23 +5,23 @@
     "user": {
       "all": {
         "on": {
-          "count": 76,
-          "list": 255000,
-          "core": 108000,
-          "output": 238000
+          "count": 72,
+          "list": 241000,
+          "core": 105000,
+          "output": 225000
         }
       },
       "Reader": {
         "on": {
           "count": 9,
           "list": 61000,
-          "core": 25000,
+          "core": 24000,
           "output": 55000
         }
       },
       "Plus": {
         "on": {
-          "count": 68,
+          "count": 64,
           "list": 236000,
           "core": 110000,
           "output": 240000

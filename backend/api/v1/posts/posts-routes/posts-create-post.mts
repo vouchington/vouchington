@@ -1,3 +1,6 @@
+import { asTopicRecommendationPost } from '@services/topic-recommendations'
+import { projectPublicTopicRecommendation } from '@services/topic-recommendations/public-projection'
+import { executeCreatePostContribution } from '@services/post-writes/execute'
 import type { Context } from '@jongleberry/api-server'
 import {
   CONTRIBUTION_ADMISSION_IN_PROGRESS,
@@ -6,18 +9,19 @@ import {
 import { verifyCaptchaOrAttestation } from '@services/captcha'
 import { attachWrittenPostProvenance } from '@services/content-provenance'
 import { assessRecaptchaToken } from '@services/recaptcha'
-import {
-  admitRouteContribution,
-  contributionPolicySourceForPostType,
-} from '@services/contribution-gating'
+import { admitRouteContribution } from '@services/contribution-gating'
 import { isHoneypotTriggered } from '@services/honeypot'
 import type { CreatePostInput } from '@services/posts'
-import { executeCreatePostContribution } from '@services/posts/execute-contribution'
-import { isSupportedPostType, validateCreatePostInput } from '@services/posts/create/validation'
+import {
+  validatePostWriteInput,
+  currentUserCanCreatePostWrite,
+  postWriteAdmission,
+  assertPostWriteBeforeCommit,
+} from '@services/post-writes'
+import { isSupportedPostType } from '@services/posts/create/validation'
 import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
 import {
   assertOfficialAccountCanCreatePost,
-  currentUserCanCreatePost,
   getAuthorizedPostContributionMembershipPlan,
 } from '@services/posts/authorization'
 import { assertNotSuspended, isAdminUser } from '@services/users'
@@ -65,14 +69,12 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts')
   const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
-  if (!currentUserCanCreatePost(currentUser)) {
-    ctx.throw(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
-  }
-
   const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
-
   const parsedBody = await parseJsonBody(ctx, '1mb')
   const body = parsedBody as CreatePostRequestBody
+  if (!currentUserCanCreatePostWrite(currentUser, body)) {
+    ctx.throw(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
+  }
 
   if (isHoneypotTriggered(body as Record<string, unknown>)) {
     validateRequestContract(ctx, 'POST:/api/v1/posts', { body })
@@ -112,12 +114,12 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
     'Use the community posts endpoint to create community posts',
   )
   const admissionPostType = isSupportedPostType(body.post_type) ? body.post_type : 'discussion'
-  let isBareOneClickLink = false
+  let rssFeedItem: Awaited<ReturnType<typeof validatePostWriteInput>>
+  let isCaptchaExemptCreation = false
   const admission = await admitRouteContribution({
     currentUser,
     membershipPlan,
-    source: contributionPolicySourceForPostType(admissionPostType, isAdminUser(currentUser)),
-    scope: 'global',
+    ...postWriteAdmission(body, isAdminUser(currentUser)),
     postType: admissionPostType,
     idempotencyKeyHeader: ctx.req.headers['idempotency-key'],
     intent: { route: 'posts.create', body },
@@ -134,26 +136,32 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
       assertOfficialAccountCanCreatePost(currentUser, body.post_type)
       validateRequestContract(ctx, 'POST:/api/v1/posts', { body })
       // The generated contract establishes string/array shape before inspecting user text.
-      isBareOneClickLink =
+      isCaptchaExemptCreation =
         body.post_type === 'link' &&
         !!body.url_id &&
         !body.url &&
         !body.title?.trim() &&
         !body.markdown?.trim() &&
         !body.images?.length
-      await validateCreatePostInput(currentUser, body, membershipPlan)
-      if (!isBareOneClickLink)
+      rssFeedItem = await validatePostWriteInput(currentUser, body, membershipPlan)
+      isCaptchaExemptCreation ||= rssFeedItem !== undefined || body.post_type === 'story'
+      if (!isCaptchaExemptCreation)
         await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'posts.create' })
     },
-    beforeCommit: () =>
-      assessRecaptchaToken({
-        currentUser,
-        token: body.recaptcha_token,
-        expectedAction: body.post_type === 'comment' ? 'create_comment' : 'create_post',
-        ip: ctx.ip,
-      }),
+    beforeCommit: async () => {
+      await assertPostWriteBeforeCommit(body)
+      if (body.post_type !== 'story' && rssFeedItem === undefined)
+        await assessRecaptchaToken({
+          currentUser,
+          token: body.recaptcha_token,
+          expectedAction: body.post_type === 'comment' ? 'create_comment' : 'create_post',
+          ip: ctx.ip,
+        })
+    },
     execute: query =>
-      executeCreatePostContribution(query, currentUser, provenance, body, membershipPlan),
+      executeCreatePostContribution(query, currentUser, provenance, body, membershipPlan, {
+        rssFeedItem,
+      }),
   })
   if (admission.kind === 'in_progress') {
     ctx.set('Retry-After', String(admission.retryAfterSeconds))
@@ -167,5 +175,12 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
   // the checked-in shape on this replay path, preserving exact replay semantics.
   if (admission.kind === 'replay') validateRequestContract(ctx, 'POST:/api/v1/posts', { body })
   ctx.setStatus(201)
-  ctx.json({ post: await attachWrittenPostProvenance(admission.response, currentUser) })
+  const post = await attachWrittenPostProvenance(admission.response, currentUser)
+  const recommendation = asTopicRecommendationPost(post)
+  ctx.assert(
+    post.post_type !== 'topic_recommendation' || recommendation,
+    500,
+    'Invalid recommendation response',
+  )
+  ctx.json({ post: recommendation ? projectPublicTopicRecommendation(recommendation) : post })
 })

@@ -82,6 +82,8 @@
         "@services/entity-relation-actions",
         // Required package edge; classifier execution is consumed by the AI worker, not routes.
         "@services/post-classifier",
+        // Required runtime edge; shared post writes are consumed by API routes and MCP.
+        "@services/post-writes",
       ],
     },
     "backend/config": {

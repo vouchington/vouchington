@@ -1,3 +1,4 @@
+import type { TopicRecommendationInputFields } from './topic-recommendation-input.mts'
 import type { PublicContentProvenance, StaffContentProvenance } from './content-provenance.mts'
 import type { BasicUser } from './user.mts'
 
@@ -160,7 +161,7 @@ export type PostElection = {
   votes_count_down: number
 }
 
-export type CreatePostUpdates = {
+export type CreatePostUpdates = TopicRecommendationInputFields & {
   post_type?: PostType
   title?: string
   markdown?: string
@@ -186,6 +187,8 @@ export type UpdatePostChanges = CreatePostUpdates & {
 }
 
 export type CreatePostInput = Omit<CreatePostUpdates, 'archive'> & {
+  story_id?: string
+  rss_feed_item_id?: string
   review_topic_ratings?: Array<{
     topic_id: string
     rating: number

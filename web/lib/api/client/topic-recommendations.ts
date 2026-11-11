@@ -77,7 +77,7 @@ export async function fetchTopHashtags(
     signal?: AbortSignal
   } = {},
 ): Promise<TopHashtagsResponseBody> {
-  return clientApi.get('/api/v1/topic-recommendations/top-hashtags', {
+  return clientApi.get('/api/v1/topics/top-hashtags', {
     searchParams: {
       q: options.q,
       mapping: options.mapping,
@@ -91,9 +91,11 @@ export async function fetchTopHashtags(
 export async function createTopicRecommendation(
   data: TopicRecommendationMutationInput,
 ): Promise<TopicRecommendationMutationResponseBody> {
-  const intent = { endpoint: '/api/v1/topic-recommendations', body: data }
+  const endpoint = '/api/v1/posts'
+  const body = { ...data, post_type: 'topic_recommendation' as const }
+  const intent = { endpoint, body }
   return admissionIdempotency.run(intent, idempotencyKey =>
-    clientApi.post<TopicRecommendationMutationResponseBody>('/api/v1/topic-recommendations', data, {
+    clientApi.post<TopicRecommendationMutationResponseBody>(endpoint, body, {
       headers: { 'Idempotency-Key': idempotencyKey },
     }),
   )
@@ -103,14 +105,11 @@ export async function updateTopicRecommendation(
   id: string,
   data: TopicRecommendationUpdateInput,
 ): Promise<TopicRecommendationMutationResponseBody> {
-  return clientApi.patch<TopicRecommendationMutationResponseBody>(
-    `/api/v1/topic-recommendations/${id}`,
-    data,
-  )
+  return clientApi.patch<TopicRecommendationMutationResponseBody>(`/api/v1/posts/${id}`, data)
 }
 
 export async function withdrawTopicRecommendation(id: string): Promise<void> {
-  return clientApi.delete(`/api/v1/topic-recommendations/${id}`)
+  return clientApi.delete(`/api/v1/posts/${id}`)
 }
 
 export async function approveTopicRecommendation(id: string): Promise<{
@@ -119,14 +118,14 @@ export async function approveTopicRecommendation(id: string): Promise<{
   topic_slug: string
   topic_type: 'topic' | 'referral_program' | 'card'
 }> {
-  return clientApi.post(`/api/v1/topic-recommendations/${id}/approvals`, {})
+  return clientApi.post(`/api/v1/posts/${id}/approvals`, {})
 }
 
 export async function rejectTopicRecommendation(
   id: string,
   reason?: string,
 ): Promise<PostMutationResponseBody> {
-  return clientApi.post(`/api/v1/topic-recommendations/${id}/rejections`, { reason })
+  return clientApi.post(`/api/v1/posts/${id}/rejections`, { reason })
 }
 
 export interface TopicRecommendationDuplicatesResult {
@@ -143,7 +142,7 @@ export async function fetchTopicRecommendationDuplicates(options: {
   signal?: AbortSignal
 }): Promise<TopicRecommendationDuplicatesResult> {
   const { signal, topic_aliases, ...rest } = options
-  return clientApi.get('/api/v1/topic-recommendations/duplicates', {
+  return clientApi.get('/api/v1/topics/duplicates', {
     searchParams: {
       ...rest,
       ...(topic_aliases?.length ? { topic_aliases: topic_aliases.join(',') } : {}),

@@ -1,9 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
+  createTestUserWithAge,
+  CONTRIBUTING_USER_AGE_MS,
   insertTestRssFeedItem,
   createTestUrlWithHostname,
   softDeleteRssFeedItemsForTest,
@@ -32,6 +34,8 @@ describe('discussion', () => {
     urlId = await createTestUrlWithHostname()
   })
 
+  afterEach(() => vi.unstubAllEnvs())
+
   async function makeItem(title?: string) {
     const random = Math.random().toString(36).slice(2, 10)
     const itemData = { title: title ?? `Item ${random}`, link: `https://example.com/${random}` }
@@ -45,23 +49,44 @@ describe('discussion', () => {
     return { itemId, itemTitle: itemData.title }
   }
 
-  describe('POST /api/v1/rss-feed-items/:id/discussions', () => {
+  describe('POST /api/v1/posts RSS item discussion', () => {
+    it('creates an RSS discussion without a token while CAPTCHA verification is enabled', async () => {
+      vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
+      const actor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+      const { itemId } = await makeItem()
+      const request = createRequest()
+      await request.authenticateAs(actor)
+      const response = await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
+        .expect(201)
+      expect(response.body.post).toMatchObject({ post_type: 'link', url_id: urlId })
+    })
     it('returns 401 when unauthenticated', async () => {
       const { itemId } = await makeItem()
       const request = createRequest()
-      await request.post(`/api/v1/rss-feed-items/${itemId}/discussions`).expect(401)
+      await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
+        .expect(401)
     })
 
     it('returns 400 for invalid UUID', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
-      await request.post('/api/v1/rss-feed-items/not-a-uuid/discussions').expect(400)
+      await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: 'not-a-uuid' })
+        .expect(422)
     })
 
     it('returns 404 for unknown item', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
-      await request.post(`/api/v1/rss-feed-items/${randomUUID()}/discussions`).expect(404)
+      await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: randomUUID() })
+        .expect(404)
     })
 
     it('creates a link post referencing the item URL and returns it', async () => {
@@ -69,8 +94,9 @@ describe('discussion', () => {
       const request = createRequest()
       await request.authenticateAs(user)
       const response = await request
-        .post(`/api/v1/rss-feed-items/${itemId}/discussions`)
-        .expect(200)
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
+        .expect(201)
 
       expect(response.body.post).toBeDefined()
       expect(response.body.post.post_type).toBe('link')
@@ -83,13 +109,15 @@ describe('discussion', () => {
       await request.authenticateAs(user)
       const key = randomUUID()
       const first = await request
-        .post(`/api/v1/rss-feed-items/${itemId}/discussions`)
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
         .set('Idempotency-Key', key)
-        .expect(200)
+        .expect(201)
       const replay = await request
-        .post(`/api/v1/rss-feed-items/${itemId}/discussions`)
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
         .set('Idempotency-Key', key)
-        .expect(200)
+        .expect(201)
 
       expect(replay.body.post.id).toBe(first.body.post.id)
     })
@@ -100,15 +128,17 @@ describe('discussion', () => {
       await request.authenticateAs(user)
       const key = randomUUID()
       const first = await request
-        .post(`/api/v1/rss-feed-items/${itemId}/discussions`)
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
         .set('Idempotency-Key', key)
-        .expect(200)
+        .expect(201)
 
       await softDeleteRssFeedItemsForTest([itemId])
       const replay = await request
-        .post(`/api/v1/rss-feed-items/${itemId}/discussions`)
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
         .set('Idempotency-Key', key)
-        .expect(200)
+        .expect(201)
 
       expect(replay.body).toEqual(first.body)
     })
@@ -123,7 +153,7 @@ describe('discussion', () => {
       const pendingAdmission = runContributionAdmission({
         actorId: user.id,
         idempotencyKey: key,
-        intent: { route: 'rss-feed-items.discussions.create', rss_feed_item_id: itemId },
+        intent: { route: 'posts.create', body: { post_type: 'link', rss_feed_item_id: itemId } },
         beforeCommit: async () => {
           claimed.resolve()
           await release.promise
@@ -134,7 +164,8 @@ describe('discussion', () => {
 
       try {
         const response = await request
-          .post(`/api/v1/rss-feed-items/${itemId}/discussions`)
+          .post('/api/v1/posts')
+          .send({ post_type: 'link', rss_feed_item_id: itemId })
           .set('Idempotency-Key', key)
           .expect(409)
         expect(response.body.code).toBe('CONTRIBUTION_ADMISSION_IN_PROGRESS')
@@ -152,7 +183,8 @@ describe('discussion', () => {
       const request = createRequest()
       await request.authenticateAs(user)
       await request
-        .post(`/api/v1/rss-feed-items/${itemId}/discussions`)
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
         .set('Idempotency-Key', 'not-a-uuid')
         .expect(400)
     })
@@ -162,8 +194,9 @@ describe('discussion', () => {
       const request = createRequest()
       await request.authenticateAs(user)
       const response = await request
-        .post(`/api/v1/rss-feed-items/${itemId}/discussions`)
-        .expect(200)
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
+        .expect(201)
       const postSlug = response.body.post.slug
 
       await request.get(`/api/v1/posts/${postSlug}`).expect(200)
@@ -175,7 +208,10 @@ describe('discussion', () => {
       await suspendTestUser(suspendedUser.id, 'test-suspension')
       const request = createRequest()
       await request.authenticateAs(suspendedUser)
-      await request.post(`/api/v1/rss-feed-items/${itemId}/discussions`).expect(403)
+      await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
+        .expect(403)
     })
 
     it('returns 403 for a contribution-gated user (account too new)', async () => {
@@ -183,7 +219,10 @@ describe('discussion', () => {
       const gatedUser = await createTestUser()
       const request = createRequest()
       await request.authenticateAs(gatedUser)
-      await request.post(`/api/v1/rss-feed-items/${itemId}/discussions`).expect(403)
+      await request
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
+        .expect(403)
     })
 
     it('creates a link post even when the source feed is not discoverable', async () => {
@@ -207,8 +246,9 @@ describe('discussion', () => {
       const request = createRequest()
       await request.authenticateAs(user)
       const response = await request
-        .post(`/api/v1/rss-feed-items/${itemId}/discussions`)
-        .expect(200)
+        .post('/api/v1/posts')
+        .send({ post_type: 'link', rss_feed_item_id: itemId })
+        .expect(201)
       expect(response.body.post.post_type).toBe('link')
     })
   })

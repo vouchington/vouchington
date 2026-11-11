@@ -187,7 +187,7 @@ describe('vote — shared REST mutation', () => {
   })
 })
 
-describe('start_discussion — delegated contribution', () => {
+describe('create_post — delegated contribution', () => {
   it('creates and exactly replays discussions on an RSS item and its story', async () => {
     const user = await createTestPlusMcpCaller()
     await upsertSystemUser('story-teller')
@@ -196,19 +196,18 @@ describe('start_discussion — delegated contribution', () => {
     await setTestItemStoryId(item.id, story.id)
     const secondItem = await createTestRssFeedItemWithUrl(feedId)
     await setTestItemStoryId(secondItem.id, story.id)
-    let storyReplay:
-      | { args: ReturnType<typeof optionArgs>; first: Record<string, unknown> }
-      | undefined
+    let storyReplay: { args: Record<string, unknown>; first: Record<string, unknown> } | undefined
     for (const [option, entityKey, entityId] of [
       ['rss_feed_item', 'rss_feed_item_id', item.id],
       ['story', 'story_id', story.id],
     ] as const) {
-      const args = optionArgs(option, {
+      const args = {
+        post_type: option === 'story' ? 'story' : 'link',
         [entityKey]: entityId,
         idempotency_key: crypto.randomUUID(),
-      })
-      const first = await callStructuredMcpTool(user, 'start_discussion', args, DISCUSSION_SCOPES)
-      const replay = await callStructuredMcpTool(user, 'start_discussion', args, DISCUSSION_SCOPES)
+      }
+      const first = await callStructuredMcpTool(user, 'create_post', args, DISCUSSION_SCOPES)
+      const replay = await callStructuredMcpTool(user, 'create_post', args, DISCUSSION_SCOPES)
       expect(first).toEqual(replay)
       expect(first).toMatchObject({ success: true, post: { id: expect.any(String) } })
       const stored = await getPostByAny((first.post as { id: string }).id)
@@ -219,7 +218,7 @@ describe('start_discussion — delegated contribution', () => {
     expect(storyReplay).toBeDefined()
     await updateRssFeedById(feedId, { discoverable: false })
     expect(
-      await callStructuredMcpTool(user, 'start_discussion', storyReplay!.args, DISCUSSION_SCOPES),
+      await callStructuredMcpTool(user, 'create_post', storyReplay!.args, DISCUSSION_SCOPES),
     ).toEqual(storyReplay!.first)
   })
 
@@ -230,23 +229,21 @@ describe('start_discussion — delegated contribution', () => {
     await updateRssFeedById(feedId, { discoverable: false })
     const result = await callStructuredMcpTool(
       user,
-      'start_discussion',
-      optionArgs('rss_feed_item', {
-        rss_feed_item_id: item.id,
-        idempotency_key: crypto.randomUUID(),
-      }),
+      'create_post',
+      { post_type: 'link', rss_feed_item_id: item.id, idempotency_key: crypto.randomUUID() },
       DISCUSSION_SCOPES,
     )
     expect(result).toMatchObject({
       success: true,
-      post: { post_type: 'link', created_by_id: user.id },
+      post: { post_type: 'link' },
     })
     const request = createRequest()
     await request.authenticateAs(user)
     const rest = await request
-      .post(`/api/v1/rss-feed-items/${restItem.id}/discussions`)
+      .post('/api/v1/posts')
+      .send({ post_type: 'link', rss_feed_item_id: restItem.id })
       .set('Idempotency-Key', crypto.randomUUID())
-      .expect(200)
+      .expect(201)
     expect(rest.body.post).toMatchObject({ post_type: 'link', created_by_id: user.id })
   })
 
@@ -258,11 +255,12 @@ describe('start_discussion — delegated contribution', () => {
     const error = JSON.parse(
       await callRejectedMcpTool(
         user,
-        'start_discussion',
-        optionArgs(option, {
+        'create_post',
+        {
+          post_type: option === 'story' ? 'story' : 'link',
           [key]: crypto.randomUUID(),
           idempotency_key: crypto.randomUUID(),
-        }),
+        },
         DISCUSSION_SCOPES,
       ),
     )
@@ -278,11 +276,8 @@ describe('start_discussion — delegated contribution', () => {
     const error = JSON.parse(
       await callRejectedMcpTool(
         user,
-        'start_discussion',
-        optionArgs('story', {
-          story_id: story.id,
-          idempotency_key: crypto.randomUUID(),
-        }),
+        'create_post',
+        { post_type: 'story', story_id: story.id, idempotency_key: crypto.randomUUID() },
         DISCUSSION_SCOPES,
       ),
     )
@@ -290,7 +285,8 @@ describe('start_discussion — delegated contribution', () => {
     const request = createRequest()
     await request.authenticateAs(user)
     const rest = await request
-      .post(`/api/v1/stories/${story.id}/discussions`)
+      .post('/api/v1/posts')
+      .send({ post_type: 'story', story_id: story.id })
       .set('Idempotency-Key', crypto.randomUUID())
       .expect(403)
     expect(rest.body.code).toBe(FEED_NOT_DISCOVERABLE)

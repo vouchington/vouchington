@@ -8,8 +8,8 @@ import {
   isCommunityRootPostType,
   loadCommunityForViewer,
 } from '@services/communities'
-import { preparePostWithCommunityReviews, type CreatePostInput } from '@services/posts'
-import { validateCreatePostInput } from '@services/posts/create/validation'
+import { preparePostWithCommunityReviews, type CreateCommunityPostInput } from '@services/posts'
+import { validatePostWriteInput } from '@services/post-writes'
 import {
   currentUserCanCreatePost,
   getAuthorizedPostContributionMembershipPlan,
@@ -70,7 +70,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
 
   const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
 
-  const body = (await parseJsonBody(ctx, '1mb')) as CreatePostInput & {
+  const body = (await parseJsonBody(ctx, '1mb')) as CreateCommunityPostInput & {
     hp_website?: string
     hp_phone?: string
     cf_turnstile_response?: string
@@ -112,7 +112,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
         403,
         'Only admins can set a post slug',
       )
-      await validateCreatePostInput(currentUser, input, membershipPlan)
+      await validatePostWriteInput(currentUser, input, membershipPlan)
       await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'communities.create-post' })
     },
     beforeCommit: () =>

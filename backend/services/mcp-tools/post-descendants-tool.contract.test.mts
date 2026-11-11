@@ -1,3 +1,4 @@
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import {
@@ -55,10 +56,12 @@ async function comment(user: PrivateUser, parentId: string) {
 describe('read_posts.descendants — real DB', () => {
   let author: Caller
   let other: Caller
+  let admin: Caller
 
   beforeAll(async () => {
     author = asCaller(await createTestUser())
     other = asCaller(await createTestUser())
+    admin = asCaller(await createTestUser({ administrator: true }))
   })
 
   describe('pagination', () => {
@@ -140,7 +143,7 @@ describe('read_posts.descendants — real DB', () => {
   })
 
   describe('replies the public cannot see', () => {
-    it('lists a pending reply as a placeholder above its valid replies, even for its author', async () => {
+    it('matches REST pending reply summaries for creator, staff and other viewers', async () => {
       const root = await createTestPost({ user: author })
       const visible = await comment(other, root.id)
       const pending = await comment(other, root.id)
@@ -148,15 +151,17 @@ describe('read_posts.descendants — real DB', () => {
       const underPending = await comment(author, pending.id)
       const deeper = await comment(author, underPending.id)
 
-      for (const caller of [author, other]) {
+      for (const caller of [author, admin, other]) {
+        const request = createRequest()
+        await request.authenticateAs(caller)
+        const rest = await request.get(`/api/v1/posts/${root.id}/descendants`).expect(200)
         const { body } = await call(caller, { post_id: root.id })
+        expect(ids(body)).toEqual(rest.body.results.map((row: { id: string }) => row.id))
         expect(ids(body)).toEqual([visible.id, pending.id, underPending.id, deeper.id])
-        expect(body.descendants?.[1]).toMatchObject({
-          id: pending.id,
-          placeholder_state: 'unmoderated',
-          title: '',
-          created_by_id: null,
-        })
+        expect(body.descendants?.[1]?.['placeholder_state']).toBe(
+          rest.body.posts[pending.id].placeholder_state,
+        )
+        expect(body.descendants?.[1]?.['title']).toBe(rest.body.posts[pending.id].title)
       }
     })
 
@@ -187,15 +192,14 @@ describe('read_posts.descendants — real DB', () => {
 
       expect(body.descendants?.[0]).toMatchObject({
         id: anonymous.id,
-        is_anonymous: true,
-        created_by_id: null,
       })
+      expect(body.descendants?.[0]).not.toHaveProperty('created_by_id')
       expect(text).not.toContain(author.id)
     })
   })
 
-  describe('a thread the caller cannot read', () => {
-    it('answers a private, pending, deleted or missing thread as not found, and reads a reply under an unmoderated comment', async () => {
+  describe('thread access', () => {
+    it('matches REST private and pending root access, denies deleted or missing roots, and reads below an unmoderated comment', async () => {
       const privateRoot = await createTestPost({
         user: author,
         privacy: 'private',
@@ -211,13 +215,24 @@ describe('read_posts.descendants — real DB', () => {
       await setTestPostClearanceStatus(hiddenParent.id, 'pending', other.id)
       const underHidden = await comment(author, hiddenParent.id)
 
-      for (const postId of [
-        privateRoot.id,
-        pendingRoot.slug,
-        deletedRoot.id,
-        crypto.randomUUID(),
-        'No Such Post!',
-      ]) {
+      for (const root of [privateRoot, pendingRoot]) {
+        for (const caller of [author, admin, other]) {
+          const request = createRequest()
+          await request.authenticateAs(caller)
+          for (const reference of [root.id, root.slug]) {
+            const rest = await request.get(`/api/v1/posts/${reference}/descendants`)
+            expect([200, 404]).toContain(rest.status)
+            const { body } = await call(caller, { post_id: reference })
+            expect(body).toMatchObject(rest.status === 200 ? { success: true } : NOT_FOUND)
+            expect(ids(body)).toEqual(
+              rest.status === 200
+                ? rest.body.results.map((row: { id: string }) => row.id)
+                : undefined,
+            )
+          }
+        }
+      }
+      for (const postId of [deletedRoot.id, crypto.randomUUID(), 'No Such Post!']) {
         expect((await call(author, { post_id: postId })).body).toEqual(NOT_FOUND)
       }
       expect((await call(author, { post_id: underHidden.id })).body).toMatchObject({

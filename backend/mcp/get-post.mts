@@ -14,7 +14,7 @@ type ToolResult = { success: true; post: McpPost } | { success: false; error: st
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; a comment needs a fully public thread root. A deleted or unmoderated comment with a valid reply below it is a placeholder (placeholder_state, no text or author). Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.',
+      'Read id/slug with REST viewer access. Hidden/missing/deleted: Post not found. Deleted/unmoderated comments with replies are placeholders unless viewer access permits their content.',
     parameters: {
       type: 'object',
       properties: {
@@ -36,7 +36,10 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     async (args: ToolArgs): Promise<ToolResult> => {
       const thread = await resolveReadableThread(currentUser, args.post_id)
       if (!thread) return { success: false, error: 'Post not found' }
-      return { success: true, post: (await toMcpPosts([thread.post], { details: true }))[0]! }
+      return {
+        success: true,
+        post: (await toMcpPosts([thread.post], { details: true, viewer: thread.viewer }))[0]!,
+      }
     },
 }
 

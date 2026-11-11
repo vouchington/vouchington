@@ -8,7 +8,7 @@ import { prepareTopicRecommendation } from '@services/topic-recommendations'
 import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
 import { callStructuredMcpTool, optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 
-const scopes = ['posts:read', 'topic-recommendations:write'] as const
+const scopes = ['posts:read', 'posts:write'] as const
 
 describe('MCP recommendation mutation Hacker News parity', () => {
   it('returns the same neutral counts on an update and a list, omitting both while hidden', async () => {
@@ -34,8 +34,11 @@ describe('MCP recommendation mutation Hacker News parity', () => {
       try {
         const updated = await callStructuredMcpTool(
           caller,
-          'update_topic_recommendation',
-          { id: recommendation.id, topic_title: `Updated ${visible} ${suffix}` },
+          'act_on_post',
+          optionArgs('edit', {
+            id: recommendation.id,
+            topic_title: `Updated ${visible} ${suffix}`,
+          }),
           scopes,
         )
         const listed = await callStructuredMcpTool(
@@ -56,7 +59,7 @@ describe('MCP recommendation mutation Hacker News parity', () => {
         expect(mutationPost.hacker_news_references).toEqual(expected)
         expect(listedPost.hacker_news_references).toEqual(expected)
         expect(mutationPost.title).toEqual(listedPost.title)
-        expect(String(listedPost.markdown)).toContain(`Example ${suffix}`)
+        expect(listedPost).not.toHaveProperty('markdown')
       } finally {
         restore()
       }

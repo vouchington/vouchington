@@ -64,6 +64,7 @@
     "@services/openai-agents": "workspace:^",
     "@services/pagination": "workspace:^",
     "@services/post-clearance": "workspace:^",
+    "@services/post-writes": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
