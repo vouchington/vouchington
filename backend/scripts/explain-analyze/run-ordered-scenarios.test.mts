@@ -4,6 +4,7 @@ import {
   BEFORE_PARTITION_RUNNERS,
   ORDERED_SHARD_STARTS,
   getOrderedRunners,
+  getShardPrelude,
   sliceOrderedRunners,
 } from './run-ordered-scenarios.mts'
 
@@ -29,7 +30,9 @@ describe('sliceOrderedRunners', () => {
 
 describe('getOrderedRunners', () => {
   it('gives each ordinary shard one segment and an unsharded run all of them in order', () => {
-    const segments = ORDINARY_EXPLAIN_SHARDS.map(shard => getOrderedRunners(shard))
+    const segments = ORDINARY_EXPLAIN_SHARDS.map(shard =>
+      getOrderedRunners(shard).slice(getShardPrelude(shard).length),
+    )
     for (const segment of segments) expect(segment.length).toBeGreaterThan(0)
     expect(segments.flat()).toEqual(BEFORE_PARTITION_RUNNERS)
     expect(getOrderedRunners(undefined)).toEqual(BEFORE_PARTITION_RUNNERS)
@@ -40,7 +43,16 @@ describe('getOrderedRunners', () => {
 
   it('opens each later ordinary shard with its declared start runner', () => {
     expect(
-      ORDINARY_EXPLAIN_SHARDS.slice(1).map(shard => getOrderedRunners(shard)[0]?.name),
+      ORDINARY_EXPLAIN_SHARDS.slice(1).map(
+        shard => getOrderedRunners(shard)[getShardPrelude(shard).length]?.name,
+      ),
     ).toEqual([...ORDERED_SHARD_STARTS])
+  })
+
+  it('replays the vote weight seed before the last shard so its membership plans keep the corpus', () => {
+    expect(getOrderedRunners('main-4')[0]?.name).toBe('seedVoteWeightDispatch')
+    expect(getOrderedRunners('main-2').map(runner => runner.name)).toContain(
+      'seedVoteWeightDispatch',
+    )
   })
 })

@@ -10,6 +10,7 @@ import { continueAfterFailure as runStep } from './scenario-failures.mts'
 import { EARLY_RUNNERS } from './run-ordered-scenarios-early.mts'
 import { LATE_RUNNERS } from './run-ordered-scenarios-late.mts'
 import { ORDINARY_EXPLAIN_SHARDS, type OrdinaryExplainShard } from './explain-shards.mts'
+import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
 
 export type OrderedRunner = () => Promise<unknown>
 
@@ -33,6 +34,17 @@ export const ORDERED_SHARD_STARTS = [
   'runNotificationVisibilityScenarios',
   'runEmbeddingReconciliationScenarios',
 ] as const
+
+// The last shard's plans (membership renewal selection, orphaned queued grants) need the mixed
+// membership corpus that the vote weight seed writes in the first segment, so that shard replays
+// the seed before its own segment. Only add a seed here that is deterministic and idempotent.
+const SHARD_PRELUDES: Partial<Record<OrdinaryExplainShard, readonly OrderedRunner[]>> = {
+  'main-4': [seedVoteWeightDispatch],
+}
+
+export function getShardPrelude(shard: OrdinaryExplainShard): readonly OrderedRunner[] {
+  return SHARD_PRELUDES[shard] ?? []
+}
 
 // Late fixture writers seed after every ordinary plan and never read the comment partitions.
 // They run at the end of the last ordinary shard.
@@ -75,7 +87,9 @@ export function getOrderedRunners(
   shard: OrdinaryExplainShard | undefined,
 ): readonly OrderedRunner[] {
   if (shard === undefined) return BEFORE_PARTITION_RUNNERS
-  return sliceOrderedRunners(BEFORE_PARTITION_RUNNERS)[ORDINARY_EXPLAIN_SHARDS.indexOf(shard)] ?? []
+  const segment =
+    sliceOrderedRunners(BEFORE_PARTITION_RUNNERS)[ORDINARY_EXPLAIN_SHARDS.indexOf(shard)] ?? []
+  return [...getShardPrelude(shard), ...segment]
 }
 
 export async function runOrderedRunners(runners: readonly OrderedRunner[]): Promise<void> {
