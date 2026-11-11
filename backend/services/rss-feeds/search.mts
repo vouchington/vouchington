@@ -126,10 +126,16 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     query.append(sql`id`)
   }
   if (usesAnyDescendantTopics) {
-    query.append(sql` FROM rss_feeds`)
-    filters.push(
-      sql`EXISTS (SELECT 1 FROM topic_descendants WHERE topic_descendants.topic_id = rss_feeds.topic_id)`,
-    )
+    query.append(sql` FROM (
+      SELECT DISTINCT topic_id FROM topic_descendants
+    ) candidate_topics
+    JOIN LATERAL (
+      -- Live feeds have a unique topic_id, so this keyed probe returns at most one row.
+      SELECT rss_feeds.* FROM rss_feeds
+      WHERE rss_feeds.topic_id = candidate_topics.topic_id
+        AND rss_feeds.deleted_at IS NULL
+      LIMIT 1
+    ) rss_feeds ON TRUE`)
   } else {
     query.append(sql` FROM rss_feeds`)
   }
