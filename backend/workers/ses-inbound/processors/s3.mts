@@ -41,9 +41,9 @@ async function loadSesInboundObjectWithMetadata(
   try {
     rejectOversizedRawEmail(response.ContentLength)
     if (!response.Body) throw new SesInboundTerminalError('Raw SES object has no body')
-    if (!response.LastModified)
-      throw new SesInboundTerminalError('Raw SES object has no receipt time')
-    if (!response.ETag) throw new SesInboundTerminalError('Raw SES object has no entity tag')
+    if (!response.LastModified || !response.ETag) {
+      throw new SesInboundTerminalError('Raw SES object has no receipt time or entity tag')
+    }
     return {
       body: boundedBodyStream(response.Body),
       receivedAt: response.LastModified,
