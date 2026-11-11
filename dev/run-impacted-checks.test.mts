@@ -50,29 +50,15 @@ describe('pre-push impact runner', () => {
       const observed = join(scratch, 'manifest.txt')
       const marker = join(scratch, 'second-ran.txt')
       mkdirSync(join(repo, 'dev', 'localization'), { recursive: true })
-      mkdirSync(join(repo, 'backend', 'scripts'), { recursive: true })
-      mkdirSync(join(repo, 'api-fixtures', 'v1'), { recursive: true })
       mkdirSync(bin)
       writeFileSync(join(repo, 'dev', 'localization', 'local-catalog.mts'), '')
-      writeFileSync(
-        join(repo, 'backend', 'scripts', 'generate-mcp-catalog.mts'),
-        'import { writeFileSync } from "node:fs"\nwriteFileSync("api-fixtures/v1/mcp.json", "fresh\\n")\n',
-      )
-      writeFileSync(join(repo, 'api-fixtures', 'v1', 'mcp.json'), 'stale\n')
       writeFileSync(join(repo, 'app.mts'), 'export const value = 1\n')
       writeFileSync(join(repo, 'keep-me.mts'), 'export const stable = true\n')
       const git = (...args: string[]) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' })
       git('init', '--quiet')
       git('config', 'user.name', 'Fixture')
       git('config', 'user.email', 'fixture@example.test')
-      git(
-        'add',
-        'app.mts',
-        'keep-me.mts',
-        'dev/localization/local-catalog.mts',
-        'backend/scripts/generate-mcp-catalog.mts',
-        'api-fixtures/v1/mcp.json',
-      )
+      git('add', 'app.mts', 'keep-me.mts', 'dev/localization/local-catalog.mts')
       git('commit', '--quiet', '-m', 'fixture')
       git('update-ref', 'refs/remotes/origin/main', 'HEAD')
       writeFileSync(join(repo, 'app.mts'), 'export const value = 2\n')
@@ -117,29 +103,6 @@ describe('pre-push impact runner', () => {
       })
       expect(renamed.status).toBe(1)
       expect(readFileSync(observed, 'utf8')).toBe('app.mts\nkeep-me.mts\nmoved.mts\n')
-
-      writeFileSync(
-        fakePnpm,
-        [
-          '#!/usr/bin/env node',
-          'const fs = require("node:fs")',
-          'const args = process.argv.slice(2)',
-          'const manifest = fs.readFileSync(args[args.indexOf("--changed-files") + 1], "utf8")',
-          'console.log(JSON.stringify({',
-          '  changed_files: manifest.trim().split("\\n"),',
-          '  warnings: [], fallback_triggered: false,',
-          '  checks: [{ name: "mcp-catalog", kind: "generic", command: [process.execPath, "-e", "console.log(1)"] }],',
-          '}))',
-        ].join('\n'),
-      )
-      const regenerated = spawnSync(process.execPath, [script], {
-        cwd: repo,
-        env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` },
-        encoding: 'utf8',
-      })
-      expect(regenerated.status).toBe(1)
-      expect(regenerated.stderr).toContain('generation changed tracked artifacts')
-      expect(readFileSync(join(repo, 'api-fixtures', 'v1', 'mcp.json'), 'utf8')).toBe('fresh\n')
     } finally {
       rmSync(scratch, { recursive: true, force: true })
     }

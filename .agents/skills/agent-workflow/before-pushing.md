@@ -6,8 +6,10 @@
   For client/API changes, use the relevant [impact recipe](impact-recipes.md).
 - Follow the [commit checklist](../../../docs/checklists/commit.md): type-aware lint, directly changed
   tests, scope inspection, and formatting. Run `pnpm run impacted-checks` before pushing. It
-  computes the changed-file manifest, refreshes the local catalog, selects generic CI checks,
-  and runs each selected command. Fix every failure and selection warning before pushing.
+  computes the changed-file manifest, refreshes the local catalog, selects static and
+  generated-artifact checks, and runs each selected command without database or service setup.
+  It runs no test suites; CI owns the full area suites. Fix every failure and selection warning
+  before pushing.
 - When local impact selection fails, diagnose the cause while keeping selection unknown. For invocation failures,
   native CLI reports with `--format json` write an `error` object: exit `75` means `lock_busy` or `lock_timeout`, while exit
   `124` means `deadline`; `error.phase` identifies the interrupted phase. Read the current holder

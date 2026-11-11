@@ -18,17 +18,16 @@ Use this checklist before every `git commit`. GitHub Actions is the full gate af
 
 ## Before Pushing
 
-Before the first push, run these local steps (also covered in [agent-workflow skill § Before Pushing](../../.agents/skills/agent-workflow/before-pushing.md)). Selected coverage suites can take substantially longer than the focused steps. GitHub Actions is the full gate.
+Before the first push, run these local steps (also covered in [agent-workflow skill § Before Pushing](../../.agents/skills/agent-workflow/before-pushing.md)). The impact runner runs static analysis and generated-artifact checks only, without database or service setup. CI owns full area suites.
 
 1. `pnpm exec oxlint --deny-warnings --type-aware <changed TS/MTS files and their direct dependents>`
 2. `pnpm exec vitest run <directly changed test files> --bail=3`
 3. `git diff --name-only origin/main...HEAD` — scope check before rebasing
 4. `pnpm exec oxfmt --check <changed supported files>`
-5. Run `pnpm run impacted-checks`. It refreshes the local catalog, computes the changed-file manifest against `origin/main`, selects the generic CI checks, runs every selected command, and fails on selection warnings or command failures. Fix stale generated artifacts before pushing.
+5. Run `pnpm run impacted-checks`. It refreshes the local catalog, computes the changed-file manifest against `origin/main`, selects static and generated-artifact checks, runs every selected command, and fails on selection warnings or command failures. Fix stale generated artifacts before pushing. It does not run test suites.
 
-Run `pnpm run test:playwright` when Playwright-relevant paths changed. CI never selects individual
-test files; it runs the full suite of every area whose path filter matches
-([area test suites](../development/ci.md#area-test-suites)).
+CI never selects individual test files; it runs the full suite of every area whose path filter
+matches ([area test suites](../development/ci.md#area-test-suites)).
 
 ## See Also
 

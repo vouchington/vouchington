@@ -120,9 +120,7 @@ function main(): void {
   run('node', ['dev/localization/local-catalog.mts'])
   const base = run('git', ['merge-base', 'origin/main', 'HEAD'], true).trim()
   if (!base) throw new Error('Could not find the merge base with origin/main')
-  process.env.IMPACTED_CHECKS_BASE = base
-  process.env.IMPACTED_CHECKS_HEAD = 'HEAD'
-  let paths = changedPaths(base)
+  const paths = changedPaths(base)
   if (paths.length === 0) {
     process.stdout.write('No changed files against origin/main.\n')
     return
@@ -137,19 +135,8 @@ function main(): void {
       writeFileSync(manifest, `${paths.join('\n')}\n`)
     }
     writeManifest()
-    let checks = selectChecks(manifest, paths)
-    let regeneratedTrackedCatalog = false
-    if (checks.some(check => check.name === 'mcp-catalog')) {
-      const before = run('git', ['diff', '--binary', '--'], true)
-      run('node', ['backend/scripts/generate-mcp-catalog.mts'])
-      regeneratedTrackedCatalog = run('git', ['diff', '--binary', '--'], true) !== before
-      paths = changedPaths(base)
-      writeManifest()
-      checks = selectChecks(manifest, paths)
-    }
-    const failures: string[] = regeneratedTrackedCatalog
-      ? ['mcp-catalog: generation changed tracked artifacts; review and commit them before pushing']
-      : []
+    const checks = selectChecks(manifest, paths)
+    const failures: string[] = []
     for (const check of checks) {
       process.stdout.write(`\nRunning selected check: ${check.name}\n`)
       try {

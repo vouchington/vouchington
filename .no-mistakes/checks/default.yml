@@ -3,18 +3,6 @@ commands:
     command: [pnpm, exec, tsc, --noEmit, --incremental, --project, backend/tsconfig.json]
     fileArgs: none
     always: true
-  - name: patch-coverage
-    command: [pnpm, run, impacted-checks:coverage]
-    fileArgs: append
-    include:
-      - 'backend/**'
-      - 'email-templates/**'
-      - 'web/**'
-      - 'lambdas/**'
-      - 'cloudflare-worker/**'
-      - 'ts-shared/**'
-      - .coverage-rules.yml
-      - 'ci/vitest/project-ownership*.mts'
   - name: typecheck-backend-email
     command: [pnpm, exec, tsc, --noEmit, --incremental, --project, email-templates/tsconfig.json]
     fileArgs: none
@@ -49,27 +37,20 @@ commands:
       - 'backend/queues/**/enqueues/schedules.mts'
       - 'backend/services/queue-monitoring/scheduled-jobs-registry.mts'
       - 'backend/services/queue-monitoring/scheduled-job-manifests.mts'
-  # Needs the worktree backend env (`./dev/initialize backend`): the registry loads data stores.
-  - name: mcp-catalog
-    command: [node, backend/scripts/generate-mcp-catalog.mts, --check]
+  - name: generated-ddl-inserts
+    command: [node, ci/validate-generated-ddl-inserts.mts]
     fileArgs: none
     include:
-      - 'backend/**/*.mts'
-      - 'backend/mcp/**'
-      - 'backend/services/mcp-tools/**'
-      - 'backend/scripts/*mcp*'
-      - 'backend/test-helpers/**/*mcp*'
-      - 'api-contracts/**'
-      - 'api-fixtures/v1/mcp*.json'
-      - docs/overview/architecture/mcp/catalog.md
-  - name: backend-contract-inventories
-    command: [bash, -e, .github/workflows/checks-static-backend-contracts.sh]
+      - 'backend/data-stores/psql/config-driven/**'
+      - 'backend/data-stores/psql/schema-snapshot/**'
+      - 'ci/generated-ddl-inserts/**'
+      - ci/validate-generated-ddl-inserts.mts
+  - name: topic-merge-foreign-keys
+    command: [node, ci/check-topic-merge-foreign-keys.mts]
     fileArgs: none
     include:
       - 'backend/**'
-      - 'api-contracts/**'
-      - 'api-fixtures/**'
-      - '.github/workflows/checks-static-backend-contracts.sh'
+      - ci/check-topic-merge-foreign-keys.mts
   - name: web-route-selector-map
     command:
       [node, static-code-analysis/i18n-extract/route-selector-map.mts, --check, --diagnostics]
@@ -80,35 +61,12 @@ commands:
       - 'web/**/*.mts'
       - 'localization/catalog/**'
       - 'static-code-analysis/i18n-extract/**'
-  - name: web-route-localization-bounds
-    command: [node, ci/check-live-web-route-localization.mts]
-    fileArgs: none
-    include:
-      - 'web/**'
-      - 'localization/catalog/**'
-      - 'static-code-analysis/i18n-extract/**'
   - name: storybook-component-coverage
     command: [bash, .github/workflows/static-code-analysis-story-coverage.sh]
     fileArgs: none
     include:
       - 'web/**'
       - '.github/workflows/static-code-analysis-story-coverage.sh'
-  - name: storybook-play-functions
-    command: [pnpm, run, test:web-storybook-browser]
-    fileArgs: none
-    include:
-      - 'web/**'
-      - 'ts-shared/**'
-      - 'test-helpers/vitest-config/storybook-browser-optimize-deps.mts'
-  # Compares the live schema with the committed snapshot; migrate the worktree database first.
-  - name: postgresql-schema-snapshot
-    command: [pnpm, --dir, backend, run, db:snapshot:check]
-    fileArgs: none
-    include:
-      - 'backend/data-stores/psql/migrations/**'
-      - 'backend/data-stores/psql/config-driven/**'
-      - 'backend/data-stores/psql/views/**'
-      - 'backend/data-stores/psql/schema-snapshot/**'
   - name: postgresql-squawk
     command: [pnpm, run, squawk]
     fileArgs: none
@@ -117,22 +75,6 @@ commands:
       - 'backend/data-stores/psql/config-driven/**'
       - 'backend/data-stores/psql/views/**'
       - .squawk.toml
-  - name: native-materialized-view-contracts
-    command:
-      [
-        node,
-        --experimental-test-module-mocks,
-        backend/scripts/check-materialized-view-contracts.mts,
-      ]
-    fileArgs: none
-    include:
-      - 'backend/**'
-  - name: postgresql-schema-tests
-    command: [pnpm, run, test:backend:postgres-schema]
-    fileArgs: none
-    include:
-      - 'backend/data-stores/psql/**'
-      - 'backend/scripts/check-materialized-view-contracts.mts'
   - name: typecheck-ts-shared
     command: [pnpm, exec, tsc, --noEmit, --incremental, --project, ts-shared/tsconfig.json]
     fileArgs: none

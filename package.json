@@ -53,7 +53,6 @@
     "test:portability": "VITEST_COVERAGE_SCOPE=portability node ci/run-vitest-project-group.mts portability",
     "ci:topology": "no-mistakes ci topology",
     "impacted-checks": "node dev/run-impacted-checks.mts",
-    "impacted-checks:coverage": "node dev/impacted-coverage.mts",
     "agent-blackboard": "agent-blackboard",
     "vouchington": "vouchington",
     "email:preview": "pnpm --dir email-templates run preview --",
