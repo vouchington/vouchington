@@ -74,6 +74,11 @@ export async function rejectCopyrightEmailCorrespondence(input: {
       AND correspondence_action = 'pending'
     FOR UPDATE`)
   assert(pendingDecisions === 1, 409, 'Copyright email correspondence was already reviewed')
+  await transaction(sql`/* rejectCopyrightEmailCorrespondence:event */
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
+      copyright_notice_email_intake_id)
+    VALUES (${pending.notice_id}, 'email_correspondence_rejected', ${input.currentUser.id}, ${input.intakeId})
+  `)
   const rationaleCiphertext = encryptSecret(
     input.rationale,
     copyrightEmailIntakePurpose(pending.amazon_ses_message_id),
@@ -90,11 +95,6 @@ export async function rejectCopyrightEmailCorrespondence(input: {
     rationaleCiphertext,
     manualFallbackCiphertext,
   })
-  await transaction(sql`/* rejectCopyrightEmailCorrespondence:event */
-    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-      copyright_notice_email_intake_id)
-    VALUES (${pending.notice_id}, 'email_correspondence_rejected', ${input.currentUser.id}, ${input.intakeId})
-  `)
   await transaction.commit()
   return { noticeId: pending.notice_id, isDuplicate: false }
 }
