@@ -21,6 +21,27 @@ function isRequestedPostIdCollision(error: unknown): boolean {
   )
 }
 
+async function collectOwned(
+  viewer: Parameters<typeof getPostFeedIds>[0],
+  options: NonNullable<Parameters<typeof getPostFeedIds>[1]>,
+  asOf: Date,
+  expectedIds: readonly string[],
+) {
+  const rows: Awaited<ReturnType<typeof getPostFeedIds>>['results'] = []
+  let after: string | undefined
+  let found = false
+  for (let index = 0; index < 80; index++) {
+    const page = await getPostFeedIds(viewer, { ...options, after }, asOf)
+    rows.push(...page.results)
+    if (found || !page.page_info.has_next_page) break
+    found = expectedIds.every(id => rows.some(row => row.id === id))
+    const next = page.page_info.end_cursor ?? undefined
+    if (!next || next === after) throw new Error('Expected advancing feed cursor')
+    after = next
+  }
+  return rows
+}
+
 describe('post feed decision instant', () => {
   it('rejects a non-finite explicit decision instant', async () => {
     const viewer = await createTestUser()
@@ -90,28 +111,31 @@ describe('post feed decision instant', () => {
     }
     const ownedIds = [olderId, equalPostId, newerId, ...shareIds]
     const asOf = new Date(cutoffMs + DAY_MS)
-    const windowed = await getPostFeedIds(
+    const windowed = await collectOwned(
       viewer,
       { feed_type: 'follow_users', time_range: '1d', limit: 25 },
       asOf,
+      [equalPostId, newerId, shareIds[1]!, shareIds[2]!],
     )
     expect(
-      windowed.results
+      windowed
         .filter(row => ownedIds.includes(row.id))
         .map(row => row.id)
         .toSorted(),
     ).toEqual([equalPostId, newerId, shareIds[1], shareIds[2]].toSorted())
-    expect(
-      windowed.results.filter(row => shareIds.includes(row.id)).map(row => row.entity_id),
-    ).toEqual([targetId, targetId])
+    expect(windowed.filter(row => shareIds.includes(row.id)).map(row => row.entity_id)).toEqual([
+      targetId,
+      targetId,
+    ])
 
-    const unbounded = await getPostFeedIds(
+    const unbounded = await collectOwned(
       viewer,
       { feed_type: 'follow_users', time_range: 'all', limit: 25 },
       asOf,
+      ownedIds,
     )
     expect(
-      unbounded.results
+      unbounded
         .filter(row => ownedIds.includes(row.id))
         .map(row => row.id)
         .toSorted(),

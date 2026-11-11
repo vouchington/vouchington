@@ -15,7 +15,7 @@ import createTool from '../create-topic-recommendation.mts'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { createRequest } from '@voucha/test-helpers/api/server'
 
-const SCOPES = ['topic-recommendations:read', 'topic-recommendations:write'] as const
+const SCOPES = ['posts:read', 'topic-recommendations:write'] as const
 const TOOL = 'create_topic_recommendation'
 const body = () => {
   const slug = `mcp-topic-${crypto.randomUUID()}`
@@ -155,7 +155,7 @@ describe('MCP recommendation creation — real admission', () => {
 
   it('requires write consent and the Plus plan', async () => {
     const user = await caller()
-    expect(await callRejectedMcpTool(user, TOOL, args(), ['topic-recommendations:read'])).toContain(
+    expect(await callRejectedMcpTool(user, TOOL, args(), ['posts:read'])).toContain(
       'Tool requires scopes',
     )
     expect(

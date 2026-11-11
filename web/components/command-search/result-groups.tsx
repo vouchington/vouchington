@@ -9,6 +9,7 @@ import { getTopicTypeLabel } from '@/types/topics'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getPostRoute, type SearchResults, type SearchTab } from '../command-search-data'
 import { CommandLinkItem } from './command-link-item'
+import { PostContinuationItem } from './post-continuation-item'
 import {
   NewsResults,
   DomainResults,
@@ -28,6 +29,10 @@ interface ResultGroupsProps {
   results: SearchResults
   onOpenChange: (open: boolean) => void
   pushRoute: (href: string) => void
+  onLoadMorePosts?: () => void | Promise<void>
+  canLoadMorePosts?: boolean
+  loadingMorePosts?: boolean
+  postLoadError?: boolean
 }
 
 export function ResultGroups({
@@ -36,6 +41,10 @@ export function ResultGroups({
   results,
   onOpenChange,
   pushRoute,
+  onLoadMorePosts,
+  canLoadMorePosts,
+  loadingMorePosts,
+  postLoadError,
 }: ResultGroupsProps) {
   const t = useTranslations()
   return (
@@ -73,6 +82,10 @@ export function ResultGroups({
         onOpenChange={onOpenChange}
         pushRoute={pushRoute}
         results={results}
+        onLoadMorePosts={onLoadMorePosts}
+        canLoadMorePosts={canLoadMorePosts}
+        loadingMorePosts={loadingMorePosts}
+        postLoadError={postLoadError}
       />
       <NewsResults
         activeTab={activeTab}
@@ -99,7 +112,7 @@ function TopicResults({
   onOpenChange,
   pushRoute,
   results,
-}: Omit<ResultGroupsProps, 'matchedShortcuts'>) {
+}: Pick<ResultGroupsProps, 'activeTab' | 'onOpenChange' | 'pushRoute' | 'results'>) {
   const t = useTranslations()
   if (results.topics.length === 0 || (activeTab !== 'all' && activeTab !== 'topics')) return null
   return (
@@ -127,9 +140,14 @@ function PostResults({
   onOpenChange,
   pushRoute,
   results,
+  onLoadMorePosts,
+  canLoadMorePosts,
+  loadingMorePosts,
+  postLoadError,
 }: Omit<ResultGroupsProps, 'matchedShortcuts'>) {
   const t = useTranslations()
-  if (results.posts.length === 0 || (activeTab !== 'all' && activeTab !== 'posts')) return null
+  if (activeTab !== 'all' && activeTab !== 'posts') return null
+  if (results.posts.length === 0 && !canLoadMorePosts) return null
   return (
     <CommandGroup
       heading={t('extracted.commandSearch.resultGroups.posts_a80811cf')}
@@ -149,6 +167,13 @@ function PostResults({
           pushRoute={pushRoute}
         />
       ))}
+      {canLoadMorePosts && onLoadMorePosts && (
+        <PostContinuationItem
+          onLoadMore={onLoadMorePosts}
+          loading={Boolean(loadingMorePosts)}
+          hasError={Boolean(postLoadError)}
+        />
+      )}
     </CommandGroup>
   )
 }

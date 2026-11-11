@@ -20,7 +20,6 @@ import read_community_list_item_counts from '../get-community-list-item-counts.m
 import read_community_list_items from '../get-community-list-items.mts'
 import read_community_members from '../get-community-members.mts'
 import read_community_pinned_posts from '../get-community-pinned-posts.mts'
-import read_community_posts from '../get-community-posts.mts'
 import read_community_details from '../get-community.mts'
 import read_reference_data_membership_plans from '../get-membership-plans.mts'
 import read_reference_data_platform_stats from '../get-platform-stats.mts'
@@ -38,7 +37,6 @@ import read_feed_referral_links from '../get-referral-link-feed.mts'
 import read_posts_ancestors from '../get-post-ancestors.mts'
 import read_posts_descendants from '../get-post-descendants.mts'
 import read_posts_details from '../get-post.mts'
-import read_posts_trending from '../get-trending-posts.mts'
 import read_posts_search from '../search-posts.mts'
 import read_hostnames_search from '../search-hostnames.mts'
 import read_data_points_topic_insights from '../get-topic-insights.mts'
@@ -53,7 +51,6 @@ export const userMergedReadingGroups = [
       { option: 'list_items', source: read_community_list_items },
       { option: 'members', source: read_community_members },
       { option: 'pinned_posts', source: read_community_pinned_posts },
-      { option: 'posts', source: read_community_posts },
       { option: 'details', source: read_community_details },
     ],
   },
@@ -123,7 +120,6 @@ export const userMergedReadingGroups = [
       { option: 'ancestors', source: read_posts_ancestors },
       { option: 'descendants', source: read_posts_descendants },
       { option: 'details', source: read_posts_details },
-      { option: 'trending', source: read_posts_trending },
       { option: 'search', source: read_posts_search },
     ],
   },

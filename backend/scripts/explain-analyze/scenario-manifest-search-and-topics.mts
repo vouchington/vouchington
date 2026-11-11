@@ -18,7 +18,11 @@ export const SEARCH_AND_TOPICS_SCENARIOS = [
   'search-admin-users',
   'search-admin-users-uuid',
   'search-admin-users-email',
-  ...(['search-communities', 'search-communities-has-list-items'] as const),
+  ...([
+    'search-communities',
+    'search-communities-has-list-items',
+    'search-communities-topic-pair',
+  ] as const),
   'search-communities-member',
   ...(['search-communities-text', 'search-communities-text-members'] as const),
   'search-communities-text-trending',
@@ -28,7 +32,12 @@ export const SEARCH_AND_TOPICS_SCENARIOS = [
   'search-communities-virtual-subscriptions',
   'search-community-posts',
   ...SEARCH_PAGE_SCENARIO_IDS,
-  ...(['search-hostnames-trust', 'search-hostnames-trust-by-topic'] as const),
+  ...([
+    'search-hostnames-trust',
+    'search-hostnames-trust-by-topic',
+    'search-hostnames-topic-match-all',
+  ] as const),
+  'search-hashtag-topic-resolution-five',
   ...([
     'search-topic-aliases',
     'search-users',

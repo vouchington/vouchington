@@ -1,4 +1,7 @@
+import { POST_DISCOVERY_SCENARIO_IDS } from './post-discovery-scenario-ids.mts'
+
 export const VIEW_DRIVEN_SCENARIO_IDS = [
+  ...POST_DISCOVERY_SCENARIO_IDS,
   'active-community-agent-prompts',
   'autotagger-agent-candidate-topics',
   'detect-rss-feed-item-language',

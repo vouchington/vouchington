@@ -37,6 +37,7 @@ export type OmnisearchCommunity = {
 export type OmnisearchResult = {
   topics: OmnisearchTopic[]
   posts: OmnisearchPost[]
+  posts_page_info: Awaited<ReturnType<typeof searchPostsVertical>>['page_info']
   news: OmnisearchNewsItem[]
   domains: OmnisearchDomain[]
   communities: OmnisearchCommunity[]
@@ -142,7 +143,11 @@ export async function searchOmnisearch(options: OmnisearchOptions): Promise<Omni
 
   return {
     topics: topicsR.status === 'fulfilled' ? topicsR.value : [],
-    posts: postsR.status === 'fulfilled' ? postsR.value : [],
+    posts: postsR.status === 'fulfilled' ? postsR.value.results : [],
+    posts_page_info:
+      postsR.status === 'fulfilled'
+        ? postsR.value.page_info
+        : { start_cursor: null, end_cursor: null, has_next_page: false },
     news: newsR.status === 'fulfilled' ? newsR.value : [],
     domains: domainsR.status === 'fulfilled' ? domainsR.value : [],
     communities: communitiesR.status === 'fulfilled' ? communitiesR.value : [],

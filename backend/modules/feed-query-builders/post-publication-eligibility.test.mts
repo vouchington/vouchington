@@ -15,7 +15,7 @@ describe('buildNotificationPostEligibilityFilter', () => {
     expect(statement.text).toContain('access_post.approved_at IS NOT NULL')
     expect(statement.text).toContain('candidate_post.archived_at IS NULL')
     expect(statement.text).toContain('publication_community.archived_at IS NULL')
-    expect(statement.text).toContain('story_posts post_story')
+    expect(statement.text).toContain('story_posts story_link')
     expect(statement.text).not.toContain("access_post.privacy = 'public'")
     expect(statement.text).not.toContain('publication_member.user_id')
   })
@@ -30,7 +30,7 @@ describe('buildDirectPostEligibilityFilter', () => {
 
     expect(statement.text).toContain('candidate_post.approved_at')
     expect(statement.text).toContain('access_post.approved_at')
-    expect(statement.text).toContain('story_posts post_story')
+    expect(statement.text).toContain('story_posts story_link')
     expect(statement.text).not.toContain('publication_community.archived_at')
     expect(statement.values).not.toContain('candidate_post')
     expect(statement.values).not.toContain('access_post')
@@ -73,7 +73,7 @@ describe('buildPublicPostEligibilityFilter', () => {
     expect(statement.text).toContain('publication_suspension.lifted_at IS NULL')
     expect(statement.text).toContain('publication_root_suspension.lifted_at IS NULL')
     expect(statement.text).toContain('publication_community.archived_at IS NULL')
-    expect(statement.text).toContain('story_posts post_story')
+    expect(statement.text).toContain('story_posts story_link')
   })
 
   it('allows registered-audience posts only when explicitly requested', () => {
@@ -96,7 +96,7 @@ describe('buildOtherwisePublicPostEligibilityFilter', () => {
     expect(statement.text).toContain("access_post.privacy = 'public'")
     expect(statement.text).toContain("access_post.broadcast = 'everyone'")
     expect(statement.text).toContain('publication_community.archived_at IS NULL')
-    expect(statement.text).toContain('story_posts post_story')
+    expect(statement.text).toContain('story_posts story_link')
     expect(statement.text).not.toContain('candidate_post.archived_at IS NULL')
     expect(statement.text).not.toContain('access_post.archived_at IS NULL')
   })

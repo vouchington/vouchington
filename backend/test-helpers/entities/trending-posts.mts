@@ -13,11 +13,12 @@ export type CreateTrendingPostDataOptions = {
   votesScoreUp?: number
   postType?: 'discussion' | 'review' | 'data_point' | 'story' | 'topic_recommendation' | 'article'
   createdAt?: Date
+  createdById?: string
 }
 
 export type DominantPostFixtureSpec = Pick<
   CreateTrendingPostDataOptions,
-  'votesScoreUp' | 'postType' | 'createdAt'
+  'votesScoreUp' | 'postType' | 'createdAt' | 'createdById'
 >
 
 type OwnedTrendingPostDataOptions = DominantPostFixtureSpec & {
@@ -32,10 +33,10 @@ export async function createTrendingPostData(options: CreateTrendingPostDataOpti
 }
 
 async function createTrendingPostDataWithOwnedId(options: OwnedTrendingPostDataOptions) {
-  const { postId, votesScoreUp = 1, postType = 'discussion' } = options
+  const { postId, votesScoreUp = 1, postType = 'discussion', createdById } = options
 
-  const user = await createTestUserDirect()
-  if (!user) throw new Error('Failed to create test user')
+  const userId = createdById ?? (await createTestUserDirect())?.id
+  if (!userId) throw new Error('Failed to create test user')
 
   const random = createRandomString(10)
 
@@ -43,7 +44,7 @@ async function createTrendingPostDataWithOwnedId(options: OwnedTrendingPostDataO
     id: postId,
     title: `Trending Post ${random}`,
     slug: `trending-post-${random}`,
-    createdById: user.id,
+    createdById: userId,
     markdown: postType === 'story' ? '' : `Trending post content ${random}`,
     postType,
   })
@@ -58,7 +59,7 @@ async function createTrendingPostDataWithOwnedId(options: OwnedTrendingPostDataO
 
   return {
     postId,
-    userId: user.id,
+    userId,
   }
 }
 

@@ -1,4 +1,5 @@
 import { it, expect, describe } from 'vitest'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { buildPostSearchQuery } from '../query-builder.mts'
 import type { PrivateUser } from '@services/users/types'
 
@@ -14,6 +15,18 @@ describe('query-builder (pagination and moderation)', () => {
     // Should add posts.id < ? predicate
     expect(query.sql).toContain('posts.id <')
     expect(query.values).toContain(testId)
+  })
+
+  it('pins an explicit finite time range to the supplied decision instant', () => {
+    const asOf = new Date('2026-06-15T12:00:00.000Z')
+    const query = buildPostSearchQuery(undefined, {
+      sort: 'new',
+      time_range: '1w',
+      time_range_as_of: asOf,
+    })
+
+    expect(query.sql).toContain('posts.id >=')
+    expect(query.values).toContain(timestampToUuidv7LowerBound(asOf.getTime() - 7 * 86_400_000))
   })
 
   it('buildPostSearchQuery allows drafts when currentUser matches user_id', () => {
@@ -111,16 +124,19 @@ describe('query-builder (pagination and moderation)', () => {
     const query = buildPostSearchQuery(undefined, { sort: 'hot' })
 
     expect(query.sql).toContain('hot_score')
-    expect(query.sql).toContain('POWER(2.0')
+    expect(query.sql).toContain('LN(posts.votes_score_sort::DOUBLE PRECISION)')
   })
 
   it('buildPostSearchQuery orders by hot_score DESC for sort=hot', () => {
     const query = buildPostSearchQuery(undefined, { sort: 'hot' })
 
-    expect(query.sql).toContain('hot_score DESC, posts.id DESC')
+    expect(query.sql).toContain(
+      'ORDER BY (CASE WHEN posts.votes_score_sort > 0 THEN LN(posts.votes_score_sort::DOUBLE PRECISION)',
+    )
+    expect(query.sql).not.toContain('ORDER BY hot_score')
   })
 
-  it('keeps a hot result or credit filter in the same statement as the page sort', () => {
+  it('applies hot result and credit filters on the hot-score walk', () => {
     const result = buildPostSearchQuery(undefined, {
       post_types: ['data_point'],
       sort: 'hot',
@@ -135,9 +151,13 @@ describe('query-builder (pagination and moderation)', () => {
     for (const query of [result, credit]) {
       expect(query.sql).not.toContain('MATERIALIZED')
       expect(query.sql).toContain('posts.votes_score_net > 0')
-      expect(query.sql).toContain('POWER(2.0')
+      expect(query.sql).toContain('LN(posts.votes_score_sort::DOUBLE PRECISION)')
       expect(query.sql).toContain('AS hot_score')
-      expect(query.sql).toContain('ORDER BY hot_score DESC, posts.id DESC')
+      expect(query.sql).toContain('posts.community_id IS NULL')
+      expect(query.sql).toContain(
+        'ORDER BY (CASE WHEN posts.votes_score_sort > 0 THEN LN(posts.votes_score_sort::DOUBLE PRECISION)',
+      )
+      expect(query.sql).not.toContain('ORDER BY hot_score')
       expect(query.sql).toContain('LIMIT')
     }
     expect(result.sql).toContain("posts.structured_data->>'result' = 'pending'")
@@ -146,7 +166,7 @@ describe('query-builder (pagination and moderation)', () => {
     expect(credit.values).not.toContain('300-579')
   })
 
-  it('applies a hot result cursor in that same statement', () => {
+  it('applies a stable hot cursor in the same walk as the result filter', () => {
     const query = buildPostSearchQuery(undefined, {
       post_types: ['data_point'],
       sort: 'hot',
@@ -191,15 +211,6 @@ describe('query-builder (pagination and moderation)', () => {
     const query = buildPostSearchQuery(undefined, { sort: 'new' })
 
     expect(query.sql).not.toContain('hot_score')
-  })
-
-  it('buildPostSearchQuery throws when following_new cursor is missing ranking_lt', () => {
-    expect(() =>
-      buildPostSearchQuery({ id: 'user-1' } as unknown as PrivateUser, {
-        sort: 'following_new',
-        id_lt: '123e4567-e89b-12d3-a456-426614174000',
-      }),
-    ).toThrow('following_new cursor requires ranking_lt')
   })
 
   it('buildPostSearchQuery hides non-approved posts for anonymous users', () => {
@@ -247,7 +258,7 @@ describe('query-builder (pagination and moderation)', () => {
   it('keeps public story search on a discoverable source', () => {
     const query = buildPostSearchQuery(undefined, { post_types: ['story'] })
 
-    expect(query.sql).toContain('story_posts post_story')
+    expect(query.sql).toContain('story_posts story_link')
     expect(query.sql).toContain('is_discoverable')
     expect(query.sql).toContain('approved_at IS NOT NULL')
   })
@@ -258,14 +269,14 @@ describe('query-builder (pagination and moderation)', () => {
       { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
       { post_types: ['story'] },
     )
-    expect(moderator.sql).toContain('story_posts post_story')
+    expect(moderator.sql).toContain('story_posts story_link')
     expect(moderator.sql).toContain('rss_feed_items story_item')
     expect(moderator.sql).toContain('is_discoverable')
     expect(moderator.sql).toContain("posts.post_type = 'story'")
     expect(moderator.sql).not.toContain('post_type = ANY')
   })
 
-  it('keeps administrator, public-only, and story lookup search on the shared clause', () => {
+  it('keeps administrator, signed-out, and story lookup search on the shared clause', () => {
     const userId = '123e4567-e89b-12d3-a456-426614174000'
     const administrator = buildPostSearchQuery(
       { id: userId, roles: ['administrator'] } as unknown as PrivateUser,
@@ -274,18 +285,15 @@ describe('query-builder (pagination and moderation)', () => {
     expect(administrator.sql).not.toContain('story_posts')
     expect(administrator.sql).not.toContain('approved_at IS NOT NULL')
 
-    const publicOnly = buildPostSearchQuery(
-      { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
-      { post_types: ['story'], public_eligibility_only: true },
-    )
-    expect(publicOnly.sql).toContain('story_posts post_story')
-    expect(publicOnly.sql).toContain('is_discoverable')
+    const signedOut = buildPostSearchQuery(undefined, { post_types: ['story'] })
+    expect(signedOut.sql).toContain('story_posts story_link')
+    expect(signedOut.sql).toContain('is_discoverable')
 
     const lookup = buildPostSearchQuery(
       { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
       { post_types: ['story'], story_id: userId },
     )
-    expect(lookup.sql).toContain('story_posts post_story')
+    expect(lookup.sql).toContain('story_posts story_link')
     expect(lookup.sql).toContain('is_discoverable')
   })
 })

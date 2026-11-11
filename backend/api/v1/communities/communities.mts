@@ -1,4 +1,5 @@
 import { clampAnonLimit } from '@services/pagination'
+import { validateTopicSearchTerms } from '@services/search-params'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
@@ -66,6 +67,7 @@ app
       limit = clampAnonLimit(limit)
     }
 
+    validateTopicSearchTerms(ctx.query, ['topic'], true)
     const topicParam = ctx.query.topic
     const topicParams = parseStringArray(topicParam)
     if (

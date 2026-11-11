@@ -1,6 +1,11 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it, beforeAll } from 'vitest'
-import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
+import {
+  createTestTopic,
+  createTestUserDirect,
+  insertScoredPostTopicCategoryRelation,
+  insertTestPost,
+} from '@voucha/test-helpers'
 import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
 import { buildPostsRssFeed } from './posts-feed.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -33,6 +38,40 @@ describe('buildPostsRssFeed', () => {
       administrator: true,
     })
     adminSlugPrefix = `rss-admin-test-${randomHex()}`
+  })
+
+  it('returns the topic match on the first page and skips pending posts', async () => {
+    const username = `rsspage${randomHex()}`
+    const user = await createTestUserDirect({ username })
+    const ids: string[] = []
+    try {
+      for (const [index, clearanceStatus] of ['approved', 'pending', 'pending'].entries()) {
+        ids.push(
+          await insertTestPost({
+            title: `RSS continuation ${index}`,
+            slug: `rss-continuation-${index}-${randomHex()}`,
+            createdById: user.id,
+            markdown: 'Continuation fixture',
+            clearanceStatus: clearanceStatus as 'approved' | 'pending',
+            createdAt: new Date(Date.now() - (3 - index) * 60_000),
+          }),
+        )
+      }
+      const topic = await createTestTopic()
+      await insertScoredPostTopicCategoryRelation(ids[0]!, topic.id, user.id)
+      const first = await buildPostsRssFeed({
+        username,
+        postType: 'discussion',
+        topicSlugs: [topic.slug],
+        apiKey: 'test-key',
+      })
+      expect(first).toContain('RSS continuation 0')
+      expect(first).not.toContain('RSS continuation 1')
+      expect(first).not.toContain('RSS continuation 2')
+      expect(first).not.toContain('<atom:link')
+    } finally {
+      await Promise.all(ids.map(id => deleteTestPost(id)))
+    }
   })
 
   it('renders markdown to HTML in descriptions', async () => {

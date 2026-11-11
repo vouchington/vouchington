@@ -63,35 +63,16 @@ flowchart TD
     Limit --> PageInfo["Slice to limit, detect has_next_page, encode cursor"]
 ```
 
-## Filter Options
+## Matching and ranking
 
-| Filter                  | Description                                                                                                 |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `user_id`               | Posts by a specific user                                                                                    |
-| `related_topic_ids`     | Posts tagged with all specified topics (AND logic). API param: `categories=`                                |
-| `universal_topic_ids`   | Posts related to topic by any relationship: tagged OR review-rated OR data-point-for. API param: `topics=`  |
-| `review_topic_ids`      | Reviews for specified topics (implies `post_type = 'review'`). API param: `review_topic=`                   |
-| `data_point_topic_ids`  | Data points for specified topics (implies `post_type = 'data_point'`). API param: `data_point_topic=`       |
-| `url_id`                | Posts related to a specific URL entity                                                                      |
-| `similar_post_id`       | Posts semantically similar to a given post (vector distance)                                                |
-| `similar_topic_id`      | Posts semantically similar to a given topic (vector distance)                                               |
-| `text_search_query`     | Full-text search (PostgreSQL `tsvector`). Shorthand: `q=` (mapped automatically by the parser)              |
-| `semantic_search_query` | Semantic search (pgvector cosine similarity)                                                                |
-| `post_types`            | Filter by post type array: `discussion`, `review`, `data_point`, `comment`, `article`, `blog_post`, `story` |
+Post search combines audience, post-type, topic and text or semantic conditions on the shared
+discovery query. Topic terms are conjunctive; alternate attachment sources satisfy each topic.
+When keyword and semantic signals are both present, they contribute to the same relevance rank.
 
-When both `text_search_query` and `semantic_search_query` are provided, their score vectors are multiplied for cross-ranking.
-
-## Sort Modes
-
-| Sort            | Cursor encodes            | Default when                         |
-| --------------- | ------------------------- | ------------------------------------ |
-| `new`           | `{ id: string }`          | No search query                      |
-| `best`          | `{ score: number, id }`   | Explicit `sort=best`                 |
-| `hot`           | `{ score: number, id }`   | Explicit `sort=hot`                  |
-| `relevance`     | `{ ranking: number, id }` | Text or semantic search applied      |
-| `following_new` | `{ ranking: number, id }` | Authenticated feed (following first) |
-
-The `hot` sort uses the same three-day decay expression as post feeds and trending posts. Its clock-skew and future-UUID behavior is canonical in the shared hot-score builder.
+Hot and trending post search use a fixed-epoch rank so unchanged scores keep their ordering across
+requests. Future timestamps participate in that rank. The walk orders by that rank and id and
+stops at the page limit. See the [pagination contract](pagination.md). Trending posts are that
+same search with `sort=trending`.
 
 ## Time bound
 
@@ -102,7 +83,8 @@ Post search is always bounded by time, so a request reads a recent window of the
 - **Privacy/broadcast**: `buildPrivacyFilter()` applies audience rules (anonymous, logged-in, followers, mutual followers)
 - **Moderation**: Posts flagged by OpenAI omni-moderation are hidden from all non-owners and non-admins
 - **Deleted**: `deleted_at IS NOT NULL` rows always excluded
-- **Post types**: `topic_recommendation` is excluded from generic search by default
+- **Post types**: Community posts and topic recommendations follow the same discovery eligibility
+  as other post types.
 
 ## Embeddings
 
@@ -133,15 +115,26 @@ silently applies a filter for only the ASCII prefix of the token.
 Each parser maps linked topics and exact unlinked aliases to the appropriate SQL filter for its
 surface:
 
-- **Posts** (`parse-posts.mts`) → positive topic and topic-alias category relations.
+- **Posts** (`parse-posts.mts`) → shared topic membership and exact standalone alias membership.
 - **News** (`parse-rss-feed-items.mts`) → `hashtag_topic_ids` — one `(feed-owner-topic OR category-topic)` clause per resolved topic ID, ANDed together for multi-hashtag searches, so that `/news?q=#slug` returns items matching either ownership or categorization for that topic, overlapping with `/topic/[slug]/news`.
 - **Topics list** (`parse-topics.mts`) → direct linked topic match; standalone aliases produce an empty result because they do not identify a topic.
 - **RSS feeds list** (`parse-rss-feeds.mts`) → `topic_ids` — feeds where `rss_feeds.topic_id` matches the resolved ID.
+
+RSS descendant searches probe live feeds by matching topic keys so generic prepared plans cannot
+turn topic membership into a scan of enabled feeds. All-of searches test each root independently; a shared descendant can
+satisfy several roots without counting duplicate relation rows. The indexed form is retained for
+its measured plan stability ([comparison](https://github.com/vouchington/vouchington/pull/5372)).
 
 Linked hashtags expand to the direct topic relation and every alias linked to that topic. Standalone
 hashtags match only their exact alias relation. The `topic_ids` and `category_topic_ids` filter
 dimensions for `rss-feed-items` are AND-ed when both are present. One filter is generated per
 hashtag, so items must match every hashtag. Unknown valid hashtags return an empty result.
+
+Post-search hashtag terms are ANDed together. Linked hashtags become topic terms, so aliases
+rolling up to a selected topic do not impose a second exact-hashtag restriction. Standalone
+hashtags retain their exact membership filter. Input validation rejects excess hashtag terms
+before resolving them; REST, the website and MCP share this resolution and rejection behavior.
+Topic search applies those terms on the sort-key walk and stops at the page limit.
 
 See Feed And List Filters for the full surface matrix.
 

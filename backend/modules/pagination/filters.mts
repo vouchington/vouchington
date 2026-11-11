@@ -31,13 +31,14 @@ export const VALID_TOPIC_TYPES = [
  * @param value - Raw query parameter value
  * @returns Array of allowed post_types filter values, or undefined if none valid
  */
-export function validatePostTypes(value: unknown): PostType[] | undefined {
+export function validatePostTypes(
+  value: unknown,
+  allowed: readonly PostType[] = VALID_POST_TYPES,
+): PostType[] | undefined {
   if (!value) return undefined
 
   const types = parseStringArray(value)
-  const validTypes = types.filter((type): type is PostType =>
-    isCatalogValue(VALID_POST_TYPES, type),
-  )
+  const validTypes = types.filter((type): type is PostType => isCatalogValue(allowed, type))
 
   return validTypes.length > 0 ? validTypes : undefined
 }

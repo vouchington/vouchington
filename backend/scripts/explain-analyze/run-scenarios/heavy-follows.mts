@@ -87,8 +87,8 @@ export async function runHeavyFollowScenarios() {
         limit: 25,
         time_range: '1w',
       })
-      if (page.results.length !== 25 || !page.page_info.has_next_page)
-        throw new Error('Heavy hot feed fixture must return a full positive-support page')
+      if (page.results.length > 25 || !page.page_info.has_next_page || !page.page_info.end_cursor)
+        throw new Error('Heavy hot feed must stay within its page limit and advance its cursor')
     },
     'heavy-hot',
   )

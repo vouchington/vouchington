@@ -24,8 +24,14 @@ export async function getPostFeedIds(
   const sort: PostFeedWalkSort =
     options.sort === 'hot' ? (time_range === '1y' || time_range === 'all' ? 'best' : 'hot') : 'new'
   const cursor = parsePostFeedCursor(options.after, sort)
+  if (options.has_unknown_hashtag)
+    return {
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }
   // Hot scores keep one decision instant across pages, carried in the cursor.
-  const decisionInstant = cursor?.sort === 'hot' ? new Date(cursor.asOf) : requestedInstant
+  const decisionInstant =
+    cursor?.sort === 'hot' ? new Date(cursor.asOf ?? Number.NaN) : requestedInstant
   const requestedCutoff = getTimeRangeLowerBoundDate(time_range, decisionInstant)
   const hotFloor = new Date(decisionInstant.getTime() - HOT_WINDOW_MS)
   const cutoff =

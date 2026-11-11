@@ -7,26 +7,38 @@ import { getPublicPostIds } from '@services/posts'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import type { OmnisearchNewsItem, OmnisearchOptions, OmnisearchPost } from './omnisearch-types.mts'
 
-export async function searchPostsVertical(options: OmnisearchOptions): Promise<OmnisearchPost[]> {
+type PostVerticalResult = {
+  results: OmnisearchPost[]
+  page_info: Awaited<ReturnType<typeof getPostIds>>['page_info']
+}
+
+export async function searchPostsVertical(options: OmnisearchOptions): Promise<PostVerticalResult> {
   const {
     currentUser,
     textSearchQuery,
     hashtagTopicIds,
     hashtagAliasIds,
     hasUnknownHashtag,
+    postAfter,
     limit = getPaginationLimits(3).default,
   } = options
-  if (hasUnknownHashtag) return []
+  if (hasUnknownHashtag) {
+    return {
+      results: [],
+      page_info: { start_cursor: null, end_cursor: null, has_next_page: false },
+    }
+  }
   const params = {
     text_search_query: textSearchQuery,
     hashtag_topic_ids: hashtagTopicIds?.length ? hashtagTopicIds : undefined,
     hashtag_alias_ids: hashtagAliasIds?.length ? hashtagAliasIds : undefined,
     limit,
+    after: postAfter,
   }
-  const { results } = currentUser
+  const { results, page_info } = currentUser
     ? await getPostIds(currentUser, params)
     : await getPostIdsCached(params)
-  if (results.length === 0) return []
+  if (results.length === 0) return { results: [], page_info }
   const visibleResults = currentUser
     ? results
     : await getPublicPostIds(results.map(result => result.id)).then(publicPostIds =>
@@ -35,7 +47,7 @@ export async function searchPostsVertical(options: OmnisearchOptions): Promise<O
   const postsById = indexById(
     await getPostByAnyCachedBatch(visibleResults.map(result => result.id)),
   )
-  return visibleResults.flatMap(result => {
+  const posts = visibleResults.flatMap(result => {
     const post = postsById[result.id]
     if (!post) return []
     const authoredTitle = post.title.trim() || null
@@ -50,6 +62,7 @@ export async function searchPostsVertical(options: OmnisearchOptions): Promise<O
       },
     ]
   })
+  return { results: posts, page_info }
 }
 
 export async function searchNewsVertical(

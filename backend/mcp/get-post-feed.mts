@@ -1,3 +1,4 @@
+import { validateTopicSearchTerms } from '@services/search-params'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPostFeedIds, VALID_POST_FEED_TYPES } from '@services/feeds'
 import type { BasicUser } from '@services/users/types'
@@ -21,7 +22,7 @@ import {
 const getPostFeedTool: MergedToolSource<PostArgs, FeedResult> = {
   schema: {
     description:
-      'Page posts delivered to your own feed. Results identify each post for read_posts (option details); the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.',
+      'Page your feed posts with REST follow, community and content rules. Use read_posts(details) for content. Up to 100 results per page. Reuse end_cursor while has_next_page is true.',
     parameters: {
       type: 'object',
       properties: {
@@ -53,6 +54,7 @@ const getPostFeedTool: MergedToolSource<PostArgs, FeedResult> = {
     (currentUser: BasicUser) =>
     async (args: PostArgs): Promise<FeedResult> => {
       const viewer = await requirePrivateToolUser(currentUser)
+      validateTopicSearchTerms(args, [], true)
       const page = await findPageOrNull(args.after, async () => {
         const hashtag = await hashtagOptions(args.q)
         const result = await getPostFeedIds(viewer, {

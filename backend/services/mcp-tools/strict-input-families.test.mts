@@ -37,7 +37,6 @@ const families: [string, Record<string, unknown>][] = [
   ['create_community', { name: 'Synthetic test community', idempotency_key: id }],
   ['read_my_review_disputes', optionArgs('list', {})],
   ['read_my_moderation_appeals', optionArgs('list', {})],
-  ['list_my_topic_recommendations', {}],
   ['get_editorial_story', { story_id: id }],
   ['read_crawler', optionArgs('list', {})],
   ['read_editorial_job', optionArgs('import_batch', { batch_id: id })],

@@ -10,8 +10,6 @@ import { searchCommunities } from '@services/communities/search'
 import { getTrendingTopics } from '@services/trending-topics/get-trending-topics'
 import type { TrendingTopicsOptions } from '@services/trending-topics/types'
 import { searchUrlHostnames, type SearchUrlHostnamesOptions } from '@services/urls-hostnames/search'
-import { getTrendingPosts } from '@services/trending-posts/get-trending-posts'
-import type { TrendingPostsOptions } from '@services/trending-posts/types'
 import { getPlatformStats } from '@services/platform-stats/get-platform-stats'
 import {
   COMMUNITIES_ANON_CACHE,
@@ -19,7 +17,6 @@ import {
   POST_IDS_ANON_CACHE,
   RSS_FEED_ITEMS_ANON_CACHE,
   TOPIC_IDS_ANON_CACHE,
-  TRENDING_POSTS_ANON_CACHE,
   TRENDING_TOPICS_ANON_CACHE,
   URL_HOSTNAMES_ANON_CACHE,
 } from '@services/entity-cache/anonymous-search-prefixes'
@@ -69,11 +66,6 @@ export const getTrendingTopicsCached = createSearchCache(
 export const searchUrlHostnamesCached = createSearchCache(
   URL_HOSTNAMES_ANON_CACHE,
   (options: SearchUrlHostnamesOptions) => searchUrlHostnames(options),
-)
-
-export const getTrendingPostsCached = createSearchCache(
-  TRENDING_POSTS_ANON_CACHE,
-  (options: TrendingPostsOptions) => getTrendingPosts(options),
 )
 
 export const getPlatformStatsCached = createSearchCache(

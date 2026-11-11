@@ -61,7 +61,6 @@ import withdrawTopicRecommendationTool from '../withdraw-topic-recommendation.mt
 import type { Tool } from '@services/openai-agents/tool-types'
 import { communityListMembershipReadTools } from './community-list-membership-read-tools.mts'
 import { entityRelationWriteTools } from './entity-relation-write-tools.mts'
-import { ownDataReadTools } from './own-data-read-tools.mts'
 import { searchReferenceReadTools } from './search-reference-read-tools.mts'
 import { communityModerationTools } from '../community-moderation-tools.mts'
 import { brandTopicClaimTools } from '../brand/topic-claims.mts'
@@ -106,7 +105,6 @@ export const ALL_TOOLS: readonly Tool[] = [
   ...adminMergedTools,
   ...communityListMembershipReadTools,
   ...entityRelationWriteTools,
-  ...ownDataReadTools,
   ...searchReferenceReadTools,
   ...communityModerationTools,
   ...brandTopicClaimTools,

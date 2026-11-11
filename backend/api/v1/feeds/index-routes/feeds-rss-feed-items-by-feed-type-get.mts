@@ -1,3 +1,4 @@
+import { validateTopicSearchTerms } from '@services/search-params'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getRssFeedItemHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import { indexById } from '@modules/utils'
@@ -48,6 +49,7 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     `Invalid feed_type. Must be one of: ${VALID_RSS_FEED_ITEM_FEED_TYPES.join(', ')}`,
   )
 
+  validateTopicSearchTerms(ctx.query, [], true)
   const paginationOptions = parseAndValidatePaginatedRequest(
     ctx,
     'GET:/api/v1/feeds/rss_feed_items/:feed_type',
@@ -80,7 +82,6 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
   const result = await getRssFeedItemFeedIds(currentUser, options)
   const rssFeedItemIds = result.results.map(r => r.entity_id)
 
-  // Collect unique story IDs, then batch-fetch story data and member IDs
   const storyIds = [
     ...new Set(result.results.flatMap(r => (r.story_id !== null ? [r.story_id] : []))),
   ]
@@ -90,7 +91,6 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     getVisiblePostStoryIdsByStoryIds(currentUser, storyIds),
   ])
 
-  // Fetch story member items not already in primary results
   const primaryIdSet = new Set(rssFeedItemIds)
   const memberItemIdsSet = new Set<string>()
   for (const page of Object.values(storyMemberPages)) {

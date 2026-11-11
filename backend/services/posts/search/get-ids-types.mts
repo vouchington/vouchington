@@ -8,4 +8,5 @@ export type PostSearchRow = {
   ranking_score?: string | number
   following_rank?: string | number
   hot_score?: string | number
+  trending_score?: string | number
 }

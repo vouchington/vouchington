@@ -45874,6 +45874,10 @@
           "category": {
             "type": "string"
           },
+          "community_id": {
+            "format": "uuid",
+            "type": "string"
+          },
           "creator": {
             "type": "string"
           },
@@ -45905,7 +45909,8 @@
                 "link",
                 "article",
                 "blog_post",
-                "story"
+                "story",
+                "topic_recommendation"
               ],
               "type": "string"
             },
@@ -45931,7 +45936,7 @@
             "type": "string"
           },
           "sort": {
-            "enum": ["new", "best", "hot", "relevance", "following_new"],
+            "enum": ["new", "best", "hot", "trending", "relevance", "following_new"],
             "type": "string"
           },
           "story_id": {
@@ -45953,6 +45958,9 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "trending_min_score": {
+            "type": "number"
           },
           "url": {
             "anyOf": [
@@ -47200,38 +47208,6 @@
               "type": "string"
             },
             "type": "array"
-          }
-        },
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/trending-posts": {
-      "query": {
-        "properties": {
-          "after": {
-            "type": "string"
-          },
-          "limit": {
-            "default": 20,
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "min_score": {
-            "type": "number"
-          },
-          "post_type": {
-            "enum": ["discussion", "review", "data_point", "story"],
-            "type": "string"
-          },
-          "time_range": {
-            "default": "day",
-            "enum": ["day", "week", "month"],
-            "type": "string"
-          },
-          "topic_id": {
-            "format": "uuid",
-            "type": "string"
           }
         },
         "type": "object"
@@ -53009,9 +52985,6 @@
       "type": "object"
     },
     "GET:/api/v1/topics/compare": {
-      "$ref": "#/components/schemas/Record_string_unknown"
-    },
-    "GET:/api/v1/trending-posts": {
       "$ref": "#/components/schemas/Record_string_unknown"
     },
     "GET:/api/v1/trending-topics": {

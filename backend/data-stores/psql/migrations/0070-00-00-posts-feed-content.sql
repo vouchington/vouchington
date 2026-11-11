@@ -448,17 +448,17 @@ CREATE INDEX IF NOT EXISTS idx_posts__data_point_vertical
   ON posts (data_point_vertical, id DESC)
   WHERE data_point_vertical IS NOT NULL AND deleted_at IS NULL;
 
--- Story and data-point search read one post type in id order, including the 30-day id bound.
+-- Story, data-point, and topic-recommendation search read one post type in id order.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__post_type__id
   ON posts (post_type, id DESC)
-  WHERE deleted_at IS NULL AND post_type IN ('story', 'data_point');
+  WHERE deleted_at IS NULL AND post_type IN ('story', 'data_point', 'topic_recommendation');
 
--- Best rank for one story or data-point type. id is in the key so the time bound and cursor stay on the index.
+-- Best rank for one story, data-point, or topic-recommendation type.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__post_type__votes_score_sort__id
   ON posts (post_type, votes_score_sort DESC, id DESC)
-  WHERE deleted_at IS NULL AND post_type IN ('story', 'data_point');
+  WHERE deleted_at IS NULL AND post_type IN ('story', 'data_point', 'topic_recommendation');
 
 -- Best rank inside one data-point vertical.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

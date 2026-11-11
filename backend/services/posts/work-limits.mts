@@ -4,14 +4,12 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 export const SEMANTIC_POST_CANDIDATE_LIMIT = 1000
 
 const defaultFields = {
-  hacker_news_hot_candidate_limit: 1000,
   semantic_post_candidate_limit: SEMANTIC_POST_CANDIDATE_LIMIT,
   review_succession_candidate_page_size: 100,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const postsWorkMaxValues = {
-  hacker_news_hot_candidate_limit: 10000,
   semantic_post_candidate_limit: SEMANTIC_POST_CANDIDATE_LIMIT,
   review_succession_candidate_page_size: 1000,
 }
@@ -19,7 +17,6 @@ export const postsWorkMaxValues = {
 export const postsWorkConfig = new DynamicConfig({
   key: 'posts-work-config',
   fieldTypes: {
-    hacker_news_hot_candidate_limit: 'number',
     semantic_post_candidate_limit: 'number',
     review_succession_candidate_page_size: 'number',
   },

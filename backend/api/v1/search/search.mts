@@ -7,10 +7,13 @@ import { defineQueryContract, queryInteger, queryString } from '@vouchington/pag
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { searchOmnisearch } from '@services/search'
 import { resolveHashtagTopicSearch } from '@services/search-params'
+import { detectSearchSort, hasTextSearch } from '@modules/search-utils'
+import { decodePostSearchCursor } from '@services/posts/search/get-ids-page-info'
 
 const searchQuery = defineQueryContract({
   q: queryString(),
   limit: queryInteger({ minimum: 1, maximum: 100, default: 3 }),
+  after: queryString(),
 })
 
 // GET /api/v1/search — combined omnisearch across all five verticals.
@@ -36,12 +39,28 @@ app.route('/api/v1/search').get(async ctx => {
     filter.kind === 'exact_alias' ? [filter.aliasId] : [],
   )
   const hasUnknownHashtag = hashtagResult.hasUnknown
+  const postAfter = ctx.query.after as string | undefined
+  if (postAfter) {
+    const cursorOptions = { after: postAfter, text_search_query: textSearchQuery }
+    decodePostSearchCursor(
+      cursorOptions,
+      detectSearchSort(cursorOptions),
+      hasTextSearch(cursorOptions),
+    )
+  }
 
   if (
     hasUnknownHashtag ||
     (!textSearchQuery?.trim() && hashtagTopicIds.length === 0 && hashtagAliasIds.length === 0)
   ) {
-    ctx.json({ topics: [], posts: [], news: [], domains: [], communities: [] })
+    ctx.json({
+      topics: [],
+      posts: [],
+      posts_page_info: { start_cursor: null, end_cursor: null, has_next_page: false },
+      news: [],
+      domains: [],
+      communities: [],
+    })
     return
   }
 
@@ -52,6 +71,7 @@ app.route('/api/v1/search').get(async ctx => {
     hashtagAliasIds,
     hasUnknownHashtag,
     limit,
+    postAfter,
   })
 
   if (!currentUser) {

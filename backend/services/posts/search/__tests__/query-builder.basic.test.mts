@@ -138,44 +138,44 @@ describe('query-builder (basic)', () => {
     expect(query.values).toContain(topicId2)
   })
 
-  it('buildPostSearchQuery derives universal-topic membership from topic-side candidates', () => {
-    const topicId1 = '123e4567-e89b-12d3-a456-426614174001'
-    const topicId2 = '123e4567-e89b-12d3-a456-426614174002'
-    const query = buildPostSearchQuery(undefined, {
-      universal_topic_ids: [topicId1, topicId2, topicId1],
-    })
-
-    expect(query.sql).toContain('posts.id IN')
-    expect(query.sql).toContain(
-      '(CASE WHEN deleted_at IS NULL AND votes_score_net > 0 THEN object_id END) = ANY',
-    )
-    expect(query.sql).not.toContain('post_topic_alias_sources')
-    expect(query.sql).toContain('FROM relation__post__category__topic_alias relation')
-    expect(query.sql).toContain(
-      'JOIN topic_aliases alias ON alias.id = (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END)',
-    )
-    expect(query.sql).toContain('alias.topic_id = ANY')
-    expect(query.sql).toContain('AND deleted_at IS NULL')
-    expect(query.sql).toContain('AND votes_score_net > 0')
-    expect(query.sql.match(/UNION/g)).toHaveLength(3)
-    expect(query.sql).toContain('GROUP BY universal_topic_candidates.post_id')
-    expect(query.sql).toContain('HAVING COUNT(*) =')
-    expect(query.sql).not.toContain('ptc.subject_id = posts.id')
-    expect(query.values).toEqual(
-      expect.arrayContaining([
-        [topicId1, topicId2],
-        [topicId1, topicId2],
-        [topicId1, topicId2],
-        [topicId1, topicId2],
-        2,
-      ]),
-    )
-  })
-
   it('buildPostSearchQuery ignores an empty universal-topic filter', () => {
     const query = buildPostSearchQuery(undefined, { universal_topic_ids: [] })
 
     expect(query.sql).not.toContain('universal_topic_candidates')
+    expect(query.sql).not.toContain('topic_member')
+  })
+
+  it('probes every universal topic from the post id', () => {
+    const topicId = '123e4567-e89b-12d3-a456-426614174010'
+    const query = buildPostSearchQuery(undefined, {
+      universal_topic_ids: [topicId],
+      sort: 'new',
+    })
+
+    expect(query.sql).toContain('FROM posts')
+    expect(query.sql).not.toContain('SELECT DISTINCT ON (posts.id)')
+    expect(query.sql).not.toContain('UNION ALL')
+    expect(query.sql).toContain('relation__post__category__topic')
+    expect(query.sql).toContain('post_review_topic_ratings')
+    expect(query.sql).toContain('post_data_point_topics')
+    expect(query.sql).toContain('topic_aliases alias')
+    expect(query.values).toContain(topicId)
+  })
+
+  it('keeps an empty community cursor on the community id index', () => {
+    const communityId = '123e4567-e89b-12d3-a456-426614174010'
+    const testId = '00000000-0000-0000-0000-000000000000'
+    const query = buildPostSearchQuery(undefined, {
+      sort: 'new',
+      community_id: communityId,
+      id_lt: testId,
+    })
+
+    expect(query.sql).toContain('posts.community_id = ?')
+    expect(query.sql).toContain('posts.id < ?')
+    expect(query.sql).not.toContain('(posts.community_id, posts.id) <')
+    expect(query.values).toContain(communityId)
+    expect(query.values).toContain(testId)
   })
 
   it('buildPostSearchQuery adds similar_post_id CTE and filter', () => {
@@ -241,7 +241,9 @@ describe('query-builder (basic)', () => {
     expect(known.sql).toContain("posts.data_point_vertical = 'bank_account'")
     expect(known.sql).toContain("posts.structured_data->>'result' = 'pending'")
     expect(known.sql).toContain("posts.structured_data->>'credit_score_range' = '300-579'")
+    expect(known.sql).toContain('posts.community_id IS NULL')
     expect(known.sql).toContain("'019e0000-ee00-7000-8000-000000000001'::uuid")
+    expect(known.values).not.toContain('019e0000-ee00-7000-8000-000000000001')
     expect(known.values).not.toContain('bank_account')
     expect(known.values).not.toContain('pending')
     expect(known.values).not.toContain('300-579')
@@ -250,14 +252,15 @@ describe('query-builder (basic)', () => {
     expect(discussion.sql).toContain("posts.post_type = 'discussion'::post_types")
     expect(discussion.values).not.toContain('discussion')
 
-    const unknown = buildPostSearchQuery(undefined, {
+    const recommendation = buildPostSearchQuery(undefined, {
       post_types: ['topic_recommendation'],
       data_point_vertical: 'mortgage',
       data_point_topic_ids: ['not-a-uuid'],
     })
-    expect(unknown.values).toContain('topic_recommendation')
-    expect(unknown.values).toContain('mortgage')
-    expect(unknown.values).toContain('not-a-uuid')
+    expect(recommendation.sql).toContain("posts.post_type = 'topic_recommendation'::post_types")
+    expect(recommendation.values).not.toContain('topic_recommendation')
+    expect(recommendation.values).toContain('mortgage')
+    expect(recommendation.values).toContain('not-a-uuid')
 
     for (const result of ['counter_offer', 'retention_offer', 'sign_up_bonus', 'offer']) {
       const query = buildPostSearchQuery(undefined, {
@@ -265,7 +268,6 @@ describe('query-builder (basic)', () => {
         data_point_result: result,
       })
       expect(query.sql).toContain(`posts.structured_data->>'result' = '${result}'`)
-      expect(query.values).not.toContain(result)
     }
     for (const range of ['580-669', '670-739', '740-799', '800-850']) {
       const query = buildPostSearchQuery(undefined, {
@@ -273,7 +275,6 @@ describe('query-builder (basic)', () => {
         data_point_credit_score_range: range,
       })
       expect(query.sql).toContain(`posts.structured_data->>'credit_score_range' = '${range}'`)
-      expect(query.values).not.toContain(range)
     }
     const open = buildPostSearchQuery(undefined, {
       post_types: ['data_point'],

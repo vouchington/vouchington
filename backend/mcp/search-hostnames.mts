@@ -2,7 +2,11 @@ import type { MergedToolSource } from './create-merged-tool.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
 import { getPaginationLimits } from '@services/pagination'
-import { parseHostnamesSearchParams } from '@services/search-params'
+import {
+  parseHostnamesSearchParams,
+  validateTopicSearchTerms,
+  MAX_TOPIC_SEARCH_TERMS,
+} from '@services/search-params'
 import { searchUrlHostnames } from '@services/urls-hostnames'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -60,7 +64,12 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         ...pageInputProperties('Hostnames', HOSTNAME_PAGE_LIMIT),
         include_descendants: { type: 'boolean' },
         topic_match: { type: 'string', enum: ['any', 'all'] },
-        topics: { type: 'array', items: topicReferenceSchema },
+        topics: {
+          type: 'array',
+          maxItems: MAX_TOPIC_SEARCH_TERMS,
+          items: topicReferenceSchema,
+          description: 'At most five topic terms, including topic.',
+        },
       },
       required: [],
     },
@@ -76,6 +85,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      validateTopicSearchTerms(args, ['topic', 'topics'])
       const page = await findPageOrNull(args.after, async () => {
         // A null viewer keeps `blocked: false` and every moderation filter off, like anonymous REST.
         const topics = await resolvedTopicFilters({ topic: args.topic, topics: args.topics })

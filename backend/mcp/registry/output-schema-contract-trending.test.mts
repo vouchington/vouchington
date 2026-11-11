@@ -49,18 +49,15 @@ describe('MCP output schema contract for trending reads — real DB', () => {
     await refreshMaterializedViewForTest('mv_trending_topics')
   })
 
-  describe('read_posts.trending', () => {
+  describe('read_posts.search sorted by trending', () => {
     const callPosts = (args: Record<string, unknown>) =>
       callStructuredMcpTool(
         caller,
         'read_posts',
-        optionArgs('trending', { topic_id: topicId, ...args }),
+        optionArgs('search', { sort: 'trending', topic: topicId, time_range: '1w', ...args }),
         ['posts:read'],
       ) as Promise<Page>
 
-    // A post's trending score decays with its age, so the score in page one's cursor is a hair above
-    // the same post's score by the time page two runs. The REST route has this property too, so the
-    // last post of a page can come back first on the next page; it never skips one.
     it('continues from page_info.end_cursor without skipping or going back', async () => {
       const first = await callPosts({ limit: 2 })
       expect(first.results.map(r => r.id)).toEqual(postIds.slice(0, 2))
@@ -81,11 +78,11 @@ describe('MCP output schema contract for trending reads — real DB', () => {
       const result = await callStructuredMcpTool(
         caller,
         'read_posts',
-        optionArgs('trending', { topic_id: `missing-topic-${crypto.randomUUID()}` }),
+        optionArgs('search', { sort: 'trending', topic: `missing-topic-${crypto.randomUUID()}` }),
         ['posts:read'],
       )
 
-      expect(result).toEqual({ success: false, error: 'Topic not found' })
+      expect(result).toMatchObject({ success: true, results: [] })
     })
 
     it('clamps an oversized limit like the REST route and rejects a non-positive one', async () => {
@@ -93,30 +90,18 @@ describe('MCP output schema contract for trending reads — real DB', () => {
 
       expect(clamped.results.map(r => r.id)).toEqual(postIds)
       await expect(
-        callRejectedMcpTool(caller, 'read_posts', optionArgs('trending', { limit: 0 }), [
-          'posts:read',
-        ]),
+        callRejectedMcpTool(
+          caller,
+          'read_posts',
+          optionArgs('search', { sort: 'trending', limit: 0 }),
+          ['posts:read'],
+        ),
       ).resolves.toContain('/limit must be >= 1')
     })
 
     it('refuses a cursor that is not a trending cursor', async () => {
-      await expect(
-        callRejectedMcpTool(
-          caller,
-          'read_posts',
-          optionArgs('trending', { after: 'not-a-cursor' }),
-          ['posts:read'],
-        ),
-      ).resolves.toBe(
-        JSON.stringify({
-          error: {
-            status: 400,
-            code: 'INVALID_INPUT',
-            message: 'Invalid cursor format: expected score cursor',
-            retryable: false,
-          },
-        }),
-      )
+      const result = await callPosts({ after: 'not-a-cursor' })
+      expect(result).toEqual({ success: false, error: 'Invalid cursor' })
     })
   })
 
@@ -151,9 +136,12 @@ describe('MCP output schema contract for trending reads — real DB', () => {
       expect(clamped.results.length).toBeGreaterThan(0)
       expect(clamped.results.length).toBeLessThanOrEqual(100)
       await expect(
-        callRejectedMcpTool(caller, 'discover_topics', optionArgs('trending', { limit: 0 }), [
-          'topics:read',
-        ]),
+        callRejectedMcpTool(
+          caller,
+          'discover_topics',
+          optionArgs('search', { sort: 'trending', limit: 0 }),
+          ['topics:read'],
+        ),
       ).resolves.toContain('/limit must be >= 1')
     })
   })

@@ -172,10 +172,13 @@ describe('create.broadcast-privacy', () => {
       await approveTestPost(post.id)
       const globalResults = await getPostIds(creator, { user_id: creator.id })
       const globalIds = globalResults.results.map(r => r.id)
+      const strangerResults = await getPostIds(stranger, { user_id: creator.id })
+      const strangerIds = strangerResults.results.map(r => r.id)
       expect(post.community_id).toBe(community.id)
       expect(review?.post_id).toBe(post.id)
       expect(review?.community_id).toBe(community.id)
-      expect(globalIds).not.toContain(post.id)
+      expect(globalIds).toContain(post.id)
+      expect(strangerIds).toContain(post.id)
     })
 
     it('requires private visibility for private community posts', async () => {

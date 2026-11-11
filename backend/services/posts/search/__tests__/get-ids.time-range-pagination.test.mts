@@ -21,7 +21,7 @@ describe('getPostIds paging within a time range', () => {
         slug: `${label}-${suffix}`,
         createdById: user.id,
         markdown: `${label} ${suffix}`,
-        postType: 'topic_recommendation',
+        postType: 'discussion',
       })
     const [newerId, olderId, monthOldId, yearOldId] = await Promise.all([
       insert('newer', 1),
@@ -32,8 +32,7 @@ describe('getPostIds paging within a time range', () => {
     try {
       const base = {
         user_id: user.id,
-        include_topic_recommendations: true,
-        post_types: ['topic_recommendation' as const],
+        post_types: ['discussion' as const],
         sort: 'new' as const,
         limit: 1,
       }

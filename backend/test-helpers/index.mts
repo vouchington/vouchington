@@ -71,7 +71,6 @@ export {
   createUniversalTopicFiltersBaseQueryForTest,
   createRssFeedItemHashtagFiltersBaseQueryForTest,
   createEligibleRssFeedItemsCteBaseQueryForTest,
-  createEligiblePostsCteBaseQueryForTest,
   createCrawlChunksBaseQueryForTest,
   createCrawlChunksMarkdownConditionForTest,
   createCrawlChunksCreatedAtOrderForTest,

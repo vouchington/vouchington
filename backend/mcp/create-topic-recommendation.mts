@@ -52,7 +52,7 @@ const tool: Tool<Args, { success: true; post: McpTopicRecommendationPost }> = {
     audience: 'user',
     title: 'Create Topic Recommendation',
     plan: 'plus',
-    requiredScopes: ['topic-recommendations:read', 'topic-recommendations:write'],
+    requiredScopes: ['posts:read', 'topic-recommendations:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     api: [{ method: 'POST', path: '/api/v1/topic-recommendations' }],
     outputSchema: TOPIC_RECOMMENDATION_RESULT_SCHEMA,

@@ -121,6 +121,40 @@ describe('search functions', () => {
   })
 
   describe('searchPostsOnly', () => {
+    it('exposes an empty page cursor and forwards it with the original query', async () => {
+      mockFetchPosts.mockResolvedValueOnce({
+        results: [],
+        posts: {},
+        page_info: { start_cursor: null, end_cursor: 'cursor-1', has_next_page: true },
+      })
+      mockFetchPosts.mockResolvedValueOnce({
+        results: [{ id: 'post-1' }],
+        posts: { 'post-1': post },
+        page_info: { start_cursor: null, end_cursor: null, has_next_page: false },
+      })
+
+      const first = await searchPostsOnly('travel rewards', signal)
+      expect(first.posts).toEqual([])
+      expect(first.posts_page_info).toEqual({
+        start_cursor: null,
+        end_cursor: 'cursor-1',
+        has_next_page: true,
+      })
+      const next = await searchPostsOnly(
+        'travel rewards',
+        signal,
+        first.posts_page_info!.end_cursor!,
+      )
+      expect(mockFetchPosts).toHaveBeenLastCalledWith({
+        q: 'travel rewards',
+        limit: 5,
+        signal,
+        after: 'cursor-1',
+      })
+      expect(next.posts).toEqual([post])
+      expect(next.posts_page_info?.has_next_page).toBe(false)
+    })
+
     it('fetches posts with limit 5 and returns only posts', async () => {
       mockFetchPosts.mockResolvedValueOnce({
         results: [{ id: 'post-1' }],

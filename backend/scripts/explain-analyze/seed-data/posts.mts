@@ -2,7 +2,15 @@ import { beginTransaction } from '@data-stores/psql'
 import { contentHash, seedUuid } from './common.mts'
 import { PostSeedDiagnostics, type SeedBackend } from './post-diagnostics.mts'
 
-export async function seedPosts(count = 10_000): Promise<void> {
+export async function seedPosts(
+  count = 10_000,
+  startIndex = 0,
+  postTypeForIndex: (
+    index: number,
+  ) => 'discussion' | 'review' | 'data_point' | 'topic_recommendation' = index =>
+    index % 3 === 0 ? 'discussion' : index % 3 === 1 ? 'review' : 'data_point',
+  idForIndex: (index: number) => string = index => seedUuid(index, '05'),
+): Promise<void> {
   console.log(`Seeding ${count} posts...`)
   const diagnostics = new PostSeedDiagnostics()
   try {
@@ -31,10 +39,10 @@ export async function seedPosts(count = 10_000): Promise<void> {
         const verticals: (string | null)[] = []
         const structuredDataValues: (string | null)[] = []
         for (let j = 0; j < batch; j++) {
-          const idx = i + j
-          const id = seedUuid(idx, '05')
+          const idx = startIndex + i + j
+          const id = idForIndex(idx)
           const userId = seedUuid(idx % 20_000, '01')
-          const postType = idx % 3 === 0 ? 'discussion' : idx % 3 === 1 ? 'review' : 'data_point'
+          const postType = postTypeForIndex(idx)
           const title = `Seed Post ${idx}`
           const markdown = `Content for seed post ${idx}`
           const hash = contentHash(`post-${idx}`)

@@ -52,6 +52,30 @@ describe('searchCommunities – topicIds filter', () => {
     expect(ids).not.toContain(communityB.id)
   })
 
+  it('requires each distinct topic when several are requested', async () => {
+    const rand = createRandomString(8)
+    const [both, partial] = await Promise.all([
+      insertTestCommunity({ createdById: user.id, name: `${rand} Both`, slug: `${rand}-both` }),
+      insertTestCommunity({
+        createdById: user.id,
+        name: `${rand} Partial`,
+        slug: `${rand}-partial`,
+      }),
+    ])
+    const [first, second] = await Promise.all([
+      insertTestTopic({ name: `First ${rand}`, slug: `first-${rand}`, createdById: user.id }),
+      insertTestTopic({ name: `Second ${rand}`, slug: `second-${rand}`, createdById: user.id }),
+    ])
+    await Promise.all([
+      insertTestCommunityListItem({ communityId: both.id, itemType: 'topic', entityId: first }),
+      insertTestCommunityListItem({ communityId: both.id, itemType: 'topic', entityId: second }),
+      insertTestCommunityListItem({ communityId: partial.id, itemType: 'topic', entityId: first }),
+    ])
+
+    const result = await searchCommunities({ topicIds: [first, second, first], search: rand })
+    expect(result.results.map(row => row.id)).toEqual([both.id])
+  })
+
   it('returns metrics and both communities are included when sort=members', async () => {
     const rand = createRandomString(8)
 

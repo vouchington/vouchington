@@ -17,6 +17,7 @@ import {
 } from '@voucha/test-helpers'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { createTopicAliases } from '@services/topics/aliases'
+import { withDominantPostFixtures } from '@voucha/test-helpers/entities/trending-posts'
 
 describe('GET /api/v1/search', () => {
   let user: PrivateUser
@@ -49,6 +50,7 @@ describe('GET /api/v1/search', () => {
     expect(response.body).toEqual({
       topics: [],
       posts: [],
+      posts_page_info: { start_cursor: null, end_cursor: null, has_next_page: false },
       news: [],
       domains: [],
       communities: [],
@@ -83,6 +85,43 @@ describe('GET /api/v1/search', () => {
     expect(response.body.message).toBe('Invalid request query')
   })
 
+  it.each(['ordinary query', '#unknown-cursor-validation-topic', ''])(
+    'rejects malformed post cursors for query %s',
+    async q => {
+      await createRequest().get('/api/v1/search').query({ q, after: 'not-a-cursor' }).expect(400)
+    },
+  )
+
+  it('returns the matching hashtag post ahead of newer unrelated posts', async () => {
+    const alias = `omnisearch-page-${createRandomString(10).toLowerCase()}`
+    await insertUnlinkedTopicAliasForTest(alias)
+    const aliasId = await getTopicAliasIdForTest(alias)
+    if (!aliasId) throw new Error('Expected created topic alias')
+    const target = await createTestPost({ user })
+    await createTopHashtagPostSourceForTest({
+      postId: target.id,
+      topicAliasId: aliasId,
+      userId: user.id,
+      authoredToken: alias,
+    })
+    await withDominantPostFixtures(
+      [998, 999].map(milliseconds => ({
+        createdAt: new Date(`9999-12-31T23:59:59.${milliseconds}Z`),
+        createdById: user.id,
+      })),
+      async () => {
+        const request = createRequest()
+        await request.authenticateAs(user)
+        const first = await request
+          .get('/api/v1/search')
+          .query({ q: `#${alias}` })
+          .expect(200)
+        expect(first.body.posts.map((post: { id: string }) => post.id)).toEqual([target.id])
+        expect(first.body.posts_page_info.has_next_page).toBe(false)
+      },
+    )
+  })
+
   it('returns an empty shape for an unknown hashtag topic mention', async () => {
     const request = createRequest()
     const response = await request
@@ -92,6 +131,7 @@ describe('GET /api/v1/search', () => {
     expect(response.body).toEqual({
       topics: [],
       posts: [],
+      posts_page_info: { start_cursor: null, end_cursor: null, has_next_page: false },
       news: [],
       domains: [],
       communities: [],
@@ -167,7 +207,14 @@ describe('GET /api/v1/search', () => {
     expect(textSearch.body.posts.map((result: { id: string }) => result.id)).toContain(post.id)
 
     const response = await request.get(`/api/v1/search?q=${text}%20%23missing-${text}`).expect(200)
-    expect(response.body).toEqual({ topics: [], posts: [], news: [], domains: [], communities: [] })
+    expect(response.body).toEqual({
+      topics: [],
+      posts: [],
+      posts_page_info: { start_cursor: null, end_cursor: null, has_next_page: false },
+      news: [],
+      domains: [],
+      communities: [],
+    })
   })
 
   it('keeps post-authored title language metadata separate from its display fallback', async () => {

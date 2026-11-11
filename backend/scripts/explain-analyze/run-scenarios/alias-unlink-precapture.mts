@@ -13,6 +13,7 @@ import {
   finalizeTopicAliasUnlink,
 } from '@services/topics/unlink-topic-alias-phase'
 import { stageTopicAliasUnlinkPage } from '@services/topics/unlink-topic-alias-stage'
+import { resolveHashtagTopicSearch } from '@services/search-params'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { captureAliasUnlinkControlScenarios } from './alias-unlink-controls.mts'
 import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
@@ -72,6 +73,31 @@ export async function captureAliasUnlinkPrecaptureScenarios(): Promise<void> {
   try {
     await cleanupAliasUnlinkFixture()
     await seedAliasUnlinkFixture()
+    registerScenarioContract('search-hashtag-topic-resolution-five', {
+      expectations: [
+        { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 5 },
+        { kind: 'maxProcessedRows', relation: 'topics', max: 10 },
+      ],
+    })
+    await runAndCapture(
+      'search-hashtag-topic-resolution-five',
+      async () => {
+        const resolution = await resolveHashtagTopicSearch(
+          '#seed-alias-0 #seed-alias-1 #seed-topic-2 #seed-topic-3 #seed-publication-alias-guard',
+        )
+        if (
+          resolution.hasUnknown ||
+          resolution.topicIds.length !== 4 ||
+          resolution.filters.filter(filter => filter.kind === 'exact_alias').length !== 1
+        ) {
+          throw new Error(
+            'Five-term hashtag search did not resolve its linked, slug, and alias inputs',
+          )
+        }
+      },
+      undefined,
+      'resolveHashtagTopicSearch',
+    )
     await postPublicationWorkConfig.waitForInitialization()
     restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
       topic_alias_unlink_page_size: PAGE_SIZE,

@@ -6,33 +6,33 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 
-import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
-
-import { getPostByAnyCached } from '@services/entity-fetch'
-
 import type { PrivateUser } from '@voucha/types/entities/user'
 
 import { getPostByAny } from '@services/posts'
-
-import { createTopicAliases } from '@services/topics/aliases'
-
-import { getTopicByAny } from '@services/topics'
+import { getPostIds } from '@services/posts/search/get-ids'
 
 import type { CreateTopicRecommendationInput } from '../types.mts'
 
 import { runWithOwnedPostElectionVoteStats } from '../../../test-helpers/election-vote-stats-admission.mts'
 
 import {
-  approveTopicRecommendation,
   prepareTopicRecommendation,
   deletePendingRecommendation,
   rejectTopicRecommendation,
-  searchTopicRecommendations,
   updateTopicRecommendation,
 } from '../index.mts'
 
 const createRecommendation = (...args: Parameters<typeof prepareTopicRecommendation>) =>
   createTestTopicRecommendation(prepareTopicRecommendation, ...args)
+
+const searchRecommendations = (user: PrivateUser, q: string, limit?: number) =>
+  getPostIds(user, {
+    post_types: ['topic_recommendation'],
+    sort: 'best',
+    time_range: 'all',
+    topic_recommendation_q: q,
+    limit,
+  })
 
 describe('index.generated', () => {
   let user: PrivateUser
@@ -155,7 +155,7 @@ describe('index.generated', () => {
       await deletePendingRecommendation(user, recommendation)
 
       expect(await getPostByAny(recommendation.id)).toBeNull()
-      const result = await searchTopicRecommendations({ q: random })
+      const result = await searchRecommendations(user, random)
       expect(result.results.map(item => item.id)).not.toContain(recommendation.id)
     })
 
@@ -243,7 +243,7 @@ describe('index.generated', () => {
       expect(highStats).toMatchObject({ votes_count_up: 2, votes_score_net: 2 })
 
       // Use q filter with the unique random string to avoid accumulated data pushing results out
-      const result = await searchTopicRecommendations({ q: random, limit: 10 })
+      const result = await searchRecommendations(user, random, 10)
       const lowIndex = result.results.findIndex(
         (item: { id: string }) => item.id === evidence.targets.lowScoreId,
       )
@@ -264,7 +264,7 @@ describe('index.generated', () => {
         topic_slug: `deep-link-topic-${Date.now()}-${random}`,
       })
 
-      const result = await searchTopicRecommendations({ q: recommendation.id })
+      const result = await searchRecommendations(user, recommendation.id)
 
       expect(result.results.map(item => item.id)).toContain(recommendation.id)
     })
@@ -280,20 +280,13 @@ describe('index.generated', () => {
         topic_title: 'Literal 1000 Topic',
         topic_slug: `literal-1000-topic-${Date.now()}`,
       })
-      const percentResult = await searchTopicRecommendations({ q: '100%' })
+      const percentResult = await searchRecommendations(user, '100%')
       expect(percentResult.results.map(result => result.id)).toContain(literal.id)
       expect(percentResult.results.map(result => result.id)).not.toContain(wildcardOnly.id)
 
-      const underscoreResult = await searchTopicRecommendations({ q: 'foo_bar' })
+      const underscoreResult = await searchRecommendations(user, 'foo_bar')
       expect(underscoreResult.results.map(result => result.id)).toContain(literal.id)
       expect(underscoreResult.results.map(result => result.id)).not.toContain(wildcardOnly.id)
     })
   })
-
-  // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof insertTestTopic)
-  void (0 as unknown as typeof getPostByAnyCached)
-  void (0 as unknown as typeof createTopicAliases)
-  void (0 as unknown as typeof getTopicByAny)
-  void (0 as unknown as typeof approveTopicRecommendation)
 })

@@ -32,7 +32,6 @@ const PUBLIC_READER_SCOPES = [
   'backend/services/rss-xml/',
   'backend/services/search/',
   'backend/services/sitemaps/',
-  'backend/services/trending-posts/',
   'backend/services/topics/',
   'backend/services/users/metrics-batch-sql.mts',
 ]

@@ -81,7 +81,6 @@
     "@services/topic-claims": "workspace:^",
     "@services/topic-recommendations": "workspace:^",
     "@services/topics": "workspace:^",
-    "@services/trending-posts": "workspace:^",
     "@services/trending-topics": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/urls-hostnames": "workspace:^",

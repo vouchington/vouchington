@@ -1699,7 +1699,7 @@
           "tool": {
             "name": "read_community",
             "title": "Read Community",
-            "description": "list_item_counts: Count a public community's curated list entries by item_type (topic, rss_feed, post, url_hostname or url). Counts reflect the signed-out view: unreadable posts are excluded. Use read_community (option list_items) to page through them.\nlist_items: List a public community's curated item_type in list order, as a signed-out reader sees it. entity_id identifies each entry; label gives hostname, URL or feed title where no tool reads by id, or null if unreadable. Unreadable posts are omitted. Read topics with read_topic (option details), posts with read_posts (option details), and totals with read_community (option list_item_counts).\nmembers: List a public community's members as a signed-out reader sees them: owner and moderators always, regular members only when member_roster_visibility is public.\npinned_posts: Get the posts a public community has pinned, in pin order, by its UUID or slug, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. A pinned post the public cannot see is left out.\nposts: List a public community's approved posts as a signed-out reader sees them, newest or hot first. Anonymous posts never name their author. q matches text and #hashtags. Unfiltered pages exclude pins; pinned_post_ids appears only on the first. Read them with read_community (option pinned_posts).\ndetails: Get a public community by UUID or slug, including its rules, owner and public counts. Private, deleted and unknown communities all return Community not found, even for members or owners. Use read_community (options posts, pinned_posts, members) for its contents.",
+            "description": "list_item_counts: Count a public community's curated list entries by item_type (topic, rss_feed, post, url_hostname or url). Counts reflect the signed-out view: unreadable posts are excluded. Use read_community (option list_items) to page through them.\nlist_items: List a public community's curated item_type in list order, as a signed-out reader sees it. entity_id identifies each entry; label gives hostname, URL or feed title where no tool reads by id, or null if unreadable. Unreadable posts are omitted. Read topics with read_topic (option details), posts with read_posts (option details), and totals with read_community (option list_item_counts).\nmembers: List a public community's members as a signed-out reader sees them: owner and moderators always, regular members only when member_roster_visibility is public.\npinned_posts: Get the posts a public community has pinned, in pin order, by its UUID or slug, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. A pinned post the public cannot see is left out.\ndetails: Get a public community by UUID or slug, including its rules, owner and public counts. Private, deleted and unknown communities all return Community not found, even for members or owners. Use read_community (options posts, pinned_posts, members) for its contents.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -1790,49 +1790,6 @@
                     },
                     "arguments": {
                       "$ref": "#/$defs/S1"
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
-                      "enum": ["posts"]
-                    },
-                    "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "community_id": {
-                          "$ref": "#/$defs/S2"
-                        },
-                        "sort": {
-                          "type": "string",
-                          "enum": ["new", "hot"],
-                          "description": "Sort order: new (most recent, the default) or hot"
-                        },
-                        "q": {
-                          "type": "string",
-                          "description": "Keyword search over the posts. Same as the REST q: matches text and #hashtags."
-                        },
-                        "time_range": {
-                          "type": "string",
-                          "enum": ["1d", "1w", "1m", "1y", "all"],
-                          "description": "Post search: omit for no age filter. An explicit code, including 1m, is strict. Community lists default to 1m."
-                        },
-                        "limit": {
-                          "type": "integer",
-                          "minimum": 1,
-                          "maximum": 25,
-                          "description": "Posts per page; defaults to 20."
-                        },
-                        "after": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["community_id"],
-                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -1937,7 +1894,7 @@
                                 "type": "string"
                               },
                               "label": {
-                                "$ref": "#/$defs/S4"
+                                "$ref": "#/$defs/S3"
                               }
                             },
                             "required": [
@@ -1952,7 +1909,7 @@
                           }
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["success", "results", "page_info"],
@@ -1981,7 +1938,7 @@
                                 "type": "string"
                               },
                               "username": {
-                                "$ref": "#/$defs/S4"
+                                "$ref": "#/$defs/S3"
                               },
                               "role": {
                                 "enum": ["member", "moderator", "owner"],
@@ -1996,7 +1953,7 @@
                           }
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["success", "results", "page_info"],
@@ -2017,40 +1974,93 @@
                           "const": true
                         },
                         "pinned_posts": {
-                          "$ref": "#/$defs/S1"
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "slug": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "post_type": {
+                                "enum": [
+                                  "article",
+                                  "blog_post",
+                                  "comment",
+                                  "data_point",
+                                  "discussion",
+                                  "link",
+                                  "review",
+                                  "story",
+                                  "topic_recommendation"
+                                ],
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "markdown": {
+                                "type": "string"
+                              },
+                              "parent_post_id": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "root_post_id": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "created_by_id": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "is_anonymous": {
+                                "type": "boolean"
+                              },
+                              "created_at": {
+                                "type": "string"
+                              },
+                              "updated_at": {
+                                "type": "string"
+                              },
+                              "provenance": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "placeholder_state": {
+                                "enum": ["deleted", "unmoderated"],
+                                "type": "string"
+                              },
+                              "hacker_news_references": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "comment_count": {
+                                    "type": "number"
+                                  },
+                                  "story_count": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": ["comment_count", "story_count"],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "slug",
+                              "post_type",
+                              "title",
+                              "markdown",
+                              "parent_post_id",
+                              "root_post_id",
+                              "created_by_id",
+                              "is_anonymous",
+                              "created_at",
+                              "updated_at"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": ["success", "pinned_posts"],
-                      "additionalProperties": false
-                    },
-                    {
-                      "$ref": "#/$defs/S2"
-                    }
-                  ]
-                },
-                {
-                  "type": "object",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "success": {
-                          "const": true
-                        },
-                        "pinned_post_ids": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "results": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "page_info": {
-                          "$ref": "#/$defs/S3"
-                        }
-                      },
-                      "required": ["success", "pinned_post_ids", "results", "page_info"],
                       "additionalProperties": false
                     },
                     {
@@ -2080,10 +2090,10 @@
                               "type": "string"
                             },
                             "markdown": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S3"
                             },
                             "rules_markdown": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S3"
                             },
                             "member_roster_visibility": {
                               "enum": ["members", "moderators", "public", "users"],
@@ -2109,7 +2119,7 @@
                               "type": "boolean"
                             },
                             "archived_at": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S3"
                             },
                             "created_at": {
                               "type": "string"
@@ -2118,64 +2128,7 @@
                               "type": "string"
                             },
                             "provenance": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "app": {
-                                  "anyOf": [
-                                    {
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "client_id": {
-                                          "type": "string"
-                                        },
-                                        "client_name": {
-                                          "type": "string"
-                                        },
-                                        "kind": {
-                                          "const": "verified"
-                                        }
-                                      },
-                                      "required": ["client_id", "client_name", "kind"],
-                                      "type": "object"
-                                    },
-                                    {
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "hostname": {
-                                          "type": "string"
-                                        },
-                                        "kind": {
-                                          "const": "hostname"
-                                        }
-                                      },
-                                      "required": ["hostname", "kind"],
-                                      "type": "object"
-                                    },
-                                    {
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "key": {
-                                          "type": "string"
-                                        },
-                                        "kind": {
-                                          "const": "known"
-                                        }
-                                      },
-                                      "required": ["key", "kind"],
-                                      "type": "object"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "via": {
-                                  "enum": ["api", "mcp"],
-                                  "type": "string"
-                                }
-                              },
-                              "required": ["app", "via"],
-                              "type": "object"
+                              "$ref": "#/$defs/S1"
                             }
                           },
                           "required": [
@@ -2206,7 +2159,7 @@
                                   "type": "string"
                                 },
                                 "username": {
-                                  "$ref": "#/$defs/S4"
+                                  "$ref": "#/$defs/S3"
                                 }
                               },
                               "required": ["id", "username"],
@@ -2265,175 +2218,64 @@
               ],
               "$defs": {
                 "S1": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "slug": {
-                        "anyOf": [
-                          {
-                            "type": "null"
+                  "additionalProperties": false,
+                  "properties": {
+                    "app": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "client_id": {
+                              "type": "string"
+                            },
+                            "client_name": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "verified"
+                            }
                           },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "post_type": {
-                        "enum": [
-                          "article",
-                          "blog_post",
-                          "comment",
-                          "data_point",
-                          "discussion",
-                          "link",
-                          "review",
-                          "story",
-                          "topic_recommendation"
-                        ],
-                        "type": "string"
-                      },
-                      "title": {
-                        "type": "string"
-                      },
-                      "markdown": {
-                        "type": "string"
-                      },
-                      "parent_post_id": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "root_post_id": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "created_by_id": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "is_anonymous": {
-                        "type": "boolean"
-                      },
-                      "created_at": {
-                        "type": "string"
-                      },
-                      "updated_at": {
-                        "type": "string"
-                      },
-                      "provenance": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "app": {
-                            "anyOf": [
-                              {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "client_id": {
-                                    "type": "string"
-                                  },
-                                  "client_name": {
-                                    "type": "string"
-                                  },
-                                  "kind": {
-                                    "const": "verified"
-                                  }
-                                },
-                                "required": ["client_id", "client_name", "kind"],
-                                "type": "object"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "hostname": {
-                                    "type": "string"
-                                  },
-                                  "kind": {
-                                    "const": "hostname"
-                                  }
-                                },
-                                "required": ["hostname", "kind"],
-                                "type": "object"
-                              },
-                              {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "key": {
-                                    "type": "string"
-                                  },
-                                  "kind": {
-                                    "const": "known"
-                                  }
-                                },
-                                "required": ["key", "kind"],
-                                "type": "object"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "via": {
-                            "enum": ["api", "mcp"],
-                            "type": "string"
-                          }
+                          "required": ["client_id", "client_name", "kind"],
+                          "type": "object"
                         },
-                        "required": ["app", "via"],
-                        "type": "object"
-                      },
-                      "placeholder_state": {
-                        "enum": ["deleted", "unmoderated"],
-                        "type": "string"
-                      },
-                      "hacker_news_references": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "comment_count": {
-                            "type": "number"
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "hostname": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "hostname"
+                            }
                           },
-                          "story_count": {
-                            "type": "number"
-                          }
+                          "required": ["hostname", "kind"],
+                          "type": "object"
                         },
-                        "required": ["comment_count", "story_count"],
-                        "type": "object"
-                      }
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "const": "known"
+                            }
+                          },
+                          "required": ["key", "kind"],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
-                    "required": [
-                      "id",
-                      "slug",
-                      "post_type",
-                      "title",
-                      "markdown",
-                      "parent_post_id",
-                      "root_post_id",
-                      "created_by_id",
-                      "is_anonymous",
-                      "created_at",
-                      "updated_at"
-                    ],
-                    "additionalProperties": false
-                  }
+                    "via": {
+                      "enum": ["api", "mcp"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["app", "via"],
+                  "type": "object"
                 },
                 "S2": {
                   "type": "object",
@@ -2449,36 +2291,6 @@
                   "additionalProperties": false
                 },
                 "S3": {
-                  "type": "object",
-                  "properties": {
-                    "has_next_page": {
-                      "type": "boolean"
-                    },
-                    "start_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "end_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "required": ["has_next_page", "start_cursor", "end_cursor"],
-                  "additionalProperties": false
-                },
-                "S4": {
                   "anyOf": [
                     {
                       "type": "null"
@@ -2487,6 +2299,22 @@
                       "type": "string"
                     }
                   ]
+                },
+                "S4": {
+                  "type": "object",
+                  "properties": {
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "start_cursor": {
+                      "$ref": "#/$defs/S3"
+                    },
+                    "end_cursor": {
+                      "$ref": "#/$defs/S3"
+                    }
+                  },
+                  "required": ["has_next_page", "start_cursor", "end_cursor"],
+                  "additionalProperties": false
                 }
               }
             },
@@ -2501,8 +2329,7 @@
                 "list_items": "#/anyOf/1",
                 "members": "#/anyOf/2",
                 "pinned_posts": "#/anyOf/3",
-                "posts": "#/anyOf/4",
-                "details": "#/anyOf/5"
+                "details": "#/anyOf/4"
               }
             }
           },
@@ -2540,10 +2367,6 @@
             {
               "method": "GET",
               "path": "/api/v1/communities/:idOrSlug/pinned-posts"
-            },
-            {
-              "method": "GET",
-              "path": "/api/v1/communities/:idOrSlug/posts"
             },
             {
               "method": "GET",
@@ -3720,10 +3543,12 @@
                         },
                         "topic": {
                           "type": "array",
+                          "maxItems": 5,
                           "items": {
                             "type": "string",
                             "description": "Topic id, slug, or exact name"
-                          }
+                          },
+                          "description": "All selected topics must match. At most five topic and hashtag terms combined."
                         }
                       },
                       "required": [],
@@ -4300,7 +4125,7 @@
           "tool": {
             "name": "discover_rss_feeds",
             "title": "Discover Rss Feeds",
-            "description": "search: Search RSS feeds by title, type and current state. Returns at most 25 feeds per page and page_info.end_cursor for the next page. Text search has no cursor, as on REST. sort=trending ranks the feeds that gained follows or items in time_range (day, week or month; default week) and takes no filter besides apply_mutes, limit and after.\nrecommended: List RSS feed recommendations for the current user, with scores and reasons. Use read_rss_feed (option details) for details. Returns at most 100 per page and a cursor for the next page.",
+            "description": "search: Search RSS feeds by title, type and current state. Up to 25 feeds per page; continue with page_info.end_cursor. Text search has no cursor, as on REST. sort=trending ranks the feeds that gained follows or items in time_range (day, week or month; default week) and takes no filter besides apply_mutes, limit and after.\nrecommended: List RSS feed recommendations for the current user, with scores and reasons. Use read_rss_feed (option details) for details. Returns at most 100 per page and a cursor for the next page.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -4361,9 +4186,11 @@
                         },
                         "topics": {
                           "type": "array",
+                          "maxItems": 5,
                           "items": {
                             "$ref": "#/$defs/S1"
-                          }
+                          },
+                          "description": "Up to five topic/#hashtag terms."
                         },
                         "sort": {
                           "type": "string",
@@ -5625,7 +5452,7 @@
           "tool": {
             "name": "read_feed",
             "title": "Read Feed",
-            "description": "posts: Page posts delivered to your own feed. Results identify each post for read_posts (option details); the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.\nrss_items: Page RSS items delivered to your own feed. Results identify each item for read_rss_feed_item (option details); the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.\nreferral_links: Page referral links from users you follow, applying the REST feed privacy and mute policy. Returns at most 100 per page with page_info.end_cursor.",
+            "description": "posts: Page your feed posts with REST follow, community and content rules. Use read_posts(details) for content. Up to 100 results per page. Reuse end_cursor while has_next_page is true.\nrss_items: Page RSS items delivered to your own feed. Results identify each item for read_rss_feed_item (option details); the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.\nreferral_links: Page referral links from users you follow, applying the REST feed privacy and mute policy. Returns at most 100 per page with page_info.end_cursor.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -6031,7 +5858,7 @@
           "tool": {
             "name": "read_posts",
             "title": "Read Posts",
-            "description": "ancestors: Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. A deleted or unmoderated parent is a placeholder (placeholder_state, no text or author). A missing or not fully public comment returns Post not found.\ndescendants: Page direct-child heads with bounded previews. IDs sort per page. Follow opaque end_cursor on empty pages; it may skip unseen heads. has_next_page means more heads, not all replies. Expand returned comments via post_id. Deleted or unmoderated replies are placeholders.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; a comment needs a fully public thread root. A deleted or unmoderated comment with a valid reply below it is a placeholder (placeholder_state, no text or author). Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\ntrending: Get posts with positive net support, ranked by age-decayed vote confidence. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.\nsearch: Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.",
+            "description": "ancestors: Get a comment's parent chain, excluding the comment: the root plus up to 5 nearest parents per page, root first. Pass page_info.end_cursor as after for older parents; the root repeats each page. Root posts have none. A deleted or unmoderated parent is a placeholder (placeholder_state, no text or author). A missing or not fully public comment returns Post not found.\ndescendants: Page direct-child heads with bounded previews. IDs sort per page. Follow opaque end_cursor on empty pages; it may skip unseen heads. has_next_page means more heads, not all replies. Expand returned comments via post_id. Deleted or unmoderated replies are placeholders.\ndetails: Get a public post, comment or story post by UUID or slug. Private, pending, deleted, missing or hidden posts return Post not found; a comment needs a fully public thread root. A deleted or unmoderated comment with a valid reply below it is a placeholder (placeholder_state, no text or author). Use read_posts (option ancestors) for parents and read_posts (option descendants) for replies.\nsearch: Search posts with keyword, semantic, or similar-item signals. Follow the opaque end_cursor while has_next_page is true.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -6116,48 +5943,6 @@
                   "type": "object",
                   "properties": {
                     "option": {
-                      "enum": ["trending"]
-                    },
-                    "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "time_range": {
-                          "type": "string",
-                          "enum": ["day", "week", "month"],
-                          "description": "Time window for trending calculation. Defaults to \"week\"."
-                        },
-                        "post_type": {
-                          "type": "string",
-                          "enum": ["discussion", "review", "data_point", "story"]
-                        },
-                        "topic_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "after": {
-                          "type": "string"
-                        },
-                        "limit": {
-                          "type": "integer",
-                          "minimum": 1,
-                          "description": "Maximum number of results to return. Defaults to 20; values over 100 are clamped to 100."
-                        },
-                        "min_score": {
-                          "type": "number",
-                          "minimum": 0,
-                          "description": "Minimum age-decayed confidence score."
-                        }
-                      },
-                      "required": [],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
                       "enum": ["search"]
                     },
                     "arguments": {
@@ -6165,7 +5950,7 @@
                       "properties": {
                         "q": {
                           "type": "string",
-                          "description": "Keyword search. Same as GET /api/v1/posts q: matches post text and #hashtags."
+                          "description": "Keyword search. Same as GET /api/v1/posts q: matches post text and up to five #hashtags."
                         },
                         "search": {
                           "type": "string",
@@ -6201,23 +5986,25 @@
                         },
                         "sort": {
                           "type": "string",
-                          "enum": ["new", "best", "hot", "relevance", "following_new"],
-                          "description": "Sort order: new (most recent), best (highest voted), hot, relevance (search relevance; the default when searching), following_new"
+                          "enum": ["new", "best", "hot", "trending", "relevance", "following_new"],
+                          "description": "Sort by new, best, hot, trending, relevance, or following_new. Hot and trending use a stable age-weighted rank. Keyword relevance orders by ranking score, then id."
                         },
                         "post_type": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "post_types": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/$defs/S2"
+                            "$ref": "#/$defs/S1"
                           }
                         },
                         "categories": {
                           "type": "array",
+                          "maxItems": 5,
                           "items": {
                             "type": "string"
-                          }
+                          },
+                          "description": "Match all categories; five maximum including category."
                         },
                         "category": {
                           "type": "string"
@@ -6226,14 +6013,23 @@
                           "type": "string",
                           "description": "User id or username"
                         },
+                        "community_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "trending_min_score": {
+                          "type": "number",
+                          "minimum": 0,
+                          "description": "Minimum age-decayed score for trending."
+                        },
                         "data_point_topic": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         },
                         "data_point_vertical": {
                           "type": "string"
                         },
                         "review_topic": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         },
                         "story_id": {
                           "type": "string",
@@ -6249,13 +6045,15 @@
                           "description": "Post search: omit for no age filter. An explicit code, including 1m, is strict. Community lists default to 1m."
                         },
                         "topic": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         },
                         "topics": {
                           "type": "array",
+                          "maxItems": 5,
                           "items": {
-                            "$ref": "#/$defs/S1"
-                          }
+                            "$ref": "#/$defs/S2"
+                          },
+                          "description": "Match all topics; five topic and hashtag terms maximum."
                         },
                         "url": {
                           "anyOf": [
@@ -6281,10 +6079,6 @@
               "$defs": {
                 "S1": {
                   "type": "string",
-                  "description": "Topic id, slug, or exact name"
-                },
-                "S2": {
-                  "type": "string",
                   "enum": [
                     "discussion",
                     "review",
@@ -6293,8 +6087,13 @@
                     "link",
                     "article",
                     "blog_post",
-                    "story"
+                    "story",
+                    "topic_recommendation"
                   ]
+                },
+                "S2": {
+                  "type": "string",
+                  "description": "Topic id, slug, or exact name"
                 },
                 "S3": {
                   "type": "string",
@@ -6369,7 +6168,7 @@
                               "type": "string"
                             },
                             "slug": {
-                              "$ref": "#/$defs/S6"
+                              "$ref": "#/$defs/S4"
                             },
                             "post_type": {
                               "enum": [
@@ -6392,13 +6191,13 @@
                               "type": "string"
                             },
                             "parent_post_id": {
-                              "$ref": "#/$defs/S6"
+                              "$ref": "#/$defs/S4"
                             },
                             "root_post_id": {
-                              "$ref": "#/$defs/S6"
+                              "$ref": "#/$defs/S4"
                             },
                             "created_by_id": {
-                              "$ref": "#/$defs/S6"
+                              "$ref": "#/$defs/S4"
                             },
                             "is_anonymous": {
                               "type": "boolean"
@@ -6570,57 +6369,23 @@
                         "success": {
                           "const": true
                         },
-                        "time_range": {
-                          "type": "string",
-                          "enum": ["day", "week", "month"]
-                        },
-                        "results": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "trending_score": {
-                                "type": "number"
-                              },
-                              "hacker_news_references": {
-                                "$ref": "#/$defs/S5"
-                              }
-                            },
-                            "required": ["id", "trending_score"],
-                            "additionalProperties": false
-                          }
-                        },
-                        "page_info": {
-                          "$ref": "#/$defs/S4"
-                        }
-                      },
-                      "required": ["success", "time_range", "results", "page_info"],
-                      "additionalProperties": false
-                    },
-                    {
-                      "$ref": "#/$defs/S2"
-                    }
-                  ]
-                },
-                {
-                  "type": "object",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "success": {
-                          "const": true
-                        },
                         "results": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
                               "hacker_news_references": {
-                                "$ref": "#/$defs/S5"
+                                "additionalProperties": false,
+                                "properties": {
+                                  "comment_count": {
+                                    "type": "number"
+                                  },
+                                  "story_count": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": ["comment_count", "story_count"],
+                                "type": "object"
                               },
                               "id": {
                                 "type": "string"
@@ -6640,7 +6405,20 @@
                           }
                         },
                         "page_info": {
-                          "$ref": "#/$defs/S4"
+                          "additionalProperties": false,
+                          "properties": {
+                            "end_cursor": {
+                              "$ref": "#/$defs/S4"
+                            },
+                            "has_next_page": {
+                              "type": "boolean"
+                            },
+                            "start_cursor": {
+                              "$ref": "#/$defs/S4"
+                            }
+                          },
+                          "required": ["end_cursor", "has_next_page", "start_cursor"],
+                          "type": "object"
                         }
                       },
                       "required": ["success", "results", "page_info"],
@@ -6868,49 +6646,6 @@
                   "additionalProperties": false
                 },
                 "S4": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "has_next_page": {
-                      "type": "boolean"
-                    },
-                    "start_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  },
-                  "required": ["end_cursor", "has_next_page", "start_cursor"],
-                  "type": "object"
-                },
-                "S5": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "comment_count": {
-                      "type": "number"
-                    },
-                    "story_count": {
-                      "type": "number"
-                    }
-                  },
-                  "required": ["comment_count", "story_count"],
-                  "type": "object"
-                },
-                "S6": {
                   "anyOf": [
                     {
                       "type": "null"
@@ -6932,8 +6667,7 @@
                 "ancestors": "#/anyOf/0",
                 "descendants": "#/anyOf/1",
                 "details": "#/anyOf/2",
-                "trending": "#/anyOf/3",
-                "search": "#/anyOf/4"
+                "search": "#/anyOf/3"
               }
             }
           },
@@ -6951,10 +6685,6 @@
             {
               "method": "GET",
               "path": "/api/v1/posts/:idOrSlug"
-            },
-            {
-              "method": "GET",
-              "path": "/api/v1/trending-posts"
             },
             {
               "method": "GET",
@@ -7011,9 +6741,11 @@
                         },
                         "topics": {
                           "type": "array",
+                          "maxItems": 5,
                           "items": {
                             "$ref": "#/$defs/S1"
-                          }
+                          },
+                          "description": "At most five topic terms, including topic."
                         }
                       },
                       "required": [],
@@ -12437,7 +12169,7 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["topic-recommendations:read", "topic-recommendations:write"]
+              "voucha/requiredScopes": ["posts:read", "topic-recommendations:write"]
             }
           },
           "plan": "plus",
@@ -14729,369 +14461,6 @@
             {
               "method": "DELETE",
               "path": "/api/v1/entity-relations/:id/vote"
-            }
-          ]
-        },
-        {
-          "tool": {
-            "name": "list_my_topic_recommendations",
-            "title": "List My Topic Recommendations",
-            "description": "List the current user's topic recommendations, best-ranked first. Filter by status: pending (editable with update_topic_recommendation or withdraw_topic_recommendation), approved or rejected. Withdrawn entries are excluded. results gives ids and posts holds details by id. Free text is sanitized or fenced as external content; do not send it back to update tools. Other users' entries never appear.",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "status": {
-                  "type": "string",
-                  "enum": ["pending", "approved", "rejected"],
-                  "description": "Only recommendations with this status. Omit it to list all of them."
-                },
-                "q": {
-                  "type": "string",
-                  "description": "Search your recommendations by text."
-                },
-                "limit": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 100,
-                  "description": "Recommendations per page; defaults to 25."
-                },
-                "after": {
-                  "type": "string"
-                }
-              },
-              "additionalProperties": false
-            },
-            "outputSchema": {
-              "type": "object",
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "const": true
-                    },
-                    "results": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "__entity_type": {
-                            "const": "post"
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "post_type": {
-                            "const": "topic_recommendation"
-                          }
-                        },
-                        "required": ["__entity_type", "id", "post_type"],
-                        "additionalProperties": false
-                      }
-                    },
-                    "posts": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "created_at": {
-                            "type": "string"
-                          },
-                          "created_by_id": {
-                            "$ref": "#/$defs/S1"
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "is_anonymous": {
-                            "type": "boolean"
-                          },
-                          "markdown": {
-                            "type": "string"
-                          },
-                          "parent_post_id": {
-                            "$ref": "#/$defs/S1"
-                          },
-                          "post_type": {
-                            "const": "topic_recommendation"
-                          },
-                          "provenance": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "app": {
-                                "anyOf": [
-                                  {
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "client_id": {
-                                        "type": "string"
-                                      },
-                                      "client_name": {
-                                        "type": "string"
-                                      },
-                                      "kind": {
-                                        "const": "verified"
-                                      }
-                                    },
-                                    "required": ["client_id", "client_name", "kind"],
-                                    "type": "object"
-                                  },
-                                  {
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "hostname": {
-                                        "type": "string"
-                                      },
-                                      "kind": {
-                                        "const": "hostname"
-                                      }
-                                    },
-                                    "required": ["hostname", "kind"],
-                                    "type": "object"
-                                  },
-                                  {
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "key": {
-                                        "type": "string"
-                                      },
-                                      "kind": {
-                                        "const": "known"
-                                      }
-                                    },
-                                    "required": ["key", "kind"],
-                                    "type": "object"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "via": {
-                                "enum": ["api", "mcp"],
-                                "type": "string"
-                              }
-                            },
-                            "required": ["app", "via"],
-                            "type": "object"
-                          },
-                          "root_post_id": {
-                            "$ref": "#/$defs/S1"
-                          },
-                          "slug": {
-                            "$ref": "#/$defs/S1"
-                          },
-                          "title": {
-                            "type": "string"
-                          },
-                          "topic_recommendation": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "aliases": {
-                                "items": {
-                                  "type": "string"
-                                },
-                                "type": "array"
-                              },
-                              "approval_error_message": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "created_topic_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "created_topic_slug": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "example_referral_link": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "hostname": {
-                                "anyOf": [
-                                  {
-                                    "$ref": "#/$defs/S2"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "hostname_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "hostnames": {
-                                "items": {
-                                  "$ref": "#/$defs/S2"
-                                },
-                                "type": "array"
-                              },
-                              "landing_page_urls": {
-                                "items": {
-                                  "type": "string"
-                                },
-                                "type": "array"
-                              },
-                              "post_id": {
-                                "type": "string"
-                              },
-                              "rejection_reason": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "reviewed_at": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "reviewed_by_id": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "status": {
-                                "enum": ["approved", "pending", "rejected"],
-                                "type": "string"
-                              },
-                              "topic_markdown": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "topic_slug": {
-                                "type": "string"
-                              },
-                              "topic_title": {
-                                "type": "string"
-                              },
-                              "topic_type": {
-                                "enum": ["card", "referral_program", "topic"],
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "aliases",
-                              "approval_error_message",
-                              "created_topic_id",
-                              "example_referral_link",
-                              "hostname",
-                              "hostname_id",
-                              "hostnames",
-                              "landing_page_urls",
-                              "post_id",
-                              "rejection_reason",
-                              "reviewed_at",
-                              "reviewed_by_id",
-                              "status",
-                              "topic_markdown",
-                              "topic_slug",
-                              "topic_title",
-                              "topic_type"
-                            ],
-                            "type": "object"
-                          },
-                          "updated_at": {
-                            "type": "string"
-                          },
-                          "hacker_news_references": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "comment_count": {
-                                "type": "number"
-                              },
-                              "story_count": {
-                                "type": "number"
-                              }
-                            },
-                            "required": ["comment_count", "story_count"],
-                            "type": "object"
-                          }
-                        },
-                        "required": [
-                          "created_at",
-                          "created_by_id",
-                          "id",
-                          "is_anonymous",
-                          "markdown",
-                          "parent_post_id",
-                          "post_type",
-                          "root_post_id",
-                          "slug",
-                          "title",
-                          "topic_recommendation",
-                          "updated_at"
-                        ],
-                        "type": "object"
-                      }
-                    },
-                    "page_info": {
-                      "type": "object",
-                      "properties": {
-                        "has_next_page": {
-                          "type": "boolean"
-                        },
-                        "start_cursor": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "end_cursor": {
-                          "$ref": "#/$defs/S1"
-                        }
-                      },
-                      "required": ["has_next_page", "start_cursor", "end_cursor"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["success", "results", "posts", "page_info"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "const": false
-                    },
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["success", "error"],
-                  "additionalProperties": false
-                }
-              ],
-              "$defs": {
-                "S1": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "S2": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "__entity_type": {
-                      "const": "hostname"
-                    },
-                    "hostname": {
-                      "type": "string"
-                    },
-                    "id": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["__entity_type", "hostname", "id"],
-                  "type": "object"
-                }
-              }
-            },
-            "annotations": {
-              "readOnlyHint": true,
-              "idempotentHint": true
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["topic-recommendations:read"]
-            }
-          },
-          "plan": "free",
-          "roles": null,
-          "api": [
-            {
-              "method": "GET",
-              "path": "/api/v1/topic-recommendations"
             }
           ]
         },
@@ -19613,7 +18982,7 @@
               "idempotentHint": false
             },
             "_meta": {
-              "voucha/requiredScopes": ["topic-recommendations:read", "topic-recommendations:write"]
+              "voucha/requiredScopes": ["posts:read", "topic-recommendations:write"]
             }
           },
           "plan": "plus",
@@ -19657,7 +19026,7 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["topic-recommendations:read", "topic-recommendations:write"]
+              "voucha/requiredScopes": ["posts:read", "topic-recommendations:write"]
             }
           },
           "plan": "plus",

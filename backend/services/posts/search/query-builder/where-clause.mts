@@ -14,7 +14,8 @@ import { buildPostHasHackerNewsReferences } from '@modules/feed-query-builders'
 import { appendBaseFilters } from './base-filters.mts'
 import { appendPartitionAndPaginationFilters } from './pagination-filters.mts'
 import { appendSearchAndSimilarityFilters } from './search-filters.mts'
-import { appendTopicFilters } from './topic-filters.mts'
+import { appendPostSearchSpecialFilters } from './special-filters.mts'
+import { appendTopicFilters, appendTopicMembershipFilters } from './topic-filters.mts'
 
 export function appendPostSearchWhereClause(
   query: SQLStatement,
@@ -41,14 +42,14 @@ export function appendPostSearchWhereClause(
   },
 ): void {
   const filters: SQLStatement[] = []
-  // The Hacker News cohort (sort 'new') stays the newest eligible rows so its walk is index-bounded;
-  // this filter then trims it in the outer pagination statement.
-  if (sort === 'hot') filters.push(sql`posts.votes_score_net > 0`)
-  // A materialized eligible cohort already applied these filters in this statement's snapshot.
+  if (sort === 'hot' || sort === 'trending') filters.push(sql`posts.votes_score_net > 0`)
+  // Pagination-only statements already applied eligibility inside the same query.
   if (!paginationOnly) {
     appendBaseFilters(filters, currentUser, options)
     appendTopicFilters(filters, options)
+    appendTopicMembershipFilters(filters, options, options.topicMembershipColumn ?? 'posts.id')
     appendSimpleColumnFilters(filters, options)
+    appendPostSearchSpecialFilters(filters, options, decisionInstant)
     appendSearchAndSimilarityFilters(filters, { ...options, hasSemanticSearch, hasTextSearch })
   }
   appendPartitionAndPaginationFilters(filters, {
@@ -91,7 +92,7 @@ function optionValues(...groups: ReadonlyArray<readonly { value: string }[]>): r
 }
 
 const POST_TYPE_LITERALS = closedLiterals(
-  VALID_FILTERABLE_POST_TYPES,
+  [...VALID_FILTERABLE_POST_TYPES, 'topic_recommendation'],
   quoted => `posts.post_type = ${quoted}::post_types`,
 )
 const VERTICAL_LITERALS = closedLiterals(
@@ -154,6 +155,9 @@ function appendSimpleColumnFilters(filters: SQLStatement[], options: PostSearchO
       ),
     )
   }
+  // The positive result and credit indexes cover global data points only.
+  if (options.data_point_result || options.data_point_credit_score_range)
+    filters.push(sql`posts.community_id IS NULL`)
   if (options.story_id) {
     filters.push(sql`EXISTS (
       SELECT 1

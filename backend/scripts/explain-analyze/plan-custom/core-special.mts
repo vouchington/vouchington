@@ -6,27 +6,28 @@ export function assertCorePlanCheck(name: string, result: ExplainResult): void {
   const nodes = collectPlanNodes(result.plan)
   switch (name) {
     case 'universalTopicCandidates': {
-      const candidate = nodes.some(node =>
-        [
-          'relation__post__category__topic',
-          'post_review_topic_ratings',
-          'post_data_point_topics',
-        ].includes(baseRelationName(node)),
+      // The tail read counts the capped walk from its far end; it carries no membership probe.
+      if (result.query_text.includes('buildTopicWalkTailQuery')) return
+      // The sort-index walk over posts, with each membership relation probed by the post id.
+      const keyedProbe = nodes.some(
+        node =>
+          [
+            'relation__post__category__topic',
+            'post_review_topic_ratings',
+            'post_data_point_topics',
+          ].includes(baseRelationName(node)) &&
+          /\b(subject_id|post_id) = /.test(stringFromUnknown(node['Index Cond'] ?? '')),
       )
       const posts = nodes.filter(
         node => baseRelationName(node) === 'posts' && node['Alias'] === 'posts',
       )
       if (
-        !candidate ||
-        !posts.some(
-          node =>
-            String(node['Node Type']).includes('Index') &&
-            stringFromUnknown(node['Index Cond'] ?? '').includes('id'),
-        ) ||
+        !keyedProbe ||
+        !posts.some(node => String(node['Node Type']).includes('Index')) ||
         posts.some(node => node['Node Type'] === 'Seq Scan')
       )
         throw new Error(
-          `${result.name} must drive universal-topic search from reverse-indexed candidates before indexed posts.id lookups`,
+          `${result.name} must walk posts by a sort index with keyed per-row membership probes`,
         )
       return
     }

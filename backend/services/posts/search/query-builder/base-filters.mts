@@ -7,56 +7,66 @@ import {
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
 import type { PostSearchOptions } from '../types.mts'
-import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/metadata'
+import { appendFollowingPhaseFilters } from './ranked-page-queries.mts'
 
 export function appendBaseFilters(
   filters: SQLStatement[],
   currentUser: BasicUser | undefined,
   {
     exclude_for_user_id,
-    include_topic_recommendations,
+    following_phase,
+    include_archived_communities,
     post_types,
     profileCountPostType,
-    public_eligibility_only,
     user_id,
   }: PostSearchOptions,
 ): boolean {
   filters.push(sql`posts.deleted_at IS NULL`)
-  filters.push(sql`posts.community_id IS NULL`)
+  // Profile facet counts retain their existing global-post scope; discovery accepts communities.
+  if (profileCountPostType) filters.push(sql`posts.community_id IS NULL`)
   // A profile count's only post_type predicate is its literal, so the partial index can be proved.
-  if (!profileCountPostType && !include_topic_recommendations) {
-    filters.push(sql`posts.post_type != 'topic_recommendation'`)
-  }
   if (!profileCountPostType && !post_types?.length) filters.push(sql`posts.post_type != 'comment'`)
 
-  // Public-only callers (MCP read_posts(search)) are judged as signed out, so neither an author nor an
-  // administrator widens what they see. The exclusions below still follow `currentUser`.
-  const viewer = public_eligibility_only ? undefined : currentUser
+  const viewer = currentUser
   const isAdmin = isAdminUser(viewer ?? null)
-  const rootEligibility = (rootAlias: 'posts' | 'root_post'): SQLStatement => {
-    if (viewer)
-      return buildViewerPostDiscoveryEligibilityFilter('posts', rootAlias, {
-        currentUserId: viewer.id,
-        isAdministrator: isAdmin,
-      })
-    const eligibility = buildPublicPostEligibilityFilter('posts', rootAlias)
-    // A reply is readable when it and the thread root are, so only the root's type can block a
-    // comment. Comments are searched only when asked for, so only then does the root need judging.
-    if (public_eligibility_only && post_types?.includes('comment'))
-      eligibility
-        .append(sql` AND (posts.post_type <> 'comment' OR `)
-        .append(rootAlias)
-        .append(sql`.post_type::text <> ALL(${[...BLOCKED_POST_TYPES]}::text[]))`)
-    return eligibility
-  }
   // Root posts already supply their own access row; only replies need a keyed root probe.
   const discoveryEligibility = sql`CASE WHEN posts.root_post_id IS NULL THEN `
-  discoveryEligibility.append(rootEligibility('posts')).append(sql` ELSE EXISTS (
-    SELECT 1 FROM posts root_post
-    WHERE root_post.id = posts.root_post_id AND `)
-  discoveryEligibility.append(rootEligibility('root_post')).append(sql`) END`)
+  if (viewer) {
+    discoveryEligibility.append(
+      buildViewerPostDiscoveryEligibilityFilter('posts', 'posts', {
+        currentUserId: viewer.id,
+        includeArchivedCommunities: include_archived_communities === true,
+        isAdministrator: isAdmin,
+      }),
+    )
+  } else {
+    discoveryEligibility.append(
+      buildPublicPostEligibilityFilter('posts', 'posts', {
+        includeArchivedCommunities: include_archived_communities === true,
+      }),
+    )
+  }
+  discoveryEligibility.append(sql` ELSE EXISTS (
+    SELECT 1 FROM posts root_post WHERE root_post.id = posts.root_post_id AND `)
+  if (viewer) {
+    discoveryEligibility.append(
+      buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
+        currentUserId: viewer.id,
+        includeArchivedCommunities: include_archived_communities === true,
+        isAdministrator: isAdmin,
+      }),
+    )
+  } else {
+    discoveryEligibility.append(
+      buildPublicPostEligibilityFilter('posts', 'root_post', {
+        includeArchivedCommunities: include_archived_communities === true,
+      }),
+    )
+  }
+  discoveryEligibility.append(sql`) END`)
   filters.push(discoveryEligibility)
+  if (following_phase && viewer) appendFollowingPhaseFilters(filters, viewer.id, following_phase)
   if (exclude_for_user_id) appendUserExclusionFilters(filters, exclude_for_user_id)
   if (user_id) {
     appendUserFilter(filters, {

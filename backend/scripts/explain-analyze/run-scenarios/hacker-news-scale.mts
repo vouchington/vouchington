@@ -16,6 +16,7 @@ import {
   setHackerNewsScaleShape,
   verifyHackerNewsScaleShape,
 } from '../seed-data/hacker-news-scale-shapes.mts'
+import { disableHackerNewsScaleReferenceAutovacuum } from '../seed-data/hacker-news-scale-storage.mts'
 import { prepareHackerNewsReadCache } from './hacker-news-scale-cache.mts'
 import { hackerNewsScalePages } from './hacker-news-scale-pages.mts'
 import {
@@ -28,6 +29,7 @@ import { writeHackerNewsScaleReport } from './hacker-news-scale-report.mts'
 /** Last corpus phase: its future leaves must not change any ordinary scenario's plans. */
 export async function runHackerNewsScaleScenarios(): Promise<void> {
   await prepareHackerNewsReadCache()
+  await disableHackerNewsScaleReferenceAutovacuum()
   const fixture = await seedHackerNewsScaleFixture()
   await measureHackerNewsScaleFixture(fixture)
 }
@@ -37,6 +39,7 @@ export async function measureHackerNewsScaleFixture(
   fixture: HackerNewsScaleFixture,
 ): Promise<void> {
   await prepareHackerNewsReadCache()
+  await disableHackerNewsScaleReferenceAutovacuum()
   await postsWorkConfig.waitForInitialization()
   prepareOutputDir()
   const observations: unknown[] = []

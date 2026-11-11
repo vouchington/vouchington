@@ -42,58 +42,16 @@ export function buildTopicPostCandidateSelect(topicId: string): SQLStatement {
 }
 
 /**
- * Many-topic `(post_id, topic_id)` candidate pairs across all four topic-attachment shapes:
- * direct category relation, hashtag alias relation, review topic ratings, and data-point topics.
- * Meant for a `FROM (…) universal_topic_candidates` subselect; callers group by `post_id` and
- * require `COUNT(*) = topicIds.length` to require every topic, or dedupe for "any of these topics".
- */
-export function buildUniversalTopicPostCandidatePairsSelect(topicIds: string[]): SQLStatement {
-  return sql`
-    SELECT subject_id AS post_id, object_id AS topic_id
-    FROM `
-    .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
-    .append(sql`
-    WHERE (CASE WHEN deleted_at IS NULL AND votes_score_net > 0 THEN object_id END) = ANY(${topicIds})
-      AND deleted_at IS NULL
-      AND votes_score_net > 0
-
-    UNION
-
-    SELECT relation.subject_id, alias.topic_id
-    FROM `)
-    .append(POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE).append(sql` relation
-    JOIN topic_aliases alias ON alias.id = (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END)
-    WHERE relation.deleted_at IS NULL AND relation.votes_score_net > 0
-      AND alias.topic_id = ANY(${topicIds})
-
-    UNION
-
-    SELECT post_id, topic_id
-    FROM post_review_topic_ratings
-    WHERE topic_id = ANY(${topicIds})
-
-    UNION
-
-    SELECT post_id, topic_id
-    FROM post_data_point_topics
-    WHERE topic_id = ANY(${topicIds})
-  `)
-}
-
-/**
  * Single-topic membership test: is the post at `postIdColumn` positively attached to `topicId`,
  * directly or through one of its hashtag aliases? `postIdColumn` must be a qualified
  * `table.column` identifier (e.g. `posts.id`, `eligible_posts.id`) — every call site joins at
  * least one other `posts`-aliased table, so a bare column would be ambiguous at runtime.
  *
  * Uses a candidate-bind `IN (SELECT candidate.post_id FROM (…) candidate)` shape built from
- * `buildTopicPostCandidateSelect`, mirroring `appendUniversalTopicFilters`'s pattern, rather than
- * a correlated `EXISTS (… UNION ALL …)`: Postgres cannot pull a `UNION ALL` body into a semijoin,
- * so the old shape materialized the full candidate set once per outer row instead of once per
- * query. The anti-pattern this avoids is `no-mistakes`' `postgres-sql-shape-policy` rule
- * (`correlated-exists-set-operation`, jonathanong/no-mistakes#850, `.no-mistakes/rules/policies.yml`); as of
- * no-mistakes 0.57.1 that rule does not yet trace SQL composed across function boundaries like
- * this one, so it would not have caught the shape this replaces. See #11082.
+ * `buildTopicPostCandidateSelect`, rather than a correlated `EXISTS (… UNION ALL …)`: Postgres
+ * cannot pull a `UNION ALL` body into a semijoin, so that shape materialized the candidate set
+ * once per outer row. A correlated `OR EXISTS` also let topic discussion counts start at `posts`
+ * and filter by `post_type`, which misses the topic-viewer row cap.
  */
 export function buildTopicMembershipExists(postIdColumn: string, topicId: string): SQLStatement {
   assertSafePostIdColumn(postIdColumn)
@@ -107,20 +65,63 @@ export function buildTopicMembershipExists(postIdColumn: string, topicId: string
 }
 
 /**
- * Correlated single-alias membership test: is the post at `postIdColumn` positively attached to
- * the hashtag alias `aliasId`? `postIdColumn` must be a qualified `table.column` identifier.
+ * List filters probe one post. A topic-side `IN (SELECT post_id …)` reads every alias
+ * relation for that topic: explain-analyze read 40,466 and 80,932 of those rows against
+ * the existing 3,010 and 30,000 caps. The post id is the index key instead.
  */
+function buildKeyedTopicAttachmentExists(postIdColumn: string, topicId: string): SQLStatement {
+  return sql`EXISTS (
+    SELECT 1 FROM `
+    .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
+    .append(sql` direct_relation
+    WHERE direct_relation.subject_id = `)
+    .append(postIdColumn)
+    .append(sql` AND direct_relation.object_id = ${topicId}
+      AND direct_relation.deleted_at IS NULL AND direct_relation.votes_score_net > 0
+  ) OR EXISTS (
+    SELECT 1 FROM `)
+    .append(POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE)
+    .append(sql` alias_relation
+    WHERE alias_relation.subject_id = `)
+    .append(postIdColumn).append(sql` AND alias_relation.object_id = ANY (ARRAY(
+      SELECT alias.id FROM topic_aliases alias WHERE alias.topic_id = ${topicId}
+    ))
+      AND alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0
+  )`)
+}
+
+/** A keyed check across direct relations, linked aliases, review ratings and data-point topics. */
+export function buildUniversalTopicMembershipExists(
+  postIdColumn: string,
+  topicId: string,
+): SQLStatement {
+  assertSafePostIdColumn(postIdColumn)
+  return sql`(`
+    .append(buildKeyedTopicAttachmentExists(postIdColumn, topicId))
+    .append(sql` OR EXISTS (
+      SELECT 1 FROM post_review_topic_ratings rating
+      WHERE rating.post_id = `)
+    .append(postIdColumn)
+    .append(sql` AND rating.topic_id = ${topicId}
+    ) OR EXISTS (
+      SELECT 1 FROM post_data_point_topics data_point
+      WHERE data_point.post_id = `)
+    .append(postIdColumn).append(sql` AND data_point.topic_id = ${topicId}
+    ))`)
+}
+
+/** A keyed check for one exact hashtag alias, even when it has no linked topic. */
 export function buildTopicAliasMembershipExists(
   postIdColumn: string,
   aliasId: string,
 ): SQLStatement {
   assertSafePostIdColumn(postIdColumn)
   return sql`EXISTS (
-      SELECT 1 FROM `
+    SELECT 1 FROM `
     .append(POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE)
     .append(sql` relation
-      WHERE relation.subject_id = `)
+    WHERE relation.subject_id = `)
     .append(postIdColumn).append(sql` AND relation.object_id = ${aliasId}
-        AND relation.deleted_at IS NULL AND relation.votes_score_net > 0
-    )`)
+      AND relation.deleted_at IS NULL AND relation.votes_score_net > 0
+  )`)
 }

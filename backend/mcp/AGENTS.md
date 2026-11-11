@@ -2,7 +2,9 @@
 
 - Curry each tool function with `currentUser` first. Extra curry arguments use `Tool<ToolArgs, ToolResult, [ExtraArg]>`, never `Omit<Tool, 'function'>` reconstruction.
 - Import tools by direct path, never the barrel, and wire them through `buildAgentTools` from `@agents/_shared`.
-- Search/discovery tools exclude internal workflow-only post types, including `topic_recommendation`.
+- Search/discovery tools use the same viewer eligibility as their REST post-discovery twin,
+  including topic recommendations when the viewer is eligible. Keep output masking and private-field
+  rules consistent across both surfaces.
 - Search tools reuse `SearchSystemArgs`, `clampToolLimit`, `expandHybridSearchArgs`, and `buildSearchToolSchemaProperties` from `search-system.mts`.
 - Paged search options (`read_posts(search)`, `discover_topics(search)`) build their REST query through `paged-search.mts` and parse it with `@services/search-params`, so limits and cursors match the REST twin. Leave `limit` without a schema `maximum`: the REST parser clamps it.
 - Every tool with an external server audience declares `meta.outputSchema`; the catalog test fails for one that does not. A new list of related rows is bounded and paged, the way `read_topic(details)` pages children (`@services/topics/children-page`).

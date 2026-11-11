@@ -2,7 +2,8 @@ import { runHackerNewsReadmissionScenarios } from './hacker-news-readmission.mts
 import { beginTransaction, read } from '@data-stores/psql'
 import { buildHackerNewsPostUrlsSql } from '@services/urls/hacker-news-post-urls'
 import { buildPostSearchQuery } from '@services/posts/search/query-builder'
-import { postsWorkConfig, getPostsWorkLimit } from '@services/posts/work-limits'
+import { postsWorkConfig } from '@services/posts/work-limits'
+import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import { getRssFeedItemFeedIds } from '@services/feeds'
 import { getPrivateUserByIdOrSlug } from '@services/users'
@@ -37,6 +38,9 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
     })
     await seed.commit()
     await postsWorkConfig.waitForInitialization()
+    const hackerNewsHotLeaves = await partitionIndexLeaves(
+      'idx_posts__hacker_news_references__stable_hot_rank__id',
+    )
     const user = await getPrivateUserByIdOrSlug(fixture.actorId)
     if (!user) throw new Error('Hacker News feed fixture user is missing')
     for (const density of ['low', 'high'] as const) {
@@ -65,18 +69,22 @@ export async function runHackerNewsFilterScenarios(): Promise<void> {
               expectations: [
                 { kind: 'queryBinds', token: 'posts.has_hacker_news_references' },
                 ...(boundedHot
-                  ? [{ kind: 'queryBinds' as const, token: 'hacker_news_hot_candidates' }]
+                  ? [{ kind: 'queryBinds' as const, token: 'hackerNewsHotWindow' }]
                   : []),
                 ...(boundedHot
-                  ? [{ kind: 'queryBinds' as const, token: 'hackerNewsHotWindow' }]
+                  ? [
+                      {
+                        kind: 'usesIndexes' as const,
+                        indexes: hackerNewsHotLeaves,
+                        anyOf: true,
+                      },
+                    ]
                   : []),
                 {
                   kind: 'maxProcessedRows',
                   relation: 'posts',
-                  // Bounded cohort source/root and page probes; never the corpus.
-                  max: boundedHot
-                    ? 4 * getPostsWorkLimit('hacker_news_hot_candidate_limit') + 2 * 26
-                    : 2000,
+                  // The hot walk stops on the stable-rank index; other sorts use the id or score index.
+                  max: 2000,
                 },
               ],
               allowEmptyResult: true,

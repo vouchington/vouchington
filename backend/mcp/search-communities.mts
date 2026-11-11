@@ -1,6 +1,7 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
+import { validateTopicSearchTerms, MAX_TOPIC_SEARCH_TERMS } from '@services/search-params'
 import {
   COMMUNITY_SORT_MODES,
   resolveCommunityHashtagQuery,
@@ -65,7 +66,13 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         has_list_items: { type: 'boolean' },
         has_list_type: { type: 'boolean' },
         list_type: { type: 'string', enum: ['follow', 'mute'] },
-        topic: { type: 'array', items: topicReferenceSchema },
+        topic: {
+          type: 'array',
+          maxItems: MAX_TOPIC_SEARCH_TERMS,
+          items: topicReferenceSchema,
+          description:
+            'All selected topics must match. At most five topic and hashtag terms combined.',
+        },
       },
       required: [],
     },
@@ -84,6 +91,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      validateTopicSearchTerms(args, ['topic'], true)
       const topics = await resolvedTopicFilters({ topics: args.topic })
       if (args.topic && !topics) {
         return { success: true, results: [], page_info: EMPTY_PAGE_INFO }

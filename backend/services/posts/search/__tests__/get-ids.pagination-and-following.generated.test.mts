@@ -197,43 +197,6 @@ describe('get-ids.pagination-and-following.generated', () => {
     expect(new Set(returnedIds).size).toBe(101)
   })
 
-  it('getPostIds sort=following_new places followed reviewers before newer unfollowed reviewers', async () => {
-    const viewer = await createTestUser()
-    const followedReviewer = await createTestUser()
-    const unfollowedReviewer = await createTestUser()
-    const topic = await createTestTopic()
-
-    await followUser(viewer!, followedReviewer!)
-
-    const followedReviewId = await insertTestReview({
-      userId: followedReviewer!.id,
-      topicRatings: [{ topicId: topic.id, rating: 5 }],
-      title: `Followed Review ${randomUUID()}`,
-      markdown: 'followed reviewer content',
-    })
-
-    const unfollowedReviewId = await insertTestReview({
-      userId: unfollowedReviewer!.id,
-      topicRatings: [{ topicId: topic.id, rating: 4 }],
-      title: `Unfollowed Review ${randomUUID()}`,
-      markdown: 'unfollowed reviewer content',
-    })
-
-    const result = await getPostIds(viewer!, {
-      review_topic_ids: [topic.id],
-      post_types: ['review'],
-      sort: 'following_new',
-      limit: 10,
-    })
-
-    const followedIndex = result.results.findIndex(post => post.id === followedReviewId)
-    const unfollowedIndex = result.results.findIndex(post => post.id === unfollowedReviewId)
-
-    expect(followedIndex).toBeGreaterThanOrEqual(0)
-    expect(unfollowedIndex).toBeGreaterThanOrEqual(0)
-    expect(followedIndex).toBeLessThan(unfollowedIndex)
-  })
-
   it('getPostIds sort=following_new falls back to newest-first when viewer is logged out', async () => {
     const olderReviewer = await createTestUser()
     const newerReviewer = await createTestUser()
@@ -270,5 +233,40 @@ describe('get-ids.pagination-and-following.generated', () => {
     expect(olderIndex).toBeGreaterThanOrEqual(0)
     expect(newerIndex).toBeGreaterThanOrEqual(0)
     expect(newerIndex).toBeLessThan(olderIndex)
+  })
+
+  it('getPostIds pages followed authors before others inside a topic', async () => {
+    const viewer = await createTestUser()
+    const followed = await createTestUser()
+    const other = await createTestUser()
+    await followUser(viewer!, followed!)
+    const topic = await createTestTopic()
+    const now = Date.now()
+    const ids: string[] = []
+    for (const [index, author] of [other, followed, followed].entries()) {
+      ids.push(
+        await insertTestReview({
+          userId: author!.id,
+          topicRatings: [{ topicId: topic.id, rating: 5 }],
+          title: `Topic phase ${randomUUID()}`,
+          markdown: 'topic phase review',
+          createdAt: new Date(now - index * 1_000),
+        }),
+      )
+    }
+    const options = {
+      universal_topic_ids: [topic.id],
+      sort: 'following_new' as const,
+      limit: 1,
+    }
+    const seen: string[] = []
+    let after: string | undefined
+    for (let page = 0; page < 5; page++) {
+      const result = await getPostIds(viewer!, { ...options, after })
+      seen.push(...result.results.map(row => row.id))
+      if (!result.page_info.has_next_page) break
+      after = result.page_info.end_cursor ?? undefined
+    }
+    expect(seen).toEqual([ids[1], ids[2], ids[0]])
   })
 })

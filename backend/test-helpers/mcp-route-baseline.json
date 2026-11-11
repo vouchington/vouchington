@@ -474,7 +474,7 @@
       }
     },
     "F46": {
-      "scopes": ["topic-recommendations:read", "topic-recommendations:write"],
+      "scopes": ["posts:read", "topic-recommendations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -637,7 +637,7 @@
       }
     },
     "F64": {
-      "scopes": ["topic-recommendations:read"],
+      "scopes": ["posts:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -753,7 +753,7 @@
       }
     },
     "F76": {
-      "scopes": ["topic-recommendations:read", "topic-recommendations:write"],
+      "scopes": ["posts:read", "topic-recommendations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -864,7 +864,7 @@
       }
     },
     "F87": {
-      "scopes": ["topic-recommendations:read", "topic-recommendations:write"],
+      "scopes": ["posts:read", "topic-recommendations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -3308,19 +3308,6 @@
         "decision": false
       }
     ],
-    "GET:/api/v1/communities/:idOrSlug/posts": [
-      {
-        "audience": "user",
-        "facts": "F47",
-        "inputFields": "I071",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "read_community",
-          "option": "posts"
-        },
-        "decision": false
-      }
-    ],
     "GET:/api/v1/countries": [
       {
         "audience": "user",
@@ -3835,19 +3822,6 @@
         "decision": false
       }
     ],
-    "GET:/api/v1/topic-recommendations": [
-      {
-        "audience": "user",
-        "facts": "F64",
-        "inputFields": "I012",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "list_my_topic_recommendations",
-          "option": null
-        },
-        "decision": false
-      }
-    ],
     "GET:/api/v1/topics": [
       {
         "audience": "user",
@@ -3896,19 +3870,6 @@
         "operation": {
           "tool": "read_topic",
           "option": "compare"
-        },
-        "decision": false
-      }
-    ],
-    "GET:/api/v1/trending-posts": [
-      {
-        "audience": "user",
-        "facts": "F15",
-        "inputFields": "I098",
-        "requestBodyFields": null,
-        "operation": {
-          "tool": "read_posts",
-          "option": "trending"
         },
         "decision": false
       }

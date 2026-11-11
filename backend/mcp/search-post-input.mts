@@ -1,11 +1,13 @@
+import { MAX_TOPIC_SEARCH_TERMS } from '@services/search-params'
 import type { PostSearchSort } from '@services/posts/search/types'
 import { topicReferenceSchema, userReferenceSchema } from './entity-reference-schema.mts'
-import { VALID_FILTERABLE_POST_TYPES } from '@ts-shared/feed-capabilities'
+import { VALID_SEARCH_POST_TYPES } from '@ts-shared/feed-capabilities'
 
 export const POST_SORTS = [
   'new',
   'best',
   'hot',
+  'trending',
   'relevance',
   'following_new',
 ] as const satisfies readonly PostSearchSort[]
@@ -25,19 +27,30 @@ export function postSearchFilterSchemaProperties() {
       type: 'string',
       enum: [...POST_SORTS],
       description:
-        'Sort order: new (most recent), best (highest voted), hot, relevance (search relevance; the default when searching), following_new',
+        'Sort by new, best, hot, trending, relevance, or following_new. Hot and trending use a stable age-weighted rank. Keyword relevance orders by ranking score, then id.',
     },
     post_type: {
       type: 'string',
-      enum: [...VALID_FILTERABLE_POST_TYPES],
+      enum: [...VALID_SEARCH_POST_TYPES],
     },
     post_types: {
       type: 'array',
-      items: { type: 'string', enum: [...VALID_FILTERABLE_POST_TYPES] },
+      items: { type: 'string', enum: [...VALID_SEARCH_POST_TYPES] },
     },
-    categories: { type: 'array', items: { type: 'string' } },
+    categories: {
+      type: 'array',
+      maxItems: MAX_TOPIC_SEARCH_TERMS,
+      items: { type: 'string' },
+      description: 'Match all categories; five maximum including category.',
+    },
     category: { type: 'string' },
     creator: userReferenceSchema,
+    community_id: { type: 'string', format: 'uuid' },
+    trending_min_score: {
+      type: 'number',
+      minimum: 0,
+      description: 'Minimum age-decayed score for trending.',
+    },
     data_point_topic: topicReferenceSchema,
     data_point_vertical: { type: 'string' },
     review_topic: topicReferenceSchema,
@@ -49,7 +62,12 @@ export function postSearchFilterSchemaProperties() {
     },
     time_range: postTimeRangeSchema,
     topic: topicReferenceSchema,
-    topics: { type: 'array', items: topicReferenceSchema },
+    topics: {
+      type: 'array',
+      maxItems: MAX_TOPIC_SEARCH_TERMS,
+      items: topicReferenceSchema,
+      description: 'Match all topics; five topic and hashtag terms maximum.',
+    },
     url: {
       anyOf: [
         { type: 'string', format: 'uuid' },

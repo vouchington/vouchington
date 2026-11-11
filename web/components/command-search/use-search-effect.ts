@@ -43,7 +43,7 @@ export function useSearchEffect(
         try {
           const nextResults = await fetchCombinedSearch(query, signal)
           if (!signal.aborted) {
-            setResults(nextResults)
+            setResults({ ...nextResults, searchKey: `${activeTab}\0${query}` })
             setLoading(false)
           }
           if (fediverseEnabled) {
@@ -67,7 +67,7 @@ export function useSearchEffect(
         try {
           const nextResults = await searchByTab(query, activeTab, signal)
           if (!signal.aborted) {
-            setResults(nextResults)
+            setResults({ ...nextResults, searchKey: `${activeTab}\0${query}` })
             setLoading(false)
           }
         } catch {

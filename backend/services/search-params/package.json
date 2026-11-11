@@ -31,6 +31,7 @@
     "@services/pagination": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",
+    "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@vouchington/pagination": "^0.0.4",
     "http-errors": "^2.0.1"

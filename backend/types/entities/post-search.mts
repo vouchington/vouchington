@@ -2,7 +2,7 @@ import type { PostType } from './post.mts'
 import type { PaginatedResult } from '../pagination.mts'
 import type { TimeRange } from '../feed.mts'
 
-export type PostSearchSort = 'new' | 'best' | 'hot' | 'relevance' | 'following_new'
+export type PostSearchSort = 'new' | 'best' | 'hot' | 'trending' | 'relevance' | 'following_new'
 
 // Result type for post search responses
 export type PostSearchResult = PaginatedResult<'post'> & {
@@ -10,12 +10,21 @@ export type PostSearchResult = PaginatedResult<'post'> & {
   title?: string
   data_point_vertical?: string | null
   structured_data?: unknown
+  trending_score?: number
 }
 
 type PostSearchFilterOptions = {
   // Filter options
   url_id?: string // Filter by related URL (with canonical chain)
   user_id?: string // Filter by post creator
+  community_id?: string // Filter to approved posts in a community
+  include_archived_communities?: boolean // Dedicated community listing preserves its archive view
+  exclude_post_ids?: string[] // Exclude pinned posts from community pages
+  topic_recommendation_status?: 'pending' | 'approved' | 'rejected'
+  topic_recommendation_q?: string // Match recommendation post text, proposed title, or slug
+  trending_topic_id?: string // Exact positively tagged topic, for the trending endpoint
+  trending_min_score?: number // Minimum age-decayed display score
+  include_trending_score?: boolean // Include the display score in the internal result reference
   similar_post_id?: string // Find similar posts via embeddings
   similar_topic_id?: string // Find similar posts to topic via embeddings
   similar_rss_feed_item_id?: string // Find similar posts to an RSS feed item via embeddings
@@ -35,15 +44,9 @@ type PostSearchFilterOptions = {
   data_point_credit_score_range?: string // Filter data_point posts by structured_data.credit_score_range
   story_id?: string // Filter posts linked to a specific story
   has_hacker_news_references?: boolean // Posts whose URL is seen or mentioned on Hacker News (true) or not (false)
-  include_topic_recommendations?: boolean // Internal opt-in for dedicated recommendation flows
   drafts?: boolean // Show unpublished posts
   time_range?: TimeRange // Omitted post search has no age filter. An explicit code is strict.
   exclude_for_user_id?: string // Exclude muted/blocked hostnames, topics, and users for this user
-  // Judge every candidate as a signed-out reader would, whoever `currentUser` is, so private data
-  // stays out of the results even for its owner or an administrator. Only MCP `read_posts(search)` sets it:
-  // it must stay aligned with `resolveReadableThread` in backend/mcp/mcp-post-access.mts.
-  // Viewer-keyed filters (`exclude_for_user_id`, the `following_new` join) still follow `currentUser`.
-  public_eligibility_only?: boolean
 
   // Sort option
   sort?: PostSearchSort // Default: 'new' or 'relevance' if searching
@@ -54,6 +57,8 @@ type BasePaginationOptions = {
   limit?: number // Default 25, max 100
   omitLimit?: boolean // Skip LIMIT clause entirely (for facets)
   omitOrderBy?: boolean // Skip ORDER BY clause (for count queries)
+  topicMembershipColumn?: string // Internal: the id column the topic membership probes key on
+  inspectedTail?: boolean // Internal: return only the last row the capped topic walk inspected
 }
 
 // Pagination for sort='new' (default when not searching)
@@ -85,6 +90,13 @@ type HotSortPagination = BasePaginationOptions & {
   ranking_lt?: never
 }
 
+type TrendingSortPagination = BasePaginationOptions & {
+  sort: 'trending'
+  after?: string
+  vote_score_lt?: never
+  ranking_lt?: never
+}
+
 // Pagination for sort='relevance' (default when searching)
 type RelevanceSortPagination = BasePaginationOptions & {
   sort?: 'relevance'
@@ -97,6 +109,7 @@ type PostSearchPaginationOptions =
   | FollowingNewSortPagination
   | BestSortPagination
   | HotSortPagination
+  | TrendingSortPagination
   | RelevanceSortPagination
 
 type PostSearchQueryOptions = {
@@ -111,6 +124,11 @@ type PostSearchQueryOptions = {
   vote_score_lt?: number
   ranking_lt?: number
   hot_score_lt?: number
+  cohort_hi?: string
+  cohort_lo?: string
+  cohort_before_id?: string
+  cohort_cap?: number
+  following_phase?: 'followed' | 'other'
 }
 
 export type PostSearchOptions = PostSearchFilterOptions &

@@ -10,7 +10,7 @@ import { createPaginationParser } from '@modules/pagination'
 import { VALID_MEDIA_TYPES } from '@modules/pagination/filters'
 import { loadCommunityForViewer } from '@services/communities'
 import type { PostFeedType, RssFeedItemFeedType } from '@services/feeds/types'
-import { resolveHashtagTopicSearch } from '@services/search-params'
+import { resolveHashtagTopicSearch, validateTopicSearchTerms } from '@services/search-params'
 import { requireAuth } from '../../../response-helpers.mts'
 
 export const postFeedParser = createPaginationParser({
@@ -58,6 +58,7 @@ export const rssFeedItemFeedQuery = defineQueryContract({
 })
 
 export async function parseHashtagFeedSearchOptions(query: Record<string, unknown>) {
+  validateTopicSearchTerms(query, [], true)
   const hashtagSearch = await resolveHashtagTopicSearch(query.q)
   return {
     has_unknown_hashtag: hashtagSearch.hasUnknown,

@@ -11,6 +11,9 @@ const PAGE_COMMUNITY_ID = seedUuid(9, '14')
 const PAGE_LIST_ID = seedUuid(9, '34')
 const POST_INDEX_BASE = 100_000
 const RELATION_BASE_MS = postSeedTimestampMs(0) + 400 * 24 * 60 * 60 * 1000
+export const INELIGIBLE_COLLECTION_PAGE_TOPIC_IDS = Array.from({ length: 400 }, (_, index) =>
+  seedUuid(index, 'b7'),
+)
 
 export async function seedIneligibleCollectionPages(): Promise<void> {
   const count = INELIGIBLE_COLLECTION_PAGE_COUNT
@@ -21,7 +24,7 @@ export async function seedIneligibleCollectionPages(): Promise<void> {
   const isLive = (index: number) => index >= hiddenRun && index < count - hiddenRun
   const livePostIds = postIds.filter((_, index) => isLive(index))
   const highestRankedHiddenPostIds = postIds.slice(-hiddenRun)
-  const topicIds = Array.from({ length: count }, (_, index) => seedUuid(index, 'b7'))
+  const topicIds = INELIGIBLE_COLLECTION_PAGE_TOPIC_IDS
   const hostnameIds = Array.from({ length: count }, (_, index) => seedUuid(index, 'b8'))
   const membershipIds = Array.from({ length: count }, (_, index) =>
     seedUuidAtTimestamp(RELATION_BASE_MS + index * 1000, index),

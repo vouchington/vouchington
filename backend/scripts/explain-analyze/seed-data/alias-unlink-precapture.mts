@@ -23,7 +23,7 @@ export async function seedAliasUnlinkFixture(): Promise<void> {
   await query(
     `/* seedAliasUnlinkControlAliases */
      INSERT INTO topic_aliases (id, topic_id, alias)
-     VALUES ($1::uuid, $3::uuid, '#seed-publication-alias-guard'),
+     VALUES ($1::uuid, $3::uuid, 'seed-publication-alias-guard'),
        ($2::uuid, $3::uuid, 'seed-publication-mark-probe')
      ON CONFLICT DO NOTHING`,
     [ALIAS_UNLINK_HASHTAG_ID, ALIAS_UNLINK_MARK_ID, seed.topic],

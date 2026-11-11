@@ -8,6 +8,7 @@ import {
   seedSearchEmbeddingCache,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Page = { results: { id: string; markdown: string }[] }
@@ -16,13 +17,13 @@ type Caller = PrivateUser & { membership_plan: null }
 const SCOPES = ['posts:read'] as const
 const asCaller = (user: PrivateUser): Caller => ({ ...user, membership_plan: null })
 
-// Visibility is the MCP read policy (see the privacy and agreement tests), so this checks the
-// semantic path through the real call path: only the embedding can match these fixtures, and each
-// one has its own nearby vector.
+// Semantic discovery uses the same viewer eligibility as GET /api/v1/posts. Only the embedding
+// can match these fixtures, and each one has its own nearby vector.
 describe('read_posts.search semantic visibility — real DB', () => {
   const query = `semantic visibility ${crypto.randomUUID()}`
   let author: Caller
   let viewer: Caller
+  let stranger: Caller
   let ids: { open: string; ownFlagged: string; otherFlagged: string; recommendation: string }
 
   const search = (as: Caller) =>
@@ -32,6 +33,19 @@ describe('read_posts.search semantic visibility — real DB', () => {
       optionArgs('search', { semantic_search_query: query }),
       SCOPES,
     ).then(page => (page as Page).results.map(result => result.id))
+
+  const searchAndMatchRest = async (as: Caller): Promise<string[]> => {
+    const mcpIds = await search(as)
+    const request = createRequest()
+    await request.authenticateAs(as)
+    const rest = await request
+      .get('/api/v1/posts')
+      .query({ semantic_search_query: query })
+      .expect(200)
+    const restIds = (rest.body.results as { id: string }[]).map(result => result.id)
+    expect(mcpIds.toSorted()).toEqual(restIds.toSorted())
+    return mcpIds
+  }
 
   const queryEmbedding = makeRandomEmbedding()
 
@@ -60,6 +74,7 @@ describe('read_posts.search semantic visibility — real DB', () => {
     const otherUser = await createTestUser()
     author = asCaller(authorUser)
     viewer = asCaller(otherUser)
+    stranger = asCaller(await createTestUser())
     ids = {
       open: await seed(authorUser, 'open', false),
       ownFlagged: await seed(authorUser, 'own flagged', true),
@@ -68,17 +83,25 @@ describe('read_posts.search semantic visibility — real DB', () => {
     }
   })
 
-  it('hides a flagged post from every caller, including its own author', async () => {
-    for (const caller of [author, viewer]) {
-      const callerIds = await search(caller)
+  it('shows each author their flagged post and matches REST discovery', async () => {
+    const authorIds = await searchAndMatchRest(author)
+    const viewerIds = await searchAndMatchRest(viewer)
 
-      expect(callerIds).toContain(ids.open)
-      expect(callerIds).not.toContain(ids.ownFlagged)
-      expect(callerIds).not.toContain(ids.otherFlagged)
-    }
+    expect(authorIds).toEqual(
+      expect.arrayContaining([ids.open, ids.ownFlagged, ids.recommendation]),
+    )
+    expect(authorIds).not.toContain(ids.otherFlagged)
+    expect(viewerIds).toEqual(
+      expect.arrayContaining([ids.open, ids.otherFlagged, ids.recommendation]),
+    )
+    expect(viewerIds).not.toContain(ids.ownFlagged)
   })
 
-  it('leaves topic recommendations out of the results', async () => {
-    expect(await search(author)).not.toContain(ids.recommendation)
+  it('keeps both authors’ flagged posts from an unrelated viewer', async () => {
+    const strangerIds = await searchAndMatchRest(stranger)
+
+    expect(strangerIds).toEqual(expect.arrayContaining([ids.open, ids.recommendation]))
+    expect(strangerIds).not.toContain(ids.ownFlagged)
+    expect(strangerIds).not.toContain(ids.otherFlagged)
   })
 })

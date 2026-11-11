@@ -98,7 +98,9 @@ The cold/warm labels concern PostgreSQL shared buffers. Before each cold replay,
 evicts only non-shared current-database heaps and indexes named by that statement's plan and records
 evicted, flushed and skipped buffers. Skipped buffers fail preparation. The owned post leaves disable autovacuum, because a running
 autovacuum worker pins leaf buffers and makes eviction skip them; the explicit ANALYZE calls
-supply their statistics. A warm measurement follows
+supply their statistics. The historical URL join reads relations outside those leaves, so this
+disposable database disables autovacuum there too and cancels a worker already vacuuming them.
+A transient skip is retried; a buffer that stays pinned still fails preparation. A warm measurement follows
 the same statement and plan mode immediately. OS and storage caches remain uncontrolled; neither
 the ordinary repeat pass nor a WAL checkpoint establishes a cold read cache. This instrumentation
 requires the disposable database's PostgreSQL administrator and the `pg_buffercache` extension;

@@ -13,6 +13,22 @@ describe('GET /rss/posts', () => {
     await request.get(`/rss/posts?apikey=${rawKey}&post_type=invalid`).expect(400)
   })
 
+  it('rejects a malformed continuation cursor', async () => {
+    const rawKey = await freshKey()
+    await createRequest()
+      .get('/rss/posts')
+      .query({ apikey: rawKey, after: 'not-a-cursor' })
+      .expect(400)
+  })
+
+  it('rejects more than five raw topic slugs before resolving duplicates or unknowns', async () => {
+    const rawKey = await freshKey()
+    await createRequest()
+      .get('/rss/posts')
+      .query({ apikey: rawKey, topics: 'missing,missing,missing,missing,missing,missing' })
+      .expect(400)
+  })
+
   it('returns 200 with valid post_type filter', async () => {
     const rawKey = await freshKey()
     const request = createRequest()

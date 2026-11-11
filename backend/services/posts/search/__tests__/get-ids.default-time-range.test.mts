@@ -30,7 +30,6 @@ describe('getPostIds default time range', () => {
       await Promise.all([setPostVotesScoreUp(recentId, 1), setPostVotesScoreUp(oldId, 1)])
       const base = {
         user_id: user.id,
-        include_topic_recommendations: true,
         post_types: ['topic_recommendation' as const],
         limit: 10,
       }
@@ -92,7 +91,6 @@ describe('getPostIds default time range', () => {
     try {
       const base = {
         user_id: user.id,
-        include_topic_recommendations: true,
         post_types: ['topic_recommendation' as const],
         limit: 10,
       }
@@ -128,7 +126,6 @@ describe('getPostIds default time range', () => {
     try {
       const base = {
         user_id: user.id,
-        include_topic_recommendations: true,
         post_types: ['topic_recommendation' as const],
         sort: 'new' as const,
         time_range: '1w' as const,

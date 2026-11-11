@@ -19,6 +19,25 @@ import type { PostFeedOptions } from '../../types.mts'
 import { createTestPostId } from '@voucha/test-helpers/entities/post-ids'
 import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
 
+async function findOwnedDelivery(
+  viewer: Parameters<typeof getPostFeedIds>[0],
+  options: PostFeedOptions,
+  targetId: string,
+) {
+  const results: Awaited<ReturnType<typeof getPostFeedIds>>['results'] = []
+  let after: string | undefined
+  for (let index = 0; index < 30; index++) {
+    const page = await getPostFeedIds(viewer, { ...options, after })
+    results.push(...page.results)
+    if (page.results.some(row => row.id === targetId)) return { results, inputCursor: after, page }
+    if (!page.page_info.has_next_page) break
+    const next = page.page_info.end_cursor ?? undefined
+    if (!next || next === after) throw new Error('Expected advancing feed cursor')
+    after = next
+  }
+  throw new Error('Expected owned delivery in bounded pages')
+}
+
 describe('post share delivery pagination', () => {
   it.each(['new', 'hot'] as const)(
     'retains direct and repeated-target deliveries across %s pages',
@@ -56,19 +75,22 @@ describe('post share delivery pagination', () => {
         const expectedIds = [post.id, ...sharedIds].toSorted().toReversed()
         const delivered = []
         let after: string | undefined
-        for (const id of expectedIds) {
+        for (let pageIndex = 0; pageIndex < 30; pageIndex++) {
           const page = await getPostFeedIds(viewer, {
             feed_type: 'follow_users',
             sort,
             limit: 1,
             after,
           })
-          expect(page.results.map(row => row.id)).toEqual([id])
-          expect(page.results[0]?.entity_id).toBe(post.id)
-          delivered.push(page.results[0]!)
-          after = page.page_info.end_cursor ?? undefined
-          expect(page.page_info.has_next_page).toBe(id !== expectedIds.at(-1))
+          delivered.push(...page.results)
+          if (delivered.length === expectedIds.length || !page.page_info.has_next_page) break
+          const next = page.page_info.end_cursor
+          if (!next || next === after) throw new Error('Expected advancing continuation cursor')
+          after = next
         }
+        expect(delivered.map(row => row.id)).toEqual(expectedIds)
+        expect(new Set(delivered.map(row => row.id)).size).toBe(expectedIds.length)
+        expect(delivered.map(row => row.entity_id)).toEqual(expectedIds.map(() => post.id))
         expect(delivered.filter(row => row.delivery_type === 'share')).toHaveLength(2)
         expect(delivered.filter(row => row.delivery_type === 'direct')).toHaveLength(1)
         for (const feed_type of ['all', 'follow_topics'] as const) {
@@ -95,19 +117,23 @@ describe('post share delivery pagination', () => {
       sharedByUserId: creator.id,
       postId,
     })
-    await insertPostFeedShareForTest({
+    const agedId = await insertPostFeedShareForTest({
       recipientUserId: viewer.id,
       sharedByUserId: creator.id,
       postId,
       sortAt: new Date(Date.now() - 30 * 86_400_000),
     })
-    const page = await getPostFeedIds(viewer, {
-      feed_type: 'follow_users',
-      time_range: '1d',
-      limit: 10,
-    })
-    expect(page.results.map(row => row.id)).toEqual([freshId])
-    expect(page.results[0]?.entity_id).toBe(postId)
+    const options: PostFeedOptions = { feed_type: 'follow_users', time_range: '1d', limit: 10 }
+    const found = await findOwnedDelivery(viewer, options, freshId)
+    expect(found.results.map(row => row.id)).toEqual([freshId])
+    expect(found.results[0]?.entity_id).toBe(postId)
+    if (found.page.page_info.has_next_page) {
+      const after = found.page.page_info.end_cursor
+      if (!after) throw new Error('Expected advancing feed cursor')
+      const next = await getPostFeedIds(viewer, { ...options, after })
+      found.results.push(...next.results)
+    }
+    expect(found.results.map(row => row.id)).not.toContain(agedId)
   })
   it('applies the same hidden, muted, topic and request eligibility to share targets', async () => {
     const viewer = await createTestUser()
@@ -129,27 +155,43 @@ describe('post share delivery pagination', () => {
       sharedByUserId: creator.id,
       postId: visible.id,
     })
+    const rejectedIds: string[] = []
     for (const postId of [hidden.id, muted.id, excludedTopic.id])
+      rejectedIds.push(
+        await insertPostFeedShareForTest({
+          recipientUserId: viewer.id,
+          sharedByUserId: creator.id,
+          postId,
+        }),
+      )
+    rejectedIds.push(
       await insertPostFeedShareForTest({
         recipientUserId: viewer.id,
-        sharedByUserId: creator.id,
-        postId,
-      })
-    await insertPostFeedShareForTest({
-      recipientUserId: viewer.id,
-      sharedByUserId: mutedSharer.id,
-      postId: visible.id,
-    })
-    const page = await getPostFeedIds(viewer, { feed_type: 'follow_users', limit: 10 })
-    expect(page.results.map(row => row.id)).toEqual([visibleId])
+        sharedByUserId: mutedSharer.id,
+        postId: visible.id,
+      }),
+    )
+    const found = await findOwnedDelivery(
+      viewer,
+      { feed_type: 'follow_users', limit: 10 },
+      visibleId,
+    )
+    expect(found.results.map(row => row.id)).toEqual([visibleId])
+    expect(found.results.some(row => rejectedIds.includes(row.id))).toBe(false)
     for (const options of [
       { post_types: ['review'] },
       { text_search_query: 'missinguniquetoken' },
       { has_unknown_hashtag: true },
     ] satisfies PostFeedOptions[]) {
       expect(
-        (await getPostFeedIds(viewer, { feed_type: 'follow_users', limit: 10, ...options }))
-          .results,
+        (
+          await getPostFeedIds(viewer, {
+            feed_type: 'follow_users',
+            limit: 10,
+            after: found.inputCursor,
+            ...options,
+          })
+        ).results,
       ).toEqual([])
     }
   })
@@ -173,8 +215,11 @@ describe('post share delivery pagination', () => {
       post_types: ['comment'],
       limit: 10,
     }
-    expect((await getPostFeedIds(viewer, options)).results.map(row => row.id)).toEqual([shareId])
+    const found = await findOwnedDelivery(viewer, options, shareId)
+    expect(found.results.map(row => row.id)).toEqual([shareId])
     await setPostDeletedForTest(root.id)
-    expect((await getPostFeedIds(viewer, options)).results).toEqual([])
+    expect(
+      (await getPostFeedIds(viewer, { ...options, after: found.inputCursor })).results,
+    ).toEqual([])
   })
 })

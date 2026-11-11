@@ -20,6 +20,7 @@ import { runMembershipProviderRecoveryScenarios } from './run-scenarios/membersh
 import { runRetentionStagePageScenarios } from './run-scenarios/retention-stage-pages.mts'
 import { runStripeEventRecoveryScenario } from './run-scenarios/stripe-event-recovery.mts'
 import { runPaymentLedgerRetentionScenarios } from './run-scenarios/payment-ledger-retention.mts'
+import { runLatePostPageScenarios } from './run-scenarios/late-post-pages.mts'
 import { runVoteScoreRankingScenarios } from './run-scenarios/vote-score-ranking.mts'
 import { runMembershipRenewalSelectionScenario } from './run-scenarios/membership-renewal-selection.mts'
 import { runClassifierHumanVoteComparisonScenarios } from './run-scenarios/classifier-human-vote-comparison.mts'
@@ -91,4 +92,5 @@ export async function runLateScenarios(): Promise<void> {
   await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios)
   await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
   await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
+  await runStep(runLatePostPageScenarios.name, runLatePostPageScenarios)
 }

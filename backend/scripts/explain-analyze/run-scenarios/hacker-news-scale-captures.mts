@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { explainAnalyze, read, type ExplainResult } from '@data-stores/psql'
 import { buildPostSearchQuery } from '@services/posts/search/query-builder'
-import { getPostsWorkLimit } from '@services/posts/work-limits'
+import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import { getHackerNewsUrlIdsByPostIds } from '@services/urls/hacker-news-post-urls'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { getExplainPlanCacheModes, runAndCapture } from '../run-support.mts'
@@ -13,6 +13,33 @@ import {
 } from './hacker-news-scale-cache.mts'
 import { buildHackerNewsScaleReference } from './hacker-news-scale-reference.mts'
 import type { HackerNewsScalePage, HackerNewsScaleRow } from './hacker-news-scale-pages.mts'
+
+let hotLeaves: readonly string[] | undefined
+
+async function hackerNewsHotLeaves(): Promise<readonly string[]> {
+  hotLeaves ??= await partitionIndexLeaves('idx_posts__hacker_news_references__stable_hot_rank__id')
+  return hotLeaves
+}
+
+let postIdLeaves: readonly string[] | undefined
+
+/** Per-partition indexes led by id: the walk an empty hot window falls back to. */
+async function postIdOnlyLeaves(): Promise<readonly string[]> {
+  if (postIdLeaves) return postIdLeaves
+  const { rows } = await read<{ index_name: string }>(
+    `/* hackerNewsScalePostIdLeaves */ SELECT index_class.relname AS index_name
+     FROM pg_partition_tree('posts'::regclass) tree
+     JOIN pg_index leaf_index ON leaf_index.indrelid = tree.relid
+     JOIN pg_class index_class ON index_class.oid = leaf_index.indexrelid
+     JOIN pg_attribute id_column ON id_column.attrelid = tree.relid
+       AND id_column.attname = 'id' AND id_column.attnum = leaf_index.indkey[0]
+     WHERE tree.isleaf     LIMIT 1001`,
+  )
+  if (rows.length === 0 || rows.length > 1000)
+    throw new Error('posts id-only leaf inventory must be bounded')
+  postIdLeaves = rows.map(row => row.index_name)
+  return postIdLeaves
+}
 
 type CaptureContext = {
   fixture: HackerNewsScaleFixture
@@ -28,13 +55,25 @@ export async function captureHackerNewsScalePage(
   cache: HackerNewsCacheState,
 ): Promise<void> {
   const id = `${prefix}-${page.name}-${cache}`
-  const maxPosts =
-    page.options.sort === 'hot'
-      ? 4 * getPostsWorkLimit('hacker_news_hot_candidate_limit') + 2 * 26
-      : 2000
+  const maxPosts = 2000
+  const hot = page.options.sort === 'hot'
   registerScenarioContract(id, {
     expectations: [
       { kind: 'queryBinds', token: 'posts.has_hacker_news_references' },
+      ...(hot
+        ? [
+            {
+              kind: 'usesIndexes' as const,
+              // With no hot rows the planner has nothing to walk on the hot leaf, so an empty
+              // window may read the per-partition id index; maxProcessedRows below keeps it bounded.
+              indexes: [
+                ...(await hackerNewsHotLeaves()),
+                ...(prefix.startsWith('hacker-news-scale-zero-') ? await postIdOnlyLeaves() : []),
+              ],
+              anyOf: true,
+            },
+          ]
+        : []),
       { kind: 'maxProcessedRows', relation: 'posts', max: maxPosts },
       { kind: 'maxBitmapIndexRows', max: maxPosts },
     ],

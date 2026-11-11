@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import { getPostFeedIds } from '../get-ids.mts'
-import { decodeCursor, encodeCursor, isPreciseTimestampCursor } from '@modules/pagination'
+import { encodeCursor } from '@modules/pagination'
 import { followUser, createTestUser, createTestPost } from '@voucha/test-helpers'
 import {
   processFollowerDistributionChunk,
@@ -14,33 +14,25 @@ describe('getPostFeedIds (pagination)', () => {
 
     await followUser(user, followedUser)
 
-    await createTestPost({ user: followedUser })
-    await createTestPost({ user: followedUser })
-    await createTestPost({ user: followedUser })
-
-    // Get first page with limit 1
-    const page1 = await getPostFeedIds(user, {
-      feed_type: 'follow_users',
-      limit: 1,
-    })
-
-    expect(page1.results.length).toBe(1)
-    expect(page1.page_info.has_next_page).toBe(true)
-    expect(page1.page_info.end_cursor).toBeDefined()
-    expect(isPreciseTimestampCursor(decodeCursor(page1.page_info.end_cursor!))).toBe(true)
-
-    // Get second page
-    expect(page1.page_info.end_cursor).toBeTruthy()
-    const page2 = await getPostFeedIds(user, {
-      feed_type: 'follow_users',
-      after: page1.page_info.end_cursor!,
-      limit: 1,
-    })
-    expect(page2.results.length).toBe(1)
-    expect(page2.results[0].id).not.toBe(page1.results[0].id)
+    const expected = []
+    for (let index = 0; index < 3; index++) {
+      expected.push((await createTestPost({ user: followedUser })).id)
+    }
+    const seen: string[] = []
+    let after: string | undefined
+    for (let pageIndex = 0; pageIndex < 30; pageIndex++) {
+      const page = await getPostFeedIds(user, { feed_type: 'follow_users', limit: 1, after })
+      seen.push(...page.results.map(row => row.id))
+      if (seen.length === expected.length || !page.page_info.has_next_page) break
+      const next = page.page_info.end_cursor
+      if (!next || next === after) throw new Error('Expected advancing continuation cursor')
+      after = next
+    }
+    expect(seen.toSorted()).toEqual(expected.toSorted())
+    expect(new Set(seen).size).toBe(expected.length)
   })
 
-  it('rejects invalid cursor with non-uuid id', async () => {
+  it('rejects a malformed or obsolete cursor', async () => {
     const user = await createTestUser()
 
     await expect(

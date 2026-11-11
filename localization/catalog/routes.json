@@ -68033,6 +68033,7 @@
 {"alias":"extracted.topicid.page.verifyYourRelationshipToThisTopic_2c72fbba","consumer":"web","pattern":"/topic-claims/[slug]"},
 {"alias":"extracted.ui.breadcrumb.breadcrumb_d6dc6b5e","consumer":"web","pattern":"/topic-claims/[slug]"},
 {"alias":"nav.home","consumer":"web","pattern":"/topic-claims/[slug]"},
+{"alias":"extracted.admin.adminPagination.next_1ff57a29","consumer":"web","pattern":"/topic-recommendations"},
 {"alias":"extracted.components.asideDrawer.pageSidebar_e6a5a26e","consumer":"web","pattern":"/topic-recommendations"},
 {"alias":"extracted.components.asideDrawer.togglePageSidebar_d151700b","consumer":"web","pattern":"/topic-recommendations"},
 {"alias":"extracted.components.asideDrawer.toggleSidebarShortcuthint_f1704b4a","consumer":"web","pattern":"/topic-recommendations"},

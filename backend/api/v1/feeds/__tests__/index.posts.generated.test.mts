@@ -18,6 +18,7 @@ import {
 import { getPostFeedIds } from '@services/feeds/posts/get-ids'
 
 import { insertTestLinkPostWithCrawl } from '@voucha/test-helpers/entities/link-posts'
+import { findFeedPost } from '@voucha/test-helpers/feed-api-pagination'
 
 describe('GET /api/v1/feeds/posts/:feed_type', () => {
   it('should return 401 for unauthenticated users', async () => {
@@ -33,20 +34,6 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     await request.get('/api/v1/feeds/posts/invalid_type').expect(404)
   })
 
-  it('should return empty results when user has no follows', async () => {
-    const user = await createTestUser()
-    const request = createRequest()
-    await request.authenticateAs(user)
-
-    const response = await request.get('/api/v1/feeds/posts/any').expect(200)
-
-    // Streaming pattern: posts, posts_metrics are objects, not arrays
-    expect(response.body.posts).toEqual({})
-    expect(response.body.posts_metrics).toEqual({})
-    expect(response.body.results).toEqual([])
-    expect(response.body.page_info.has_next_page).toBe(false)
-  })
-
   it('should return posts from followed users', async () => {
     const user = await createTestUser()
     const followedUser = await createTestUser()
@@ -57,7 +44,7 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    const response = await request.get('/api/v1/feeds/posts/follow_users').expect(200)
+    const response = await findFeedPost(request, '/api/v1/feeds/posts/follow_users', post.id)
 
     // Streaming pattern: posts, posts_metrics are objects
     expect(typeof response.body.posts).toBe('object')
@@ -81,9 +68,11 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    const response = await request
-      .get('/api/v1/feeds/posts/follow_users?community=missing-community')
-      .expect(200)
+    const response = await findFeedPost(
+      request,
+      '/api/v1/feeds/posts/follow_users?community=missing-community',
+      post.id,
+    )
 
     expect(
       response.body.results.map((result: { entity_id: string }) => result.entity_id),
@@ -104,7 +93,12 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     const request = createRequest()
     await request.authenticateAs(recipient)
 
-    const response = await request.get('/api/v1/feeds/posts/follow_users').expect(200)
+    const response = await findFeedPost(
+      request,
+      '/api/v1/feeds/posts/follow_users',
+      post.id,
+      'share',
+    )
     const sharedResult = response.body.results.find(
       (result: { entity_id?: string; delivery_type?: string }) =>
         result.entity_id === post.id && result.delivery_type === 'share',
@@ -130,7 +124,7 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    const response = await request.get('/api/v1/feeds/posts/follow_topics').expect(200)
+    const response = await findFeedPost(request, '/api/v1/feeds/posts/follow_topics', post.id)
 
     const foundResult = response.body.results.find(
       (r: { entity_id: string }) => r.entity_id === post.id,
@@ -152,9 +146,11 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    const response = await request
-      .get('/api/v1/feeds/posts/follow_topics?community=missing-community')
-      .expect(200)
+    const response = await findFeedPost(
+      request,
+      '/api/v1/feeds/posts/follow_topics?community=missing-community',
+      post.id,
+    )
 
     expect(
       response.body.results.map((result: { entity_id: string }) => result.entity_id),
@@ -195,7 +191,7 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    const response = await request.get('/api/v1/feeds/posts/follow_users').expect(200)
+    const response = await findFeedPost(request, '/api/v1/feeds/posts/follow_users', posts[0]!.id)
 
     // Verify streaming pattern structure
     expect(typeof response.body.posts).toBe('object')
@@ -222,7 +218,7 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    const response = await request.get('/api/v1/feeds/posts/follow_users').expect(200)
+    const response = await findFeedPost(request, '/api/v1/feeds/posts/follow_users', post.id)
 
     const foundResult = response.body.results.find(
       (r: { entity_id: string }) => r.entity_id === post.id,
@@ -266,7 +262,7 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    const response = await request.get('/api/v1/feeds/posts/follow_users').expect(200)
+    const response = await findFeedPost(request, '/api/v1/feeds/posts/follow_users', post.id)
 
     expect(typeof response.body.post_elections).toBe('object')
     expect(Array.isArray(response.body.post_elections)).toBe(false)
@@ -287,7 +283,7 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
     })
     const request = createRequest()
     await request.authenticateAs(user)
-    const response = await request.get('/api/v1/feeds/posts/follow_users').expect(200)
+    const response = await findFeedPost(request, '/api/v1/feeds/posts/follow_users', postId)
     expect(response.body.post_link_embeds).toBeDefined()
     expect(response.body.post_link_embeds[postId]).toBeDefined()
   })

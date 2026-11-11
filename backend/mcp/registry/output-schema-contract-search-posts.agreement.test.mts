@@ -12,18 +12,16 @@ import {
   type McpPostReadabilityFixtures,
 } from '@voucha/test-helpers/mcp-post-readability-fixtures'
 import type { PrivateUser } from '@services/users/types'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Caller = PrivateUser & { membership_plan: null }
 
 const SCOPES = ['posts:read'] as const
-const NOT_FOUND = { success: false, error: 'Post not found' }
-
 const asCaller = (user: PrivateUser): Caller => ({ ...user, membership_plan: null })
 
-// read_posts and read_posts share one read policy. A search result is a post read_posts can open,
-// and a post read_posts refuses never shows up in a search, whoever asks and however they search.
-describe('read_posts.search agrees with read_posts.details — real DB', () => {
+// Search discovery follows GET /api/v1/posts. Direct post details have their own read policy.
+describe('read_posts.search agrees with GET /api/v1/posts — real DB', () => {
   const token = `srchagree${crypto.randomUUID().replaceAll('-', '')}`
   const semanticQuery = `agreement post search ${crypto.randomUUID()}`
   const queryEmbedding = makeRandomEmbedding()
@@ -53,7 +51,11 @@ describe('read_posts.search agrees with read_posts.details — real DB', () => {
 
   beforeAll(async () => {
     const author = await createTestUser()
-    callers = [asCaller(author), asCaller(await createTestUser({ administrator: true }))]
+    callers = [
+      asCaller(author),
+      asCaller(await createTestUser({ administrator: true })),
+      asCaller(await createTestUser()),
+    ]
     await seedSearchEmbeddingCache(semanticQuery, queryEmbedding)
     fixtures = await seedMcpPostReadabilityFixtures(author, { token, embedding: queryEmbedding })
     const seed = await createTestPost({ user: author, title: `${token} similar seed` })
@@ -65,63 +67,42 @@ describe('read_posts.search agrees with read_posts.details — real DB', () => {
     ]
   })
 
-  it('opens the readable fixtures and answers every hidden fixture as not found', async () => {
-    for (const caller of callers) {
-      const answers: Record<string, unknown> = {}
-      for (const post of [...fixtures.readable, ...fixtures.hidden]) {
-        const answer = await call(caller, 'read_posts', optionArgs('details', { post_id: post.id }))
-        answers[post.label] = answer['success'] ? 'opened' : answer
-      }
-
-      expect(answers).toEqual({
-        ...Object.fromEntries(fixtures.readable.map(post => [post.label, 'opened'])),
-        ...Object.fromEntries(fixtures.hidden.map(post => [post.label, NOT_FOUND])),
-      })
-    }
-  })
-
-  it('opens a comment awaiting review as a placeholder because a valid reply sits below it', async () => {
-    for (const caller of callers) {
-      for (const post of fixtures.placeholders) {
-        const answer = await call(caller, 'read_posts', optionArgs('details', { post_id: post.id }))
-
-        expect(answer).toMatchObject({
-          success: true,
-          post: { id: post.id, title: '', markdown: '', created_by_id: null },
-        })
-        expect((answer['post'] as Record<string, unknown>)['placeholder_state']).toBe('unmoderated')
-      }
-    }
-  })
-
-  it('never returns a placeholder or a comment under a blocked-type root from a search', async () => {
-    const excluded = new Set(
-      [...fixtures.hidden, ...fixtures.placeholders]
-        .filter(post => post.post_type === 'comment')
-        .map(post => post.id),
-    )
+  it('matches REST discovery for keyword, semantic, and similar-post searches', async () => {
     for (const caller of callers) {
       for (const args of searches) {
-        const ids = await searchIds(caller, args)
-
-        expect(ids.filter(id => excluded.has(id))).toEqual([])
-      }
-    }
-  })
-
-  it('returns only posts that read_posts.details opens, in every search mode', async () => {
-    for (const caller of callers) {
-      for (const args of searches) {
-        const ids = [...new Set(await searchIds(caller, args))]
-        const refused: unknown[] = []
-        for (const id of ids) {
-          const answer = await call(caller, 'read_posts', optionArgs('details', { post_id: id }))
-          if (!answer['success']) refused.push({ id, answer })
+        const mcpIds = await searchIds(caller, args)
+        const request = createRequest()
+        await request.authenticateAs(caller)
+        const restIds: string[] = []
+        const { similar_post_id, ...restArgs } = args
+        for (const post_type of [undefined, 'comment']) {
+          const response = await request
+            .get('/api/v1/posts')
+            .query({
+              ...restArgs,
+              ...(typeof similar_post_id === 'string' && { similar_post: similar_post_id }),
+              ...(post_type && { post_types: post_type }),
+              limit: 100,
+            })
+            .expect(200)
+          restIds.push(...(response.body.results as { id: string }[]).map(result => result.id))
         }
-
-        expect(ids.length).toBeGreaterThan(0)
-        expect(refused).toEqual([])
+        expect(mcpIds.toSorted()).toEqual(restIds.toSorted())
+        expect(mcpIds).toContain(fixtures.readable[0]!.id)
       }
+    }
+  })
+
+  it('keeps follower-only private posts out for an unrelated viewer', async () => {
+    const stranger = callers.at(-1)!
+    const followersOnly = fixtures.hidden.find(post => post.label === 'followers-only post')!
+    const mutualOnly = fixtures.hidden.find(post => post.label === 'mutual-followers-only post')!
+    const strangerIds = await searchIds(stranger, { text_search_query: token })
+    expect(strangerIds).not.toContain(followersOnly.id)
+    expect(strangerIds).not.toContain(mutualOnly.id)
+    for (const caller of callers.slice(0, -1)) {
+      const ids = await searchIds(caller, { text_search_query: token })
+      expect(ids).toEqual(expect.arrayContaining([followersOnly.id, mutualOnly.id]))
     }
   })
 })

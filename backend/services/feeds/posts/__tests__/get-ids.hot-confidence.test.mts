@@ -13,6 +13,32 @@ import {
 } from '@voucha/test-helpers'
 import { getPostFeedIds } from '../get-ids.mts'
 
+async function collectUntilEntities(
+  viewer: Parameters<typeof getPostFeedIds>[0],
+  options: NonNullable<Parameters<typeof getPostFeedIds>[1]>,
+  expected: readonly string[],
+) {
+  const rows: Awaited<ReturnType<typeof getPostFeedIds>>['results'] = []
+  let after: string | undefined
+  for (let index = 0; index < 30; index++) {
+    const page = await getPostFeedIds(viewer, { ...options, after })
+    rows.push(...page.results)
+    if (
+      expected.every(
+        (id, position) =>
+          rows.filter(row => row.entity_id === id).length >=
+          expected.slice(0, position + 1).filter(value => value === id).length,
+      ) ||
+      !page.page_info.has_next_page
+    )
+      break
+    const next = page.page_info.end_cursor ?? undefined
+    if (!next || next === after) throw new Error('Expected advancing feed cursor')
+    after = next
+  }
+  return rows
+}
+
 describe('hot post feed', () => {
   it('ranks direct and shared deliveries by confidence and excludes nonpositive support', async () => {
     const viewer = await createTestUser()
@@ -49,19 +75,16 @@ describe('hot post feed', () => {
         ),
       ])
       const options = { feed_type: 'follow_users' as const, min_score_follow_users: -10 }
-      const first = await getPostFeedIds(viewer, { ...options, sort: 'hot', limit: 2 })
-      expect(first.results.map(row => row.entity_id)).toEqual([ids[0], ids[0]])
-      expect(first.page_info.has_next_page).toBe(true)
-      const second = await getPostFeedIds(viewer, {
-        ...options,
-        sort: 'hot',
-        limit: 2,
-        after: first.page_info.end_cursor!,
-      })
-      expect(second.results.map(row => row.entity_id)).toEqual([ids[1], ids[1]])
-      expect(second.page_info.has_next_page).toBe(false)
-      const recent = await getPostFeedIds(viewer, { ...options, sort: 'new', limit: 20 })
-      expect(new Set(recent.results.map(row => row.entity_id))).toEqual(new Set(ids))
+      const expectedHot = [ids[0]!, ids[0]!, ids[1]!, ids[1]!]
+      const hotRows = await collectUntilEntities(
+        viewer,
+        { ...options, sort: 'hot', limit: 2 },
+        expectedHot,
+      )
+      expect(hotRows.map(row => row.entity_id)).toEqual(expectedHot)
+      expect(new Set(hotRows.map(row => row.id)).size).toBe(expectedHot.length)
+      const recent = await collectUntilEntities(viewer, { ...options, sort: 'new', limit: 20 }, ids)
+      expect(new Set(recent.map(row => row.entity_id))).toEqual(new Set(ids))
     } finally {
       await Promise.all(ids.map(id => deleteTestPost(id)))
     }
@@ -89,11 +112,15 @@ describe('hot post feed', () => {
       min_score_follow_users: -10,
       limit: 10,
     }
-    const recent = await getPostFeedIds(viewer, { ...options, sort: 'new' })
-    expect(recent.results.map(row => row.entity_id).toSorted()).toEqual(
+    const recent = await collectUntilEntities(
+      viewer,
+      { ...options, sort: 'new' },
+      comments.map(comment => comment.id),
+    )
+    expect(recent.map(row => row.entity_id).toSorted()).toEqual(
       comments.map(comment => comment.id).toSorted(),
     )
-    const hot = await getPostFeedIds(viewer, { ...options, sort: 'hot' })
-    expect(hot.results.map(row => row.entity_id)).toEqual([comments[0]!.id])
+    const hot = await collectUntilEntities(viewer, { ...options, sort: 'hot' }, [comments[0]!.id])
+    expect(hot.map(row => row.entity_id)).toEqual([comments[0]!.id])
   })
 })

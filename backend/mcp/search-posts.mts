@@ -6,10 +6,16 @@ import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPaginationLimits } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
 import { getPostIds } from '@services/posts/search/get-ids'
-import { getPostByAnyCachedBatch } from '@services/entity-fetch'
-import { preparePostsSearchParams, resolvePostsSearchParams } from '@services/search-params'
+import { rejectMcpSimilarSeed } from '@services/posts/public-similar-seed'
+import { getPostsWithRootsByAnyCached } from '@services/posts/get-cached-with-roots'
+import { labelAndMaskPosts } from '@services/content-provenance'
+import {
+  preparePostsSearchParams,
+  resolvePostsSearchParams,
+  validateTopicSearchTerms,
+} from '@services/search-params'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import type { FilterablePostType } from '@ts-shared/feed-capabilities'
+import type { SearchPostType } from '@ts-shared/feed-capabilities'
 import {
   EMPTY_PAGE_INFO,
   findPageOrNull,
@@ -20,20 +26,21 @@ import {
   type PagedSearchArgs,
   type SearchPageInfo,
 } from './paged-search.mts'
-import { resolveReadableThread } from './mcp-post-access.mts'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
+import { requirePrivateToolUser } from './private-user.mts'
 import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 import { POST_SORTS, postSearchFilterSchemaProperties } from './search-post-input.mts'
-
 type ToolArgs = PagedSearchArgs & {
   sort?: (typeof POST_SORTS)[number]
-  post_type?: FilterablePostType
-  post_types?: FilterablePostType[]
+  post_type?: SearchPostType
+  post_types?: SearchPostType[]
   categories?: string[]
   category?: string
   creator?: string
+  community_id?: string
+  trending_min_score?: number
   data_point_topic?: string
   data_point_vertical?: string
   review_topic?: string
@@ -82,12 +89,12 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.',
+      'Search posts with keyword, semantic, or similar-item signals. Follow the opaque end_cursor while has_next_page is true.',
     parameters: {
       type: 'object',
       properties: {
         ...pagedSearchSchemaProperties(
-          'Keyword search. Same as GET /api/v1/posts q: matches post text and #hashtags.',
+          'Keyword search. Same as GET /api/v1/posts q: matches post text and up to five #hashtags.',
         ),
         ...postSearchFilterSchemaProperties(),
       },
@@ -105,6 +112,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const viewer = currentUser ? await requirePrivateToolUser(currentUser) : undefined
+      validateTopicSearchTerms(args, ['topic', 'topics'], true)
+      validateTopicSearchTerms(args, ['category', 'categories'])
       const page = await findPageOrNull(args.after, async () => {
         const [topics, creator] = await Promise.all([
           resolvedTopicFilters({
@@ -126,6 +136,10 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
             ...(args.categories && { categories: args.categories }),
             ...(args.category && { category: args.category }),
             ...(creator && { creator }),
+            ...(args.community_id && { community_id: args.community_id }),
+            ...(args.trending_min_score !== undefined && {
+              trending_min_score: args.trending_min_score,
+            }),
             ...(topics.data_point_topic && { data_point_topic: topics.data_point_topic }),
             ...(args.data_point_vertical && { data_point_vertical: args.data_point_vertical }),
             ...(topics.review_topic && { review_topic: topics.review_topic }),
@@ -141,36 +155,25 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           getPaginationLimits(25),
         )
         const { shouldReturnEmpty, searchOptions } = await resolvePostsSearchParams(prepared)
-        if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
-
-        // A similar-post seed the caller cannot read through read_posts (option details) answers like a seed that does
-        // not exist: its embedding must not rank anything for them. A tool call always has a user,
-        // so a missing one gets an empty page rather than a crash.
-        const { similar_post_id } = searchOptions
         if (
-          similar_post_id &&
-          !(
-            currentUser &&
-            (await resolveReadableThread(currentUser, similar_post_id))?.state === 'readable'
-          )
-        ) {
+          shouldReturnEmpty ||
+          (await rejectMcpSimilarSeed(viewer !== undefined, searchOptions.similar_post_id))
+        )
           return { results: [], page_info: EMPTY_PAGE_INFO }
-        }
 
-        // Every candidate is judged like read_posts (option details) judges it (the credential owner minus private
-        // data), so an owner's private or uncleared post is not returned. Muted and blocked users,
-        // topics and hostnames still stay out of the caller's results.
-        return getPostIds(currentUser, {
+        return getPostIds(viewer, {
           ...searchOptions,
           omitLimit: false,
-          exclude_for_user_id: currentUser?.id,
-          public_eligibility_only: true,
+          ...(viewer && { exclude_for_user_id: viewer.id }),
         })
       })
       if (!page) return INVALID_CURSOR_RESULT
       const { results, page_info } = page
-      const posts = await getPostByAnyCachedBatch(results.map(result => result.id))
-      const visiblePosts = posts.filter((post): post is NonNullable<typeof post> => post !== null)
+      const { posts, roots } = await getPostsWithRootsByAnyCached(results.map(result => result.id))
+      const masked = await labelAndMaskPosts([...posts, ...roots], viewer)
+      const visiblePosts = masked
+        .slice(0, posts.length)
+        .filter((post): post is NonNullable<typeof post> => post != null)
 
       const references = await getPostHackerNewsSummaries(visiblePosts.map(post => post.id))
       return {

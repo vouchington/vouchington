@@ -31,14 +31,23 @@ describe('getPostFeedIds', () => {
       (await sharePostWithFollowers(followedUser, sharedPost.id)).distribution_id,
     )
 
-    const result = await getPostFeedIds(viewer, {
-      feed_type: 'follow_users',
-      limit: 10,
-    })
-
-    expect(result.results[0]?.entity_id).toBe(sharedPost.id)
-    expect(result.results[0]?.delivery_type).toBe('share')
-    expect(result.results.some(row => row.entity_id === olderDirectPost.id)).toBe(true)
+    const results: Awaited<ReturnType<typeof getPostFeedIds>>['results'] = []
+    let after: string | undefined
+    for (let index = 0; index < 30; index++) {
+      const page = await getPostFeedIds(viewer, { feed_type: 'follow_users', limit: 10, after })
+      results.push(...page.results)
+      if (
+        results.some(row => row.entity_id === olderDirectPost.id) ||
+        !page.page_info.has_next_page
+      )
+        break
+      const next = page.page_info.end_cursor ?? undefined
+      if (!next || next === after) throw new Error('Expected advancing feed cursor')
+      after = next
+    }
+    expect(results.map(row => row.entity_id)).toEqual([sharedPost.id, olderDirectPost.id])
+    expect(results[0]?.delivery_type).toBe('share')
+    expect(new Set(results.map(row => row.id)).size).toBe(results.length)
   })
 
   it('includes posts tagged with topics from a proxy_follow community list', async () => {

@@ -140,6 +140,17 @@ _none_
 - `idx_posts__clearance_changed_by_id`: `CREATE INDEX idx_posts__clearance_changed_by_id ON ONLY public.posts USING btree (clearance_changed_by_id) WHERE (clearance_changed_by_id IS NOT NULL)`
 - `idx_posts__clearance_review_queue`: `CREATE INDEX idx_posts__clearance_review_queue ON ONLY public.posts USING btree (id DESC) WHERE ((deleted_at IS NULL) AND ((rejected_at IS NOT NULL) OR (in_review_at IS NOT NULL)))`
 - `idx_posts__community_id`: `CREATE INDEX idx_posts__community_id ON ONLY public.posts USING btree (community_id, id) WHERE (community_id IS NOT NULL)`
+- `idx_posts__community_id__stable_hot_rank__id`:
+
+  ```sql
+  CREATE INDEX idx_posts__community_id__stable_hot_rank__id ON ONLY public.posts USING btree (community_id, (
+  CASE
+      WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)
+      ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)
+  END) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((community_id IS NOT NULL) AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))
+  ```
+
+- `idx_posts__community_id__votes_score_sort__id`: `CREATE INDEX idx_posts__community_id__votes_score_sort__id ON ONLY public.posts USING btree (community_id, votes_score_sort DESC, id DESC) WHERE ((community_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_posts__created_by_id`: `CREATE INDEX idx_posts__created_by_id ON ONLY public.posts USING btree (created_by_id, id)`
 - `idx_posts__created_by_id__community_id__id`: `CREATE INDEX idx_posts__created_by_id__community_id__id ON ONLY public.posts USING btree (created_by_id, community_id, id) WHERE (deleted_at IS NULL)`
 - `idx_posts__created_by_id__is_anonymous__comment`: `CREATE INDEX idx_posts__created_by_id__is_anonymous__comment ON ONLY public.posts USING btree (created_by_id, is_anonymous) WHERE ((post_type = 'comment'::post_types) AND (deleted_at IS NULL))`
@@ -155,18 +166,48 @@ _none_
 - `idx_posts__data_point_vertical__votes_score_sort__id`: `CREATE INDEX idx_posts__data_point_vertical__votes_score_sort__id ON ONLY public.posts USING btree (data_point_vertical, votes_score_sort DESC, id DESC) WHERE ((data_point_vertical IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_posts__deleted_by_id`: `CREATE INDEX idx_posts__deleted_by_id ON ONLY public.posts USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_posts__hacker_news_references__id`: `CREATE INDEX idx_posts__hacker_news_references__id ON ONLY public.posts USING btree (id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))`
+- `idx_posts__hacker_news_references__stable_hot_rank__id`:
+
+  ```sql
+  CREATE INDEX idx_posts__hacker_news_references__stable_hot_rank__id ON ONLY public.posts USING btree ((
+  CASE
+      WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)
+      ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)
+  END) DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))
+  ```
+
 - `idx_posts__hacker_news_references__votes_score_sort__id`: `CREATE INDEX idx_posts__hacker_news_references__votes_score_sort__id ON ONLY public.posts USING btree (votes_score_sort DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL))`
 - `idx_posts__id__post_type`: `CREATE INDEX idx_posts__id__post_type ON ONLY public.posts USING btree (id DESC, post_type) WHERE (deleted_at IS NULL)`
 - `idx_posts__lingua_rs_pending`: `CREATE INDEX idx_posts__lingua_rs_pending ON ONLY public.posts USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_posts__llm_moderation_content_sha256__id`: `CREATE INDEX idx_posts__llm_moderation_content_sha256__id ON ONLY public.posts USING btree (llm_moderation_content_sha256, id)`
 - `idx_posts__parent_id__id`: `CREATE INDEX idx_posts__parent_id__id ON ONLY public.posts USING btree (parent_post_id, id) WHERE (parent_post_id IS NOT NULL)`
-- `idx_posts__post_type__id`: `CREATE INDEX idx_posts__post_type__id ON ONLY public.posts USING btree (post_type, id DESC) WHERE ((deleted_at IS NULL) AND (post_type = ANY (ARRAY['story'::post_types, 'data_point'::post_types])))`
-- `idx_posts__post_type__votes_score_sort__id`: `CREATE INDEX idx_posts__post_type__votes_score_sort__id ON ONLY public.posts USING btree (post_type, votes_score_sort DESC, id DESC) WHERE ((deleted_at IS NULL) AND (post_type = ANY (ARRAY['story'::post_types, 'data_point'::post_types])))`
+- `idx_posts__post_type__id`: `CREATE INDEX idx_posts__post_type__id ON ONLY public.posts USING btree (post_type, id DESC) WHERE ((deleted_at IS NULL) AND (post_type = ANY (ARRAY['story'::post_types, 'data_point'::post_types, 'topic_recommendation'::post_types])))`
+- `idx_posts__post_type__stable_hot_rank__id`:
+
+  ```sql
+  CREATE INDEX idx_posts__post_type__stable_hot_rank__id ON ONLY public.posts USING btree (post_type, (
+  CASE
+      WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)
+      ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)
+  END) DESC, id DESC) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))
+  ```
+
+- `idx_posts__post_type__votes_score_sort__id`: `CREATE INDEX idx_posts__post_type__votes_score_sort__id ON ONLY public.posts USING btree (post_type, votes_score_sort DESC, id DESC) WHERE ((deleted_at IS NULL) AND (post_type = ANY (ARRAY['story'::post_types, 'data_point'::post_types, 'topic_recommendation'::post_types])))`
 - `idx_posts__privacy_private`: `CREATE INDEX idx_posts__privacy_private ON ONLY public.posts USING btree (created_by_id, broadcast) WHERE ((privacy = 'private'::privacy_types) AND (deleted_at IS NULL))`
 - `idx_posts__root_id__community_id__id`: `CREATE INDEX idx_posts__root_id__community_id__id ON ONLY public.posts USING btree (root_post_id, community_id, id) WHERE (root_post_id IS NOT NULL)`
 - `idx_posts__root_id__id`: `CREATE INDEX idx_posts__root_id__id ON ONLY public.posts USING btree (root_post_id, id) WHERE (root_post_id IS NOT NULL)`
 - `idx_posts__root_post_visibility`: `CREATE INDEX idx_posts__root_post_visibility ON ONLY public.posts USING btree (id) INCLUDE (broadcast, created_by_id) WHERE (deleted_at IS NULL)`
 - `idx_posts__search_vector`: `CREATE INDEX idx_posts__search_vector ON ONLY public.posts USING gin (search_vector) WHERE (deleted_at IS NULL)`
+- `idx_posts__stable_hot_rank__id`:
+
+  ```sql
+  CREATE INDEX idx_posts__stable_hot_rank__id ON ONLY public.posts USING btree ((
+  CASE
+      WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)
+      ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)
+  END) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))
+  ```
+
 - `idx_posts__structured_data`: `CREATE INDEX idx_posts__structured_data ON ONLY public.posts USING gin (structured_data jsonb_path_ops) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_posts__structured_data__credit_score_range__id`: `CREATE INDEX idx_posts__structured_data__credit_score_range__id ON ONLY public.posts USING btree (((structured_data ->> 'credit_score_range'::text)), id DESC) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_posts__structured_data__result__id`: `CREATE INDEX idx_posts__structured_data__result__id ON ONLY public.posts USING btree (((structured_data ->> 'result'::text)), id DESC) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))`

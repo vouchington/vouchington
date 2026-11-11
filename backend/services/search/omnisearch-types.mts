@@ -29,4 +29,6 @@ export type OmnisearchOptions = {
   hasUnknownHashtag?: boolean
   /** Per-vertical result cap. Defaults to 3. */
   limit?: number
+  /** Opaque post-search continuation cursor; other verticals remain on their first page. */
+  postAfter?: string
 }

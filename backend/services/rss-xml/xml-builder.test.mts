@@ -61,6 +61,16 @@ const items: RssItem[] = [
 ]
 
 describe('buildRssXml', () => {
+  it('emits an Atom next link for an empty page and omits it when exhausted', () => {
+    const nextLink = 'https://example.com/rss/posts?user=alice&after=opaque%2Bcursor'
+    const xml = buildRssXml({ ...channel, nextLink }, [])
+    expect(xml).toContain('xmlns:atom="http://www.w3.org/2005/Atom"')
+    expect(xml).toMatch(/<atom:link\b[^>]*rel="next"/)
+    expect(xml).toContain('user=alice&amp;after=opaque%2Bcursor')
+    expect(xml).not.toContain('<item>')
+    expect(buildRssXml(channel, [])).not.toContain('<atom:link')
+  })
+
   it('round-trips a guid and link containing "&" to their exact original string', () => {
     // Regression test for the CDATA_WHITESPACE_REGEX collapse. news-feed guids/links are
     // external article URLs and routinely carry query strings with `&` (utm params, etc.),

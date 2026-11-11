@@ -6,7 +6,6 @@ import sql from 'sql-template-strings'
 import { encodeCursor } from '@modules/pagination'
 import { resolveCommunityIdCursorPage } from '../id-cursor-page.mts'
 
-export { searchCommunityPosts } from './approved-posts.mts'
 type CommunityFeedPost = {
   id: string
   [key: string]: unknown

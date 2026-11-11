@@ -4,10 +4,12 @@ import { getRssFeedByIdCached } from '@services/entity-fetch'
 import type { ViewRssFeed } from '@services/rss-feeds/types'
 import { buildRssFeedsPage, decodeRssFeedsCursor, searchRssFeeds } from '@services/rss-feeds'
 import {
+  MAX_TOPIC_SEARCH_TERMS,
   prepareRssFeedsSearchParams,
   resolveRssFeedsSearchParams,
   RSS_FEED_SORTS,
   RSS_FEED_TIME_RANGES,
+  validateTopicSearchTerms,
 } from '@services/search-params'
 import { rssFeedReferenceSchema, topicReferenceSchema } from './entity-reference-schema.mts'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
@@ -45,7 +47,7 @@ const MAX_LIMIT = 25
 
 export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
   schema: {
-    description: `Search RSS feeds by title, type and current state. Returns at most ${MAX_LIMIT} feeds per page and page_info.end_cursor for the next page. Text search has no cursor, as on REST. sort=trending ranks the feeds that gained follows or items in time_range (day, week or month; default week) and takes no filter besides apply_mutes, limit and after.`,
+    description: `Search RSS feeds by title, type and current state. Up to ${MAX_LIMIT} feeds per page; continue with page_info.end_cursor. Text search has no cursor, as on REST. sort=trending ranks the feeds that gained follows or items in time_range (day, week or month; default week) and takes no filter besides apply_mutes, limit and after.`,
     parameters: {
       type: 'object',
       properties: {
@@ -62,7 +64,12 @@ export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
         publisher_types: { type: 'array', items: { type: 'string' } },
         topic: topicReferenceSchema,
         topic_match: { type: 'string', enum: ['any', 'all'] },
-        topics: { type: 'array', items: topicReferenceSchema },
+        topics: {
+          type: 'array',
+          maxItems: MAX_TOPIC_SEARCH_TERMS,
+          items: topicReferenceSchema,
+          description: 'Up to five topic/#hashtag terms.',
+        },
         sort: {
           type: 'string',
           enum: [...RSS_FEED_SORTS],
@@ -94,6 +101,7 @@ export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
   function:
     (currentUser: BasicUser) =>
     async (args: ListArgs): Promise<ListResult> => {
+      validateTopicSearchTerms(args, ['topic', 'topics'], true)
       const page = await findPageOrNull(args.after, async () => {
         const topics = await resolvedTopicFilters({ topic: args.topic, topics: args.topics })
         if (!topics) return { results: [], page_info: EMPTY_PAGE_INFO }

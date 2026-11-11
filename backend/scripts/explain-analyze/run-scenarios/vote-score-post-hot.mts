@@ -1,5 +1,6 @@
-import { getPostIds, getPostFeedIds, getTrendingPosts } from '../run-services.mts'
+import { getPostIds, getPostFeedIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
+import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { withSeedAnchorClock } from '../seed-clock.mts'
 import { seedVoteScorePostHotFixture } from '../seed-data/vote-score-post-hot.mts'
@@ -7,31 +8,24 @@ import { seedVoteScorePostHotFixture } from '../seed-data/vote-score-post-hot.mt
 const PAGE_SIZE = 25
 const WEEKLY_POST_SCAN_CAP = 15_000
 
-export type VoteScorePostHotCursors = Readonly<{
-  search: string
-  feed: string
-  trending: string
-}>
+export type VoteScorePostHotCursors = Readonly<{ search: string; feed: string; trending: string }>
 type RankedPage = {
   results: unknown[]
   page_info: { has_next_page: boolean; end_cursor: string | null }
 }
-
-function postScanGate() {
-  return [{ kind: 'maxProcessedRows' as const, relation: 'posts', max: WEEKLY_POST_SCAN_CAP }]
-}
-
+const postScanGate = () => [
+  { kind: 'maxProcessedRows' as const, relation: 'posts', max: WEEKLY_POST_SCAN_CAP },
+]
 async function prepareCursor<T extends RankedPage>(
   label: string,
   loadFirstPage: () => Promise<T>,
 ): Promise<string> {
   const page = await loadFirstPage()
   const cursor = page.page_info.end_cursor
-  if (page.results.length !== PAGE_SIZE || !page.page_info.has_next_page || !cursor)
-    throw new Error(`${label} hot-ranking fixture must have a full first page and continuation`)
+  if (!cursor || !page.page_info.has_next_page || page.results.length !== PAGE_SIZE)
+    throw new Error(`${label} hot-ranking fixture must stay bounded and return a continuation`)
   return cursor
 }
-
 export async function prepareVoteScorePostHotCursors(): Promise<VoteScorePostHotCursors> {
   return withSeedAnchorClock(async () => ({
     search: await prepareCursor('Post search', () =>
@@ -46,24 +40,69 @@ export async function prepareVoteScorePostHotCursors(): Promise<VoteScorePostHot
       }),
     ),
     trending: await prepareCursor('Trending posts', () =>
-      getTrendingPosts({ timeRange: 'week', limit: PAGE_SIZE }),
+      getPostIds(undefined, { sort: 'trending', time_range: '1w', limit: PAGE_SIZE }),
     ),
   }))
 }
-
-async function requireContinuation<
-  T extends { results: unknown[]; page_info: { has_next_page: boolean } },
->(label: string, load: () => Promise<T>): Promise<T> {
+async function requireContinuation<T extends RankedPage>(
+  label: string,
+  load: () => Promise<T>,
+  after?: string,
+): Promise<T> {
   const page = await load()
-  if (page.results.length !== PAGE_SIZE || !page.page_info.has_next_page)
-    throw new Error(`${label} hot-ranking continuation must return a full page with another page`)
+  if (
+    !page.page_info.end_cursor ||
+    !page.page_info.has_next_page ||
+    page.results.length !== PAGE_SIZE ||
+    (after !== undefined && page.page_info.end_cursor === after)
+  )
+    throw new Error(`${label} hot-ranking continuation must stay bounded and advance its cursor`)
   return page
 }
 
+function contractForScenario(
+  id: string,
+  leaves: { rank: readonly string[]; primaryKey: readonly string[]; shares: readonly string[] },
+): Parameters<typeof registerScenarioContract>[1] {
+  const feed = id.startsWith('vote-score-post-feed-hot-')
+  const topicRelations = [
+    'relation__post__category__topic',
+    'relation__post__category__topic_alias',
+    'topic_aliases',
+  ]
+  return {
+    expectations: [
+      ...postScanGate(),
+      {
+        kind: 'usesIndexes' as const,
+        indexes: feed ? leaves.shares : [...leaves.rank, ...leaves.primaryKey],
+        anyOf: true,
+      },
+      ...(feed ? [{ kind: 'custom' as const, name: 'postTopicMembership' }] : []),
+      // Follow and mute can each inspect a candidate's topic children.
+      ...(feed
+        ? topicRelations.map(relation => ({
+            kind: 'maxProcessedRows' as const,
+            relation,
+            max: WEEKLY_POST_SCAN_CAP * 2,
+          }))
+        : []),
+    ],
+    forbidSequentialScans: feed ? topicRelations : [],
+    crossPartition: {
+      posts: 'Hot ranking traverses eligible positive-score posts across the requested week.',
+    },
+  }
+}
 export async function runVoteScorePostHotScenarios(): Promise<void> {
   await seedVoteScorePostHotFixture()
   const cursors = await prepareVoteScorePostHotCursors()
-  const scenarios = getVoteScorePostHotScenarios(cursors)
+  const [rank, primaryKey, shares] = await Promise.all([
+    partitionIndexLeaves('idx_posts__stable_hot_rank__id'),
+    partitionIndexLeaves('posts_pkey'),
+    partitionIndexLeaves('idx_post_feed_shares__recipient__sort'),
+  ])
+  const scenarios = getVoteScorePostHotScenarios(cursors, { rank, primaryKey, shares })
 
   for (const scenario of scenarios) {
     registerScenarioContract(scenario.id, scenario.contract)
@@ -80,6 +119,7 @@ export type VoteScorePostHotScenario = Readonly<{
 
 export function getVoteScorePostHotScenarios(
   cursors: VoteScorePostHotCursors,
+  leaves: { rank: readonly string[]; primaryKey: readonly string[]; shares: readonly string[] },
 ): readonly VoteScorePostHotScenario[] {
   return [
     {
@@ -111,58 +151,34 @@ export function getVoteScorePostHotScenarios(
     {
       id: 'vote-score-post-feed-hot-after',
       run: () =>
-        requireContinuation('Post feed', () =>
-          getPostFeedIds(seedUser, {
-            sort: 'hot',
-            feed_type: 'any',
-            limit: PAGE_SIZE,
-            time_range: '1w',
-            after: cursors.feed,
-          }),
+        requireContinuation(
+          'Post feed',
+          () =>
+            getPostFeedIds(seedUser, {
+              sort: 'hot',
+              feed_type: 'any',
+              limit: PAGE_SIZE,
+              time_range: '1w',
+              after: cursors.feed,
+            }),
+          cursors.feed,
         ),
     },
     {
       id: 'vote-score-trending-posts-first',
-      run: () => getTrendingPosts({ timeRange: 'week', limit: PAGE_SIZE }),
+      run: () => getPostIds(undefined, { sort: 'trending', time_range: '1w', limit: PAGE_SIZE }),
     },
     {
       id: 'vote-score-trending-posts-after',
       run: () =>
         requireContinuation('Trending posts', () =>
-          getTrendingPosts({ timeRange: 'week', limit: PAGE_SIZE, after: cursors.trending }),
+          getPostIds(undefined, {
+            sort: 'trending',
+            time_range: '1w',
+            limit: PAGE_SIZE,
+            after: cursors.trending,
+          }),
         ),
     },
-  ].map(scenario => ({
-    ...scenario,
-    contract: {
-      expectations: [
-        ...postScanGate(),
-        ...(scenario.id.startsWith('vote-score-post-feed-hot-')
-          ? [{ kind: 'custom' as const, name: 'postTopicMembership' }]
-          : []),
-        ...(scenario.id.startsWith('vote-score-post-feed-hot-')
-          ? [
-              'relation__post__category__topic',
-              'relation__post__category__topic_alias',
-              'topic_aliases',
-            ].map(relation => ({
-              kind: 'maxProcessedRows' as const,
-              relation,
-              // Follow and mute can each inspect the candidate post's topic children.
-              max: WEEKLY_POST_SCAN_CAP * 2,
-            }))
-          : []),
-      ],
-      forbidSequentialScans: scenario.id.startsWith('vote-score-post-feed-hot-')
-        ? [
-            'relation__post__category__topic',
-            'relation__post__category__topic_alias',
-            'topic_aliases',
-          ]
-        : [],
-      crossPartition: {
-        posts: 'Hot ranking traverses eligible positive-score posts across the requested week.',
-      },
-    },
-  }))
+  ].map(scenario => ({ ...scenario, contract: contractForScenario(scenario.id, leaves) }))
 }

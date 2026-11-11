@@ -4,6 +4,7 @@ import {
   getTopicAliasIdForTest,
   insertTestTopic,
   insertTopicAliasForTest,
+  insertUnlinkedTopicAliasForTest,
   softDeleteTopic,
 } from '@voucha/test-helpers'
 import { parsePostsSearchParams } from '../parse-posts.mts'
@@ -44,8 +45,8 @@ describe('parse-posts', () => {
       q: `cashback #parse-posts-hash-${random}`,
     })
     expect(searchOptions.text_search_query).toBe('cashback')
-    expect(searchOptions.hashtag_topic_ids).toEqual([topicId])
-    expect(searchOptions.universal_topic_ids).toBeUndefined()
+    expect(searchOptions.universal_topic_ids).toEqual([topicId])
+    expect(searchOptions).not.toHaveProperty('hashtag_topic_ids')
   })
 
   it('treats an alias owned by a deleted topic as an exact hashtag alias', async () => {
@@ -68,7 +69,33 @@ describe('parse-posts', () => {
     expect(shouldReturnEmpty).toBe(false)
     expect(searchOptions.text_search_query).toBe('cashback')
     expect(searchOptions.hashtag_alias_ids).toEqual([aliasId])
-    expect(searchOptions.hashtag_topic_ids).toBeUndefined()
+    expect(searchOptions).not.toHaveProperty('hashtag_topic_ids')
+  })
+
+  it('prefers a linked alias over a colliding active topic slug', async () => {
+    const user = await createTestUser()
+    const random = Math.random().toString(36).slice(2, 8)
+    const slug = `collision-${random}`
+    const aliasTopicId = await insertTestTopic({
+      name: `Alias ${random}`,
+      slug: `alias-topic-${random}`,
+      createdById: user.id,
+    })
+    await insertTestTopic({ name: `Slug ${random}`, slug, createdById: user.id })
+    await insertTopicAliasForTest(aliasTopicId, slug)
+    const { searchOptions } = await parsePostsSearchParams({ q: `#${slug}` })
+    expect(searchOptions.universal_topic_ids).toEqual([aliasTopicId])
+  })
+
+  it('prefers an active topic slug over a colliding unlinked alias', async () => {
+    const user = await createTestUser()
+    const random = Math.random().toString(36).slice(2, 8)
+    const slug = `unlinked-collision-${random}`
+    const topicId = await insertTestTopic({ name: `Slug ${random}`, slug, createdById: user.id })
+    await insertUnlinkedTopicAliasForTest(slug)
+    const { searchOptions } = await parsePostsSearchParams({ q: `#${slug}` })
+    expect(searchOptions.universal_topic_ids).toEqual([topicId])
+    expect(searchOptions.hashtag_alias_ids).toBeUndefined()
   })
 
   it('parsePostsSearchParams returns an empty result for an unknown valid hashtag', async () => {
@@ -91,7 +118,7 @@ describe('parse-posts', () => {
 
       expect(shouldReturnEmpty).toBe(false)
       expect(searchOptions.text_search_query).toBe(query)
-      expect(searchOptions.hashtag_topic_ids).toBeUndefined()
+      expect(searchOptions).not.toHaveProperty('hashtag_topic_ids')
       expect(searchOptions.hashtag_alias_ids).toBeUndefined()
     },
   )
@@ -108,7 +135,7 @@ describe('parse-posts', () => {
 
     expect(shouldReturnEmpty).toBe(false)
     expect(searchOptions.text_search_query).toBe(query)
-    expect(searchOptions.hashtag_topic_ids).toBeUndefined()
+    expect(searchOptions).not.toHaveProperty('hashtag_topic_ids')
     expect(searchOptions.hashtag_alias_ids).toBeUndefined()
   })
 
@@ -129,16 +156,59 @@ describe('parse-posts', () => {
 
     expect(shouldReturnEmpty).toBe(false)
     expect(searchOptions.text_search_query).toBe(`Read 🚀 at ${url}`)
-    expect(searchOptions.hashtag_topic_ids).toEqual([topicId])
+    expect(searchOptions.universal_topic_ids).toEqual([topicId])
   })
 
-  it('parsePostsSearchParams throws 422 for too many hashtag topic identifiers', async () => {
-    const hashtags = Array.from({ length: 11 }, (_, i) => `#topic-${i}`).join(' ')
+  it('rejects six raw hashtag mentions before deduplication', async () => {
+    const hashtags = Array.from({ length: 6 }, () => '#same-topic').join(' ')
 
     await expect(parsePostsSearchParams({ q: hashtags })).rejects.toMatchObject({
-      status: 422,
-      message: 'Too many hashtag topic identifiers (max 10)',
+      status: 400,
+      message: 'Too many hashtag topic identifiers (max 5)',
     })
+  })
+
+  it('deduplicates four linked hashtags against an explicit topic', async () => {
+    const user = await createTestUser()
+    const random = Math.random().toString(36).slice(2, 8)
+    const slug = `parse-posts-linked-${random}`
+    const alias = `parse-posts-alias-${random}`
+    const topicId = await insertTestTopic({ name: `Linked ${random}`, slug, createdById: user.id })
+    await insertTopicAliasForTest(topicId, alias)
+    const { shouldReturnEmpty, searchOptions } = await parsePostsSearchParams({
+      topic: slug,
+      q: Array.from({ length: 4 }, () => `#${alias}`).join(' '),
+    })
+    expect(shouldReturnEmpty).toBe(false)
+    expect(searchOptions.universal_topic_ids).toEqual([topicId])
+    expect(searchOptions).not.toHaveProperty('hashtag_topic_ids')
+    expect(searchOptions.hashtag_alias_ids).toBeUndefined()
+  })
+
+  it('keeps distinct topic terms and an unlinked hashtag as independent filters', async () => {
+    const user = await createTestUser()
+    const random = Math.random().toString(36).slice(2, 8)
+    const firstSlug = `parse-first-${random}`
+    const secondSlug = `parse-second-${random}`
+    const unlinked = `parse-unlinked-${random}`
+    const first = await insertTestTopic({
+      name: `First ${random}`,
+      slug: firstSlug,
+      createdById: user.id,
+    })
+    const second = await insertTestTopic({
+      name: `Second ${random}`,
+      slug: secondSlug,
+      createdById: user.id,
+    })
+    await insertUnlinkedTopicAliasForTest(unlinked)
+    const aliasId = await getTopicAliasIdForTest(unlinked)
+    const { searchOptions } = await parsePostsSearchParams({
+      topic: firstSlug,
+      q: `#${secondSlug} #${unlinked}`,
+    })
+    expect(searchOptions.universal_topic_ids).toEqual([first, second])
+    expect(searchOptions.hashtag_alias_ids).toEqual([aliasId])
   })
 
   it('parsePostsSearchParams deduplicates topic identifiers (universal)', async () => {
@@ -187,9 +257,12 @@ describe('parse-posts', () => {
     expect(searchOptions.data_point_topic_ids).toEqual([topicId])
   })
 
-  it('parsePostsSearchParams throws 422 when too many topic identifiers', async () => {
-    const slugs = Array.from({ length: 11 }, (_, i) => `topic-${i}`).join(',')
-    await expect(parsePostsSearchParams({ topic: slugs })).rejects.toMatchObject({ status: 422 })
+  it('rejects six topic identifiers before resolving them', async () => {
+    const slugs = Array.from({ length: 6 }, (_, i) => `topic-${i}`).join(',')
+    await expect(parsePostsSearchParams({ topic: slugs })).rejects.toMatchObject({
+      status: 400,
+      message: 'Too many topic identifiers (max 5)',
+    })
   })
 
   it('parsePostsSearchParams parses drafts booleanish', async () => {

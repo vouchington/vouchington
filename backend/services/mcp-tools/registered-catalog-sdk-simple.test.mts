@@ -58,7 +58,7 @@ describe('registered catalog SDK', () => {
     { testCase: cases[0]!, name: 'read_reference_data', option: 'countries', args: {} },
     { testCase: cases[0]!, name: 'read_rss_feed_item', option: 'list', args: {} },
     { testCase: cases[0]!, name: 'read_feed', option: 'posts', args: { feed_type: 'any' } },
-    { testCase: cases[0]!, name: 'read_posts', option: 'trending', args: {} },
+    { testCase: cases[0]!, name: 'read_posts', option: 'search', args: { sort: 'trending' } },
     { testCase: cases[0]!, name: 'read_hostnames', option: 'search', args: { sort: 'trust' } },
     { testCase: cases[0]!, name: 'read_my_review_disputes', option: 'list', args: {} },
     { testCase: cases[0]!, name: 'read_my_moderation_appeals', option: 'list', args: {} },

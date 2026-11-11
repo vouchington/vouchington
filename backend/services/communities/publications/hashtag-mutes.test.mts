@@ -8,14 +8,12 @@ import {
   insertEntityRelation,
   insertTestCommunity,
   insertTestCommunityMember,
-  insertTestCommunityPostReview,
   insertTestPost,
   insertTestTopic,
   insertTopicAliasForTest,
   setTopHashtagPostRelationScoreForTest,
 } from '@voucha/test-helpers'
 import { createCommunityPostReview } from './add.mts'
-import { searchCommunityPosts } from './get.mts'
 import { assertCommunityPostTopicsNotMuted } from './muted-topics.mts'
 
 describe('community hashtag-topic mutes', () => {
@@ -50,40 +48,11 @@ describe('community hashtag-topic mutes', () => {
     ).resolves.toBeUndefined()
   })
 
-  it('hides an approved post whose linked hashtag topic is muted in its community', async () => {
-    const { community, owner, postId } = await createCommunityPostWithMutedHashtag()
-    await insertTestCommunityPostReview({
-      communityId: community.id,
-      postId,
-      submittedById: owner.id,
-    })
-
-    const result = await searchCommunityPosts(community.id)
-
-    expect(result.results.map(post => post.id)).not.toContain(postId)
-  })
-
   it('does not apply a mute after the hashtag category relation loses support', async () => {
     const { aliasId, community, owner, postId } = await createCommunityPostWithMutedHashtag()
     await setTopHashtagPostRelationScoreForTest({ postId, topicAliasId: aliasId, score: 0 })
 
     await expect(createCommunityPostReview(owner.id, postId, community.id)).resolves.toBeDefined()
-
-    const result = await searchCommunityPosts(community.id)
-    expect(result.results.map(post => post.id)).toContain(postId)
-  })
-
-  it('hides an approved post with a positive alias relation to a muted topic but no source row', async () => {
-    const { community, owner, postId } = await createCommunityPostWithMutedHashtagNoSource()
-    await insertTestCommunityPostReview({
-      communityId: community.id,
-      postId,
-      submittedById: owner.id,
-    })
-
-    const result = await searchCommunityPosts(community.id)
-
-    expect(result.results.map(post => post.id)).not.toContain(postId)
   })
 
   async function createCommunityPostWithMutedHashtagNoSource() {

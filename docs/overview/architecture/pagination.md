@@ -44,13 +44,20 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
 - UUID-only public cursors whose dataset identity can vary by resource, owner, or filters must carry
   an exact resource scope built from normalized identifiers, filters, and ordering. Reject scoped
   cursors with missing, additional, tampered, or mismatched fields.
+- Post-search hot and trending ranks use a fixed epoch, keeping order stable across requests
+  when vote scores are unchanged. Future timestamps participate in the rank; near ties can differ
+  from an age-decayed calculation. Their opaque cursor binds that ordering. The page is one walk
+  ordered by that rank, then id, and stops at `limit + 1`.
+- Personalized post feeds walk eligible deliveries in sort order and stop at `limit + 1`. A short
+  page has `has_next_page` false. REST and MCP continue with `end_cursor` only while that flag is
+  true, and they keep the same feed filters.
+- Post search walks the requested sort key with eligibility in the same statement and stops at
+  `limit + 1`. Topic membership is an `EXISTS` on that walk. Keyword relevance orders by the
+  ranking score, then id. Semantic search keeps its finite vector window and then the same page
+  limit. A short page is exhausted.
 - Friend recommendation cursors use the exact
   `{"resource":"my-friend-recommendations","owner_id":"…","order":"id-asc"}` scope. Unscoped
   simple ID cursors are rejected.
-- The owner-filtered topic recommendation listing, which the MCP `list_my_topic_recommendations`
-  tool uses, carries a scope of the resource, owner, status, text filter and `best` order. A cursor
-  from another owner or status, or a plain REST score cursor, is refused, and the unfiltered REST
-  listing refuses a scoped one.
 - Private post relation collections use the same scope binding with a timestamp-and-UUID keyset.
   The page uses the live relation keyset. Post type, clearance, audience, and community access are
   eligibility predicates in the same walk, applied before the ordered limit.
@@ -178,6 +185,9 @@ primitives from `@modules/pagination`. PostgreSQL projects UTC microsecond text 
 response page; cursor predicates compare that text directly as `timestamptz`. Public timestamps
 remain dates and cursors remain opaque strings. Numeric timestamp and `share:`-prefixed historical
 payloads are rejected under the current prelaunch contract.
+
+The public posts RSS document pages with the same post-search keyset. Atom `rel="next"` is present
+only when that page has another row, and it carries the opaque `after` cursor with the same filters.
 
 Feed cursors include the direct/share tier and bind the viewer, administrator context, community,
 feed type, time range, score thresholds and effective filters. Recency cursors separately bind their

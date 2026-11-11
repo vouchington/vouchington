@@ -1,6 +1,7 @@
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import { INELIGIBLE_COLLECTION_PAGE_TOPIC_IDS } from '../seed-data/ineligible-collection-pages.mts'
 import { searchCommunities } from '../run-services.mts'
 import { runTrendingTextScenarios } from './community-search-trending.mts'
 
@@ -69,6 +70,23 @@ export async function runCommunitySearchScenarios() {
       }),
     'has-list-items',
   )
+
+  registerScenarioContract('search-communities-topic-pair', {
+    expectations: [
+      { kind: 'custom', name: 'searchCommunitiesEligibility' },
+      // Two matching communities each probe two terms through the live unique key.
+      { kind: 'maxProcessedRows', relation: 'community_list_topics', max: 4 },
+    ],
+  })
+  await runAndCapture('search-communities-topic-pair', async () => {
+    const page = await searchCommunities({
+      topicIds: INELIGIBLE_COLLECTION_PAGE_TOPIC_IDS.slice(0, 2),
+      sort: 'name',
+      limit: COMMUNITY_SEARCH_PAGE_SIZE,
+    })
+    if (!page.results.some(community => community.id === seedUuid(9, '14')))
+      throw new Error('All-of community topic search omitted its seeded pair')
+  })
 
   registerScenarioContract('search-communities-text', {
     expectations: [

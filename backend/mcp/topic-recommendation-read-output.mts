@@ -1,12 +1,7 @@
 import { getPostHackerNewsSummaries } from '@services/urls/hacker-news-sidecars'
 import type { HackerNewsReferenceCounts } from '@services/urls/hacker-news-references-types'
-import type { Post } from '@services/posts/types'
 import { attachPostProvenance } from '@services/content-provenance'
-import {
-  asTopicRecommendationPost,
-  type TopicRecommendationPost,
-  type TopicRecommendationStatus,
-} from '@services/topic-recommendations'
+import type { TopicRecommendationPost } from '@services/topic-recommendations'
 import {
   projectPublicTopicRecommendation,
   type PublicTopicRecommendationPost,
@@ -17,23 +12,6 @@ const SOURCE = 'topic_recommendation'
 
 export type McpTopicRecommendationPost = PublicTopicRecommendationPost & {
   hacker_news_references?: HackerNewsReferenceCounts
-}
-
-/**
- * The recommendations among `posts`, read from the primary database, that this page lists. The ids
- * come from a replica, as on REST, so one reviewed a moment ago can still be selected as pending,
- * and one withdrawn a moment ago is not a recommendation any more. The row just read decides, so
- * such a row is dropped. The cursor is a position in the ranking, so dropping a row skips nothing.
- */
-export function listedRecommendations(
-  posts: readonly (Post | null | undefined)[],
-  status: TopicRecommendationStatus | undefined,
-): TopicRecommendationPost[] {
-  return posts.flatMap(post => {
-    const recommendation = asTopicRecommendationPost(post)
-    if (!recommendation) return []
-    return !status || recommendation.topic_recommendation.status === status ? [recommendation] : []
-  })
 }
 
 /** Text the documented post types as a required string: an empty value stays empty, never null. */

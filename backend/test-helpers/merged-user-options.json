@@ -256,14 +256,6 @@
     },
     {
       "target": "read_community",
-      "option": "posts",
-      "args": {
-        "community_id": "sample"
-      },
-      "routes": ["GET:/api/v1/communities/:idOrSlug/posts"]
-    },
-    {
-      "target": "read_community",
       "option": "details",
       "args": {
         "community_id": "sample"
@@ -349,12 +341,6 @@
         "topic_id": "sample"
       },
       "routes": []
-    },
-    {
-      "target": "read_posts",
-      "option": "trending",
-      "args": {},
-      "routes": ["GET:/api/v1/trending-posts"]
     },
     {
       "target": "discover_topics",

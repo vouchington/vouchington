@@ -24,7 +24,6 @@ import {
   prepareTopicRecommendation,
   deletePendingRecommendation,
   rejectTopicRecommendation,
-  searchTopicRecommendations,
   updateTopicRecommendation,
 } from '../index.mts'
 
@@ -163,6 +162,5 @@ describe('index.generated', () => {
   void (0 as unknown as typeof keepCreateTopicRecommendationInput)
   void (0 as unknown as typeof upsertPostElectionVotes)
   void (0 as unknown as typeof deletePendingRecommendation)
-  void (0 as unknown as typeof searchTopicRecommendations)
   void (0 as unknown as typeof otherUser)
 })

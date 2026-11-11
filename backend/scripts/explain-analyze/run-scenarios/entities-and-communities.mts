@@ -20,7 +20,7 @@ import {
   getPublicUserByAny,
   getRecommendedRssFeeds,
   getTopicByAny,
-  getTrendingPosts,
+  getPostIds,
   searchCommunities,
   searchRssFeeds,
   POST_ELECTION_CONFIG,
@@ -98,20 +98,26 @@ export async function runEntityAndCommunityScenarios() {
     getFollowedUsersByElectionVote(seedUser, seedPostId, 'post_votes', 1),
   )
 
-  // Trending posts — CTE with exponential time-decay scoring
+  // Trending posts share the posts search walk for the week the product page requests.
   registerScenarioContract('trending-posts', {
     expectations: [],
     crossPartition: { posts: 'Trending ranks eligible posts from the requested week.' },
   })
-  await runAndCapture('trending-posts', () => getTrendingPosts({ timeRange: 'week', limit: 25 }))
+  await runAndCapture('trending-posts', () =>
+    getPostIds(undefined, { sort: 'trending', time_range: '1w', limit: 25 }),
+  )
 
-  // Trending posts filtered by topic
   registerScenarioContract('trending-posts-by-topic', {
     expectations: [],
     crossPartition: { posts: 'Topic trending ranks eligible posts from the requested week.' },
   })
   await runAndCapture('trending-posts-by-topic', () =>
-    getTrendingPosts({ timeRange: 'week', topicId: seedTopicId, limit: 25 }),
+    getPostIds(undefined, {
+      sort: 'trending',
+      time_range: '1w',
+      trending_topic_id: seedTopicId,
+      limit: 25,
+    }),
   )
 
   // Trending communities — one keyset page over the materialized score
@@ -152,7 +158,6 @@ export async function runEntityAndCommunityScenarios() {
   )
 
   await runViewDrivenPostScenarios()
-
   await runCommunitySearchScenarios()
   await runEntityTailScenarios()
 }

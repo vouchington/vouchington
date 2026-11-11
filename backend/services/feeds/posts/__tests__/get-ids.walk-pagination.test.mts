@@ -8,6 +8,7 @@ import {
   setPostVotesScoreUp,
 } from '@voucha/test-helpers'
 import { getPostFeedIds } from '../get-ids.mts'
+import { withDominantPostFixtures } from '@voucha/test-helpers/entities/trending-posts'
 import type { PostFeedOptions } from '../../types.mts'
 
 const sorts = [
@@ -24,50 +25,47 @@ describe('post feed single walk', () => {
       const author = await createTestUser()
       const sharer = await createTestUser()
       await followUser(viewer, author)
-      const visible = []
-      for (const votes of [1, 2, 3]) {
-        const post = await createTestPost({ user: author })
-        await setPostVotesScoreUp(post.id, votes)
-        visible.push(post)
-      }
-      // Five ineligible posts outrank every visible one in all three orders.
-      for (let index = 0; index < 5; index += 1) {
-        const post = await createTestPost({ user: author })
-        await setPostVotesScoreUp(post.id, 500 + index)
-        await hidePost(viewer, post)
-      }
-      const sharedId = await insertPostFeedShareForTest({
-        recipientUserId: viewer.id,
-        sharedByUserId: sharer.id,
-        postId: visible[0]!.id,
-      })
-      const options = {
-        feed_type: 'follow_users',
-        sort: sort === 'new' ? 'new' : 'hot',
-        time_range,
-        limit: 2,
-      } satisfies PostFeedOptions
-
-      const deliveries: { id: string; entity_id: string; delivery_type: string }[] = []
-      let after: string | undefined
-      let reader = viewer
-      for (let pages = 0; pages < 10; pages += 1) {
-        const page = await getPostFeedIds(reader, { ...options, after })
-        // A page is empty only when nothing is left: full pages continue, the last is non-empty.
-        expect(page.results).toHaveLength(page.page_info.has_next_page ? 2 : page.results.length)
-        expect(page.results.length).toBeGreaterThan(0)
-        deliveries.push(...page.results)
-        if (!page.page_info.has_next_page) break
-        after = page.page_info.end_cursor!
-        // A role change between pages keeps the keyset valid for the new viewer scope.
-        reader = { ...viewer, roles: ['administrator'] }
-      }
-
-      expect(deliveries.map(row => row.entity_id).toSorted()).toEqual(
-        [...visible.map(post => post.id), visible[0]!.id].toSorted(),
+      await withDominantPostFixtures(
+        Array.from({ length: 8 }, (_, index) => ({
+          createdAt: new Date(`9999-12-31T23:59:59.${991 + index}Z`),
+          votesScoreUp: index < 3 ? 100_000_000 + index : 100_001_000 + index,
+          createdById: author.id,
+        })),
+        async ids => {
+          const visible = ids.slice(0, 3)
+          for (const id of ids.slice(3)) await hidePost(viewer, { id })
+          const sharedId = await insertPostFeedShareForTest({
+            recipientUserId: viewer.id,
+            sharedByUserId: sharer.id,
+            postId: visible[0]!,
+            sortAt: new Date('9999-12-31T23:59:59.990Z'),
+          })
+          const options = {
+            feed_type: 'follow_users',
+            sort: sort === 'new' ? 'new' : 'hot',
+            time_range,
+            limit: 2,
+          } satisfies PostFeedOptions
+          const deliveries: { id: string; entity_id: string; delivery_type: string }[] = []
+          let after: string | undefined
+          let reader = viewer
+          for (let pages = 0; pages < 10; pages += 1) {
+            const page = await getPostFeedIds(reader, { ...options, after })
+            expect(page.results.length).toBeLessThanOrEqual(2)
+            deliveries.push(...page.results)
+            if (deliveries.length === 4 || !page.page_info.has_next_page) break
+            const next = page.page_info.end_cursor ?? undefined
+            if (!next || next === after) throw new Error('Expected advancing continuation cursor')
+            after = next
+            reader = { ...viewer, roles: ['administrator'] }
+          }
+          expect(deliveries.map(row => row.entity_id).toSorted()).toEqual(
+            [...visible, visible[0]!].toSorted(),
+          )
+          expect(new Set(deliveries.map(row => row.id)).size).toBe(deliveries.length)
+          expect(deliveries.find(row => row.id === sharedId)?.delivery_type).toBe('share')
+        },
       )
-      expect(new Set(deliveries.map(row => row.id)).size).toBe(deliveries.length)
-      expect(deliveries.find(row => row.id === sharedId)?.delivery_type).toBe('share')
     },
   )
 

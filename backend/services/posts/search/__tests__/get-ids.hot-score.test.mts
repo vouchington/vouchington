@@ -41,7 +41,6 @@ describe('getPostIds hot-score pagination', () => {
 
       const options: PostSearchOptions = {
         user_id: user.id,
-        include_topic_recommendations: true,
         post_types: ['topic_recommendation'],
         sort: 'hot',
         time_range: 'all',
@@ -58,7 +57,6 @@ describe('getPostIds hot-score pagination', () => {
         false,
       )
       expect(cursor.hot_score_lt).toBeGreaterThan(0)
-      expect(cursor.hot_score_lt).toBeLessThan(1)
       expect(Number.isFinite(cursor.hot_score_lt)).toBe(true)
 
       const page2 = await getPostIds(undefined, {
