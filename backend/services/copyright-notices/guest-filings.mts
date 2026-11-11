@@ -7,6 +7,7 @@ import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { copyrightGuestCapabilityPurpose } from './guest-capabilities.mts'
 import { revokeCopyrightGuestCapabilitiesForWithdrawal } from './guest-capability-withdrawal.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
+import { preemptCopyrightRestorations } from './restore-preemption.mts'
 
 const guestFilingKinds = ['supplement', 'withdrawal', 'court_or_ccb_hold'] as const
 type GuestFilingKind = (typeof guestFilingKinds)[number]
@@ -86,6 +87,7 @@ export async function appendCopyrightGuestFiling(input: {
     ) VALUES (${input.noticeId}, ${guestFilingEvent(input.kind)}, ${submission.id})
   `)
   if (input.kind === 'court_or_ccb_hold') {
+    await preemptCopyrightRestorations(input.noticeId, transaction)
     await transaction(sql`/* appendCopyrightGuestFiling:urgent */
       INSERT INTO copyright_notice_urgent_filings (copyright_notice_submission_id, classified_at)
       VALUES (${submission.id}, ${input.now})
