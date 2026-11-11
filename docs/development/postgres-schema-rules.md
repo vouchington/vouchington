@@ -12,6 +12,8 @@ upgrade deployments, so do not add backfills, dual writes, compatibility readers
 stages for old application versions. Keep external protocols, security key rotation, and exact
 replay envelopes where those contracts actually require them. Launch behavior and worktree-database
 recovery follow [One current contract](../../AGENTS.md).
+The `postgres-no-add-column` exception list in `.no-mistakes/rules/policies.yml` is empty;
+adding an entry is not a fix.
 
 - An internal entity reference is a column or child row with a concrete foreign key and a
   supporting index, including a reference inside a primary or unique key. The same id may also be
@@ -87,7 +89,7 @@ recovery follow [One current contract](../../AGENTS.md).
 - **Join on ids, never on text.** An outside string (vendor id, edge or cache key, slug, email) is a
   unique or generated column, never a primary or foreign key. Turn it into an id once where it
   enters. Looking up outside input by its unique text is fine; joining tables on it is not.
-  Hashtag text is the exception because the text is what is matched.
+  Hashtag and category text matching is the only exception because the text is what is matched.
 - A `uuid` column ending in `_id` belongs to a foreign key unless it is a cursor or high-water
   mark, a per-attempt fencing token, a kept-after-delete scope or audit id, an id living outside
   PostgreSQL, a pre-allocated id, or a natural key. Each exception has a reason in an allow entry.
@@ -183,7 +185,8 @@ state from the latest history row.
   viewer's blocks or mutes, the time window is the scan bound where the sort has one, and EXPLAIN at
   representative cardinality compares rows read with rows returned. No candidate pools: no capped or `MATERIALIZED` CTE of
   the listed entity that is filtered or limited afterwards, no window loops or probes, no cursor
-  proof state, and no config field that sizes a candidate pool. A short or empty page is allowed
+  proof state, no config field that sizes a candidate pool, and no new write caps (caps are best
+  effort; see [lock scope](postgresql/reference-transactions.md#lock-scope)). A short or empty page is allowed
   only when it carries a continuation cursor and a "load more" signal (see bounding below). Small
   viewer-scoped sets (follows, mutes, blocks, memberships) may be subqueries or semi-joins. Compare
   plans against that single walk.

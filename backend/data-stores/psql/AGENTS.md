@@ -7,7 +7,7 @@
 - Never add `ALTER TABLE ADD COLUMN` or `DROP TABLE` migrations. Fold columns into their original creator; cross-file FKs use `ALTER TABLE ADD CONSTRAINT`.
 - Every FK declares `ON DELETE`; cross-file FK/check constraints use `NOT VALID` then `VALIDATE CONSTRAINT`. Fixed migrations and ledger inserts are transactional; never add manual `BEGIN`/`COMMIT` or online index-upgrade migrations.
 - Vote schema uses [`election-schema-config.mts`](config-driven/utils/election-schema-config.mts).
-- After SQL changes, follow [snapshot generation](../../../docs/development/postgresql/schema-snapshot/README.md) and fetch CI's generated commit.
+- After SQL changes, push the PR head, then follow [snapshot generation](../../../docs/development/postgresql/schema-snapshot/README.md) and fetch CI’s generated commit.
 - Query UUIDv7 `id`, never `created_at`; annotate queries with `/* functionName */`, use cursors instead of `OFFSET`, and use `pgvector.toSql()`. Query partition parents except for operator maintenance and bounded DEFAULT retention.
 - Restrict correlated views at every nesting level. Read `view_*` by key and follow [R6 query shape](../../../docs/development/postgres-schema-rules.md#r6--query-shape) and [view pull-up rules](../../../docs/development/postgresql/reference-migrations-views-and-config-driven.md#view-composition-and-the-eligibility-view-pull-up-rule).
 - Use the simplest query; justify added layers with [EXPLAIN ANALYZE](../../../docs/development/postgres-schema-rules.md#r6--query-shape) against that query. Follow [counts and rankings](../../../docs/development/postgres-schema-rules.md#prefer-no-counter-columns-trending-and-rankings-are-materialized-views).
