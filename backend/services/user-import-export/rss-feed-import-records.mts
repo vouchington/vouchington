@@ -3,7 +3,6 @@ import { isUUID } from '@modules/utils'
 import assert from 'http-assert'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import sql from 'sql-template-strings'
-import { getUserImportExportConfig } from './config.mts'
 import {
   type CreateUserRssFeedImportResult,
   type UserRssFeedImportBatchRow,
@@ -18,7 +17,6 @@ export async function createRssFeedImport(
   should_follow_imported_feeds: boolean,
 ): Promise<CreateUserRssFeedImportResult> {
   assert(urls.length <= 500, 422, 'No more than 500 URLs may be imported')
-  const chunkSize = getUserImportExportConfig().import_insert_chunk_size
   await using query = await beginTransaction()
   const { rows } = await write(
     sql`/* createRssFeedImport */
@@ -42,22 +40,18 @@ export async function createRssFeedImport(
   )
   const batch = rows[0] as UserRssFeedImportBatchRow
 
-  // Bounded chunks keep one statement from carrying every URL of a large import.
-  for (let start = 0; start < urls.length; start += chunkSize) {
-    const chunk = urls.slice(start, start + chunkSize)
-    // oxlint-disable-next-line no-await-in-loop -- chunks of one transaction insert in row order
-    await write(
-      sql`/* createRssFeedImportRows */
+  // The import cap bounds both arrays, so all rows fit in one set-based write.
+  await write(
+    sql`/* createRssFeedImportRows */
         INSERT INTO user_rss_feed_import_rows (batch_id, row_index, input_url)
         SELECT ${batch.id}, input.row_index, input.input_url
         FROM UNNEST(
-          ${chunk.map((_, offset) => start + offset)}::int[],
-          ${chunk}::text[]
+          ${urls.map((_, index) => index)}::int[],
+          ${urls}::text[]
         ) AS input(row_index, input_url)
         `,
-      { query },
-    )
-  }
+    { query },
+  )
 
   await query.commit()
   return {

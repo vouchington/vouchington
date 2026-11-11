@@ -8,10 +8,9 @@ import { userImportExportConfig } from './config.mts'
 import { getRssFeedImport } from './rss-feed-imports.mts'
 
 describe('large RSS feed imports', () => {
-  it('stores the largest allowed import in bounded insert chunks and lists it in row order', async () => {
+  it('stores the largest allowed import in one bounded insert and lists it in row order', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(userImportExportConfig, {
-        import_insert_chunk_size: 100,
         import_status_page_size: 100,
       }),
     )
