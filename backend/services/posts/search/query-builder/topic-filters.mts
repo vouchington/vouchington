@@ -1,9 +1,9 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
-  buildTopicAliasMembershipExists,
-  buildTopicMembershipExists,
-  buildUniversalTopicMembershipExists,
-} from '@modules/feed-query-builders'
+  keyedTopicAliasMembershipExists,
+  keyedTopicMembershipExists,
+  keyedUniversalTopicMembershipExists,
+} from './topic-membership-probes.mts'
 import type { PostSearchOptions } from '../types.mts'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/metadata'
 
@@ -35,11 +35,11 @@ export function appendTopicMembershipFilters(
   postIdColumn: string,
 ): void {
   for (const topicId of new Set(hashtag_topic_ids ?? []))
-    filters.push(buildTopicMembershipExists(postIdColumn, topicId))
+    filters.push(keyedTopicMembershipExists(postIdColumn, topicId))
   for (const aliasId of new Set(hashtag_alias_ids ?? []))
-    filters.push(buildTopicAliasMembershipExists(postIdColumn, aliasId))
+    filters.push(keyedTopicAliasMembershipExists(postIdColumn, aliasId))
   for (const topicId of new Set(universal_topic_ids ?? []))
-    filters.push(buildUniversalTopicMembershipExists(postIdColumn, topicId))
+    filters.push(keyedUniversalTopicMembershipExists(postIdColumn, topicId))
 }
 
 function appendUrlFilter(filters: SQLStatement[]): void {

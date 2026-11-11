@@ -6,6 +6,8 @@ export function assertCorePlanCheck(name: string, result: ExplainResult): void {
   const nodes = collectPlanNodes(result.plan)
   switch (name) {
     case 'universalTopicCandidates': {
+      // The tail read counts the capped walk from its far end; it carries no membership probe.
+      if (result.query_text.includes('buildTopicWalkTailQuery')) return
       // The sort-index walk over posts, with each membership relation probed by the post id.
       const keyedProbe = nodes.some(
         node =>
