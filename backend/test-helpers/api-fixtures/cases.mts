@@ -39,6 +39,7 @@ import { nativeUserAccountDataApiFixtureCases } from './native-user-account-data
 import { nativeUserProfileApiFixtureCases } from './native-user-profile-cases.mts'
 import { nativeOAuthBrokerApiFixtureCases } from './native-oauth-broker-cases.mts'
 import { nativeSessionMcpApiFixtureCases } from './native-session-mcp-cases.mts'
+import { nativeReAuthApiFixtureCases } from './native-reauth-cases.mts'
 import { oauthAppApiFixtureCases } from './oauth-app-cases.mts'
 import { oauthClientVerificationApiFixtureCases } from './oauth-client-verification-cases.mts'
 import { oauthManagementApiFixtureCases } from './oauth-management-cases.mts'
@@ -72,10 +73,8 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
     'backend/test-helpers/api-fixtures/native-oauth-broker-cases.mts',
     nativeOAuthBrokerApiFixtureCases,
   ),
-  ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/native-session-mcp-cases.mts',
-    nativeSessionMcpApiFixtureCases,
-  ),
+  ...fromCaseFile(`${caseRoot}native-session-mcp-cases.mts`, nativeSessionMcpApiFixtureCases),
+  ...fromCaseFile(`${caseRoot}native-reauth-cases.mts`, nativeReAuthApiFixtureCases),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/oauth-management-cases.mts',
     oauthManagementApiFixtureCases,

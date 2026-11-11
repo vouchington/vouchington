@@ -52,7 +52,7 @@ export const swiftEmailApiFixtureCases: ApiFixtureCase[] = [
     },
     auth: 'fixture-user',
     status: 200,
-    requestBody: { token: 'ABCD1234', re_auth_token: 'fresh-auth-fixture' },
+    requestBody: { token: 'ABCDEFGHJK', re_auth_token: 'fresh-auth-fixture' },
     body: {
       results: [
         {

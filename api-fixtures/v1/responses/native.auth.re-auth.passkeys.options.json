@@ -1,0 +1,16 @@
+{
+  "flow_id": "00000000-0000-7000-8000-000000000742",
+  "options": {
+    "allowCredentials": [
+      {
+        "id": "dm91Y2hhLXN5bnRoZXRpYy1wYXNza2V5LWNyZWRlbnRpYWw",
+        "transports": ["internal"],
+        "type": "public-key"
+      }
+    ],
+    "challenge": "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI",
+    "rpId": "voucha.ai",
+    "timeout": 60000,
+    "userVerification": "preferred"
+  }
+}

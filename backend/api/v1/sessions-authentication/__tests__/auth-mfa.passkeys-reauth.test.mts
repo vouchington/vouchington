@@ -11,6 +11,8 @@ import { createLoginAttempt, countMfaLoginAttempt } from '@services/mfa/login-at
 import { countTotpReAuthAttempt } from '@services/mfa/re-auth-failures'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
+import { backendResponseContracts } from '../../../../test-helpers/api-fixtures/response-contracts.mts'
+import { validateResponseContract } from '../../../../test-helpers/api-fixtures/contract-schema.mts'
 
 describe('MFA API Routes', () => {
   installEmailDomainDnsMock()
@@ -238,6 +240,12 @@ describe('MFA API Routes', () => {
         .send({ code })
         .expect(200)
 
+      expect(
+        validateResponseContract(
+          backendResponseContracts['POST:/api/v1/auth/mfa/re-auth/totp/verification']!.schema,
+          res.body,
+        ),
+      ).toEqual([])
       expect(res.body.re_auth_token).toBeTruthy()
       // A successful verified factor clears the user's earlier charged attempts.
       for (let i = 0; i < 6; i++) await countTotpReAuthAttempt(totpUser.id)

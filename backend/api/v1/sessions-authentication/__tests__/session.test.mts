@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { backendResponseContracts } from '../../../../test-helpers/api-fixtures/response-contracts.mts'
+import { validateResponseContract } from '../../../../test-helpers/api-fixtures/contract-schema.mts'
 
 import { nextTestRequestIp } from '@voucha/test-helpers/api/server'
 import { createNativeRequest as createRequest } from '@voucha/test-helpers/native-api-request'
@@ -28,6 +30,13 @@ describe('Session Routes', () => {
     it('should create new device and session tokens when none provided', async () => {
       const request = createRequest()
       const response = await request.patch('/api/v1/session').send({}).expect(200)
+
+      expect(
+        validateResponseContract(
+          backendResponseContracts['PATCH:/api/v1/session']!.schema,
+          response.body,
+        ),
+      ).toEqual([])
 
       expect(response.body.session).toHaveProperty('dt')
       expect(response.body.session).toHaveProperty('st')

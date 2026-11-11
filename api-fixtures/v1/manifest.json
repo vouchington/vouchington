@@ -7870,6 +7870,53 @@
       "source": "backend/api/v1/sessions-authentication/auth-oauth-broker.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/auth/re-auth/methods": {
+      "bodyKind": "content",
+      "hash": "d9c68f8814779f94e728715ab4b96515d9dce41650de189ee236a74bb87928d4",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/auth/re-auth/methods",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "has_email": {
+              "required": true,
+              "schema": {
+                "type": "boolean"
+              }
+            },
+            "has_passkey": {
+              "required": true,
+              "schema": {
+                "type": "boolean"
+              }
+            },
+            "has_totp": {
+              "required": true,
+              "schema": {
+                "type": "boolean"
+              }
+            },
+            "providers": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-reauth-methods.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
     "GET:/api/v1/auth/sessions": {
       "bodyKind": "content",
       "hash": "c57b767778cc45de660995bc246b54c6ad2a79894b38a1c0344dce197b76ab28",
@@ -82589,6 +82636,246 @@
       "source": "backend/api/v1/reports/reports.mts",
       "statusKnowledge": "default"
     },
+    "PATCH:/api/v1/session": {
+      "bodyKind": "content",
+      "hash": "cf39e4e02201f2eb4f66581d4286955ceab55826869b98deb3692cabc6a8df67",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "PATCH",
+      "routeTemplate": "/api/v1/session",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "session": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "did": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "dt": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "dte": {
+                    "required": true,
+                    "schema": {
+                      "type": "number"
+                    }
+                  },
+                  "secure": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "session": {
+                    "required": true,
+                    "schema": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "aud": {
+                          "required": false,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "items": {
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              }
+                            ]
+                          }
+                        },
+                        "client": {
+                          "required": false,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "did": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "exp": {
+                          "required": false,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "iat": {
+                          "required": false,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "iss": {
+                          "required": false,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "ja4_hash": {
+                          "required": false,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "mfa_at": {
+                          "required": false,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "mpe": {
+                          "required": false,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "mpl": {
+                          "required": false,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "rca": {
+                          "required": false,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "rol": {
+                          "required": false,
+                          "schema": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          }
+                        },
+                        "sca": {
+                          "required": false,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "sid": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "tt": {
+                          "required": false,
+                          "schema": {
+                            "type": "number"
+                          }
+                        },
+                        "ua_hash": {
+                          "required": false,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "uid": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "uil": {
+                          "required": false,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "sid": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "st": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "ste": {
+                    "required": true,
+                    "schema": {
+                      "type": "number"
+                    }
+                  },
+                  "uid": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/session.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
     "PATCH:/api/v1/vote-integrity/flags/:id": {
       "bodyKind": "content",
       "hash": "8fd72bd50a00bdc2cf0d6a6dd7f1939e3647977ac0d45015ca4319d1c1454d74",
@@ -87435,6 +87722,84 @@
       "statusCodes": [204],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/auth/mfa/re-auth/email/tokens": {
+      "bodyKind": "content",
+      "hash": "1d959628b69bf9859504da182ef94992ef3b63138df348a9b1b4d028c64e7779",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/mfa/re-auth/email/tokens",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "email_address": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-mfa-routes/auth-mfa-re-auth-email-tokens-post.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/auth/mfa/re-auth/email/verification": {
+      "bodyKind": "content",
+      "hash": "b7b9ef20ba467798a7766daabf4ba221515faa27836f1d094d82726798eb37d8",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/mfa/re-auth/email/verification",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "re_auth_token": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-mfa-routes/auth-mfa-re-auth-email-verification-post.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/auth/mfa/re-auth/totp/verification": {
+      "bodyKind": "content",
+      "hash": "b7b9ef20ba467798a7766daabf4ba221515faa27836f1d094d82726798eb37d8",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/mfa/re-auth/totp/verification",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "re_auth_token": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-mfa-routes/auth-mfa-re-auth-totp-verification-post.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/auth/native/email-address/login": {
       "bodyKind": "content",
       "hash": "74808c22f87bc190e20ab5e93d3c98dbd5280f40bdea2c80567f034f562f6a22",
@@ -87903,6 +88268,295 @@
       },
       "source": "backend/api/v1/sessions-authentication/auth-oauth-completion.mts",
       "statusCodes": [202],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/auth/re-auth/passkeys/options": {
+      "bodyKind": "content",
+      "hash": "005aac2e408f52404b5fd9f19f957186a7df447f848c21a50ab3c40804e363b0",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/re-auth/passkeys/options",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "flow_id": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "options": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "allowCredentials": {
+                    "required": false,
+                    "schema": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "required": true,
+                            "schema": {
+                              "type": "string"
+                            }
+                          },
+                          "transports": {
+                            "required": false,
+                            "schema": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "type": {
+                            "required": true,
+                            "schema": {
+                              "type": "literal",
+                              "value": "public-key"
+                            }
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "challenge": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "extensions": {
+                    "required": false,
+                    "schema": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "appid": {
+                          "required": false,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "credProps": {
+                          "required": false,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        },
+                        "hmacCreateSecret": {
+                          "required": false,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        },
+                        "minPinLength": {
+                          "required": false,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "hints": {
+                    "required": false,
+                    "schema": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "rpId": {
+                    "required": false,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "timeout": {
+                    "required": false,
+                    "schema": {
+                      "type": "number"
+                    }
+                  },
+                  "userVerification": {
+                    "required": false,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-reauth-passkeys.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/auth/re-auth/passkeys/verification": {
+      "bodyKind": "content",
+      "hash": "b7b9ef20ba467798a7766daabf4ba221515faa27836f1d094d82726798eb37d8",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/re-auth/passkeys/verification",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "re_auth_token": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-reauth-passkeys.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/authorizations": {
+      "bodyKind": "content",
+      "hash": "19895b0a40102ed0be570905627a00fbfe636bba9b9dfa9d05a597634f2f4a91",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/re-auth/providers/:provider/authorizations",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "expires_at": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "flow_id": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "redirect_url": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-reauth-broker.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/challenges": {
+      "bodyKind": "content",
+      "hash": "2dbfa17a8f7846ddfb15b033f64c0b4ded4e8ef572183ad2cf6722307b00682f",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/re-auth/providers/:provider/challenges",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "expires_at": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "flow_id": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "nonce": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-reauth-sdk.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/proofs": {
+      "bodyKind": "content",
+      "hash": "b7b9ef20ba467798a7766daabf4ba221515faa27836f1d094d82726798eb37d8",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/re-auth/providers/:provider/proofs",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "re_auth_token": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-reauth-broker.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/verification": {
+      "bodyKind": "content",
+      "hash": "b7b9ef20ba467798a7766daabf4ba221515faa27836f1d094d82726798eb37d8",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/re-auth/providers/:provider/verification",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "re_auth_token": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-reauth-sdk.mts",
+      "statusCodes": [200],
       "statusKnowledge": "explicit"
     },
     "POST:/api/v1/communities/:communitySlug/automod/recent-actions/:sourceKey/feedback": {
@@ -96463,6 +97117,52 @@
       "statusCodes": [202],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/rss-feed-items/:rssFeedItemId/shares#bot-challenge": {
+      "bodyKind": "content",
+      "hash": "061d6108ad0e5d1b8146ec86bdd9803115555d1ec5a503c1f56521a0cefc62df",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/rss-feed-items/:rssFeedItemId/shares",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": "bot-challenge.mutation"
+              }
+            },
+            "code": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": "BOT_CHALLENGE_REQUIRED"
+              }
+            },
+            "message": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "request_id": {
+              "required": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/bot-challenge.mts",
+      "statusCodes": [403],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/rss-feeds": {
       "bodyKind": "content",
       "hash": "decb40d52aefa349a521cbb03f22fc8f438e20b6b3dc2770ad8b27fbc2690978",
@@ -101729,6 +102429,37 @@
       "status": 200
     },
     {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "PATCH:/api/v1/session",
+      "bodyFile": "responses/native.auth.session.refresh.rotated.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.session.refresh.rotated",
+      "method": "PATCH",
+      "migratedFrom": [],
+      "path": "/api/v1/session",
+      "requestBody": {
+        "dt": "fixture-previous-device-jwt",
+        "st": "fixture-previous-session-jwt"
+      },
+      "requestHeaders": {
+        "Content-Type": "application/json",
+        "x-voucha-app-version": "test",
+        "x-voucha-client": "dotnet",
+        "x-voucha-platform": "windows"
+      },
+      "responseSchema": {
+        "hash": "2ea21e6b1efcacb2263ebf8d119673f478d54b42bd3250b72d577e2e54373ecc",
+        "key": "native.auth.session.refresh.rotated"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/session"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-session-mcp-cases.mts"
+      },
+      "status": 200
+    },
+    {
       "auth": "none",
       "backendResponseContractKey": "POST:/api/v1/auth/native/email-address/tokens",
       "bodyFile": "responses/native.auth.email-address.tokens.json",
@@ -101741,7 +102472,10 @@
         "emailAddress": "fixture@example.test"
       },
       "requestHeaders": {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "x-voucha-app-version": "test",
+        "x-voucha-client": "dotnet",
+        "x-voucha-platform": "windows"
       },
       "responseSchema": {
         "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d",
@@ -101766,10 +102500,13 @@
       "path": "/api/v1/auth/native/email-address/login",
       "requestBody": {
         "emailAddress": "fixture@example.test",
-        "token": "123456"
+        "token": "ABCDEFGHJK"
       },
       "requestHeaders": {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "x-voucha-app-version": "test",
+        "x-voucha-client": "dotnet",
+        "x-voucha-platform": "windows"
       },
       "responseSchema": {
         "hash": "0f9e7b0f698ea7b7535ab1a6c1cb157c5a839ecc5bb0601563ffb8df9ac00567",
@@ -101794,10 +102531,13 @@
       "path": "/api/v1/auth/native/email-address/login",
       "requestBody": {
         "emailAddress": "fixture@example.test",
-        "token": "123456"
+        "token": "ABCDEFGHJK"
       },
       "requestHeaders": {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "x-voucha-app-version": "test",
+        "x-voucha-client": "dotnet",
+        "x-voucha-platform": "windows"
       },
       "responseSchema": {
         "hash": "55a7500e07ea6637e2be4742b86d9ebb5a4b1a4bb16d6543c6b3c8d1c60a3fe9",
@@ -101836,6 +102576,287 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-session-mcp-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/rss-feed-items/:rssFeedItemId/shares#bot-challenge",
+      "bodyFile": "responses/native.bot-challenge.required.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.bot-challenge.required",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/rss-feed-items/00000000-0000-7000-8000-000000000743/shares",
+      "responseSchema": {
+        "hash": "cfc5fd66c023036f54f4ecb829ee6cc2b485cb9fd581e242ec6c4ecc5db6d831",
+        "key": "native.bot-challenge.required"
+      },
+      "route": {
+        "pathParams": {
+          "rssFeedItemId": "00000000-0000-7000-8000-000000000743"
+        },
+        "routeTemplate": "/api/v1/rss-feed-items/:rssFeedItemId/shares"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
+      },
+      "status": 403
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/auth/re-auth/methods",
+      "bodyFile": "responses/native.auth.re-auth.methods.default.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.methods.default",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/re-auth/methods",
+      "responseSchema": {
+        "hash": "9a755e22b27ce3c4602426eee7b9454ea3d6ad4ced41c13a2b546d426a519c7f",
+        "key": "native.auth.re-auth.methods.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/re-auth/methods"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/auth/mfa/re-auth/email/tokens",
+      "bodyFile": "responses/native.auth.re-auth.email.tokens.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.email.tokens",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/mfa/re-auth/email/tokens",
+      "responseSchema": {
+        "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d",
+        "key": "native.auth.re-auth.email.tokens"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/mfa/re-auth/email/tokens"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/auth/mfa/re-auth/email/verification",
+      "bodyFile": "responses/native.auth.re-auth.email.verification.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.email.verification",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/mfa/re-auth/email/verification",
+      "requestBody": {
+        "code": "ABCDEFGHJK"
+      },
+      "responseSchema": {
+        "hash": "353ce8d7659ff29d8a097e092a80b1646e0331fe048b19e9b244f2d4850dd737",
+        "key": "native.auth.re-auth.email.verification"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/mfa/re-auth/email/verification"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/auth/mfa/re-auth/totp/verification",
+      "bodyFile": "responses/native.auth.re-auth.totp.verification.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.totp.verification",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/mfa/re-auth/totp/verification",
+      "requestBody": {
+        "code": "123456"
+      },
+      "responseSchema": {
+        "hash": "353ce8d7659ff29d8a097e092a80b1646e0331fe048b19e9b244f2d4850dd737",
+        "key": "native.auth.re-auth.totp.verification"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/mfa/re-auth/totp/verification"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/auth/re-auth/passkeys/options",
+      "bodyFile": "responses/native.auth.re-auth.passkeys.options.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.passkeys.options",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/re-auth/passkeys/options",
+      "requestBody": {
+        "passkey_id": "00000000-0000-7000-8000-000000000741"
+      },
+      "responseSchema": {
+        "hash": "ffd9334f05da1d5d138cf015489b83dc182fe5a4c7ddd8fd959c57a0d22fc6da",
+        "key": "native.auth.re-auth.passkeys.options"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/re-auth/passkeys/options"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/auth/re-auth/passkeys/verification",
+      "bodyFile": "responses/native.auth.re-auth.passkeys.verification.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.passkeys.verification",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/re-auth/passkeys/verification",
+      "requestBody": {
+        "flow_id": "00000000-0000-7000-8000-000000000742",
+        "passkey_id": "00000000-0000-7000-8000-000000000741",
+        "response": {
+          "clientExtensionResults": {},
+          "id": "dm91Y2hhLXN5bnRoZXRpYy1wYXNza2V5LWNyZWRlbnRpYWw",
+          "rawId": "dm91Y2hhLXN5bnRoZXRpYy1wYXNza2V5LWNyZWRlbnRpYWw",
+          "response": {
+            "authenticatorData": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ",
+            "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiUWtKQ1FrSkNRa0pDUWtKQ1FrSkNRa0pDUWtKQ1FrSkNRa0pDUWtKQ1FrSSIsIm9yaWdpbiI6Imh0dHBzOi8vdm91Y2hhLmFpIn0",
+            "signature": "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg"
+          },
+          "type": "public-key"
+        }
+      },
+      "responseSchema": {
+        "hash": "353ce8d7659ff29d8a097e092a80b1646e0331fe048b19e9b244f2d4850dd737",
+        "key": "native.auth.re-auth.passkeys.verification"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/re-auth/passkeys/verification"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/auth/re-auth/providers/:provider/challenges",
+      "bodyFile": "responses/native.auth.re-auth.providers.challenge.google.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.providers.challenge.google",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/re-auth/providers/google/challenges",
+      "responseSchema": {
+        "hash": "508a26c71619e6278a87ae32410c630ffee2624881ffd899975d5137c75b3933",
+        "key": "native.auth.re-auth.providers.challenge.google"
+      },
+      "route": {
+        "pathParams": {
+          "provider": "google"
+        },
+        "routeTemplate": "/api/v1/auth/re-auth/providers/:provider/challenges"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/auth/re-auth/providers/:provider/verification",
+      "bodyFile": "responses/native.auth.re-auth.providers.verification.google.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.providers.verification.google",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/re-auth/providers/google/verification",
+      "requestBody": {
+        "credential": "fixture-provider-credential",
+        "flow_id": "00000000-0000-7000-8000-000000000742"
+      },
+      "responseSchema": {
+        "hash": "353ce8d7659ff29d8a097e092a80b1646e0331fe048b19e9b244f2d4850dd737",
+        "key": "native.auth.re-auth.providers.verification.google"
+      },
+      "route": {
+        "pathParams": {
+          "provider": "google"
+        },
+        "routeTemplate": "/api/v1/auth/re-auth/providers/:provider/verification"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/auth/re-auth/providers/:provider/authorizations",
+      "bodyFile": "responses/native.auth.re-auth.providers.authorization.github.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.providers.authorization.github",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/re-auth/providers/github/authorizations",
+      "requestBody": {
+        "callback_mode": "native",
+        "completion_proof_challenge": "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
+      },
+      "responseSchema": {
+        "hash": "070d0d021d9ea31a826b56ed574290f3dabd19ef2a77e99393476f392ec36efc",
+        "key": "native.auth.re-auth.providers.authorization.github"
+      },
+      "route": {
+        "pathParams": {
+          "provider": "github"
+        },
+        "routeTemplate": "/api/v1/auth/re-auth/providers/:provider/authorizations"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/auth/re-auth/providers/:provider/proofs",
+      "bodyFile": "responses/native.auth.re-auth.providers.proof.github.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.providers.proof.github",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/re-auth/providers/github/proofs",
+      "requestBody": {
+        "flow_id": "00000000-0000-7000-8000-000000000742"
+      },
+      "responseSchema": {
+        "hash": "353ce8d7659ff29d8a097e092a80b1646e0331fe048b19e9b244f2d4850dd737",
+        "key": "native.auth.re-auth.providers.proof.github"
+      },
+      "route": {
+        "pathParams": {
+          "provider": "github"
+        },
+        "routeTemplate": "/api/v1/auth/re-auth/providers/:provider/proofs"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-reauth-cases.mts"
       },
       "status": 200
     },
@@ -107535,7 +108556,7 @@
       "path": "/api/v1/my/email-addresses/tests%2Bnative-user%40voucha.ai/verifications",
       "requestBody": {
         "re_auth_token": "fresh-auth-fixture",
-        "token": "ABCD1234"
+        "token": "ABCDEFGHJK"
       },
       "responseSchema": {
         "hash": "afa1a5c784004c22180370d6e4624c43e9d59203def103a6229510c371035b48",

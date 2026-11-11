@@ -180,6 +180,10 @@
       "fixtureIds": ["native.oauth.providers.broker-capabilities"],
       "hash": "c5ae4764362ff8e984ac39e29d904b95e498fcbfb4c7a6721bf5ee20f1606f5e"
     },
+    "GET:/api/v1/auth/re-auth/methods": {
+      "fixtureIds": ["native.auth.re-auth.methods.default"],
+      "hash": "d9c68f8814779f94e728715ab4b96515d9dce41650de189ee236a74bb87928d4"
+    },
     "GET:/api/v1/auth/sessions": {
       "fixtureIds": ["native.auth.sessions.default"],
       "hash": "c57b767778cc45de660995bc246b54c6ad2a79894b38a1c0344dce197b76ab28"
@@ -1232,6 +1236,10 @@
       "fixtureIds": ["native.moderation.report-resolution.reviewed"],
       "hash": "338db8afaf566d56e06d1dd7988899066439f7c197300e158e105356e4dd0a6d"
     },
+    "PATCH:/api/v1/session": {
+      "fixtureIds": ["native.auth.session.refresh.rotated"],
+      "hash": "cf39e4e02201f2eb4f66581d4286955ceab55826869b98deb3692cabc6a8df67"
+    },
     "PATCH:/api/v1/vote-integrity/flags/:id": {
       "fixtureIds": [
         "native.moderation.vote-integrity.resolution.dismissed",
@@ -1300,6 +1308,18 @@
       "fixtureIds": ["native.auth.bluesky.link-completion.default"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
     },
+    "POST:/api/v1/auth/mfa/re-auth/email/tokens": {
+      "fixtureIds": ["native.auth.re-auth.email.tokens"],
+      "hash": "1d959628b69bf9859504da182ef94992ef3b63138df348a9b1b4d028c64e7779"
+    },
+    "POST:/api/v1/auth/mfa/re-auth/email/verification": {
+      "fixtureIds": ["native.auth.re-auth.email.verification"],
+      "hash": "b7b9ef20ba467798a7766daabf4ba221515faa27836f1d094d82726798eb37d8"
+    },
+    "POST:/api/v1/auth/mfa/re-auth/totp/verification": {
+      "fixtureIds": ["native.auth.re-auth.totp.verification"],
+      "hash": "b7b9ef20ba467798a7766daabf4ba221515faa27836f1d094d82726798eb37d8"
+    },
     "POST:/api/v1/auth/native/email-address/login": {
       "fixtureIds": [
         "native.auth.email-address.login.authenticated",
@@ -1334,6 +1354,30 @@
     "POST:/api/v1/auth/oauth/authorizations/:flowId/complete#pending": {
       "fixtureIds": ["native.oauth.authorization.complete.pending"],
       "hash": "96cc955daf2ee31976e71f34f4e09bbb2613a937c0dd48b64f50b72803b610ed"
+    },
+    "POST:/api/v1/auth/re-auth/passkeys/options": {
+      "fixtureIds": ["native.auth.re-auth.passkeys.options"],
+      "hash": "005aac2e408f52404b5fd9f19f957186a7df447f848c21a50ab3c40804e363b0"
+    },
+    "POST:/api/v1/auth/re-auth/passkeys/verification": {
+      "fixtureIds": ["native.auth.re-auth.passkeys.verification"],
+      "hash": "b7b9ef20ba467798a7766daabf4ba221515faa27836f1d094d82726798eb37d8"
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/authorizations": {
+      "fixtureIds": ["native.auth.re-auth.providers.authorization.github"],
+      "hash": "19895b0a40102ed0be570905627a00fbfe636bba9b9dfa9d05a597634f2f4a91"
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/challenges": {
+      "fixtureIds": ["native.auth.re-auth.providers.challenge.google"],
+      "hash": "2dbfa17a8f7846ddfb15b033f64c0b4ded4e8ef572183ad2cf6722307b00682f"
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/proofs": {
+      "fixtureIds": ["native.auth.re-auth.providers.proof.github"],
+      "hash": "b7b9ef20ba467798a7766daabf4ba221515faa27836f1d094d82726798eb37d8"
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/verification": {
+      "fixtureIds": ["native.auth.re-auth.providers.verification.google"],
+      "hash": "b7b9ef20ba467798a7766daabf4ba221515faa27836f1d094d82726798eb37d8"
     },
     "POST:/api/v1/communities/:communitySlug/automod/recent-actions/:sourceKey/feedback": {
       "fixtureIds": ["web.communities.automod-feedback.create.default"],
@@ -1640,6 +1684,10 @@
       "fixtureIds": ["native.rss-feed-items.followers.share"],
       "hash": "4e08b0299f6aaa051f39f3ac907f5f863849bb7bf99269b46429ad539b12504b"
     },
+    "POST:/api/v1/rss-feed-items/:rssFeedItemId/shares#bot-challenge": {
+      "fixtureIds": ["native.bot-challenge.required"],
+      "hash": "061d6108ad0e5d1b8146ec86bdd9803115555d1ec5a503c1f56521a0cefc62df"
+    },
     "POST:/api/v1/rss-feeds": {
       "fixtureIds": ["native.rss-feeds.create.accepted"],
       "hash": "decb40d52aefa349a521cbb03f22fc8f438e20b6b3dc2770ad8b27fbc2690978"
@@ -1834,6 +1882,50 @@
       "fixtureIds": ["native.auth.email-address.tokens"],
       "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d"
     },
+    "native.auth.re-auth.email.tokens": {
+      "fixtureIds": ["native.auth.re-auth.email.tokens"],
+      "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d"
+    },
+    "native.auth.re-auth.email.verification": {
+      "fixtureIds": ["native.auth.re-auth.email.verification"],
+      "hash": "353ce8d7659ff29d8a097e092a80b1646e0331fe048b19e9b244f2d4850dd737"
+    },
+    "native.auth.re-auth.methods.default": {
+      "fixtureIds": ["native.auth.re-auth.methods.default"],
+      "hash": "9a755e22b27ce3c4602426eee7b9454ea3d6ad4ced41c13a2b546d426a519c7f"
+    },
+    "native.auth.re-auth.passkeys.options": {
+      "fixtureIds": ["native.auth.re-auth.passkeys.options"],
+      "hash": "ffd9334f05da1d5d138cf015489b83dc182fe5a4c7ddd8fd959c57a0d22fc6da"
+    },
+    "native.auth.re-auth.passkeys.verification": {
+      "fixtureIds": ["native.auth.re-auth.passkeys.verification"],
+      "hash": "353ce8d7659ff29d8a097e092a80b1646e0331fe048b19e9b244f2d4850dd737"
+    },
+    "native.auth.re-auth.providers.authorization.github": {
+      "fixtureIds": ["native.auth.re-auth.providers.authorization.github"],
+      "hash": "070d0d021d9ea31a826b56ed574290f3dabd19ef2a77e99393476f392ec36efc"
+    },
+    "native.auth.re-auth.providers.challenge.google": {
+      "fixtureIds": ["native.auth.re-auth.providers.challenge.google"],
+      "hash": "508a26c71619e6278a87ae32410c630ffee2624881ffd899975d5137c75b3933"
+    },
+    "native.auth.re-auth.providers.proof.github": {
+      "fixtureIds": ["native.auth.re-auth.providers.proof.github"],
+      "hash": "353ce8d7659ff29d8a097e092a80b1646e0331fe048b19e9b244f2d4850dd737"
+    },
+    "native.auth.re-auth.providers.verification.google": {
+      "fixtureIds": ["native.auth.re-auth.providers.verification.google"],
+      "hash": "353ce8d7659ff29d8a097e092a80b1646e0331fe048b19e9b244f2d4850dd737"
+    },
+    "native.auth.re-auth.totp.verification": {
+      "fixtureIds": ["native.auth.re-auth.totp.verification"],
+      "hash": "353ce8d7659ff29d8a097e092a80b1646e0331fe048b19e9b244f2d4850dd737"
+    },
+    "native.auth.session.refresh.rotated": {
+      "fixtureIds": ["native.auth.session.refresh.rotated"],
+      "hash": "2ea21e6b1efcacb2263ebf8d119673f478d54b42bd3250b72d577e2e54373ecc"
+    },
     "native.auth.sessions.default": {
       "fixtureIds": ["native.auth.sessions.default"],
       "hash": "08d84623760e2c633e192f9e8ada31f90c923fa8c99819309408a26cb72ec6a1"
@@ -1889,6 +1981,10 @@
     "native.bookmarks.users.subscribed-posts.default": {
       "fixtureIds": ["native.bookmarks.users.subscribed-posts.default"],
       "hash": "3b6f8eac920779dd9c9c91bb65d472b075a7f74ec98a4a8c3a5619eea1d62c41"
+    },
+    "native.bot-challenge.required": {
+      "fixtureIds": ["native.bot-challenge.required"],
+      "hash": "cfc5fd66c023036f54f4ecb829ee6cc2b485cb9fd581e242ec6c4ecc5db6d831"
     },
     "native.captcha-config.default": {
       "fixtureIds": ["native.captcha-config.default"],

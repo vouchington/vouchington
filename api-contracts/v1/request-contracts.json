@@ -43083,6 +43083,7 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/auth/re-auth/methods": {},
     "GET:/api/v1/auth/sessions": {
       "query": {
         "properties": {
@@ -48969,6 +48970,7 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/auth/mfa/re-auth/email/tokens": {},
     "POST:/api/v1/auth/mfa/re-auth/email/verification": {
       "body": {
         "additionalProperties": false,
