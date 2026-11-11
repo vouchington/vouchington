@@ -3,7 +3,8 @@ import { buildViewerPostDiscoveryEligibilityFilter } from '@modules/feed-query-b
 import { getProfileCountCap } from '@services/users/profile-count-cap'
 import { getTopicsWorkLimit, topicsWorkMaxValues } from '@services/topics/work-limits'
 import sql from 'sql-template-strings'
-import { seedUuid } from './common.mts'
+import { postSeedTimestampMs, seedUuid } from './common.mts'
+import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 
 const FIXTURE_ID_START = 2_500_000
 
@@ -41,11 +42,14 @@ export async function seedManyAliasTopicViewerCounts(): Promise<void> {
     currentUserId: viewerId,
     isAdministrator: false,
   })
+  // Borrow only anchor-past posts so database-clock relation ids follow their endpoints.
   const eligiblePostsQuery = sql`/* seedManyAliasTopicViewerCounts:eligible-posts */
     SELECT candidate_post.id, candidate_post.created_by_id
     FROM posts candidate_post
     JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-    WHERE candidate_post.post_type = 'discussion' AND `
+    WHERE candidate_post.post_type = 'discussion'
+      AND candidate_post.id < ${getMinUUIDv7ForDate(new Date(postSeedTimestampMs(0)))}::uuid
+      AND `
     .append(eligibility)
     .append(sql` ORDER BY candidate_post.id DESC LIMIT ${positiveCount}`)
 
