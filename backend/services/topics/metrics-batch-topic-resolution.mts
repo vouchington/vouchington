@@ -92,8 +92,5 @@ export function topicResolutionCtes(): string {
       SELECT id, input_order FROM id_lookups
       UNION
       SELECT id, input_order FROM slug_lookups
-    ),
-    requested_topic_ids AS MATERIALIZED (
-      SELECT DISTINCT id FROM combined_ids
-    ),`
+    )`
 }

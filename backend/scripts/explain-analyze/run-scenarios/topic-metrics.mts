@@ -1,30 +1,45 @@
-import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { getTopicMetricsByAnyBatch } from '../run-services.mts'
 
-const METRICS_ANCILLARY_ROW_ALLOWANCE = 1_000
-
 export async function runTopicMetricsBatchScenario(seedAllTopicIds: string[]) {
   registerScenarioContract('topic-metrics-batch', {
     expectations: [
-      { kind: 'queryBinds', token: 'requested_topic_ids' },
+      { kind: 'queryBinds', token: 'combined_ids' },
       { kind: 'forbidCorrelatedAggregates' },
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          // Partitioned relations expose the default leaf. These are the leaf names of
+          // idx_relation__post__category__topic__positive_object and its alias twin,
+          // plus the topic_id leaf indexes on the rating and data-point partitions.
+          'relation__post__category__topic__default_case_subject_id_idx',
+          'relation__post__category__topic_alias__defa_case_subject_id_idx',
+          'post_review_topic_ratings__default_topic_id_post_id_rating_idx',
+          'post_data_point_topics__default_topic_id_post_id_idx',
+          'idx_rss_feed_item_categories__topic_id',
+          'idx_topic_aliases__topic_id',
+          'idx_rss_feed_item_sources__item_feed',
+          'rss_feed_item_sources_pkey',
+        ],
+      },
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_rss_feeds__topic_id', 'idx_rss_feeds__topic_id__unique'],
+        anyOf: true,
+      },
       ...Object.entries({
         posts: 5_000,
         relation__post__category__topic: 5_000,
         relation__post__category__topic_alias: 5_000,
         post_review_topic_ratings: 5_000,
         post_data_point_topics: 5_000,
-        // Category and feed-topic branches can each visit the RSS corpus.
-        rss_feed_item_categories:
-          SEEDED_ROWS_BY_RELATION.rss_feed_item_categories! + METRICS_ANCILLARY_ROW_ALLOWANCE,
-        rss_feed_item_sources:
-          (SEEDED_ROWS_BY_RELATION.rss_feed_item_sources! + METRICS_ANCILLARY_ROW_ALLOWANCE) * 2,
-        rss_feed_items:
-          SEEDED_ROWS_BY_RELATION.rss_feed_items! +
-          SEEDED_ROWS_BY_RELATION.rss_feed_item_sources! +
-          METRICS_ANCILLARY_ROW_ALLOWANCE * 2,
+        // 100 seeded topics own about 7,500 category rows. The walk stops at the probe.
+        rss_feed_item_categories: 12_000,
+        // News checks each category row's sources, and latest walks each topic feed to the probe.
+        rss_feed_item_sources: 40_000,
+        rss_feed_items: 30_000,
+        // One feed probe per news source row plus one topic-feed lookup per requested topic.
         rss_feeds: 6_000,
       }).map(([relation, max]) => ({ kind: 'maxProcessedRows' as const, relation, max })),
     ],
