@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
 // One recoverable callback, a pending flow, and an expired callback exercise
@@ -32,4 +32,14 @@ export async function seedViewDrivenOAuth(): Promise<void> {
     values,
   )
   await transaction.commit()
+}
+
+/** Restore only the recoverable and pending fixture flows after a seeded database is archived. */
+export async function refreshViewDrivenOAuthActiveExpiries(): Promise<void> {
+  await write(
+    `/* refreshViewDrivenOAuthActiveExpiries */ UPDATE oauth_authorizations
+     SET expires_at = CURRENT_TIMESTAMP + INTERVAL '1 day'
+     WHERE id = ANY($1::uuid[])`,
+    [[seedUuid(0, '3a'), seedUuid(1, '3a')]],
+  )
 }

@@ -51,6 +51,12 @@ the timeout as a query-plan failure or rerunning the job.
   different number of posts per hour, which flipped a plan between a seq scan and a bitmap scan.
   Fixture discovery must use the same clock: an initial lookup under wall time can age a fixture
   out of its visibility window before capture begins.
+- Expiring fixtures whose selectors use a bounded business window also derive their expiry and
+  cutoff from that anchor. A seed restored for a later runner must retain the same eligible page;
+  otherwise elapsed wall time can move every seeded row below the selector's lower bound.
+- Fixtures selected with PostgreSQL's wall clock refresh only their known active rows immediately
+  before capture after an archived seed is restored. A pinned application clock cannot keep an
+  expired SQL-clock row eligible.
 - After bulk seeding, the seed runs `VACUUM (ANALYZE)` on declared seeded relations before the first
   plan capture, instead of depending on autovacuum timing, and refreshes statistics after the
   first post batch because a fresh database plans the retained-identity trigger against empty-table

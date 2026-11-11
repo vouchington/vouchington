@@ -21,6 +21,7 @@ export async function runHostnameBlocklistScenario(): Promise<void> {
     undefined,
     'urlBlocklistBatchesFromDb:hostnames',
   )
+  await seedHostnameCacheInvalidationWork()
   await runAndCapture(
     'hostname-cache-invalidation-claim',
     async () => {

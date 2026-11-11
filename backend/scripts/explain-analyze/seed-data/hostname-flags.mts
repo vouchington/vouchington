@@ -40,6 +40,18 @@ export async function seedHostnameCacheInvalidationWork(): Promise<void> {
     ) seed
     ON CONFLICT (url_hostname_id) DO NOTHING`,
   )
+  // The archived seed can spend a day in transit before this scenario runs. Restore the future
+  // half by its known hostname cohort; the due half remains due and captured drains reinsert it.
+  await write(
+    `/* seedExplainHostnameCacheInvalidationWork:refreshFuture */ WITH fixture AS (
+      SELECT id, row_number() OVER (ORDER BY hostname) AS ordinal
+      FROM url_hostnames WHERE hostname LIKE 'seed-blocked-%.example.net'
+    )
+    UPDATE url_hostname_cache_invalidation_work_items work
+    SET available_at = CURRENT_TIMESTAMP + INTERVAL '1 day'
+    FROM fixture
+    WHERE work.url_hostname_id = fixture.id AND fixture.ordinal > 10000`,
+  )
   // This also restores rows deleted by the captured drain. Refresh both claim relations before
   // the first replay rather than letting autovacuum timing choose the measured plan.
   await write(

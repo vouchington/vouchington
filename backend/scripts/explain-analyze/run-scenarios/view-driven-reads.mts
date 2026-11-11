@@ -16,6 +16,7 @@ import { runIneligibleCollectionPageScenarios } from './ineligible-collection-pa
 import { runModerationSummaryReportScenario } from './moderation-summary-reports.mts'
 import { runAndCapture, seedPostId, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import { refreshViewDrivenOAuthActiveExpiries } from '../seed-data/view-driven-oauth.mts'
 import {
   COMMUNITY_MEMBERSHIP_CAP_COMMUNITIES,
   COMMUNITY_MEMBERSHIP_CAP_MODERATORS,
@@ -157,6 +158,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
     captureAutotaggerAgentCandidateTopicIds(read, { postId: seedPostId, rssFeedItemId: null }),
   )
 
+  await refreshViewDrivenOAuthActiveExpiries()
   registerScenarioContract('recoverable-oauth-authorizations', {
     expectations: [{ kind: 'maxProcessedRows', relation: 'oauth_authorizations', max: 1000 }],
   })
