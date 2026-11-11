@@ -25,7 +25,6 @@ import {
 import { postsParser, postsQueryContract } from './parse-posts-contract.mts'
 import { prepareQueryForValidation } from './prepare-query.mts'
 import { withInternalOmitLimit } from './types.mts'
-
 export function preparePostsSearchParams(
   query: Record<string, unknown>,
   runtimeLimits?: PaginationRuntimeLimitBounds,
@@ -64,10 +63,11 @@ export function preparePostsSearchParams(
     hasHackerNewsReferences: query.has_hacker_news_references,
     dataPointVertical: query.data_point_vertical,
     topicRecommendationStatus: query.topic_recommendation_status,
+    dataPointResult: query.data_point_result,
+    dataPointCreditScoreRange: query.data_point_credit_score_range,
     q: query.q,
   }
 }
-
 export async function resolvePostsSearchParams(
   prepared: ReturnType<typeof preparePostsSearchParams>,
 ) {
@@ -90,6 +90,8 @@ export async function resolvePostsSearchParams(
     hasHackerNewsReferences,
     dataPointVertical,
     topicRecommendationStatus,
+    dataPointResult,
+    dataPointCreditScoreRange,
     q,
   } = prepared
   const hashtagSearch = await resolveHashtagTopicSearch(
@@ -143,7 +145,6 @@ export async function resolvePostsSearchParams(
     (storyIdRaw !== undefined && storyId === undefined) ||
     (communityIdRaw !== undefined && !isUUID(communityIdRaw)) ||
     hashtagSearch.hasUnknown
-
   const universalTopicIds = [
     ...new Set([
       ...resolvedTopicIds.filter((id): id is string => id !== null),
@@ -184,6 +185,10 @@ export async function resolvePostsSearchParams(
     ...(typeof dataPointVertical === 'string' && dataPointVertical.trim()
       ? { data_point_vertical: dataPointVertical.trim() }
       : {}),
+    ...(typeof dataPointResult === 'string' && { data_point_result: dataPointResult }),
+    ...(typeof dataPointCreditScoreRange === 'string' && {
+      data_point_credit_score_range: dataPointCreditScoreRange,
+    }),
     ...(storyId && { story_id: storyId }),
   }
   return {

@@ -87,8 +87,7 @@ type ToolResult =
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description:
-      "Get a topic's full description, aliases and type-specific details such as a card's annual fee, issuer and brand, a rewards program's parent company, or a referral program's company and enabled or disabled time. Set hierarchy for parents or children; children are paged. Use children_page_info.end_cursor as children_after for the next page.",
+    description: 'Read topic details and optional hierarchy.',
     parameters: {
       type: 'object',
       properties: {

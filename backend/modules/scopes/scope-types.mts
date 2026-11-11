@@ -47,7 +47,6 @@ export type ApiScope =
   | 'communities:write'
   | 'community-moderation:read'
   | 'community-moderation:write'
-  | 'data-points:read'
   | 'disputes:read'
   | 'disputes:write'
   | 'domain-ratings:read'

@@ -41,9 +41,9 @@ const CREDIT_HOT_INDEX = 'idx_posts__data_point_credit_score_range__positive__id
 
 type DataPointSort = 'new' | 'best' | 'hot'
 
-async function hotFilterIndexLeaves(indexName: string): Promise<readonly string[]> {
+async function filterIndexLeaves(indexName: string): Promise<readonly string[]> {
   const { rows } = await read<{ index_name: string }>(
-    `/* dataPointHotFilterIndexLeaves */
+    `/* dataPointFilterIndexLeaves */
      SELECT index_class.relname AS index_name
      FROM pg_partition_tree($1::regclass) tree
      JOIN pg_class index_class ON index_class.oid = tree.relid
@@ -55,8 +55,8 @@ async function hotFilterIndexLeaves(indexName: string): Promise<readonly string[
 }
 
 export async function runDataPointSearchScenarios(): Promise<void> {
-  const resultHotIndexes = await hotFilterIndexLeaves(RESULT_HOT_INDEX)
-  const creditHotIndexes = await hotFilterIndexLeaves(CREDIT_HOT_INDEX)
+  const resultHotIndexes = await filterIndexLeaves(RESULT_HOT_INDEX)
+  const creditHotIndexes = await filterIndexLeaves(CREDIT_HOT_INDEX)
   await seedSelectiveDataPointMatches(seedUser.id)
   try {
     await capture(
@@ -78,6 +78,13 @@ export async function runDataPointSearchScenarios(): Promise<void> {
       { data_point_result: 'pending' },
       SELECTIVE_POST_MAX,
       resultHotIndexes,
+    )
+    await capture(
+      'search-data-points-credit-new',
+      'new',
+      { data_point_credit_score_range: '300-579' },
+      SELECTIVE_POST_MAX,
+      await filterIndexLeaves('idx_posts__structured_data__credit_score_range__id'),
     )
     await capture(
       'search-data-points-credit-best',

@@ -34,8 +34,7 @@ type ToolResult =
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description:
-      'Get aggregate statistics for a topic from its latest public data points inside the configured year window, capped per topic. Returns approval rate, median credit limit, and credit score distribution.',
+    description: 'Read capped recent public data-point statistics.',
     parameters: {
       type: 'object',
       properties: {
@@ -51,7 +50,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
   meta: {
     audience: 'user',
     title: 'Get Topic Insights',
-    requiredScopes: ['data-points:read'],
+    requiredScopes: ['topics:read'],
     annotations: { readOnlyHint: true },
     api: null,
     outputSchema: outcomeSchema('success', {

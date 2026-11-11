@@ -43,8 +43,7 @@ type ToolResult =
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description:
-      'Compare the latest public data points inside the configured year window, capped per topic, for two topics (cards, bank accounts, etc.). Useful for answering questions like "which card has a better approval rate?"',
+    description: 'Compare capped recent public data-point statistics.',
     parameters: {
       type: 'object',
       properties: {

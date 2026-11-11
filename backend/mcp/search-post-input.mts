@@ -1,4 +1,5 @@
 import type { PagedSearchArgs } from './paged-search.mts'
+import { CREDIT_CARD_RESULTS, CREDIT_SCORE_RANGES } from '@ts-shared/data-points'
 import { MAX_TOPIC_SEARCH_TERMS } from '@services/search-params'
 import type { PostSearchSort } from '@services/posts/search/types'
 import { topicReferenceSchema, userReferenceSchema } from './entity-reference-schema.mts'
@@ -54,6 +55,11 @@ export function postSearchFilterSchemaProperties() {
     },
     data_point_topic: topicReferenceSchema,
     data_point_vertical: { type: 'string' },
+    data_point_result: { type: 'string', enum: CREDIT_CARD_RESULTS.map(option => option.value) },
+    data_point_credit_score_range: {
+      type: 'string',
+      enum: CREDIT_SCORE_RANGES.map(option => option.value),
+    },
     review_topic: topicReferenceSchema,
     story_id: { type: 'string', format: 'uuid' },
     topic_recommendation_status: { type: 'string', enum: ['pending', 'approved', 'rejected'] },
@@ -89,6 +95,8 @@ export type SearchPostArgs = PagedSearchArgs & {
   community_id?: string
   trending_min_score?: number
   data_point_topic?: string
+  data_point_result?: string
+  data_point_credit_score_range?: string
   data_point_vertical?: string
   review_topic?: string
   topic_recommendation_status?: 'pending' | 'approved' | 'rejected'

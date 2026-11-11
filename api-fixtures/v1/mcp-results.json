@@ -288,6 +288,8 @@
       "structuredContent": {
         "success": true,
         "post": {
+          "data_point_vertical": null,
+          "structured_data": null,
           "id": "0198ffff-0000-7000-8000-000000000002",
           "slug": "example-post",
           "post_type": "link",

@@ -39,8 +39,7 @@ import read_posts_descendants from '../get-post-descendants.mts'
 import read_posts_details from '../get-post.mts'
 import read_posts_search from '../search-posts.mts'
 import read_hostnames_search from '../search-hostnames.mts'
-import read_data_points_topic_insights from '../get-topic-insights.mts'
-import read_data_points_search from '../search-data-points.mts'
+import read_topic_data_point_insights from '../get-topic-insights.mts'
 import read_users_details from '../get-user.mts'
 import read_users_search from '../search-users.mts'
 export const userMergedReadingGroups = [
@@ -69,6 +68,7 @@ export const userMergedReadingGroups = [
       { option: 'compare', source: read_topic_compare },
       { option: 'details', source: read_topic_details },
       { option: 'metrics', source: read_topic_metrics },
+      { option: 'data_point_insights', source: read_topic_data_point_insights },
     ],
   },
   {
@@ -126,13 +126,6 @@ export const userMergedReadingGroups = [
   {
     name: 'read_hostnames',
     options: [{ option: 'search', source: read_hostnames_search }],
-  },
-  {
-    name: 'read_data_points',
-    options: [
-      { option: 'topic_insights', source: read_data_points_topic_insights },
-      { option: 'search', source: read_data_points_search },
-    ],
   },
   {
     name: 'read_users',

@@ -9,6 +9,7 @@ import {
   queryUuidOrUri,
 } from '@vouchington/pagination'
 import { createPaginationParser } from '@modules/pagination'
+import { CREDIT_CARD_RESULTS, CREDIT_SCORE_RANGES } from '@ts-shared/data-points'
 import { VALID_SEARCH_POST_TYPES } from '@ts-shared/feed-capabilities'
 
 export const postsParser = createPaginationParser({
@@ -39,6 +40,8 @@ export const postsQueryContract = defineQueryContract({
   drafts: queryBoolean(),
   has_hacker_news_references: queryBoolean(),
   data_point_vertical: queryString(),
+  data_point_result: queryEnum(CREDIT_CARD_RESULTS.map(option => option.value)),
+  data_point_credit_score_range: queryEnum(CREDIT_SCORE_RANGES.map(option => option.value)),
   story_id: queryUuid(),
   topic_recommendation_status: queryEnum(['pending', 'approved', 'rejected'] as const),
 })

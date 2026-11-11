@@ -46244,6 +46244,22 @@
           "creator": {
             "type": "string"
           },
+          "data_point_credit_score_range": {
+            "type": "string",
+            "enum": ["300-579", "580-669", "670-739", "740-799", "800-850"]
+          },
+          "data_point_result": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "denied",
+              "pending",
+              "counter_offer",
+              "retention_offer",
+              "sign_up_bonus",
+              "offer"
+            ]
+          },
           "data_point_topic": {
             "type": "string"
           },

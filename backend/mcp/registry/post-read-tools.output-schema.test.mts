@@ -70,6 +70,13 @@ describe('post and story read tool output schemas', () => {
     }
   })
 
+  it('documents data-point details using the REST Post contract', () => {
+    const found = propertiesOf(branches(getPostTool)[0]!)
+    const post = propertiesOf(found['post'] as JsonSchema)
+    expect(post['data_point_vertical']).toEqual(documented('Post', 'data_point_vertical'))
+    expect(post['structured_data']).toEqual(documented('Post', 'structured_data'))
+  })
+
   it('takes every story field from the Story contract', () => {
     const properties = propertiesOf(mcpStorySchema())
 

@@ -46,6 +46,8 @@ export const hackerNewsMcpResultCases: readonly McpResultFixtureCase[] = [
     structuredContent: {
       success: true,
       post: {
+        data_point_vertical: null,
+        structured_data: null,
         id,
         slug: 'example-post',
         post_type: 'link',

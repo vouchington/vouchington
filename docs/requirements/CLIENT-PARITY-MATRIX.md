@@ -655,10 +655,13 @@ block the producer. No native parity completion is claimed here.
 
 `GET /api/v1/posts?post_types=story` and MCP `read_posts` rank story posts with the normal post
 page for new, best, and hot. A story post is included when `story_posts` links it to a live story
-that has a feed item in an enabled, discoverable, undeleted feed. MCP `read_data_points` search
-uses that same post page, with `post_types=data_point` and the data-point filters, and returns
+that has a feed item in an enabled, discoverable, undeleted feed. REST and MCP `read_posts` search
+use that same post page, with `post_types=data_point` and enum-validated result and credit-score
+filters, and return
 `page_info`. Clients page with the returned post cursor. Swift and .NET follow the producer and
-do not gate this repository.
+do not gate this repository. Topic data-point insights use MCP `read_topic` with the
+`data_point_insights` option and `topics:read`; data-point search uses `posts:read`. Clients
+request those resource scopes.
 
 ## Web search pages
 

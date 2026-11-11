@@ -69,6 +69,8 @@ describe('MCP Hacker News placeholder privacy', () => {
       const projected = result.post as Record<string, unknown>
       expect(projected).toMatchObject({ id: comment.id, placeholder_state: state, markdown: '' })
       expect(projected.hacker_news_references).toBeUndefined()
+      expect(projected.data_point_vertical).toBeNull()
+      expect(projected.structured_data).toBeNull()
       const response = await createRequest().get(`/api/v1/posts/${comment.id}`).expect(200)
       expect(response.body.post.placeholder_state).toBe(state)
       expect(response.body.post_hacker_news_references?.[comment.id]).toBeUndefined()

@@ -86,6 +86,8 @@ describe('search parameter query contracts', () => {
         'categories',
         'community_id',
         'creator',
+        'data_point_result',
+        'data_point_credit_score_range',
         'data_point_topic',
         'data_point_vertical',
         'drafts',

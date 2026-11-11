@@ -327,8 +327,8 @@
       "routes": ["GET:/api/v1/topics/:idOrSlug"]
     },
     {
-      "target": "read_data_points",
-      "option": "topic_insights",
+      "target": "read_topic",
+      "option": "data_point_insights",
       "args": {
         "topic_id": "sample"
       },
@@ -395,12 +395,6 @@
       "option": "search",
       "args": {},
       "routes": ["GET:/api/v1/communities"]
-    },
-    {
-      "target": "read_data_points",
-      "option": "search",
-      "args": {},
-      "routes": []
     },
     {
       "target": "read_hostnames",
@@ -688,12 +682,13 @@
       }
     },
     {
-      "target": "read_data_points",
-      "scopes": ["data-points:read"],
+      "target": "read_topic",
+      "scopes": ["topics:read"],
       "plan": "free",
       "annotations": {
         "readOnlyHint": true
-      }
+      },
+      "option": "data_point_insights"
     },
     {
       "target": "read_users",
@@ -804,8 +799,8 @@
       "args": {}
     },
     {
-      "target": "read_data_points",
-      "option": "topic_insights",
+      "target": "read_topic",
+      "option": "data_point_insights",
       "args": {}
     },
     {
