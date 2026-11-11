@@ -144,7 +144,7 @@
     "@vouchington/api-client": "^0.3.0",
     "@vouchington/localization": "^0.3.1",
     "@vouchington/localization-compiler": "^0.3.0",
-    "@vouchington/postgres": "^0.4.0",
+    "@vouchington/postgres": "^0.5.0",
     "@vouchington/session-jwt": "^0.0.3",
     "@vouchington/worker-runtime": "^0.3.1",
     "agent-blackboard": "^0.7.0",
