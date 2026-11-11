@@ -4097,7 +4097,6 @@
 {"id":"copy.native.dotnet.csharpEditor.preview","value":"Preview"},
 {"id":"copy.native.dotnet.csharpEditor.selectImage","value":"Select image"},
 {"id":"copy.native.dotnet.csharpEditor.suggestionWithDetail","value":"{label}  {detail}"},
-{"id":"copy.native.dotnet.csharpStatus.mergedInto","value":"Merged into {id}"},
 {"id":"copy.native.dotnet.csharpStatus.playbackFailed","value":"Playback failed."},
 {"id":"copy.native.dotnet.csharpStatus.saveTopicFirst","value":"Save the topic before managing settings."},
 {"id":"copy.native.dotnet.csharpStatus.savedItem","value":"Saved {id}"},

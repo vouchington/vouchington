@@ -16,7 +16,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_06 = [
   { key: 'native.dotnet.csharpEditor.selectImage', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpEditor.suggestionWithDetail', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpEditor.write', consumers: ['dotnet'] },
-  { key: 'native.dotnet.csharpStatus.mergedInto', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpStatus.saveTopicFirst', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpStatus.savedItem', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpStatus.speed', consumers: ['dotnet'] },

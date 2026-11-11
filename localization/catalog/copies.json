@@ -4097,7 +4097,6 @@
 {"descriptor":null,"id":"copy.native.dotnet.csharpEditor.preview"},
 {"descriptor":null,"id":"copy.native.dotnet.csharpEditor.selectImage"},
 {"descriptor":null,"id":"copy.native.dotnet.csharpEditor.suggestionWithDetail"},
-{"descriptor":null,"id":"copy.native.dotnet.csharpStatus.mergedInto"},
 {"descriptor":null,"id":"copy.native.dotnet.csharpStatus.playbackFailed"},
 {"descriptor":null,"id":"copy.native.dotnet.csharpStatus.saveTopicFirst"},
 {"descriptor":null,"id":"copy.native.dotnet.csharpStatus.savedItem"},
