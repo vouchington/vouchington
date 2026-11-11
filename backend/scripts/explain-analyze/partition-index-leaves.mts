@@ -14,13 +14,17 @@ export async function partitionIndexLeaves(indexName: string): Promise<readonly 
   return rows.map(row => row.index_name)
 }
 
-/** An id-ordered posts walk: the primary key, or the partial id index the planner may pick instead. */
+/**
+ * An id-ordered posts walk: the primary key, or an id-led index the planner may pick instead
+ * (the partial visibility index, or the (id DESC, post_type) index).
+ */
 export async function postIdOrderLeaves(): Promise<readonly string[]> {
-  const [primaryKey, visibility] = await Promise.all([
+  const [primaryKey, visibility, idPostType] = await Promise.all([
     partitionIndexLeaves('posts_pkey'),
     partitionIndexLeaves('idx_posts__root_post_visibility'),
+    partitionIndexLeaves('idx_posts__id__post_type'),
   ])
-  return [...primaryKey, ...visibility]
+  return [...primaryKey, ...visibility, ...idPostType]
 }
 
 /** Leaf index names for several parents in one read. */

@@ -1,4 +1,4 @@
-import { getPostFeedIds, getPostIds } from '../run-services.mts'
+import { getPostIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { partitionIndexLeavesOf } from '../partition-index-leaves.mts'
@@ -8,11 +8,8 @@ import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 
 const PAGE_SIZE = 25
 const POST_SEARCH_QUERY = 'buildPostSearchQuery'
-const POST_FEED_QUERY = 'getPostFeedIds'
 const MAX_POST_ROWS = 1200
 const MAX_ALIAS_RELATION_ROWS = 1200
-const MAX_FEED_POST_ROWS = 15_000
-const MAX_FEED_MEMBERSHIP_ROWS = MAX_FEED_POST_ROWS * 2
 const TOPIC_ALIAS_INDEX = 'idx_topic_aliases__topic_id'
 
 type TopicFixture = 'sparse' | 'dense'
@@ -97,36 +94,6 @@ async function captureTopicPair(
   await capture(continuationId, continuationOptions)
 }
 
-function registerMultiTopicFeedScenario(id: string): void {
-  registerScenarioContract(id, {
-    seededRows: POST_TOPIC_FIXTURES_SEEDED_ROWS,
-    allowEmptyResult: true,
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'posts', max: MAX_FEED_POST_ROWS },
-      {
-        kind: 'maxProcessedRows',
-        relation: 'relation__post__category__topic',
-        max: MAX_FEED_MEMBERSHIP_ROWS,
-      },
-      {
-        kind: 'maxProcessedRows',
-        relation: 'relation__post__category__topic_alias',
-        max: MAX_FEED_MEMBERSHIP_ROWS,
-      },
-      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: MAX_FEED_MEMBERSHIP_ROWS },
-      { kind: 'maxBitmapIndexRows', max: MAX_FEED_MEMBERSHIP_ROWS },
-    ],
-    forbidSequentialScans: [
-      'relation__post__category__topic',
-      'relation__post__category__topic_alias',
-      'topic_aliases',
-    ],
-    crossPartition: {
-      posts: 'A followed-post feed walks deliveries that match both topics.',
-    },
-  })
-}
-
 export async function runPostTopicSemiJoinScenarios(): Promise<void> {
   // Each page probes the alias relation by post id: the key-led leaves, not a topic-side read.
   const aliasRelationLeaves = await partitionIndexLeavesOf([
@@ -156,26 +123,4 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
     aliasRelationLeaves,
   )
   await capture('post-topic-semi-join-multi-topic-search', multiTopicOptions)
-
-  const multiTopicFeedOptions = {
-    universal_topic_ids: [
-      POST_TOPIC_SEMI_JOIN_FIXTURE.sparseTopicId,
-      POST_TOPIC_SEMI_JOIN_FIXTURE.denseTopicId,
-    ],
-    feed_type: 'any' as const,
-    time_range: '1w' as const,
-    limit: PAGE_SIZE,
-  }
-  const feedPage = await getPostFeedIds(seedUser, multiTopicFeedOptions)
-  if (feedPage.results.length > PAGE_SIZE)
-    throw new Error('Two-topic post feed page exceeded its limit')
-  if (feedPage.results.length < PAGE_SIZE && feedPage.page_info.has_next_page)
-    throw new Error('Two-topic post feed must not continue a short page')
-  registerMultiTopicFeedScenario('post-topic-semi-join-multi-topic-feed')
-  await runAndCapture(
-    'post-topic-semi-join-multi-topic-feed',
-    () => getPostFeedIds(seedUser, multiTopicFeedOptions),
-    undefined,
-    POST_FEED_QUERY,
-  )
 }

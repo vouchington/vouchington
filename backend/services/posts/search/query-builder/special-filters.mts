@@ -32,12 +32,12 @@ export function appendPostSearchSpecialFilters(
         AND trending_topic.votes_score_net > 0
     )`)
   }
-  if (options.sort === 'trending') {
+  // No `display score > 0` filter: votes_score_net > 0 already implies a positive score, and a
+  // second predicate on the decayed expression leaves the planner estimating a page below LIMIT,
+  // so it sorts the whole window instead of walking the stable-rank index.
+  if (options.sort === 'trending' && options.trending_min_score !== undefined) {
     const displayScore = buildHotScoreExpression('posts', decisionInstant)
-    filters.push(sql``.append(displayScore).append(sql` > 0`))
-    if (options.trending_min_score !== undefined) {
-      filters.push(sql``.append(displayScore).append(sql` >= ${options.trending_min_score}`))
-    }
+    filters.push(sql``.append(displayScore).append(sql` >= ${options.trending_min_score}`))
   }
 }
 
