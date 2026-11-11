@@ -93,7 +93,7 @@ describe('statutory restoration and repeat-infringer incidents', () => {
     const accountId = scene.claimant.id
     const hold = await recordOrdinaryCopyrightHold(scene)
 
-    await expect(applyRestore(scene)).resolves.toBe('blocked')
+    await expect(applyRestore(scene)).resolves.toBe('not_claimed')
     await expect(readRestoreState(scene.notice.id)).resolves.toBe('blocked')
     // A blocked intent also carries `completed_at`; only a `completed` restore ends the incident.
     await replayTestLiftConfirmationConsequences(scene.notice.id)

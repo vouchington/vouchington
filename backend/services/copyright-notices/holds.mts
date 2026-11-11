@@ -104,11 +104,6 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     422,
     'A legal hold target does not belong to this copyright notice',
   )
-  await preemptCopyrightRestorations(
-    submissionRows[0].copyright_notice_id,
-    transaction,
-    input.targetIds,
-  )
   if (isQualifyingCopyrightLegalHold(input)) {
     lateHoldIntentIds = await activateLateCopyrightLegalHoldRestrictions(
       assessment.id,
@@ -117,6 +112,12 @@ export async function appendCopyrightLegalHoldAssessment(input: {
       transaction,
     )
   }
+  // Work item last, matching the delivery worker's restriction-then-work-item row order.
+  await preemptCopyrightRestorations(
+    submissionRows[0].copyright_notice_id,
+    transaction,
+    input.targetIds,
+  )
   // ast-grep-ignore: no-three-sequential-awaits -- insert the legal-hold lifecycle event before sampling legal activity; replay restore intents only after the hold decision and clock writes complete
   await transaction(sql`/* appendCopyrightLegalHoldAssessment:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,

@@ -29,7 +29,7 @@ async function blockedCopyrightRestore(targetCount = 1) {
   const scene = await openHeldCounterNoticeRestore(targetCount)
   const hold = await recordOrdinaryCopyrightHold(scene)
   await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
-    'blocked',
+    'not_claimed',
   )
   return { ...scene, hold }
 }
