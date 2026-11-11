@@ -27,24 +27,17 @@ jobs:
       actions: read
       contents: read
 
-  # Three shards restore the same prepared database and seeds, so the shared corpus is identical.
-  # `main` runs every scenario except the two fixtures below, `partition` runs only the
-  # partitioned comment fixture and `hn-scale` runs only the million-post Hacker News fixture
-  # (backend/scripts/explain-analyze/explain-shards.mts), so the slowest scenario groups no
-  # longer extend one serial run past its step budget. The `explain-analyze-gates` job
-  # merges all shards and enforces the plan gates, so `backend.yml` still needs one result.
-  explain-analyze:
-    name: explain-analyze (${{ matrix.shard }})
+  # Seed the shared corpus once and hand every shard a copy of its data directory. Each shard used to
+  # reseed the identical corpus itself (136s to 243s per shard on 2026-11-09), so one slow runner
+  # could fail any shard and every shard paid for the seed.
+  seed-explain:
     needs: [prepare-postgres]
     if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
-    # Main: about 8 minutes of setup and seeds plus up to 20 minutes of scenarios on a slow
-    # runner. The partition shard needs less than the main shard's budget (see its step budgets).
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [main, partition, hn-scale]
+    # Setup, restore, the crawl-tier check, both seeds, the data directory archive and its uploads.
+    timeout-minutes: 20
+    outputs:
+      anchor-date: ${{ steps.anchor.outputs.date }}
     env:
       S3_BUCKET_IMAGES: test-images
       S3_BUCKET_IMAGE_UPLOADS: test-image-uploads
@@ -88,9 +81,6 @@ jobs:
           POSTGRES_INITDB_ARGS: '-c max_connections=300 -c log_min_messages=log -c work_mem=32MB'
         ports:
           - 5432
-        # The full partition fixture exceeds the former 4GiB tmpfs. Use the image's
-        # disk-backed ephemeral /var/lib/postgresql volume for data and WAL; resource
-        # samples still capture usage on the same ubuntu-latest runner.
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -105,12 +95,16 @@ jobs:
         run: |
           echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
       - name: Pin the EXPLAIN seed anchor day
-        # seed.mts and run.mts are separate node processes that must derive the same seeded ids.
-        # Choose the day once for the whole job so a boundary falling between the two steps
-        # cannot give them different ids (#2110). The day is the UTC day 735 minutes ago
-        # (SEED_ANCHOR_LAG_MS): its noon has passed, so no seeded row is dated after the run.
+        id: anchor
+        # seed.mts and run.mts are separate node processes, now in separate jobs, that must derive
+        # the same seeded ids. Choose the day once and pass it to every shard so a boundary falling
+        # between them cannot give them different ids (#2110). The day is the UTC day 735 minutes
+        # ago (SEED_ANCHOR_LAG_MS): its noon has passed, so no seeded row is dated after the run.
         timeout-minutes: 1
-        run: echo "EXPLAIN_SEED_ANCHOR_DATE=$(date -u -d '-735 minutes' +%Y-%m-%d)" >> "$GITHUB_ENV"
+        run: |
+          day="$(date -u -d '-735 minutes' +%Y-%m-%d)"
+          echo "EXPLAIN_SEED_ANCHOR_DATE=$day" >> "$GITHUB_ENV"
+          echo "date=$day" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
       - uses: ./.github/actions/start-valkey
@@ -134,8 +128,8 @@ jobs:
             pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
             < "$RUNNER_TEMP/backend-postgres.dump"
       - name: Check native RSS crawl tier snapshot and dispatch
-        # Its coverage joins the merged native LCOV; one shard is enough.
-        if: ${{ matrix.shard == 'main' }}
+        # It needs the unseeded database: its owned feeds must reach the bounded dispatch pages.
+        # Its coverage joins the merged native LCOV through the main shard.
         timeout-minutes: 2
         env:
           NODE_DISABLE_COMPILE_CACHE: '1'
@@ -150,15 +144,123 @@ jobs:
         run: node backend/scripts/seeds/dev-seed.mts
         timeout-minutes: 3
       - name: Seed EXPLAIN data with resource samples
-        # Both shards seed the identical corpus. Ten main-shard seeds on 2026-11-09 (runs
-        # 42592728690 to 42597072815) took 136s to 243s, and the slow runners clustered at 233s
-        # to 240s. Runs 42595278183 and 42597072815 were killed by the old 4 minute limit at 243s
-        # after "Seed complete." printed. Six minutes is about 1.5 times the slow-runner time.
+        # Ten seeds on 2026-11-09 (runs 42592728690 to 42597072815) took 136s to 243s, and the
+        # slow runners clustered at 233s to 240s. Runs 42595278183 and 42597072815 were killed by
+        # the 4 minute limit at 243s after "Seed complete." printed. Six minutes is about 1.5
+        # times the slow-runner time. This job seeds once; each shard starts on a copy of its data
+        # directory.
         timeout-minutes: 6
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
         run: source "$GITHUB_WORKSPACE/.github/workflows/explain-analyze-seed-with-resource-samples.sh"
+      - name: Stop and archive seeded PostgreSQL data directory
+        # Stops the service container; no later step in this job uses the database.
+        timeout-minutes: 4
+        env:
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+          PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        run: .github/workflows/explain-analyze-seeded-data-directory.sh save
+      - name: Upload seeded PostgreSQL data directory
+        timeout-minutes: 3
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: explain-seeded-postgres-${{ github.run_id }}
+          path: ${{ runner.temp }}/explain-seeded/explain-seeded-pgdata.tar.zst
+          if-no-files-found: error
+          # The archive is already zstd-compressed.
+          compression-level: 0
+          retention-days: 1
+      - name: Upload crawl tier check coverage
+        timeout-minutes: 1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: explain-seed-coverage-${{ github.run_id }}
+          path: backend/scripts/explain-analyze/output/pruning-v8/
+          if-no-files-found: error
+          retention-days: 1
+      - name: Upload seed diagnostics
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: explain-seed-diagnostics
+          path: |
+            backend/scripts/explain-analyze/output/seed-resources.txt
+            backend/scripts/explain-analyze/output/seed-posts.jsonl
+          retention-days: 1
+      - if: failure()
+        uses: ./.github/actions/valkey-logs
+        timeout-minutes: 1
+
+  # Every shard starts PostgreSQL on a copy of the seeded data directory, so the shared corpus,
+  # its physical layout and its planner statistics are identical.
+  # `main` runs every scenario except the two fixtures below, `partition` runs only the
+  # partitioned comment fixture and `hn-scale` runs only the million-post Hacker News fixture
+  # (backend/scripts/explain-analyze/explain-shards.mts), so the slowest scenario groups no
+  # longer extend one serial run past its step budget. The `explain-analyze-gates` job
+  # merges all shards and enforces the plan gates, so `backend.yml` still needs one result.
+  explain-analyze:
+    name: explain-analyze (${{ matrix.shard }})
+    needs: [seed-explain]
+    if: ${{ !cancelled() && needs.seed-explain.result == 'success' }}
+    runs-on: ubuntu-latest
+    # Main: about 6 minutes of setup and data directory transfer plus up to 20 minutes of scenarios
+    # on a slow runner. The partition shard needs less than the main shard's budget (see its steps).
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [main, partition, hn-scale]
+    env:
+      S3_BUCKET_IMAGES: test-images
+      S3_BUCKET_IMAGE_UPLOADS: test-image-uploads
+      S3_BUCKET_SITEMAPS: test-sitemaps
+      S3_BUCKET_RENDERS: test-renders
+      S3_BUCKET_ASSETS: test-assets
+      S3_BUCKET_CRAWLS: test-crawls
+      S3_BUCKET_USER_EXPORTS: test-user-exports
+      S3_BUCKET_QUARANTINE: test-quarantine
+      S3_BUCKET_BEDROCK_BATCH: test-bedrock-batch
+      EXPLAIN_SEED_ANCHOR_DATE: ${{ needs.seed-explain.outputs.anchor-date }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+      - uses: ./.github/actions/start-valkey
+        timeout-minutes: 2
+      - uses: ./.github/actions/setup-backend
+        id: setup-backend
+        timeout-minutes: 5
+      - uses: ./.github/actions/download-artifact
+        timeout-minutes: 3
+        with:
+          name: explain-seeded-postgres-${{ github.run_id }}
+          path: ${{ runner.temp }}/explain-seeded
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+      - name: Start PostgreSQL on the seeded data directory
+        # A step container, not a service: services start before any step can supply the data.
+        timeout-minutes: 4
+        env:
+          PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        run: .github/workflows/explain-analyze-seeded-data-directory.sh start
+      - name: Add crawl tier check coverage
+        # The seed job ran the check against the unseeded database; one shard carries its coverage.
+        if: ${{ matrix.shard == 'main' }}
+        timeout-minutes: 2
+        uses: ./.github/actions/download-artifact
+        with:
+          name: explain-seed-coverage-${{ github.run_id }}
+          path: backend/scripts/explain-analyze/output/pruning-v8
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
       - name: Run main EXPLAIN scenarios
         if: ${{ matrix.shard == 'main' }}
         # Every scenario but the partition fixture took about 14.4 minutes on the slow run
@@ -221,6 +323,12 @@ jobs:
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
+      - name: Print PostgreSQL logs
+        # A step container prints nothing at teardown, unlike the former service container.
+        if: failure()
+        continue-on-error: true
+        timeout-minutes: 1
+        run: docker logs explain-postgres 2>&1 | tail -n 200
 
   # Plan gates, the seq-scan and resource-pressure baselines, and native coverage need every
   # scenario, so they run once over the merged shard results.

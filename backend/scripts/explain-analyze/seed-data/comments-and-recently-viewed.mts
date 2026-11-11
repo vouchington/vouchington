@@ -80,22 +80,13 @@ export async function seedComments(): Promise<void> {
   }
 }
 const SEED_SESSION_ID = seedUuid(0, '11') // 019e0000-1100-7000-8000-000000000000
-async function seedRecentlyViewedEntities(
-  entityType: 'post' | 'topic',
-  getEntityId: (i: number) => string,
-  count = 100,
-): Promise<void> {
-  console.log(`Seeding ${count} recently viewed ${entityType}s...`)
-  const sessionId = SEED_SESSION_ID
+/**
+ * Writes the seed user's recently viewed posts to Valkey. The recommended-topics scenario calls
+ * this in its own shard: shards restore only PostgreSQL, so their Valkey starts empty.
+ */
+export async function seedRecentlyViewedPosts(count: number): Promise<void> {
   const userId = seedUuid(0, '01')
   for (let i = 0; i < count; i++) {
-    const entityId = getEntityId(i)
-    await upsertRecentlyViewed(entityType, entityId, sessionId, userId)
+    await upsertRecentlyViewed('post', seedUuid(i % 500, '05'), SEED_SESSION_ID, userId)
   }
-}
-export async function seedRecentlyViewedPosts(count = 100): Promise<void> {
-  await seedRecentlyViewedEntities('post', i => seedUuid(i % 500, '05'), count)
-}
-export async function seedRecentlyViewedTopics(count = 100): Promise<void> {
-  await seedRecentlyViewedEntities('topic', i => seedUuid(i % 500, '04'), count)
 }

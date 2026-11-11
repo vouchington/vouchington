@@ -8,6 +8,7 @@ import {
   seedUser,
 } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
+import { seedRecentlyViewedPosts } from '../seed-data/comments-and-recently-viewed.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import {
   ANONYMOUS_ENTITY_RELATION_VIEWER,
@@ -42,6 +43,9 @@ export async function runSearchAndFacetScenarios() {
     read(buildCommentTreeQuery(seedCommentRootId, { sort: 'best' })),
   )
 
+  // The query reads the viewer's recently viewed posts from Valkey, which a restored shard starts
+  // without. Write the same 500 seeded posts its read window takes.
+  await seedRecentlyViewedPosts(500)
   await runAndCapture('recommended-topics', () => getRecommendedTopics(seedUser, { limit: 25 }))
   await runRecommendedTopicsVoteHistoryScenario()
 

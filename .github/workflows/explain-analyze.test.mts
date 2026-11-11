@@ -11,7 +11,7 @@ type Step = {
 }
 
 type Workflow = {
-  jobs: { 'explain-analyze': { steps: Step[] } }
+  jobs: { 'seed-explain': { steps: Step[] } }
 }
 
 const ANCHOR_ENV = 'EXPLAIN_SEED_ANCHOR_DATE'
@@ -30,14 +30,14 @@ function proofInstants(): readonly string[] {
   return [override]
 }
 
-function explainAnalyzeJob() {
+function seedExplainJob() {
   const workflow = load(readFileSync('.github/workflows/explain-analyze.yml', 'utf8')) as Workflow
-  return workflow.jobs['explain-analyze']
+  return workflow.jobs['seed-explain']
 }
 
 describe('explain-analyze seed anchor day', () => {
   it('exports the UTC day 735 minutes before the job, not the runner zone day', () => {
-    const pinStep = explainAnalyzeJob().steps.find(candidate =>
+    const pinStep = seedExplainJob().steps.find(candidate =>
       candidate.run?.includes(`${ANCHOR_ENV}=`),
     )
     const script = `
@@ -55,6 +55,7 @@ printf '%s\\n' "$VOUCH_UTC_DAY" "$VOUCH_LOCAL_DAY"
     for (const instant of proofInstants()) {
       const directory = mkdtempSync(join(tmpdir(), 'explain-anchor-'))
       const githubEnv = join(directory, 'github-env')
+      const githubOutput = join(directory, 'github-output')
       const at = new Date(new Date(instant).getTime() - 735 * 60_000)
       const zone = at.getUTCHours() >= 10 ? 'Pacific/Kiritimati' : 'Pacific/Pago_Pago'
       const utcDay = at.toISOString().slice(0, 10)
@@ -64,6 +65,7 @@ printf '%s\\n' "$VOUCH_UTC_DAY" "$VOUCH_LOCAL_DAY"
           env: {
             ...process.env,
             GITHUB_ENV: githubEnv,
+            GITHUB_OUTPUT: githubOutput,
             VOUCH_UTC_DAY: utcDay,
             VOUCH_LOCAL_DAY: localDay,
           },
@@ -73,6 +75,8 @@ printf '%s\\n' "$VOUCH_UTC_DAY" "$VOUCH_LOCAL_DAY"
         expect(result.stdout.trim().split('\n')).toEqual([utcDay, localDay])
         const exported = readFileSync(githubEnv, 'utf8')
         expect(exported).toBe(`${ANCHOR_ENV}=${utcDay}\n`)
+        // Every shard reads the seed job's output, so it must be the same day.
+        expect(readFileSync(githubOutput, 'utf8')).toBe(`date=${utcDay}\n`)
         expect(localDay).not.toBe(utcDay)
       } finally {
         rmSync(directory, { recursive: true, force: true })
