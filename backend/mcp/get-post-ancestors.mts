@@ -91,7 +91,10 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       )
       return {
         success: true,
-        ancestors: await toMcpPosts(ids.flatMap(node => loaded.get(node.id) ?? [])),
+        ancestors: await toMcpPosts(
+          ids.flatMap(node => loaded.get(node.id) ?? []),
+          { viewer: thread.viewer },
+        ),
         page_info: page.pageInfo,
       }
     },

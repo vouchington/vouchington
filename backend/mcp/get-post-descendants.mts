@@ -65,14 +65,13 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     async (args: ToolArgs): Promise<ToolResult> => {
       const thread = await resolveReadableThread(currentUser, args.post_id)
       if (!thread) return { success: false, error: 'Post not found' }
-      // The signed-out page is the owner's page minus what private visibility adds (see
-      // resolveReadableThread), and its cursors are scoped to the thread, never to a viewer.
+      // Match REST viewer visibility; cursors remain scoped to the thread, not the viewer.
       const page = await (async () => {
         const pagination = parseCommentDescendantPagination({
           limit: args.limit,
           after: args.after,
         })
-        return getCommentDescendantsPage(null, thread.post, pagination)
+        return getCommentDescendantsPage(thread.viewer ?? null, thread.post, pagination)
       })().catch((err: unknown) => {
         if (createHttpError.isHttpError(err) && err.status === 400) return null
         throw err
@@ -81,7 +80,10 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       const posts = await getPostsOrDeletedCommentStubs(page.ids)
       return {
         success: true,
-        descendants: await toMcpPosts(posts.filter((post): post is Post => Boolean(post))),
+        descendants: await toMcpPosts(
+          posts.filter((post): post is Post => Boolean(post)),
+          { viewer: thread.viewer },
+        ),
         page_info: page.pageInfo,
       }
     },

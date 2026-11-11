@@ -126,9 +126,9 @@ async function toPostSummary(post: Post): Promise<McpPostSummary> {
 
 export async function toMcpPostSummaries(
   posts: Post[],
-  options: { readOnly?: boolean } = {},
+  options: { readOnly?: boolean; viewer?: PrivateUser | null } = {},
 ): Promise<McpPostSummary[]> {
-  const masked = maskCommentPlaceholders(posts, null).map(post => post as Post)
+  const masked = maskCommentPlaceholders(posts, options.viewer).map(post => post as Post)
   const references = await getPostHackerNewsSummaries(
     masked.flatMap(post => (post.placeholder_state ? [] : [post.id])),
     options,

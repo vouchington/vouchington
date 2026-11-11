@@ -101,7 +101,7 @@ describe('MCP reads of placeholder comments', () => {
     }
   })
 
-  it('walks with a null viewer, so it never returns less than the signed-out REST page', async () => {
+  it('walks with the REST viewer so hidden branches have the same descendants', async () => {
     const { user, root, reply } = await thread()
     const hidden = await reply(root)
     const nested = await reply(hidden)
@@ -114,9 +114,9 @@ describe('MCP reads of placeholder comments', () => {
 
     expect(viaMcp).toMatchObject({ success: true })
     const mcpIds = (viaMcp as { descendants: { id: string }[] }).descendants.map(post => post.id)
-    for (const id of signedOut.ids) expect(mcpIds).toContain(id)
-    expect(mcpIds).toContain(nested.id)
-    // The viewer's own hide shortens their REST page, never the MCP one.
+    expect(mcpIds).toEqual(signedIn.ids)
+    expect(mcpIds).not.toContain(nested.id)
+    // Both authenticated surfaces stop previews beneath the viewer's hidden branch.
     expect(signedIn.ids).toEqual([hidden.id, sibling.id])
     expect(signedOut.ids).toEqual([hidden.id, nested.id, sibling.id])
   })

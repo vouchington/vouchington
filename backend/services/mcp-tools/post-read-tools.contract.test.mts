@@ -1,3 +1,4 @@
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestPost,
   createTestUser,
@@ -49,6 +50,31 @@ async function call(
   return { body: result.structuredContent as ReadResult, text: block.text }
 }
 
+async function readRestAndMcp(
+  caller: Caller,
+  option: 'details' | 'ancestors',
+  post: TestPost,
+  reference: string | null | undefined,
+) {
+  if (!reference) throw new Error('the test post has no reference')
+  const request = createRequest()
+  await request.authenticateAs(caller)
+  const rest = await request.get(
+    `/api/v1/posts/${reference}${option === 'ancestors' ? '/ancestors' : ''}`,
+  )
+  expect([200, 404]).toContain(rest.status)
+  const { body } = await call(caller, option, reference)
+  expect(body.post?.['id']).toBe(rest.status === 200 && option === 'details' ? post.id : undefined)
+  const ancestors =
+    rest.status === 200 && option === 'ancestors'
+      ? rest.body.results
+          .map((row: { id: string }) => row.id)
+          .filter((id: string) => id !== post.id)
+      : undefined
+  expect(body.ancestors?.map(row => row['id'])).toEqual(ancestors)
+  return { body, expected: rest.status === 200 ? { success: true } : NOT_FOUND }
+}
+
 async function pendingPost(user: PrivateUser, options: Parameters<typeof createTestPost>[0] = {}) {
   const post = await createTestPost({ user, ...options })
   await setTestPostClearanceStatus(post.id, 'pending', user.id)
@@ -58,10 +84,12 @@ async function pendingPost(user: PrivateUser, options: Parameters<typeof createT
 describe('read_posts.details and read_posts.ancestors — real DB', () => {
   let author: Caller
   let admin: Caller
+  let outsider: Caller
 
   beforeAll(async () => {
     author = asCaller(await createTestUser())
     admin = asCaller(await createTestUser({ administrator: true }))
+    outsider = asCaller(await createTestUser())
   })
 
   describe('a public post', () => {
@@ -107,7 +135,7 @@ describe('read_posts.details and read_posts.ancestors — real DB', () => {
     })
   })
 
-  describe('a post the credential owner could see only through private visibility', () => {
+  describe('authenticated REST visibility', () => {
     const hidden: [string, (user: PrivateUser) => Promise<TestPost>][] = [
       [
         'a private post shared with signed-in users',
@@ -135,16 +163,21 @@ describe('read_posts.details and read_posts.ancestors — real DB', () => {
       ['the owner’s own post awaiting review', user => pendingPost(user)],
     ]
 
-    it.each(hidden)('answers %s as not found, even to its author', async (_label, build) => {
-      const post = await build(author)
+    it.each(hidden)(
+      'matches REST access to %s for the creator, staff and an outsider',
+      async (_label, build) => {
+        const post = await build(author)
 
-      for (const caller of [author, admin]) {
-        for (const option of ['details', 'ancestors'] as const) {
-          expect((await call(caller, option, post.id)).body).toEqual(NOT_FOUND)
-          expect((await call(caller, option, post.slug)).body).toEqual(NOT_FOUND)
+        for (const caller of [author, admin, outsider]) {
+          for (const option of ['details', 'ancestors'] as const) {
+            for (const reference of [post.id, post.slug]) {
+              const { body, expected } = await readRestAndMcp(caller, option, post, reference)
+              expect(body).toMatchObject(expected)
+            }
+          }
         }
-      }
-    })
+      },
+    )
   })
 
   describe('a post that is deleted, missing or malformed', () => {
@@ -217,7 +250,7 @@ describe('read_posts.details and read_posts.ancestors — real DB', () => {
       })
     })
 
-    it('reads a comment under an unmoderated ancestor, which shows as a placeholder', async () => {
+    it('matches REST pending ancestor summaries for creator, staff and outsiders', async () => {
       const root = await createTestPost({ user: author })
       const hiddenParent = await pendingPost(author, {
         post_type: 'comment',
@@ -231,15 +264,22 @@ describe('read_posts.details and read_posts.ancestors — real DB', () => {
 
       const details = await call(admin, 'details', reply.id)
       expect(details.body.post).toMatchObject({ id: reply.id })
-      const ancestors = await call(admin, 'ancestors', reply.id)
-      expect(ancestors.body.ancestors?.[1]).toMatchObject({
-        id: hiddenParent.id,
-        placeholder_state: 'unmoderated',
-        title: '',
-      })
+      for (const caller of [author, admin, outsider]) {
+        const request = createRequest()
+        await request.authenticateAs(caller)
+        const rest = await request.get(`/api/v1/posts/${reply.id}/ancestors`).expect(200)
+        const ancestors = await call(caller, 'ancestors', reply.id)
+        expect(ancestors.body.ancestors?.[1]?.['id']).toBe(hiddenParent.id)
+        expect(ancestors.body.ancestors?.[1]?.['placeholder_state']).toBe(
+          rest.body.posts[hiddenParent.id].placeholder_state,
+        )
+        expect(ancestors.body.ancestors?.[1]?.['title']).toBe(
+          rest.body.posts[hiddenParent.id].title,
+        )
+      }
     })
 
-    it('answers a comment under a private root as not found', async () => {
+    it('matches REST access to a comment under a private root', async () => {
       const root = await createTestPost({ user: author, privacy: 'private', broadcast: 'users' })
       const comment = await createTestPost({
         user: author,
@@ -247,8 +287,13 @@ describe('read_posts.details and read_posts.ancestors — real DB', () => {
         parent_post_id: root.id,
       })
 
-      for (const option of ['details', 'ancestors'] as const) {
-        expect((await call(author, option, comment.id)).body).toEqual(NOT_FOUND)
+      for (const caller of [author, admin, outsider]) {
+        for (const option of ['details', 'ancestors'] as const) {
+          for (const reference of [comment.id, comment.slug]) {
+            const { body, expected } = await readRestAndMcp(caller, option, comment, reference)
+            expect(body).toMatchObject(expected)
+          }
+        }
       }
     })
   })
