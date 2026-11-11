@@ -93,10 +93,9 @@ export async function withOwnedEngagementAdmissions<T>(
         return undefined
       receipts.push({
         event,
-        outcome: event.completion.then(
-          value => ({ ok: true, value }),
-          (err: unknown) => ({ ok: false, error: err }),
-        ),
+        outcome: event.completion
+          .then(value => ({ ok: true as const, value }))
+          .catch((err: unknown) => ({ ok: false as const, error: err })),
       })
       return undefined
     })

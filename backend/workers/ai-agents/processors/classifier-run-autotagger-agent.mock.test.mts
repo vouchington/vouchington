@@ -219,10 +219,9 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
         new ModelProviderError('server-error', 'provider unreachable', { retryClass: 'transient' }),
       )
       const attempt = () =>
-        processClassifierRun(classifierRunJobFor(dispatched.data)).then(
-          result => result.kind,
-          () => 'threw',
-        )
+        processClassifierRun(classifierRunJobFor(dispatched.data))
+          .then(result => result.kind)
+          .catch(() => 'threw')
 
       const outcomes: string[] = []
       for (let tries = 0; tries <= CLASSIFIER_RUN_ATTEMPTS; tries += 1)

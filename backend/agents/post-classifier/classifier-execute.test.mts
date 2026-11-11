@@ -236,10 +236,9 @@ describe('post classifier execution with real receipts', () => {
     const settled = await executePostClassifierRun(
       { ...input, maxAttempts: kind === 'terminal' ? 1 : 3 },
       dependencies,
-    ).then(
-      result => ({ result }),
-      (err: unknown) => ({ error: err }),
     )
+      .then(result => ({ result }))
+      .catch((err: unknown) => ({ error: err }))
     expect(settled).toEqual(
       {
         decode: { error: expect.objectContaining({ code: 'invalid-response' }) },

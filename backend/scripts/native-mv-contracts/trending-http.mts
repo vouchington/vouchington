@@ -46,6 +46,7 @@ async function verifyOrdinaryReadProfileThreshold(
             }
             await readAndAssertSeededFeed()
             if (count === 2) await readAndAssertSeededFeed()
+            // oxlint-disable-next-line promise/prefer-catch -- A response.end failure must not trigger a second response write.
           })().then(
             () => response.end(),
             (err: unknown) => {

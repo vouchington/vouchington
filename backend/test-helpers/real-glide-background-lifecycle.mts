@@ -43,12 +43,7 @@ export async function startRealGlideBackgroundLifecycle<TJob extends JobDefiniti
   const workerErrors: unknown[] = []
   const started: Worker[] = []
   const observe = <Result,>(operation: Promise<Result>): Promise<Result> => {
-    work.push(
-      operation.then(
-        () => undefined,
-        () => undefined,
-      ),
-    )
+    work.push(operation.then(() => undefined).catch(() => undefined))
     return operation
   }
   const runProcessor: RealGlideProcessor = job =>

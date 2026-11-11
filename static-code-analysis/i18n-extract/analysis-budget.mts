@@ -38,16 +38,16 @@ export async function withI18nAnalysisBudget<T>(
   const timeout =
     budgetMs === undefined
       ? undefined
-      : clock.delay(budgetMs).then(
-          () => {
-            throw new Error(`no-mistakes ${label} exceeded ${budgetMs}ms`)
-          },
-          () => {
+      : clock
+          .delay(budgetMs)
+          .catch(() => {
             throw new Error(
               `no-mistakes ${label} exceeded ${budgetMs}ms (lock wait or hung analysis)`,
             )
-          },
-        )
+          })
+          .then(() => {
+            throw new Error(`no-mistakes ${label} exceeded ${budgetMs}ms`)
+          })
   timeout?.catch(() => undefined)
   try {
     return await (timeout === undefined ? work : Promise.race([work, timeout]))

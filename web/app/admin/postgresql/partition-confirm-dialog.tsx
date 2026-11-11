@@ -51,15 +51,14 @@ export function PartitionConfirmDialog({
   useEffect(() => {
     if (pendingAction !== 'cleanupPartitions') return undefined
     let active = true
-    void fetchPartitions().then(
-      status => {
+    void fetchPartitions()
+      .then(status => {
         if (active) setPartitionStatus(status)
-      },
-      (err: unknown) => {
+      })
+      .catch((err: unknown) => {
         if (active)
           setStatusError(err instanceof Error ? err.message : 'Could not load partition status')
-      },
-    )
+      })
     return () => {
       active = false
     }

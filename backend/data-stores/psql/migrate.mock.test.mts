@@ -45,10 +45,9 @@ describe('migration SQL initialization failures', () => {
       started.resolve()
       return astOperation
     })
-    const result = runViews(fixture.options).then(
-      () => ({ error: undefined, astSettled }),
-      (err: unknown) => ({ error: err, astSettled }),
-    )
+    const result = runViews(fixture.options)
+      .then(() => ({ error: undefined, astSettled }))
+      .catch((err: unknown) => ({ error: err, astSettled }))
     let readiness: 'started' | 'completed'
     try {
       readiness = await Promise.race([
@@ -83,10 +82,9 @@ describe('migration SQL initialization failures', () => {
     const reason = new Error('single parser initialization failure')
     initialization.parser.mockRejectedValueOnce(reason)
     initialization.ast.mockResolvedValueOnce(undefined)
-    const result = await runViews(fixture.options).then(
-      () => ({ error: undefined }),
-      (err: unknown) => ({ error: err }),
-    )
+    const result = await runViews(fixture.options)
+      .then(() => ({ error: undefined }))
+      .catch((err: unknown) => ({ error: err }))
     expect(result.error).toBe(reason)
     expect(initialization.ast).toHaveBeenCalledOnce()
     expect(fixture.sqlAttempts).toBe(0)
@@ -100,10 +98,9 @@ describe('migration SQL initialization failures', () => {
     initialization.parser.mockImplementation(actualParser.loadSqlParserModule)
     initialization.ast.mockImplementation(actualAst.initSqlAst)
     const missingReadiness = Promise.withResolvers<void>()
-    const realCompletion = runViews(fixture.options).then(
-      () => ({ kind: 'completed' as const }),
-      (err: unknown) => ({ kind: 'failed' as const, error: err }),
-    )
+    const realCompletion = runViews(fixture.options)
+      .then(() => ({ kind: 'completed' as const }))
+      .catch((err: unknown) => ({ kind: 'failed' as const, error: err }))
     const observed = await Promise.race([
       missingReadiness.promise.then(() => 'started' as const),
       realCompletion.then(() => 'completed' as const),

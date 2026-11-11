@@ -199,10 +199,9 @@ describe('delegated create admission — real store', () => {
         await finish.promise
         return { run: 'abandoned' }
       },
-    }).then(
-      () => null,
-      (err: unknown) => err,
-    )
+    })
+      .then(() => null)
+      .catch((err: unknown) => err)
     await started.promise
     await expireContributionAdmissionClaimForTest({
       actorId: args.currentUser.id,

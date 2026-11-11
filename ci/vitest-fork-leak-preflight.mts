@@ -123,9 +123,9 @@ it('sees runnable work settled before the next test', async () => {
           VITEST_FORK_LEAK_DETECTION: 'on',
         },
         timeout: 25_000,
-      }).then(
-        ({ stdout, stderr }) => ({ exitCode: 0, output: `${stdout}\n${stderr}` }),
-        (err: unknown) => {
+      })
+        .then(({ stdout, stderr }) => ({ exitCode: 0, output: `${stdout}\n${stderr}` }))
+        .catch((err: unknown) => {
           const failed = err as { code?: number; stdout?: string; stderr?: string }
           if (
             typeof failed.code !== 'number' ||
@@ -138,8 +138,7 @@ it('sees runnable work settled before the next test', async () => {
             })
           }
           return { exitCode: failed.code, output: `${failed.stdout ?? ''}\n${failed.stderr ?? ''}` }
-        },
-      )
+        })
       const first = await Promise.race([
         markerWaiter.promise.then(marker => ({ marker })),
         childResult.then(result => ({ result })),

@@ -95,10 +95,13 @@ async function observeJob<T extends { name: string; data: unknown }>(
   const found = Promise.withResolvers<T>()
   events.on('error', error => found.reject(error))
   events.on('added', (event: { jobId: string }) => {
-    void activitypub.getJob(event.jobId).then(candidate => {
-      if (candidate && predicate(candidate as unknown as T))
-        found.resolve(candidate as unknown as T)
-    }, found.reject)
+    void activitypub
+      .getJob(event.jobId)
+      .then(candidate => {
+        if (candidate && predicate(candidate as unknown as T))
+          found.resolve(candidate as unknown as T)
+      })
+      .catch(found.reject)
   })
   await events.waitUntilReady()
   return { job: found.promise, close: () => events.close() }

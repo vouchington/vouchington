@@ -15,7 +15,7 @@ const settleChallengeQueue = () => undefined
 
 export function requestBotChallengeToken(action: string, signal?: AbortSignal): Promise<string> {
   const result = challengeQueue.then(() => renderBotChallenge(action, signal))
-  challengeQueue = result.then(settleChallengeQueue, settleChallengeQueue)
+  challengeQueue = result.then(settleChallengeQueue).catch(settleChallengeQueue)
   return result
 }
 

@@ -24,14 +24,13 @@ export function PasskeyReAuthPane(props: Props) {
   const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     let current = true
-    void getPasskeysClient().then(
-      result => {
+    void getPasskeysClient()
+      .then(result => {
         if (current) setPage(result)
-      },
-      (err: unknown) => {
+      })
+      .catch((err: unknown) => {
         if (current) setError(err instanceof Error ? err : new Error(String(err)))
-      },
-    )
+      })
     return () => {
       current = false
     }

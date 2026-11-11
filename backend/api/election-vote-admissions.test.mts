@@ -125,16 +125,18 @@ describe('owned vote-route admission settlement', () => {
       const secondary = new Error('Owned route secondary')
       const first = Promise.withResolvers<never>()
       first.reject(primary)
-      const result = await settleVoteRouteOperations([
-        first.promise,
-        Promise.reject(secondary),
-        Promise.resolve('independent route settled'),
-      ]).then(
-        () => {
-          throw new Error('Expected actual route settlement failure')
-        },
-        (err: unknown) => err,
-      )
+      const result = await (async () => {
+        try {
+          await settleVoteRouteOperations([
+            first.promise,
+            Promise.reject(secondary),
+            Promise.resolve('independent route settled'),
+          ])
+        } catch (err) {
+          return err
+        }
+        throw new Error('Expected actual route settlement failure')
+      })()
       expect(result).toBeInstanceOf(AggregateError)
       if (!(result instanceof AggregateError)) throw new Error('Expected AggregateError')
       expect(result.errors).toEqual([primary, secondary])

@@ -201,17 +201,16 @@ describe('POST /api/v1/app-attestation/attest', () => {
         clientApp: 'ios',
         attestationStatus: 'attested',
       })
-      const mintResult = await mint.then(
-        value => ({ allowed: true, tokenType: value.token_type, code: null }),
-        (err: unknown) => ({
+      const mintResult = await mint
+        .then(value => ({ allowed: true, tokenType: value.token_type, code: null }))
+        .catch((err: unknown) => ({
           allowed: false,
           tokenType: null,
           code:
             typeof err === 'object' && err !== null && 'code' in err && typeof err.code === 'string'
               ? err.code
               : undefined,
-        }),
-      )
+        }))
       expect(mintResult).toEqual(
         authOrigin === 'native'
           ? { allowed: true, tokenType: 'Bearer', code: null }

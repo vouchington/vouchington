@@ -63,13 +63,12 @@ describe('migration server clients', () => {
           }
         },
       })
-      const outcome = await result.then(
-        () => 'closed',
-        (err: unknown) => {
+      const outcome = await result
+        .then(() => 'closed')
+        .catch((err: unknown) => {
           if (!(err instanceof Error)) throw err
           return err.message
-        },
-      )
+        })
       expect(outcome).toContain(expected)
       expect(reads).toBeGreaterThan(1)
       expect(sleeps).toEqual([200])
@@ -122,13 +121,12 @@ describe('migration server clients', () => {
           activity('parallel worker', 8),
         ]),
       }),
-    }).then(
-      () => 'closed',
-      (err: unknown) => {
+    })
+      .then(() => 'closed')
+      .catch((err: unknown) => {
         if (!(err instanceof Error)) throw err
         return err.message
-      },
-    )
+      })
     expect(outcome).toContain('pid=7')
     expect(outcome).toContain('backend_type=client backend')
     expect(outcome).toContain('pid=8')
@@ -144,13 +142,12 @@ describe('migration server clients', () => {
         throw new Error('sleep past the deadline')
       },
       run: async () => ({ stdout: JSON.stringify([client]) }),
-    }).then(
-      () => 'closed',
-      (err: unknown) => {
+    })
+      .then(() => 'closed')
+      .catch((err: unknown) => {
         if (!(err instanceof Error)) throw err
         return err.message
-      },
-    )
+      })
     expect(outcome).toContain('pid=9')
     expect(outcome).toContain('backend_type=client backend')
     expect(outcome).toContain('state=idle')
@@ -191,13 +188,12 @@ describe('migration server clients', () => {
         throw new Error('sleep past the deadline')
       },
       run: async () => ({ stdout: JSON.stringify([activity('client backend', 11)]) }),
-    }).then(
-      () => 'closed',
-      (err: unknown) => {
+    })
+      .then(() => 'closed')
+      .catch((err: unknown) => {
         if (!(err instanceof Error)) throw err
         return err.message
-      },
-    )
+      })
     expect(stayed).toContain('pid=11')
     expect(stayed).toContain('backend_type=client backend')
   })

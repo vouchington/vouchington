@@ -102,14 +102,9 @@ describe('manual copyright email association', () => {
         resolvePreflight()
     })
     try {
-      const association = associateCopyrightEmailIntakeWithNotice(
-        moderator,
-        intake.id,
-        noticeId,
-      ).then(
-        () => new Error('Erased case was linked'),
-        (err: unknown) => err,
-      )
+      const association = associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId)
+        .then(() => new Error('Erased case was linked'))
+        .catch((err: unknown) => err)
       await preflight
       await erasure.commit()
       await expect(association).resolves.toMatchObject({ status: 404 })
@@ -194,10 +189,9 @@ describe('manual copyright email association', () => {
     })
     try {
       const association = runWithCapturedQueries(async () =>
-        associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId).then(
-          () => new Error('Manual association unexpectedly won'),
-          (err: unknown) => err,
-        ),
+        associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId)
+          .then(() => new Error('Manual association unexpectedly won'))
+          .catch((err: unknown) => err),
       )
       await preflight
       expect(

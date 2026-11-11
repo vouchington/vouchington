@@ -10,16 +10,14 @@ function createAdmissionHold<T>() {
     entered.resolve()
     return release.promise
       .then(() => runInsideTestWorkerProcessor(add))
-      .then(
-        result => {
-          admitted.resolve(result)
-          return result
-        },
-        (err: unknown) => {
-          admitted.reject(err)
-          throw err
-        },
-      )
+      .then(result => {
+        admitted.resolve(result)
+        return result
+      })
+      .catch((err: unknown) => {
+        admitted.reject(err)
+        throw err
+      })
   }
   // The service may handle a rejected add before the assertion awaits this receipt.
   void admitted.promise.catch(() => undefined)

@@ -158,10 +158,9 @@ describe('runCommand', () => {
       stdout,
       timeoutMs: 2_000,
     })
-    const settled = pending.then(
-      value => ({ settled: 'fulfilled' as const, value }),
-      (err: unknown) => ({ settled: 'rejected' as const, err }),
-    )
+    const settled = pending
+      .then(value => ({ settled: 'fulfilled' as const, value }))
+      .catch((err: unknown) => ({ settled: 'rejected' as const, err }))
     const callback = await gate.promise
     callback(Object.assign(new Error('disk write failed'), { code: 'EIO' }))
     await expect(settled).resolves.toMatchObject({

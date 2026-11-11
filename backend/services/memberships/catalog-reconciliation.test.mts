@@ -256,10 +256,7 @@ describe('Stripe membership catalog reconciliation', () => {
       context,
       resolvePrice: failingResolver,
     })
-    const failureOutcome = failure.then(
-      () => null,
-      (err: unknown) => err as Error,
-    )
+    const failureOutcome = failure.then(() => null).catch((err: unknown) => err as Error)
     await started
     const success = reconcileStripeMembershipCatalog({
       context,

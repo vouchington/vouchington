@@ -70,14 +70,13 @@ describe('resolve-published-images', () => {
         GITHUB_STEP_SUMMARY: join(dir, 'summary'),
         PATH: `${bin}:${process.env['PATH'] ?? ''}`,
       },
-    }).then(
-      value => ({ ok: true as const, ...value }),
-      (err: unknown) => {
+    })
+      .then(value => ({ ok: true as const, ...value }))
+      .catch((err: unknown) => {
         if (!(err instanceof Error) || !('stderr' in err) || typeof err.stderr !== 'string')
           throw err
         return { ok: false as const, stderr: err.stderr }
-      },
-    )
+      })
     const read = (path: string) => readFile(path, 'utf8').catch(() => '')
     const calls = (await read(paths.calls)).trim().split('\n').filter(Boolean)
     const ghArgs = async (target: string) => (await read(join(argsDir, target))).split('\n')

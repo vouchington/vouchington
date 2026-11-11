@@ -37,11 +37,11 @@ self.addEventListener('push', event => {
 })
 
 function enqueuePushWork(work) {
+  // oxlint-disable-next-line promise/prefer-catch -- Run each push task once after either prior outcome; catch would repeat a failed notification.
   const next = pushWork.then(work, work)
   pushWork = next.catch(console.error)
   return next
 }
-
 async function handlePushMessage(message) {
   if (!message || message.type !== 'voucha:web-push' || message.version !== 1)
     throw new Error('Unsupported push binding protocol.')

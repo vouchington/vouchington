@@ -215,10 +215,9 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     const failure = await processReconcileCopyrightDeliveryIntents({
       pending: ['in_app', 'email'],
       cursors: { in_app: encodeUuidCursorBefore(inApp.id), 'email-notices': 'not-a-cursor' },
-    }).then(
-      () => null,
-      (err: unknown) => err,
-    )
+    })
+      .then(() => null)
+      .catch((err: unknown) => err)
 
     expect(failure).toBeInstanceOf(AggregateError)
     const errors = (failure as AggregateError).errors as Error[]

@@ -21,12 +21,12 @@ function sessionAnswering(status: number, headers: Record<string, string> = {}):
 }
 
 async function failureOf(operation: Promise<unknown>): Promise<unknown> {
-  return operation.then(
-    () => {
-      throw new Error('Expected the Bluesky call to fail')
-    },
-    (err: unknown) => err,
-  )
+  try {
+    await operation
+  } catch (err) {
+    return err
+  }
+  throw new Error('Expected the Bluesky call to fail')
 }
 
 describe('Bluesky follow calls under PDS failures', () => {

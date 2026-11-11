@@ -46,10 +46,8 @@ describe('OAuth authorization callback expiry', () => {
         state,
         code: 'provider-code',
       })
-        .then(
-          value => ({ kind: 'accepted', value }),
-          (err: unknown) => ({ kind: 'rejected', value: err }),
-        )
+        .then(value => ({ kind: 'accepted', value }))
+        .catch((err: unknown) => ({ kind: 'rejected', value: err }))
         .finally(() => {
           vi.useRealTimers()
         })

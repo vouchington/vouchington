@@ -26,10 +26,9 @@ describe('concrete image policy admission', () => {
       imageId,
       user.id,
       owner,
-    ).then(
-      () => null,
-      (err: unknown) => err,
     )
+      .then(() => null)
+      .catch((err: unknown) => err)
     expect(error).toEqual(
       expect.objectContaining({ message: 'Image is not ready for a public surface' }),
     )

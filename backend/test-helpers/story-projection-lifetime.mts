@@ -30,10 +30,8 @@ export function createStoryProjectionLifetime<Work extends { post_id: string }>(
   function release(entry: (typeof claims)[number]): Promise<Outcome> {
     entry.release ??= Promise.resolve()
       .then(() => operations.release(entry.work))
-      .then(
-        () => ({ ok: true }) as const,
-        (err: unknown) => ({ ok: false, error: err }) as const,
-      )
+      .then(() => ({ ok: true }) as const)
+      .catch((err: unknown) => ({ ok: false, error: err }) as const)
     return entry.release
   }
 
@@ -61,16 +59,14 @@ export function createStoryProjectionLifetime<Work extends { post_id: string }>(
     if (root || finishing) throw new Error('Projection fixture root may only start once')
     root = Promise.resolve()
       .then(action)
-      .then(
-        () => ({ ok: true }) as const,
-        (err: unknown) => {
-          if (err instanceof ClaimReleaseFailure) {
-            err.entry.primary = true
-            return { ok: false, error: err.reason } as const
-          }
-          return { ok: false, error: err } as const
-        },
-      )
+      .then(() => ({ ok: true }) as const)
+      .catch((err: unknown) => {
+        if (err instanceof ClaimReleaseFailure) {
+          err.entry.primary = true
+          return { ok: false, error: err.reason } as const
+        }
+        return { ok: false, error: err } as const
+      })
     return root.then(outcome => {
       if (!outcome.ok) throw outcome.error
       return undefined

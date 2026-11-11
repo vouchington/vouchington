@@ -60,8 +60,9 @@ function createResponseReadable(body: ReadableStream<Uint8Array>): Readable {
   }
   return new Readable({
     read() {
-      void reader.read().then(
-        result => {
+      void reader
+        .read()
+        .then(result => {
           if (this.destroyed) return
           if (result.done) {
             reachedEnd = true
@@ -70,9 +71,8 @@ function createResponseReadable(body: ReadableStream<Uint8Array>): Readable {
             return
           }
           this.push(result.value)
-        },
-        (err: unknown) => this.destroy(err instanceof Error ? err : new Error(String(err))),
-      )
+        })
+        .catch((err: unknown) => this.destroy(err instanceof Error ? err : new Error(String(err))))
     },
     destroy(error, callback) {
       const finish = () => {
@@ -92,5 +92,6 @@ function cancelReader(
   reader: Pick<ReadableStreamDefaultReader<Uint8Array>, 'cancel'>,
   onComplete: () => void,
 ): void {
+  // oxlint-disable-next-line promise/prefer-catch -- Cancellation failure still finishes teardown exactly once; catch would rerun a throwing completion callback.
   void reader.cancel().then(onComplete, onComplete)
 }

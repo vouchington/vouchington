@@ -133,15 +133,13 @@ export async function withTestMembershipUserLocked<T>(
   userId: string,
   callback: () => Promise<T>,
 ): Promise<T> {
-  {
-    await using transaction = await beginTransaction()
-    const query = transaction
-    await query(sql`/* withTestMembershipUserLocked */
+  await using transaction = await beginTransaction()
+  const query = transaction
+  await query(sql`/* withTestMembershipUserLocked */
         SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
-    const result = await callback()
-    await transaction.commit()
-    return result
-  }
+  const result = await callback()
+  await transaction.commit()
+  return result
 }
 
 export async function holdTestMembershipRowLock(

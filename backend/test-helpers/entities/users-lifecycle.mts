@@ -49,15 +49,13 @@ export async function hardDeleteTestUserWithLockTimeout(
   userId: string,
   lockTimeout = '50ms',
 ): Promise<void> {
-  {
-    await using transaction = await beginTransaction()
-    const query = transaction
-    await query(sql`/* hardDeleteTestUserWithLockTimeout */
+  await using transaction = await beginTransaction()
+  const query = transaction
+  await query(sql`/* hardDeleteTestUserWithLockTimeout */
         SELECT set_config('lock_timeout', ${lockTimeout}, TRUE)
       `)
-    await query(sql`/* hardDeleteTestUserWithLockTimeout */ DELETE FROM users WHERE id = ${userId}`)
-    await transaction.commit()
-  }
+  await query(sql`/* hardDeleteTestUserWithLockTimeout */ DELETE FROM users WHERE id = ${userId}`)
+  await transaction.commit()
 }
 
 export async function setTestUserVoteWeight(userId: string, voteWeight: number): Promise<void> {
@@ -72,19 +70,17 @@ export async function softDeleteTestUserAndWaitBeforeCommit(
   afterDelete?: () => void,
   beforeDelete?: (query: TransactionQuery) => Promise<void>,
 ): Promise<void> {
-  {
-    await using transaction = await beginTransaction()
-    const query = transaction
-    await beforeDelete?.(query)
-    await query(sql`/* softDeleteTestUserAndWaitBeforeCommit */
+  await using transaction = await beginTransaction()
+  const query = transaction
+  await beforeDelete?.(query)
+  await query(sql`/* softDeleteTestUserAndWaitBeforeCommit */
         UPDATE users
         SET deleted_at = CURRENT_TIMESTAMP
         WHERE id = ${userId}
       `)
-    afterDelete?.()
-    await waitBeforeCommit
-    await transaction.commit()
-  }
+  afterDelete?.()
+  await waitBeforeCommit
+  await transaction.commit()
 }
 
 export async function hardDeleteTestUserAndWaitBeforeCommit(
@@ -93,18 +89,16 @@ export async function hardDeleteTestUserAndWaitBeforeCommit(
   afterDelete?: () => void,
   beforeDelete?: (query: TransactionQuery) => Promise<void>,
 ): Promise<void> {
-  {
-    await using transaction = await beginTransaction()
-    const query = transaction
-    await beforeDelete?.(query)
-    await query(sql`/* hardDeleteTestUserAndWaitBeforeCommit */
+  await using transaction = await beginTransaction()
+  const query = transaction
+  await beforeDelete?.(query)
+  await query(sql`/* hardDeleteTestUserAndWaitBeforeCommit */
         DELETE FROM users
         WHERE id = ${userId}
       `)
-    afterDelete?.()
-    await waitBeforeCommit
-    await transaction.commit()
-  }
+  afterDelete?.()
+  await waitBeforeCommit
+  await transaction.commit()
 }
 
 export async function getTestUserRaw(userId: string): Promise<{

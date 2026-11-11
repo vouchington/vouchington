@@ -13,14 +13,15 @@ describe('reciprocal deletion lock producers', () => {
   it('fails a key-share probe with lock_not_available while the holder is open', async () => {
     const user = await createTestUser({ administrator: true })
     const gate = await holdTestRetainedUserIdentityLocks([user.id])
-    const aborted = gate.completed.then(
-      () => {
-        throw new Error('Expected the retained-identity lock to abort before cleanup')
-      },
-      (err: unknown) => {
+    const aborted = (async () => {
+      try {
+        await gate.completed
+      } catch (err) {
         if (!(err instanceof TestUserDeletionWriterAborted)) throw err
-      },
-    )
+        return
+      }
+      throw new Error('Expected the retained-identity lock to abort before cleanup')
+    })()
     try {
       await expect(lockTestRetainedUserIdentityKeyShareNowait(user.id)).rejects.toMatchObject({
         code: '55P03',
@@ -37,14 +38,15 @@ describe('reciprocal deletion lock producers', () => {
       createTestUser({ administrator: true }),
     ])
     const gate = await holdTestRetainedUserIdentityLocks([target.id, actor.id])
-    const aborted = gate.completed.then(
-      () => {
-        throw new Error('Expected the retained-identity lock to abort before cleanup')
-      },
-      (err: unknown) => {
+    const aborted = (async () => {
+      try {
+        await gate.completed
+      } catch (err) {
         if (!(err instanceof TestUserDeletionWriterAborted)) throw err
-      },
-    )
+        return
+      }
+      throw new Error('Expected the retained-identity lock to abort before cleanup')
+    })()
     try {
       await expect(
         withTestUserDeletionRequestKeyShareNowait(query =>

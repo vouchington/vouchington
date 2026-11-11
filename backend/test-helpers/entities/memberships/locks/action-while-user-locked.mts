@@ -35,10 +35,9 @@ export async function runTestActionWhileMembershipUserLocked<T>(
       },
       async waitForLock => {
         const action = Promise.resolve().then(options.startAction)
-        const outcome = action.then(
-          value => ({ status: 'fulfilled' as const, value }),
-          (err: unknown) => ({ status: 'rejected' as const, reason: err }),
-        )
+        const outcome = action
+          .then(value => ({ status: 'fulfilled' as const, value }))
+          .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
         let waitFailure: { reason: unknown } | undefined
         try {
           await waitForLock(action)

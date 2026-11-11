@@ -29,12 +29,11 @@ const dynamicImportErrors: unknown[] = []
 
 /** Remember a next/dynamic loader promise until flush or until it settles. */
 export function trackDynamicImport(promise: Promise<unknown>): void {
-  const settled = promise.then(
-    () => undefined,
-    (err: unknown) => {
+  const settled = promise
+    .then(() => undefined)
+    .catch((err: unknown) => {
       dynamicImportErrors.push(err)
-    },
-  )
+    })
   pendingDynamicImports.add(settled)
   void settled.finally(() => {
     pendingDynamicImports.delete(settled)

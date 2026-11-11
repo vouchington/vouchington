@@ -59,9 +59,9 @@ async function runMirror(
       EXPECTED_FIRST: first,
       EXPECTED_SECOND: second,
     },
-  }).then(
-    value => ({ code: 0, ...value }),
-    (err: unknown) => {
+  })
+    .then(value => ({ code: 0, ...value }))
+    .catch((err: unknown) => {
       if (
         !(err instanceof Error) ||
         !('code' in err) ||
@@ -73,8 +73,7 @@ async function runMirror(
       )
         throw err
       return { code: err.code, stdout: err.stdout, stderr: err.stderr }
-    },
-  )
+    })
   const callLog = (await readFile(calls, 'utf8').catch(() => '')).trim()
   const recorded = callLog ? callLog.split('\n').map(line => JSON.parse(line) as string[]) : []
   return { ...result, calls: recorded }

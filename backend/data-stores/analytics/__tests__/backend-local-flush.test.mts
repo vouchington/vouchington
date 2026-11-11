@@ -164,10 +164,12 @@ describe('backend-local flush concurrency', () => {
           for (let reaction = 0; reaction < 5; reaction += 1) {
             handoff = handoff.then(() => undefined)
           }
-          void handoff.then(() => {
-            writeRecord('queue_workers', makeRecord('at-drain-boundary'))
-            void flush().then(boundaryFlush.resolve, boundaryFlush.reject)
-          }, boundaryFlush.reject)
+          void handoff
+            .then(() => {
+              writeRecord('queue_workers', makeRecord('at-drain-boundary'))
+              void flush().then(boundaryFlush.resolve).catch(boundaryFlush.reject)
+            })
+            .catch(boundaryFlush.reject)
         },
         async () => {
           try {

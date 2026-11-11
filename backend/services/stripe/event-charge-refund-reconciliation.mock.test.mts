@@ -183,7 +183,7 @@ describe('charge.refunded reconciliation receipt', () => {
             : Reflect.apply(add, memberships, args)
           if (matches) {
             ownedAdds.push(job)
-            void job.then(admission.resolve, admission.reject)
+            void job.then(admission.resolve).catch(admission.reject)
           }
           return job
         })

@@ -43,18 +43,16 @@ esac
         TRIVY_GHCR_EXIT: String(options.ghcrExit ?? 0),
         TRIVY_MIRROR_EXIT: String(options.mirrorExit ?? 0),
       },
-    }).then(
-      value => ({ ok: true as const, value }),
-      (err: unknown) => ({ error: err, ok: false as const }),
-    )
+    })
+      .then(value => ({ ok: true as const, value }))
+      .catch((err: unknown) => ({ error: err, ok: false as const }))
 
-    const calls = await readFile(callsPath, 'utf8').then(
-      content => content.trim().split('\n'),
-      (err: unknown) => {
+    const calls = await readFile(callsPath, 'utf8')
+      .then(content => content.trim().split('\n'))
+      .catch((err: unknown) => {
         if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return []
         throw err
-      },
-    )
+      })
 
     return { calls, result }
   }
@@ -161,24 +159,21 @@ printf '200'
           TRIVY_CALLS_PATH: callsPath,
         },
       },
-    ).then(
-      value => ({ ok: true as const, value }),
-      (err: unknown) => ({ error: err, ok: false as const }),
     )
-    const calls = await readFile(callsPath, 'utf8').then(
-      content => content.trim().split('\n'),
-      (err: unknown) => {
+      .then(value => ({ ok: true as const, value }))
+      .catch((err: unknown) => ({ error: err, ok: false as const }))
+    const calls = await readFile(callsPath, 'utf8')
+      .then(content => content.trim().split('\n'))
+      .catch((err: unknown) => {
         if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return []
         throw err
-      },
-    )
-    const pnpmCalls = await readFile(pnpmCallsPath, 'utf8').then(
-      content => content.trim(),
-      (err: unknown) => {
+      })
+    const pnpmCalls = await readFile(pnpmCallsPath, 'utf8')
+      .then(content => content.trim())
+      .catch((err: unknown) => {
         if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return ''
         throw err
-      },
-    )
+      })
 
     if (!result.ok) {
       throw new Error(pnpmCalls || 'prepare-trivy-db failed')

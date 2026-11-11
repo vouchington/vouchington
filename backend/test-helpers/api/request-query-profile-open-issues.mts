@@ -63,10 +63,9 @@ if (['pull_request', 'merge_group'].includes(process.env.EVENT_NAME ?? '')) {
 }
 const authenticated =
   Boolean(process.env.GH_TOKEN || process.env.GITHUB_TOKEN) ||
-  (await run('gh', ['auth', 'token']).then(
-    () => true,
-    () => false,
-  ))
+  (await run('gh', ['auth', 'token'])
+    .then(() => true)
+    .catch(() => false))
 if (!authenticated) {
   process.stdout.write('skipped: no GH_TOKEN, GITHUB_TOKEN, or gh login to check baseline issues\n')
   process.exit(0)

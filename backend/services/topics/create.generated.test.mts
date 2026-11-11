@@ -79,10 +79,7 @@ describe('create.generated', () => {
     try {
       const firstEvent = await Promise.race([
         queueGate.entered.then(() => 'admission-entered'),
-        creation.then(
-          () => 'creation-settled',
-          () => 'creation-rejected',
-        ),
+        creation.then(() => 'creation-settled').catch(() => 'creation-rejected'),
       ])
       expect(firstEvent).toBe('admission-entered')
       gateEntered = true
@@ -196,10 +193,7 @@ describe('create.generated', () => {
     try {
       const firstEvent = await Promise.race([
         queueGate.entered.then(() => 'admission-entered'),
-        creation.then(
-          () => 'creation-settled',
-          () => 'creation-rejected',
-        ),
+        creation.then(() => 'creation-settled').catch(() => 'creation-rejected'),
       ])
       expect(firstEvent).toBe('admission-entered')
       gateEntered = true

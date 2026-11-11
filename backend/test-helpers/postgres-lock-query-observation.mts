@@ -41,6 +41,7 @@ export function observeTestPostgresLockQuery(client: PoolClient, selected: TestP
     }
     try {
       const pending = Reflect.apply(query, client, args)
+      // oxlint-disable-next-line promise/prefer-catch -- clear lock-query pending state in the original reaction
       void pending.then(completed, completed)
       return pending
     } catch (err) {

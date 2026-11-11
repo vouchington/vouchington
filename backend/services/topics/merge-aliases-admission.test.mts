@@ -70,10 +70,7 @@ describe('mergeTopicAliases post-commit admission', () => {
     try {
       const firstEvent = await Promise.race([
         queueGate.entered.then(() => 'admission-entered'),
-        merge.then(
-          () => 'merge-settled',
-          () => 'merge-rejected',
-        ),
+        merge.then(() => 'merge-settled').catch(() => 'merge-rejected'),
       ])
       expect(firstEvent).toBe('admission-entered')
       gateEntered = true

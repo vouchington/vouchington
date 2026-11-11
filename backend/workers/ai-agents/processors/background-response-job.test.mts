@@ -101,10 +101,7 @@ describe('job-owned background responses', () => {
     const job = makeJob('story-post', [response('resp_a'), response('resp_b')])
     const context = createBackgroundResponseJobContext(job as unknown as Job<AIAgentJobData>)
     const recovery = recoverJobBackgroundResponses(job as unknown as Job<AIAgentJobData>, context)
-    const outcome = recovery.then(
-      () => 'resolved' as const,
-      (err: unknown) => err,
-    )
+    const outcome = recovery.then(() => 'resolved' as const).catch((err: unknown) => err)
 
     await bothStarted.promise
     first.reject(failure)

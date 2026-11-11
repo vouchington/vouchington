@@ -54,23 +54,22 @@ function loadInitialCatalog(
   locale: string,
   pathname: string,
 ): Promise<EnCatalog> {
-  const promise = getWebLocalizationBatch(locale, webSelectorsForPath(pathname).join(',')).then(
-    batch => {
+  const promise = getWebLocalizationBatch(locale, webSelectorsForPath(pathname).join(','))
+    .then(batch => {
       const entry = resolvedCatalog(batch)
       const current = catalogs.get(cacheKey)
       if (current?.state === 'loading' && current.promise === promise) {
         catalogs.set(cacheKey, entry)
       }
       return entry.catalog
-    },
-    (err: unknown) => {
+    })
+    .catch((err: unknown) => {
       const current = catalogs.get(cacheKey)
       if (current?.state === 'loading' && current.promise === promise) {
         catalogs.delete(cacheKey)
       }
       throw err
-    },
-  )
+    })
   catalogs.set(cacheKey, { state: 'loading', promise })
   return promise
 }

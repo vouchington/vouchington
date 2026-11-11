@@ -90,10 +90,9 @@ describe('logout cleanup lease', () => {
       if (args[0] === admitLogoutCleanupScript) {
         admissions += 1
         if (admissions === 3) {
-          void Promise.resolve(result).then(
-            () => thirdAdmission.resolve(),
-            () => thirdAdmission.resolve(),
-          )
+          void Promise.resolve(result)
+            .then(() => thirdAdmission.resolve())
+            .catch(() => thirdAdmission.resolve())
         }
       }
       return result

@@ -69,9 +69,14 @@ export async function runCommunityMembershipCapScenarios(): Promise<void> {
     'community-moderator-capacity',
     async () => {
       await using transaction = await beginTransaction()
-      await assertCommunityModeratorCapacity(COMMUNITY_MEMBERSHIP_CAP_COMMUNITY_ID, {
-        query: transaction,
-      }).then(
+      const capacityCheck = assertCommunityModeratorCapacity(
+        COMMUNITY_MEMBERSHIP_CAP_COMMUNITY_ID,
+        {
+          query: transaction,
+        },
+      )
+      // oxlint-disable-next-line promise/prefer-catch -- Success deliberately throws; only the capacity check's rejection may satisfy this assertion.
+      await capacityCheck.then(
         () => {
           throw new Error('The seeded community must be at moderator capacity')
         },

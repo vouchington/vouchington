@@ -24,20 +24,18 @@ export async function insertTestPostStoryAndWaitBeforeCommit(
   releaseCommit: Promise<void>,
   onInserted: () => void,
 ): Promise<void> {
-  {
-    await using transaction = await beginTransaction()
-    const query = transaction
-    await query(
-      `/* insertTestPostStoryAndWaitBeforeCommit.lifecycleLock */
+  await using transaction = await beginTransaction()
+  const query = transaction
+  await query(
+    `/* insertTestPostStoryAndWaitBeforeCommit.lifecycleLock */
         SELECT pg_advisory_xact_lock(hashtextextended('story-lifecycle:' || $1::text, 0))`,
-      [storyId],
-    )
-    await query(sql`/* insertTestPostStoryAndWaitBeforeCommit */
+    [storyId],
+  )
+  await query(sql`/* insertTestPostStoryAndWaitBeforeCommit */
         INSERT INTO story_posts (post_id, story_id, initiated_by_id)
         VALUES (${postId}, ${storyId}, ${initiatedById})
       `)
-    onInserted()
-    await releaseCommit
-    await transaction.commit()
-  }
+  onInserted()
+  await releaseCommit
+  await transaction.commit()
 }

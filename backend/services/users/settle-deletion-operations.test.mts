@@ -12,10 +12,9 @@ describe('user deletion operation completion', () => {
     async reason => {
       const rejected = Promise.withResolvers<never>()
       rejected.reject(reason)
-      const result = await settleUserDeletionOperations([rejected.promise], 'failed').then(
-        () => ({ ok: true as const, err: undefined }),
-        (err: unknown) => ({ ok: false as const, err }),
-      )
+      const result = await settleUserDeletionOperations([rejected.promise], 'failed')
+        .then(() => ({ ok: true as const, err: undefined }))
+        .catch((err: unknown) => ({ ok: false as const, err }))
       expect(result.ok).toBe(false)
       expect(result.err).toBe(reason)
     },
@@ -34,10 +33,9 @@ describe('user deletion operation completion', () => {
         rejectedUndefined.promise,
       ],
       'multiple failed',
-    ).then(
-      () => ({ errors: [] as unknown[] }),
-      (err: unknown) => err as AggregateError,
     )
+      .then(() => ({ errors: [] as unknown[] }))
+      .catch((err: unknown) => err as AggregateError)
     expect(result).toBeInstanceOf(AggregateError)
     expect(result.errors).toHaveLength(3)
     expect(result.errors[0]).toBe(first)

@@ -49,10 +49,9 @@ describe('post URL policy across ownership and publication', () => {
       await release.promise
       return UndiciResponse.json({})
     })
-    const creating = createPost(admin, WEB_PROVENANCE, { post_type: 'link', url: href }).then(
-      () => null,
-      (err: unknown) => err,
-    )
+    const creating = createPost(admin, WEB_PROVENANCE, { post_type: 'link', url: href })
+      .then(() => null)
+      .catch((err: unknown) => err)
     try {
       await requested.promise
       try {

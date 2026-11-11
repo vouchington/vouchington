@@ -101,10 +101,7 @@ describe('browser crawl failed reservations', () => {
       const item = await fixture()
       vi.spyOn(browserCrawl, 'crawlWithBrowser').mockRejectedValue(error)
       const operation = processBrowserCrawl(item.url, item.linkId, item.crawler)
-      const outcome = await operation.then(
-        () => undefined,
-        (err: unknown) => err,
-      )
+      const outcome = await operation.then(() => undefined).catch((err: unknown) => err)
       expect(outcome).toBe(throws ? error : undefined)
       expect(await getBrowserCrawlReservations(item.url.id)).toEqual([
         { completed: true, status, networkError },

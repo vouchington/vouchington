@@ -153,10 +153,9 @@ describe('C8 community actions applied in the completion transaction (real PG, m
     const others = fixture.prompts.slice(1).map(prompt => prompt.id)
     answerWith({ flagged: new Set([flaggedId]), ...options(flaggedId, others) })
 
-    const outcome = await processRun(await reserveCommunityModerationFixtureRun(fixture)).then(
-      result => result.kind,
-      () => 'threw',
-    )
+    const outcome = await processRun(await reserveCommunityModerationFixtureRun(fixture))
+      .then(result => result.kind)
+      .catch(() => 'threw')
 
     expect(outcome).not.toBe('completed')
     expect((await getClassifierRunFacts(fixture.postId))[0]?.completed_at).toBeNull()

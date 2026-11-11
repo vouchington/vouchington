@@ -48,13 +48,12 @@ describe('download-with-diagnostics', () => {
         GITHUB_STEP_SUMMARY: summary,
         PATH: `${binDir}:${process.env.PATH ?? ''}`,
       },
-    }).then(
-      value => ({ ok: true as const, value }),
-      (err: unknown) => {
+    })
+      .then(value => ({ ok: true as const, value }))
+      .catch((err: unknown) => {
         if (!(err instanceof Error) || !('stdout' in err) || !('stderr' in err)) throw err
         return { error: err, ok: false as const }
-      },
-    )
+      })
 
     return { destination, result, summary }
   }

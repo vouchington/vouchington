@@ -20,10 +20,9 @@ export function observePlatformStatsCache() {
     const task = original.apply(this, args)
     if (args[1]?.keys?.includes(key)) {
       pending.push(
-        task.then(
-          value => ({ status: 'fulfilled' as const, value }),
-          (err: unknown) => ({ status: 'rejected' as const, reason: err }),
-        ),
+        task
+          .then(value => ({ status: 'fulfilled' as const, value }))
+          .catch((err: unknown) => ({ status: 'rejected' as const, reason: err })),
       )
     }
     return task

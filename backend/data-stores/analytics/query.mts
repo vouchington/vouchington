@@ -50,8 +50,9 @@ async function refreshPendingViews(connection: DuckDBConnection): Promise<void> 
 let queryQueue: Promise<unknown> = Promise.resolve()
 
 function enqueue<T>(task: () => Promise<T>): Promise<T> {
+  // oxlint-disable-next-line promise/prefer-catch -- Run each task once after either prior queue outcome; catch would rerun a failed task.
   const result = queryQueue.then(task, task)
-  queryQueue = result.then(() => undefined, onError)
+  queryQueue = result.then(() => undefined).catch(onError)
   return result
 }
 

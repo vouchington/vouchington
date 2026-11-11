@@ -61,14 +61,9 @@ export async function createTestPostgresMultiWait() {
     try {
       if (state.witnessed)
         throw new Error('Owned PostgreSQL lock witness was requested more than once')
-      const settledEarly = state.operation!.then(
-        () => {
-          throw new Error('Owned action settled without its native lock wait')
-        },
-        (err: unknown) => {
-          throw err
-        },
-      )
+      const settledEarly = state.operation!.then(() => {
+        throw new Error('Owned action settled without its native lock wait')
+      })
       const loan = await Promise.race([
         state.captured.promise,
         settledEarly,
@@ -145,7 +140,7 @@ export async function createTestPostgresMultiWait() {
           await state.setup
           if (closed) throw closedReason
           const actionOutcome = Promise.resolve().then(() => actionScope.run(state.token, action))
-          void actionOutcome.then(operation.resolve, operation.reject)
+          void actionOutcome.then(operation.resolve).catch(operation.reject)
         } catch (err) {
           primary ??= err
           state.captured.reject(err)

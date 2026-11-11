@@ -56,13 +56,12 @@ fi
           },
         },
       )
-      const code = await result.then(
-        () => 0,
-        (err: unknown) => {
+      const code = await result
+        .then(() => 0)
+        .catch((err: unknown) => {
           if (!(err instanceof Error) || !('code' in err) || typeof err.code !== 'number') throw err
           return err.code
-        },
-      )
+        })
       expect(code).toBe(fail ? 17 : 0)
       const expectedCalls = [
         `--dir ${dir} install --frozen-lockfile --filter @voucha/ci... --prod --ignore-scripts`,

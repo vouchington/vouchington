@@ -68,10 +68,8 @@ export async function withLogoutCleanupClock<Result>(
     syncBuiltinESMExports()
     settled = context
       .run(owner, async () => operation())
-      .then(
-        value => ({ status: 'fulfilled', value }),
-        (err: unknown) => ({ status: 'rejected', reason: err }),
-      )
+      .then(value => ({ status: 'fulfilled' as const, value }))
+      .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
     result = await settled
   } catch (err) {
     result = { status: 'rejected', reason: err }
