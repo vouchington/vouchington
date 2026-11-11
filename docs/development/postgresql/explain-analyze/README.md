@@ -40,7 +40,8 @@ and realistic eligible and ineligible rows when a stage has a distinct access pa
 - Ordinary seeded rows are never dated after the run. The anchor day is the latest day whose noon,
   plus the largest forward offset any seed helper adds, has already passed. Rows the database stamps
   itself (`uuidv7()` ids, `now()`) therefore sort after ordinary seeded rows; relation tables check
-  `id > subject_id`, and a noon anchor on the run's own day failed that check every morning.
+  `id > subject_id`, and a noon anchor on the run's own day failed that check before the latest
+  seeded post timestamp had passed.
 - While each scenario builds its query, `Date` is pinned to the anchor noon so time-range
   cutoffs sit at a fixed offset from seeded rows. Under the wall clock a one-week window held a
   different number of posts per hour, which flipped a plan between a seq scan and a bitmap scan.

@@ -36,7 +36,7 @@ function seedExplainJob() {
 }
 
 describe('explain-analyze seed anchor day', () => {
-  it('exports the UTC day 735 minutes before the job, not the runner zone day', () => {
+  it('exports the UTC day 960 minutes before the job, not the runner zone day', () => {
     const pinStep = seedExplainJob().steps.find(candidate =>
       candidate.run?.includes(`${ANCHOR_ENV}=`),
     )
@@ -44,8 +44,8 @@ describe('explain-analyze seed anchor day', () => {
 set -euo pipefail
 date() {
   case "$*" in
-    "-u -d -735 minutes +%Y-%m-%d") printf '%s\\n' "$VOUCH_UTC_DAY" ;;
-    "-d -735 minutes +%Y-%m-%d") printf '%s\\n' "$VOUCH_LOCAL_DAY" ;;
+    "-u -d -960 minutes +%Y-%m-%d") printf '%s\\n' "$VOUCH_UTC_DAY" ;;
+    "-d -960 minutes +%Y-%m-%d") printf '%s\\n' "$VOUCH_LOCAL_DAY" ;;
     *) echo "unexpected date call: $*" >&2; return 1 ;;
   esac
 }
@@ -56,7 +56,7 @@ printf '%s\\n' "$VOUCH_UTC_DAY" "$VOUCH_LOCAL_DAY"
       const directory = mkdtempSync(join(tmpdir(), 'explain-anchor-'))
       const githubEnv = join(directory, 'github-env')
       const githubOutput = join(directory, 'github-output')
-      const at = new Date(new Date(instant).getTime() - 735 * 60_000)
+      const at = new Date(new Date(instant).getTime() - 960 * 60_000)
       const zone = at.getUTCHours() >= 10 ? 'Pacific/Kiritimati' : 'Pacific/Pago_Pago'
       const utcDay = at.toISOString().slice(0, 10)
       const localDay = new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(at)

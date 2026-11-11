@@ -10,7 +10,11 @@ const PAGE_USER_ID = seedUuid(7, '01')
 const PAGE_COMMUNITY_ID = seedUuid(9, '14')
 const PAGE_LIST_ID = seedUuid(9, '34')
 const POST_INDEX_BASE = 100_000
-const RELATION_BASE_MS = postSeedTimestampMs(0) + 400 * 24 * 60 * 60 * 1000
+// Keep relation and list-item ids newer than their referenced posts without dating ordinary
+// fixture rows after the run's wall clock.
+export const INELIGIBLE_COLLECTION_RELATION_OFFSET_MS = 60 * 60_000
+export const INELIGIBLE_COLLECTION_ITEM_SPACING_MS = 1000
+const RELATION_BASE_MS = postSeedTimestampMs(0) + INELIGIBLE_COLLECTION_RELATION_OFFSET_MS
 export const INELIGIBLE_COLLECTION_PAGE_TOPIC_IDS = Array.from({ length: 400 }, (_, index) =>
   seedUuid(index, 'b7'),
 )
@@ -27,7 +31,7 @@ export async function seedIneligibleCollectionPages(): Promise<void> {
   const topicIds = INELIGIBLE_COLLECTION_PAGE_TOPIC_IDS
   const hostnameIds = Array.from({ length: count }, (_, index) => seedUuid(index, 'b8'))
   const membershipIds = Array.from({ length: count }, (_, index) =>
-    seedUuidAtTimestamp(RELATION_BASE_MS + index * 1000, index),
+    seedUuidAtTimestamp(RELATION_BASE_MS + index * INELIGIBLE_COLLECTION_ITEM_SPACING_MS, index),
   )
   const introducedAt = hostnameIds.map((_, index) =>
     isLive(index) ? new Date(RELATION_BASE_MS) : null,
@@ -129,7 +133,10 @@ export async function seedIneligibleCollectionPages(): Promise<void> {
   const subjectPostId = postIds[hiddenRun]!
   const objectIds = postIds.filter(id => id !== subjectPostId)
   const relationIds = objectIds.map((_, index) =>
-    seedUuidAtTimestamp(RELATION_BASE_MS + (count + index) * 1000, index),
+    seedUuidAtTimestamp(
+      RELATION_BASE_MS + (count + index) * INELIGIBLE_COLLECTION_ITEM_SPACING_MS,
+      index,
+    ),
   )
   await transaction(
     `/* seedIneligibleCollectionPages */ INSERT INTO relation__post__related__post
@@ -155,7 +162,10 @@ export async function seedIneligibleCollectionPages(): Promise<void> {
     (_, index) => seedUuid(index, 'b9'),
   )
   const noiseMembershipIds = Array.from({ length: noiseCommunityIds.length * count }, (_, index) =>
-    seedUuidAtTimestamp(RELATION_BASE_MS + (count * 2 + index) * 1000, index),
+    seedUuidAtTimestamp(
+      RELATION_BASE_MS + (count * 2 + index) * INELIGIBLE_COLLECTION_ITEM_SPACING_MS,
+      index,
+    ),
   )
   await transaction(
     `/* seedIneligibleCollectionPages */ INSERT INTO communities
