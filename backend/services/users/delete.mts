@@ -141,7 +141,11 @@ export async function deleteUser(
   )
   await enqueueDeleteUserBookmarkBloomFilterBestEffort(user.id)
   // Delivery denial is post-commit: the scheduled reconciliation repairs a missed enqueue.
-  void enqueueReconcileMediaDeliveryRegistry()
+  try {
+    await enqueueReconcileMediaDeliveryRegistry()
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+  }
   try {
     await enqueueUserDeletion({
       requestId: deletion.request.id,

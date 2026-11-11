@@ -43,9 +43,21 @@ describe('user deletion media authority', () => {
     const reconcile = vi.spyOn(notificationEnqueues, 'enqueueReconcileMediaDeliveryRegistry')
     await deleteUser(user, user)
     expect(reconcile).toHaveBeenCalledTimes(1)
+    expect(reconcile).toHaveBeenCalledWith()
+    // The job payload is `{}`; the shared-DB test guard requires the processor options to scope
+    // the run to this fixture, and they only narrow which rows it touches.
     await processReconcileMediaDeliveryRegistry({}, { recordIds: [recordId!], imageIds: [imageId] })
     await processMediaDeliveryRegistryRecord(recordId!)
     expect(edge.records.get(key)?.state).toBe('withheld')
+    expect((await getTestUserRaw(user.id))?.deleted_at).toBeInstanceOf(Date)
+  })
+
+  it('still deletes the user when the reconcile enqueue fails', async () => {
+    const user = await createTestUser()
+    vi.spyOn(notificationEnqueues, 'enqueueReconcileMediaDeliveryRegistry').mockRejectedValueOnce(
+      new Error('enqueue unavailable'),
+    )
+    await deleteUser(user, user)
     expect((await getTestUserRaw(user.id))?.deleted_at).toBeInstanceOf(Date)
   })
 })
