@@ -69,3 +69,4 @@ _none_
 
 - `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
 - `trigger_topic_claims_updated_at`: `CREATE TRIGGER trigger_topic_claims_updated_at BEFORE UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_topic_references_after_foreign_key`: `CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`

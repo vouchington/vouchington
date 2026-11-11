@@ -17,7 +17,6 @@ import {
   insertTopicReferenceGuardFollow,
   reenableTopicReferenceGuardProgram,
   updateTopicReferenceGuardFollow,
-  withTopicReferenceGuardFence,
 } from '@voucha/test-helpers/topic-reference-guard'
 import { getTopicMergeRelations } from '@voucha/test-helpers/topic-merge-references'
 import {
@@ -26,6 +25,7 @@ import {
 } from '../../entity-relation-actions/bookmark.mts'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '../get.mts'
+import { createTopicMergeOperation } from '../merge-operations.mts'
 import { TOPIC_MERGE_REFERENCE_GROUPS } from '../merge-reference-inventory.mts'
 
 describe('topic merge reference lifecycle', () => {
@@ -57,15 +57,35 @@ describe('topic merge reference lifecycle', () => {
     })
   })
 
-  it('accepts a new reference without a lifecycle advisory fence', async () => {
+  it('accepts a new reference to a topic with no unfinished merge', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic({ user })
-    await withTopicReferenceGuardFence(topic.id, async () => {
-      await insertTopicReferenceGuardFollow(topic.id, user.id)
-    })
+    await insertTopicReferenceGuardFollow(topic.id, user.id)
     await expect(getTopicMergeRelations(topic.id, topic.id, user.id)).resolves.toMatchObject({
       follows: [{ object_id: topic.id }],
     })
+  })
+
+  it('rejects a new reference once a merge operation names the topic', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const user = await createTestUser()
+    const source = await createTestTopic({ user: admin })
+    const destination = await createTestTopic({ user: admin })
+    const [fullSource, fullDestination] = await Promise.all([
+      getTopicByAny(source.id),
+      getTopicByAny(destination.id),
+    ])
+    await createTopicMergeOperation(admin, fullSource!, fullDestination!)
+    for (const topicId of [source.id, destination.id]) {
+      await expect(insertTopicReferenceGuardFollow(topicId, user.id)).rejects.toMatchObject({
+        status: 409,
+        code: 'topic_merge_in_progress',
+        topic_id: topicId,
+      })
+    }
+    await expect(
+      getActiveTopicReferenceGuardFollows([source.id, destination.id], user.id),
+    ).resolves.toEqual([])
   })
 
   it('leaves no live inventory reference to the merged source', async () => {

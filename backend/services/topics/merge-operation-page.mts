@@ -13,7 +13,7 @@ export async function processTopicMergeOperationPage(
   const { rows } = await query<TopicMergeOperationRow>(
     `/* processTopicMergeOperationPage lock */
     SELECT operation.id, operation.source_topic_id, operation.destination_topic_id,
-      operation.requested_by_id, operation.fence_token, operation.stage,
+      operation.requested_by_id, operation.stage,
       operation.stage_table_position, operation.relation_column_position,
       operation.relation_phase, operation.alias_phase, operation.cursor_row_id,
       operation.cursor_subject_id, operation.cursor_object_id, operation.cursor_alias,
@@ -85,8 +85,8 @@ async function commitPage(
 async function executeLockedPage(query: TransactionQuery, operation: TopicMergeOperationRow) {
   await query(
     `/* processTopicMergeOperationPage context */
-    SELECT set_config('voucha.topic_merge_operation_id',$1,TRUE),set_config('voucha.topic_merge_fence_token',$2,TRUE)`,
-    [operation.id, operation.fence_token],
+    SELECT set_config('voucha.topic_merge_operation_id',$1,TRUE)`,
+    [operation.id],
   )
   return executeTopicMergeStagePage(query, operation, getTopicMergeWorkLimit('page_size'))
 }

@@ -62,3 +62,4 @@ Not partitioned — growth: unbounded.
 - `trigger_topic_aliases_project_update`: `CREATE TRIGGER trigger_topic_aliases_project_update AFTER UPDATE ON public.topic_aliases REFERENCING OLD TABLE AS old_aliases NEW TABLE AS new_aliases FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases()`
 - `trigger_topic_aliases_updated_at`: `CREATE TRIGGER trigger_topic_aliases_updated_at BEFORE UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_topic_merge_slug_alias_reservation`: `CREATE TRIGGER trigger_topic_merge_slug_alias_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_slug_alias_not_reserved()`
+- `trigger_topic_references_after_foreign_key`: `CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id', 'unlink_topic_id')`

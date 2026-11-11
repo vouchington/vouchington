@@ -92,9 +92,9 @@ self-relation removal so the merge cannot erase an outstanding audit finding.
 The merge walks indexed parent edges up to a configured depth and refuses deeper ancestry. Discovered ancestors remain reserved while preflight walks the graph, so later pages cannot rely
 on an earlier edge that has changed.
 Image placements retain their source identity as history. Delayed classification applies no
-effects to inactive topics. A dedicated merge fence protects new current references without refusing
-ordinary reference writes during feed or vote-stat updates. Admission serializes the participants before reserving them; guarded reference writers respect
-the reservation between committed pages. Derived batch rows remain unfenced.
+effects to inactive topics. Guarded reference writers read the committed merge reservation and refuse a topic an unfinished merge
+names, without taking any advisory lock, so ordinary reference writes during feed or vote-stat updates
+never wait. Admission locks the participant rows before reserving them. Derived batch rows remain unguarded.
 New embedding and classifier work admits only active topic identities; completed derived records
 retain the identity they describe rather than being redirected by a later merge.
 

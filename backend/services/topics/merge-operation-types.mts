@@ -24,7 +24,6 @@ export type TopicMergeOperationRow = {
   source_topic_id: string
   destination_topic_id: string
   requested_by_id: string
-  fence_token: string
   stage: TopicMergeStage
   stage_table_position: number
   relation_column_position: number

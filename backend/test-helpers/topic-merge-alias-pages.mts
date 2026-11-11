@@ -32,8 +32,7 @@ export async function runTopicMergeAliasTestPage(operationId: string, limit: num
     cursor_alias: string | null
   }>(
     `/* runTopicMergeAliasTestPage */ SELECT operation.*, topic.slug AS source_slug,
-      set_config('voucha.topic_merge_operation_id', operation.id::text, TRUE),
-      set_config('voucha.topic_merge_fence_token', operation.fence_token::text, TRUE)
+      set_config('voucha.topic_merge_operation_id', operation.id::text, TRUE)
       FROM topic_merge_operations operation JOIN topics topic ON topic.id = operation.source_topic_id
       WHERE operation.id = $1::uuid FOR UPDATE OF operation`,
     [operationId],

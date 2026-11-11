@@ -1,4 +1,4 @@
-import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 
 export async function insertTopicReferenceGuardFollow(topicId: string, userId: string) {
   await write(
@@ -29,29 +29,6 @@ export async function reenableTopicReferenceGuardProgram(topicId: string): Promi
       WHERE topic_id = $1::uuid`,
     [topicId],
   )
-}
-
-export async function insertTopicReferenceGuardFollowInTransaction(
-  query: TransactionQuery,
-  topicId: string,
-  userId: string,
-) {
-  await query(
-    `/* insertTopicReferenceGuardFollowInTransaction */
-      INSERT INTO relation__user__follow__topic (subject_id, object_id)
-      VALUES ($1::uuid, $2::uuid)`,
-    [userId, topicId],
-  )
-}
-
-export async function withTopicReferenceGuardFence<T>(
-  _topicId: string,
-  operation: () => Promise<T>,
-) {
-  await using query = await beginTransaction()
-  const result = await operation()
-  await query.commit()
-  return result
 }
 
 export async function getTopicReferenceGuardCoverage() {

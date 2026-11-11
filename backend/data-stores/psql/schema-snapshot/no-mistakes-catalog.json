@@ -1527,7 +1527,7 @@
       "returnsSet": false
     },
     "fn_ensure_active_topic_references()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  reference_column TEXT;\n  referenced_topic_id UUID;\n  previous_topic_id UUID;\n  reserved_topic_id UUID;\nBEGIN\n  FOREACH reference_column IN ARRAY TG_ARGV LOOP\n    -- Inspect both sides: a deletion or non-key edit can change a merge preflight or capture.\n    referenced_topic_id := NULL;\n    previous_topic_id := NULL;\n    IF TG_OP <> 'DELETE' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;\n    END IF;\n    IF TG_OP <> 'INSERT' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;\n    END IF;\n    FOR reserved_topic_id IN\n      SELECT DISTINCT id FROM unnest(ARRAY[previous_topic_id, referenced_topic_id]) AS ids(id)\n      WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      -- Never wait while holding a child row or publication scope: admission takes this fence first.\n      IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(\n        'topic-merge-lifecycle:' || reserved_topic_id::TEXT, 0\n      )) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic references are changing; retry the request',\n          DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (\n        SELECT 1 FROM topic_merge_parent_ancestors ancestor\n        JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id\n        WHERE ancestor.topic_id = reserved_topic_id\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations merge_operation\n        WHERE (merge_operation.source_topic_id = reserved_topic_id\n            OR merge_operation.destination_topic_id = reserved_topic_id)\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n    END LOOP;\n    -- Missing identities remain the foreign key constraint's responsibility.\n    -- Re-enabling a deleted or merged program must not reuse its unchanged topic id.\n    IF referenced_topic_id IS NOT NULL\n      AND EXISTS (\n        SELECT 1 FROM topics WHERE id = referenced_topic_id\n          AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)\n      ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic reference must identify an active topic',\n        DETAIL = json_build_object('code', 'topic_reference_inactive', 'topic_id', referenced_topic_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  reference_column TEXT;\n  referenced_topic_id UUID;\n  previous_topic_id UUID;\n  reserved_topic_id UUID;\nBEGIN\n  FOREACH reference_column IN ARRAY TG_ARGV LOOP\n    -- Inspect both sides: a deletion or non-key edit can change a merge preflight or capture.\n    referenced_topic_id := NULL;\n    previous_topic_id := NULL;\n    IF TG_OP <> 'DELETE' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;\n    END IF;\n    IF TG_OP <> 'INSERT' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;\n    END IF;\n    FOR reserved_topic_id IN\n      SELECT DISTINCT id FROM unnest(ARRAY[previous_topic_id, referenced_topic_id]) AS ids(id)\n      WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (\n        SELECT 1 FROM topic_merge_parent_ancestors ancestor\n        JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id\n        WHERE ancestor.topic_id = reserved_topic_id\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations merge_operation\n        WHERE (merge_operation.source_topic_id = reserved_topic_id\n            OR merge_operation.destination_topic_id = reserved_topic_id)\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n    END LOOP;\n    -- Missing identities remain the foreign key constraint's responsibility.\n    -- Re-enabling a deleted or merged program must not reuse its unchanged topic id.\n    IF referenced_topic_id IS NOT NULL\n      AND EXISTS (\n        SELECT 1 FROM topics WHERE id = referenced_topic_id\n          AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)\n      ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic reference must identify an active topic',\n        DETAIL = json_build_object('code', 'topic_reference_inactive', 'topic_id', referenced_topic_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_ensure_copyright_email_ancestor_live_endpoints()": {
@@ -1547,15 +1547,15 @@
       "returnsSet": false
     },
     "fn_ensure_topic_merge_participant_not_reserved()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_participant_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM topic_merge_operations merge_operation\n    WHERE (merge_operation.source_topic_id = OLD.id\n        OR merge_operation.destination_topic_id = OLD.id)\n      AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n      AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n        (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n         COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n  ) THEN\n    RAISE EXCEPTION USING ERRCODE = 'V0409',\n      MESSAGE = 'Topic merge is in progress',\n      DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', OLD.id)::TEXT;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_participant_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM topic_merge_operations merge_operation\n    WHERE (merge_operation.source_topic_id = OLD.id\n        OR merge_operation.destination_topic_id = OLD.id)\n      AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n      AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')\n  ) THEN\n    RAISE EXCEPTION USING ERRCODE = 'V0409',\n      MESSAGE = 'Topic merge is in progress',\n      DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', OLD.id)::TEXT;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_ensure_topic_merge_relation_child_not_reserved()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_relation_child_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  parent_subject_id UUID;\n  parent_relation_id UUID;\n  participant_ids UUID[];\n  participant_id UUID;\n  candidate_record RECORD;\nBEGIN\n  FOR candidate_record IN SELECT * FROM (VALUES\n    (CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE to_jsonb(NEW) END),\n    (CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE to_jsonb(OLD) END)\n  ) candidates(row_value) WHERE row_value IS NOT NULL\n  LOOP\n    parent_subject_id := (candidate_record.row_value ->> TG_ARGV[1])::UUID;\n    parent_relation_id := (candidate_record.row_value ->> TG_ARGV[2])::UUID;\n    IF parent_relation_id IS NULL THEN CONTINUE; END IF;\n    EXECUTE format('SELECT ARRAY[%s] FROM %I WHERE subject_id = $1 AND id = $2', TG_ARGV[3], TG_ARGV[0])\n      INTO participant_ids USING parent_subject_id, parent_relation_id;\n    FOR participant_id IN SELECT DISTINCT id FROM unnest(participant_ids) ids(id) WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      IF NOT pg_try_advisory_xact_lock_shared(hashtextextended('topic-merge-lifecycle:' || participant_id::TEXT, 0)) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic vote target is changing; retry the request',\n          DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', participant_id)::TEXT;\n      END IF;\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations operation\n        WHERE (operation.source_topic_id = participant_id OR operation.destination_topic_id = participant_id)\n          AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n          AND (operation.id::TEXT, operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', participant_id)::TEXT;\n      END IF;\n    END LOOP;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_relation_child_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  parent_subject_id UUID;\n  parent_relation_id UUID;\n  participant_ids UUID[];\n  participant_id UUID;\n  candidate_record RECORD;\nBEGIN\n  FOR candidate_record IN SELECT * FROM (VALUES\n    (CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE to_jsonb(NEW) END),\n    (CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE to_jsonb(OLD) END)\n  ) candidates(row_value) WHERE row_value IS NOT NULL\n  LOOP\n    parent_subject_id := (candidate_record.row_value ->> TG_ARGV[1])::UUID;\n    parent_relation_id := (candidate_record.row_value ->> TG_ARGV[2])::UUID;\n    IF parent_relation_id IS NULL THEN CONTINUE; END IF;\n    EXECUTE format('SELECT ARRAY[%s] FROM %I WHERE subject_id = $1 AND id = $2', TG_ARGV[3], TG_ARGV[0])\n      INTO participant_ids USING parent_subject_id, parent_relation_id;\n    FOR participant_id IN SELECT DISTINCT id FROM unnest(participant_ids) ids(id) WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations operation\n        WHERE (operation.source_topic_id = participant_id OR operation.destination_topic_id = participant_id)\n          AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n          AND operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', participant_id)::TEXT;\n      END IF;\n    END LOOP;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_ensure_topic_merge_slug_alias_not_reserved()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_slug_alias_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  candidate_alias TEXT;\n  source_id UUID;\nBEGIN\n  FOR candidate_alias IN\n    SELECT DISTINCT alias FROM (\n      SELECT CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE NEW.alias END AS alias\n      UNION ALL\n      SELECT CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.alias END\n    ) aliases WHERE alias IS NOT NULL\n  LOOP\n    SELECT id INTO source_id FROM topics WHERE slug = candidate_alias AND deleted_at IS NULL LIMIT 1;\n    IF source_id IS NULL THEN CONTINUE; END IF;\n    IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(\n      'topic-merge-lifecycle:' || source_id::TEXT, 0\n    )) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic alias is changing during a merge; retry the request',\n        DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', source_id)::TEXT;\n    END IF;\n    IF EXISTS (\n      SELECT 1 FROM topic_merge_operations merge_operation\n      WHERE merge_operation.source_topic_id = source_id\n        AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n        AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n          (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n           COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n    ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic merge is in progress',\n        DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', source_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_slug_alias_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  candidate_alias TEXT;\n  source_id UUID;\nBEGIN\n  FOR candidate_alias IN\n    SELECT DISTINCT alias FROM (\n      SELECT CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE NEW.alias END AS alias\n      UNION ALL\n      SELECT CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.alias END\n    ) aliases WHERE alias IS NOT NULL\n  LOOP\n    SELECT id INTO source_id FROM topics WHERE slug = candidate_alias AND deleted_at IS NULL LIMIT 1;\n    IF source_id IS NULL THEN CONTINUE; END IF;\n    IF EXISTS (\n      SELECT 1 FROM topic_merge_operations merge_operation\n      WHERE merge_operation.source_topic_id = source_id\n        AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n        AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')\n    ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic merge is in progress',\n        DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', source_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_field_changes(before_fields jsonb, after_fields jsonb)": {
@@ -1739,7 +1739,7 @@
       "returnsSet": false
     },
     "fn_project_topic_aliases()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_topic_aliases()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  affected_topic_ids UUID[];\n  affected_topic_id UUID;\n  removed_aliases TEXT[];\n  added_aliases TEXT[];\nBEGIN\n  -- The operation accumulates the exact final projection in its alias history document.\n  -- Its private transaction capability is checked against the durable reservation.\n  IF EXISTS (\n    SELECT 1 FROM topic_merge_operations operation\n    WHERE operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)\n      AND operation.fence_token::TEXT = current_setting('voucha.topic_merge_fence_token', TRUE)\n      AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n  ) THEN RETURN NULL; END IF;\n  IF TG_OP = 'INSERT' THEN\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM new_aliases;\n  ELSIF TG_OP = 'DELETE' THEN\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM old_aliases;\n  ELSE\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM (\n      SELECT topic_id FROM new_aliases UNION SELECT topic_id FROM old_aliases\n    ) affected;\n  END IF;\n  -- Serialize each parent and apply only this statement's transition rows. Re-reading every\n  -- destination alias after each bounded merge page would make the merge quadratic.\n  FOR affected_topic_id IN\n    SELECT id FROM topics WHERE id = ANY(affected_topic_ids) ORDER BY id FOR NO KEY UPDATE\n  LOOP\n    removed_aliases := '{}'::TEXT[];\n    added_aliases := '{}'::TEXT[];\n    IF TG_OP <> 'INSERT' THEN\n      SELECT COALESCE(ARRAY_AGG(alias), '{}'::TEXT[]) INTO removed_aliases\n      FROM old_aliases WHERE topic_id = affected_topic_id;\n    END IF;\n    IF TG_OP <> 'DELETE' THEN\n      SELECT COALESCE(ARRAY_AGG(alias), '{}'::TEXT[]) INTO added_aliases\n      FROM new_aliases WHERE topic_id = affected_topic_id;\n    END IF;\n    UPDATE topics SET aliases = ARRAY(\n      SELECT alias FROM (\n        SELECT existing.alias FROM UNNEST(topics.aliases) AS existing(alias)\n        WHERE existing.alias <> ALL(removed_aliases)\n        UNION\n        SELECT added.alias FROM UNNEST(added_aliases) AS added(alias)\n      ) next_aliases ORDER BY alias\n    ) WHERE id = affected_topic_id;\n  END LOOP;\n  RETURN NULL;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_topic_aliases()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  affected_topic_ids UUID[];\n  affected_topic_id UUID;\n  removed_aliases TEXT[];\n  added_aliases TEXT[];\nBEGIN\n  -- The operation accumulates the exact final projection in its alias history document.\n  -- Its transaction names the unfinished operation, which is checked against the durable reservation.\n  IF EXISTS (\n    SELECT 1 FROM topic_merge_operations operation\n    WHERE operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)\n      AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n  ) THEN RETURN NULL; END IF;\n  IF TG_OP = 'INSERT' THEN\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM new_aliases;\n  ELSIF TG_OP = 'DELETE' THEN\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM old_aliases;\n  ELSE\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM (\n      SELECT topic_id FROM new_aliases UNION SELECT topic_id FROM old_aliases\n    ) affected;\n  END IF;\n  -- Serialize each parent and apply only this statement's transition rows. Re-reading every\n  -- destination alias after each bounded merge page would make the merge quadratic.\n  FOR affected_topic_id IN\n    SELECT id FROM topics WHERE id = ANY(affected_topic_ids) ORDER BY id FOR NO KEY UPDATE\n  LOOP\n    removed_aliases := '{}'::TEXT[];\n    added_aliases := '{}'::TEXT[];\n    IF TG_OP <> 'INSERT' THEN\n      SELECT COALESCE(ARRAY_AGG(alias), '{}'::TEXT[]) INTO removed_aliases\n      FROM old_aliases WHERE topic_id = affected_topic_id;\n    END IF;\n    IF TG_OP <> 'DELETE' THEN\n      SELECT COALESCE(ARRAY_AGG(alias), '{}'::TEXT[]) INTO added_aliases\n      FROM new_aliases WHERE topic_id = affected_topic_id;\n    END IF;\n    UPDATE topics SET aliases = ARRAY(\n      SELECT alias FROM (\n        SELECT existing.alias FROM UNNEST(topics.aliases) AS existing(alias)\n        WHERE existing.alias <> ALL(removed_aliases)\n        UNION\n        SELECT added.alias FROM UNNEST(added_aliases) AS added(alias)\n      ) next_aliases ORDER BY alias\n    ) WHERE id = affected_topic_id;\n  END LOOP;\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_project_topic_image_placements()": {
@@ -1831,7 +1831,7 @@
       "returnsSet": false
     },
     "fn_reject_classifier_batch_candidate_owner_delete()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_owner_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)\n    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id)\n    AND NOT EXISTS (\n      SELECT 1 FROM topic_merge_operations operation\n      JOIN classifier_candidates candidate ON candidate.topic_id = operation.source_topic_id\n      WHERE candidate.id = OLD.candidate_id\n        AND operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)\n        AND operation.fence_token::TEXT = current_setting('voucha.topic_merge_fence_token', TRUE)\n        AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n    )\n    AND NOT (\n      uuid_extract_timestamp(OLD.batch_id) < CURRENT_TIMESTAMP - INTERVAL '90 days'\n      AND NOT EXISTS (\n        SELECT 1 FROM classifier_runs AS run\n        WHERE run.decision_batch_id = OLD.batch_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM topic_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM story_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier batch candidate snapshots require expired, unreferenced decisions before deletion' USING ERRCODE = '23503';\n  END IF;\n  RETURN OLD;\nEND $function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_owner_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)\n    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id)\n    AND NOT EXISTS (\n      SELECT 1 FROM topic_merge_operations operation\n      JOIN classifier_candidates candidate ON candidate.topic_id = operation.source_topic_id\n      WHERE candidate.id = OLD.candidate_id\n        AND operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)\n        AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n    )\n    AND NOT (\n      uuid_extract_timestamp(OLD.batch_id) < CURRENT_TIMESTAMP - INTERVAL '90 days'\n      AND NOT EXISTS (\n        SELECT 1 FROM classifier_runs AS run\n        WHERE run.decision_batch_id = OLD.batch_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM topic_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM story_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier batch candidate snapshots require expired, unreferenced decisions before deletion' USING ERRCODE = '23503';\n  END IF;\n  RETURN OLD;\nEND $function$\n",
       "returnsSet": false
     },
     "fn_reject_classifier_candidate_community_override_lifecycle()": {
@@ -11877,6 +11877,9 @@
         },
         "trigger_card_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_card_topics_updated_at BEFORE UPDATE ON public.card_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.card_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('bank_topic_id', 'brand_topic_id', 'topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -13178,6 +13181,9 @@
         },
         "trigger_classifier_candidates_updated_at": {
           "definition": "CREATE TRIGGER trigger_classifier_candidates_updated_at BEFORE UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {
@@ -21672,6 +21678,9 @@
         },
         "trigger_project_community_list_topics_count": {
           "definition": "CREATE TRIGGER trigger_project_community_list_topics_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -52650,6 +52659,9 @@
         },
         "trigger_curated_aside_items_guard_rss_feed_hard_delete": {
           "definition": "CREATE TRIGGER trigger_curated_aside_items_guard_rss_feed_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -54664,6 +54676,9 @@
         },
         "trigger_fediverse_instance_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_fediverse_instance_topics_updated_at BEFORE UPDATE ON public.fediverse_instance_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.fediverse_instance_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -56978,6 +56993,9 @@
         },
         "trigger_hostname_crawler_configurations_updated_at": {
           "definition": "CREATE TRIGGER trigger_hostname_crawler_configurations_updated_at BEFORE UPDATE ON public.hostname_crawler_configurations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.hostname_crawler_configurations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -60972,6 +60990,9 @@
         },
         "trigger_individual_cards_fn_update_updated_at": {
           "definition": "CREATE TRIGGER trigger_individual_cards_fn_update_updated_at BEFORE UPDATE ON public.individual_cards FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.individual_cards FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('card_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -61457,6 +61478,9 @@
         },
         "trigger_individual_rewards_program_point_valuations_updated_at": {
           "definition": "CREATE TRIGGER trigger_individual_rewards_program_point_valuations_updated_at BEFORE UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_topic_id')"
         }
       },
       "uniqueConstraints": {
@@ -61654,6 +61678,9 @@
         },
         "trigger_individual_rewards_program_statuses_updated_at": {
           "definition": "CREATE TRIGGER trigger_individual_rewards_program_statuses_updated_at BEFORE UPDATE ON public.individual_rewards_program_statuses FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.individual_rewards_program_statuses FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_status_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -93161,6 +93188,9 @@
         },
         "trigger_post_data_point_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_post_data_point_topics_updated_at BEFORE UPDATE ON public.post_data_point_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.post_data_point_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -93602,6 +93632,9 @@
         },
         "trigger_post_explicit_topic_categories_updated_at": {
           "definition": "CREATE TRIGGER trigger_post_explicit_topic_categories_updated_at BEFORE UPDATE ON public.post_explicit_topic_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.post_explicit_topic_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -96035,6 +96068,9 @@
         },
         "trigger_post_review_topic_ratings_updated_at": {
           "definition": "CREATE TRIGGER trigger_post_review_topic_ratings_updated_at BEFORE UPDATE ON public.post_review_topic_ratings FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.post_review_topic_ratings FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -97406,6 +97442,9 @@
         },
         "trigger_post_topic_recommendations_updated_at": {
           "definition": "CREATE TRIGGER trigger_post_topic_recommendations_updated_at BEFORE UPDATE ON public.post_topic_recommendations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.post_topic_recommendations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('created_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -101034,6 +101073,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.referral_program_topic_link_validation_rule_sets FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.referral_program_topic_link_validation_rule_sets FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -101194,6 +101236,9 @@
         },
         "trigger_referral_program_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_referral_program_topics_updated_at BEFORE UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -101458,6 +101503,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__community__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__community__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -102340,6 +102388,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__post__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__post__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {
@@ -104241,6 +104292,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__post__mentioned__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__post__mentioned__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -107484,6 +107538,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {
@@ -109411,6 +109468,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -110378,6 +110438,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -111377,6 +111440,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -112376,6 +112442,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__guide__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__guide__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -113375,6 +113444,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__landing_page__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__landing_page__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -114018,6 +114090,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__mentioned__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__mentioned__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {}
@@ -114282,6 +114357,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__parent__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__parent__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         }
       },
       "uniqueConstraints": {}
@@ -114870,6 +114948,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__publisher_type__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__publisher_type__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -115837,6 +115918,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__related__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__related__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -116804,6 +116888,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__related__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__related__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -117803,6 +117890,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__related__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__related__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -118802,6 +118892,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__terms_of_service__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__terms_of_service__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -119445,6 +119538,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__block__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__block__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -120553,6 +120649,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {
@@ -121196,6 +121295,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__dismiss_recommendation__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__dismiss_recommendation__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -122304,6 +122406,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -123920,6 +124025,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -127084,6 +127192,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__subscribe_posts__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__subscribe_posts__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -127348,6 +127459,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__subscribe_rss_feed_items__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__subscribe_rss_feed_items__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -128857,6 +128971,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.retailer_countries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('retailer_topic_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.retailer_countries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('retailer_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -128942,6 +129059,9 @@
         },
         "trigger_retailer_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_retailer_topics_updated_at BEFORE UPDATE ON public.retailer_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.retailer_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -132654,6 +132774,9 @@
         },
         "trigger_rewards_program_status_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_rewards_program_status_topics_updated_at BEFORE UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('lifetime_version_id', 'topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -132789,6 +132912,9 @@
         },
         "trigger_rewards_program_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_rewards_program_topics_updated_at BEFORE UPDATE ON public.rewards_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rewards_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -133096,6 +133222,9 @@
         },
         "trigger_rss_feed_categories_updated_at": {
           "definition": "CREATE TRIGGER trigger_rss_feed_categories_updated_at BEFORE UPDATE ON public.rss_feed_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rss_feed_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -133590,6 +133719,9 @@
         },
         "trigger_rss_feed_item_categories_updated_at": {
           "definition": "CREATE TRIGGER trigger_rss_feed_item_categories_updated_at BEFORE UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -137198,6 +137330,9 @@
         },
         "trigger_sync_url_feed_rank": {
           "definition": "CREATE TRIGGER trigger_sync_url_feed_rank AFTER INSERT OR DELETE OR UPDATE OF rss_feed_url_id, is_enabled, deleted_at ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_update_url_feed_rank()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -137708,6 +137843,9 @@
         },
         "trigger_spending_category_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_spending_category_topics_updated_at BEFORE UPDATE ON public.spending_category_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.spending_category_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -138010,6 +138148,9 @@
         },
         "trigger_spending_entries_fn_update_updated_at": {
           "definition": "CREATE TRIGGER trigger_spending_entries_fn_update_updated_at BEFORE UPDATE ON public.spending_entries FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.spending_entries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('spending_category_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -140947,6 +141088,9 @@
         },
         "trigger_topic_merge_slug_alias_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_slug_alias_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_slug_alias_not_reserved()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id', 'unlink_topic_id')"
         }
       },
       "uniqueConstraints": {
@@ -141520,6 +141664,9 @@
         },
         "trigger_topic_claims_updated_at": {
           "definition": "CREATE TRIGGER trigger_topic_claims_updated_at BEFORE UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -142468,7 +142615,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 10
         },
         "completed_at": {
           "comment": "Time the source redirect and final state committed.",
@@ -142478,7 +142625,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 18
         },
         "created_at": {
           "comment": null,
@@ -142488,7 +142635,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 30
         },
         "cursor_alias": {
           "comment": "Last processed alias in lexical order.",
@@ -142498,7 +142645,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 14
         },
         "cursor_country_position": {
           "comment": "Last country-key comparison position for retailer preflight.",
@@ -142508,7 +142655,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 15
         },
         "cursor_object_id": {
           "comment": "Last processed relation object key for a composite-key page.",
@@ -142518,7 +142665,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 13
         },
         "cursor_row_id": {
           "comment": "Last processed UUID row key within the current stage and table.",
@@ -142528,7 +142675,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 11
         },
         "cursor_subject_id": {
           "comment": "Last processed relation subject key for a composite-key page.",
@@ -142538,7 +142685,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 12
         },
         "destination_aliases_after": {
           "comment": "Sorted merged destination alias history document accumulated through bounded pages.",
@@ -142548,7 +142695,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29
+          "ordinalPosition": 28
         },
         "destination_aliases_before": {
           "comment": "Sorted destination alias history document accumulated through bounded pages.",
@@ -142558,7 +142705,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28
+          "ordinalPosition": 27
         },
         "destination_topic_id": {
           "comment": "Topic that receives current references.",
@@ -142578,7 +142725,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 21
         },
         "failed_at": {
           "comment": "Preflight rejection time before any merge effects.",
@@ -142588,17 +142735,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
-        },
-        "fence_token": {
-          "comment": "Private capability for one worker transaction to mutate reserved participants.",
-          "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 19
         },
         "generation": {
           "comment": "Committed page generation used to reject stale continuation jobs.",
@@ -142608,7 +142745,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17
+          "ordinalPosition": 16
         },
         "id": {
           "comment": null,
@@ -142628,7 +142765,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 25
         },
         "metric_snapshot_xip_count": {
           "comment": "In-progress transaction count in the first metric-page snapshot; lower is newer at equal xmax.",
@@ -142638,7 +142775,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 24
         },
         "metric_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary captured at the first post-reference metric page for vote projection ordering.",
@@ -142648,7 +142785,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 23
         },
         "metric_stats": {
           "comment": "Bounded page accumulation of destination vote, rating, and bookmark statistics.",
@@ -142658,7 +142795,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 23
+          "ordinalPosition": 22
         },
         "rejected_at": {
           "comment": "When bounded preflight rejected the request; reservations release only after scratch cleanup reaches failed_at.",
@@ -142668,7 +142805,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 20
         },
         "relation_column_position": {
           "comment": "Subject or object topic-FK pass for the current relation table.",
@@ -142678,7 +142815,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "relation_phase": {
           "comment": "Discovery, votes, flags, or parent cleanup step for a voted relation group.",
@@ -142688,7 +142825,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 9
         },
         "requested_by_id": {
           "comment": "Administrator who requested the merge.",
@@ -142708,7 +142845,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 26
         },
         "source_topic_id": {
           "comment": "Topic whose current references move to the destination.",
@@ -142728,7 +142865,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 6
         },
         "stage_table_position": {
           "comment": "Position in the finite reviewed table inventory for the current stage.",
@@ -142738,7 +142875,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 7
         },
         "started_at": {
           "comment": "First page start time.",
@@ -142748,7 +142885,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 17
         },
         "updated_at": {
           "comment": "Last committed cursor or stage transition time for recovery.",
@@ -142758,7 +142895,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30
+          "ordinalPosition": 29
         }
       },
       "comment": "Durable progress and participant reservation for one staged topic merge.",
@@ -148876,6 +149013,9 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topic_votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.topic_votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        },
         "trigger_topic_votes__ua_release": {
           "definition": "CREATE TRIGGER trigger_topic_votes__ua_release AFTER DELETE ON public.topic_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
         }
@@ -150313,6 +150453,9 @@
         },
         "trigger_topic_merge_participant_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_participant_reservation BEFORE DELETE OR UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_participant_not_reserved()"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id', 'rewards_program_topic_id')"
         },
         "trigger_topics_content_provenance_immutable": {
           "definition": "CREATE TRIGGER trigger_topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()"
@@ -152698,6 +152841,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         },
         "trigger_url_hostnames_crawl_policy_changed_at": {
           "definition": "CREATE TRIGGER trigger_url_hostnames_crawl_policy_changed_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_url_hostname_crawl_policy_changed_at()"
@@ -158302,6 +158448,9 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        },
         "trigger_user_landing_page_items_updated_at": {
           "definition": "CREATE TRIGGER trigger_user_landing_page_items_updated_at BEFORE UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
@@ -161919,6 +162068,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
+        },
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
         },
         "trigger_user_referra_program_links_content_provenance_immutable": {
           "definition": "CREATE TRIGGER trigger_user_referra_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()"
