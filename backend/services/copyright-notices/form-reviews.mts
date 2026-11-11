@@ -46,9 +46,6 @@ export async function reviewCopyrightFormIntake(input: {
   `)
   const intake = rows[0]
   assert(intake, 404, 'Copyright form intake not found')
-  // A review must enter the case before thread cleanup rechecks its blocker proof.
-  await transaction(sql`/* reviewCopyrightFormIntake:lockNotice */
-    SELECT id FROM copyright_notices WHERE id = ${intake.notice_id} FOR KEY SHARE`)
   const { rows: reviewRows } = await transaction<{ is_accepted: boolean }>(
     sql`/* reviewCopyrightFormIntake:existing */
       SELECT is_accepted FROM copyright_notice_form_intake_reviews
@@ -72,6 +69,14 @@ export async function reviewCopyrightFormIntake(input: {
       422,
       'Only guest forms and signed-in forms without a clear anti-spam result require moderator review',
     )
+  }
+  const assessmentId = await getOrCreateHumanAssessment(
+    intake.submission_id,
+    input.currentUser,
+    input.is_accepted,
+    transaction,
+  )
+  if (!existing) {
     await transaction(sql`/* reviewCopyrightFormIntake:review */
       INSERT INTO copyright_notice_form_intake_reviews (
         copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
@@ -81,12 +86,6 @@ export async function reviewCopyrightFormIntake(input: {
       )
     `)
   }
-  const assessmentId = await getOrCreateHumanAssessment(
-    intake.submission_id,
-    input.currentUser,
-    input.is_accepted,
-    transaction,
-  )
   await transaction.commit()
   if (input.is_accepted) {
     await enforceCopyrightAssessment(assessmentId)
