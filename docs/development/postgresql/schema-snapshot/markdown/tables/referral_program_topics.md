@@ -36,5 +36,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references AFTER INSERT OR DELETE OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')`
 - `trigger_referral_program_topics_updated_at`: `CREATE TRIGGER trigger_referral_program_topics_updated_at BEFORE UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_topic_references_after_fk`: `CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')`

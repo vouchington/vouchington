@@ -44,5 +44,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references AFTER INSERT OR DELETE OR UPDATE ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
 - `trigger_project_community_list_topics_count`: `CREATE TRIGGER trigger_project_community_list_topics_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()`
+- `trigger_topic_references_after_fk`: `CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`

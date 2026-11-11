@@ -43,5 +43,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references AFTER INSERT OR DELETE OR UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_topic_id')`
 - `trigger_individual_rewards_program_point_valuations_updated_at`: `CREATE TRIGGER trigger_individual_rewards_program_point_valuations_updated_at BEFORE UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_topic_references_after_fk`: `CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_topic_id')`
