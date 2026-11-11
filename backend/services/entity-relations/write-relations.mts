@@ -73,8 +73,8 @@ export async function writeEntityRelations(
 
 /**
  * Inserts already safety-screened post related URLs in a caller-owned transaction. This narrow
- * boundary requires the caller to hold the post scope lock and check capacity, safety, and
- * authorization in this same transaction. Projection receipts record safety decisions.
+ * boundary requires the caller to check capacity, safety, and authorization in this same
+ * transaction. Projection receipts record safety decisions.
  * It dispatches no effects, leaving the caller's atomic publication unit intact.
  */
 export async function insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction(
