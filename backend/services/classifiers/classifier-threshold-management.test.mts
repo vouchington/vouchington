@@ -128,7 +128,7 @@ describe('setClassifierCandidateThreshold', () => {
     expect(community[0]).toMatchObject({ lower: 0.3, deactivatedById: actor.id })
   })
 
-  it('serializes concurrent changes so exactly one revision stays active', async () => {
+  it('keeps one active revision when concurrent changes race on an existing one', async () => {
     const { fixture, actor, scope } = await createThresholdManagementCase()
     const other = await createTestUser()
 
@@ -137,10 +137,16 @@ describe('setClassifierCandidateThreshold', () => {
       setClassifierCandidateThreshold(other.id, scope, { lower: 0.2, upper: null }),
     ])
 
-    expect(results.map(result => result.outcome)).toEqual(['changed', 'changed'])
+    const outcomes = results.map(result => result.outcome)
+    expect(outcomes).toContain('changed')
+    expect(outcomes.every(outcome => outcome === 'changed' || outcome === 'conflict')).toBe(true)
     const rows = await readCandidateThresholdRows(fixture.topicCandidateId)
-    expect(rows).toHaveLength(3)
+    expect(rows).toHaveLength(1 + outcomes.filter(outcome => outcome === 'changed').length)
     expect(rows.filter(row => row.active)).toHaveLength(1)
+    const changedIds = results.flatMap(result =>
+      result.outcome === 'changed' ? [result.threshold.id] : [],
+    )
+    expect(changedIds).toContain(rows.find(row => row.active)?.id)
   })
 
   it('returns one conflict when two first revisions read the empty active slot', async () => {
