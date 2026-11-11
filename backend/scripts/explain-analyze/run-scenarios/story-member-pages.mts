@@ -15,7 +15,6 @@ import {
   hydrateStoryMemberPage,
 } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { withSeedAnchorClock } from '../seed-clock.mts'
 
 const HYDRATION_QUERY_NAMES = [
   'getRssFeedItemsByIdBatch',

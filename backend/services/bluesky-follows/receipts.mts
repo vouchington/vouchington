@@ -163,8 +163,7 @@ export async function listBlueskyFollowReceiptsForFollower(
 // records live in the other follower's repo, so followeeUserId cannot delete them remotely. A
 // self-follow receipt is excluded because followeeUserId also owns that remote record;
 // disconnect.mts deletes it through the follower cleanup before dropping the local receipt. A
-// full page (`hasMore`) means more may remain after `lastFollowerUserId`; the caller continues
-// through a disconnect continuation job (disconnect.mts), never a loop here.
+// full page (`hasMore`) may leave more; the disconnect job resumes after `lastFollowerUserId`, never in a loop here.
 // The page rows are locked in the CTE, so their ctids stay valid for the delete in this statement;
 // deleting by ctid keeps the delete on the page instead of re-joining the whole table.
 export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
