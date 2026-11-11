@@ -1,6 +1,10 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { completeCopyrightActionIntentInTransaction } from '../../../services/copyright-notices/action-delivery-locking.mts'
+import {
+  completeCopyrightActionIntentInTransaction,
+  lockCopyrightActionDelivery,
+} from '../../../services/copyright-notices/action-delivery-locking.mts'
+import { getTestPostgresBackendProcessId } from '../../postgres-lock-wait.mts'
 import { replayEligibleCopyrightRestoreIntentsInTransaction } from '../../../services/copyright-notices/court-hold-restore-replay.mts'
 
 /** Supplies an owned candidate directly, proving the locked automatic replay rechecks its state. */
@@ -88,4 +92,27 @@ export async function isTestCopyrightPlacementWithheld(placementId: string): Pro
     sql`/* isTestCopyrightPlacementWithheld */ SELECT copyright_withheld_at IS NOT NULL AS withheld FROM media_placements WHERE id = ${placementId}`,
   )
   return rows[0]!.withheld
+}
+
+/** Holds a claimed restore's work item the way finalization does, until `complete` or `release`. */
+export async function holdTestCopyrightActionDelivery(claimed: {
+  id: string
+  lease_token: string
+}) {
+  const holder = await beginTransaction()
+  await lockCopyrightActionDelivery(claimed.id, claimed.lease_token, holder)
+  return {
+    processId: await getTestPostgresBackendProcessId(holder),
+    release: () => holder[Symbol.asyncDispose](),
+    async complete(completedAt: Date) {
+      await completeCopyrightActionIntentInTransaction({
+        intentId: claimed.id,
+        leaseToken: claimed.lease_token,
+        outcome: 'completed',
+        completedAt,
+        query: holder,
+      })
+      await holder.commit()
+    },
+  }
 }

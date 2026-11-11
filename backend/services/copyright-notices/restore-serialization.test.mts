@@ -1,18 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
-import { isTestCopyrightPlacementWithheld } from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
+import {
+  holdTestCopyrightActionDelivery,
+  isTestCopyrightPlacementWithheld,
+} from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
 import { appendCopyrightGuestFiling, processCopyrightActionIntent } from './index.mts'
-import {
-  claimCopyrightActionIntent,
-  completeCopyrightActionIntentInTransaction,
-  lockCopyrightActionDelivery,
-} from './action-delivery-state.mts'
+import { claimCopyrightActionIntent } from './action-delivery-state.mts'
 import { issueCopyrightGuestCapability } from './guest-capabilities.mts'
 
 async function restoreState(noticeId: string, intentId: string) {
@@ -79,15 +76,14 @@ describe('copyright restore serialization', () => {
     expect(claimed).not.toBeNull()
 
     // Finalization's own lock: the work item row is held until its completion commits.
-    await using holder = await beginTransaction()
-    await lockCopyrightActionDelivery(claimed!.id, claimed!.lease_token, holder)
+    const held = await holdTestCopyrightActionDelivery(claimed!)
     const filing = await withTestOwnedPostgresWait(
       {
-        holderProcessId: await getTestPostgresBackendProcessId(holder),
+        holderProcessId: held.processId,
         pool: 'write',
         lock: { kind: 'transaction' },
         queryMarker: 'preemptCopyrightRestorations',
-        releaseHolder: () => holder[Symbol.asyncDispose](),
+        releaseHolder: held.release,
       },
       async waitForLock => {
         const pending = appendCopyrightGuestFiling({
@@ -99,14 +95,7 @@ describe('copyright restore serialization', () => {
         })
         // Admission waits for the row finalization holds instead of skipping it.
         await waitForLock(pending)
-        await completeCopyrightActionIntentInTransaction({
-          intentId: claimed!.id,
-          leaseToken: claimed!.lease_token,
-          outcome: 'completed',
-          completedAt: scene.restorationAt,
-          query: holder,
-        })
-        await holder.commit()
+        await held.complete(scene.restorationAt)
         return pending
       },
     )
