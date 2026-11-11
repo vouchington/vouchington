@@ -74,6 +74,9 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'classifier_retention_cursors.cursor_child_id',
   'classifier_retention_cursors.cursor_classifier_id',
   'classifier_retention_cursors.cursor_prompt_version_id',
+  // A retention cascade can hard-delete the prompt while its request remains open.
+  'classifier_run_requests.cursor_community_prompt_id',
+  'classifier_run_requests.sweep_upper_bound_community_prompt_id',
   'follower_distribution_deliveries.delivery_id',
   'membership_google_play_recovery_cursors.cursor_evidence_id',
   'membership_google_play_recovery_cursors.sweep_upper_bound_evidence_id',
