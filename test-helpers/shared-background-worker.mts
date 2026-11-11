@@ -82,12 +82,13 @@ export async function settleSharedBackgroundJobs(
   return true
 }
 
-type JobProcessor = (job: { name: string }) => Promise<unknown>
+type JobProcessor = (job: { id?: string; name: string }) => Promise<unknown>
 
 const domainGates = new Map<string, Promise<void>>()
 // Handlers of a held domain, from the hold until its release has drained them. A held job its test
-// already removed still runs its handler on release, and that handler may enqueue same-domain
-// children; all of that DB work must settle before the holding test ends.
+// already removed never runs, like a removed job in the real queue: its dispatcher handler would
+// otherwise sweep rows other files own. Handlers that do run may enqueue same-domain children; all
+// of that DB work must settle before the holding test ends.
 const trackedRuns = new Map<string, Set<Promise<unknown>>>()
 let gatingInstalled = false
 
@@ -107,14 +108,18 @@ function domainOf(job: { name: string }): string {
 export function holdBackgroundDomain(domain: BackgroundDomain): () => Promise<void> {
   const worker = getSharedBackgroundWorker()
   if (!gatingInstalled) {
-    const internals = worker as unknown as { processor: JobProcessor }
+    const internals = worker as unknown as TestWorkerInternals & { processor: JobProcessor }
     const processor = internals.processor
+    const runUnlessRemoved = async (job: Parameters<JobProcessor>[0]) => {
+      if (job.id !== undefined && !(await internals.queue.getJob(job.id))) return undefined
+      return processor(job)
+    }
     internals.processor = job => {
       const name = domainOf(job)
       const runs = trackedRuns.get(name)
       const gate = domainGates.get(name)
-      if (!runs) return gate ? gate.then(() => processor(job)) : processor(job)
-      const run = (gate ? gate.then(() => processor(job)) : processor(job)).finally(() =>
+      if (!runs) return gate ? gate.then(() => runUnlessRemoved(job)) : processor(job)
+      const run = (gate ? gate.then(() => runUnlessRemoved(job)) : processor(job)).finally(() =>
         runs.delete(run),
       )
       runs.add(run)
