@@ -87,6 +87,19 @@ describe('read_posts.search discovery visibility — real DB', () => {
     const seed = await createTestPost({ user: authorUser, title: `${token} similar seed` })
     await addDummyEmbeddingToPost(seed.id, { embedding: makeNearbyEmbedding(queryEmbedding) })
     similarSeedId = seed.id
+    const pendingRoot = fixtures.hidden.find(post => post.label === 'post awaiting review')!
+    const comment = await createTestPost({
+      user: authorUser,
+      post_type: 'comment',
+      parent_post_id: pendingRoot.id,
+      title: `${token} comment under a pending root`,
+    })
+    await addDummyEmbeddingToPost(comment.id, { embedding: makeNearbyEmbedding(queryEmbedding) })
+    fixtures.hidden.push({
+      label: 'comment under a pending root',
+      id: comment.id,
+      post_type: 'comment',
+    })
   })
 
   it.each(['text_search_query', 'semantic_search_query', 'similar_post_id'])(
@@ -121,8 +134,16 @@ describe('read_posts.search discovery visibility — real DB', () => {
     // empty-page checks, so they run together and stay inside the five-second cap.
     const pages = await Promise.all(
       [author, admin, stranger].flatMap(caller =>
-        ['followers-only post', 'post awaiting review'].map(async label => {
-          const seed = fixtures.hidden.find(post => post.label === label)!
+        [
+          'followers-only post',
+          'post awaiting review',
+          'comment under a private root',
+          'comment under a pending root',
+          'comment awaiting review',
+        ].map(async label => {
+          const seed = [...fixtures.hidden, ...fixtures.placeholders].find(
+            post => post.label === label,
+          )!
           const [mcpIds, restIds] = await Promise.all([
             search(caller, { similar_post_id: seed.id }),
             restSearch(caller, { similar_post_id: seed.id }),
@@ -135,6 +156,16 @@ describe('read_posts.search discovery visibility — real DB', () => {
       expect(mcpIds).toEqual([])
       expect(restIds).toEqual([])
     }
+  })
+
+  it('keeps an approved comment under a public root usable as a similar source', async () => {
+    const args = { similar_post_id: fixtures.readable[1]!.id }
+    const [mcpIds, restIds] = await Promise.all([
+      search(stranger, args),
+      restSearch(stranger, args),
+    ])
+    expect(mcpIds.toSorted()).toEqual(restIds.toSorted())
+    expect(mcpIds).toContain(fixtures.readable[0]!.id)
   })
 
   it('matches REST discovery for a muted author', async () => {
