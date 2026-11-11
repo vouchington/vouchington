@@ -59,4 +59,51 @@ describe('local patch coverage planning', () => {
       ),
     ).toThrow('Coverage producer needs credentials')
   })
+
+  it('preserves CI collector scopes instead of crediting unpublished coverage', () => {
+    const ownership = [
+      {
+        workflow: 'tooling.yml',
+        orchestratorJob: 'tooling',
+        jobLabel: 'tools',
+        invocation: 'tooling-registry' as const,
+        projects: [{ project: 'tools', credential: 'None' }],
+      },
+      {
+        workflow: 'tooling.yml',
+        orchestratorJob: 'tooling',
+        jobLabel: 'dedicated',
+        invocation: 'literal' as const,
+        projects: [{ project: 'bounds', credential: 'None' }],
+      },
+      {
+        workflow: 'host.yml',
+        orchestratorJob: 'host',
+        jobLabel: 'host',
+        invocation: 'portability-group' as const,
+        projects: [{ project: 'host', credential: 'None' }],
+      },
+      {
+        workflow: 'stories.yml',
+        orchestratorJob: 'stories',
+        jobLabel: 'stories',
+        invocation: 'storybook' as const,
+        projects: [{ project: 'stories', credential: 'None' }],
+      },
+    ]
+    const workflow = {
+      jobs: Object.fromEntries(
+        ownership.map(job => [
+          job.jobLabel,
+          {
+            uses: `./.github/workflows/${job.workflow}`,
+            with: { publish_coverage: true },
+          },
+        ]),
+      ),
+    }
+    expect(
+      localCoverageProjects(workflow, ownership).projects.map(project => project.coverageScope),
+    ).toEqual(['tooling', 'tooling', 'portability', 'stories'])
+  })
 })

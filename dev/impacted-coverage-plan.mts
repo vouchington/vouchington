@@ -40,7 +40,20 @@ export function localCoverageProjects(
   for (const job of Object.values(workflow.jobs)) {
     if (job.with?.publish_coverage === true) workflows.add(job.uses?.split('/').at(-1))
   }
-  const projects = ownership.flatMap(job => (workflows.has(job.workflow) ? job.projects : []))
+  const scopes = new Map<string, string>()
+  for (const job of ownership) {
+    if (job.invocation === 'tooling-registry') scopes.set(job.workflow, 'tooling')
+    if (job.invocation === 'portability-group') scopes.set(job.workflow, 'portability')
+  }
+  const projects = ownership.flatMap(job =>
+    workflows.has(job.workflow)
+      ? job.projects.map(project => ({
+          ...project,
+          coverageScope:
+            job.invocation === 'storybook' ? project.project : scopes.get(job.workflow),
+        }))
+      : [],
+  )
   const credentialed = projects.find(project => project.credential !== 'None')
   if (credentialed) throw new Error(`Coverage producer needs credentials: ${credentialed.project}`)
   if (projects.length === 0) throw new Error('No local Vitest coverage producers found for area')

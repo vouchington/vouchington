@@ -90,6 +90,7 @@ function main(): void {
       // Sequential producers keep both database access and the coverage output isolated.
       for (const project of projects) {
         const output = join(artifacts, project.project.replaceAll('/', '-'))
+        const projectEnv = { ...env, VITEST_COVERAGE_SCOPE: project.coverageScope ?? '' }
         const args = [
           'exec',
           './ci/with-node-test-options',
@@ -120,10 +121,10 @@ function main(): void {
               '--',
               ...args,
             ],
-            env,
+            projectEnv,
           )
         } else {
-          run('pnpm', args, env)
+          run('pnpm', args, projectEnv)
         }
         if (!existsSync(join(output, 'lcov.info'))) {
           throw new Error(`patch-coverage ${area}: ${project.project} produced no fresh LCOV`)
