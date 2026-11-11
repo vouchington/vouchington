@@ -54,5 +54,5 @@ _none_
 **Triggers:**
 
 - `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
-- `trigger_topic_references_after_fk`: `CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
+- `trigger_topic_references_after_foreign_key`: `CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
 - `trigger_user_landing_page_items_updated_at`: `CREATE TRIGGER trigger_user_landing_page_items_updated_at BEFORE UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

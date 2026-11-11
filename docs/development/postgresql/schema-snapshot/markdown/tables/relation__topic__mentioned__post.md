@@ -41,4 +41,4 @@ _none_
 **Triggers:**
 
 - `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__mentioned__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')`
-- `trigger_topic_references_after_fk`: `CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__mentioned__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')`
+- `trigger_topic_references_after_foreign_key`: `CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__mentioned__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')`

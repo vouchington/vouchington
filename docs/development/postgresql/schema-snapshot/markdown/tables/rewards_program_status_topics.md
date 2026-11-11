@@ -36,4 +36,4 @@ _none_
 
 - `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('lifetime_version_id', 'topic_id')`
 - `trigger_rewards_program_status_topics_updated_at`: `CREATE TRIGGER trigger_rewards_program_status_topics_updated_at BEFORE UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
-- `trigger_topic_references_after_fk`: `CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('lifetime_version_id', 'topic_id')`
+- `trigger_topic_references_after_foreign_key`: `CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('lifetime_version_id', 'topic_id')`

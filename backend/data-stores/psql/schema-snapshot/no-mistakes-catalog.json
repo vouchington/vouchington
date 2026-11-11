@@ -11878,8 +11878,8 @@
         "trigger_card_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_card_topics_updated_at BEFORE UPDATE ON public.card_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.card_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('bank_topic_id', 'brand_topic_id', 'topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.card_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('bank_topic_id', 'brand_topic_id', 'topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -13182,8 +13182,8 @@
         "trigger_classifier_candidates_updated_at": {
           "definition": "CREATE TRIGGER trigger_classifier_candidates_updated_at BEFORE UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {
@@ -21679,8 +21679,8 @@
         "trigger_project_community_list_topics_count": {
           "definition": "CREATE TRIGGER trigger_project_community_list_topics_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -52660,8 +52660,8 @@
         "trigger_curated_aside_items_guard_rss_feed_hard_delete": {
           "definition": "CREATE TRIGGER trigger_curated_aside_items_guard_rss_feed_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -54677,8 +54677,8 @@
         "trigger_fediverse_instance_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_fediverse_instance_topics_updated_at BEFORE UPDATE ON public.fediverse_instance_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.fediverse_instance_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.fediverse_instance_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -56994,8 +56994,8 @@
         "trigger_hostname_crawler_configurations_updated_at": {
           "definition": "CREATE TRIGGER trigger_hostname_crawler_configurations_updated_at BEFORE UPDATE ON public.hostname_crawler_configurations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.hostname_crawler_configurations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.hostname_crawler_configurations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -60991,8 +60991,8 @@
         "trigger_individual_cards_fn_update_updated_at": {
           "definition": "CREATE TRIGGER trigger_individual_cards_fn_update_updated_at BEFORE UPDATE ON public.individual_cards FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.individual_cards FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('card_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.individual_cards FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('card_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -61479,8 +61479,8 @@
         "trigger_individual_rewards_program_point_valuations_updated_at": {
           "definition": "CREATE TRIGGER trigger_individual_rewards_program_point_valuations_updated_at BEFORE UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_topic_id')"
         }
       },
       "uniqueConstraints": {
@@ -61679,8 +61679,8 @@
         "trigger_individual_rewards_program_statuses_updated_at": {
           "definition": "CREATE TRIGGER trigger_individual_rewards_program_statuses_updated_at BEFORE UPDATE ON public.individual_rewards_program_statuses FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.individual_rewards_program_statuses FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_status_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.individual_rewards_program_statuses FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_status_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -93189,8 +93189,8 @@
         "trigger_post_data_point_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_post_data_point_topics_updated_at BEFORE UPDATE ON public.post_data_point_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.post_data_point_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.post_data_point_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -93633,8 +93633,8 @@
         "trigger_post_explicit_topic_categories_updated_at": {
           "definition": "CREATE TRIGGER trigger_post_explicit_topic_categories_updated_at BEFORE UPDATE ON public.post_explicit_topic_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.post_explicit_topic_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.post_explicit_topic_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -96069,8 +96069,8 @@
         "trigger_post_review_topic_ratings_updated_at": {
           "definition": "CREATE TRIGGER trigger_post_review_topic_ratings_updated_at BEFORE UPDATE ON public.post_review_topic_ratings FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.post_review_topic_ratings FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.post_review_topic_ratings FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -97443,8 +97443,8 @@
         "trigger_post_topic_recommendations_updated_at": {
           "definition": "CREATE TRIGGER trigger_post_topic_recommendations_updated_at BEFORE UPDATE ON public.post_topic_recommendations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.post_topic_recommendations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('created_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.post_topic_recommendations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('created_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -101074,8 +101074,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.referral_program_topic_link_validation_rule_sets FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.referral_program_topic_link_validation_rule_sets FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.referral_program_topic_link_validation_rule_sets FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -101237,8 +101237,8 @@
         "trigger_referral_program_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_referral_program_topics_updated_at BEFORE UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -101504,8 +101504,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__community__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__community__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__community__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -102389,8 +102389,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__post__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__post__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__post__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {
@@ -104293,8 +104293,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__post__mentioned__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__post__mentioned__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__post__mentioned__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -107539,8 +107539,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {
@@ -109469,8 +109469,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -110439,8 +110439,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -111441,8 +111441,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -112443,8 +112443,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__guide__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__guide__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__guide__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -113445,8 +113445,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__landing_page__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__landing_page__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__landing_page__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -114091,8 +114091,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__mentioned__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__mentioned__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__mentioned__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {}
@@ -114358,8 +114358,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__parent__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__parent__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__parent__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         }
       },
       "uniqueConstraints": {}
@@ -114949,8 +114949,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__publisher_type__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__publisher_type__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__publisher_type__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -115919,8 +115919,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__related__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__related__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__related__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -116889,8 +116889,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__related__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__related__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__related__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -117891,8 +117891,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__related__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__related__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__related__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -118893,8 +118893,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__terms_of_service__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__terms_of_service__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__topic__terms_of_service__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
         }
       },
       "uniqueConstraints": {
@@ -119539,8 +119539,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__block__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__block__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__block__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -120650,8 +120650,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {
@@ -121296,8 +121296,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__dismiss_recommendation__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__dismiss_recommendation__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__dismiss_recommendation__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -122407,8 +122407,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -124026,8 +124026,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -127193,8 +127193,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__subscribe_posts__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__subscribe_posts__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__subscribe_posts__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -127460,8 +127460,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__subscribe_rss_feed_items__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__subscribe_rss_feed_items__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.relation__user__subscribe_rss_feed_items__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
         }
       },
       "uniqueConstraints": {}
@@ -128972,8 +128972,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.retailer_countries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('retailer_topic_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.retailer_countries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('retailer_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.retailer_countries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('retailer_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -129060,8 +129060,8 @@
         "trigger_retailer_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_retailer_topics_updated_at BEFORE UPDATE ON public.retailer_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.retailer_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.retailer_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -132775,8 +132775,8 @@
         "trigger_rewards_program_status_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_rewards_program_status_topics_updated_at BEFORE UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('lifetime_version_id', 'topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('lifetime_version_id', 'topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -132913,8 +132913,8 @@
         "trigger_rewards_program_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_rewards_program_topics_updated_at BEFORE UPDATE ON public.rewards_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.rewards_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rewards_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -133223,8 +133223,8 @@
         "trigger_rss_feed_categories_updated_at": {
           "definition": "CREATE TRIGGER trigger_rss_feed_categories_updated_at BEFORE UPDATE ON public.rss_feed_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.rss_feed_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rss_feed_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -133720,8 +133720,8 @@
         "trigger_rss_feed_item_categories_updated_at": {
           "definition": "CREATE TRIGGER trigger_rss_feed_item_categories_updated_at BEFORE UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -137331,8 +137331,8 @@
         "trigger_sync_url_feed_rank": {
           "definition": "CREATE TRIGGER trigger_sync_url_feed_rank AFTER INSERT OR DELETE OR UPDATE OF rss_feed_url_id, is_enabled, deleted_at ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_update_url_feed_rank()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -137844,8 +137844,8 @@
         "trigger_spending_category_topics_updated_at": {
           "definition": "CREATE TRIGGER trigger_spending_category_topics_updated_at BEFORE UPDATE ON public.spending_category_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.spending_category_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.spending_category_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -138149,8 +138149,8 @@
         "trigger_spending_entries_fn_update_updated_at": {
           "definition": "CREATE TRIGGER trigger_spending_entries_fn_update_updated_at BEFORE UPDATE ON public.spending_entries FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.spending_entries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('spending_category_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.spending_entries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('spending_category_topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -141089,8 +141089,8 @@
         "trigger_topic_merge_slug_alias_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_slug_alias_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_slug_alias_not_reserved()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id', 'unlink_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id', 'unlink_topic_id')"
         }
       },
       "uniqueConstraints": {
@@ -141665,8 +141665,8 @@
         "trigger_topic_claims_updated_at": {
           "definition": "CREATE TRIGGER trigger_topic_claims_updated_at BEFORE UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         }
       },
       "uniqueConstraints": {}
@@ -149013,8 +149013,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topic_votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.topic_votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.topic_votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         },
         "trigger_topic_votes__ua_release": {
           "definition": "CREATE TRIGGER trigger_topic_votes__ua_release AFTER DELETE ON public.topic_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
@@ -150454,8 +150454,8 @@
         "trigger_topic_merge_participant_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_participant_reservation BEFORE DELETE OR UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_participant_not_reserved()"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id', 'rewards_program_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id', 'rewards_program_topic_id')"
         },
         "trigger_topics_content_provenance_immutable": {
           "definition": "CREATE TRIGGER trigger_topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()"
@@ -152842,8 +152842,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         },
         "trigger_url_hostnames_crawl_policy_changed_at": {
           "definition": "CREATE TRIGGER trigger_url_hostnames_crawl_policy_changed_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_url_hostname_crawl_policy_changed_at()"
@@ -158448,8 +158448,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
         },
         "trigger_user_landing_page_items_updated_at": {
           "definition": "CREATE TRIGGER trigger_user_landing_page_items_updated_at BEFORE UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
@@ -162069,8 +162069,8 @@
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
         },
-        "trigger_topic_references_after_fk": {
-          "definition": "CREATE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR DELETE OR UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
+        "trigger_topic_references_after_foreign_key": {
+          "definition": "CREATE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR DELETE OR UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
         },
         "trigger_user_referra_program_links_content_provenance_immutable": {
           "definition": "CREATE TRIGGER trigger_user_referra_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()"
