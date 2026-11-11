@@ -146,7 +146,6 @@
 - `spending:write`
 - `topic-claims:read`
 - `topic-claims:write`
-- `topic-recommendations:write`
 - `topics:read`
 - `users:read`
 - `votes:write`
