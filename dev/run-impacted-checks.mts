@@ -28,7 +28,7 @@ function gitPaths(args: string[]): string[] {
 function changedPaths(base: string): string[] {
   return [
     ...new Set([
-      ...gitPaths(['diff', '--name-only', '-z', base, '--']),
+      ...gitPaths(['diff', '--no-renames', '--name-only', '-z', base, '--']),
       ...gitPaths(['ls-files', '--others', '--exclude-standard', '-z']),
     ]),
   ].toSorted()

@@ -26,6 +26,9 @@ describe('pre-push impact runner', () => {
       parseSelectedChecks(JSON.stringify({ ...validReport, changed_files: [] }), paths),
     ).toThrow(/every changed file/)
     expect(() =>
+      parseSelectedChecks(JSON.stringify({ ...validReport, fallback_triggered: true }), paths),
+    ).toThrow(/selected gates are unknown/)
+    expect(() =>
       parseSelectedChecks(
         JSON.stringify({ ...validReport, checks: [{ name: 'unknown', kind: 'generic' }] }),
         paths,
@@ -57,6 +60,7 @@ describe('pre-push impact runner', () => {
       )
       writeFileSync(join(repo, 'api-fixtures', 'v1', 'mcp.json'), 'stale\n')
       writeFileSync(join(repo, 'app.mts'), 'export const value = 1\n')
+      writeFileSync(join(repo, 'keep-me.mts'), 'export const stable = true\n')
       const git = (...args: string[]) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' })
       git('init', '--quiet')
       git('config', 'user.name', 'Fixture')
@@ -64,6 +68,7 @@ describe('pre-push impact runner', () => {
       git(
         'add',
         'app.mts',
+        'keep-me.mts',
         'dev/localization/local-catalog.mts',
         'backend/scripts/generate-mcp-catalog.mts',
         'api-fixtures/v1/mcp.json',
@@ -103,6 +108,15 @@ describe('pre-push impact runner', () => {
       expect(result.stderr).toContain('exited 7')
       expect(readFileSync(observed, 'utf8')).toBe('app.mts\n')
       expect(readFileSync(marker, 'utf8')).toBe('ran')
+
+      git('mv', 'keep-me.mts', 'moved.mts')
+      const renamed = spawnSync(process.execPath, [script], {
+        cwd: repo,
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` },
+        encoding: 'utf8',
+      })
+      expect(renamed.status).toBe(1)
+      expect(readFileSync(observed, 'utf8')).toBe('app.mts\nkeep-me.mts\nmoved.mts\n')
 
       writeFileSync(
         fakePnpm,
