@@ -21,6 +21,26 @@ async function hackerNewsHotLeaves(): Promise<readonly string[]> {
   return hotLeaves
 }
 
+let postIdLeaves: readonly string[] | undefined
+
+/** Per-partition indexes led by id: the walk an empty hot window falls back to. */
+async function postIdOnlyLeaves(): Promise<readonly string[]> {
+  if (postIdLeaves) return postIdLeaves
+  const { rows } = await read<{ index_name: string }>(
+    `/* hackerNewsScalePostIdLeaves */ SELECT index_class.relname AS index_name
+     FROM pg_partition_tree('posts'::regclass) tree
+     JOIN pg_index leaf_index ON leaf_index.indrelid = tree.relid
+     JOIN pg_class index_class ON index_class.oid = leaf_index.indexrelid
+     JOIN pg_attribute id_column ON id_column.attrelid = tree.relid
+       AND id_column.attname = 'id' AND id_column.attnum = leaf_index.indkey[0]
+     WHERE tree.isleaf     LIMIT 1001`,
+  )
+  if (rows.length === 0 || rows.length > 1000)
+    throw new Error('posts id-only leaf inventory must be bounded')
+  postIdLeaves = rows.map(row => row.index_name)
+  return postIdLeaves
+}
+
 type CaptureContext = {
   fixture: HackerNewsScaleFixture
   observations: unknown[]
@@ -44,7 +64,12 @@ export async function captureHackerNewsScalePage(
         ? [
             {
               kind: 'usesIndexes' as const,
-              indexes: await hackerNewsHotLeaves(),
+              // With no hot rows the planner has nothing to walk on the hot leaf, so an empty
+              // window may read the per-partition id index; maxProcessedRows below keeps it bounded.
+              indexes: [
+                ...(await hackerNewsHotLeaves()),
+                ...(prefix.startsWith('hacker-news-scale-zero-') ? await postIdOnlyLeaves() : []),
+              ],
               anyOf: true,
             },
           ]
