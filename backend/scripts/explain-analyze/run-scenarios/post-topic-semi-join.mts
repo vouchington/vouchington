@@ -1,7 +1,7 @@
 import { getPostFeedIds, getPostIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { partitionIndexLeaves } from '../partition-index-leaves.mts'
+import { partitionIndexLeavesOf } from '../partition-index-leaves.mts'
 import { POST_TOPIC_SEMI_JOIN_FIXTURE } from '../seed-data/post-topic-semi-join-fixture.mts'
 import { POST_TOPIC_FIXTURES_SEEDED_ROWS } from '../post-discovery-seeded-rows.mts'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
@@ -129,15 +129,11 @@ function registerMultiTopicFeedScenario(id: string): void {
 
 export async function runPostTopicSemiJoinScenarios(): Promise<void> {
   // Each page probes the alias relation by post id: the key-led leaves, not a topic-side read.
-  const aliasRelationLeaves = (
-    await Promise.all(
-      [
-        'relation__post__category__topic_alias_pkey',
-        'relation__post__category__topic_alias_subject_id_id_key',
-        'idx_relation__post__category__topic_alias__subject__newest',
-      ].map(partitionIndexLeaves),
-    )
-  ).flat()
+  const aliasRelationLeaves = await partitionIndexLeavesOf([
+    'relation__post__category__topic_alias_pkey',
+    'relation__post__category__topic_alias_subject_id_id_key',
+    'idx_relation__post__category__topic_alias__subject__newest',
+  ])
   await captureTopicPair('sparse', aliasRelationLeaves)
   await captureTopicPair('dense', aliasRelationLeaves)
 

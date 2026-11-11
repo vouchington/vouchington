@@ -22,3 +22,18 @@ export async function postIdOrderLeaves(): Promise<readonly string[]> {
   ])
   return [...primaryKey, ...visibility]
 }
+
+/** Leaf index names for several parents in one read. */
+export async function partitionIndexLeavesOf(indexNames: readonly string[]): Promise<string[]> {
+  const { rows } = await read<{ index_name: string }>(
+    `/* partitionIndexLeavesOf */
+     SELECT DISTINCT index_class.relname AS index_name
+     FROM unnest($1::text[]) AS parent(name)
+     CROSS JOIN LATERAL pg_partition_tree(parent.name::regclass) tree
+     JOIN pg_class index_class ON index_class.oid = tree.relid
+     WHERE tree.isleaf`,
+    [indexNames],
+  )
+  if (rows.length === 0) throw new Error(`${indexNames.join(', ')} have no partition leaves`)
+  return rows.map(row => row.index_name)
+}
