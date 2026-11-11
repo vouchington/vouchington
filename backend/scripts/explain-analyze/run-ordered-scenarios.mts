@@ -10,6 +10,11 @@ import { continueAfterFailure as runStep } from './scenario-failures.mts'
 import { EARLY_RUNNERS } from './run-ordered-scenarios-early.mts'
 import { LATE_RUNNERS } from './run-ordered-scenarios-late.mts'
 import { ORDINARY_EXPLAIN_SHARDS, type OrdinaryExplainShard } from './explain-shards.mts'
+import {
+  prepareCrawlDispatchScale,
+  prepareReferralCrawlScale,
+  prepareReferralUnfurlScale,
+} from './seed-data/dispatch-work-plans.mts'
 import { runAnalyze } from './seed-data/maintenance.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
 
@@ -36,13 +41,21 @@ export const ORDERED_SHARD_STARTS = [
   'runEmbeddingReconciliationScenarios',
 ] as const
 
+// The referral link plans read the crawl and referral link volume the dispatch work plan seeds
+// add in the first segment, so the last shard replays those seeds without their captures.
+async function replayDispatchWorkPlanSeeds(): Promise<void> {
+  await prepareCrawlDispatchScale()
+  await prepareReferralCrawlScale()
+  await prepareReferralUnfurlScale()
+}
+
 // The last shard's plans (membership renewal selection, orphaned queued grants) need the mixed
 // membership corpus that the vote weight seed writes in the first segment, and its large-table
 // scan baseline needs the vacuumed statistics that notification visibility settles before it, so
-// that shard replays both before its own segment. Only add a step here that is deterministic and
+// that shard replays both, and the dispatch seeds, before its own segment. Only add a step here that is deterministic and
 // idempotent.
 const SHARD_PRELUDES: Partial<Record<OrdinaryExplainShard, readonly OrderedRunner[]>> = {
-  'main-4': [seedVoteWeightDispatch, runAnalyze],
+  'main-4': [replayDispatchWorkPlanSeeds, seedVoteWeightDispatch, runAnalyze],
 }
 
 export function getShardPrelude(shard: OrdinaryExplainShard): readonly OrderedRunner[] {

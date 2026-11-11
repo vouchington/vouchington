@@ -49,8 +49,9 @@ describe('getOrderedRunners', () => {
     ).toEqual([...ORDERED_SHARD_STARTS])
   })
 
-  it('replays the vote weight seed before the last shard so its membership plans keep the corpus', () => {
+  it('replays the earlier seeds before the last shard so its plans keep their corpora', () => {
     expect(getShardPrelude('main-4').map(runner => runner.name)).toEqual([
+      'replayDispatchWorkPlanSeeds',
       'seedVoteWeightDispatch',
       'runAnalyze',
     ])
