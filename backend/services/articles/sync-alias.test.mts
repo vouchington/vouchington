@@ -6,11 +6,7 @@ import {
   countCapturedQueriesByAnnotation,
   withCapturedTestQueries,
 } from '@voucha/test-helpers/query-capture'
-import {
-  stubArticleBucket,
-  syncOwnedArticles,
-  type ArticleBucketObject,
-} from '../../test-helpers/article-sync-fixtures.mts'
+import { syncOwnedArticles, useArticleBucket } from '../../test-helpers/article-sync-fixtures.mts'
 import { getPostByAny } from '@services/posts/get'
 
 import { syncArticles } from './sync.mts'
@@ -20,19 +16,19 @@ describe('syncArticles aliases', () => {
     const user = await createTestUser({ administrator: true })
     const slug = `aliased-sync-${randomUUID()}`
     const ownedSlugs = new Set([slug])
-    const objects = new Map<string, ArticleBucketObject>([
+    const bucket = await useArticleBucket([
       ['seed.md', `---\ntitle: Seed\nslug: ${slug}\n---\nSeed body.`],
     ])
-    stubArticleBucket(objects)
     const sync = () => syncOwnedArticles(ownedSlugs, () => syncArticles(user))
 
     expect((await sync()).results[0]?.action).toBe('created')
     const post = await getPostByAny(slug)
     expect(post).not.toBeNull()
 
-    objects.clear()
-    objects.set('slug.md', `---\ntitle: Changed\nslug: ${slug}\n---\nChanged body.`)
-    objects.set('uuid.md', `---\ntitle: Changed\nslug: ${post!.id}\n---\nChanged body.`)
+    await bucket.replace([
+      ['slug.md', `---\ntitle: Changed\nslug: ${slug}\n---\nChanged body.`],
+      ['uuid.md', `---\ntitle: Changed\nslug: ${post!.id}\n---\nChanged body.`],
+    ])
 
     const { result, queries } = await withCapturedTestQueries(sync)
 

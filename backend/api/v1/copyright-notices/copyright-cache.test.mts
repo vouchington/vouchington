@@ -1,20 +1,18 @@
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { S3Client } from '@aws-sdk/client-s3'
+import { describe, expect, it } from 'vitest'
 import { createHash } from 'node:crypto'
-import { Readable } from 'node:stream'
+import { putS3Object } from '@voucha/test-helpers/aws-emulator-s3'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { readOwnedCopyrightEmailQueue } from '@voucha/test-helpers/copyright-email-queue-http-contract'
 import { createCopyrightEmailIntake } from '@services/copyright-notices'
 
 describe('copyright API cache policy', () => {
   useCopyrightIntakeEnvironment()
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
+  // Registered after the intake environment so its bucket replaces the placeholder name.
+  const evidence = useCopyrightEvidenceBucket()
 
   it('marks member, staff, and raw-email responses private and no-store', async () => {
     const member = createRequest()
@@ -27,10 +25,12 @@ describe('copyright API cache policy', () => {
     const moderatorUser = await createTestUser({ extraRoles: ['moderator'] })
     await moderator.authenticateAs(moderatorUser)
     const bytes = Buffer.from('From: claimant@example.test\r\n\r\nCopyright notice')
+    const rawStorageKey = `email/${crypto.randomUUID()}/original.eml`
+    await putS3Object({ Bucket: evidence.name(), Key: rawStorageKey, Body: bytes })
     const { intake } = await createCopyrightEmailIntake({
       sesMessageId: `ses-api-raw-${crypto.randomUUID()}`,
       receivedAt: new Date(),
-      rawStorageKey: `email/${crypto.randomUUID()}/original.eml`,
+      rawStorageKey,
       rawSha256: createHash('sha256').update(bytes).digest(),
       rawMimeType: 'message/rfc822',
       rawByteSize: bytes.byteLength,
@@ -42,10 +42,6 @@ describe('copyright API cache policy', () => {
     })
     expect(staff.headers['cache-control']).toBe('private, no-store')
 
-    vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({
-      Body: Readable.from([bytes]),
-      ContentLength: bytes.byteLength,
-    } as never)
     const raw = await moderator.get(`/api/v1/copyright-email-intakes/${intake.id}/raw`).expect(200)
     expect(raw.headers).toMatchObject({
       'cache-control': 'private, no-store',

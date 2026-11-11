@@ -1,13 +1,18 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { buffer } from 'node:stream/consumers'
-import type { Readable } from 'node:stream'
+import { randomUUID } from 'node:crypto'
 import { gunzipSync } from 'node:zlib'
+import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { emulatorS3, putS3Object } from '@voucha/test-helpers/aws-emulator-s3'
+import {
+  clearS3ObjectDenials,
+  denyS3ObjectActions,
+  useOwnedS3Bucket,
+} from '@voucha/test-helpers/s3-owned-bucket'
 import { generateSitemapPage } from './generation-page.mts'
 import type { GenerationPageDependencies } from './generation-page-types.mts'
 import type { SitemapGenerationProgress } from './generation-storage.mts'
 import { applyStoragePrefix } from './storage-prefix.mts'
-import type { PostDayManifest } from './storage.mts'
+import { getSitemapFamilyManifest, type PostDayManifest } from './storage.mts'
 import type { SitemapFamilyEntry } from './types.mts'
 
 describe('bounded sitemap publication', () => {
@@ -17,6 +22,8 @@ describe('bounded sitemap publication', () => {
   })
   it('keeps the previous index live across a cap and a failed staged upload', async () => {
     vi.stubEnv('SITEMAP_BASE_URL', 'https://test.com')
+    vi.stubEnv('SITEMAP_S3_PREFIX', `generation-page-${randomUUID()}`)
+    const bucket = await useOwnedS3Bucket('sitemaps')
     const entries: SitemapFamilyEntry[] = [
       {
         id: '0199a000-0000-7000-8000-000000000003',
@@ -31,19 +38,29 @@ describe('bounded sitemap publication', () => {
     ]
     let progress: SitemapGenerationProgress | null = null
     const currentProgress = (): SitemapGenerationProgress | null => progress
-    let manifest: PostDayManifest | null = {
+    const previousManifest: PostDayManifest = {
       active_page_count: 1,
       generation_id: '11111111-1111-4111-8111-111111111111',
       generated_at: '2026-03-01T00:00:00.000Z',
       content_hash: 'previous-content',
     }
     const indexKey = applyStoragePrefix('sitemaps/families/topics.xml')
-    const objects = new Map<string, string>([[indexKey, 'previous-index']])
+    await putS3Object({
+      Bucket: bucket,
+      Key: indexKey,
+      Body: 'previous-index',
+      Metadata: { 'sitemap-manifest': JSON.stringify(previousManifest) },
+    })
+    const readIndex = async () => {
+      const object = await emulatorS3().send(
+        new GetObjectCommand({ Bucket: bucket, Key: indexKey }),
+      )
+      return Buffer.from(await object.Body!.transformToByteArray())
+    }
     const retired: Array<{ generationId: string; pageCount: number }> = []
-    let failNextPage = true
     const dependencies: GenerationPageDependencies<SitemapFamilyEntry> = {
       getProgress: async () => progress,
-      getManifest: async () => manifest,
+      getManifest: () => getSitemapFamilyManifest('topics'),
       putProgress: async value => {
         progress = value
       },
@@ -71,40 +88,36 @@ describe('bounded sitemap publication', () => {
         lastmod: entry.updated_at.toISOString(),
       }),
     }
-    vi.spyOn(S3Client.prototype, 'send').mockImplementation(async command => {
-      if (!(command instanceof PutObjectCommand)) throw new Error('Unexpected S3 command')
-      const input = command.input
-      const key = input.Key!
-      const body = await buffer(input.Body as Readable)
-      const manifestMetadata = input.Metadata?.['sitemap-manifest']
-      if (manifestMetadata) manifest = JSON.parse(manifestMetadata) as PostDayManifest
-      if (key.endsWith('/2.xml') && failNextPage) throw new Error('staged upload failed')
-      objects.set(key, gunzipSync(body).toString())
-      return {} as never
-    })
+    await denyS3ObjectActions(bucket, [
+      { action: 's3:PutObject', keys: [applyStoragePrefix('families/topics/*/2.xml')] },
+    ])
 
     const first = await generateSitemapPage(1, dependencies)
     expect(first).toMatchObject({ manifest: null, hasMore: true })
-    expect(objects.get(indexKey)).toBe('previous-index')
-    expect(manifest?.generation_id).toBe('11111111-1111-4111-8111-111111111111')
+    expect((await readIndex()).toString()).toBe('previous-index')
+    expect((await getSitemapFamilyManifest('topics'))?.generation_id).toBe(
+      '11111111-1111-4111-8111-111111111111',
+    )
     const stagedGenerationId = currentProgress()?.generation_id
 
-    await expect(generateSitemapPage(1, dependencies)).rejects.toThrow('staged upload failed')
-    expect(objects.get(indexKey)).toBe('previous-index')
+    await expect(generateSitemapPage(1, dependencies)).rejects.toMatchObject({
+      name: 'AccessDenied',
+    })
+    expect((await readIndex()).toString()).toBe('previous-index')
     expect(currentProgress()?.page_count).toBe(1)
 
-    failNextPage = false
+    await clearS3ObjectDenials(bucket)
     const final = await generateSitemapPage(1, dependencies)
     expect(final).toMatchObject({ hasMore: false, manifest: { active_page_count: 2 } })
-    expect(objects.get(indexKey)).toContain(
+    expect(gunzipSync(await readIndex()).toString()).toContain(
       `https://test.com/sitemaps/topics/${stagedGenerationId}/2.xml`,
     )
     expect(progress).toBeNull()
 
-    const publishedIndex = objects.get(indexKey)
+    const publishedIndex = await readIndex()
     const repaged = await generateSitemapPage(2, dependencies)
     expect(repaged.manifest).toEqual(final.manifest)
-    expect(objects.get(indexKey)).toBe(publishedIndex)
+    expect(await readIndex()).toEqual(publishedIndex)
     expect(retired.at(-1)?.pageCount).toBe(1)
     expect(retired.at(-1)?.generationId).not.toBe(final.manifest?.generation_id)
   })

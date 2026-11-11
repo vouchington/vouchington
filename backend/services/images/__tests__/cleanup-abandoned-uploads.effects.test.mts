@@ -9,7 +9,7 @@ import {
   insertOwnedUploadCleanupCluster,
   makeOwnedUploadCleanupSweep,
 } from '@voucha/test-helpers/image-upload-cleanup'
-import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { seedOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import type { AbandonedUploadSweep } from '@queues/content-analysis/types'
 import { cleanupAbandonedUploads } from '../cleanup-abandoned-uploads.mts'
 import { getImageByIdFromPrimary } from '../get.mts'
@@ -31,14 +31,13 @@ describe('upload cleanup effect checkpoints', () => {
     const sweep = await makeOwnedUploadCleanupSweep(ids, now)
     sweep.windows.recovery.done = true
     sweep.windows.abandonment.done = true
-    let fail = true
-    const storage = installOwnedUploadCleanupStorage(ids, async input => {
-      if (input.Key === first && fail) throw new Error('owned provider failure')
-    })
+    const storage = await seedOwnedUploadCleanupStorage(ids)
     context.onTestFinished(
       overrideDynamicConfigFieldsForTest(imagesWorkConfig, { cleanup_batch_size: 1 }),
     )
     const saved: AbandonedUploadSweep[] = []
+    // The one-row page holds only `first`; its staged-source deletion meets a missing bucket.
+    const restoreUploads = storage.failBucket('imageUploads')
     expect(
       await cleanupAbandonedUploads(sweep, async next => {
         saved.push(next)
@@ -47,6 +46,8 @@ describe('upload cleanup effect checkpoints', () => {
       stagedSourcesDeleted: 0,
       hasMore: true,
     })
+    restoreUploads()
+    await expect(storage.deleted()).resolves.toEqual([])
     const next = saved[0]
     if (!next) throw new Error('Known provider failure did not advance the page')
     expect(next.windows.staged).toMatchObject({ after: { id: first }, done: false })
@@ -56,7 +57,9 @@ describe('upload cleanup effect checkpoints', () => {
       hasMore: false,
     })
     expect((await getImageByIdFromPrimary(later))?.upload_source_deleted_at).toBeInstanceOf(Date)
-    fail = false
+    await expect(storage.deleted()).resolves.toEqual([
+      { Bucket: storage.buckets.imageUploads, Key: later },
+    ])
     const fresh = await makeOwnedUploadCleanupSweep(ids, now)
     fresh.windows.recovery.done = true
     fresh.windows.abandonment.done = true
@@ -65,7 +68,9 @@ describe('upload cleanup effect checkpoints', () => {
       hasMore: false,
     })
     expect((await getImageByIdFromPrimary(first))?.upload_source_deleted_at).toBeInstanceOf(Date)
-    expect(storage.calls.map(call => call.Key)).toEqual([first, later, first])
+    await expect(storage.deleted()).resolves.toEqual(
+      [first, later].map(Key => ({ Bucket: storage.buckets.imageUploads, Key })),
+    )
   })
 
   it('replays an unsaved staged page without repeating its acknowledged provider deletion', async () => {
@@ -79,18 +84,23 @@ describe('upload cleanup effect checkpoints', () => {
     const sweep = await makeOwnedUploadCleanupSweep(ids, now)
     sweep.windows.recovery.done = true
     sweep.windows.abandonment.done = true
-    const storage = installOwnedUploadCleanupStorage(ids)
+    const storage = await seedOwnedUploadCleanupStorage(ids)
     await expect(
       cleanupAbandonedUploads(sweep, async () => {
         throw new Error('owned checkpoint failure')
       }),
     ).rejects.toThrow('owned checkpoint failure')
     expect((await getImageByIdFromPrimary(id))?.upload_source_deleted_at).toBeInstanceOf(Date)
+    await expect(storage.deleted()).resolves.toEqual([
+      { Bucket: storage.buckets.imageUploads, Key: id },
+    ])
+    // Store the source again: a replay that repeated the acknowledged deletion would remove it.
+    await storage.restock()
     expect(await cleanupAbandonedUploads(sweep, async () => {})).toMatchObject({
       stagedSourcesDeleted: 0,
       hasMore: false,
     })
-    expect(storage.calls.map(call => call.Key)).toEqual(ids)
+    await expect(storage.deleted()).resolves.toEqual([])
   })
 
   it.each(['staged', 'abandonment'] as const)(
@@ -106,7 +116,7 @@ describe('upload cleanup effect checkpoints', () => {
       const sweep = await makeOwnedUploadCleanupSweep(ids, now)
       for (const name of ['staged', 'recovery', 'abandonment'] as const)
         sweep.windows[name].done = name !== phase
-      const storage = installOwnedUploadCleanupStorage(ids)
+      const storage = await seedOwnedUploadCleanupStorage(ids)
       const saved: AbandonedUploadSweep[] = []
       const message = `owned ${phase} acknowledgement failure`
       const restore =
@@ -127,7 +137,9 @@ describe('upload cleanup effect checkpoints', () => {
       const expectedError = expect.objectContaining({ message })
       expect(failure).toMatchObject(phase === 'staged' ? { errors: [expectedError] } : { message })
       expect(saved).toEqual([])
-      expect(storage.calls.map(call => call.Key)).toEqual([id])
+      await expect(storage.deleted()).resolves.toEqual([
+        { Bucket: storage.buckets.imageUploads, Key: id },
+      ])
       expect((await getImageByIdFromPrimary(id, true))?.upload_source_deleted_at).toBeNull()
       // The saved page remains replayable after an uncertain acknowledgement.
       expect(

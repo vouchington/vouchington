@@ -1,13 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import {
-  GetObjectCommand,
-  ListObjectsV2Command,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3'
+import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { S3Buckets } from '@modules/aws'
+import { emulatorS3, putS3Object, readS3ObjectText } from '@voucha/test-helpers/aws-emulator-s3'
 import {
   getTrackedDayRangeFromCache,
   setTrackedDayRangeCache,
@@ -15,6 +11,8 @@ import {
 } from './tracked-range-cache.mts'
 import { applyStoragePrefix } from './storage-prefix.mts'
 import { getTrackedDayRange, markTrackedDay } from './storage.mts'
+
+const TRACKED_RANGE_STORAGE_KEY = 'sitemaps/meta/posts-tracked-range.json'
 
 describe('tracked-range-cache', () => {
   let TRACKED_RANGE_CACHE_KEY: string
@@ -84,23 +82,23 @@ describe('tracked-range-cache', () => {
     it('restores the merged durable tracked range to an empty cache', async () => {
       const persistedRange = { earliestDay: '2026-03-10', latestDay: '2026-05-20' }
       const durableRange = { earliestDay: '2026-01-02', latestDay: '2026-06-30' }
-      const sendSpy = mockTrackedRangeStorage(persistedRange, ['2026-01-02', '2026-06-30'])
+      await seedTrackedRangeStorage(persistedRange, ['2026-01-02', '2026-06-30'])
 
       await expect(getTrackedDayRange()).resolves.toEqual(durableRange)
       await expect(getTrackedDayRangeFromCache()).resolves.toEqual(durableRange)
 
-      expectTrackedRangeStorageUnion(sendSpy.mock.calls, durableRange)
+      await expectPersistedTrackedRange(durableRange)
     })
 
     it('preserves the durable tracked range when marking a day from an empty cache', async () => {
       const persistedRange = { earliestDay: '2026-03-10', latestDay: '2026-05-20' }
       const durableRange = { earliestDay: '2026-01-02', latestDay: '2026-06-30' }
-      const sendSpy = mockTrackedRangeStorage(persistedRange, ['2026-01-02', '2026-06-30'])
+      await seedTrackedRangeStorage(persistedRange, ['2026-01-02', '2026-06-30'])
 
       await expect(markTrackedDay('2026-04-15')).resolves.toEqual(durableRange)
       await expect(getTrackedDayRangeFromCache()).resolves.toEqual(durableRange)
 
-      expectTrackedRangeStorageUnion(sendSpy.mock.calls, durableRange)
+      await expectPersistedTrackedRange(durableRange)
     })
   })
 
@@ -116,40 +114,35 @@ describe('tracked-range-cache', () => {
     expect(trackedCalls[0]![1]?.args).toEqual(['2026-05-10'])
   }
 
-  function mockTrackedRangeStorage(
+  async function seedTrackedRangeStorage(
     persistedRange: { earliestDay: string; latestDay: string },
     discoveredDays: readonly string[],
-  ) {
-    return vi
-      .spyOn(S3Client.prototype, 'send')
-      .mockResolvedValueOnce({
-        Body: {
-          transformToString: vi
-            .fn<VitestLooseMock>()
-            .mockResolvedValue(JSON.stringify(persistedRange)),
-        },
-      } as never)
-      .mockResolvedValueOnce({
-        Contents: discoveredDays.map(day => {
-          const [year, month, date] = day.split('-')
-          return { Key: applyStoragePrefix(`posts/${year}/${month}/${date}/article/index.xml`) }
+  ): Promise<void> {
+    await Promise.all([
+      putS3Object({
+        Bucket: S3Buckets.sitemaps,
+        Key: applyStoragePrefix(TRACKED_RANGE_STORAGE_KEY),
+        Body: JSON.stringify(persistedRange),
+      }),
+      ...discoveredDays.map(day =>
+        putS3Object({
+          Bucket: S3Buckets.sitemaps,
+          Key: applyStoragePrefix(`posts/${day.replaceAll('-', '/')}/article/index.xml`),
+          Body: 'index',
         }),
-      } as never)
-      .mockResolvedValueOnce({} as never)
+      ),
+    ])
   }
 
-  function expectTrackedRangeStorageUnion(
-    calls: readonly (readonly unknown[])[],
-    range: { earliestDay: string; latestDay: string },
-  ): void {
-    expect(calls).toHaveLength(3)
-    expect(calls[0]![0]).toBeInstanceOf(GetObjectCommand)
-    expect(calls[1]![0]).toBeInstanceOf(ListObjectsV2Command)
-    expect((calls[2]![0] as PutObjectCommand).input).toMatchObject({
-      Bucket: S3Buckets.sitemaps,
-      Key: applyStoragePrefix('sitemaps/meta/posts-tracked-range.json'),
-      Body: JSON.stringify(range),
-      ContentType: 'application/json; charset=utf-8',
-    })
+  async function expectPersistedTrackedRange(range: {
+    earliestDay: string
+    latestDay: string
+  }): Promise<void> {
+    const key = applyStoragePrefix(TRACKED_RANGE_STORAGE_KEY)
+    expect(await readS3ObjectText(S3Buckets.sitemaps, key)).toBe(JSON.stringify(range))
+    const head = await emulatorS3().send(
+      new HeadObjectCommand({ Bucket: S3Buckets.sitemaps, Key: key }),
+    )
+    expect(head.ContentType).toBe('application/json; charset=utf-8')
   }
 })

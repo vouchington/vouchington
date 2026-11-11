@@ -5,15 +5,22 @@ import { getCopyrightEmailIntakeForAgent } from '@services/copyright-notices/ema
 import { eraseTestCopyrightEmailIntakeOriginal } from '@voucha/test-helpers/copyright-email-intake-retention'
 import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
 import {
-  SES_INBOUND_TEST_RECEIVED_AT,
+  deleteS3Object,
+  putS3Object,
+  readS3ObjectText,
+  s3ObjectExists,
+} from '@voucha/test-helpers/aws-emulator-s3'
+import {
   readCopyrightEmailAncestorKindForTest,
   readCopyrightEmailIntakeIdForTest,
   readCopyrightEmailIntakeVerdictsForTest,
   readCopyrightEmailParseFailureForTest,
   readCopyrightEmailThreadHeadersForTest,
-  stubSesInboundS3ForTest,
+  readS3ObjectLastModifiedForTest,
+  useSesInboundBucket,
 } from '@voucha/test-helpers/ses-inbound-s3'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { processSesInboundEmail } from '../processors.mts'
 
 vi.mock<typeof import('mailparser')>(import('mailparser'), async importOriginal => importOriginal())
@@ -81,25 +88,32 @@ const sha256Hex = (raw: string) => createHash('sha256').update(raw).digest('hex'
 // The intake switch gates decisions, not ingest (#1443): every test below runs with it off.
 describe('SES copyright inbound routing while intake is switched off', () => {
   useCopyrightIntakeEnvironment({ enabled: false })
+  // Registered after the intake environment so these buckets replace its placeholder names.
+  const inbound = useSesInboundBucket()
+  const evidence = useCopyrightEvidenceBucket()
+
+  async function receive(objectKey: string, raw: string): Promise<void> {
+    await putS3Object({ Bucket: inbound.name(), Key: objectKey, Body: raw })
+  }
 
   it('finishes an erased SES replay without recopying evidence or recreating work', async () => {
-    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
     const data = messageIdentity()
     const raw = noticeEmail({ messageId: `<${data.sesMessageId}@example.test>` })
-    const s3Calls = stubSesInboundS3ForTest({ objects: { [data.objectKey]: raw } })
+    const evidenceKey = `email/${data.sesMessageId}/${sha256Hex(raw)}.eml`
+    await receive(data.objectKey, raw)
     const enqueuedIntakeIds = watchIntakeEnqueues()
     await processSesInboundEmail(data)
+    expect(await readS3ObjectText(evidence.name(), evidenceKey)).toBe(raw)
     const intakeId = (await readCopyrightEmailIntakeIdForTest(data.sesMessageId))!
     await eraseTestCopyrightEmailIntakeOriginal(intakeId)
-    const firstRunCalls = s3Calls.length
+    await deleteS3Object(evidence.name(), evidenceKey)
+    // SES delivery is at least once: the same message lands in the inbound bucket again.
+    await receive(data.objectKey, raw)
 
     await processSesInboundEmail(data)
 
-    expect(s3Calls.slice(firstRunCalls).map(call => call.command)).toEqual([
-      'GetObjectCommand',
-      'DeleteObjectCommand',
-    ])
-    expect(s3Calls.at(-1)!.input).toEqual({ Bucket: 'ses-inbound-test', Key: data.objectKey })
+    expect(await s3ObjectExists(evidence.name(), evidenceKey)).toBe(false)
+    expect(await s3ObjectExists(inbound.name(), data.objectKey)).toBe(false)
     expect(enqueuedIntakeIds()).toEqual([intakeId])
     expect(await readCopyrightIntakeRetentionState(intakeId)).toMatchObject({
       intakeExists: true,
@@ -110,7 +124,6 @@ describe('SES copyright inbound routing while intake is switched off', () => {
   })
 
   it('ingests a notice and a reply, preserving the raw email before source cleanup', async () => {
-    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
     const notice = messageIdentity()
     const noticeMessageId = `<${notice.sesMessageId}@example.test>`
     const noticeRaw = noticeEmail({ messageId: noticeMessageId })
@@ -119,42 +132,21 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       messageId: `<${reply.sesMessageId}@example.test>`,
       inReplyTo: noticeMessageId,
     })
-    const s3Calls = stubSesInboundS3ForTest({
-      objects: { [notice.objectKey]: noticeRaw, [reply.objectKey]: replyRaw },
-    })
+    await receive(notice.objectKey, noticeRaw)
+    await receive(reply.objectKey, replyRaw)
+    const noticeReceivedAt = await readS3ObjectLastModifiedForTest(inbound.name(), notice.objectKey)
     const enqueuedIntakeIds = watchIntakeEnqueues()
 
     await processSesInboundEmail(notice)
 
     const noticeEvidenceKey = `email/${notice.sesMessageId}/${sha256Hex(noticeRaw)}.eml`
-    expect(s3Calls).toEqual([
-      {
-        command: 'GetObjectCommand',
-        input: { Bucket: 'ses-inbound-test', Key: notice.objectKey },
-      },
-      {
-        command: 'CopyObjectCommand',
-        input: {
-          Bucket: 'copyright-evidence-test',
-          Key: noticeEvidenceKey,
-          CopySource: `ses-inbound-test/${notice.objectKey}?versionId=version-1`,
-          CopySourceIfMatch: '"etag-1"',
-          MetadataDirective: 'COPY',
-        },
-      },
-      {
-        command: 'GetObjectCommand',
-        input: { Bucket: 'ses-inbound-test', Key: notice.objectKey, VersionId: 'version-1' },
-      },
-      {
-        command: 'DeleteObjectCommand',
-        input: { Bucket: 'ses-inbound-test', Key: notice.objectKey },
-      },
-    ])
+    expect(await readS3ObjectText(evidence.name(), noticeEvidenceKey)).toBe(noticeRaw)
+    expect(await s3ObjectExists(inbound.name(), notice.objectKey)).toBe(false)
+    expect(await s3ObjectExists(inbound.name(), reply.objectKey)).toBe(true)
     const noticeIntakeId = (await readCopyrightEmailIntakeIdForTest(notice.sesMessageId))!
     expect(await getCopyrightEmailIntakeForAgent(noticeIntakeId)).toMatchObject({
       id: noticeIntakeId,
-      received_at: SES_INBOUND_TEST_RECEIVED_AT,
+      received_at: noticeReceivedAt,
       raw_storage_key: noticeEvidenceKey,
       raw_sha256: createHash('sha256').update(noticeRaw).digest(),
       raw_mime_type: 'message/rfc822',
@@ -200,20 +192,22 @@ describe('SES copyright inbound routing while intake is switched off', () => {
     expect(await readCopyrightEmailAncestorKindForTest(replyIntakeId, noticeIntakeId)).toBe(
       'in_reply_to',
     )
-    expect(s3Calls.at(-1)).toEqual({
-      command: 'DeleteObjectCommand',
-      input: { Bucket: 'ses-inbound-test', Key: reply.objectKey },
-    })
+    expect(
+      await readS3ObjectText(
+        evidence.name(),
+        `email/${reply.sesMessageId}/${sha256Hex(replyRaw)}.eml`,
+      ),
+    ).toBe(replyRaw)
+    expect(await s3ObjectExists(inbound.name(), reply.objectKey)).toBe(false)
   })
 
   it('keeps an email whose sender name exceeds the intake limit as a failed intake', async () => {
-    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
     const data = messageIdentity()
     const raw = noticeEmail({ messageId: `<${data.sesMessageId}@example.test>` }).replace(
       'From: Copyright claimant <claimant@example.test>',
       `From: ${'a'.repeat(501)} <claimant@example.test>`,
     )
-    const s3Calls = stubSesInboundS3ForTest({ objects: { [data.objectKey]: raw } })
+    await receive(data.objectKey, raw)
     const enqueuedIntakeIds = watchIntakeEnqueues()
 
     await processSesInboundEmail(data)
@@ -223,16 +217,16 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       'The original email could not be parsed as RFC 5322 MIME.',
     )
     expect(enqueuedIntakeIds()).toEqual([])
-    expect(s3Calls.at(-1)).toEqual({
-      command: 'DeleteObjectCommand',
-      input: { Bucket: 'ses-inbound-test', Key: data.objectKey },
-    })
+    expect(
+      await readS3ObjectText(evidence.name(), `email/${data.sesMessageId}/${sha256Hex(raw)}.eml`),
+    ).toBe(raw)
+    expect(await s3ObjectExists(inbound.name(), data.objectKey)).toBe(false)
   })
 
   it('keeps malformed MIME as a staff-visible failed intake before cleanup', async () => {
-    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
     const data = messageIdentity()
-    const s3Calls = stubSesInboundS3ForTest({ objects: { [data.objectKey]: senderlessEmail() } })
+    const raw = senderlessEmail()
+    await receive(data.objectKey, raw)
     const enqueuedIntakeIds = watchIntakeEnqueues()
 
     await processSesInboundEmail(data)
@@ -248,9 +242,9 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       attachmentCount: 0,
     })
     expect(enqueuedIntakeIds()).toEqual([])
-    expect(s3Calls.at(-1)).toEqual({
-      command: 'DeleteObjectCommand',
-      input: { Bucket: 'ses-inbound-test', Key: data.objectKey },
-    })
+    expect(
+      await readS3ObjectText(evidence.name(), `email/${data.sesMessageId}/${sha256Hex(raw)}.eml`),
+    ).toBe(raw)
+    expect(await s3ObjectExists(inbound.name(), data.objectKey)).toBe(false)
   })
 })

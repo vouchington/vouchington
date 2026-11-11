@@ -1,122 +1,112 @@
-import { DeleteObjectsCommand, ListObjectVersionsCommand, S3Client } from '@aws-sdk/client-s3'
+import {
+  DeleteBucketPolicyCommand,
+  DeleteObjectCommand,
+  ListObjectVersionsCommand,
+  PutBucketPolicyCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3'
 import { afterEach, beforeEach, vi } from 'vitest'
+import { createTestS3Bucket, emulatorS3 } from '../../aws-emulator-s3.mts'
 
-const BUCKET = 'test-copyright-evidence'
-const DEFAULT_PAGE_SIZE = 2
-
-type StoredVersion = { versionId: string; deleteMarker: boolean }
-
-export type FakeEvidenceBucket = {
-  /** Stores `versions` object versions of `key`, newest first, plus a delete marker on top if asked. */
-  put(key: string, options?: { versions?: number; deleteMarker?: boolean }): void
-  /** How many versions and delete markers of `key` the bucket still holds. */
-  countVersions(key: string): number
-  /** `DeleteObjects` answers 200 with an `Errors` entry for every version of `key`. */
-  refuse(key: string): void
-  allow(key: string): void
-  /** Number of `DeleteObjects` requests the sweep has sent. */
-  deleteRequests(): number
+export type CopyrightEvidenceBucket = {
+  /** The emulator bucket `S3_BUCKET_COPYRIGHT_EVIDENCE` names for the current test. */
+  name(): string
+  /** Writes `versions` object versions of `key`, then a delete marker on top if asked. */
+  put(key: string, options?: { versions?: number; deleteMarker?: boolean }): Promise<void>
+  /** How many versions and delete markers of exactly `key` the bucket still holds. */
+  countVersions(key: string): Promise<number>
+  /** An explicit-deny policy makes `DeleteObjects` answer 200 with an `Errors` entry per version. */
+  refuse(key: string): Promise<void>
+  allow(key: string): Promise<void>
 }
 
 /**
- * A versioned evidence bucket behind the shared S3 client: only the two calls the retention sweep
- * makes are answered, listings page two entries at a time unless `pageSize` says otherwise, and `DeleteObjects` honours
- * `VersionId` and reports refusals the way S3 does. The bucket env is set for the test.
+ * A fresh versioned AWS Emulator bucket per test, named by `S3_BUCKET_COPYRIGHT_EVIDENCE`. A refusal
+ * is the bucket policy denial production sees when IAM withholds `s3:DeleteObjectVersion`.
  */
-export function useFakeCopyrightEvidenceBucket(
-  bucketOptions: { pageSize?: number } = {},
-): FakeEvidenceBucket {
-  const PAGE_SIZE = bucketOptions.pageSize ?? DEFAULT_PAGE_SIZE
-  const objects = new Map<string, StoredVersion[]>()
+export function useCopyrightEvidenceBucket(): CopyrightEvidenceBucket {
+  let bucket: string | undefined
   const refused = new Set<string>()
-  let deleteCalls = 0
-  let nextVersion = 0
 
-  beforeEach(() => {
-    objects.clear()
+  beforeEach(async () => {
     refused.clear()
-    deleteCalls = 0
-    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', BUCKET)
-    vi.spyOn(S3Client.prototype, 'send').mockImplementation((async (command: unknown) => {
-      if (command instanceof ListObjectVersionsCommand) return list(command.input)
-      if (command instanceof DeleteObjectsCommand) return remove(command.input)
-      throw new Error('Unexpected S3 command in the retention sweep')
-    }) as never)
+    bucket = await createTestS3Bucket('copyright-evidence', { versioned: true })
+    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', bucket)
   })
   afterEach(() => {
-    vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 
-  function list(input: {
-    Bucket?: string
-    Prefix?: string
-    VersionIdMarker?: string
-    MaxKeys?: number
-  }) {
-    expectBucket(input.Bucket)
-    const entries = [...objects.entries()]
-      .filter(([key]) => key.startsWith(input.Prefix ?? ''))
-      .toSorted(([left], [right]) => left.localeCompare(right))
-      .flatMap(([key, versions]) => versions.map(version => ({ key, ...version })))
-    const start = input.VersionIdMarker ? Number(input.VersionIdMarker) : 0
-    const pageSize = Math.min(PAGE_SIZE, input.MaxKeys ?? PAGE_SIZE)
-    const page = entries.slice(start, start + pageSize)
-    const truncated = start + pageSize < entries.length
-    const Versions: { Key: string; VersionId: string }[] = []
-    const DeleteMarkers: { Key: string; VersionId: string }[] = []
-    for (const entry of page) {
-      const identifier = { Key: entry.key, VersionId: entry.versionId }
-      if (entry.deleteMarker) DeleteMarkers.push(identifier)
-      else Versions.push(identifier)
-    }
-    return {
-      IsTruncated: truncated,
-      NextKeyMarker: truncated ? page.at(-1)?.key : undefined,
-      NextVersionIdMarker: truncated ? String(start + pageSize) : undefined,
-      Versions,
-      DeleteMarkers,
-    }
+  function name(): string {
+    if (!bucket) throw new Error('The copyright evidence bucket exists only inside a test')
+    return bucket
   }
 
-  function remove(input: {
-    Bucket?: string
-    Delete?: { Objects?: { Key?: string; VersionId?: string }[] }
-  }) {
-    expectBucket(input.Bucket)
-    deleteCalls += 1
-    const errors: { Key: string; VersionId?: string; Code: string }[] = []
-    for (const { Key, VersionId } of input.Delete?.Objects ?? []) {
-      if (!Key || !VersionId) throw new Error('A versioned delete needs a key and a version id')
-      if (refused.has(Key)) {
-        errors.push({ Key, VersionId, Code: 'AccessDenied' })
-        continue
-      }
-      const remaining = (objects.get(Key) ?? []).filter(entry => entry.versionId !== VersionId)
-      if (remaining.length > 0) objects.set(Key, remaining)
-      else objects.delete(Key)
+  async function applyRefusals(): Promise<void> {
+    const Bucket = name()
+    if (refused.size === 0) {
+      await emulatorS3().send(new DeleteBucketPolicyCommand({ Bucket }))
+      return
     }
-    return { Errors: errors }
+    await emulatorS3().send(
+      new PutBucketPolicyCommand({
+        Bucket,
+        Policy: JSON.stringify({
+          Version: '2012-10-17',
+          Statement: [
+            {
+              Effect: 'Deny',
+              Principal: '*',
+              Action: 's3:DeleteObjectVersion',
+              Resource: [...refused].map(key => `arn:aws:s3:::${Bucket}/${key}`),
+            },
+          ],
+        }),
+      }),
+    )
   }
 
   return {
-    put(key, options = {}) {
-      const versions: StoredVersion[] = Array.from({ length: options.versions ?? 1 }, () => ({
-        versionId: `version-${(nextVersion += 1)}`,
-        deleteMarker: false,
-      }))
+    name,
+    async put(key, options = {}) {
+      const Bucket = name()
+      await Promise.all(
+        Array.from({ length: options.versions ?? 1 }, (_, version) =>
+          emulatorS3().send(new PutObjectCommand({ Bucket, Key: key, Body: `v${version}` })),
+        ),
+      )
       if (options.deleteMarker) {
-        versions.unshift({ versionId: `version-${(nextVersion += 1)}`, deleteMarker: true })
+        await emulatorS3().send(new DeleteObjectCommand({ Bucket, Key: key }))
       }
-      objects.set(key, [...(objects.get(key) ?? []), ...versions])
     },
-    countVersions: key => objects.get(key)?.length ?? 0,
-    refuse: key => void refused.add(key),
-    allow: key => void refused.delete(key),
-    deleteRequests: () => deleteCalls,
+    async countVersions(key) {
+      let count = 0
+      let KeyMarker: string | undefined
+      let VersionIdMarker: string | undefined
+      for (;;) {
+        const page = await emulatorS3().send(
+          new ListObjectVersionsCommand({
+            Bucket: name(),
+            Prefix: key,
+            KeyMarker,
+            VersionIdMarker,
+          }),
+        )
+        for (const entry of [...(page.Versions ?? []), ...(page.DeleteMarkers ?? [])]) {
+          if (entry.Key === key) count += 1
+        }
+        if (!page.IsTruncated) return count
+        KeyMarker = page.NextKeyMarker
+        VersionIdMarker = page.NextVersionIdMarker
+      }
+    },
+    async refuse(key) {
+      refused.add(key)
+      await applyRefusals()
+    },
+    async allow(key) {
+      refused.delete(key)
+      await applyRefusals()
+    },
   }
-}
-
-function expectBucket(bucket: string | undefined): void {
-  if (bucket !== BUCKET) throw new Error('The sweep used the wrong bucket')
 }

@@ -7,7 +7,7 @@ import {
   readAllQueueJobs,
   withDominantPostFixtures,
 } from '@voucha/test-helpers'
-import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
+import { useSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
 import { getSitemapPostDayData } from '@voucha/test-helpers/sitemap-queue-jobs'
 import { backgroundQueue as sitemapsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { sitemapsWorkConfig } from '@services/sitemaps/work-limits'
@@ -57,13 +57,12 @@ describe('sitemaps handler routing', () => {
   })
 
   it('routes a post-day job through validated type and day data to publication', async () => {
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
     const day = uniqueDay()
 
     await run('processUpdatePostDaySitemap', { postType: 'discussion', day })
 
-    expect(objects.has(postDayIndexKey(day))).toBe(true)
+    expect(await store.has(postDayIndexKey(day))).toBe(true)
   })
 
   it('hands an unfinished post-day generation its continuation id and rejects malformed data', async () => {
@@ -71,8 +70,7 @@ describe('sitemaps handler routing', () => {
       overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { generation_page_row_limit: 1 }),
     )
     const day = uniqueDay()
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
     await withDominantPostFixtures(
       [
         { postType: 'discussion', votesScoreUp: 1, createdAt: new Date(`${day}T12:00:00.000Z`) },
@@ -82,9 +80,7 @@ describe('sitemaps handler routing', () => {
         const beforeIds = new Set((await readAllQueueJobs(sitemapsQueue)).map(job => job.id))
         await run('processUpdatePostDaySitemap', { postType: 'discussion', day })
         const progressKey = `posts/${day.replaceAll('-', '/')}/discussion/_progress.json`
-        const progress = JSON.parse(objects.get(progressKey)!.toString()) as {
-          generation_id: string
-        }
+        const progress = (await store.json<{ generation_id: string }>(progressKey))!
         const continuation = (await readAllQueueJobs(sitemapsQueue)).find(
           job =>
             !beforeIds.has(job.id) &&
@@ -94,7 +90,7 @@ describe('sitemaps handler routing', () => {
         )
         expect(continuation).toBeDefined()
         await run('processUpdatePostDaySitemap', getSitemapPostDayData(continuation!)!)
-        expect(objects.has(postDayIndexKey(day))).toBe(true)
+        expect(await store.has(postDayIndexKey(day))).toBe(true)
       },
     )
     expect(() => run('processUpdateFamilySitemap', { family: 'topics', generationId: '' })).toThrow(
@@ -103,14 +99,13 @@ describe('sitemaps handler routing', () => {
   })
 
   it('routes index and family jobs to real generated objects', async () => {
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
     await run('processUpdatePostTypeIndex', { postType: 'review' })
     await run('processUpdatePostsIndex')
     await run('processUpdateRootIndex')
-    expect(objects.has('sitemaps/types/review.xml')).toBe(true)
-    expect(objects.has('sitemaps/posts.xml')).toBe(true)
-    expect(objects.has('sitemaps/root.xml')).toBe(true)
+    expect(await store.has('sitemaps/types/review.xml')).toBe(true)
+    expect(await store.has('sitemaps/posts.xml')).toBe(true)
+    expect(await store.has('sitemaps/root.xml')).toBe(true)
 
     onTestFinished(
       overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { generation_page_row_limit: 1 }),
@@ -118,7 +113,8 @@ describe('sitemaps handler routing', () => {
     await createTestUser()
     await run('processUpdateFamilySitemap', { family: 'users' })
     expect(
-      objects.has('families/users/_progress.json') || objects.has('sitemaps/families/users.xml'),
+      (await store.has('families/users/_progress.json')) ||
+        (await store.has('sitemaps/families/users.xml')),
     ).toBe(true)
   })
 
@@ -133,13 +129,11 @@ describe('sitemaps handler routing', () => {
     const archiveYear = 2000 + (Number.parseInt(randomUUID().slice(0, 4), 16) % 20)
     const archiveDay = `${archiveYear}-01-01`
     const nextDay = `${archiveYear}-01-02`
-    const objects = new Map<string, Buffer>([
-      [
-        'sitemaps/meta/posts-tracked-range.json',
-        Buffer.from(JSON.stringify({ earliestDay: archiveDay, latestDay: archiveDay })),
-      ],
-    ])
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
+    await store.put(
+      'sitemaps/meta/posts-tracked-range.json',
+      JSON.stringify({ earliestDay: archiveDay, latestDay: archiveDay }),
+    )
     const addBulk = vi.spyOn(sitemapsQueue, 'addBulk')
     await run('processNightlyBackfillWeekDispatcher')
     await run('processWeeklyBackfillMonthDispatcher')
@@ -153,7 +147,7 @@ describe('sitemaps handler routing', () => {
           getSitemapPostDayData(job)?.day === nextDay,
       ),
     ).toBe(true)
-    expect(objects.get('sitemaps/retired/_cursor.json')).toBeDefined()
+    expect(await store.has('sitemaps/retired/_cursor.json')).toBe(true)
   })
 
   it('rejects malformed job data before processing', () => {

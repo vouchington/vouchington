@@ -3,7 +3,7 @@ import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/c
 import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
 import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
 import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
-import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { createCopyrightEmailIntake } from './email-intakes.mts'
@@ -19,7 +19,7 @@ const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 
 describe('copyright email admission during operational erasure', () => {
   useCopyrightOperationalCursorReservation()
-  const bucket = useFakeCopyrightEvidenceBucket()
+  const bucket = useCopyrightEvidenceBucket()
   it('caps recommendation deletion to the remaining child budget', async () => {
     const intake = await createRetentionParsedEmail('recommendation-page-budget')
     for (const marker of [1, 2]) {
@@ -31,7 +31,7 @@ describe('copyright email admission during operational erasure', () => {
         structuredOutput: { marker },
       })
     }
-    bucket.put(intake.raw_storage_key)
+    await bucket.put(intake.raw_storage_key)
     await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
     await sweepUnlinkedCopyrightEmailIntakes({
       now: future(91),

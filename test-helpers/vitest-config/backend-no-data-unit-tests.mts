@@ -4,6 +4,8 @@ export const backendNoDataUnitTestFiles = [
   'backend/services/jwt-session/client-binding.test.mts',
   'backend/services/jwt-session/verify-request-memo.test.mts',
   'backend/services/sitemaps/generation-page.no-data.test.mts',
+  'backend/services/sitemaps/storage.no-data.test.mts',
+  'backend/services/sitemaps/generation-storage.no-data.test.mts',
   'backend/services/urls-domains-robots/__tests__/fetch-body-signal.test.mts',
   'backend/services/urls-domains-robots/__tests__/fetch-unread-body.test.mts',
   'backend/services/urls-domains-robots/__tests__/fetch-pinned.test.mts',

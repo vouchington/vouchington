@@ -18,7 +18,7 @@ import {
   createImageDeletionFixture,
   failingImageDeletionTransaction,
 } from '@voucha/test-helpers/image-deletion'
-import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { seedOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { processImageDeletionRecovery } from './image-deletion.mts'
 
 describe('image deletion recovery dispatcher', () => {
@@ -35,10 +35,9 @@ describe('image deletion recovery dispatcher', () => {
     const fixtures = [await createImageDeletionFixture(1), await createImageDeletionFixture(1)]
     const imageIds = fixtures.map(fixture => fixture.imageId).toSorted()
     const images = await Promise.all(imageIds.map(id => getImageByIdFromPrimary(id)))
-    const storage = installOwnedUploadCleanupStorage(
+    const storage = await seedOwnedUploadCleanupStorage(
       images.flatMap(image => [image!.id, image!.s3_key, image!.sha_256!.toString('hex')]),
     )
-    context.onTestFinished(storage.restore)
     context.onTestFinished(
       overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
         images_page_size: 1,
@@ -89,16 +88,23 @@ describe('image deletion recovery dispatcher', () => {
       await processImageDeletionPage(fixture.imageId)
       await expect(countPostImageRevisions(fixture.postIds[0]!)).resolves.toBe(1)
     }
-    const completedCalls = [...storage.calls]
+    // Both deletions finished their storage cleanup; store those objects again so any repeated
+    // cleanup below would remove them.
+    for (const imageId of imageIds)
+      expect(await storage.deleted()).toContainEqual({
+        Bucket: storage.buckets.images,
+        Key: imageId,
+      })
+    await storage.restock()
     await processImageDeletionPage(randomUUID())
-    expect(storage.calls).toEqual(completedCalls)
+    await expect(storage.deleted()).resolves.toEqual([])
     const converged = await background.add(IMAGE_DELETION_RECOVER_JOB.name, data, {
       ...IMAGE_DELETION_RECOVER_JOB.options,
       jobId: `image-deletion-recovery-${randomUUID()}`,
     })
     if (!converged) throw new Error('Owned convergence dispatcher was not admitted')
     await expect(processImageDeletionRecovery(Object.assign(converged, { data }))).resolves.toBe(0)
-    expect(storage.calls).toEqual(completedCalls)
+    await expect(storage.deleted()).resolves.toEqual([])
     await expect(
       Promise.all(fixtures.map(fixture => countPostImageRevisions(fixture.postIds[0]!))),
     ).resolves.toEqual([1, 1])

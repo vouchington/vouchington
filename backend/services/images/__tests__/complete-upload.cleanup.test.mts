@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto'
 import { chmod, rm, stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { Readable } from 'node:stream'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { S3Buckets } from '@modules/aws'
 import { createTestUser } from '@voucha/test-helpers'
+import { putS3Object, readS3ObjectBytes } from '@voucha/test-helpers/aws-emulator-s3'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createImageUploadUrl } from '../create-upload-url.mts'
 import { completeImageUpload } from '../complete-upload.mts'
@@ -39,20 +40,16 @@ describe('completeImageUpload temporary-file cleanup', () => {
       await chmod(spoolDirectory, 0o700)
       await rm(spoolDirectory, { force: true, recursive: true })
     })
-    vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      Body: Readable.from([bytes]),
-    } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
-    vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue()
-    vi.spyOn(s3Module, 'promoteFrozenImageToS3').mockImplementation(async ({ filename }) => {
+    await putS3Object({ Bucket: S3Buckets.imageUploads, Key: image_id, Body: bytes })
+    // Storage stays real: this only observes the frozen file and makes its directory read-only
+    // before the real promotion reads it.
+    const promote = s3Module.promoteFrozenImageToS3
+    vi.spyOn(s3Module, 'promoteFrozenImageToS3').mockImplementation(async image => {
       // A spool directory that is no longer writable makes the real temporary-file removal fail.
-      spooledFile = filename
-      spoolDirectory = dirname(filename)
+      spooledFile = image.filename
+      spoolDirectory = dirname(image.filename)
       await chmod(spoolDirectory, 0o500)
-      return { created: true, s3Key: sha256.toString('hex') }
-    })
-    vi.spyOn(s3Module, 'ensureImageDeliveryAliasInS3').mockResolvedValue({
-      created: true,
-      s3Key: image_id,
+      return promote(image)
     })
 
     await expect(completeImageUpload(user, image_id)).resolves.toMatchObject({
@@ -62,5 +59,8 @@ describe('completeImageUpload temporary-file cleanup', () => {
 
     expect((await stat(spooledFile!)).size).toBe(bytes.byteLength)
     expect((await getImageById(image_id))?.s3_key).toBe(sha256.toString('hex'))
+    await expect(readS3ObjectBytes(S3Buckets.images, sha256.toString('hex'))).resolves.toEqual(
+      bytes,
+    )
   })
 })

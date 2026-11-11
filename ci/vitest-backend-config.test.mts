@@ -135,9 +135,13 @@ describe('backend Vitest project config', () => {
       isolate: true,
       include: ['backend/**/*.real-glide.mock.test.mts', 'backend/**/*.real-glide.test.mts'],
     })
-    expect(realGlideProject()?.globalSetup).toBeUndefined()
+    // No queue global setup: the AWS Emulator is the only shared service this project starts.
+    expect(realGlideProject()?.globalSetup).toBe(
+      './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+    )
     expect(realGlideProject()?.setupFiles).toEqual([
       './test-helpers/vitest.setup.postgres-sessions.mts',
+      './backend/test-helpers/vitest.setup.aws-emulator.mts',
     ])
   })
 

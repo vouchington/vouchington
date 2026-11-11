@@ -1,110 +1,106 @@
+import { randomUUID } from 'node:crypto'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Readable } from 'node:stream'
-import { HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-
-const mocks = vi.hoisted(() => ({
-  mockSend: vi.fn<typeof import('@aws-sdk/client-s3').S3Client.prototype.send>(),
-}))
-
-vi.mock<typeof import('@aws-sdk/client-s3')>(import('@aws-sdk/client-s3'), async importOriginal => {
-  const sdk = await importOriginal()
-  vi.spyOn(sdk.S3Client.prototype, 'send').mockImplementation(mocks.mockSend)
-  return sdk
-})
-
+import type { Readable } from 'node:stream'
+import { HeadObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { emulatorS3, putS3Object, readS3ObjectText } from '@voucha/test-helpers/aws-emulator-s3'
+import { denyS3ObjectActions, useOwnedS3Bucket } from '@voucha/test-helpers/s3-owned-bucket'
 import { getSitemapFamilyManifest, putSitemapObjectFile } from './storage.mts'
-import { S3Buckets } from '@modules/aws'
+import { applyStoragePrefix } from './storage-prefix.mts'
+
+const manifest = {
+  active_page_count: 3,
+  generation_id: '11111111-1111-4111-8111-111111111111',
+  generated_at: '2026-06-10T12:00:00.000Z',
+  content_hash: 'content-hash',
+}
+const familyIndexKey = 'sitemaps/families/topics.xml'
+
+/** A bucket and storage prefix owned by this test, so the fixed family path cannot collide. */
+async function ownedSitemapStorage(): Promise<string> {
+  vi.stubEnv('SITEMAP_S3_PREFIX', `sitemap-storage-${randomUUID()}`)
+  return useOwnedS3Bucket('sitemaps')
+}
 
 describe('sitemap storage', () => {
-  beforeEach(() => {
-    mocks.mockSend.mockReset()
-  })
-
-  afterAll(() => {
+  afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
   })
 
-  it.each([
-    Object.assign(new Error('missing object'), { name: 'NoSuchKey' }),
-    Object.assign(new Error('missing object'), { $metadata: { httpStatusCode: 404 } }),
-  ])('treats a missing family manifest as empty storage', async missing => {
-    mocks.mockSend.mockRejectedValueOnce(missing)
+  it('treats a missing family manifest as empty storage', async () => {
+    await ownedSitemapStorage()
 
     await expect(getSitemapFamilyManifest('topics')).resolves.toBeNull()
-    expect(mocks.mockSend).toHaveBeenCalledOnce()
   })
 
   it('propagates access denial without treating it as a missing manifest', async () => {
-    const failure = Object.assign(new Error('access denied'), {
-      name: 'AccessDenied',
+    const bucket = await ownedSitemapStorage()
+    const key = applyStoragePrefix(familyIndexKey)
+    await putS3Object({
+      Bucket: bucket,
+      Key: key,
+      Body: 'index',
+      Metadata: { 'sitemap-manifest': JSON.stringify(manifest) },
+    })
+    await denyS3ObjectActions(bucket, [{ action: 's3:GetObject', keys: [key] }])
+
+    await expect(getSitemapFamilyManifest('topics')).rejects.toMatchObject({
       $metadata: { httpStatusCode: 403 },
     })
-    mocks.mockSend.mockRejectedValueOnce(failure)
-
-    await expect(getSitemapFamilyManifest('topics')).rejects.toBe(failure)
-    expect(mocks.mockSend).toHaveBeenCalledOnce()
   })
 
   it('loads the manifest committed atomically with the public family index', async () => {
-    const manifest = {
-      active_page_count: 3,
-      generation_id: '11111111-1111-4111-8111-111111111111',
-      generated_at: '2026-06-10T12:00:00.000Z',
-      content_hash: 'content-hash',
-    }
-    mocks.mockSend.mockResolvedValueOnce({
+    const bucket = await ownedSitemapStorage()
+    await putS3Object({
+      Bucket: bucket,
+      Key: applyStoragePrefix(familyIndexKey),
+      Body: 'index',
       Metadata: { 'sitemap-manifest': JSON.stringify(manifest) },
-    } as never)
+    })
 
     await expect(getSitemapFamilyManifest('topics')).resolves.toEqual(manifest)
-
-    expect(mocks.mockSend).toHaveBeenCalledOnce()
-    const command = mocks.mockSend.mock.calls[0]![0] as HeadObjectCommand
-    expect(command.input).toMatchObject({
-      Bucket: S3Buckets.sitemaps,
-      Key: 'sitemaps/families/topics.xml',
-    })
   })
 
   it('writes XML and its compact publication manifest in one upload', async () => {
+    const bucket = await ownedSitemapStorage()
     const file = createSitemapUploadFile()
-    const manifest = {
-      active_page_count: 1,
-      generation_id: '11111111-1111-4111-8111-111111111111',
-      generated_at: '2026-06-10T12:00:00.000Z',
-      content_hash: 'content-hash',
-    }
-    captureUnreadSitemapBody(false)
     try {
-      await putSitemapObjectFile('sitemaps/families/topics.xml', file.filePath, {
+      await putSitemapObjectFile(familyIndexKey, file.filePath, {
         contentType: 'application/xml; charset=utf-8',
         contentEncoding: 'gzip',
         manifest,
       })
-      const command = mocks.mockSend.mock.calls[0]![0] as PutObjectCommand
-      expect(command.input).toMatchObject({
-        Key: 'sitemaps/families/topics.xml',
-        ContentType: 'application/xml; charset=utf-8',
-        ContentEncoding: 'gzip',
-        Metadata: { 'sitemap-manifest': JSON.stringify(manifest) },
-      })
     } finally {
       await rm(file.directory, { recursive: true, force: true })
     }
+
+    const key = applyStoragePrefix(familyIndexKey)
+    const head = await emulatorS3().send(new HeadObjectCommand({ Bucket: bucket, Key: key }))
+    expect(head).toMatchObject({
+      ContentType: 'application/xml; charset=utf-8',
+      ContentEncoding: 'gzip',
+      Metadata: { 'sitemap-manifest': JSON.stringify(manifest) },
+    })
+    expect(await readS3ObjectText(bucket, key)).toBe('sitemap-bytes')
+    await expect(getSitemapFamilyManifest('topics')).resolves.toEqual(manifest)
   })
 
   it('rejects a public index whose publication metadata is missing', async () => {
-    mocks.mockSend.mockResolvedValueOnce({} as never)
+    const bucket = await ownedSitemapStorage()
+    await putS3Object({ Bucket: bucket, Key: applyStoragePrefix(familyIndexKey), Body: 'index' })
+
     await expect(getSitemapFamilyManifest('topics')).rejects.toThrow(
       'Published sitemap index is missing its manifest',
     )
   })
 
+  // A real upload always reads its body; only an injected send can leave the stream unread.
   it('destroys an unread file upload stream when send resolves without reading', async () => {
+    await ownedSitemapStorage()
     const file = createSitemapUploadFile()
     const captured = captureUnreadSitemapBody(false)
     try {
@@ -122,6 +118,7 @@ describe('sitemap storage', () => {
   })
 
   it('destroys an unread file upload stream when send rejects without reading', async () => {
+    await ownedSitemapStorage()
     const file = createSitemapUploadFile()
     const captured = captureUnreadSitemapBody(true)
     try {
@@ -150,7 +147,7 @@ function createSitemapUploadFile(): { directory: string; filePath: string } {
 
 function captureUnreadSitemapBody(rejectSend: boolean): { errors: unknown[]; body?: Readable } {
   const captured: { errors: unknown[]; body?: Readable } = { errors: [] }
-  mocks.mockSend.mockImplementationOnce(async command => {
+  vi.spyOn(S3Client.prototype, 'send').mockImplementationOnce(async command => {
     const body = (command as { input: { Body: Readable } }).input.Body
     captured.body = body
     body.on('error', error => {

@@ -3,7 +3,7 @@ import { createTestUserDirect } from '@voucha/test-helpers/entities/index'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import {
   attemptCopyrightReceiptReviewMutation,
@@ -27,7 +27,7 @@ const oldReview = new Date('2001-01-01T00:00:00.000Z')
 describe('standalone copyright receipt review expiry', () => {
   useCopyrightIntakeEnvironment()
   useCopyrightOperationalCursorReservation()
-  useFakeCopyrightEvidenceBucket()
+  useCopyrightEvidenceBucket()
   it('erases expired final facts while retaining exact SES replay identity', async () => {
     const reviewer = await createTestUserDirect({ extraRoles: ['moderator'] })
     const receipt = await seedCopyrightReceiptReview({

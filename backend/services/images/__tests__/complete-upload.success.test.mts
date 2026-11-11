@@ -1,19 +1,46 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { S3Buckets } from '@modules/aws'
 import { createTestUser } from '@voucha/test-helpers'
+import {
+  putS3Object,
+  readS3ObjectBytes,
+  s3ObjectExists,
+} from '@voucha/test-helpers/aws-emulator-s3'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
+import { useMissingS3Bucket } from '@voucha/test-helpers/missing-s3-bucket'
 import { createImageUploadUrl } from '../create-upload-url.mts'
 import { completeImageUpload } from '../complete-upload.mts'
+import * as digestModule from '../complete-upload-digest.mts'
 import { deleteImageById } from '../delete.mts'
 import { getImageById } from '../get.mts'
 import { deriveUploadStatus } from '../get-upload-state.mts'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
-
-import * as s3Module from '../s3-upload-lifecycle.mts'
-import * as finalS3 from '../s3.mts'
-import { Readable } from 'node:stream'
-import { readFile } from 'node:fs/promises'
 import { createHash, randomBytes } from 'node:crypto'
-import { deepStrictEqual } from 'node:assert'
 import type { PrivateUser } from '@voucha/types/entities/user'
+
+// Each upload's bytes are random, so its digest key in the shared emulator belongs to this test.
+async function stageUpload(user: PrivateUser, label: string, contentType = 'image/jpeg') {
+  const { image_id } = await createImageUploadUrl(user, { contentType, contentLength: 1024 })
+  const bytes = Buffer.from(`${label} ${randomBytes(16).toString('hex')}`)
+  await putS3Object({
+    Bucket: S3Buckets.imageUploads,
+    Key: image_id,
+    Body: bytes,
+    ContentType: contentType,
+  })
+  const digest = createHash('sha256').update(bytes).digest()
+  return { imageId: image_id, bytes, digest }
+}
+
+/** Run `action` once, right after the digest claim and before promotion begins. */
+function afterDigestClaim(imageId: string, action: () => Promise<void>) {
+  const persist = digestModule.persistImageHashWhileProcessing
+  vi.spyOn(digestModule, 'persistImageHashWhileProcessing').mockImplementation(async (hash, id) => {
+    const claimed = await persist(hash, id)
+    if (id === imageId) await action()
+    return claimed
+  })
+}
 
 describe('completeImageUpload - success path', () => {
   let user: PrivateUser
@@ -23,173 +50,99 @@ describe('completeImageUpload - success path', () => {
   })
 
   beforeEach(async () => {
-    vi.clearAllMocks()
+    vi.restoreAllMocks()
     await imageUploadsQueue.obliterate({ force: true })
-    vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue()
-    vi.spyOn(s3Module, 'promoteFrozenImageToS3').mockImplementation(
-      async ({ filename, sha256 }) => {
-        const bytes = await readFile(filename)
-        deepStrictEqual(createHash('sha256').update(bytes).digest(), sha256)
-        return { created: true, s3Key: sha256.toString('hex') }
-      },
-    )
-    vi.spyOn(s3Module, 'ensureImageDeliveryAliasInS3').mockImplementation(
-      async (imageId, { filename, sha256 }) => {
-        const bytes = await readFile(filename)
-        deepStrictEqual(createHash('sha256').update(bytes).digest(), sha256)
-        return { created: true, s3Key: imageId }
-      },
-    )
   })
 
   it('keeps deletion evidence null when staging-source deletion fails after promotion', async () => {
-    const { image_id } = await createImageUploadUrl(user, {
-      contentType: 'image/jpeg',
-      contentLength: 1024,
-    })
-    const bytes = Buffer.from(`source deletion retry ${randomBytes(16).toString('hex')}`)
-    vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      Body: Readable.from([bytes]),
-    } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
-    vi.mocked(s3Module.deleteImageUploadSourceFromS3).mockRejectedValueOnce(
-      new Error('staging delete failed'),
+    const { imageId, bytes, digest } = await stageUpload(user, 'source deletion retry')
+    // Promotion has finished when its key persists; the staging source delete then meets a
+    // missing bucket.
+    onTestFinished(
+      runBeforePostgresStatementForTest('/* persistPromotedImageKey:update */', async () => {
+        useMissingS3Bucket('imageUploads')
+      }),
     )
 
-    await expect(completeImageUpload(user, image_id)).resolves.toMatchObject({ id: image_id })
+    await expect(completeImageUpload(user, imageId)).resolves.toMatchObject({ id: imageId })
 
-    const image = await getImageById(image_id)
-    expect(image?.s3_key).toBe(createHash('sha256').update(bytes).digest('hex'))
+    const image = await getImageById(imageId)
+    expect(image?.s3_key).toBe(digest.toString('hex'))
     expect(image?.upload_source_deleted_at).toBeNull()
+    await expect(readS3ObjectBytes(S3Buckets.images, digest.toString('hex'))).resolves.toEqual(
+      bytes,
+    )
   })
 
   it('returns the promoted image when metadata enqueueing fails', async () => {
-    const { image_id } = await createImageUploadUrl(user, {
-      contentType: 'image/jpeg',
-      contentLength: 1024,
-    })
-    const bytes = Buffer.from(`metadata enqueue ${randomBytes(16).toString('hex')}`)
-    vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      Body: Readable.from([bytes]),
-    } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
+    const { imageId, digest } = await stageUpload(user, 'metadata enqueue')
     vi.spyOn(imageUploadsQueue, 'add').mockRejectedValueOnce(new Error('queue unavailable'))
 
-    const result = await completeImageUpload(user, image_id)
+    const result = await completeImageUpload(user, imageId)
 
-    expect(result.s3_key).toBe(createHash('sha256').update(bytes).digest('hex'))
-    expect((await getImageById(image_id))?.s3_key).toBe(result.s3_key)
+    expect(result.s3_key).toBe(digest.toString('hex'))
+    expect((await getImageById(imageId))?.s3_key).toBe(result.s3_key)
   })
 
   it('promotes the frozen body rather than a later staging mutation', async () => {
-    const { image_id } = await createImageUploadUrl(user, {
-      contentType: 'image/png',
-      contentLength: 1024,
+    const { imageId, bytes, digest } = await stageUpload(user, 'original', 'image/png')
+    afterDigestClaim(imageId, async () => {
+      await putS3Object({ Bucket: S3Buckets.imageUploads, Key: imageId, Body: 'mutated staging' })
     })
-    const original = Buffer.from(`original ${randomBytes(16).toString('hex')}`)
-    const expected = Buffer.from(original)
-    async function* mutableSource() {
-      yield original
-      original.fill(0)
-    }
-    vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      $metadata: {},
-      Body: mutableSource(),
-      ContentType: 'image/png',
-    } as unknown as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
-    const promote = vi
-      .spyOn(s3Module, 'promoteFrozenImageToS3')
-      .mockImplementation(async ({ filename, sha256 }) => {
-        expect(await readFile(filename)).toEqual(expected)
-        return { created: true, s3Key: sha256.toString('hex') }
-      })
 
-    await completeImageUpload(user, image_id)
+    await completeImageUpload(user, imageId)
 
-    expect(promote).toHaveBeenCalledOnce()
-    expect(original).not.toEqual(expected)
+    await expect(readS3ObjectBytes(S3Buckets.images, digest.toString('hex'))).resolves.toEqual(
+      bytes,
+    )
+    await expect(readS3ObjectBytes(S3Buckets.images, imageId)).resolves.toEqual(bytes)
   })
 
   it('does not resurrect an image deleted while immutable promotion is in flight', async () => {
-    const { image_id } = await createImageUploadUrl(user, {
-      contentType: 'image/jpeg',
-      contentLength: 1024,
+    const { imageId, digest } = await stageUpload(user, 'delete race')
+    afterDigestClaim(imageId, async () => {
+      await deleteImageById(imageId)
     })
-    const bytes = Buffer.from(`delete race ${randomBytes(16).toString('hex')}`)
-    vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      Body: Readable.from([bytes]),
-    } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
-    let releasePromotion!: () => void
-    let promotionStarted!: () => void
-    const started = new Promise<void>(resolve => {
-      promotionStarted = resolve
-    })
-    const release = new Promise<void>(resolve => {
-      releasePromotion = resolve
-    })
-    vi.spyOn(s3Module, 'promoteFrozenImageToS3').mockImplementation(async ({ sha256 }) => {
-      promotionStarted()
-      await release
-      return { created: true, s3Key: sha256.toString('hex') }
-    })
-    vi.spyOn(s3Module, 'deleteKnownImageStorageFromS3').mockResolvedValue()
-    const deletePromoted = vi.spyOn(finalS3, 'deleteImagesFromS3').mockResolvedValue()
 
-    const completion = completeImageUpload(user, image_id)
-    void completion.catch(() => {})
-    await started
-    await deleteImageById(image_id)
-    releasePromotion()
+    await expect(completeImageUpload(user, imageId)).rejects.toMatchObject({ status: 409 })
 
-    await expect(completion).rejects.toMatchObject({ status: 409 })
-    expect(await getImageById(image_id)).toBeNull()
-    expect(deletePromoted).toHaveBeenCalledWith([
-      { s3_key: createHash('sha256').update(bytes).digest('hex') },
-      { s3_key: image_id },
-    ])
+    expect(await getImageById(imageId)).toBeNull()
+    // The promotion created both final objects after the deletion; the rejected promotion removed
+    // them again.
+    await expect(s3ObjectExists(S3Buckets.images, digest.toString('hex'))).resolves.toBe(false)
+    await expect(s3ObjectExists(S3Buckets.images, imageId)).resolves.toBe(false)
   })
 
   it('returns processing image and enqueues metadata extraction', async () => {
-    const { image_id } = await createImageUploadUrl(user, {
-      contentType: 'image/jpeg',
-      contentLength: 1024,
-    })
-    // Mock S3 response with unique data per test run
-    const mockImageData = Buffer.from(`fake image data ${randomBytes(16).toString('hex')}`)
-    const mockStream = Readable.from([mockImageData])
-    const getFromS3Spy = vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      Body: mockStream,
-    } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
-
-    const mockHash = createHash('sha256').update(mockImageData).digest()
+    const { imageId, bytes, digest } = await stageUpload(user, 'fake image data')
 
     // Complete the upload — synchronous part of the flow
-    const result = await completeImageUpload(user, image_id)
+    const result = await completeImageUpload(user, imageId)
 
     // Verify the result reflects the processing handoff
-    expect(result.id).toBe(image_id)
+    expect(result.id).toBe(imageId)
     expect(deriveUploadStatus(result)).toBe('processing')
-    expect(result.sha_256).toEqual(mockHash)
-    expect(result.s3_key).toBe(mockHash.toString('hex'))
-    expect(s3Module.ensureImageDeliveryAliasInS3).toHaveBeenCalledWith(
-      image_id,
-      expect.objectContaining({ sha256: expect.any(Buffer) }),
-    )
+    expect(result.sha_256).toEqual(digest)
+    expect(result.s3_key).toBe(digest.toString('hex'))
 
-    // Verify S3 was called
-    expect(getFromS3Spy).toHaveBeenCalledWith(
-      expect.objectContaining({ id: image_id, upload_staged_at: expect.any(Date) }),
+    // The staged bytes moved to the digest object and the image-ID delivery alias.
+    await expect(readS3ObjectBytes(S3Buckets.images, digest.toString('hex'))).resolves.toEqual(
+      bytes,
     )
+    await expect(readS3ObjectBytes(S3Buckets.images, imageId)).resolves.toEqual(bytes)
+    await expect(s3ObjectExists(S3Buckets.imageUploads, imageId)).resolves.toBe(false)
 
     // Verify metadata extraction was enqueued for the worker using the production options. There
     // is deliberately no custom jobId: it would outlive the job and block the hourly recovery.
-    const [queuedJob] = await imageUploadsQueue.searchJobs({ data: { id: image_id } })
-    expect(queuedJob?.data).toEqual({ id: image_id })
+    const [queuedJob] = await imageUploadsQueue.searchJobs({ data: { id: imageId } })
+    expect(queuedJob?.data).toEqual({ id: imageId })
     expect(queuedJob).toMatchObject({
       name: 'extract-metadata',
-      data: { id: image_id },
+      data: { id: imageId },
       opts: {
         priority: 0,
         deduplication: {
-          id: `extract-image-metadata-${image_id}`,
+          id: `extract-image-metadata-${imageId}`,
           mode: 'simple',
         },
       },
@@ -197,44 +150,25 @@ describe('completeImageUpload - success path', () => {
     expect(queuedJob?.opts.jobId).toBeUndefined()
 
     // Verify database row reflects processing + persisted hash
-    const updatedImage = await getImageById(image_id)
+    const updatedImage = await getImageById(imageId)
     expect(updatedImage && deriveUploadStatus(updatedImage)).toBe('processing')
-    expect(updatedImage?.sha_256).toEqual(mockHash)
+    expect(updatedImage?.sha_256).toEqual(digest)
     expect(updatedImage?.upload_source_deleted_at).toBeInstanceOf(Date)
   })
 
   it('handles deduplication - return existing image if hash matches', async () => {
-    // Create and complete first upload
-    const { image_id: firstImageId } = await createImageUploadUrl(user, {
-      contentType: 'image/jpeg',
-      contentLength: 1024,
-    })
-    // Use unique image data per test run to avoid cross-test deduplication
-    const mockImageData = Buffer.from(`fake image data ${randomBytes(16).toString('hex')}`)
-
-    // Mock for first upload
-    vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      Body: Readable.from([mockImageData]),
-    } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
-
-    const firstResult = await completeImageUpload(user, firstImageId)
+    const first = await stageUpload(user, 'fake image data')
+    const firstResult = await completeImageUpload(user, first.imageId)
 
     // First upload is now in processing state with the persisted hash
     expect(deriveUploadStatus(firstResult)).toBe('processing')
 
-    // Create second upload with same content
+    // Stage a second upload with the same content
     const { image_id: secondImageId } = await createImageUploadUrl(user, {
       contentType: 'image/jpeg',
       contentLength: 1024,
     })
-
-    // Mock S3 delete for duplicate
-    const deleteFromS3Spy = vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3')
-
-    // Mock same hash for second upload
-    vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
-      Body: Readable.from([mockImageData]),
-    } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
+    await putS3Object({ Bucket: S3Buckets.imageUploads, Key: secondImageId, Body: first.bytes })
 
     // Complete second upload - should return first image
     const secondResult = await completeImageUpload(user, secondImageId)
@@ -242,8 +176,9 @@ describe('completeImageUpload - success path', () => {
     // Should return the first image because hash matched
     expect(secondResult.id).toBe(firstResult.id)
 
-    // Verify S3 object for duplicate was deleted
-    expect(deleteFromS3Spy).toHaveBeenCalledWith(expect.objectContaining({ id: secondImageId }))
+    // The duplicate's staged source is gone and it never gained a delivery alias
+    await expect(s3ObjectExists(S3Buckets.imageUploads, secondImageId)).resolves.toBe(false)
+    await expect(s3ObjectExists(S3Buckets.images, secondImageId)).resolves.toBe(false)
 
     // Verify second image was deleted from database
     const deletedImage = await getImageById(secondImageId)

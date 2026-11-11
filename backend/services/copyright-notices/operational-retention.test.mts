@@ -25,7 +25,7 @@ import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyrigh
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
 import { createRetentionSignedInForm } from '@voucha/test-helpers/services/copyright-notices/retention-signed-in-form'
-import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { createCopyrightEmailIntake, ErasedCopyrightEmailIntakeReplay } from './email-intakes.mts'
 import { recordCopyrightEmailParse } from './email-intake-parses.mts'
@@ -39,7 +39,7 @@ const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 
 describe('copyright operational retention', () => {
   useCopyrightOperationalCursorReservation()
-  const bucket = useFakeCopyrightEvidenceBucket()
+  const bucket = useCopyrightEvidenceBucket()
 
   it('commits concurrent same-case party inserts without a case lock upgrade', async () => {
     const notice = await createRetentionMinimalCase()
@@ -134,7 +134,7 @@ describe('copyright operational retention', () => {
     })
     const orphan = await readCopyrightThreadTokenForIntake(erasedIntake.id, 'message_id')
     expect(orphan).toBeTruthy()
-    bucket.put(erasedIntake.raw_storage_key)
+    await bucket.put(erasedIntake.raw_storage_key)
     await positionCopyrightOperationalCursor('unlinked_email_intakes', erasedIntake.id)
     await sweepUnlinkedCopyrightEmailIntakes({
       now: future(91),
@@ -178,7 +178,7 @@ describe('copyright operational retention', () => {
   it('deletes old unlinked email evidence and keeps the SES receipt for exact replay', async () => {
     const intake = await createRetentionParsedEmail('unlinked')
     const key = intake.raw_storage_key
-    bucket.put(key, { versions: 2, deleteMarker: true })
+    await bucket.put(key, { versions: 2, deleteMarker: true })
     await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
     await sweepUnlinkedCopyrightEmailIntakes({
       now: future(89),
@@ -186,7 +186,7 @@ describe('copyright operational retention', () => {
       childLimit: 20,
       maxBatches: 10,
     })
-    expect(bucket.countVersions(key)).toBe(3)
+    expect(await bucket.countVersions(key)).toBe(3)
     expect((await readCopyrightIntakeRetentionState(intake.id)).intakeExists).toBe(true)
 
     await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
@@ -196,11 +196,11 @@ describe('copyright operational retention', () => {
       childLimit: 20,
       maxBatches: 10,
     }
-    bucket.refuse(key)
+    await bucket.refuse(key)
     await expect(sweepUnlinkedCopyrightEmailIntakes(expired)).rejects.toThrow(
       'Copyright evidence delete refused',
     )
-    expect(bucket.countVersions(key)).toBe(3)
+    expect(await bucket.countVersions(key)).toBe(3)
     expect((await readCopyrightIntakeRetentionState(intake.id)).intakeExists).toBe(true)
     await expect(
       createCopyrightEmailIntake({
@@ -216,9 +216,9 @@ describe('copyright operational retention', () => {
         },
       }),
     ).rejects.toBeInstanceOf(ErasedCopyrightEmailIntakeReplay)
-    bucket.allow(key)
+    await bucket.allow(key)
     await sweepUnlinkedCopyrightEmailIntakes(expired)
-    expect(bucket.countVersions(key)).toBe(0)
+    expect(await bucket.countVersions(key)).toBe(0)
     expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({
       intakeExists: false,
       receiptExists: true,
@@ -239,20 +239,20 @@ describe('copyright operational retention', () => {
         },
       }),
     ).rejects.toBeInstanceOf(ErasedCopyrightEmailIntakeReplay)
-    expect(bucket.countVersions(key)).toBe(0)
+    expect(await bucket.countVersions(key)).toBe(0)
   })
 
   it('commits partial version erasure while retaining the live pointer until confirmation', async () => {
     const intake = await createRetentionParsedEmail('many-versions')
     const notice = await createRetentionMinimalCase()
-    bucket.put(intake.raw_storage_key, { versions: 6 })
+    await bucket.put(intake.raw_storage_key, { versions: 6 })
     const siblingKey = `${intake.raw_storage_key}/other`
-    bucket.put(siblingKey, { versions: 2 })
+    await bucket.put(siblingKey, { versions: 2 })
     await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
     const options = { now: future(91), retentionDays: 90, childLimit: 2, maxBatches: 2 }
     const first = await sweepUnlinkedCopyrightEmailIntakes(options)
     expect(first.hasMore).toBe(true)
-    expect(bucket.countVersions(intake.raw_storage_key)).toBe(4)
+    expect(await bucket.countVersions(intake.raw_storage_key)).toBe(4)
     expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({
       intakeExists: true,
       receiptExists: true,
@@ -281,8 +281,8 @@ describe('copyright operational retention', () => {
       const result = await sweepUnlinkedCopyrightEmailIntakes(options)
       if (!result.hasMore) break
     }
-    expect(bucket.countVersions(intake.raw_storage_key)).toBe(0)
-    expect(bucket.countVersions(siblingKey)).toBe(2)
+    expect(await bucket.countVersions(intake.raw_storage_key)).toBe(0)
+    expect(await bucket.countVersions(siblingKey)).toBe(2)
     expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({
       intakeExists: false,
       receiptExists: true,

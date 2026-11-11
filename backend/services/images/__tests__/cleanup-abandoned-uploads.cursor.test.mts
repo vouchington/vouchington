@@ -8,7 +8,8 @@ import {
   insertOwnedUploadCleanupCluster,
   makeOwnedUploadCleanupSweep,
 } from '@voucha/test-helpers/image-upload-cleanup'
-import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { seedOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import type { AbandonedUploadSweep } from '@queues/content-analysis/types'
 import { randomBytes } from 'node:crypto'
@@ -60,7 +61,7 @@ describe('abandoned upload cursor windows', () => {
       recovery: recoveryOwned.windows.recovery.upper,
       abandonment: abandonmentOwned.windows.abandonment.upper,
     }
-    const storage = installOwnedUploadCleanupStorage(ids)
+    const storage = await seedOwnedUploadCleanupStorage(ids)
     const sweep = await initializeAbandonedUploadSweep()
     expect(Date.parse(sweep.recoveryCutoff) - Date.parse(sweep.abandonmentCutoff)).toBe(23 * HOUR)
     for (const phase of ['staged', 'recovery', 'abandonment'] as const) {
@@ -77,7 +78,7 @@ describe('abandoned upload cursor windows', () => {
       ).toBe(true)
     }
     expect(await Promise.all(ids.map(id => getImageById(id, true)))).toEqual(before)
-    expect(storage.calls).toEqual([])
+    await expect(storage.deleted()).resolves.toEqual([])
   })
 
   it('persists applied progress after storage effects and leaves the B+1 witness for continuation', async () => {
@@ -97,14 +98,15 @@ describe('abandoned upload cursor windows', () => {
     const started = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
     const saved: AbandonedUploadSweep[] = []
-    let held = false
-    const storage = installOwnedUploadCleanupStorage(ids.slice(0, 2), async () => {
-      if (!held) {
-        held = true
+    const storage = await seedOwnedUploadCleanupStorage(ids.slice(0, 2))
+    // Hold the pass at its acknowledgement, after the first page's storage deletion completed.
+    const restoreHold = runBeforePostgresStatementForTest(
+      '/* markImageUploadSourcesDeleted:lock */',
+      async () => {
         started.resolve()
         await release.promise
-      }
-    })
+      },
+    )
     const restoreConfig = overrideDynamicConfigFieldsForTest(imagesWorkConfig, {
       cleanup_batch_size: 1,
     })
@@ -116,6 +118,9 @@ describe('abandoned upload cursor windows', () => {
       try {
         await started.promise
         expect(saved).toEqual([])
+        await expect(storage.deleted()).resolves.toEqual([
+          { Bucket: storage.buckets.imageUploads, Key: first },
+        ])
         expect(await getImageById(witness)).not.toBeNull()
         expect(await getImageById(outside)).not.toBeNull()
       } finally {
@@ -127,7 +132,9 @@ describe('abandoned upload cursor windows', () => {
       if (!resumed) throw new Error('Bounded cleanup did not save progress')
       expect(resumed.windows.abandonment.after?.id).toBe(first)
       expect(resumed.windows.abandonment.done).toBe(false)
-      expect(storage.calls.map(call => call.Key)).toEqual([first])
+      await expect(storage.deleted()).resolves.toEqual([
+        { Bucket: storage.buckets.imageUploads, Key: first },
+      ])
       const second = await cleanupAbandonedUploads(resumed, async state => {
         saved.push(state)
       })
@@ -135,8 +142,13 @@ describe('abandoned upload cursor windows', () => {
       expect(saved.at(-1)?.windows.abandonment.after?.id).toBe(witness)
       expect(await getImageById(witness)).toBeNull()
       expect(await getImageById(outside)).not.toBeNull()
+      await expect(storage.deleted()).resolves.toEqual([
+        { Bucket: storage.buckets.imageUploads, Key: first },
+        { Bucket: storage.buckets.imageUploads, Key: witness },
+      ])
     } finally {
       release.resolve()
+      restoreHold()
       restoreConfig()
     }
   })
@@ -150,20 +162,24 @@ describe('abandoned upload cursor windows', () => {
     sweep.windows.staged.done = true
     sweep.windows.recovery.done = true
     const late = await insertOwnedUploadCleanupCluster(user.id, 1, new Date(stagedAt.getTime() + 1))
-    const storage = installOwnedUploadCleanupStorage([...initial, ...late])
+    const storage = await seedOwnedUploadCleanupStorage([...initial, ...late])
     expect(await cleanupAbandonedUploads(sweep, async () => {})).toMatchObject({
       cleaned: 1,
       hasMore: false,
     })
     expect(await getImageById(initial[0]!)).toBeNull()
     expect(await getImageById(late[0]!)).not.toBeNull()
-    expect(storage.calls.map(call => call.Key)).toEqual(initial)
+    await expect(storage.deleted()).resolves.toEqual(
+      initial.map(Key => ({ Bucket: storage.buckets.imageUploads, Key })),
+    )
     const nextSweep = await makeOwnedUploadCleanupSweep(late, now)
     expect(await cleanupAbandonedUploads(nextSweep, async () => {})).toMatchObject({
       cleaned: 1,
       hasMore: false,
     })
     expect(await getImageById(late[0]!)).toBeNull()
-    expect(storage.calls.map(call => call.Key)).toEqual([...initial, ...late])
+    await expect(storage.deleted()).resolves.toEqual(
+      [...initial, ...late].map(Key => ({ Bucket: storage.buckets.imageUploads, Key })),
+    )
   })
 })

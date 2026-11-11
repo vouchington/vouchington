@@ -1,10 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
-import { installS3TestCredentials } from '@voucha/test-helpers/s3-test-environment'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
-import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import {
   addCopyrightCasePurgeFixtureParty,
   publishCopyrightCasePurgeCoverage,
@@ -32,15 +31,8 @@ function firstPage(noticeId: string): CopyrightCasePurgeJobData {
 }
 
 describe('copyright case purge holds placed mid-purge', () => {
-  let restoreS3Credentials: (() => void) | undefined
-  beforeEach(() => {
-    restoreS3Credentials = installS3TestCredentials()
-  })
-  afterEach(() => {
-    restoreS3Credentials?.()
-  })
   useAutomaticProvisionalWithholding()
-  const bucket = useFakeCopyrightEvidenceBucket()
+  const bucket = useCopyrightEvidenceBucket()
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed email fixture and bounded PostgreSQL purge pages
@@ -78,13 +70,13 @@ describe('copyright case purge holds placed mid-purge', () => {
     expect(await readCopyrightCasePurgeFixture(entry.noticeId)).toMatchObject({ live: true })
   }, 30_000)
 
-  // no-mistakes-timeout-reason: reviewed email fixture, fake evidence bucket, and bounded pages
+  // no-mistakes-timeout-reason: reviewed email fixture, emulator evidence bucket, and bounded pages
   it('stops a purge whose case hold lands after evidence erasure started', async () => {
     await setPageSize(1)
     const entry = await createRetentionEmailCase()
     await settleCopyrightCasePurgeFixtureActions(entry.noticeId)
     await publishCopyrightCasePurgeCoverage(entry.noticeId)
-    for (const key of entry.evidenceKeys) bucket.put(key, { versions: 3, deleteMarker: true })
+    for (const key of entry.evidenceKeys) await bucket.put(key, { versions: 3, deleteMarker: true })
     let data = firstPage(entry.noticeId)
     for (let step = 0; step < 1_000 && data.phase !== 'evidence'; step += 1) {
       const page = await runCopyrightCasePurgePage(data, PURGE_NOW)
@@ -94,12 +86,16 @@ describe('copyright case purge holds placed mid-purge', () => {
     expect(data.phase).toBe('evidence')
     const started = await runCopyrightCasePurgePage(data, PURGE_NOW)
     expect(started.hasMore).toBe(true)
-    const deletesBeforeHold = bucket.deleteRequests()
+    const versionsBeforeHold = await Promise.all(entry.evidenceKeys.map(bucket.countVersions))
+    // The started page erased part of the evidence; the rest must survive the hold.
+    expect(versionsBeforeHold.reduce((total, count) => total + count)).toBeGreaterThan(0)
 
     await placeCopyrightCasePreservationHold(entry.moderator, entry.noticeId, 'litigation_threat')
     const stopped = await runCopyrightCasePurgePage(started.data, PURGE_NOW)
     expect(stopped.hasMore).toBe(false)
-    expect(bucket.deleteRequests()).toBe(deletesBeforeHold)
+    expect(await Promise.all(entry.evidenceKeys.map(bucket.countVersions))).toEqual(
+      versionsBeforeHold,
+    )
     expect(await readCopyrightCasePurgeFixture(entry.noticeId)).toMatchObject({ live: true })
   }, 30_000)
 })

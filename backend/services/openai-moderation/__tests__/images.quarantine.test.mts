@@ -13,7 +13,7 @@ import {
 import { afterAll, it, expect, afterEach, vi, beforeAll, beforeEach, describe } from 'vitest'
 import * as moderation from '@modules/openai-utils/moderate'
 import { processPendingImageQuarantinePage } from '../delete-flagged.mts'
-import { observeImageQuarantineS3 } from '../../../test-helpers/image-quarantine-s3.mts'
+import { seedImageQuarantineStorage } from '../../../test-helpers/image-quarantine-s3.mts'
 import { upsertImageOpenAIModeration } from '../images.mts'
 import { getImageByAny } from '@services/images/get'
 import type { PrivateUser } from '@services/users/types'
@@ -49,7 +49,7 @@ describe('image quarantine', () => {
 
   it('sexual/minors flag → quarantine copy, original deleted, renders deleted', async () => {
     const image = await createCompletedModerationImage(user)
-    const storage = observeImageQuarantineS3(image)
+    const storage = await seedImageQuarantineStorage(image)
     requestOpenAIModeration.mockResolvedValueOnce(
       createOpenAIModerationResponse(true, { 'sexual/minors': true }),
     )
@@ -57,34 +57,25 @@ describe('image quarantine', () => {
     const result = await upsertImageOpenAIModeration(image.id)
 
     expect(result.flagged).toBe(true)
-    expect(storage.copies()).toHaveLength(1)
-    expect(storage.copies()[0]!.input).toMatchObject({
-      Bucket: storage.quarantineBucket,
-      Key: image.s3_key,
-      CopySource: `${storage.imagesBucket}/${image.s3_key}`,
-    })
-    expect(storage.calls[0]).toBe(storage.copies()[0])
-    expect(storage.deletes().length).toBeGreaterThan(0)
-    expect(storage.renderLists().map(command => command.input.Prefix)).toEqual(
-      [...new Set([image.s3_key, image.id])].map(key => `${key}--`),
-    )
+    await expect(storage.quarantineCopy()).resolves.toBe(storage.original)
+    await expect(storage.storedOriginalKeys()).resolves.toEqual([])
+    await expect(storage.storedRenderKeys()).resolves.toEqual([])
     await expect(getImageByAny(image.id)).resolves.toBeNull()
   })
 
-  it('sexual/minors + copy throws → retains a blocked, pending image for reconciliation', async () => {
+  it('sexual/minors + copy fails → retains a blocked, pending image for reconciliation', async () => {
     const image = await createCompletedModerationImage(user)
-    const storage = observeImageQuarantineS3(image)
+    // No original to copy: the emulator rejects the quarantine copy with NoSuchKey.
+    const storage = await seedImageQuarantineStorage(image, { original: false })
     requestOpenAIModeration.mockResolvedValueOnce(
       createOpenAIModerationResponse(true, { 'sexual/minors': true }),
     )
-    storage.failCopy(new Error('quarantine S3 unavailable'))
 
     const result = await upsertImageOpenAIModeration(image.id)
 
     expect(result.flagged).toBe(true)
-    expect(storage.copies()).toHaveLength(1)
-    expect(storage.deletes()).toHaveLength(0)
-    expect(storage.renderLists()).toHaveLength(0)
+    await expect(storage.quarantineCopy()).resolves.toBeUndefined()
+    await expect(storage.storedRenderKeys()).resolves.toEqual(storage.renderKeys)
     await expect(getImageByAny(image.id)).resolves.toBeNull()
     await expect(getImageModerationState(image.id)).resolves.toMatchObject({
       deleted_at: null,
@@ -95,7 +86,7 @@ describe('image quarantine', () => {
 
   it('hides a pending quarantine from post rendering and rejects a new attachment', async () => {
     const image = await createCompletedModerationImage(user)
-    const storage = observeImageQuarantineS3(image)
+    await seedImageQuarantineStorage(image, { original: false })
     const suffix = crypto.randomUUID()
     const postId = await insertTestPost({
       title: `Pending quarantine ${suffix}`,
@@ -109,7 +100,6 @@ describe('image quarantine', () => {
     requestOpenAIModeration.mockResolvedValueOnce(
       createOpenAIModerationResponse(true, { 'sexual/minors': true }),
     )
-    storage.failCopy(new Error('quarantine S3 unavailable'))
 
     await upsertImageOpenAIModeration(image.id)
 
@@ -122,19 +112,21 @@ describe('image quarantine', () => {
 
   it('reconciles a pending CSAM quarantine after its initial copy failure', async () => {
     const image = await createCompletedModerationImage(user)
-    const storage = observeImageQuarantineS3(image)
+    const storage = await seedImageQuarantineStorage(image, { original: false })
     requestOpenAIModeration.mockResolvedValueOnce(
       createOpenAIModerationResponse(true, { 'sexual/minors': true }),
     )
-    storage.failCopy(new Error('quarantine S3 unavailable'))
 
     await upsertImageOpenAIModeration(image.id)
+    await expect(storage.quarantineCopy()).resolves.toBeUndefined()
+    await storage.storeOriginal()
     await expect(processPendingImageQuarantinePage([{ id: image.id }])).resolves.toMatchObject({
       reconciled: 1,
     })
 
-    expect(storage.copies()).toHaveLength(2)
-    expect(storage.deletes().length).toBeGreaterThan(0)
+    await expect(storage.quarantineCopy()).resolves.toBe(storage.original)
+    await expect(storage.storedOriginalKeys()).resolves.toEqual([])
+    await expect(storage.storedRenderKeys()).resolves.toEqual([])
     await expect(getImageByAny(image.id)).resolves.toBeNull()
     await expect(getImageModerationState(image.id)).resolves.toMatchObject({
       deleted_at: expect.any(Date),
@@ -144,7 +136,7 @@ describe('image quarantine', () => {
 
   it('harassment flag → quarantine not called, regular delete', async () => {
     const image = await createCompletedModerationImage(user)
-    const storage = observeImageQuarantineS3(image)
+    const storage = await seedImageQuarantineStorage(image)
     requestOpenAIModeration.mockResolvedValueOnce(
       createOpenAIModerationResponse(true, { harassment: true }),
     )
@@ -152,34 +144,33 @@ describe('image quarantine', () => {
     const result = await upsertImageOpenAIModeration(image.id)
 
     expect(result.flagged).toBe(true)
-    expect(storage.copies()).toHaveLength(0)
-    expect(storage.renderLists()).toHaveLength(0)
-    expect(storage.deletes().length).toBeGreaterThan(0)
+    await expect(storage.quarantineCopy()).resolves.toBeUndefined()
+    await expect(storage.storedOriginalKeys()).resolves.toEqual([])
+    // Render cleanup runs only for quarantined images.
+    await expect(storage.storedRenderKeys()).resolves.toEqual(storage.renderKeys)
     await expect(getImageByAny(image.id)).resolves.toBeNull()
   })
 
-  it('sexual/minors + renders delete throws → original still deleted', async () => {
+  it('sexual/minors + renders cleanup fails → original still deleted', async () => {
     const image = await createCompletedModerationImage(user)
-    const storage = observeImageQuarantineS3(image)
+    const storage = await seedImageQuarantineStorage(image)
     requestOpenAIModeration.mockResolvedValueOnce(
       createOpenAIModerationResponse(true, { 'sexual/minors': true }),
     )
-    storage.failRenders(new Error('renders S3 unavailable'))
+    storage.failRenders()
 
     const result = await upsertImageOpenAIModeration(image.id)
 
     expect(result.flagged).toBe(true)
-    expect(storage.copies()).toHaveLength(1)
-    expect(storage.deletes().length).toBeGreaterThan(0)
-    expect(storage.renderLists().map(command => command.input.Prefix)).toEqual(
-      [...new Set([image.s3_key, image.id])].map(key => `${key}--`),
-    )
+    await expect(storage.quarantineCopy()).resolves.toBe(storage.original)
+    await expect(storage.storedOriginalKeys()).resolves.toEqual([])
+    await expect(storage.storedRenderKeys()).resolves.toEqual(storage.renderKeys)
     await expect(getImageByAny(image.id)).resolves.toBeNull()
   })
 
   it('already-moderated sexual/minors image → quarantine on retry', async () => {
     const image = await createCompletedModerationImage(user)
-    const storage = observeImageQuarantineS3(image)
+    const storage = await seedImageQuarantineStorage(image)
     const flaggedModeration = createImageModerationResult(true, {
       categories: { 'sexual/minors': true } as never,
     })
@@ -189,10 +180,9 @@ describe('image quarantine', () => {
 
     expect(result.skipped).toBe(true)
     expect(result.reason).toBe('already_moderated_flagged')
-    expect(storage.copies()).toHaveLength(1)
-    expect(storage.renderLists().map(command => command.input.Prefix)).toEqual(
-      [...new Set([image.s3_key, image.id])].map(key => `${key}--`),
-    )
+    await expect(storage.quarantineCopy()).resolves.toBe(storage.original)
+    await expect(storage.storedOriginalKeys()).resolves.toEqual([])
+    await expect(storage.storedRenderKeys()).resolves.toEqual([])
     await expect(getImageByAny(image.id)).resolves.toBeNull()
   })
 })

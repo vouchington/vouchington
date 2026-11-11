@@ -1,11 +1,13 @@
-import { createHash, randomUUID } from 'node:crypto'
-import { GetObjectCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3'
+import { randomUUID } from 'node:crypto'
+import { DeleteObjectsCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { S3Buckets } from '../modules/aws/s3.mts'
 import sql from 'sql-template-strings'
 import { onTestFinished, vi } from 'vitest'
 import { write } from '@data-stores/psql'
 import type { ArticleSyncResult } from '@voucha/types/article-sync'
 import { getPostByAny } from '../services/posts/get.mts'
+import { emulatorS3, listS3Keys, putS3Object } from './aws-emulator-s3.mts'
+import { useOwnedS3Bucket } from './s3-owned-bucket.mts'
 
 export function createArticleSyncFixtures() {
   const suffix = randomUUID()
@@ -51,50 +53,77 @@ export async function seedArticleSyncTimestamp(postId: string, timestamp: Date):
     throw new Error('Owned timestamp seed missed its post')
 }
 
-/** One object under `articles/`: its markdown, a read failure, or a fetch the test settles itself. */
-export type ArticleBucketObject = string | Error | (() => Promise<string>)
+const ARTICLE_PREFIX = 'articles/'
+
+export type ArticleBucket = {
+  /** Replaces every article object with these files and their markdown. */
+  replace: (articles: Iterable<readonly [string, string]>) => Promise<void>
+  put: (file: string, markdown: string) => Promise<void>
+}
 
 /**
- * The article bucket behind the shared S3 client. `ListObjectsV2` answers the files in `objects`
- * (read at each call, so a test can change them between syncs) and `GetObject` answers each one's
- * markdown or failure. A string's ETag is its content hash; an error or pending object gets an ETag
- * unique to this stub, so the production markdown cache cannot answer for a changed object.
- * `fetchedKeys` records the `GetObject` keys in request order.
+ * Gives the current test its own article bucket in the AWS Emulator behind `S3Buckets.assets`, so
+ * the fixed `articles/` listing sees only this test's files.
  */
-export function stubArticleBucket(objects: ReadonlyMap<string, ArticleBucketObject>): {
-  fetchedKeys: string[]
-} {
-  const stubId = randomUUID()
+export async function useArticleBucket(
+  articles: Iterable<readonly [string, string]> = [],
+): Promise<ArticleBucket> {
+  const bucket = await useOwnedS3Bucket('assets')
+  const put = async (file: string, markdown: string) => {
+    await putS3Object({ Bucket: bucket, Key: `${ARTICLE_PREFIX}${file}`, Body: markdown })
+  }
+  const replace = async (next: Iterable<readonly [string, string]>) => {
+    const existing = await listS3Keys(bucket, ARTICLE_PREFIX)
+    if (existing.length) {
+      await emulatorS3().send(
+        new DeleteObjectsCommand({
+          Bucket: bucket,
+          Delete: { Objects: existing.map(Key => ({ Key })) },
+        }),
+      )
+    }
+    await Promise.all([...next].map(([file, markdown]) => put(file, markdown)))
+  }
+  await replace(articles)
+  return { replace, put }
+}
+
+/** Larger than the article size bound, so its read fails in production code. */
+export function oversizedArticleMarkdown(): string {
+  return 'x'.repeat(256 * 1024 + 1)
+}
+
+/**
+ * S3 cannot pause a read, so ordering checks hold one article's `GetObject` at the SDK edge until
+ * `load` settles; every other request reaches the emulator. `fetchedKeys` records article reads in
+ * request order.
+ */
+export function holdArticleRead(
+  file: string,
+  load: () => Promise<string>,
+): { fetchedKeys: string[] } {
   const fetchedKeys: string[] = []
-  const etag = (file: string, object: ArticleBucketObject) =>
-    typeof object === 'string'
-      ? createHash('sha256').update(object).digest('hex')
-      : `${stubId}:${file}`
-  const spy = vi.spyOn(S3Client.prototype, 'send').mockImplementation(async command => {
-    if (command instanceof ListObjectsV2Command) {
-      if (command.input.Bucket !== S3Buckets.assets || command.input.Prefix !== 'articles/')
-        throw new Error('Article listing left the articles prefix')
-      return {
-        Contents: [...objects].map(([file, object]) => ({
-          Key: `articles/${file}`,
-          ETag: etag(file, object),
-          Size: typeof object === 'string' ? Buffer.byteLength(object) : undefined,
-        })),
-      } as never
+  const send = S3Client.prototype.send
+  const spy = vi.spyOn(S3Client.prototype, 'send').mockImplementation(function (
+    this: S3Client,
+    command,
+    ...args
+  ) {
+    if (
+      command instanceof GetObjectCommand &&
+      command.input.Bucket === S3Buckets.assets &&
+      command.input.Key?.startsWith(ARTICLE_PREFIX)
+    ) {
+      fetchedKeys.push(command.input.Key)
+      if (command.input.Key === `${ARTICLE_PREFIX}${file}`) {
+        return load().then(markdown => ({
+          $metadata: {},
+          Body: { transformToString: async () => markdown },
+          ContentLength: Buffer.byteLength(markdown),
+        })) as never
+      }
     }
-    if (command instanceof GetObjectCommand) {
-      const key = command.input.Key!
-      const object = objects.get(key.slice('articles/'.length))
-      if (object === undefined) throw new Error(`Missing article object ${key}`)
-      fetchedKeys.push(key)
-      if (object instanceof Error) throw object
-      const markdown = typeof object === 'string' ? object : await object()
-      return {
-        Body: { transformToString: async () => markdown },
-        ContentLength: Buffer.byteLength(markdown),
-      } as never
-    }
-    throw new Error(`Unexpected S3 command: ${command.constructor.name}`)
+    return Reflect.apply(send, this, [command, ...args]) as never
   })
   onTestFinished(() => spy.mockRestore())
   return { fetchedKeys }
