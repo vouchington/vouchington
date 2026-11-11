@@ -4,6 +4,7 @@ import { expireDataRequests } from '@services/account-data-requests/update'
 import { claimRecoverableDataRequests } from '@services/account-data-requests/recovery'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
+import { resolveSeedAnchor, SEED_ANCHOR_DATE_ENV } from '../seed-data/seed-anchor.mts'
 
 export async function runAccountDataExportScenarios(): Promise<void> {
   await seedExpiredExports()
@@ -104,14 +105,19 @@ export async function runAccountDataExportScenarios(): Promise<void> {
 }
 
 async function seedExpiredExports(): Promise<void> {
-  await write(`/* seedExplainExpiredExports */
+  const anchor = new Date(resolveSeedAnchor(process.env[SEED_ANCHOR_DATE_ENV]).dayAnchorMs)
+  await write(
+    `/* seedExplainExpiredExports */
     INSERT INTO user_data_requests (id, dispatched_at, processing_started_at, completed_at,
       s3_key, expires_at)
     SELECT format('019e0000-7c07-7000-8000-%s', lpad(n::text, 12, '0'))::uuid,
       NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day',
       'explain-export-' || n,
-      CASE WHEN n < 10 THEN NOW() - INTERVAL '2 days' ELSE NOW() + INTERVAL '1 day' END
-    FROM generate_series(0, 19) AS n ON CONFLICT (id) DO NOTHING`)
+      CASE WHEN n < 10 THEN $1::timestamptz - INTERVAL '2 days'
+        ELSE NOW() + INTERVAL '1 day' END
+    FROM generate_series(0, 19) AS n ON CONFLICT (id) DO NOTHING`,
+    [anchor],
+  )
 }
 
 async function resetExportRecoveryFixtures(): Promise<void> {
