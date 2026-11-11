@@ -16,7 +16,7 @@ const admittedRelations = new AsyncLocalStorage<Map<string, RelationAdmission>>(
 
 /**
  * Admit all tables before writing; never partially refuse a batch. Post-related URLs recheck
- * capacity under the post scope lock; other relation types may overshoot during accepted races.
+ * capacity in their write transaction. Concurrent admissions may still overshoot the cap.
  */
 export async function withRelationLimitAdmission<T>(
   subjectId: string,

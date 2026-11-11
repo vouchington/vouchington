@@ -63,9 +63,9 @@ cleanup removes only older generations, so the edit stays protected. A block tha
 already-written URL after this statement commits is handled by the next generation, which prunes
 projected URLs missing from the new eligible prefix.
 
-Post-related URL writes recheck the relation cap under the post scope lock, so they cannot exceed
-it. Other relation types keep check-before-write behavior and may overshoot during concurrent
-admission.
+Post-related URL writes check the relation cap before writing, so sequential requests refuse new
+relations above capacity. Concurrent admissions may exceed the cap; it is a best-effort guard for
+this relation type, as for the others.
 
 ## Table Structure
 
