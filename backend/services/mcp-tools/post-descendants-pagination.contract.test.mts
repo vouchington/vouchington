@@ -33,13 +33,15 @@ describe('comment descendants REST and MCP parity', () => {
     })
     overrideDynamicConfigFieldsForTest(paginationConfig, { descendants_max_limit: 3 })
     const root = await createTestPost({ user: author })
-    const pending = await comment(author, root.id)
-    await setTestPostClearanceStatus(pending.id, 'pending', author.id)
+    const pending = await comment(other, root.id)
+    await setTestPostClearanceStatus(pending.id, 'pending', other.id)
     const head = await comment(author, root.id)
     const children = [await comment(other, head.id), await comment(other, head.id)]
 
+    const request = createRequest()
+    await request.authenticateAs(author)
     const pairedPage = async (postId: string, after?: string) => {
-      const rest = await createRequest()
+      const rest = await request
         .get(`/api/v1/posts/${postId}/descendants`)
         .query({ limit: 201, ...(after === undefined ? {} : { after }) })
         .expect(200)
@@ -63,10 +65,7 @@ describe('comment descendants REST and MCP parity', () => {
     expect(ids(remaining)).toEqual([children[1]!.id])
     expect(remaining.page_info).toMatchObject({ has_next_page: false })
 
-    await createRequest()
-      .get(`/api/v1/posts/${root.id}/descendants`)
-      .query({ after: '' })
-      .expect(400)
+    await request.get(`/api/v1/posts/${root.id}/descendants`).query({ after: '' }).expect(400)
     expect((await call(author, { post_id: root.id, after: '' })).body).toEqual({
       success: false,
       error: 'Invalid cursor',
