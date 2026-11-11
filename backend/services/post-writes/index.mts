@@ -27,6 +27,7 @@ import {
 import { prepareTopicRecommendation } from '@services/topic-recommendations/create-topic-recommendation'
 
 export { validatePostWriteInput } from './input.mts'
+export { currentUserCanCreatePostWrite } from './authorization.mts'
 import { RECOMMENDATION_FIELDS } from './input.mts'
 
 /** Prepare one admitted post; each domain retains its canonical transactional implementation. */

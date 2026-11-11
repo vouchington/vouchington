@@ -17,13 +17,13 @@ import { preparePostWithCommunityReviews, type CreatePostInput, type Post } from
 import {
   preparePostWrite,
   validatePostWriteInput,
+  currentUserCanCreatePostWrite,
   postWriteAdmission,
   assertPostWriteBeforeCommit,
 } from '@services/post-writes'
 import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
 import {
   assertOfficialAccountCanCreatePost,
-  currentUserCanCreatePost,
   getAuthorizedPostContributionMembershipPlan,
 } from '@services/posts/authorization'
 import type { Tool } from '@services/openai-agents/tool-types'
@@ -88,7 +88,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
   function: currentUser => async (args, invocationContext) => {
     const user = await requireActiveToolUser(currentUser)
     const authority = getDelegatedToolAuthority(user, invocationContext)
-    if (!currentUserCanCreatePost(user))
+    if (!currentUserCanCreatePostWrite(user, args))
       throw createCodedError(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
     const membershipPlan = await getAuthorizedPostContributionMembershipPlan(user)
     const { idempotency_key, ...body } = args

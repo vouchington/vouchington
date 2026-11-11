@@ -14,6 +14,7 @@ import { isHoneypotTriggered } from '@services/honeypot'
 import type { CreatePostInput } from '@services/posts'
 import {
   validatePostWriteInput,
+  currentUserCanCreatePostWrite,
   postWriteAdmission,
   assertPostWriteBeforeCommit,
 } from '@services/post-writes'
@@ -21,7 +22,6 @@ import { isSupportedPostType } from '@services/posts/create/validation'
 import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
 import {
   assertOfficialAccountCanCreatePost,
-  currentUserCanCreatePost,
   getAuthorizedPostContributionMembershipPlan,
 } from '@services/posts/authorization'
 import { assertNotSuspended, isAdminUser } from '@services/users'
@@ -69,14 +69,13 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts')
   const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
-  if (!currentUserCanCreatePost(currentUser)) {
+  const parsedBody = await parseJsonBody(ctx, '1mb')
+  const body = parsedBody as CreatePostRequestBody
+  if (!currentUserCanCreatePostWrite(currentUser, body)) {
     ctx.throw(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
   }
 
   const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
-
-  const parsedBody = await parseJsonBody(ctx, '1mb')
-  const body = parsedBody as CreatePostRequestBody
 
   if (isHoneypotTriggered(body as Record<string, unknown>)) {
     validateRequestContract(ctx, 'POST:/api/v1/posts', { body })
