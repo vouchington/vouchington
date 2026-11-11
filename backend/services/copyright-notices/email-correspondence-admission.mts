@@ -130,6 +130,13 @@ export async function admitCopyrightEmailCorrespondence(input: {
     422,
     'Correspondence kind does not apply to this jurisdiction',
   )
+  const { rowCount: pendingDecisions } =
+    await transaction(sql`/* admitCopyrightEmailCorrespondence:pendingDecision */
+    SELECT id FROM copyright_notice_email_intake_notice_links
+    WHERE copyright_notice_email_intake_id = ${input.intakeId}
+      AND correspondence_action = 'pending'
+    FOR UPDATE`)
+  assert(pendingDecisions === 1, 409, 'Copyright email correspondence was already reviewed')
   const { submissionId, correspondenceId } = await insertAdmittedCopyrightEmailSubmission(
     transaction,
     input,

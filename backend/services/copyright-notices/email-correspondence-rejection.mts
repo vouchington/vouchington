@@ -67,6 +67,13 @@ export async function rejectCopyrightEmailCorrespondence(input: {
     await transaction.commit()
     return { noticeId: pending.notice_id, isDuplicate: true }
   }
+  const { rowCount: pendingDecisions } =
+    await transaction(sql`/* rejectCopyrightEmailCorrespondence:pendingDecision */
+    SELECT id FROM copyright_notice_email_intake_notice_links
+    WHERE copyright_notice_email_intake_id = ${input.intakeId}
+      AND correspondence_action = 'pending'
+    FOR UPDATE`)
+  assert(pendingDecisions === 1, 409, 'Copyright email correspondence was already reviewed')
   const rationaleCiphertext = encryptSecret(
     input.rationale,
     copyrightEmailIntakePurpose(pending.amazon_ses_message_id),

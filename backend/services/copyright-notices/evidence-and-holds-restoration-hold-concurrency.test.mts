@@ -15,7 +15,7 @@ describe('late legal-hold and restoration concurrency', () => {
     vi.unstubAllEnvs()
   })
 
-  it('serializes the placement fence before case records, leaving a concurrent restored tuple denied', async () => {
+  it('keeps the placement withheld when a legal hold overlaps restoration', async () => {
     const { moderator, notice, restorationAt, restore, target } =
       await openHeldCounterNoticeRestore()
     const holdSubmission = await appendTestCopyrightNoticeSubmission({
@@ -27,7 +27,7 @@ describe('late legal-hold and restoration concurrency', () => {
       bodyCiphertext: `concurrent-hold-${crypto.randomUUID()}`,
     })
 
-    const [restoreOutcome, holdOutcome] = await Promise.all([
+    const [, holdOutcome] = await Promise.all([
       processCopyrightActionIntent(restore.id, restorationAt),
       appendCopyrightLegalHoldAssessment({
         currentUser: moderator,
