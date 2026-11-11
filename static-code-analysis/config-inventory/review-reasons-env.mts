@@ -16,6 +16,10 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
   ],
   ['API_EGRESS_PROXY_URL', 'Service Connect endpoint; keep with deployment network wiring.'],
   [
+    'AWS_ENDPOINT_URL',
+    'AWS SDK endpoint override; set only by the test harness to reach the local AWS Emulator.',
+  ],
+  [
     'CLOUDFLARE_CF_FETCH_PATH',
     'Worker endpoint path; keep environment-scoped until route ownership changes.',
   ],
