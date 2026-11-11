@@ -27,7 +27,7 @@ describe('platform-stats cache project', () => {
       include: [routeTest],
       exclude: ['**/node_modules/**', '**/.git/**'],
     })
-    expect(project?.globalSetup).toBe('./test-helpers/vitest.setup.data-stores.mts')
+    expect(project?.globalSetup).toEqual(ordinary!.globalSetup)
     expect(project?.setupFiles).toEqual(ordinary!.setupFiles)
     expect(project).not.toHaveProperty('maxWorkers')
     expect(project).not.toHaveProperty('fileParallelism')

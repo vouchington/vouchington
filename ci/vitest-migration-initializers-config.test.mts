@@ -22,7 +22,10 @@ describe('migration initializer fault project', () => {
       pool: 'forks',
       sequence: { setupFiles: 'list' },
       runner: ordinary?.runner,
-      globalSetup: './test-helpers/vitest.setup.data-stores.mts',
+      globalSetup: [
+        './test-helpers/vitest.setup.data-stores.mts',
+        './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+      ],
       testTimeout: 5_000,
       hookTimeout: 5_000,
     })
