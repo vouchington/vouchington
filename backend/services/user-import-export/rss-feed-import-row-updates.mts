@@ -56,19 +56,19 @@ export async function updateRssFeedImportRowCompleted(
 export async function updateRssFeedImportRowFailed(
   rowId: string,
   errorMessage: string,
-  options: { isFinalAttempt: boolean; rssFeedId?: string; query?: TransactionQuery },
+  options: { isFinalAttempt: boolean; rssFeedId?: string },
 ): Promise<void> {
   const trimmed = errorMessage.trim()
   if (!options.isFinalAttempt) {
-    const statement = sql`/* updateRssFeedImportRowFailed/intermediate */
-      UPDATE user_rss_feed_import_rows
-      SET error_message = ${trimmed}
-      WHERE id = ${rowId}
-        AND completed_at IS NULL
-        AND failed_at IS NULL
-    `
-    if (options.query) await write(statement, { query: options.query })
-    else await write(statement)
+    await write(
+      sql`/* updateRssFeedImportRowFailed/intermediate */
+        UPDATE user_rss_feed_import_rows
+        SET error_message = ${trimmed}
+        WHERE id = ${rowId}
+          AND completed_at IS NULL
+          AND failed_at IS NULL
+      `,
+    )
     return
   }
 
@@ -91,19 +91,14 @@ export async function updateRssFeedImportRowFailed(
       failed: 1,
       skipped: trimmed === 'RELATION_LIMIT_REACHED' ? 1 : 0,
     })
-  }, options.query)
+  })
 }
 
 // The row write and its batch delta share a transaction. The batch statement starts after the
 // row write, so its counters include any final failure or completion that committed meanwhile.
 async function withRssFeedImportRowWrite(
   run: (query: TransactionQuery) => Promise<void>,
-  query?: TransactionQuery,
 ): Promise<void> {
-  if (query) {
-    await run(query)
-    return
-  }
   await using owned = await beginTransaction()
   await run(owned)
   await owned.commit()

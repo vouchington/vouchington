@@ -10,6 +10,7 @@ import {
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import {
   getFirstRssFeedImportRowId,
+  failRssFeedImportRowForLimitForTest,
   getRssFeedImportRowIds,
   lockRssFeedImportRowForTest,
 } from '@voucha/test-helpers/rss-feed-import-rows'
@@ -158,11 +159,7 @@ describe('RSS import skipped counters', () => {
       async waitForLock => {
         const completion = updateRssFeedImportRowCompleted(rowId, 'followed', feed.id)
         await waitForLock(completion)
-        await updateRssFeedImportRowFailed(rowId, 'RELATION_LIMIT_REACHED', {
-          isFinalAttempt: true,
-          rssFeedId: feed.id,
-          query: holder,
-        })
+        await failRssFeedImportRowForLimitForTest(holder, rowId)
         await holder.commit()
         await completion
       },
