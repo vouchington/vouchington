@@ -220,7 +220,6 @@ describe('MCP output schema contract for the other read tools — real DB', () =
         id,
         title: `Contract Data Point ${suffix}`,
         post_type: 'data_point',
-        markdown: expect.any(String),
       },
     ])
   })

@@ -2927,7 +2927,7 @@
           "tool": {
             "name": "read_topic",
             "title": "Read Topic",
-            "description": "compare: Compare the latest public data points inside the configured year window, capped per topic, for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"\ndetails: Get a topic's full description, aliases and type-specific details such as a card's annual fee, issuer and brand, a rewards program's parent company, or a referral program's company and enabled or disabled time. Set hierarchy for parents or children; children are paged. Use children_page_info.end_cursor as children_after for the next page.\nmetrics: Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.",
+            "description": "compare: Compare recent public data-point statistics (capped).\ndetails: Read topic details and hierarchy.\nmetrics: Read topic post/follower counts and star ratings.\ndata_point_insights: Recent public data-point statistics (capped).",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -2947,8 +2947,7 @@
                           "$ref": "#/$defs/S1"
                         },
                         "vertical": {
-                          "type": "string",
-                          "enum": ["credit_card", "bank_account"]
+                          "$ref": "#/$defs/S2"
                         }
                       },
                       "required": ["topic_id_a", "topic_id_b"],
@@ -2973,16 +2972,16 @@
                         "hierarchy": {
                           "type": "string",
                           "enum": ["parents", "children", "both"],
-                          "description": "Also return related topics. \"parents\" = what this topic belongs to (for example the bank that issues a card), \"children\" = what belongs to this topic (for example every card a bank issues), \"both\" = each. Omit for no related topics."
+                          "description": "Parents, paged children, or both."
                         },
                         "children_after": {
                           "type": "string",
-                          "description": "Cursor from a previous result children_page_info.end_cursor, for the next page of children. Only used when hierarchy is \"children\" or \"both\"."
+                          "description": "Children cursor: children_page_info.end_cursor (children/both)."
                         },
                         "children_limit": {
                           "type": "integer",
                           "minimum": 1,
-                          "description": "Maximum number of children per page. Defaults to 25; values over 100 are clamped to 100. Only used when hierarchy is \"children\" or \"both\"."
+                          "description": "Children per page: default 25, clamped to 100 (children/both)."
                         }
                       },
                       "required": ["topic_id"],
@@ -3011,12 +3010,39 @@
                   },
                   "required": ["option", "arguments"],
                   "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["data_point_insights"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "topic_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "vertical": {
+                          "$ref": "#/$defs/S2"
+                        }
+                      },
+                      "required": ["topic_id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
                 }
               ],
               "$defs": {
                 "S1": {
                   "type": "string",
                   "description": "Topic id, slug, or exact name"
+                },
+                "S2": {
+                  "type": "string",
+                  "enum": ["credit_card", "bank_account"]
                 }
               }
             },
@@ -3153,40 +3179,27 @@
                               "type": "null"
                             },
                             {
-                              "additionalProperties": false,
-                              "properties": {
-                                "amount": {
-                                  "maximum": 9007199254740991,
-                                  "minimum": 0,
-                                  "type": "integer"
-                                },
-                                "currency": {
-                                  "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
-                                  "type": "string"
-                                }
-                              },
-                              "required": ["amount", "currency"],
-                              "type": "object"
+                              "$ref": "#/$defs/S4"
                             }
                           ]
                         },
                         "bank_name": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S5"
                         },
                         "brand_name": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S5"
                         },
                         "rewards_program_company": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S5"
                         },
                         "company_topic_id": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S5"
                         },
                         "enabled_at": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S5"
                         },
                         "disabled_at": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S5"
                         },
                         "parents": {
                           "$ref": "#/$defs/S2"
@@ -3198,13 +3211,13 @@
                           "additionalProperties": false,
                           "properties": {
                             "end_cursor": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S5"
                             },
                             "has_next_page": {
                               "type": "boolean"
                             },
                             "start_cursor": {
-                              "$ref": "#/$defs/S4"
+                              "$ref": "#/$defs/S5"
                             }
                           },
                           "required": ["end_cursor", "has_next_page", "start_cursor"],
@@ -3296,6 +3309,78 @@
                         "news",
                         "followers",
                         "ratings"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "$ref": "#/$defs/S3"
+                    }
+                  ]
+                },
+                {
+                  "type": "object",
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "const": true
+                        },
+                        "topic_id": {
+                          "type": "string"
+                        },
+                        "total_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "approved_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "denied_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pending_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "approval_rate": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1
+                            }
+                          ]
+                        },
+                        "median_credit_limits": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/S4"
+                          }
+                        },
+                        "credit_score_distribution": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "required": [
+                        "success",
+                        "topic_id",
+                        "total_count",
+                        "approved_count",
+                        "denied_count",
+                        "pending_count",
+                        "approval_rate",
+                        "median_credit_limits",
+                        "credit_score_distribution"
                       ],
                       "additionalProperties": false
                     },
@@ -3429,6 +3514,22 @@
                   "additionalProperties": false
                 },
                 "S4": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["amount", "currency"],
+                  "type": "object"
+                },
+                "S5": {
                   "anyOf": [
                     {
                       "type": "null"
@@ -3449,7 +3550,8 @@
               "voucha/optionOutputPointers": {
                 "compare": "#/anyOf/0",
                 "details": "#/anyOf/1",
-                "metrics": "#/anyOf/2"
+                "metrics": "#/anyOf/2",
+                "data_point_insights": "#/anyOf/3"
               }
             }
           },
@@ -5924,7 +6026,7 @@
                       "properties": {
                         "q": {
                           "type": "string",
-                          "description": "Keyword search. Same as GET /api/v1/posts q: matches post text and up to five #hashtags."
+                          "description": "Search text and up to five #hashtags (REST q)."
                         },
                         "search": {
                           "type": "string",
@@ -5961,7 +6063,7 @@
                         "sort": {
                           "type": "string",
                           "enum": ["new", "best", "hot", "trending", "relevance", "following_new"],
-                          "description": "Sort by new, best, hot, trending, relevance, or following_new. Hot and trending use a stable age-weighted rank. Keyword relevance orders by ranking score, then id."
+                          "description": "Hot/trending decay by age; relevance orders by score then id."
                         },
                         "post_type": {
                           "$ref": "#/$defs/S1"
@@ -5978,7 +6080,7 @@
                           "items": {
                             "type": "string"
                           },
-                          "description": "Match all categories; five maximum including category."
+                          "description": "All categories; at most five including category."
                         },
                         "category": {
                           "type": "string"
@@ -6002,6 +6104,22 @@
                         "data_point_vertical": {
                           "type": "string"
                         },
+                        "data_point_result": {
+                          "type": "string",
+                          "enum": [
+                            "approved",
+                            "denied",
+                            "pending",
+                            "counter_offer",
+                            "retention_offer",
+                            "sign_up_bonus",
+                            "offer"
+                          ]
+                        },
+                        "data_point_credit_score_range": {
+                          "type": "string",
+                          "enum": ["300-579", "580-669", "670-739", "740-799", "800-850"]
+                        },
                         "review_topic": {
                           "$ref": "#/$defs/S2"
                         },
@@ -6015,12 +6133,12 @@
                         },
                         "has_hacker_news_references": {
                           "type": "boolean",
-                          "description": "Only items whose URL is seen or mentioned on Hacker News (true) or not (false)."
+                          "description": "Filter URLs by Hacker News references (true) or their absence (false)."
                         },
                         "time_range": {
                           "type": "string",
                           "enum": ["1d", "1w", "1m", "1y", "all"],
-                          "description": "Post search: omit for no age filter. An explicit code, including 1m, is strict. Community lists default to 1m."
+                          "description": "Omit for all ages; explicit codes are strict. Community lists default to 1m."
                         },
                         "topic": {
                           "$ref": "#/$defs/S2"
@@ -6031,7 +6149,7 @@
                           "items": {
                             "$ref": "#/$defs/S2"
                           },
-                          "description": "Match all topics; five topic and hashtag terms maximum."
+                          "description": "All topics; at most five with hashtag terms."
                         },
                         "url": {
                           "anyOf": [
@@ -6416,7 +6534,11 @@
                               },
                               "required": ["comment_count", "story_count", "stories", "comments"],
                               "additionalProperties": false
-                            }
+                            },
+                            "data_point_vertical": {
+                              "$ref": "#/$defs/S2"
+                            },
+                            "structured_data": {}
                           },
                           "required": [
                             "id",
@@ -6429,7 +6551,9 @@
                             "created_by_id",
                             "is_anonymous",
                             "created_at",
-                            "updated_at"
+                            "updated_at",
+                            "data_point_vertical",
+                            "structured_data"
                           ],
                           "additionalProperties": false
                         }
@@ -6878,295 +7002,6 @@
               "path": "/api/v1/hostnames"
             }
           ]
-        },
-        {
-          "tool": {
-            "name": "read_data_points",
-            "title": "Read Data Points",
-            "description": "topic_insights: Get aggregate statistics for a topic from its latest public data points inside the configured year window, capped per topic. Returns approval rate, median credit limit, and credit score distribution.\nsearch: Search data point posts by topic or JSONB fields across ages. The cursor is opaque; pass page_info.end_cursor while has_next_page is true and stop when it is false.",
-            "inputSchema": {
-              "type": "object",
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
-                      "enum": ["topic_insights"]
-                    },
-                    "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "topic_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "vertical": {
-                          "$ref": "#/$defs/S2"
-                        }
-                      },
-                      "required": ["topic_id"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "option": {
-                      "enum": ["search"]
-                    },
-                    "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "topic_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "vertical": {
-                          "$ref": "#/$defs/S2"
-                        },
-                        "result": {
-                          "type": "string",
-                          "enum": [
-                            "approved",
-                            "denied",
-                            "pending",
-                            "counter_offer",
-                            "retention_offer",
-                            "sign_up_bonus",
-                            "offer"
-                          ]
-                        },
-                        "credit_score_range": {
-                          "type": "string",
-                          "enum": ["300-579", "580-669", "670-739", "740-799", "800-850"]
-                        },
-                        "limit": {
-                          "type": "number",
-                          "description": "Maximum results to return (default: 25, max: 25)"
-                        },
-                        "after": {
-                          "type": "string",
-                          "description": "Opaque cursor for the same filters; pass page_info.end_cursor while has_next_page is true."
-                        }
-                      },
-                      "required": [],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["option", "arguments"],
-                  "additionalProperties": false
-                }
-              ],
-              "$defs": {
-                "S1": {
-                  "type": "string",
-                  "description": "Topic id, slug, or exact name"
-                },
-                "S2": {
-                  "type": "string",
-                  "enum": ["credit_card", "bank_account"]
-                }
-              }
-            },
-            "outputSchema": {
-              "type": "object",
-              "anyOf": [
-                {
-                  "type": "object",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "success": {
-                          "const": true
-                        },
-                        "topic_id": {
-                          "type": "string"
-                        },
-                        "total_count": {
-                          "type": "integer",
-                          "minimum": 0
-                        },
-                        "approved_count": {
-                          "type": "integer",
-                          "minimum": 0
-                        },
-                        "denied_count": {
-                          "type": "integer",
-                          "minimum": 0
-                        },
-                        "pending_count": {
-                          "type": "integer",
-                          "minimum": 0
-                        },
-                        "approval_rate": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number",
-                              "minimum": 0,
-                              "maximum": 1
-                            }
-                          ]
-                        },
-                        "median_credit_limits": {
-                          "type": "array",
-                          "items": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "amount": {
-                                "maximum": 9007199254740991,
-                                "minimum": 0,
-                                "type": "integer"
-                              },
-                              "currency": {
-                                "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
-                                "type": "string"
-                              }
-                            },
-                            "required": ["amount", "currency"],
-                            "type": "object"
-                          }
-                        },
-                        "credit_score_distribution": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "integer",
-                            "minimum": 0
-                          }
-                        }
-                      },
-                      "required": [
-                        "success",
-                        "topic_id",
-                        "total_count",
-                        "approved_count",
-                        "denied_count",
-                        "pending_count",
-                        "approval_rate",
-                        "median_credit_limits",
-                        "credit_score_distribution"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "$ref": "#/$defs/S1"
-                    }
-                  ]
-                },
-                {
-                  "type": "object",
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "success": {
-                          "const": true
-                        },
-                        "results": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "title": {
-                                "type": "string"
-                              },
-                              "data_point_vertical": {
-                                "anyOf": [
-                                  {
-                                    "type": "null"
-                                  },
-                                  {
-                                    "type": "string",
-                                    "enum": ["credit_card", "bank_account"]
-                                  }
-                                ]
-                              },
-                              "structured_data": {
-                                "type": "object"
-                              }
-                            },
-                            "required": ["id", "title", "data_point_vertical", "structured_data"],
-                            "additionalProperties": false
-                          }
-                        },
-                        "page_info": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "end_cursor": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "has_next_page": {
-                              "type": "boolean"
-                            },
-                            "start_cursor": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            }
-                          },
-                          "required": ["end_cursor", "has_next_page", "start_cursor"],
-                          "type": "object"
-                        }
-                      },
-                      "required": ["success", "results", "page_info"],
-                      "additionalProperties": false
-                    },
-                    {
-                      "$ref": "#/$defs/S1"
-                    }
-                  ]
-                }
-              ],
-              "$defs": {
-                "S1": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "const": false
-                    },
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["success", "error"],
-                  "additionalProperties": false
-                }
-              }
-            },
-            "annotations": {
-              "readOnlyHint": true,
-              "idempotentHint": true
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["data-points:read"],
-              "voucha/optionOutputPointers": {
-                "topic_insights": "#/anyOf/0",
-                "search": "#/anyOf/1"
-              }
-            }
-          },
-          "plan": "free",
-          "roles": null,
-          "api": null
         },
         {
           "tool": {

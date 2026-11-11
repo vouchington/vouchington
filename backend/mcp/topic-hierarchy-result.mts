@@ -30,16 +30,16 @@ export const HIERARCHY_ARGUMENT_PROPERTIES = {
   hierarchy: {
     type: 'string',
     enum: [...HIERARCHY_DIRECTIONS],
-    description: 'Include parents, paged children, or both. Omit for neither.',
+    description: 'Parents, paged children, or both.',
   },
   children_after: {
     type: 'string',
-    description: 'Next children page: children_page_info.end_cursor. Used with children or both.',
+    description: 'Children cursor: children_page_info.end_cursor (children/both).',
   },
   children_limit: {
     type: 'integer',
     minimum: 1,
-    description: 'Children per page (default 25, clamped to 100). Used with children or both.',
+    description: 'Children per page: default 25, clamped to 100 (children/both).',
   },
 }
 

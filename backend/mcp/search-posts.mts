@@ -73,9 +73,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        ...pagedSearchSchemaProperties(
-          'Keyword search. Same as GET /api/v1/posts q: matches post text and up to five #hashtags.',
-        ),
+        ...pagedSearchSchemaProperties('Search text and up to five #hashtags (REST q).'),
         ...postSearchFilterSchemaProperties(),
       },
       required: [],

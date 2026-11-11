@@ -18,8 +18,7 @@ export const POST_SORTS = [
 export const postTimeRangeSchema = {
   type: 'string',
   enum: ['1d', '1w', '1m', '1y', 'all'],
-  description:
-    'Post search: omit for no age filter. An explicit code, including 1m, is strict. Community lists default to 1m.',
+  description: 'Omit for all ages; explicit codes are strict. Community lists default to 1m.',
 } as const
 
 /** Public REST post search filters, plus the existing singular post-type convenience. */
@@ -28,8 +27,7 @@ export function postSearchFilterSchemaProperties() {
     sort: {
       type: 'string',
       enum: [...POST_SORTS],
-      description:
-        'Sort by new, best, hot, trending, relevance, or following_new. Hot and trending use a stable age-weighted rank. Keyword relevance orders by ranking score, then id.',
+      description: 'Hot/trending decay by age; relevance orders by score then id.',
     },
     post_type: {
       type: 'string',
@@ -43,7 +41,7 @@ export function postSearchFilterSchemaProperties() {
       type: 'array',
       maxItems: MAX_TOPIC_SEARCH_TERMS,
       items: { type: 'string' },
-      description: 'Match all categories; five maximum including category.',
+      description: 'All categories; at most five including category.',
     },
     category: { type: 'string' },
     creator: userReferenceSchema,
@@ -65,8 +63,7 @@ export function postSearchFilterSchemaProperties() {
     topic_recommendation_status: { type: 'string', enum: ['pending', 'approved', 'rejected'] },
     has_hacker_news_references: {
       type: 'boolean',
-      description:
-        'Only items whose URL is seen or mentioned on Hacker News (true) or not (false).',
+      description: 'Filter URLs by Hacker News references (true) or their absence (false).',
     },
     time_range: postTimeRangeSchema,
     topic: topicReferenceSchema,
@@ -74,7 +71,7 @@ export function postSearchFilterSchemaProperties() {
       type: 'array',
       maxItems: MAX_TOPIC_SEARCH_TERMS,
       items: topicReferenceSchema,
-      description: 'Match all topics; five topic and hashtag terms maximum.',
+      description: 'All topics; at most five with hashtag terms.',
     },
     url: {
       anyOf: [

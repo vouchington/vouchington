@@ -1,3 +1,4 @@
+import { postDataPointFilters } from './post-data-point-filters.mts'
 import { postRecommendationFilters, isRecommendationOnly } from './post-recommendation-filters.mts'
 import { isUUID } from '@modules/utils'
 import { parseBooleanish } from '@ts-shared/utils/query'
@@ -185,10 +186,7 @@ export async function resolvePostsSearchParams(
     ...(typeof dataPointVertical === 'string' && dataPointVertical.trim()
       ? { data_point_vertical: dataPointVertical.trim() }
       : {}),
-    ...(typeof dataPointResult === 'string' && { data_point_result: dataPointResult }),
-    ...(typeof dataPointCreditScoreRange === 'string' && {
-      data_point_credit_score_range: dataPointCreditScoreRange,
-    }),
+    ...postDataPointFilters(dataPointResult, dataPointCreditScoreRange),
     ...(storyId && { story_id: storyId }),
   }
   return {
@@ -196,7 +194,6 @@ export async function resolvePostsSearchParams(
     searchOptions: withInternalOmitLimit(searchOptions),
   }
 }
-
 export const parsePostsSearchParams = withQueryContract(
   async (query: Record<string, unknown>, runtimeLimits?: PaginationRuntimeLimitBounds) =>
     resolvePostsSearchParams(preparePostsSearchParams(query, runtimeLimits)),
