@@ -1,3 +1,4 @@
+import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity'
 import type { CopyrightSeedContext } from './copyright-context.mts'
 import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
@@ -80,6 +81,15 @@ export async function seedCopyrightMedia(
       FROM post_image CROSS JOIN registered
     `)
   }
+  const { rows: active } = await transaction<{ placement_id: string }>(sql`
+    /* seedCopyrightMedia:activeCapacity */
+    SELECT binding.placement_id
+    FROM image_placements binding JOIN media_placements placement ON placement.id = binding.placement_id
+    WHERE binding.post_id = ${postId} AND binding.image_id = ${imageId} AND placement.retired_at IS NULL`)
+  await admitImagePlacements(
+    transaction,
+    active.map(row => ({ imageId, placementId: row.placement_id, alreadyActive: true })),
+  )
   await transaction.commit()
   return {
     postId: postId,

@@ -79,55 +79,61 @@ describe('terminal image surface owner deletion', () => {
       'image surface placement bindings are immutable',
     )
   })
-  it('rejects reactivation after waiting for committed owner clearing', async () => {
+  it('leaves delivery unauthorized when owner clearing commits during reactivation', async () => {
     const { placement } = await createSurface()
-    await using clearing = await beginTransaction()
-    await retireTestImageSurfaceOwner(clearing, placement.placement_id)
-    await clearTestImageSurfaceOwnerInTransaction(clearing, placement.placement_id)
-    await using reactivating = await beginTransaction()
-    await expect(probePlacementRow(placement.placement_id)).rejects.toMatchObject({
-      code: '55P03',
+    {
+      await using retiring = await beginTransaction()
+      await retireTestImageSurfaceOwner(retiring, placement.placement_id)
+      await retiring.commit()
+    }
+    {
+      await using reactivating = await beginTransaction()
+      await reactivateTestImageSurfaceInTransaction(reactivating, placement.placement_id)
+      await using clearing = await beginTransaction()
+      await clearTestImageSurfaceOwnerInTransaction(clearing, placement.placement_id)
+      await clearing.commit()
+      await reactivating.commit()
+    }
+    const owner = await readTestImageSurfaceOwner(placement.placement_id)
+    expect(owner).toMatchObject({
+      user_profile_link_id: null,
+      retired_at: null,
+      retirement_reason: null,
     })
-    const result = reactivateTestImageSurfaceInTransaction(
-      reactivating,
-      placement.placement_id,
-    ).then(
-      () => null,
-      (err: unknown) => err,
-    )
-    await clearing.commit()
-    expect(await result).toMatchObject({
-      message: 'ownerless image surface must remain retired for owner removal',
-    })
+    await expect(
+      testImageSurfaceDeliveryIsAuthorized({
+        placement_id: placement.placement_id,
+        placement_revision: owner!.revision,
+        image_id: owner!.image_id,
+      }),
+    ).resolves.toBe(false)
   })
-  it('rejects owner clearing after waiting for committed reactivation', async () => {
-    const { placement } = await createSurface()
-    await using retiring = await beginTransaction()
-    await retireTestImageSurfaceOwner(retiring, placement.placement_id)
-    await retiring.commit()
-    await using reactivating = await beginTransaction()
-    await reactivateTestImageSurfaceInTransaction(reactivating, placement.placement_id)
-    await using clearing = await beginTransaction()
-    await expect(probePlacementRow(placement.placement_id)).rejects.toMatchObject({
-      code: '55P03',
-    })
-    const result = clearTestImageSurfaceOwnerInTransaction(clearing, placement.placement_id).then(
-      () => null,
-      (err: unknown) => err,
-    )
-    await reactivating.commit()
-    expect(await result).toMatchObject({
-      message: 'image surface placement bindings are immutable',
+
+  it('keeps the active concrete owner when reactivation commits before clearing', async () => {
+    const { link, placement } = await createSurface()
+    {
+      await using retiring = await beginTransaction()
+      await retireTestImageSurfaceOwner(retiring, placement.placement_id)
+      await retiring.commit()
+    }
+    {
+      await using reactivating = await beginTransaction()
+      await reactivateTestImageSurfaceInTransaction(reactivating, placement.placement_id)
+      await reactivating.commit()
+    }
+    {
+      await using clearing = await beginTransaction()
+      await expect(
+        clearTestImageSurfaceOwnerInTransaction(clearing, placement.placement_id),
+      ).rejects.toMatchObject({
+        code: '23514',
+        message: 'image surface placement bindings are immutable',
+      })
+    }
+    await expect(readTestImageSurfaceOwner(placement.placement_id)).resolves.toMatchObject({
+      user_profile_link_id: link.id,
+      retired_at: null,
+      retirement_reason: null,
     })
   })
 })
-
-async function probePlacementRow(placementId: string): Promise<void> {
-  await using probe = await beginTransaction()
-  await probe(`/* testProfileImageOwnerDeletion */ SET LOCAL lock_timeout = '50ms'`)
-  await probe(
-    `/* testProfileImageOwnerDeletion */ SELECT id FROM media_placements WHERE id = $1::uuid FOR UPDATE`,
-    [placementId],
-  )
-  await probe.commit()
-}

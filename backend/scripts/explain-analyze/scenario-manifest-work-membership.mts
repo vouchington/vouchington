@@ -13,6 +13,7 @@ export const MEMBERSHIP_WORK_SCENARIOS = [
   'media-delivery-staging-global-page',
   'media-delivery-staging-global-continuation',
   'image-placement-capacity-at-cap',
+  'image-placement-capacity-batch-at-cap',
   'image-placement-capacity-empty',
   'image-placement-capacity-surface',
   'image-placement-capacity-mixed',

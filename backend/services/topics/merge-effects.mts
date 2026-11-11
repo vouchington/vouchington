@@ -1,5 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
 import {
   processTopicMergeAliasEffectsPage,
   processTopicMergeRedirectEffectsPage,
@@ -12,17 +11,6 @@ import { finalizeTopicMergeEffects } from './merge-effects-finalize.mts'
 
 type EffectsCursor = { rowId: string | null; subjectId: string | null; objectId: string | null }
 const emptyCursor: EffectsCursor = { rowId: null, subjectId: null, objectId: null }
-
-/** Denials precede the final domain commit; cache and listener effects follow that commit. */
-export async function processTopicMergeFinalizeImages(query: TransactionQuery, sourceId: string) {
-  await prepublishImageSurfaceDenials(
-    [
-      { surfaceKind: 'topic-logo-image', topicId: sourceId },
-      { surfaceKind: 'topic-hero-image', topicId: sourceId },
-    ],
-    query,
-  )
-}
 
 /** One bounded effect page. Advancing a phase always yields to another continuation job. */
 export async function processTopicMergeEffectsPage(

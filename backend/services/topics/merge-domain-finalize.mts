@@ -1,7 +1,6 @@
 import { assertWhitelistedSqlIdentifier, type TransactionQuery } from '@data-stores/psql'
 import type { TopicMergeOperationRow } from './merge-operation-types.mts'
 import { emptyTopicMergeMetricStats } from './merge-metrics-stats.mts'
-import { processTopicMergeFinalizeImages } from './merge-effects.mts'
 import { buildElectionStatsUpdateQuery } from '@services/elections-votes/shared/vote-stats-update-query'
 import { TOPIC_ELECTION_CONFIG } from '@services/elections-votes/topic/config'
 import { recordTopicMergePublicationChange } from '@services/post-publication/capture-topic-merge'
@@ -21,7 +20,6 @@ export async function finalizeTopicMergeDomain(
     [operation.destination_topic_id],
   )
   if ((rows[0]?.revision ?? '0') !== operation.metric_rating_revision) return false
-  await processTopicMergeFinalizeImages(query, operation.source_topic_id)
   await finalizeTopicMergeProjection(query, operation)
   // Every moved reference now belongs to the destination; the committed redirect starts direct
   // publication effects after this page commits.

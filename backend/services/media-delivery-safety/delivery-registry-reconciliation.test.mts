@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { stageTestImagePlacementDeliveryRecordsForImageIds } from '@voucha/test-helpers/media-delivery-recovery'
 import {
   createTestUserDirect,
@@ -19,6 +20,10 @@ import {
 } from './index.mts'
 
 describe('scoped media delivery reconciliation', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
   it('lists and replays only owned eligible registry records', async () => {
     const [selected, unrelated] = await Promise.all([
       createCurrentProfilePlacement(),
@@ -91,17 +96,18 @@ describe('scoped media delivery reconciliation', () => {
   })
 
   it('withholds only selected unsafe records and treats an empty scope as a no-op', async () => {
+    installTestMediaDeliveryEdge()
     const [selected, unrelated] = await Promise.all([
       createCurrentProfilePlacement(),
       createCurrentProfilePlacement(),
     ])
     await Promise.all([
-      stageImagePlacementDeliveryRecord({ ...selected, state: 'allow' }),
-      stageImagePlacementDeliveryRecord({ ...unrelated, state: 'allow' }),
-    ])
-    await Promise.all([
       markImageModerationFlagged(selected.imageId),
       markImageModerationFlagged(unrelated.imageId),
+    ])
+    await Promise.all([
+      stageImagePlacementDeliveryRecord({ ...selected, state: 'allow' }),
+      stageImagePlacementDeliveryRecord({ ...unrelated, state: 'allow' }),
     ])
     await scheduleTestMediaDeliveryRetry(
       unrelated.mediaDeliveryRegistryRecordId,

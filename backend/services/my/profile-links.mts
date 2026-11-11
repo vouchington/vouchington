@@ -3,11 +3,10 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { addUrl } from '@services/urls/upsert'
 import {
-  lockImageAssetAdmission,
-  lockUserProfileLinkImageOwners,
-  prepareImageSurfaceAdmission,
+  assertImagesReadyForSurface,
   syncImageSurfacePlacement,
 } from '@services/media-delivery-safety'
+import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import {
@@ -43,7 +42,14 @@ export async function createProfileLink(
   // HAVING COUNT(*) < MAX_PROFILE_LINKS prevents insert when at the limit.
   await using transaction = await beginTransaction()
   const imageIds = input.image_id ? [input.image_id] : []
-  await prepareImageSurfaceAdmission(imageIds, transaction)
+  await runSequentially([
+    () => assertImagesReadyForSurface(imageIds, transaction),
+    () =>
+      admitImagePlacements(
+        transaction,
+        imageIds.map(imageId => ({ imageId })),
+      ),
+  ])
   const { rows } = await transaction(sql`/* createProfileLink */
     INSERT INTO user_profile_links (user_id, link_type, sort_order, url_id, handle, name, image_id)
     SELECT
@@ -66,7 +72,7 @@ export async function createProfileLink(
     input.image_id ?? null,
     input.image_id ? userId : null,
     transaction,
-    { admission: true, ready: true },
+    { ready: true },
   )
   if (input.image_id) {
     const { rows: updated } = await transaction<Omit<ProfileLink, 'url' | 'image_placement'>>(
@@ -103,8 +109,6 @@ export async function updateProfileLink(
   const urlId = input.url !== undefined ? await resolveUrlId(userId, input.url) : undefined
   // CASE WHEN preserves existing column values for fields not included in input
   await using transaction = await beginTransaction()
-  await lockImageAssetAdmission(input.image_id ? [input.image_id] : [], transaction)
-  await lockUserProfileLinkImageOwners([linkId], transaction)
   const { rows: existingRows } = await transaction<{ image_id: string | null }>(sql`
     /* updateProfileLink:lockImageSurface */
     SELECT image_id FROM user_profile_links
@@ -120,7 +124,6 @@ export async function updateProfileLink(
       desiredImageId ?? null,
       desiredImageId ? userId : null,
       transaction,
-      { admission: true, ownerDomains: true },
     )
   const { rows } = await transaction(sql`/* updateProfileLink */
     UPDATE user_profile_links
@@ -150,9 +153,8 @@ export async function updateProfileLink(
 }
 export async function deleteProfileLink(userId: string, linkId: string): Promise<void> {
   await using transaction = await beginTransaction()
-  await lockUserProfileLinkImageOwners([linkId], transaction)
   const { rows } = await transaction(
-    sql`/* deleteProfileLink */ SELECT id FROM user_profile_links
+    sql`/* deleteProfileLink:lock */ SELECT id FROM user_profile_links
       WHERE id = ${linkId} AND user_id = ${userId} FOR UPDATE`,
   )
   assert(rows.length === 1, 404, 'Profile link not found')
@@ -163,7 +165,6 @@ export async function deleteProfileLink(userId: string, linkId: string): Promise
         null,
         null,
         transaction,
-        { ownerDomains: true },
       ),
     () =>
       transaction(sql`/* deleteProfileLink */ DELETE FROM user_profile_links WHERE id = ${linkId}`),

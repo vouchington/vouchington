@@ -6,10 +6,7 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
-import {
-  createTestPostDeliveryFixture,
-  expectTestPostDeliveryRestored,
-} from '@voucha/test-helpers/media-delivery-post'
+import { createTestPostDeliveryFixture } from '@voucha/test-helpers/media-delivery-post'
 import { removeCommentAsAgent } from './agent-moderate.mts'
 import { ENTITY_LISTENERS_POST_DELETED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
@@ -23,15 +20,15 @@ describe('agent comment removal delivery recovery', () => {
     vi.unstubAllEnvs()
   })
 
-  it('keeps the comment and restores delivery when removal invalidation fails', async () => {
+  it('removes a comment without publishing an edge denial', async () => {
     await createSystemUser(MODERATION_SYSTEM_USERNAME)
     const fixture = await createTestPostDeliveryFixture('comment')
-    const failure = new Error('Agent comment removal invalidation unavailable')
-    fixture.edge.invalidatePath.mockRejectedValueOnce(failure)
 
-    await expect(removeCommentAsAgent(fixture.postId)).rejects.toBe(failure)
+    await removeCommentAsAgent(fixture.postId)
 
-    await expectTestPostDeliveryRestored(fixture)
+    expect(await getTestPostDeletedAt(fixture.postId)).not.toBeNull()
+    expect(fixture.edge.put).not.toHaveBeenCalled()
+    expect(fixture.edge.invalidatePath).not.toHaveBeenCalled()
   })
 
   it('waits for post-deleted admission after the comment commits', async () => {

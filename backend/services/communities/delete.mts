@@ -8,7 +8,6 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueCommunityMemberMetricInvalidationBestEffort } from './members/invalidate-user-metrics.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordPostPublicationChange } from '@services/post-publication'
-import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
 
 export async function deleteCommunity(
   currentUser: PrivateUser,
@@ -20,13 +19,6 @@ export async function deleteCommunity(
   assert(currentUserCanDeleteCommunity(currentUser, community, membership), 403, 'Forbidden')
 
   await using query = await beginTransaction()
-  await prepublishImageSurfaceDenials(
-    [
-      { surfaceKind: 'community-profile-image', communityId },
-      { surfaceKind: 'community-banner-image', communityId },
-    ],
-    query,
-  )
   const { rows } = await query<{ id: string }>(
     `/* deleteCommunity */
     UPDATE communities

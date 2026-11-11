@@ -23,7 +23,6 @@ import { lockExistingTopicAliasPublicationScopes } from './alias-publication-loc
 import { prepareTopicAliasInput } from './alias-preflight.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import {
-  prepublishImageSurfaceDenials,
   syncImageSurfacePlacement,
   assertImageDeliveryTransaction,
   type ImageSurfaceReference,
@@ -81,8 +80,6 @@ export const updateTopic = async (
       if (references.length) {
         const imageQuery = options.query ?? write
         assertImageDeliveryTransaction(imageQuery)
-        // Match topic merges: take the image owner domain before the topic row.
-        await prepublishImageSurfaceDenials(references, imageQuery)
         const { rows: activeTopics } = await imageQuery<{ id: string }>(sql`
           /* updateTopic:lockActiveImageOwner */
           SELECT id FROM topics
@@ -97,7 +94,6 @@ export const updateTopic = async (
             reference.nextImageId ?? null,
             reference.nextImageId ? updater.id : null,
             imageQuery,
-            { prepublished: true },
           )
         }
       }

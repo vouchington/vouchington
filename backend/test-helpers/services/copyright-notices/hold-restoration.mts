@@ -73,22 +73,27 @@ export async function cancelTestCopyrightRestorationDeadline(deadlineId: string)
 }
 
 export async function quarantineTestCopyrightRestorationImage(imageId: string): Promise<void> {
-  await write(
+  await using query = await beginTransaction()
+  await query(
     sql`/* quarantineTestCopyrightRestorationImage */ UPDATE images SET quarantine_pending_at = CURRENT_TIMESTAMP WHERE id = ${imageId}`,
   )
+  await query.commit()
 }
 
 export async function makeTestCopyrightRestorationImageUnready(imageId: string): Promise<void> {
-  await write(
+  await using query = await beginTransaction()
+  await query(
     sql`/* makeTestCopyrightRestorationImageUnready */ UPDATE images SET openai_omni_moderation_created_at = NULL WHERE id = ${imageId}`,
   )
+  await query.commit()
 }
 
 export async function retireTestCopyrightRestorationPlacement(placementId: string): Promise<void> {
-  await write(
-    sql`/* retireTestCopyrightRestorationPlacement */ UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP, retirement_reason = 'owner_removed', revision = revision + 1
-    WHERE id = ${placementId}`,
-  )
+  await using query = await beginTransaction()
+  await query(sql`/* retireTestCopyrightRestorationPlacement */
+    UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP,
+      retirement_reason = 'owner_removed', revision = revision + 1 WHERE id = ${placementId}`)
+  await query.commit()
 }
 
 export async function supersedeTestCopyrightRestorationPlacementRevision(

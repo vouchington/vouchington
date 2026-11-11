@@ -1,16 +1,11 @@
 import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 import type { ImagePlacementTuple } from '@voucha/types/entities/user'
 import sql from 'sql-template-strings'
-import {
-  imageSurfaceWhere as surfaceWhere,
-  lockImageSurfacePlacements,
-  type ImageSurfaceReference,
-} from './surface-lock.mts'
-import { prepublishImagePlacementDenial } from './delivery-registry-publish.mts'
+import { imageSurfaceWhere as surfaceWhere, type ImageSurfaceReference } from './surface-lock.mts'
 import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
-import { lockImageAssetAdmission, assertImagesReadyForSurface } from './asset-admission-lock.mts'
+import { assertImagesReadyForSurface } from './asset-admission-lock.mts'
 import { ensureImagePlacementBinding } from './retained-image-identities.mts'
-import { assertImagePlacementCapacity } from './placement-capacity.mts'
+import { admitImagePlacements } from './placement-capacity.mts'
 
 export type { ImagePlacementTuple } from '@voucha/types/entities/user'
 
@@ -52,13 +47,7 @@ export async function getImageSurfacePlacement(
  * statement that would only repeat it.
  */
 export type HeldSurfaceAuthority = {
-  /** `lockImageAssetAdmission` covered the requested image. */
-  admission?: boolean
-  /** The surface's owner advisory domain is held (`lockUserProfileLinkImageOwners`). */
-  ownerDomains?: boolean
-  /** `prepublishImageSurfaceDenials` locked, readiness- and capacity-checked, then denied this change. */
-  prepublished?: boolean
-  /** `assertImagesReadyForSurface` covered the requested image (`prepareImageSurfaceAdmission`). */
+  /** `assertImagesReadyForSurface` already covered the requested image. */
   ready?: boolean
 }
 
@@ -73,32 +62,14 @@ export async function syncImageSurfacePlacement(
   if (requestedImageId && !actorUserId) {
     throw new Error('An image surface activation requires an actor')
   }
-  const prepublished = held.prepublished === true
-  if (!held.admission && !prepublished)
-    await lockImageAssetAdmission(requestedImageId ? [requestedImageId] : [], query)
   const { rows: canonical } = await query<{ id: string | null }>(
     sql`/* syncImageSurfacePlacement:canonicalAsset */ SELECT ${requestedImageId}::uuid::text AS id`,
   )
   const imageId = canonical[0]!.id
-  if (!prepublished)
-    await lockImageSurfacePlacements([reference], query, { ownerDomainsHeld: held.ownerDomains })
-  // The pre-denial and retirement share this lock domain with recovery.  Re-read after acquiring
-  // it: the tuple observed before the advisory lock is never authority to publish or retire.
   const current = await getImageSurfacePlacement(reference, query)
   if (current?.image_id === imageId) return current
-  if (!held.ready && !prepublished)
-    await assertImagesReadyForSurface(imageId ? [imageId] : [], query)
-  if (imageId && !prepublished) await assertImagePlacementCapacity([imageId], query)
-  if (current && current.image_id !== imageId && !prepublished) {
-    await prepublishImagePlacementDenial(
-      {
-        placementId: current.placement_id,
-        revision: current.placement_revision,
-        imageId: current.image_id,
-      },
-      { query, placementLocked: true },
-    )
-  }
+  if (!held.ready) await assertImagesReadyForSurface(imageId ? [imageId] : [], query)
+  if (imageId) await admitImagePlacements(query, [{ imageId }])
   const retireStatement = sql`/* syncImageSurfacePlacement:retire */
     UPDATE media_placements placement
     SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),

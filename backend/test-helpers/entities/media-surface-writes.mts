@@ -1,9 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  lockImageAssetAdmission,
-  syncImageSurfacePlacement,
-} from '../../services/media-delivery-safety/index.mts'
+import { syncImageSurfacePlacement } from '../../services/media-delivery-safety/index.mts'
 
 export async function setTestTopicSurfaceImages(
   topicId: string,
@@ -12,8 +9,6 @@ export async function setTestTopicSurfaceImages(
   await using query = await beginTransaction()
   const logoImageId = input.logoImageId === undefined ? null : input.logoImageId
   const heroImageId = input.heroImageId === undefined ? null : input.heroImageId
-  const imageIds = [input.logoImageId, input.heroImageId].flatMap(id => (id ? [id] : []))
-  await lockImageAssetAdmission(imageIds, query)
   const { rows: actors } = await query<{ created_by_id: string }>(
     sql`/* setTestTopicSurfaceImages:actor */ SELECT created_by_id FROM topics WHERE id = ${topicId}`,
   )
@@ -55,8 +50,6 @@ export async function setTestCommunitySurfaceImages(
   await using query = await beginTransaction()
   const profileImageId = input.profileImageId === undefined ? null : input.profileImageId
   const bannerImageId = input.bannerImageId === undefined ? null : input.bannerImageId
-  const imageIds = [input.profileImageId, input.bannerImageId].flatMap(id => (id ? [id] : []))
-  await lockImageAssetAdmission(imageIds, query)
   const { rows: actors } = await query<{ created_by_id: string }>(
     sql`/* setTestCommunitySurfaceImages:actor */ SELECT created_by_id FROM communities WHERE id = ${communityId}`,
   )

@@ -1,8 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { runSequentially } from '@modules/utils/run-sequentially'
-import { lockImageAssetAdmission } from '@services/media-delivery-safety'
-import { assertImagePlacementCapacity } from '@services/media-delivery-safety/placement-capacity'
+import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity'
 
 export type PostImagePlacement = {
   placement_id: string
@@ -158,34 +157,29 @@ export async function syncPostImagePlacements(
   ])
 }
 
-/** Reserve capacity before a caller publishes any old-placement edge denial. */
+/** Best-effort cap for images this post is about to activate. Call before the first write. */
 export async function assertPostImagePlacementCapacity(
   postId: string,
   imageIds: readonly string[],
   query: TransactionQuery,
-  options: { admissionHeld?: true } = {},
 ): Promise<void> {
   const distinctImageIds = [...new Set(imageIds)]
-  // Direct callers reserve the image domain before any placement row lock.
-  // A caller may omit this statement only after declaring these assets on this same transaction.
-  if (!options.admissionHeld) await lockImageAssetAdmission(distinctImageIds, query)
-  if (distinctImageIds.length > 0) {
-    const { rows: activating } = await query<{ image_id: string }>(sql`
-      /* syncPostImagePlacements:activating */
-      SELECT requested.image_id
-      FROM unnest(${distinctImageIds}::uuid[]) AS requested(image_id)
-      WHERE NOT EXISTS (
-        SELECT 1 FROM image_placements binding
-        JOIN media_placements placement ON placement.id = binding.placement_id
-        WHERE binding.post_id = ${postId} AND binding.image_id = requested.image_id
-          AND placement.retired_at IS NULL
-        LIMIT 1
-      )
-      ORDER BY requested.image_id
-    `)
-    await assertImagePlacementCapacity(
-      activating.map(row => row.image_id),
-      query,
+  if (distinctImageIds.length === 0) return
+  const { rows: activating } = await query<{ image_id: string }>(sql`
+    /* syncPostImagePlacements:activating */
+    SELECT requested.image_id
+    FROM unnest(${distinctImageIds}::uuid[]) AS requested(image_id)
+    WHERE NOT EXISTS (
+      SELECT 1 FROM image_placements binding
+      JOIN media_placements placement ON placement.id = binding.placement_id
+      WHERE binding.post_id = ${postId} AND binding.image_id = requested.image_id
+        AND placement.retired_at IS NULL
+      LIMIT 1
     )
-  }
+    ORDER BY requested.image_id
+  `)
+  await admitImagePlacements(
+    query,
+    activating.map(row => ({ imageId: row.image_id })),
+  )
 }

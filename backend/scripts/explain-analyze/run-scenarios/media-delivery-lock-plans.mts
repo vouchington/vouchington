@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import { lockImageAssetAdmission } from '@services/media-delivery-safety/asset-admission-lock'
 import { lockImageDeliveryMutation } from '@services/media-delivery-safety/delivery-lock'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -107,10 +106,6 @@ export async function runMediaDeliveryLockPlans(): Promise<void> {
         id,
         async () => {
           await using query = await beginTransaction()
-          await lockImageAssetAdmission(
-            'imageIds' in scenario.input ? [...scenario.input.imageIds] : [],
-            query,
-          )
           await lockImageDeliveryMutation(query, {
             postIds: 'postIds' in scenario.input ? [...scenario.input.postIds] : undefined,
             imageIds: 'imageIds' in scenario.input ? [...scenario.input.imageIds] : undefined,

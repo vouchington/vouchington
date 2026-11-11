@@ -95,9 +95,7 @@ export type CopyrightImagePlacementMutationInput = {
   expectedRevision: number
 }
 
-/** Changes many placements in one statement; result order matches input order.
- * Caller must hold `lockImageDeliveryMutation({ placementIds, placementOnly: true })` for every
- * input placement in this transaction. */
+/** Changes many placements in one statement; result order matches input order. */
 export async function changeImagePlacementsCopyrightWithholding(
   inputs: readonly CopyrightImagePlacementMutationInput[],
   withhold: boolean,

@@ -100,6 +100,7 @@ describe('unchanged surface image updates', () => {
         )
       expect(edge.put).not.toHaveBeenCalled()
       await markImageModerationFlagged(imageId)
+      expect(edge.put).not.toHaveBeenCalled()
       if (kind === 'community')
         await updateCommunity(user, id, { profile_image_id: imageId, banner_image_id: imageId })
       else

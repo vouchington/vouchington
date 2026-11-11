@@ -1,3 +1,4 @@
+import * as notificationEnqueues from '@queues/notifications/enqueues'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
@@ -11,6 +12,7 @@ import { createProfileLink } from '../../my/profile-links.mts'
 import { deleteUser } from '../delete.mts'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { processMediaDeliveryRegistryRecord } from '../../media-delivery-safety/index.mts'
+import { processReconcileMediaDeliveryRegistry } from '../../../workers/notifications/processors/media-delivery-registry.mts'
 
 describe('user deletion media authority', () => {
   afterEach(() => {
@@ -18,7 +20,7 @@ describe('user deletion media authority', () => {
     vi.unstubAllEnvs()
   })
 
-  it('denies owned profile-link delivery before committing user deletion', async () => {
+  it('withholds owned profile-link delivery when user deletion commits', async () => {
     const user = await createTestUser()
     const imageId = await insertTestImage(user.id)
     const link = await createProfileLink(user.id, {
@@ -38,15 +40,24 @@ describe('user deletion media authority', () => {
     const edge = installTestMediaDeliveryEdge()
     await processMediaDeliveryRegistryRecord(recordId!)
     expect(edge.records.get(key)?.state).toBe('allow')
-    let observedLiveOwner = false
-    edge.put.mockImplementationOnce(async input => {
-      observedLiveOwner = (await getTestUserRaw(user.id))?.deleted_at === null
-      edge.accept(input)
-      return { $metadata: {} }
-    })
+    const reconcile = vi.spyOn(notificationEnqueues, 'enqueueReconcileMediaDeliveryRegistry')
     await deleteUser(user, user)
-    expect(observedLiveOwner).toBe(true)
+    expect(reconcile).toHaveBeenCalledTimes(1)
+    expect(reconcile).toHaveBeenCalledWith()
+    // The job payload is `{}`; the shared-DB test guard requires the processor options to scope
+    // the run to this fixture, and they only narrow which rows it touches.
+    await processReconcileMediaDeliveryRegistry({}, { recordIds: [recordId!], imageIds: [imageId] })
+    await processMediaDeliveryRegistryRecord(recordId!)
     expect(edge.records.get(key)?.state).toBe('withheld')
+    expect((await getTestUserRaw(user.id))?.deleted_at).toBeInstanceOf(Date)
+  })
+
+  it('still deletes the user when the reconcile enqueue fails', async () => {
+    const user = await createTestUser()
+    vi.spyOn(notificationEnqueues, 'enqueueReconcileMediaDeliveryRegistry').mockRejectedValueOnce(
+      new Error('enqueue unavailable'),
+    )
+    await deleteUser(user, user)
     expect((await getTestUserRaw(user.id))?.deleted_at).toBeInstanceOf(Date)
   })
 })

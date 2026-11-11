@@ -8,7 +8,6 @@ import { enqueueOnPostDeleted } from '@queues/entity-listeners/enqueues'
 import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { retirePostImagePlacements } from './image-placements.mts'
-import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import onError from '@modules/on-error'
 import { runSequentially } from '@modules/utils/run-sequentially'
@@ -75,7 +74,6 @@ async function removeCommentInTransaction(input: {
   const { commentId, communityId, moderationSystemUserId, query } = input
   let rowCount: number | null = null
   await runSequentially([
-    () => preparePostImageDeliveryMutation(query, { postId: commentId, imageIds: [] }),
     async () => {
       const result = await write(
         sql`/* removeCommentAsAgent */

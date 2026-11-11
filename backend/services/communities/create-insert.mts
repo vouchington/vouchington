@@ -10,10 +10,10 @@ import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enq
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
 import {
-  lockImageAssetAdmission,
   assertImagesReadyForSurface,
   syncImageSurfacePlacement,
 } from '@services/media-delivery-safety'
+import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { invalidateCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
 import type { CreateCommunityInput } from './create-types.mts'
@@ -40,8 +40,11 @@ export async function insertCommunity(
   const imageIds = [input.profile_image_id, input.banner_image_id].flatMap(imageId =>
     imageId ? [imageId] : [],
   )
-  await lockImageAssetAdmission(imageIds, query)
   await assertImagesReadyForSurface(imageIds, query)
+  await admitImagePlacements(
+    query,
+    imageIds.map(imageId => ({ imageId })),
+  )
   const options = { query }
   await assertCommunityMembershipCapacity(currentUserId, id, options)
 

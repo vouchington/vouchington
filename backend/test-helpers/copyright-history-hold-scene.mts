@@ -105,7 +105,7 @@ export async function withCopyrightHistoryHoldScene(
         INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)
         VALUES (${placementId}, ${imageId}, 'surface')`)
       await query(sql`/* copyrightHistoryHoldSceneMediaPlacement */
-        INSERT INTO media_placements (id) VALUES (${placementId})`)
+        INSERT INTO media_placements (id, retired_at, retirement_reason) VALUES (${placementId}, CURRENT_TIMESTAMP, 'owner_removed')`)
       await query(sql`/* copyrightHistoryHoldSceneProfilePlacement */
         INSERT INTO image_surface_placements (placement_id, surface_kind, image_id, user_id)
         VALUES (${placementId}, 'user-profile-image', ${imageId}, ${parties.placement})`)

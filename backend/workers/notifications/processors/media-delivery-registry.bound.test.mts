@@ -18,9 +18,9 @@ import {
 import { getTestMediaDeliveryRecordSnapshot } from '@voucha/test-helpers/entities/media-delivery-retry'
 import {
   stageImagePlacementDeliveryRecordPage,
-  stageImagePlacementDeliveryRecord,
   listRecoverableMediaDeliveryRegistryIds,
 } from '@services/media-delivery-safety'
+import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety/delivery-registry-staging'
 import type { ReconcileMediaDeliveryRegistryData } from '@queues/notifications/enqueues'
 import { processReconcileMediaDeliveryRegistry } from './media-delivery-registry.mts'
 
@@ -108,6 +108,14 @@ describe('media registry staging retired raw page', () => {
     expect(outside!.placement_id.localeCompare(active.placement_id)).toBeLessThan(0)
     expect(retired.retired_at).not.toBeNull()
     expect(active.retired_at).toBeNull()
+    // Retirement no longer publishes the denial. The page still has to skip the
+    // registry tuple left at the previous revision.
+    await stageImagePlacementDeliveryRecord({
+      placementId: retired.placement_id,
+      revision: retired.placement_revision - 1,
+      imageId: retiredImageId,
+      state: 'withheld',
+    })
     await stageImagePlacementDeliveryRecord({
       placementId: active.placement_id,
       revision: active.placement_revision,

@@ -45,14 +45,9 @@ export async function setPostImages(
         post.id,
         images.map(image => image.image_id),
         query,
-        { admissionHeld: true },
       )
       deliveryPrepared = true
-      const postState = await prepareLockedPostImageUpdate(
-        query,
-        post.id,
-        images.map(image => image.image_id),
-      )
+      const postState = await prepareLockedPostImageUpdate(query, post.id)
       const {
         title,
         markdown,

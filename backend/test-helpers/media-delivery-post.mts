@@ -1,19 +1,14 @@
-import { expect } from 'vitest'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
-  getTestMediaDeliveryRecord,
 } from './index.mts'
 import { getPostByAny } from '../services/posts/get.mts'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
-import {
-  publishStagedMediaDeliveryRecord,
-  stageImagePlacementDeliveryRecord,
-} from '../services/media-delivery-safety/index.mts'
-import { getTestDeliveryRepairMarker } from './entities/media-delivery-repair.mts'
+import { publishStagedMediaDeliveryRecord } from '../services/media-delivery-safety/index.mts'
+import { stageImagePlacementDeliveryRecord } from '../services/media-delivery-safety/delivery-registry-staging.mts'
 import { installTestMediaDeliveryEdge } from './media-delivery-edge.mts'
 
 export async function createTestPostDeliveryFixture(
@@ -64,24 +59,4 @@ export async function createTestPostDeliveryFixture(
     deliveryKey,
     mediaDeliveryRegistryRecordId: staged.mediaDeliveryRegistryRecordId,
   }
-}
-
-export async function expectTestPostDeliveryRestored(
-  fixture: Awaited<ReturnType<typeof createTestPostDeliveryFixture>>,
-): Promise<void> {
-  const { edge, deliveryKey, mediaDeliveryRegistryRecordId, postId, imageId, placement } = fixture
-  const denied = edge.put.mock.calls[0]?.[0]
-  expect(denied).toMatchObject({ deliveryKey, state: 'withheld' })
-  const restored = edge.records.get(deliveryKey)
-  expect(restored).toMatchObject({ state: 'allow' })
-  expect(BigInt(restored!.generation)).toBeGreaterThan(BigInt(denied!.generation))
-  await expect(getTestMediaDeliveryRecord(mediaDeliveryRegistryRecordId)).resolves.toMatchObject({
-    desired_state: 'allow',
-    state: 'completed',
-  })
-  await expect(getTestDeliveryRepairMarker(mediaDeliveryRegistryRecordId)).resolves.toBeNull()
-  await expect(getTestPostImagePlacement(postId, imageId)).resolves.toEqual(placement)
-  await expect(getPostByAny(postId, { readOnly: false })).resolves.toMatchObject({
-    deleted_at: null,
-  })
 }

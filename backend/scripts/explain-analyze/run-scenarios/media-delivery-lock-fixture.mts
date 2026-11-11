@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import { seedUuid } from '../seed-data/common.mts'
 
 export const NOISE_PER_FAMILY = 2_000
@@ -12,6 +12,7 @@ export const noiseImage = (i: number) => seedUuid(600_000 + i, 'e4')
 export const noisePost = (i: number) => seedUuid(600_000 + i, 'e5')
 
 export async function seedMediaDeliveryLockFixture(): Promise<void> {
+  await using query = await beginTransaction()
   const postIds = Array.from({ length: NOISE_PER_FAMILY }, (_, i) => postPlacement(i))
   const surfaceIds = Array.from({ length: NOISE_PER_FAMILY }, (_, i) => surfacePlacement(i))
   const targetIds = Array.from({ length: TARGET_COUNT }, (_, i) => targetPlacement(i))
@@ -25,13 +26,13 @@ export async function seedMediaDeliveryLockFixture(): Promise<void> {
     i >= NOISE_PER_FAMILY && i < 2 * NOISE_PER_FAMILY ? 'surface' : 'post',
   )
   const actor = seedUuid(499_999, 'e6')
-  await write(
+  await query(
     `/* seedDeliveryLock:actor */
     INSERT INTO users (id, username) VALUES ($1, 'explain-delivery-lock-actor')
     ON CONFLICT (id) DO NOTHING`,
     [actor],
   )
-  await write(
+  await query(
     `/* seedDeliveryLock:posts */
     INSERT INTO posts (id, created_by_id, post_type, title, markdown, created_via,
       bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
@@ -40,14 +41,14 @@ export async function seedMediaDeliveryLockFixture(): Promise<void> {
     FROM unnest($1::uuid[]) seed(id) ON CONFLICT (id) DO NOTHING`,
     [[...postIds.map((_, i) => noisePost(i)), targetPost], actor],
   )
-  await write(
+  await query(
     `/* seedDeliveryLock:images */
-    INSERT INTO retained_image_identities (id, created_by_id)
-    SELECT id, $2::uuid FROM unnest($1::uuid[]) seed(id)
+    INSERT INTO images (id, created_by_id, data, sha_256, s3_key)
+    SELECT id, $2::uuid, '{}'::jsonb, decode(md5(id::text) || md5(id::text), 'hex'), md5(id::text) || md5(id::text) FROM unnest($1::uuid[]) seed(id)
     ON CONFLICT (id) DO NOTHING`,
     [imageIds, actor],
   )
-  await write(
+  await query(
     `/* seedDeliveryLock:bindings */
     INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)
     SELECT id, image_id, family::image_binding_families
@@ -55,13 +56,13 @@ export async function seedMediaDeliveryLockFixture(): Promise<void> {
     ON CONFLICT (placement_id) DO NOTHING`,
     [placementIds, imageIds, families],
   )
-  await write(
+  await query(
     `/* seedDeliveryLock:placements */
     INSERT INTO media_placements (id) SELECT id FROM unnest($1::uuid[]) id
     ON CONFLICT (id) DO NOTHING`,
     [placementIds],
   )
-  await write(
+  await query(
     `/* seedDeliveryLock:postBindings */
     INSERT INTO image_placements (placement_id, post_id, image_id)
     SELECT id, post_id, image_id FROM unnest($1::uuid[], $2::uuid[], $3::uuid[]) seed(id,post_id,image_id)
@@ -73,14 +74,14 @@ export async function seedMediaDeliveryLockFixture(): Promise<void> {
     ],
   )
   const owners = surfaceIds.map((_, i) => seedUuid(500_000 + i, 'e6'))
-  await write(
+  await query(
     `/* seedDeliveryLock:owners */
     INSERT INTO users (id, username)
     SELECT id, 'explain-delivery-lock-' || replace(id::text,'-','') FROM unnest($1::uuid[]) id
     ON CONFLICT (id) DO NOTHING`,
     [owners],
   )
-  await write(
+  await query(
     `/* seedDeliveryLock:surfaceBindings */
     INSERT INTO image_surface_placements (placement_id,surface_kind,image_id,user_id)
     SELECT id,'user-profile-image',image_id,owner_id
@@ -90,7 +91,7 @@ export async function seedMediaDeliveryLockFixture(): Promise<void> {
     [surfaceIds, surfaceIds.map((_, i) => noiseImage(NOISE_PER_FAMILY + i)), owners],
   )
   const recordIds = placementIds.map((_, i) => seedUuid(500_000 + TARGET_COUNT + i, 'ea'))
-  await write(
+  await query(
     `/* seedDeliveryLock:registry */
     INSERT INTO media_delivery_registry_records (id,placement_id,placement_revision,image_id,desired_state)
     SELECT record_id,placement_id,0,image_id,'withheld'
@@ -98,16 +99,25 @@ export async function seedMediaDeliveryLockFixture(): Promise<void> {
     ON CONFLICT (id) DO NOTHING`,
     [recordIds, placementIds, imageIds],
   )
-  await write(
+  await query(
+    `/* seedDeliveryLock:surfaceOwnerProjection */
+    UPDATE users owner SET profile_image_id = binding.image_id
+    FROM image_surface_placements binding
+    WHERE binding.placement_id = ANY($1::uuid[]) AND owner.id = binding.user_id
+      AND owner.profile_image_id IS DISTINCT FROM binding.image_id`,
+    [surfaceIds],
+  )
+  await query(
     `/* seedDeliveryLock:noiseMarkers */
     INSERT INTO media_delivery_repair_markers (media_delivery_registry_record_id,marker_token)
     SELECT id, nextval('media_delivery_registry_generation_sequence') FROM unnest($1::uuid[]) id
     ON CONFLICT (media_delivery_registry_record_id) DO NOTHING`,
     [recordIds.slice(0, 2 * NOISE_PER_FAMILY).filter((_, i) => i !== NOISE_PER_FAMILY)],
   )
-  await write(
+  await query(
     '/* seedDeliveryLock:analyze */ ANALYZE image_placements, image_surface_placements, media_placements, media_delivery_registry_records, media_delivery_repair_markers',
   )
+  await query.commit()
 }
 
 export async function resetTargetMarkers(populate: boolean): Promise<void> {

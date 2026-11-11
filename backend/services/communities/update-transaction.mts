@@ -1,6 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
-  prepublishImageSurfaceDenials,
   syncImageSurfacePlacement,
   type ImageSurfaceReference,
 } from '@services/media-delivery-safety'
@@ -38,13 +37,12 @@ async function applyLockedCommunityUpdate(
 ) {
   const surfaces = await prepublishChangedCommunitySurfaces(input)
   for (const surface of surfaces) {
-    // oxlint-disable-next-line no-await-in-loop -- admission was declared and locked as one owner batch.
+    // oxlint-disable-next-line no-await-in-loop -- each surface admits, then writes its own placement.
     await syncImageSurfacePlacement(
       surface,
       surface.nextImageId ?? null,
       surface.nextImageId ? input.actorUserId : null,
       input.query,
-      { prepublished: true },
     )
   }
   const locked = await lockCommunityPublicationInputs(input.query, input.communityId)
@@ -96,7 +94,6 @@ async function prepublishChangedCommunitySurfaces(input: {
       nextImageId: input.update.banner_image_id ?? null,
     })
   }
-  await prepublishImageSurfaceDenials(references, input.query)
   return references
 }
 

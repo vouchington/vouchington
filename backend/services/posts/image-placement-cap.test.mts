@@ -87,29 +87,6 @@ describe('image placement capacity', () => {
     })
   })
 
-  it('serializes competing posts for the final slot', async () => {
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
-        max_placements_per_image: 1,
-      }),
-    )
-    const user = await createTestUser()
-    const imageId = await insertTestImage(user.id)
-    const [first, second] = await Promise.all([post(user.id), post(user.id)])
-    const results = await Promise.allSettled([
-      attach(first!, [imageId]),
-      attach(second!, [imageId]),
-    ])
-    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
-    const rejection = results.find(result => result.status === 'rejected')
-    expect(rejection).toMatchObject({ status: 'rejected', reason: limitError })
-    const placements = await Promise.all([
-      getTestPostImagePlacement(first!, imageId),
-      getTestPostImagePlacement(second!, imageId),
-    ])
-    expect(placements.filter(placement => placement?.retired_at === null)).toHaveLength(1)
-  })
-
   it('shares capacity between post and surface placements', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {

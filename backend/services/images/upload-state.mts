@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write, beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 
 interface ImageMetadata {
@@ -29,7 +29,8 @@ export async function finalizeImageMetadata(
   imageId: string,
   metadata: ImageMetadata,
 ): Promise<{ rowCount: number }> {
-  const result = await write(
+  await using query = await beginTransaction()
+  const result = await query(
     `/* finalizeImageMetadata */
     UPDATE images
     SET
@@ -42,6 +43,7 @@ export async function finalizeImageMetadata(
   `,
     [metadata, imageId],
   )
+  await query.commit()
 
   return { rowCount: result.rowCount ?? 0 }
 }

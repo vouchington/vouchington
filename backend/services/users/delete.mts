@@ -4,6 +4,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
 import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-deletions'
+import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { purgeCacheTags } from '@services/entity-cache/purge'
 import {
@@ -19,10 +20,6 @@ import {
   softDeleteAndScrubUserProfile,
 } from './delete-profile-pii.mts'
 import type { PrivateUser } from './types.mts'
-import {
-  prepublishImageSurfaceDenials,
-  lockUserProfileImageOwners,
-} from '@services/media-delivery-safety'
 import { assertCopyrightEvidenceAllowsDeletion } from './delete-copyright-evidence.mts'
 import { lockUserDeletionRows, type UserDeletionTarget } from './delete-row-locks.mts'
 
@@ -58,7 +55,6 @@ async function lockAndGetUserDeletionTarget(
   requestedById: string,
 ): Promise<UserDeletionTarget> {
   await lockUserDeletionLifecycle(query, userId)
-  await lockUserProfileImageOwners([userId], query)
   return lockUserDeletionRows(query, userId, requestedById)
 }
 
@@ -67,19 +63,6 @@ async function scrubUserDeletionIdentities(
   userId: string,
   requestedById: string,
 ): Promise<void> {
-  const { rows: links } = await query<{ id: string }>(sql`/* scrubUserDeletionIdentities:links */
-    SELECT id FROM user_profile_links WHERE user_id = ${userId} ORDER BY id
-  `)
-  await prepublishImageSurfaceDenials(
-    [
-      { surfaceKind: 'user-profile-image', userId },
-      ...links.map(link => ({
-        surfaceKind: 'user-profile-link-image' as const,
-        userProfileLinkId: link.id,
-      })),
-    ],
-    query,
-  )
   const softDeleteRowCount = await softDeleteAndScrubUserProfile(userId, requestedById, query)
   assert(softDeleteRowCount > 0, 409, 'User is already deleted')
   await revokeVerifiedIdentitiesForDeletedUser(userId, query)
@@ -157,6 +140,12 @@ export async function deleteUser(
     'User deletion follow-ups failed',
   )
   await enqueueDeleteUserBookmarkBloomFilterBestEffort(user.id)
+  // Delivery denial is post-commit: the scheduled reconciliation repairs a missed enqueue.
+  try {
+    await enqueueReconcileMediaDeliveryRegistry()
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+  }
   try {
     await enqueueUserDeletion({
       requestId: deletion.request.id,

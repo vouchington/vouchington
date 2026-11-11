@@ -90,3 +90,27 @@ export function afterPostgresTransactionQueryForTest(
       }),
   )
 }
+
+/** Run an owned real effect before a matching SQL statement is executed. */
+export function beforePostgresTransactionQueryForTest(
+  marker: string,
+  matchesValues: (values: readonly unknown[]) => boolean,
+  effect: () => Promise<void>,
+): () => void {
+  let applied = false
+  return interceptPostgresTransactionsForTest(
+    transaction =>
+      new Proxy(transaction, {
+        async apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
+          const [input, parameters] = argumentsList
+          const text = typeof input === 'string' ? input : input.text
+          const values = typeof input === 'string' ? (parameters ?? []) : (input.values ?? [])
+          if (!applied && text.includes(marker) && matchesValues(values)) {
+            applied = true
+            await effect()
+          }
+          return Reflect.apply(target, thisArgument, argumentsList)
+        },
+      }),
+  )
+}

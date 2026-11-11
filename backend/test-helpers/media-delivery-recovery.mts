@@ -10,8 +10,8 @@ import type { ReconcileMediaDeliveryRegistryData } from '../queues/notifications
 import {
   getMediaDeliveryRegistryScanBefore,
   stageImagePlacementDeliveryRecordPage,
-  stageImagePlacementDeliveryRecord,
 } from '../services/media-delivery-safety/index.mts'
+import { stageImagePlacementDeliveryRecord } from '../services/media-delivery-safety/delivery-registry-staging.mts'
 
 export async function withTestMediaRecoveryBacklog<T>(
   userId: string,

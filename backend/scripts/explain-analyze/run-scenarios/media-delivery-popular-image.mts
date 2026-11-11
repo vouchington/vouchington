@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import { stageImagePlacementDeliveryRecordPage } from '@services/media-delivery-safety/delivery-registry-staging-page'
 import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -16,14 +16,23 @@ export async function runMediaDeliveryPopularImageScenario(): Promise<void> {
   const postIds = Array.from({ length: POPULAR_COUNT }, (_, index) =>
     seedUuid(50_000 + index, '05'),
   )
-  await write(
+  await using query = await beginTransaction()
+  await query(
+    `/* seedExplainPopularImage:image */
+    INSERT INTO images (id, created_by_id, data, sha_256, s3_key)
+    VALUES ($1::uuid, COALESCE((SELECT created_by_id FROM retained_image_identities WHERE id = $1::uuid), $2::uuid),
+      '{}'::jsonb, decode(md5(($1::uuid)::text) || md5(($1::uuid)::text), 'hex'), md5(($1::uuid)::text) || md5(($1::uuid)::text))
+    ON CONFLICT (id) DO NOTHING`,
+    [imageId, seedUuid(0, '01')],
+  )
+  await query(
     `/* seedExplainPopularImage:bindings */
     INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)
     SELECT id, $2::uuid, 'post' FROM unnest($1::uuid[]) id
     ON CONFLICT (placement_id) DO NOTHING`,
     [placementIds, imageId],
   )
-  await write(
+  await query(
     `/* seedExplainPopularImage:placements */
     INSERT INTO media_placements (id, retired_at, retirement_reason)
     SELECT id, CASE WHEN ordinal <= 1900 THEN NOW() - INTERVAL '1 day' ELSE NULL END,
@@ -32,7 +41,7 @@ export async function runMediaDeliveryPopularImageScenario(): Promise<void> {
     ON CONFLICT (id) DO NOTHING`,
     [placementIds],
   )
-  await write(
+  await query(
     `/* seedExplainPopularImage:sourceBindings */
     INSERT INTO image_placements (placement_id, post_id, image_id)
     SELECT placement_id, post_id, $3::uuid
@@ -40,6 +49,7 @@ export async function runMediaDeliveryPopularImageScenario(): Promise<void> {
     ON CONFLICT (placement_id) DO NOTHING`,
     [placementIds, postIds, imageId],
   )
+  await query.commit()
   await write(`/* seedExplainPopularImage:analyze */
     ANALYZE image_placements, image_surface_placements, media_placements,
       media_delivery_registry_records, retained_image_placement_bindings`)

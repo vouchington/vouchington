@@ -29,7 +29,7 @@ export async function insertRetentionMediaFixture(query: TransactionQuery, old: 
   )
   await query(
     `/* insertRetentionMediaPlacement */
-    INSERT INTO media_placements (id) VALUES ($1)`,
+    INSERT INTO media_placements (id, retired_at, retirement_reason) VALUES ($1, CURRENT_TIMESTAMP, 'owner_removed')`,
     [placementId],
   )
   const { rows } = await query<{ id: string; generation: string }>(

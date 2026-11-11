@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  createTestPostDeliveryFixture,
-  expectTestPostDeliveryRestored,
-} from '@voucha/test-helpers/media-delivery-post'
+import { getTestPostDeletedAt } from '@voucha/test-helpers'
+import { createTestPostDeliveryFixture } from '@voucha/test-helpers/media-delivery-post'
 import { deletePost } from '../delete.mts'
 
 describe('post deletion delivery recovery', () => {
@@ -11,13 +9,13 @@ describe('post deletion delivery recovery', () => {
     vi.unstubAllEnvs()
   })
 
-  it('restores delivery after a pre-delete denial reaches the edge but invalidation fails', async () => {
+  it('deletes a post without publishing an edge denial', async () => {
     const fixture = await createTestPostDeliveryFixture()
-    const failure = new Error('Post deletion invalidation unavailable')
-    fixture.edge.invalidatePath.mockRejectedValueOnce(failure)
 
-    await expect(deletePost(fixture.user, fixture.post)).rejects.toBe(failure)
+    await deletePost(fixture.user, fixture.post)
 
-    await expectTestPostDeliveryRestored(fixture)
+    expect(await getTestPostDeletedAt(fixture.postId)).not.toBeNull()
+    expect(fixture.edge.put).not.toHaveBeenCalled()
+    expect(fixture.edge.invalidatePath).not.toHaveBeenCalled()
   })
 })

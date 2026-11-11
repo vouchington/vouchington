@@ -31,7 +31,6 @@
     "@queues/bedrock-embeddings-batch": "workspace:^",
     "@services/analytics": "workspace:^",
     "@services/images": "workspace:^",
-    "@services/media-delivery-safety": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",

@@ -134,7 +134,7 @@ BEGIN
     AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id
     AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id
     AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id
-      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)
+      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed')
   THEN
     RETURN NEW;
   END IF;
@@ -149,7 +149,7 @@ BEGIN
     AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id
     AND NEW.user_profile_link_id IS NOT DISTINCT FROM OLD.user_profile_link_id
     AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id
-      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)
+      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed')
   THEN
     RETURN NEW;
   END IF;
@@ -186,8 +186,7 @@ DECLARE
   v_ownerless boolean;
 BEGIN
   SELECT num_nonnulls(surface.user_id, surface.topic_id, surface.community_id, surface.user_profile_link_id) = 0
-  INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id
-  FOR UPDATE;
+  INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id;
   IF v_ownerless AND (NEW.retired_at IS NULL OR NEW.retirement_reason IS DISTINCT FROM 'owner_removed') THEN
     RAISE EXCEPTION 'ownerless image surface must remain retired for owner removal' USING ERRCODE = 'check_violation';
   END IF;
