@@ -137,7 +137,11 @@ export function main(
   schemaPaths: Pick<RenderPsqlDocsOptions, 'schemaDir' | 'schemaJsonPath'> = {},
 ): Promise<number> {
   return runRenderDocsCli(argv, 'Usage: render-psql-docs.mts <output-dir>', outputDir =>
-    renderPsqlDocs({ outputDir, ...schemaPaths }),
+    renderPsqlDocs({
+      outputDir,
+      schemaDir: schemaPaths.schemaDir ?? DEFAULT_SCHEMA_DIR,
+      schemaJsonPath: schemaPaths.schemaJsonPath ?? DEFAULT_SCHEMA_JSON,
+    }),
   )
 }
 
