@@ -18,7 +18,7 @@ import {
 const getReferralLinkFeedTool: MergedToolSource<ReferralArgs, ReferralResult> = {
   schema: {
     description:
-      'Page referral links from users you follow, applying the REST feed privacy and mute policy. Returns at most 100 per page with page_info.end_cursor.',
+      'Read referral links from followed users. Follow page_info.end_cursor while has_next_page is true, including short or empty pages.',
     parameters: {
       type: 'object',
       properties: {

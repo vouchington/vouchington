@@ -13,6 +13,7 @@ export async function insertTestUserReferralProgramLink(opts: {
   urlId: string
   label?: string
   parentLinkId?: string
+  activatedAt?: Date
 }): Promise<string> {
   const statement = sql`/* insertTestUserReferralProgramLink */
     INSERT INTO user_referral_program_links (
@@ -35,7 +36,7 @@ export async function insertTestUserReferralProgramLink(opts: {
       ${opts.referralProgramId},
       ${opts.urlId},
       ${opts.label ?? `test-link-${v7()}`},
-      CURRENT_TIMESTAMP,
+      COALESCE(${opts.activatedAt ?? null}::timestamptz, CURRENT_TIMESTAMP),
       ${opts.parentLinkId ?? null},
       'system'
     )

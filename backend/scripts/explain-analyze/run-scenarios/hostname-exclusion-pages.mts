@@ -46,6 +46,9 @@ export async function runHostnameExclusionPageScenarios(): Promise<void> {
       expectations: [
         { kind: 'usesIndexes', indexes: ['url_hostnames_pkey'] },
         { kind: 'maxProcessedRows', relation: 'url_hostnames', max: maxProcessedRows },
+        ...(includeReferralProgramTopics
+          ? [{ kind: 'custom' as const, name: 'referralFeedInspectedWalk' }]
+          : []),
       ],
       seededRows: {
         url_hostnames: hostnameRowCount,

@@ -25,6 +25,7 @@ import { assertStoryProjectionClaimCandidates } from './plan-custom/story-projec
 import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-custom/topic-viewer-counts.mts'
 import { assertCorePlanCheck } from './plan-custom/core-special.mts'
 import { assertUsernamePrefixCandidates } from './plan-custom/username-prefix.mts'
+import { assertReferralFeedInspectedWalk } from './plan-custom/referral-feed.mts'
 
 const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = {
   dispatchUrlSelectivity: result => assertDispatchWorkPlan('urls', result),
@@ -38,6 +39,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   claimantMisuseCursorSeek: assertClaimantMisuseCursorSeek,
   embeddingFirstPost: assertEmbeddingReconciliationPlanIfApplicable,
   paginationSpecial: assertPaginationPlanShape,
+  referralFeedInspectedWalk: assertReferralFeedInspectedWalk,
   postCreationBypassPointRead: assertPostCreationBypassPointRead,
   postTopicMembership: assertPostTopicMembershipIsReused,
   remoteFollowers: assertRemoteFollowerPagePlanShapeIfApplicable,
