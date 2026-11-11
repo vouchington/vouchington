@@ -144,7 +144,6 @@ CREATE TABLE IF NOT EXISTS topic_merge_operations (
   source_topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE RESTRICT,
   destination_topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE RESTRICT,
   requested_by_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
-  fence_token UUID NOT NULL DEFAULT uuidv7(),
   stage topic_merge_stages NOT NULL DEFAULT 'preflight',
   stage_table_position INTEGER NOT NULL DEFAULT 0 CHECK (stage_table_position >= 0),
   relation_column_position SMALLINT NOT NULL DEFAULT 0 CHECK (relation_column_position BETWEEN 0 AND 4),
@@ -215,7 +214,6 @@ COMMENT ON COLUMN topic_merge_operations.source_topic_id IS 'Topic whose current
 COMMENT ON COLUMN topic_merge_operations.rejected_at IS 'When bounded preflight rejected the request; reservations release only after scratch cleanup reaches failed_at.';
 COMMENT ON COLUMN topic_merge_operations.destination_topic_id IS 'Topic that receives current references.';
 COMMENT ON COLUMN topic_merge_operations.requested_by_id IS 'Administrator who requested the merge.';
-COMMENT ON COLUMN topic_merge_operations.fence_token IS 'Private capability for one worker transaction to mutate reserved participants.';
 COMMENT ON COLUMN topic_merge_operations.stage IS 'Current ordered merge stage.';
 COMMENT ON COLUMN topic_merge_operations.stage_table_position IS 'Position in the finite reviewed table inventory for the current stage.';
 COMMENT ON COLUMN topic_merge_operations.relation_column_position IS 'Subject or object topic-FK pass for the current relation table.';
@@ -754,11 +752,10 @@ DECLARE
   added_aliases TEXT[];
 BEGIN
   -- The operation accumulates the exact final projection in its alias history document.
-  -- Its private transaction capability is checked against the durable reservation.
+  -- Its transaction names the unfinished operation, which is checked against the durable reservation.
   IF EXISTS (
     SELECT 1 FROM topic_merge_operations operation
     WHERE operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)
-      AND operation.fence_token::TEXT = current_setting('voucha.topic_merge_fence_token', TRUE)
       AND operation.completed_at IS NULL AND operation.failed_at IS NULL
   ) THEN RETURN NULL; END IF;
   IF TG_OP = 'INSERT' THEN

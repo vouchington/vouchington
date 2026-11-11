@@ -1,4 +1,4 @@
--- Generated relations and handwritten references share the merge's dedicated lifecycle fence.
+-- Generated relations and handwritten references check committed merge reservations; the merge's own transaction names its operation id.
 CREATE OR REPLACE FUNCTION fn_ensure_active_topic_references()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -23,22 +23,12 @@ BEGIN
       SELECT DISTINCT id FROM unnest(ARRAY[previous_topic_id, referenced_topic_id]) AS ids(id)
       WHERE id IS NOT NULL ORDER BY id
     LOOP
-      -- Never wait while holding a child row or publication scope: admission takes this fence first.
-      IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(
-        'topic-merge-lifecycle:' || reserved_topic_id::TEXT, 0
-      )) THEN
-        RAISE EXCEPTION USING ERRCODE = 'V0409',
-          MESSAGE = 'Topic references are changing; retry the request',
-          DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', reserved_topic_id)::TEXT;
-      END IF;
       IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (
         SELECT 1 FROM topic_merge_parent_ancestors ancestor
         JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id
         WHERE ancestor.topic_id = reserved_topic_id
           AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL
-          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM
-            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),
-             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))
+          AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')
       ) THEN
         RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',
           DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;
@@ -48,9 +38,7 @@ BEGIN
         WHERE (merge_operation.source_topic_id = reserved_topic_id
             OR merge_operation.destination_topic_id = reserved_topic_id)
           AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL
-          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM
-            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),
-             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))
+          AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')
       ) THEN
         RAISE EXCEPTION USING ERRCODE = 'V0409',
           MESSAGE = 'Topic merge is in progress',
@@ -75,7 +63,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION fn_ensure_active_topic_references() IS
-  'Fences current reference mutations against admission and active merge reservations without waiting behind a child-row lock. Historical references remain unfenced.';
+  'Rejects current reference mutations that name a topic reserved by an unfinished merge, or an inactive topic. Historical references remain unguarded.';
 
 CREATE OR REPLACE FUNCTION fn_ensure_topic_merge_participant_not_reserved()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
@@ -85,9 +73,7 @@ BEGIN
     WHERE (merge_operation.source_topic_id = OLD.id
         OR merge_operation.destination_topic_id = OLD.id)
       AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL
-      AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM
-        (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),
-         COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))
+      AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')
   ) THEN
     RAISE EXCEPTION USING ERRCODE = 'V0409',
       MESSAGE = 'Topic merge is in progress',
@@ -121,20 +107,11 @@ BEGIN
   LOOP
     SELECT id INTO source_id FROM topics WHERE slug = candidate_alias AND deleted_at IS NULL LIMIT 1;
     IF source_id IS NULL THEN CONTINUE; END IF;
-    IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(
-      'topic-merge-lifecycle:' || source_id::TEXT, 0
-    )) THEN
-      RAISE EXCEPTION USING ERRCODE = 'V0409',
-        MESSAGE = 'Topic alias is changing during a merge; retry the request',
-        DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', source_id)::TEXT;
-    END IF;
     IF EXISTS (
       SELECT 1 FROM topic_merge_operations merge_operation
       WHERE merge_operation.source_topic_id = source_id
         AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL
-        AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM
-          (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),
-           COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))
+        AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')
     ) THEN
       RAISE EXCEPTION USING ERRCODE = 'V0409',
         MESSAGE = 'Topic merge is in progress',
@@ -221,17 +198,11 @@ BEGIN
       INTO participant_ids USING parent_subject_id, parent_relation_id;
     FOR participant_id IN SELECT DISTINCT id FROM unnest(participant_ids) ids(id) WHERE id IS NOT NULL ORDER BY id
     LOOP
-      IF NOT pg_try_advisory_xact_lock_shared(hashtextextended('topic-merge-lifecycle:' || participant_id::TEXT, 0)) THEN
-        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic vote target is changing; retry the request',
-          DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', participant_id)::TEXT;
-      END IF;
       IF EXISTS (
         SELECT 1 FROM topic_merge_operations operation
         WHERE (operation.source_topic_id = participant_id OR operation.destination_topic_id = participant_id)
           AND operation.completed_at IS NULL AND operation.failed_at IS NULL
-          AND (operation.id::TEXT, operation.fence_token::TEXT) IS DISTINCT FROM
-            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),
-             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))
+          AND operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')
       ) THEN
         RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic merge is in progress',
           DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', participant_id)::TEXT;

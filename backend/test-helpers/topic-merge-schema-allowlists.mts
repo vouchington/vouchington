@@ -76,8 +76,4 @@ export const TOPIC_MERGE_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'topic_merge_user_category_topic_vote_owners.cursor_vote_id',
     'Latest original ballot-event keyset position for bounded election history pages; the scanned vote may be moved or deleted.',
   ],
-  [
-    'topic_merge_operations.fence_token',
-    'Opaque per-operation worker capability/fencing token; identifies no durable row.',
-  ],
 ])

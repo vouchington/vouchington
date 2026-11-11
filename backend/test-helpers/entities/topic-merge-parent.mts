@@ -35,8 +35,7 @@ export async function runTopicMergeParentTestPage(
   await using query = await beginTransaction()
   await query(
     `/* authorizeTopicMergeParentTestPage */
-      SELECT set_config('voucha.topic_merge_operation_id', id::text, TRUE),
-        set_config('voucha.topic_merge_fence_token', fence_token::text, TRUE)
+      SELECT set_config('voucha.topic_merge_operation_id', id::text, TRUE)
       FROM topic_merge_operations WHERE id = $1::uuid FOR UPDATE`,
     [operationId],
   )

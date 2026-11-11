@@ -579,7 +579,6 @@ BEGIN
       JOIN classifier_candidates candidate ON candidate.topic_id = operation.source_topic_id
       WHERE candidate.id = OLD.candidate_id
         AND operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)
-        AND operation.fence_token::TEXT = current_setting('voucha.topic_merge_fence_token', TRUE)
         AND operation.completed_at IS NULL AND operation.failed_at IS NULL
     )
     AND NOT (

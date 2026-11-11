@@ -60,18 +60,17 @@ export async function seedBoundedTopicMergeRelations(
       VALUES ($1::uuid, $2::uuid, 'velocity_spike'), ($3::uuid, $4::uuid, 'velocity_spike')`,
       [input.sourceId, sourceRelationId, input.destinationId, destinationRelationId],
     )
-  const { rows: operations } = await query<{ id: string; fence_token: string }>(
+  const { rows: operations } = await query<{ id: string }>(
     `/* seedBoundedTopicMergeRelations operation */
     INSERT INTO topic_merge_operations (source_topic_id, destination_topic_id, requested_by_id)
-    VALUES ($1::uuid, $2::uuid, $3::uuid) RETURNING id, fence_token`,
+    VALUES ($1::uuid, $2::uuid, $3::uuid) RETURNING id`,
     [input.sourceId, input.destinationId, input.requesterId],
   )
   const operation = operations[0]!
   await query(
     `/* seedBoundedTopicMergeRelations fence */
-    SELECT set_config('voucha.topic_merge_operation_id', $1, TRUE),
-      set_config('voucha.topic_merge_fence_token', $2, TRUE)`,
-    [operation.id, operation.fence_token],
+    SELECT set_config('voucha.topic_merge_operation_id', $1, TRUE)`,
+    [operation.id],
   )
   return { operationId: operation.id, sourceRelationId, destinationRelationId, voteIds }
 }

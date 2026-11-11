@@ -46,7 +46,7 @@ export async function assertNoActiveTopicMerges(
   assert(rows.length === 0, 409, 'Topic merge is still in progress; retry category page')
 }
 
-/** updateTopic does not take the merge fence; validate the current locked rows as well. */
+/** updateTopic does not check merge reservations; validate the current locked rows as well. */
 function assertLockedTopicMergeTypes(
   source: Pick<Topic, 'id' | 'topic_type'>,
   destination: Pick<Topic, 'id' | 'topic_type'>,
