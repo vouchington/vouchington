@@ -8,6 +8,7 @@ import {
 import { insertTestRssFeedItem } from '@voucha/test-helpers/entities/rss-feed-items'
 import { insertTestUrl, insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import {
+  getTestExistingRssFeedItemIds,
   getTestUrlRanking,
   hardDeleteTestRssFeedItem,
   moveTestRssFeedUrl,
@@ -132,7 +133,7 @@ describe('getTopUrlsByHostnameIds', () => {
     expect(await getTestUrlRanking(targetId)).toMatchObject({ latestPublishedAt: null })
   })
 
-  it('retains the exact maximum after concurrent item inserts for one URL', async () => {
+  it('commits concurrent RSS items assigned to one URL', async () => {
     const url = await insertTestUrlDirect(
       null,
       `https://top-urls-concurrent-${randomUUID()}.example.com/item`,
@@ -148,11 +149,12 @@ describe('getTopUrlsByHostnameIds', () => {
         contentSha256: createHash('sha256').update(randomUUID()).digest(),
       })
 
-    await Promise.all([insertItem('2024-01-01T00:00:00Z'), insertItem('2025-01-01T00:00:00Z')])
+    const ids = await Promise.all([
+      insertItem('2024-01-01T00:00:00Z'),
+      insertItem('2025-01-01T00:00:00Z'),
+    ])
 
-    expect((await getTestUrlRanking(url.id)).latestPublishedAt?.toISOString()).toBe(
-      '2025-01-01T00:00:00.000Z',
-    )
+    expect(await getTestExistingRssFeedItemIds(ids)).toEqual(ids.toSorted())
     expect((await topIds(url.hostname.id))[0]).toBe(url.id)
   })
 })

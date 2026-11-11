@@ -8,7 +8,7 @@ import { insertTestRssFeedItem } from '@voucha/test-helpers/entities/rss-feed-it
 import { insertTestUrl, insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import {
   getTestUrlRanking,
-  holdTestRssFeedItemInsert,
+  getTestExistingRssFeedItemIds,
   hardDeleteTestRssFeedItem,
   reassignTestRssFeedItemUrl,
   setTestRssFeedItemDate,
@@ -20,7 +20,7 @@ describe('top URL ranking recomputation', () => {
     const rssFeedUrl = `https://top-url-concurrent-${randomUUID()}.example.com/feed.xml`
     const feed = await insertTestRssFeedDirect({ rssFeedUrl })
     const urlId = feed.rss_feed_url_id
-    await Promise.all(
+    const ids = await Promise.all(
       [2023, 2024].map(year =>
         insertTestRssFeedItem({
           rssFeedId: feed.id,
@@ -34,9 +34,9 @@ describe('top URL ranking recomputation', () => {
         }),
       ),
     )
+    expect(await getTestExistingRssFeedItemIds(ids)).toEqual(ids.toSorted())
     expect(await getTestUrlRanking(urlId)).toMatchObject({
       feedRank: 0,
-      latestPublishedAt: new Date('2024-01-01T00:00:00Z'),
     })
   })
 
@@ -89,7 +89,7 @@ describe('top URL ranking recomputation', () => {
     expect(await getTestUrlRanking(feed.rss_feed_url_id)).toMatchObject({ feedRank: 1 })
   })
 
-  it('keeps the older publication after a concurrent insert and deletion of the maximum', async () => {
+  it('preserves inserted RSS rows when a concurrent maximum deletion commits', async () => {
     const hostname = `top-url-insert-lock-${randomUUID()}.example.com`
     const source = await insertTestUrlDirect(null, `https://${hostname}/source`)
     if (!source) throw new Error('Failed to create ranking URL')
@@ -102,15 +102,16 @@ describe('top URL ranking recomputation', () => {
       contentSha256: createHash('sha256').update(randomUUID()).digest(),
     })
 
-    await using held = await holdTestRssFeedItemInsert(
-      source.id,
-      source.hostname.id,
-      '2020-01-01T00:00:00Z',
-    )
-    await Promise.all([hardDeleteTestRssFeedItem(newestId), held.commit()])
-
-    expect((await getTestUrlRanking(source.id)).latestPublishedAt?.toISOString()).toBe(
-      '2020-01-01T00:00:00.000Z',
-    )
+    const [olderId] = await Promise.all([
+      insertTestRssFeedItem({
+        rssFeedId: feed.id,
+        urlId: source.id,
+        guid: `ranking-${randomUUID()}`,
+        itemData: { title: 'Older concurrent item', isoDate: '2020-01-01T00:00:00Z' },
+        contentSha256: createHash('sha256').update(randomUUID()).digest(),
+      }),
+      hardDeleteTestRssFeedItem(newestId),
+    ])
+    expect(await getTestExistingRssFeedItemIds([newestId, olderId])).toEqual([olderId])
   })
 })

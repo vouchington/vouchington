@@ -142,9 +142,8 @@ requested boundary. Deriving that maximum at read time requires probing RSS item
 on the hostname before sorting, even when the response contains only a few URLs. The maintained
 maximum is therefore a measured exception to read-time aggregation.
 
-RSS item mutations maintain the exact maximum transactionally, including soft-deleted items.
-Bulk changes consolidate work by affected URL. Mixed upserts derive a common URL write set from
-their actual old and new rows before separate event maintenance runs. An insertion that does not advance the maximum
-still participates in that URL's write, because a concurrent downward recomputation must observe
-the committed insertion. These writes protect the ranking row they change; they do not lock the
-hostname or RSS item read set.
+RSS item mutations consolidate publication-maximum updates by affected URL and trigger event,
+including soft-deleted items. The ranking aggregate is best effort: a concurrent downward
+recomputation can miss an insertion that committed after its statement snapshot and leave the
+stored maximum behind. RSS item rows still use ordinary transactional writes; the aggregate does
+not add prelocks, lock-order helpers, or retries.

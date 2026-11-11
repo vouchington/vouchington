@@ -1,8 +1,3 @@
-import {
-  RSS_ITEM_URL_WRITE_RETURNING,
-  RSS_ITEM_URL_WRITE_LOCKS,
-  RSS_ITEM_URL_WRITE_BARRIER,
-} from '@modules/feed-query-builders/rss-feed-item-url-write-barrier'
 import type { TransactionQuery } from '@data-stores/psql'
 import { buildEmbeddingVector, sha256 } from './playwright-seed-rows.mts'
 export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<void> {
@@ -86,7 +81,7 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
       '${travelEmbedding}'::vector,
       CURRENT_TIMESTAMP
     )
-  ), written_rss_feed_items AS (
+  )
   INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at)
   SELECT identity.id, seeded.url_id, seeded.data, seeded.content_sha256, seeded.input_sha256, seeded.embedding, seeded.embedding_created_at
   FROM seeded
@@ -99,10 +94,6 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
     bedrock_nova_multimodal_v1_embedding = EXCLUDED.bedrock_nova_multimodal_v1_embedding,
     bedrock_nova_multimodal_v1_embedding_created_at = EXCLUDED.bedrock_nova_multimodal_v1_embedding_created_at,
     deleted_at = NULL
-    ${RSS_ITEM_URL_WRITE_RETURNING}
-  ), ${RSS_ITEM_URL_WRITE_LOCKS}
-  SELECT item.id, item.url_id, item.story_id, item.has_embedding, item.published_at
-  FROM written_rss_feed_items item WHERE ${RSS_ITEM_URL_WRITE_BARRIER}
       `)
   await query(
     `/* seedPlaywrightFeedData */ INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at) SELECT '019c64e6-f8c0-7000-8000-000000000002', ids.id, items.published_at FROM rss_feed_item_guids ids LEFT JOIN rss_feed_items items ON items.id = ids.id WHERE ids.url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND ids.guid IN ('doc-csp-bonus', 'doc-amex-grocery', 'doc-hilton-devalue') ON CONFLICT DO NOTHING`,

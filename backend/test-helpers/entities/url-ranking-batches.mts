@@ -1,8 +1,3 @@
-import {
-  RSS_ITEM_URL_WRITE_RETURNING,
-  RSS_ITEM_URL_WRITE_LOCKS,
-  RSS_ITEM_URL_WRITE_BARRIER,
-} from '@modules/feed-query-builders/rss-feed-item-url-write-barrier'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -47,19 +42,13 @@ export async function deleteTestUrlRankingItems(ids: string[]): Promise<void> {
 }
 
 export async function upsertTestUrlRankingItems(items: RankedItem[]): Promise<void> {
-  await write(
-    sql`/* upsertTestUrlRankingItems */
-    WITH written_rss_feed_items AS (INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
+  await write(sql`/* upsertTestUrlRankingItems */
+    INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
     SELECT id, url_id, jsonb_build_object('title', 'Ranking upsert', 'isoDate', iso_date),
       sha256(id::text::bytea)
     FROM UNNEST(${items.map(item => item.id)}::uuid[], ${items.map(item => item.urlId)}::uuid[],
       ${items.map(item => item.isoDate)}::text[]) item(id, url_id, iso_date)
-    ON CONFLICT (id) DO UPDATE SET url_id = EXCLUDED.url_id, data = EXCLUDED.data`.append(
-      RSS_ITEM_URL_WRITE_RETURNING,
-    ).append(`), ${RSS_ITEM_URL_WRITE_LOCKS}
-      SELECT item.id, item.url_id, item.story_id, item.has_embedding, item.published_at
-      FROM written_rss_feed_items item WHERE ${RSS_ITEM_URL_WRITE_BARRIER}`),
-  )
+    ON CONFLICT (id) DO UPDATE SET url_id = EXCLUDED.url_id, data = EXCLUDED.data`)
 }
 
 export async function createTestUrlRankingItemIdentity(hostnameId: string): Promise<string> {

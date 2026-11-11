@@ -419,7 +419,7 @@ COMMENT ON COLUMN urls.hostname_id IS 'The hostname this URL belongs to.';
 COMMENT ON COLUMN urls.pathname IS 'URL pathname component (e.g. /path/to/page). Max 2048 chars.';
 COMMENT ON COLUMN urls.search_params IS 'URL query parameters stored as JSONB.';
 COMMENT ON COLUMN urls.feed_rank IS '0 when a live enabled RSS feed uses this URL, otherwise 1; maintained synchronously by RSS feed triggers.';
-COMMENT ON COLUMN urls.latest_published_at IS 'Maximum publication timestamp of all RSS feed items assigned to this URL, including soft-deleted items; NULL when no items remain.';
+COMMENT ON COLUMN urls.latest_published_at IS 'Best-effort maximum publication timestamp of RSS feed items assigned to this URL, including soft-deleted items; concurrent recomputations can lag.';
 COMMENT ON COLUMN urls.media_type_id IS 'Detected MIME content type of the URL.';
 COMMENT ON COLUMN urls.canonical_url_id IS 'Self-referencing FK to the canonical version of this URL, if different.';
 COMMENT ON COLUMN urls.canonical_root_id IS 'The URL id only while this row is a terminal canonical destination; referenced by aliases to prevent cycles and chains.';

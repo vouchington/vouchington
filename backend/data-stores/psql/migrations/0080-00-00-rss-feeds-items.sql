@@ -484,11 +484,7 @@ DECLARE
   affected_url_ids UUID[];
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    PERFORM urls.id FROM urls
-    JOIN (SELECT DISTINCT url_id FROM inserted_items) inserted ON inserted.url_id = urls.id
-    ORDER BY urls.id FOR NO KEY UPDATE OF urls;
-    -- One write per URL, including older/null publications: this serializes
-    -- inserts with downward recomputes that cannot see uncommitted items.
+    -- Consolidate the statement's inserted publications into one write per URL.
     UPDATE urls
     SET latest_published_at = GREATEST(urls.latest_published_at, inserted.published_at)
     FROM (
@@ -511,9 +507,7 @@ BEGIN
   END IF;
   IF affected_url_ids IS NULL THEN RETURN NULL; END IF;
 
-  -- Lock only the URL rows this statement writes. The next SQL statement gets
-  -- a fresh READ COMMITTED snapshot after any concurrent URL writer commits.
-  PERFORM id FROM urls WHERE id = ANY(affected_url_ids) ORDER BY id FOR NO KEY UPDATE;
+  -- This aggregate is best effort: concurrent recomputations use their statement snapshot.
   UPDATE urls
   SET latest_published_at = (
     SELECT published_at FROM fn_url_latest_rss_feed_item_published_at(urls.id)
@@ -522,7 +516,7 @@ BEGIN
   RETURN NULL;
 END;
 $$;
-COMMENT ON FUNCTION fn_update_url_latest_published_at() IS 'Maintains the exact RSS publication maximum once per affected URL and statement, including soft-deleted items.';
+COMMENT ON FUNCTION fn_update_url_latest_published_at() IS 'Updates the RSS publication maximum once per affected URL and trigger event, including soft-deleted items; concurrent recomputations are best effort.';
 CREATE TRIGGER trigger_sync_url_latest_published_at_insert
 AFTER INSERT ON rss_feed_items REFERENCING NEW TABLE AS inserted_items
 FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_latest_published_at();

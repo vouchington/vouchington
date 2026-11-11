@@ -1,8 +1,3 @@
-import {
-  RSS_ITEM_URL_WRITE_RETURNING,
-  RSS_ITEM_URL_WRITE_LOCKS,
-  RSS_ITEM_URL_WRITE_BARRIER,
-} from '@modules/feed-query-builders/rss-feed-item-url-write-barrier'
 import { write } from '@data-stores/psql'
 import { contentHash, seedUuid } from './common.mts'
 
@@ -27,16 +22,14 @@ export async function seedCategoryProjection(): Promise<string> {
         FROM generate_series(1, $2::int) ordinal
         ON CONFLICT (url_hostname_id, guid) DO UPDATE SET guid = EXCLUDED.guid
         RETURNING id
-      ), written_rss_feed_items AS (
+      ), items AS (
         INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
         SELECT id, $3::uuid, '{}'::jsonb, $4::bytea FROM identities
         ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data
-        ${RSS_ITEM_URL_WRITE_RETURNING}
-      ), ${RSS_ITEM_URL_WRITE_LOCKS}, inserted_sources AS (
-        INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id)
-        SELECT $5::uuid, id FROM written_rss_feed_items ON CONFLICT DO NOTHING
+        RETURNING id
       )
-      SELECT item.id FROM written_rss_feed_items item WHERE ${RSS_ITEM_URL_WRITE_BARRIER}`,
+      INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id)
+      SELECT $5::uuid, id FROM items ON CONFLICT DO NOTHING`,
     [
       seedUuid(0, '02'),
       CATEGORY_PROJECTION_NOISE_ROWS,
