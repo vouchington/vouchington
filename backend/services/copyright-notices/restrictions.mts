@@ -42,17 +42,16 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   `,
   )
   assert(noticeRows[0], 404, 'Copyright notice not found')
-  const { rows: lockedTargets } = await transaction<{ id: string; placement_revision: number }>(
-    sql`/* acceptCopyrightNoticeAndImposeRestriction:lockTarget */
+  const { rows: currentTargets } = await transaction<{ id: string; placement_revision: number }>(
+    sql`/* acceptCopyrightNoticeAndImposeRestriction:target */
     SELECT id, placement_revision
     FROM copyright_notice_targets
     WHERE id = ${input.targetId}
       AND copyright_notice_id = ${input.noticeId}
       AND placement_id = ${target.placement_id}
-    FOR UPDATE
   `,
   )
-  assert(lockedTargets[0], 409, 'Copyright notice target changed while being restricted')
+  assert(currentTargets[0], 409, 'Copyright notice target changed while being restricted')
   const { rows: assessmentRows } = await transaction<{
     source_kind: 'signed_in_form' | 'guest_form' | 'email' | 'staff'
     assessed_by_id: string | null
@@ -62,7 +61,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     has_rejected_form_review: boolean
     territorial_revoked: boolean
   }>(
-    sql`/* acceptCopyrightNoticeAndImposeRestriction:lockAssessment */
+    sql`/* acceptCopyrightNoticeAndImposeRestriction:assessment */
     SELECT submission.source_kind, assessment.assessed_by_id, assessment.is_substantially_compliant, assessment.copyright_notice_form_screening_id,
       assessment.copyright_notice_form_screening_id IS NULL OR fn_current_copyright_form_screening(
         submission.id, assessment.copyright_notice_form_screening_id
@@ -87,7 +86,6 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     WHERE assessment.id = ${input.assessmentId}
       AND submission.copyright_notice_id = ${input.noticeId}
       AND submission.kind = 'notice'
-    FOR UPDATE OF submission
   `),
   )
   const assessment = assessmentRows[0]
@@ -133,7 +131,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const actionIntent = await insertCopyrightActionIntent(
     transaction,
     restriction.id,
-    lockedTargets[0].placement_revision,
+    currentTargets[0].placement_revision,
     'withhold',
   )
   await createCopyrightRestrictionDecisionNoticesInTransaction(
