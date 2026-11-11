@@ -37,7 +37,6 @@ const POST_TYPES = new Set<PostType>([
   'article',
   'blog_post',
 ])
-
 export function isSupportedPostType(value: unknown): value is PostType {
   return typeof value === 'string' && POST_TYPES.has(value as PostType)
 }
@@ -52,6 +51,11 @@ export async function validateCreatePostInput(
   updates.post_type ||= 'discussion'
   const postType = updates.post_type
   assert(isSupportedPostType(postType), 422, 'Unsupported post_type')
+  assert(
+    postType === 'review' || updates.review_topic_ratings === undefined,
+    422,
+    'review_topic_ratings is only allowed for review posts',
+  )
   assert(postType !== 'topic_recommendation', 422, 'Use the dedicated recommendation workflow')
   assert(postType !== 'story', 422, 'Use the dedicated story post creation flow')
   assertCanCreateAdminOnlyPostType(creator, postType)

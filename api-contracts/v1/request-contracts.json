@@ -41428,6 +41428,290 @@
     "ModerationAiRerunStatus": {
       "type": "string",
       "enum": ["active", "succeeded", "failed", "expired"]
+    },
+    "CreatedStandardPost": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "slug": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "markdown": {
+          "type": "string"
+        },
+        "post_type": {
+          "type": "string",
+          "enum": [
+            "article",
+            "blog_post",
+            "comment",
+            "data_point",
+            "discussion",
+            "link",
+            "review",
+            "story"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "created_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "parent_post_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "root_post_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "is_anonymous": {
+          "type": "boolean"
+        },
+        "community_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "broadcast": {
+          "$ref": "#/components/schemas/PostBroadcast"
+        },
+        "privacy": {
+          "$ref": "#/components/schemas/PostPrivacy"
+        },
+        "ai_summary_markdown": {
+          "type": "string"
+        },
+        "updated_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "provenance": {
+          "$ref": "#/components/schemas/PublicContentProvenance"
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": true
+            }
+          ]
+        },
+        "updated_by": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": true
+            }
+          ]
+        }
+      },
+      "required": [
+        "ai_summary_markdown",
+        "broadcast",
+        "community_id",
+        "created_at",
+        "created_by_id",
+        "id",
+        "is_anonymous",
+        "markdown",
+        "post_type",
+        "privacy",
+        "root_post_id",
+        "title",
+        "updated_at",
+        "updated_by_id"
+      ],
+      "additionalProperties": true
+    },
+    "HoneypotPost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "post_type": {
+          "$ref": "#/components/schemas/PostType"
+        },
+        "title": {
+          "type": "string"
+        },
+        "markdown": {
+          "type": "string"
+        },
+        "ai_summary_markdown": {
+          "const": ""
+        },
+        "parent_post_id": {
+          "type": "null"
+        },
+        "root_post_id": {
+          "type": "null"
+        },
+        "community_id": {
+          "type": "null"
+        },
+        "created_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "broadcast": {
+          "$ref": "#/components/schemas/PostBroadcast"
+        },
+        "privacy": {
+          "$ref": "#/components/schemas/PostPrivacy"
+        },
+        "is_anonymous": {
+          "type": "boolean"
+        },
+        "deleted_at": {
+          "type": "null"
+        },
+        "deleted_by_id": {
+          "type": "null"
+        },
+        "archived_at": {
+          "type": "null"
+        },
+        "archived_by_id": {
+          "type": "null"
+        },
+        "updated_by_id": {
+          "type": "null"
+        },
+        "clearance_status": {
+          "const": "pending"
+        },
+        "clearance_updated_at": {
+          "type": "null"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ai_summary_markdown",
+        "archived_at",
+        "archived_by_id",
+        "broadcast",
+        "clearance_status",
+        "clearance_updated_at",
+        "community_id",
+        "created_at",
+        "created_by_id",
+        "deleted_at",
+        "deleted_by_id",
+        "id",
+        "is_anonymous",
+        "markdown",
+        "parent_post_id",
+        "post_type",
+        "privacy",
+        "root_post_id",
+        "title",
+        "updated_at",
+        "updated_by_id"
+      ]
+    },
+    "CreatePostResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "post": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/CreatedStandardPost"
+            },
+            {
+              "$ref": "#/components/schemas/PublicTopicRecommendationPost"
+            },
+            {
+              "$ref": "#/components/schemas/HoneypotPost"
+            }
+          ]
+        },
+        "post_election": {
+          "$ref": "#/components/schemas/PostElection"
+        },
+        "election_vote": {
+          "$ref": "#/components/schemas/ElectionVote"
+        }
+      },
+      "required": ["post"]
     }
   },
   "operations": {
@@ -53352,6 +53636,9 @@
     },
     "GET:/api/v1/topics/duplicates": {
       "$ref": "#/components/schemas/FindTopicRecommendationDuplicatesResult"
+    },
+    "POST:/api/v1/posts": {
+      "$ref": "#/components/schemas/CreatePostResponse"
     }
   },
   "source": "checked-in-request-contracts",

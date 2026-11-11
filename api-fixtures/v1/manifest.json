@@ -96620,6 +96620,662 @@
       "source": "backend/api/oauth/native-session-tokens.mts",
       "statusKnowledge": "default"
     },
+    "POST:/api/v1/posts#topic-recommendation": {
+      "hash": "d0a22543b0fffd9f92af1f4f96a2aabbeb8d8a85bb2a17240b8746d16a878c10",
+      "method": "POST",
+      "routeTemplate": "/api/v1/posts",
+      "schema": {
+        "definitions": {
+          "ElectionVote": {
+            "additionalProperties": false,
+            "properties": {
+              "__entity_type": {
+                "required": true,
+                "schema": {
+                  "type": "literal",
+                  "value": "election_vote"
+                }
+              },
+              "choice": {
+                "required": true,
+                "schema": {
+                  "name": "ElectionVoteChoiceForPolicy_ElectionVotePolicy",
+                  "type": "ref"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "entity_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ElectionVoteChoiceForPolicy_ElectionVotePolicy": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "accurate"
+              },
+              {
+                "type": "literal",
+                "value": "confirm"
+              },
+              {
+                "type": "literal",
+                "value": "disavow"
+              },
+              {
+                "type": "literal",
+                "value": "dislike"
+              },
+              {
+                "type": "literal",
+                "value": "dispute"
+              },
+              {
+                "type": "literal",
+                "value": "inaccurate"
+              },
+              {
+                "type": "literal",
+                "value": "like"
+              },
+              {
+                "type": "literal",
+                "value": "neutral"
+              },
+              {
+                "type": "literal",
+                "value": "oppose"
+              },
+              {
+                "type": "literal",
+                "value": "support"
+              },
+              {
+                "type": "literal",
+                "value": "vouch"
+              }
+            ]
+          },
+          "OAuthContentCreationChannel": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "mcp"
+              }
+            ]
+          },
+          "PostElection": {
+            "additionalProperties": false,
+            "properties": {
+              "__entity_type": {
+                "required": true,
+                "schema": {
+                  "type": "literal",
+                  "value": "post_election"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "votes_count_down": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "votes_count_up": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "votes_score_net": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicContentProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "app": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "client_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "client_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "verified"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "hostname"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "known"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "via": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthContentCreationChannel",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicTopicRecommendationPost": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "created_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "is_anonymous": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "markdown": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "parent_post_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "post_type": {
+                "required": true,
+                "schema": {
+                  "type": "literal",
+                  "value": "topic_recommendation"
+                }
+              },
+              "provenance": {
+                "required": false,
+                "schema": {
+                  "name": "PublicContentProvenance",
+                  "type": "ref"
+                }
+              },
+              "root_post_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "slug": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "title": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "topic_recommendation": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "aliases": {
+                      "required": true,
+                      "schema": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "approval_error_message": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "created_topic_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "created_topic_slug": {
+                      "required": false,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "example_referral_link": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "hostname": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "__entity_type": {
+                                "required": true,
+                                "schema": {
+                                  "type": "literal",
+                                  "value": "hostname"
+                                }
+                              },
+                              "hostname": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "id": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "hostname_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "hostnames": {
+                      "required": true,
+                      "schema": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "__entity_type": {
+                              "required": true,
+                              "schema": {
+                                "type": "literal",
+                                "value": "hostname"
+                              }
+                            },
+                            "hostname": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "landing_page_urls": {
+                      "required": true,
+                      "schema": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "post_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "rejection_reason": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "reviewed_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "reviewed_by_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "status": {
+                      "required": true,
+                      "schema": {
+                        "name": "RecommendationStatus",
+                        "type": "ref"
+                      }
+                    },
+                    "topic_markdown": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "topic_slug": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "topic_title": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "topic_type": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "literal",
+                            "value": "card"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "referral_program"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "topic"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "RecommendationStatus": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "approved"
+              },
+              {
+                "type": "literal",
+                "value": "pending"
+              },
+              {
+                "type": "literal",
+                "value": "rejected"
+              }
+            ]
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "election_vote": {
+              "required": false,
+              "schema": {
+                "name": "ElectionVote",
+                "type": "ref"
+              }
+            },
+            "post": {
+              "required": true,
+              "schema": {
+                "name": "PublicTopicRecommendationPost",
+                "type": "ref"
+              }
+            },
+            "post_election": {
+              "required": false,
+              "schema": {
+                "name": "PostElection",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/posts/posts-routes/posts-create-post.mts",
+      "statusCodes": [201]
+    },
     "POST:/api/v1/posts/:idOrSlug/clearances": {
       "bodyKind": "content",
       "hash": "c50267d3c1ab98efdbc5f0b0e3aae1932a6103e88f005e1ef0de96715b31fda4",
@@ -100641,6 +101297,39 @@
     }
   },
   "fixtures": [
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/posts#topic-recommendation",
+      "bodyFile": "responses/native.posts.topic-recommendation.create.json",
+      "consumers": ["swift-core"],
+      "id": "native.posts.topic-recommendation.create",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/posts/posts-routes/posts-create-post.mts"],
+      "path": "/api/v1/posts",
+      "requestBody": {
+        "markdown": "Recommendation body",
+        "post_type": "topic_recommendation",
+        "title": "Native recommendation",
+        "topic_aliases": ["native topic"],
+        "topic_markdown": "Recommendation body",
+        "topic_slug": "native-topic",
+        "topic_title": "Native Topic"
+      },
+      "requestHeaders": {
+        "Idempotency-Key": "70000000-0000-7000-8000-000000005598"
+      },
+      "responseSchema": {
+        "hash": "927c03e60e3df14ab8e4a092f008c7f4aa9137e600114e48568c3bbdaf942040",
+        "key": "native.posts.topic-recommendation.create"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/posts"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-topic-recommendation-create-cases.mts"
+      },
+      "status": 201
+    },
     {
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/posts",

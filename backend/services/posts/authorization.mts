@@ -163,7 +163,7 @@ function canModerateCommunityPost(
   return Boolean(currentUser && post.community_id && (role === 'owner' || role === 'moderator'))
 }
 
-/** Recheck the delegated actor while its author lifecycle fence is held. */
+/** Recheck that the delegated actor still exists and is active before mutating posts. */
 export async function assertDelegatedPostActorActive(
   userId: string,
   options: QueryOptions,

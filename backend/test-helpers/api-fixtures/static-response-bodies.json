@@ -3794,5 +3794,40 @@
       "end_cursor": null,
       "has_next_page": false
     }
+  },
+  "native.posts.topic-recommendation.create": {
+    "post": {
+      "id": "70000000-0000-7000-8000-000000005597",
+      "slug": "native-topic",
+      "post_type": "topic_recommendation",
+      "title": "Native recommendation",
+      "markdown": "Recommendation body",
+      "parent_post_id": null,
+      "root_post_id": null,
+      "created_by_id": "user-abc",
+      "created_at": "2026-07-14T00:00:00Z",
+      "is_anonymous": false,
+      "updated_at": "2026-07-14T00:00:00Z",
+      "topic_recommendation": {
+        "post_id": "70000000-0000-7000-8000-000000005597",
+        "topic_title": "Native Topic",
+        "topic_slug": "native-topic",
+        "topic_markdown": "Recommendation body",
+        "aliases": ["native topic"],
+        "hostname_id": null,
+        "hostname": null,
+        "hostnames": [],
+        "approval_error_message": null,
+        "status": "pending",
+        "reviewed_at": null,
+        "reviewed_by_id": null,
+        "rejection_reason": null,
+        "created_topic_id": null,
+        "created_topic_slug": null,
+        "topic_type": "topic",
+        "example_referral_link": null,
+        "landing_page_urls": []
+      }
+    }
   }
 }

@@ -133,11 +133,6 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
           422,
           'Comments inherit their thread audience',
         )
-        assert(
-          postType === 'review' || body.review_topic_ratings === undefined,
-          422,
-          'review_topic_ratings is only allowed for review posts',
-        )
         assert(body.url == null || body.url_id == null, 422, 'Send either url or url_id, not both')
         if (communityId) {
           const { community: currentCommunity } = await loadCommunityForViewer(user, communityId, {

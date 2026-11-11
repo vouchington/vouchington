@@ -1644,6 +1644,10 @@
       "fixtureIds": ["native.oauth.session-mcp-token.ios"],
       "hash": "2ab31fc6f4d71ab892e4ec8a344977480c0dc3c7a5f13be991e20435eadc0760"
     },
+    "POST:/api/v1/posts#topic-recommendation": {
+      "fixtureIds": ["native.posts.topic-recommendation.create"],
+      "hash": "d0a22543b0fffd9f92af1f4f96a2aabbeb8d8a85bb2a17240b8746d16a878c10"
+    },
     "POST:/api/v1/posts/:idOrSlug/clearances": {
       "fixtureIds": [
         "native.moderation.clearance.approved",
@@ -3061,6 +3065,10 @@
     "native.posts.time-range.explicit-week": {
       "fixtureIds": ["native.posts.time-range.explicit-week"],
       "hash": "4bf6a2916388f3b0471b7db4973a6f33bb6286b05966c8ac7e5d2915d40a8f86"
+    },
+    "native.posts.topic-recommendation.create": {
+      "fixtureIds": ["native.posts.topic-recommendation.create"],
+      "hash": "927c03e60e3df14ab8e4a092f008c7f4aa9137e600114e48568c3bbdaf942040"
     },
     "native.rewards-program-status-topics.search.default": {
       "fixtureIds": ["native.rewards-program-status-topics.search.default"],

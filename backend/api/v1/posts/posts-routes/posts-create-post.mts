@@ -1,3 +1,5 @@
+import { asTopicRecommendationPost } from '@services/topic-recommendations'
+import { projectPublicTopicRecommendation } from '@services/topic-recommendations/public-projection'
 import { executeCreatePostContribution } from '@services/post-writes/execute'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -175,5 +177,12 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
   // the checked-in shape on this replay path, preserving exact replay semantics.
   if (admission.kind === 'replay') validateRequestContract(ctx, 'POST:/api/v1/posts', { body })
   ctx.setStatus(201)
-  ctx.json({ post: await attachWrittenPostProvenance(admission.response, currentUser) })
+  const post = await attachWrittenPostProvenance(admission.response, currentUser)
+  const recommendation = asTopicRecommendationPost(post)
+  ctx.assert(
+    post.post_type !== 'topic_recommendation' || recommendation,
+    500,
+    'Invalid recommendation response',
+  )
+  ctx.json({ post: recommendation ? projectPublicTopicRecommendation(recommendation) : post })
 })
