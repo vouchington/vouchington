@@ -1519,7 +1519,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM copyright_notice_form_intakes intake\n    JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON execution.state = 'completed'\n    JOIN copyright_notice_form_screenings screening\n      ON screening.id = execution.copyright_notice_form_screening_id\n    JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id\n    JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id\n    WHERE submission.id = submission_id AND screening.id = screening_id\n      AND screening.recommendation = 'not_obviously_invalid'\n      AND submission.kind = 'notice' AND submission.source_kind = 'signed_in_form'\n      AND intake.requester_user_id IS NOT NULL AND notice.jurisdiction = 'us_dmca'\n      AND char_length(notice.claimant_contact_ciphertext) > 0\n      AND char_length(btrim(notice.work_description)) > 0\n      AND intake.has_good_faith_belief AND intake.has_accuracy_authority_under_penalty_of_perjury\n      AND char_length(intake.electronic_signature_ciphertext) > 0\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_targets target\n        JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id\n        WHERE target.copyright_notice_id = notice.id AND char_length(btrim(target.hosted_use_url)) > 0\n      )\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_delivery_work_items receipt\n        JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_work_item_id = receipt.id\n        WHERE receipt.copyright_notice_id = notice.id AND receipt.recipient_role = 'claimant'\n          AND receipt.channel = 'email' AND receipt.delivery_kind = 'claimant_receipt'\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_form_intake_reviews review\n        WHERE review.copyright_notice_form_intake_id = intake.id AND NOT review.is_accepted\n      )\n  );\n$function$\n"
     },
     "fn_ensure_active_topic_references": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  reference_column TEXT;\n  referenced_topic_id UUID;\n  previous_topic_id UUID;\n  reserved_topic_id UUID;\nBEGIN\n  FOREACH reference_column IN ARRAY TG_ARGV LOOP\n    -- Inspect both sides: a deletion or non-key edit can change a merge preflight or capture.\n    referenced_topic_id := NULL;\n    previous_topic_id := NULL;\n    IF TG_OP <> 'DELETE' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;\n    END IF;\n    IF TG_OP <> 'INSERT' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;\n    END IF;\n    FOR reserved_topic_id IN\n      SELECT DISTINCT id FROM unnest(ARRAY[previous_topic_id, referenced_topic_id]) AS ids(id)\n      WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      -- Never wait while holding a child row or publication scope: admission takes this fence first.\n      IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(\n        'topic-merge-lifecycle:' || reserved_topic_id::TEXT, 0\n      )) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic references are changing; retry the request',\n          DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (\n        SELECT 1 FROM topic_merge_parent_ancestors ancestor\n        JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id\n        WHERE ancestor.topic_id = reserved_topic_id\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations merge_operation\n        WHERE (merge_operation.source_topic_id = reserved_topic_id\n            OR merge_operation.destination_topic_id = reserved_topic_id)\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n    END LOOP;\n    -- Missing identities remain the foreign key constraint's responsibility.\n    -- Re-enabling a deleted or merged program must not reuse its unchanged topic id.\n    IF referenced_topic_id IS NOT NULL\n      AND EXISTS (\n        SELECT 1 FROM topics WHERE id = referenced_topic_id\n          AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)\n      ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic reference must identify an active topic',\n        DETAIL = json_build_object('code', 'topic_reference_inactive', 'topic_id', referenced_topic_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  reference_column TEXT;\n  referenced_topic_id UUID;\n  previous_topic_id UUID;\n  reserved_topic_id UUID;\nBEGIN\n  FOREACH reference_column IN ARRAY TG_ARGV LOOP\n    -- Inspect both sides: a deletion or non-key edit can change a merge preflight or capture.\n    referenced_topic_id := NULL;\n    previous_topic_id := NULL;\n    IF TG_OP <> 'DELETE' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;\n    END IF;\n    IF TG_OP <> 'INSERT' THEN\n      EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;\n    END IF;\n    FOR reserved_topic_id IN\n      SELECT DISTINCT id FROM unnest(ARRAY[previous_topic_id, referenced_topic_id]) AS ids(id)\n      WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (\n        SELECT 1 FROM topic_merge_parent_ancestors ancestor\n        JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id\n        WHERE ancestor.topic_id = reserved_topic_id\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations merge_operation\n        WHERE (merge_operation.source_topic_id = reserved_topic_id\n            OR merge_operation.destination_topic_id = reserved_topic_id)\n          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n          AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409',\n          MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;\n      END IF;\n    END LOOP;\n    -- Missing identities remain the foreign key constraint's responsibility.\n    -- Re-enabling a deleted or merged program must not reuse its unchanged topic id.\n    IF referenced_topic_id IS NOT NULL\n      AND EXISTS (\n        SELECT 1 FROM topics WHERE id = referenced_topic_id\n          AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)\n      ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic reference must identify an active topic',\n        DETAIL = json_build_object('code', 'topic_reference_inactive', 'topic_id', referenced_topic_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_ensure_copyright_email_ancestor_live_endpoints": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_copyright_email_ancestor_live_endpoints()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE intake_id uuid;\nBEGIN\n  -- Receipts retain existing ancestry after erasure. New edges still require live intakes,\n  -- and these locks fence a concurrent private-intake deletion through commit.\n  FOR intake_id IN\n    SELECT unnest(ARRAY[NEW.reply_message_intake_receipt_id, NEW.ancestor_message_intake_receipt_id])\n    ORDER BY 1\n  LOOP\n    PERFORM 1 FROM copyright_notice_email_intakes\n      WHERE id = intake_id AND raw_storage_object_id IS NOT NULL FOR KEY SHARE;\n    IF NOT FOUND THEN\n      RAISE EXCEPTION 'copyright email ancestor source is no longer live'\n        USING ERRCODE = 'foreign_key_violation';\n    END IF;\n    PERFORM 1 FROM copyright_notice_email_intake_receipts\n      WHERE id = intake_id AND erased_at IS NULL FOR SHARE;\n    IF NOT FOUND THEN\n      RAISE EXCEPTION 'copyright email ancestor source is under retention erasure'\n        USING ERRCODE = 'check_violation';\n    END IF;\n  END LOOP;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1534,13 +1534,13 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_identity_families, identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  owner_table TEXT := 'retained_' || family::text || '_identities';\n  pinned_id UUID;\nBEGIN\n  -- Cleanup can remove an orphan between the conflict and key-share reads.\n  -- Retry until this transaction pins the retained owner.\n  LOOP\n    EXECUTE format('INSERT INTO %I (id) VALUES ($1) ON CONFLICT (id) DO NOTHING', owner_table)\n      USING identity_id;\n    EXECUTE format('SELECT id FROM %I WHERE id = $1 FOR KEY SHARE', owner_table)\n      INTO pinned_id USING identity_id;\n    EXIT WHEN pinned_id IS NOT NULL;\n  END LOOP;\nEND;\n$function$\n"
     },
     "fn_ensure_topic_merge_participant_not_reserved": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_participant_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM topic_merge_operations merge_operation\n    WHERE (merge_operation.source_topic_id = OLD.id\n        OR merge_operation.destination_topic_id = OLD.id)\n      AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n      AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n        (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n         COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n  ) THEN\n    RAISE EXCEPTION USING ERRCODE = 'V0409',\n      MESSAGE = 'Topic merge is in progress',\n      DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', OLD.id)::TEXT;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_participant_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM topic_merge_operations merge_operation\n    WHERE (merge_operation.source_topic_id = OLD.id\n        OR merge_operation.destination_topic_id = OLD.id)\n      AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n      AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')\n  ) THEN\n    RAISE EXCEPTION USING ERRCODE = 'V0409',\n      MESSAGE = 'Topic merge is in progress',\n      DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', OLD.id)::TEXT;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_ensure_topic_merge_relation_child_not_reserved": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_relation_child_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  parent_subject_id UUID;\n  parent_relation_id UUID;\n  participant_ids UUID[];\n  participant_id UUID;\n  candidate_record RECORD;\nBEGIN\n  FOR candidate_record IN SELECT * FROM (VALUES\n    (CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE to_jsonb(NEW) END),\n    (CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE to_jsonb(OLD) END)\n  ) candidates(row_value) WHERE row_value IS NOT NULL\n  LOOP\n    parent_subject_id := (candidate_record.row_value ->> TG_ARGV[1])::UUID;\n    parent_relation_id := (candidate_record.row_value ->> TG_ARGV[2])::UUID;\n    IF parent_relation_id IS NULL THEN CONTINUE; END IF;\n    EXECUTE format('SELECT ARRAY[%s] FROM %I WHERE subject_id = $1 AND id = $2', TG_ARGV[3], TG_ARGV[0])\n      INTO participant_ids USING parent_subject_id, parent_relation_id;\n    FOR participant_id IN SELECT DISTINCT id FROM unnest(participant_ids) ids(id) WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      IF NOT pg_try_advisory_xact_lock_shared(hashtextextended('topic-merge-lifecycle:' || participant_id::TEXT, 0)) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic vote target is changing; retry the request',\n          DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', participant_id)::TEXT;\n      END IF;\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations operation\n        WHERE (operation.source_topic_id = participant_id OR operation.destination_topic_id = participant_id)\n          AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n          AND (operation.id::TEXT, operation.fence_token::TEXT) IS DISTINCT FROM\n            (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n             COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', participant_id)::TEXT;\n      END IF;\n    END LOOP;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_relation_child_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  parent_subject_id UUID;\n  parent_relation_id UUID;\n  participant_ids UUID[];\n  participant_id UUID;\n  candidate_record RECORD;\nBEGIN\n  FOR candidate_record IN SELECT * FROM (VALUES\n    (CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE to_jsonb(NEW) END),\n    (CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE to_jsonb(OLD) END)\n  ) candidates(row_value) WHERE row_value IS NOT NULL\n  LOOP\n    parent_subject_id := (candidate_record.row_value ->> TG_ARGV[1])::UUID;\n    parent_relation_id := (candidate_record.row_value ->> TG_ARGV[2])::UUID;\n    IF parent_relation_id IS NULL THEN CONTINUE; END IF;\n    EXECUTE format('SELECT ARRAY[%s] FROM %I WHERE subject_id = $1 AND id = $2', TG_ARGV[3], TG_ARGV[0])\n      INTO participant_ids USING parent_subject_id, parent_relation_id;\n    FOR participant_id IN SELECT DISTINCT id FROM unnest(participant_ids) ids(id) WHERE id IS NOT NULL ORDER BY id\n    LOOP\n      IF EXISTS (\n        SELECT 1 FROM topic_merge_operations operation\n        WHERE (operation.source_topic_id = participant_id OR operation.destination_topic_id = participant_id)\n          AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n          AND operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')\n      ) THEN\n        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic merge is in progress',\n          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', participant_id)::TEXT;\n      END IF;\n    END LOOP;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_ensure_topic_merge_slug_alias_not_reserved": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_slug_alias_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  candidate_alias TEXT;\n  source_id UUID;\nBEGIN\n  FOR candidate_alias IN\n    SELECT DISTINCT alias FROM (\n      SELECT CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE NEW.alias END AS alias\n      UNION ALL\n      SELECT CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.alias END\n    ) aliases WHERE alias IS NOT NULL\n  LOOP\n    SELECT id INTO source_id FROM topics WHERE slug = candidate_alias AND deleted_at IS NULL LIMIT 1;\n    IF source_id IS NULL THEN CONTINUE; END IF;\n    IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(\n      'topic-merge-lifecycle:' || source_id::TEXT, 0\n    )) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic alias is changing during a merge; retry the request',\n        DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', source_id)::TEXT;\n    END IF;\n    IF EXISTS (\n      SELECT 1 FROM topic_merge_operations merge_operation\n      WHERE merge_operation.source_topic_id = source_id\n        AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n        AND (merge_operation.id::TEXT, merge_operation.fence_token::TEXT) IS DISTINCT FROM\n          (COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), ''),\n           COALESCE(current_setting('voucha.topic_merge_fence_token', TRUE), ''))\n    ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic merge is in progress',\n        DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', source_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_slug_alias_not_reserved()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  candidate_alias TEXT;\n  source_id UUID;\nBEGIN\n  FOR candidate_alias IN\n    SELECT DISTINCT alias FROM (\n      SELECT CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE NEW.alias END AS alias\n      UNION ALL\n      SELECT CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.alias END\n    ) aliases WHERE alias IS NOT NULL\n  LOOP\n    SELECT id INTO source_id FROM topics WHERE slug = candidate_alias AND deleted_at IS NULL LIMIT 1;\n    IF source_id IS NULL THEN CONTINUE; END IF;\n    IF EXISTS (\n      SELECT 1 FROM topic_merge_operations merge_operation\n      WHERE merge_operation.source_topic_id = source_id\n        AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL\n        AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')\n    ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic merge is in progress',\n        DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', source_id)::TEXT;\n    END IF;\n  END LOOP;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_field_changes(before_fields jsonb, after_fields jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fields jsonb)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT COALESCE(jsonb_object_agg(field, jsonb_build_object(\n    'before', before_fields -> field, 'after', after_fields -> field)), '{}'::jsonb)\n  FROM (SELECT jsonb_object_keys(before_fields || after_fields) AS field) fields\n  WHERE before_fields -> field IS DISTINCT FROM after_fields -> field\n$function$\n"
@@ -1678,7 +1678,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_story_post_related_url_relation_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.deleted_at IS NOT NULL OR\n    current_setting('voucha.story_post_related_url_projection_write', true) = 'true' THEN\n    RETURN NEW;\n  END IF;\n\n  INSERT INTO story_post_related_url_projection_relation_mutations (post_id, generation, relation_id)\n  SELECT work.post_id, work.generation, NEW.id\n  FROM story_post_related_url_projection_jobs work\n  WHERE work.post_id = NEW.subject_id\n  ON CONFLICT DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_topic_aliases": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_topic_aliases()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  affected_topic_ids UUID[];\n  affected_topic_id UUID;\n  removed_aliases TEXT[];\n  added_aliases TEXT[];\nBEGIN\n  -- The operation accumulates the exact final projection in its alias history document.\n  -- Its private transaction capability is checked against the durable reservation.\n  IF EXISTS (\n    SELECT 1 FROM topic_merge_operations operation\n    WHERE operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)\n      AND operation.fence_token::TEXT = current_setting('voucha.topic_merge_fence_token', TRUE)\n      AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n  ) THEN RETURN NULL; END IF;\n  IF TG_OP = 'INSERT' THEN\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM new_aliases;\n  ELSIF TG_OP = 'DELETE' THEN\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM old_aliases;\n  ELSE\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM (\n      SELECT topic_id FROM new_aliases UNION SELECT topic_id FROM old_aliases\n    ) affected;\n  END IF;\n  -- Serialize each parent and apply only this statement's transition rows. Re-reading every\n  -- destination alias after each bounded merge page would make the merge quadratic.\n  FOR affected_topic_id IN\n    SELECT id FROM topics WHERE id = ANY(affected_topic_ids) ORDER BY id FOR NO KEY UPDATE\n  LOOP\n    removed_aliases := '{}'::TEXT[];\n    added_aliases := '{}'::TEXT[];\n    IF TG_OP <> 'INSERT' THEN\n      SELECT COALESCE(ARRAY_AGG(alias), '{}'::TEXT[]) INTO removed_aliases\n      FROM old_aliases WHERE topic_id = affected_topic_id;\n    END IF;\n    IF TG_OP <> 'DELETE' THEN\n      SELECT COALESCE(ARRAY_AGG(alias), '{}'::TEXT[]) INTO added_aliases\n      FROM new_aliases WHERE topic_id = affected_topic_id;\n    END IF;\n    UPDATE topics SET aliases = ARRAY(\n      SELECT alias FROM (\n        SELECT existing.alias FROM UNNEST(topics.aliases) AS existing(alias)\n        WHERE existing.alias <> ALL(removed_aliases)\n        UNION\n        SELECT added.alias FROM UNNEST(added_aliases) AS added(alias)\n      ) next_aliases ORDER BY alias\n    ) WHERE id = affected_topic_id;\n  END LOOP;\n  RETURN NULL;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_topic_aliases()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  affected_topic_ids UUID[];\n  affected_topic_id UUID;\n  removed_aliases TEXT[];\n  added_aliases TEXT[];\nBEGIN\n  -- The operation accumulates the exact final projection in its alias history document.\n  -- Its transaction names the unfinished operation, which is checked against the durable reservation.\n  IF EXISTS (\n    SELECT 1 FROM topic_merge_operations operation\n    WHERE operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)\n      AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n  ) THEN RETURN NULL; END IF;\n  IF TG_OP = 'INSERT' THEN\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM new_aliases;\n  ELSIF TG_OP = 'DELETE' THEN\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM old_aliases;\n  ELSE\n    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM (\n      SELECT topic_id FROM new_aliases UNION SELECT topic_id FROM old_aliases\n    ) affected;\n  END IF;\n  -- Serialize each parent and apply only this statement's transition rows. Re-reading every\n  -- destination alias after each bounded merge page would make the merge quadratic.\n  FOR affected_topic_id IN\n    SELECT id FROM topics WHERE id = ANY(affected_topic_ids) ORDER BY id FOR NO KEY UPDATE\n  LOOP\n    removed_aliases := '{}'::TEXT[];\n    added_aliases := '{}'::TEXT[];\n    IF TG_OP <> 'INSERT' THEN\n      SELECT COALESCE(ARRAY_AGG(alias), '{}'::TEXT[]) INTO removed_aliases\n      FROM old_aliases WHERE topic_id = affected_topic_id;\n    END IF;\n    IF TG_OP <> 'DELETE' THEN\n      SELECT COALESCE(ARRAY_AGG(alias), '{}'::TEXT[]) INTO added_aliases\n      FROM new_aliases WHERE topic_id = affected_topic_id;\n    END IF;\n    UPDATE topics SET aliases = ARRAY(\n      SELECT alias FROM (\n        SELECT existing.alias FROM UNNEST(topics.aliases) AS existing(alias)\n        WHERE existing.alias <> ALL(removed_aliases)\n        UNION\n        SELECT added.alias FROM UNNEST(added_aliases) AS added(alias)\n      ) next_aliases ORDER BY alias\n    ) WHERE id = affected_topic_id;\n  END LOOP;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_project_topic_image_placements": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_topic_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND (\n    (NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL)\n    OR (NEW.merged_into_topic_id IS NOT NULL AND OLD.merged_into_topic_id IS NULL)\n  ) THEN\n    PERFORM fn_sync_image_surface_placement('topic-logo-image', NULL, NULL, NEW.id, NULL, NULL);\n    PERFORM fn_sync_image_surface_placement('topic-hero-image', NULL, NULL, NEW.id, NULL, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.logo_image_id IS DISTINCT FROM OLD.logo_image_id THEN\n    PERFORM fn_sync_image_surface_placement('topic-logo-image', NEW.logo_image_id, NULL, NEW.id, NULL, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.hero_image_id IS DISTINCT FROM OLD.hero_image_id THEN\n    PERFORM fn_sync_image_surface_placement('topic-hero-image', NEW.hero_image_id, NULL, NEW.id, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1747,7 +1747,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_configuration()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  threshold classifier_candidate_thresholds%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches\n  WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates\n  WHERE id = NEW.candidate_id FOR SHARE;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  SELECT * INTO threshold FROM classifier_candidate_thresholds\n  WHERE id = NEW.threshold_id FOR SHARE;\n  IF threshold.id IS NULL\n    OR threshold.classifier_id IS DISTINCT FROM NEW.classifier_id\n    OR threshold.candidate_id IS DISTINCT FROM NEW.candidate_id\n    OR threshold.prompt_version_id IS DISTINCT FROM NEW.prompt_version_id\n    OR threshold.deactivated_at IS NOT NULL THEN\n    RAISE EXCEPTION 'classifier batch candidate threshold must be its active configuration revision' USING ERRCODE = '23514';\n  END IF;\n  effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);\n  effective_upper := COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold);\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier batch candidate thresholds must match captured configuration' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_classifier_batch_candidate_owner_delete": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_owner_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)\n    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id)\n    AND NOT EXISTS (\n      SELECT 1 FROM topic_merge_operations operation\n      JOIN classifier_candidates candidate ON candidate.topic_id = operation.source_topic_id\n      WHERE candidate.id = OLD.candidate_id\n        AND operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)\n        AND operation.fence_token::TEXT = current_setting('voucha.topic_merge_fence_token', TRUE)\n        AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n    )\n    AND NOT (\n      uuid_extract_timestamp(OLD.batch_id) < CURRENT_TIMESTAMP - INTERVAL '90 days'\n      AND NOT EXISTS (\n        SELECT 1 FROM classifier_runs AS run\n        WHERE run.decision_batch_id = OLD.batch_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM topic_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM story_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier batch candidate snapshots require expired, unreferenced decisions before deletion' USING ERRCODE = '23503';\n  END IF;\n  RETURN OLD;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_owner_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)\n    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id)\n    AND NOT EXISTS (\n      SELECT 1 FROM topic_merge_operations operation\n      JOIN classifier_candidates candidate ON candidate.topic_id = operation.source_topic_id\n      WHERE candidate.id = OLD.candidate_id\n        AND operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)\n        AND operation.completed_at IS NULL AND operation.failed_at IS NULL\n    )\n    AND NOT (\n      uuid_extract_timestamp(OLD.batch_id) < CURRENT_TIMESTAMP - INTERVAL '90 days'\n      AND NOT EXISTS (\n        SELECT 1 FROM classifier_runs AS run\n        WHERE run.decision_batch_id = OLD.batch_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM topic_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM story_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier batch candidate snapshots require expired, unreferenced decisions before deletion' USING ERRCODE = '23503';\n  END IF;\n  RETURN OLD;\nEND $function$\n"
     },
     "fn_reject_classifier_candidate_community_override_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_community_override_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.community_id IS DISTINCT FROM OLD.community_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.enabled_at IS DISTINCT FROM OLD.enabled_at\n    OR (\n      NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id\n      AND NOT (\n        NEW.enabled_by_id IS NULL\n        AND fn_classifier_audit_actor_was_deleted(OLD.enabled_by_id)\n      )\n    )\n    OR NOT (\n      NEW.disabled_at IS NOT DISTINCT FROM OLD.disabled_at\n      OR (OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL)\n    )\n    OR (\n      NEW.disabled_by_id IS DISTINCT FROM OLD.disabled_by_id\n      AND NOT (\n        OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL\n        OR (\n          NEW.disabled_by_id IS NULL\n          AND fn_classifier_audit_actor_was_deleted(OLD.disabled_by_id)\n        )\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier candidate community override is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -134537,7 +134537,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "smallint"
         },
         "completed_at": {
@@ -134548,7 +134548,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -134559,7 +134559,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 30,
           "type": "timestamp with time zone"
         },
         "cursor_alias": {
@@ -134570,7 +134570,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "cursor_country_position": {
@@ -134581,7 +134581,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 15,
           "type": "smallint"
         },
         "cursor_object_id": {
@@ -134592,7 +134592,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 13,
           "type": "uuid"
         },
         "cursor_row_id": {
@@ -134603,7 +134603,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "cursor_subject_id": {
@@ -134614,7 +134614,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "uuid"
         },
         "destination_aliases_after": {
@@ -134625,7 +134625,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29,
+          "ordinalPosition": 28,
           "type": "jsonb"
         },
         "destination_aliases_before": {
@@ -134636,7 +134636,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28,
+          "ordinalPosition": 27,
           "type": "jsonb"
         },
         "destination_topic_id": {
@@ -134658,7 +134658,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 21,
           "type": "text"
         },
         "failed_at": {
@@ -134669,19 +134669,8 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
-        },
-        "fence_token": {
-          "collation": null,
-          "comment": "Private capability for one worker transaction to mutate reserved participants.",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "uuid"
         },
         "generation": {
           "collation": null,
@@ -134691,7 +134680,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17,
+          "ordinalPosition": 16,
           "type": "integer"
         },
         "id": {
@@ -134713,7 +134702,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 25,
           "type": "bigint"
         },
         "metric_snapshot_xip_count": {
@@ -134724,7 +134713,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 24,
           "type": "integer"
         },
         "metric_snapshot_xmax": {
@@ -134735,7 +134724,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 23,
           "type": "xid8"
         },
         "metric_stats": {
@@ -134746,7 +134735,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 23,
+          "ordinalPosition": 22,
           "type": "jsonb"
         },
         "rejected_at": {
@@ -134757,7 +134746,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "relation_column_position": {
@@ -134768,7 +134757,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "smallint"
         },
         "relation_phase": {
@@ -134779,7 +134768,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "smallint"
         },
         "requested_by_id": {
@@ -134801,7 +134790,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27,
+          "ordinalPosition": 26,
           "type": "jsonb"
         },
         "source_topic_id": {
@@ -134823,7 +134812,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "topic_merge_stages"
         },
         "stage_table_position": {
@@ -134834,7 +134823,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "integer"
         },
         "started_at": {
@@ -134845,7 +134834,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -134856,7 +134845,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
         }
       },
