@@ -1,26 +1,47 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from 'vitest'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { spendCapConfig } from '@services/ai-usage'
+import { communityAgentPromptsConfig } from '@services/community-agent-prompts/config'
+import { getActiveCommunityAgentPromptPage } from '@services/community-agent-prompts/get-active-prompts'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import {
   getCommunityPostReviewAutomodState,
   getCommunityPostReviewStatus,
   updateTestCommunityPostReviewState,
 } from '@voucha/test-helpers'
-import { classifierRunJobFor } from '@voucha/test-helpers/classifier-run-worker'
+import {
+  classifierRunDispatcherJobFor,
+  classifierRunJobFor,
+} from '@voucha/test-helpers/classifier-run-worker'
 import {
   COMMUNITY_MODERATION_CLASSIFIER_SLUG,
   createCommunityModerationFixture,
+  editTestCommunityRule,
   readCommunityModerationProjection,
+  requestCommunityModerationFixtureRun,
   reserveCommunityModerationFixtureRun,
   setTestCommunityAutomodAction,
   setTestCommunityPostReviewPlatformOverride,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
 import { answerCommunityQuestions } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-provider'
-import { getClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import {
+  getClassifierRunFacts,
+  getClassifierRunRequestFacts,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { toClassifierRunJobData } from './classifier-run-handler.mts'
-import { processClassifierRun } from './process-classifier-run.mts'
+import { getClassifierRunHandler } from './classifier-run-registry.mts'
+import { processClassifierRun, processClassifierRunDispatcher } from './process-classifier-run.mts'
 
 vi.mock<typeof import('@modules/structured-decisions/transport')>(
   import('@modules/structured-decisions/transport'),
@@ -31,6 +52,7 @@ vi.mock<typeof import('@modules/structured-decisions/transport')>(
 )
 
 const provider = vi.mocked(fetchStructuredDecisionProvider)
+const handler = getClassifierRunHandler(COMMUNITY_MODERATION_CLASSIFIER_SLUG)
 type AnswerOptions = NonNullable<Parameters<typeof answerCommunityQuestions>[1]>
 
 const processRun = (run: Parameters<typeof toClassifierRunJobData>[1]) =>
@@ -159,6 +181,25 @@ describe('C8 community actions applied in the completion transaction (real PG, m
     ).toHaveLength(1)
   })
 
+  it('waits for the final page before applying a flag from an earlier page', async () => {
+    await communityAgentPromptsConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(communityAgentPromptsConfig, { moderation_page_size: 1 }),
+    )
+    const { fixture } = await flaggedFixture('unpublish')
+    const firstPage = await getActiveCommunityAgentPromptPage(fixture.community.id, null, 1)
+    answerWith({ flagged: new Set([firstPage.items[0]!.id]) })
+    await processRun(await reserveCommunityModerationFixtureRun(fixture))
+    expect((await stateOf(fixture)).review).toMatchObject({ unpublished_at: null })
+
+    const second = await handler.reserve(fixture.subject)
+    if (second.kind !== 'reserved') throw new Error('final moderation page was not reserved')
+    await processRun(second.run)
+    expect((await stateOf(fixture)).review).toMatchObject({
+      unpublished_at: expect.any(Date),
+    })
+  })
+
   it('does not bill again or act when the community action changes after the run completed', async () => {
     const { fixture, flaggedId } = await flaggedFixture('record_only')
     answerWith({ flagged: new Set([flaggedId]) })
@@ -166,10 +207,9 @@ describe('C8 community actions applied in the completion transaction (real PG, m
     await processRun(run)
 
     await setTestCommunityAutomodAction(fixture.community.id, 'unpublish')
-    const again = await reserveCommunityModerationFixtureRun(fixture)
-    await expect(processRun(again)).resolves.toEqual({ kind: 'replay' })
+    await requestCommunityModerationFixtureRun(fixture)
+    await expect(handler.reserve(fixture.subject)).resolves.toEqual({ kind: 'no-work' })
 
-    expect(again.runId).toBe(run.runId)
     expect(provider).toHaveBeenCalledOnce()
     expect((await stateOf(fixture)).review).toMatchObject({ unpublished_at: null })
   })
@@ -187,11 +227,48 @@ describe('C8 community actions applied in the completion transaction (real PG, m
     })
 
     await expect(processRun(run)).resolves.toEqual({ kind: 'replay' })
-    const again = await reserveCommunityModerationFixtureRun(fixture)
-    await expect(processRun(again)).resolves.toEqual({ kind: 'replay' })
+    await requestCommunityModerationFixtureRun(fixture)
+    await expect(handler.reserve(fixture.subject)).resolves.toEqual({ kind: 'no-work' })
 
-    expect(again.runId).toBe(run.runId)
     expect(provider).toHaveBeenCalledOnce()
+    expect((await stateOf(fixture)).review).toMatchObject({ unpublished_at: null })
+  })
+
+  it('ignores a stale dispatcher after a completed traversal until an explicit request rearms it', async () => {
+    const { fixture, flaggedId } = await flaggedFixture('unpublish')
+    answerWith({ flagged: new Set([flaggedId]) })
+    await processRun(await reserveCommunityModerationFixtureRun(fixture))
+    await updateTestCommunityPostReviewState({
+      communityId: fixture.community.id,
+      postId: fixture.postId,
+      approvedAt: new Date(),
+      unpublishedAt: null,
+    })
+    await editTestCommunityRule(flaggedId, 'Changed rule after completion')
+
+    const dispatch = () =>
+      processClassifierRunDispatcher(
+        classifierRunDispatcherJobFor(fixture.postId, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
+      )
+    await expect(dispatch()).resolves.toEqual({ kind: 'not-ready' })
+    expect(
+      await getClassifierRunFacts(fixture.postId, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
+    ).toHaveLength(1)
+    expect(provider).toHaveBeenCalledOnce()
+    expect((await stateOf(fixture)).review).toMatchObject({ unpublished_at: null })
+    const [settled] = await getClassifierRunRequestFacts(
+      fixture.postId,
+      COMMUNITY_MODERATION_CLASSIFIER_SLUG,
+    )
+    expect(settled?.run_settled_at).not.toBeNull()
+
+    await requestCommunityModerationFixtureRun(fixture)
+    const next = await handler.reserve(fixture.subject)
+    expect(next.kind).toBe('reserved')
+    if (next.kind !== 'reserved') throw new Error('rearmed request did not reserve its new page')
+    answerWith({ flagged: new Set() })
+    await processRun(next.run)
+    expect(provider).toHaveBeenCalledTimes(2)
     expect((await stateOf(fixture)).review).toMatchObject({ unpublished_at: null })
   })
 })

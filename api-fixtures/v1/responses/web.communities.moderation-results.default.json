@@ -1,6 +1,11 @@
 {
-  "community_agent_moderations": [],
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
   "platform_moderation": {
     "status": "in_review"
-  }
+  },
+  "results": []
 }

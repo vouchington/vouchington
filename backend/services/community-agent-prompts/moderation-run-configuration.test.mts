@@ -10,8 +10,26 @@ import {
   setTestCommunityAutomodAction,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
 import { setTestCommunityModerationPromptActivatedAt } from '@voucha/test-helpers/community-moderation-prompt-activation'
-import { getActiveCommunityAgentPrompts } from './get-active-prompts.mts'
+import {
+  getActiveCommunityAgentPromptPage,
+  type ActiveCommunityAgentPromptCursor,
+} from './get-active-prompts.mts'
+import type { CommunityAgentPrompt } from './types.mts'
 import { resolveCommunityModerationRunConfiguration } from './moderation-run-configuration.mts'
+
+async function getActiveCommunityAgentPrompts(
+  communityId: string,
+): Promise<CommunityAgentPrompt[]> {
+  const prompts: CommunityAgentPrompt[] = []
+  let after: ActiveCommunityAgentPromptCursor | null = null
+  for (let pageNumber = 0; pageNumber < 10; pageNumber++) {
+    const page = await getActiveCommunityAgentPromptPage(communityId, after, 30)
+    prompts.push(...page.items)
+    if (!page.next) return prompts
+    after = page.next
+  }
+  throw new Error('test fixture exceeded ten bounded pages')
+}
 
 describe('community moderation prompt selection', () => {
   async function communityWithPrompts(count: number, characters: number) {
@@ -48,7 +66,7 @@ describe('community moderation prompt selection', () => {
     expect(resolved?.remote).toMatchObject({ promptIds: expected.map(prompt => prompt.id) })
   })
 
-  it('caps one provider call at thirty questions and keeps the source prefix', async () => {
+  it('caps one provider call at thirty questions and retains a cursor for the tail', async () => {
     const { community, active } = await communityWithPrompts(31, 10)
     const resolved = await resolveCommunityModerationRunConfiguration(community.id)
 
@@ -62,6 +80,7 @@ describe('community moderation prompt selection', () => {
     expect(resolved?.remote).toMatchObject({
       promptIds: resolved?.configuration.prompts.map(row => row.id),
     })
+    expect(resolved?.configuration.nextCursor).not.toBeNull()
   })
 
   it('pins id-sorted prompts when activation order differs in both directions', async () => {
@@ -94,7 +113,7 @@ describe('community moderation prompt selection', () => {
     )
   })
 
-  it('stops at the first rule that does not fit, even when a later one is short', async () => {
+  it('continues from the first rule that does not fit, even when a later one is short', async () => {
     const { community, active } = await communityWithPrompts(3, 1)
     await editTestCommunityRule(active[0]!.id, 'r'.repeat(20_000))
     await editTestCommunityRule(active[1]!.id, 'r'.repeat(20_001))
@@ -102,6 +121,7 @@ describe('community moderation prompt selection', () => {
 
     const resolved = await resolveCommunityModerationRunConfiguration(community.id)
     expect(resolved?.configuration.prompts.map(row => row.id)).toEqual([active[0]!.id])
+    expect(resolved?.configuration.nextCursor?.id).toBe(active[0]!.id)
   })
 })
 

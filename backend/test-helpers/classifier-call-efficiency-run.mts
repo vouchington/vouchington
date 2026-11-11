@@ -47,6 +47,8 @@ export type EfficiencyDriver = {
   slug: string
   /** Names the scope in test titles. */
   scope: string
+  /** A completed request may settle locally instead of reserving its existing receipt again. */
+  completedRequestOutcome?: 'no-work'
   /**
    * The candidate counts a content version is seeded with: one, and a large one (the scope's
    * default maximum, or the cap it enforces when it has one).

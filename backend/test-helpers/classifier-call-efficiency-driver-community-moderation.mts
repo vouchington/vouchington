@@ -8,12 +8,13 @@ import {
 } from './data-stores/psql/classifier-runs/community-moderation-fixture.mts'
 
 /**
- * C8: a community's whole rule set is one question set in one call, per post content version. The
- * largest fan-out is the per-call question cap, so a rule set at the cap is still one call.
+ * C8: one bounded page of a community's rules is one question set in one call. The largest
+ * fan-out here is the per-call question cap, so these fixtures still complete in one call.
  */
 export const communityModerationEfficiencyDriver: EfficiencyDriver = {
   slug: COMMUNITY_MODERATION_CLASSIFIER_SLUG,
   scope: 'C8 community moderation classifier',
+  completedRequestOutcome: 'no-work',
   fanOuts: [1, 30],
   questions: ruleCount => ruleCount,
   async seed(ruleCount) {

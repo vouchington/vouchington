@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import {
@@ -35,11 +35,17 @@ export async function claimClassifierRun<C, L, E>(
   if (!Number.isInteger(input.leaseSeconds) || input.leaseSeconds <= 0) {
     throw new Error('classifier run lease duration must be a positive integer')
   }
+  if (await isCompletedTarget(adapter.slug, input)) return { kind: 'completed' }
   await using query = await beginTransaction()
   const locked = await lockClassifierRun(adapter, query, input)
-  if (!locked) return { kind: 'stale' }
+  if (!locked) {
+    return (await isCompletedTarget(adapter.slug, input))
+      ? { kind: 'completed' }
+      : { kind: 'stale' }
+  }
   const { row, resolved } = locked
   if (row.completed_at) return { kind: 'completed' }
+  if (!resolved) throw new Error('incomplete classifier run has no current configuration')
   if (row.terminal_failed_at) return { kind: 'terminal' }
   // A delayed queued claim must not revive a superseded run after its payload or result range retired.
   if (
@@ -82,4 +88,22 @@ export async function claimClassifierRun<C, L, E>(
       capturedStoryCandidates,
     },
   }
+}
+
+/** Completion is immutable, so an exact completed target replays even after a later page advances. */
+async function isCompletedTarget(slug: string, input: ClaimClassifierRunInput): Promise<boolean> {
+  const { rows } = await write(sql`
+    /* isCompletedClassifierRunTarget */
+    SELECT 1 FROM classifier_runs run
+    JOIN classifiers classifier ON classifier.id = run.classifier_id
+    WHERE run.id = ${input.runId}
+      AND classifier.slug = ${slug}
+      AND run.post_id IS NOT DISTINCT FROM ${input.subject.postId}::uuid
+      AND run.rss_feed_item_id IS NOT DISTINCT FROM ${input.subject.rssFeedItemId}::uuid
+      AND run.input_sha256 = ${input.inputSha256}
+      AND run.configuration_sha256 = ${input.configurationSha256}
+      AND run.completed_at IS NOT NULL
+    LIMIT 1
+  `)
+  return rows.length > 0
 }

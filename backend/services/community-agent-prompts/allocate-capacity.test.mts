@@ -11,7 +11,7 @@ import {
 } from './allocate.mts'
 import { getCommunityAgentPrompt } from './get.mts'
 import { getUsedSlotsForUser } from './slots.mts'
-import { getActiveCommunityAgentPrompts } from './get-active-prompts.mts'
+import { getActiveCommunityAgentPromptPage } from './get-active-prompts.mts'
 
 describe('prompt slot capacity', () => {
   it.each([
@@ -52,18 +52,22 @@ describe('prompt slot capacity', () => {
     }
 
     await createTestMembership({ user_id: creator.id, plan: 'plus', stripe_customer_id })
-    expect((await getActiveCommunityAgentPrompts(community.id)).map(prompt => prompt.id)).toEqual(
-      prompts.slice(0, 3).map(prompt => prompt.id),
-    )
+    expect(
+      (await getActiveCommunityAgentPromptPage(community.id, null, 30)).items.map(
+        prompt => prompt.id,
+      ),
+    ).toEqual(prompts.slice(0, 3).map(prompt => prompt.id))
     await expect(allocateCommunityAgentPromptSlot(creator.id, prompts[4]!)).rejects.toMatchObject({
       status: 422,
     })
     expect(await getUsedSlotsForUser(creator.id)).toBe(4)
 
     await createTestMembership({ user_id: creator.id, plan: 'pro', stripe_customer_id })
-    expect((await getActiveCommunityAgentPrompts(community.id)).map(prompt => prompt.id)).toEqual(
-      prompts.slice(0, 4).map(prompt => prompt.id),
-    )
+    expect(
+      (await getActiveCommunityAgentPromptPage(community.id, null, 30)).items.map(
+        prompt => prompt.id,
+      ),
+    ).toEqual(prompts.slice(0, 4).map(prompt => prompt.id))
 
     await createTestMembership({ user_id: creator.id, plan: 'plus', stripe_customer_id })
     await deallocateCommunityAgentPromptSlot(

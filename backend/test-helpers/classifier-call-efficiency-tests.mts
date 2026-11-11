@@ -8,6 +8,7 @@ import {
   ONE_BILLED_CALL,
   reportedContentVersion,
   reserveSeededRun,
+  reserveSeededRunOutcome,
   type EfficiencyDriver,
   type EfficiencySeed,
 } from './classifier-call-efficiency-run.mts'
@@ -111,9 +112,14 @@ export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void
         const applied = await seed.effects()
 
         expect(await deliverRun(driver.slug, run)).toBe('replay')
-        const again = await reserveSeededRun(driver.slug, seed)
-        expect(again.runId).toBe(run.runId)
-        expect(await deliverRun(driver.slug, again)).toBe('replay')
+        const again = await reserveSeededRunOutcome(driver.slug, seed)
+        const replay = again.kind === 'reserved' ? await deliverRun(driver.slug, again.run) : null
+        expect(again).toMatchObject(
+          driver.completedRequestOutcome === 'no-work'
+            ? { kind: 'no-work' }
+            : { kind: 'reserved', run: { runId: run.runId } },
+        )
+        expect(replay).toBe(driver.completedRequestOutcome === 'no-work' ? null : 'replay')
 
         expect(provider.requests).toHaveLength(1)
         expect(await seed.effects()).toEqual(applied)

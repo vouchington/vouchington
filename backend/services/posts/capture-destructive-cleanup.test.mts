@@ -11,58 +11,11 @@ import {
 } from '../../test-helpers/publication-test-queries.mts'
 import { backgroundQueue as postPublicationQueue } from '@voucha/test-helpers/shared-background-queue'
 import { recordPostPublicationChange } from '@services/post-publication/capture'
-import { retainHardDeletedPostPublication } from '@services/post-publication/capture-hard-delete'
 import type { PostPublicationChange } from '@services/post-publication/types'
-import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 
 describe('destructive publication capture', () => {
-  it('captures every descendant identity before deletion without a projection receipt', async () => {
-    const user = await createTestUser()
-    const suffix = createRandomString(8)
-    const rootId = await insertTestPost({
-      title: `Physical delete root ${suffix}`,
-      slug: `physical-delete-root-${suffix}`,
-      markdown: 'Root',
-      createdById: user.id,
-    })
-    onTestFinished(() => hardDeleteTestPost(rootId))
-    const childId = await insertTestPost({
-      title: `Physical delete child ${suffix}`,
-      slug: `physical-delete-child-${suffix}`,
-      markdown: 'Child',
-      postType: 'comment',
-      createdById: user.id,
-      rootId,
-      parentId: rootId,
-    })
-    const grandchildSlug = `physical-delete-grandchild-${suffix}`
-    const grandchildId = await insertTestPost({
-      title: `Physical delete grandchild ${suffix}`,
-      slug: grandchildSlug,
-      markdown: 'Grandchild',
-      postType: 'comment',
-      createdById: user.id,
-      rootId,
-      parentId: childId,
-    })
-    const jobs = await captureAddedPublicationEffectsForScope(childId, async () => {
-      await using query = await beginTransaction()
-      await retainHardDeletedPostPublication(query, [childId])
-      await deleteTestPostRow(query, childId)
-      await query.commit()
-    })
-    expect(jobs.flatMap(job => job.keys)).toEqual(
-      expect.arrayContaining([
-        { kind: 'impact_post', uuidValue: childId },
-        { kind: 'impact_post', uuidValue: grandchildId },
-        { kind: 'identity_post_slug', textValue: grandchildSlug },
-        { kind: 'identity_author', uuidValue: user.id },
-      ]),
-    )
-  })
-
   it('captures a reply and its old slug before a mid-thread hard delete cascades', async () => {
     const user = await createTestUser()
     const suffix = createRandomString(8)

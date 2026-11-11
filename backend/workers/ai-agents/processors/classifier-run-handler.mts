@@ -33,7 +33,7 @@ export type ClassifierRunRegistration<C, L, E> = {
     context: { maxAttempts: number; signal: AbortSignal },
   ): Promise<ClassifierRunExecution>
   /** Follow-up after a run completes or replays as completed; must be idempotent. */
-  afterCompleted?(subject: ClassifierRunSubject): Promise<void>
+  afterCompleted?(subject: ClassifierRunSubject, inputSha256: Buffer): Promise<void>
 }
 
 export type ClassifierRunJobResult = {
@@ -100,7 +100,7 @@ export function createClassifierRunHandler<C, L, E>(
     }
     if (claim.kind === 'terminal') return { kind: 'terminal' }
     if (claim.kind === 'completed') {
-      await registration.afterCompleted?.(target.subject)
+      await registration.afterCompleted?.(target.subject, target.inputSha256)
       return { kind: 'replay' }
     }
     if (claim.kind === 'stale') {
@@ -122,7 +122,7 @@ export function createClassifierRunHandler<C, L, E>(
       await supersedeAndDispatchCurrent(target)
       return { kind: 'stale' }
     }
-    await registration.afterCompleted?.(target.subject)
+    await registration.afterCompleted?.(target.subject, target.inputSha256)
     return { kind: completion.kind }
   }
 

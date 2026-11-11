@@ -20,7 +20,7 @@ export async function insertClassifierRun<C>(
   subject: ClassifierRunSubject,
   current: CurrentClassifierRunInput,
   resolved: ResolvedClassifierRun<C>,
-): Promise<ReservedClassifierRun & { inserted: boolean; retired: boolean }> {
+): Promise<ReservedClassifierRun & { inserted: boolean; retired: boolean; completed: boolean }> {
   if (current.communityId) {
     await retainPublicationIdentityBridges(query, 'community', [current.communityId])
   }
@@ -39,6 +39,7 @@ export async function insertClassifierRun<C>(
     ? await query<{
         id: string
         decision_batch_id: string | null
+        completed_at: Date | null
       }>(sql`/* reserveClassifierRun.insert */
         INSERT INTO classifier_runs (
           id, classifier_id, prompt_version_id, post_id, rss_feed_item_id, input_sha256, configuration_json,
@@ -48,8 +49,8 @@ export async function insertClassifierRun<C>(
           ${subject.postId}, ${subject.rssFeedItemId}, ${current.inputSha256},
           ${resolved.configurationJson}::jsonb, ${resolved.configurationSha256},
           ${resolved.actorId}, ${proposedBatchId}
-        ) RETURNING id, decision_batch_id`)
-    : await query<{ id: string; decision_batch_id: string | null }>(sql`
+        ) RETURNING id, decision_batch_id, completed_at`)
+    : await query<{ id: string; decision_batch_id: string | null; completed_at: Date | null }>(sql`
         /* reserveClassifierRun.existingPayload */
         UPDATE classifier_runs SET superseded_at = NULL WHERE id = ${identityId}
           AND configuration_sha256 = ${resolved.configurationSha256}
@@ -58,7 +59,7 @@ export async function insertClassifierRun<C>(
           AND prompt_version_id IS NOT DISTINCT FROM ${remote?.promptVersionId ?? null}::uuid
           AND (id >= ${activeCutoffId} OR
             (completed_at IS NULL AND terminal_failed_at IS NULL))
-        RETURNING id, decision_batch_id`)
+        RETURNING id, decision_batch_id, completed_at`)
   const inserted = rows[0]
   if (!inserted && isNew) throw new Error('classifier run reservation did not return a receipt')
   if (!inserted) {
@@ -70,6 +71,7 @@ export async function insertClassifierRun<C>(
       decisionBatchId: null,
       inserted: false,
       retired: true,
+      completed: false,
     }
   }
   if (remote && isNew && proposedBatchId !== null) {
@@ -92,6 +94,7 @@ export async function insertClassifierRun<C>(
     decisionBatchId: inserted.decision_batch_id,
     inserted: isNew,
     retired: false,
+    completed: inserted.completed_at !== null,
   }
 }
 

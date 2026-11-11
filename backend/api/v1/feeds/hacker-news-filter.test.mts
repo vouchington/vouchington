@@ -1,14 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { createTestUser, followRssFeed, followUser } from '@voucha/test-helpers'
 import {
-  createTestUser,
-  createTestTopic,
-  createTestRssFeedWithTiming,
-  createTestRssFeedItemWithUrl,
-  followRssFeed,
-  followUser,
-} from '@voucha/test-helpers'
-import { setHackerNewsReferenceFlagsForTest } from '@voucha/test-helpers/hacker-news-references'
+  createHackerNewsFeedFilterFixture,
+  readHackerNewsFilteredItemIds,
+} from '@voucha/test-helpers/hacker-news-feed-filter'
 import {
   processFollowerDistributionChunk,
   shareRssFeedItemWithFollowers,
@@ -16,65 +12,51 @@ import {
 import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
-const FILTER_SPELLINGS = [
-  ['true', 'seen'],
-  ['TRUE', 'seen'],
-  ['1', 'seen'],
-  ['false', 'plain'],
-  ['FALSE', 'plain'],
-  ['0', 'plain'],
-] as const
-
-type FeedFixture = {
-  request: ReturnType<typeof createRequest>
-  seenId: string
-  plainId: string
-}
-
-async function seedPersonalizedHackerNewsFeed(): Promise<FeedFixture> {
-  const user = await createTestUser()
-  const sharer = await createTestUser()
-  const topic = await createTestTopic()
-  const feedId = await createTestRssFeedWithTiming(topic.id)
-  const seen = await createTestRssFeedItemWithUrl(feedId)
-  const plain = await createTestRssFeedItemWithUrl(feedId)
-  await setHackerNewsReferenceFlagsForTest([], [seen.id])
-  await followRssFeed(user, feedId)
-  await followUser(user, sharer)
-  for (const item of [seen, plain]) {
-    const shared = await shareRssFeedItemWithFollowers(sharer, item.id)
-    await processFollowerDistributionChunk(shared.distribution_id)
-  }
-  const request = createRequest()
-  await request.authenticateAs(user)
-  return { request, seenId: seen.id, plainId: plain.id }
-}
-
-async function filterResultIds(
-  request: FeedFixture['request'],
-  feedType: 'follow_rss_feeds' | 'follow_users',
-): Promise<string[][]> {
-  const ids: string[][] = []
-  for (const [value] of FILTER_SPELLINGS) {
-    const response = await request
-      .get(`/api/v1/feeds/rss_feed_items/${feedType}`)
-      .query({ has_hacker_news_references: value, time_range: 'all' })
-      .expect(200)
-    ids.push(response.body.results.map((row: { entity_id: string }) => row.entity_id))
-  }
-  return ids
-}
-
-function expectedSpellingIds(seenId: string, plainId: string): string[][] {
-  return FILTER_SPELLINGS.map(([, which]) => [which === 'seen' ? seenId : plainId])
-}
-
 describe('personalized RSS Hacker News filter', () => {
-  it('filters direct deliveries for every accepted spelling and ignores the filter when visibility is off', async () => {
-    const { request, seenId, plainId } = await seedPersonalizedHackerNewsFeed()
-    expect(await filterResultIds(request, 'follow_rss_feeds')).toEqual(
-      expectedSpellingIds(seenId, plainId),
-    )
+  it('filters direct feed items for each accepted boolean spelling', async () => {
+    const { user, feedId, seen, plain } = await createHackerNewsFeedFilterFixture()
+    await followRssFeed(user, feedId)
+    const request = createRequest()
+    await request.authenticateAs(user)
+
+    expect(await readHackerNewsFilteredItemIds(request, 'follow_rss_feeds')).toEqual([
+      [seen.id],
+      [seen.id],
+      [seen.id],
+      [plain.id],
+      [plain.id],
+      [plain.id],
+    ])
+  })
+
+  it('filters shared feed items for each accepted boolean spelling', async () => {
+    const [{ user, seen, plain }, sharer] = await Promise.all([
+      createHackerNewsFeedFilterFixture(),
+      createTestUser(),
+    ])
+    await followUser(user, sharer)
+    for (const item of [seen, plain]) {
+      const distribution = await shareRssFeedItemWithFollowers(sharer, item.id)
+      await processFollowerDistributionChunk(distribution.distribution_id)
+    }
+    const request = createRequest()
+    await request.authenticateAs(user)
+
+    expect(await readHackerNewsFilteredItemIds(request, 'follow_users')).toEqual([
+      [seen.id],
+      [seen.id],
+      [seen.id],
+      [plain.id],
+      [plain.id],
+      [plain.id],
+    ])
+  })
+
+  it('ignores the filter when Hacker News visibility is off', async () => {
+    const { user, feedId, seen, plain } = await createHackerNewsFeedFilterFixture()
+    await followRssFeed(user, feedId)
+    const request = createRequest()
+    await request.authenticateAs(user)
     const restore = overrideDynamicConfigFieldsForTest(hackerNewsVisibilityConfig, {
       references_visible: false,
     })
@@ -85,20 +67,20 @@ describe('personalized RSS Hacker News filter', () => {
         .expect(200)
       expect(
         response.body.results.map((row: { entity_id: string }) => row.entity_id).toSorted(),
-      ).toEqual([seenId, plainId].toSorted())
+      ).toEqual([seen.id, plain.id].toSorted())
     } finally {
       restore()
     }
+  })
+
+  it('rejects an invalid Hacker News filter value', async () => {
+    const user = await createTestUser()
+    const request = createRequest()
+    await request.authenticateAs(user)
+
     await request
       .get('/api/v1/feeds/rss_feed_items/follow_rss_feeds')
       .query({ has_hacker_news_references: 'maybe' })
       .expect(422)
-  })
-
-  it('filters shared deliveries for every accepted spelling', async () => {
-    const { request, seenId, plainId } = await seedPersonalizedHackerNewsFeed()
-    expect(await filterResultIds(request, 'follow_users')).toEqual(
-      expectedSpellingIds(seenId, plainId),
-    )
   })
 })

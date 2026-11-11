@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { validateResponseContract } from '../../../test-helpers/api-fixtures/contract-schema.mts'
+import { backendResponseContracts } from '../../../test-helpers/api-fixtures/response-contracts.mts'
 import {
   createTestUser,
   createTestPost,
@@ -9,7 +11,14 @@ import {
   insertTestCommunityPostReview,
   createTestMembership,
   createRandomString,
+  insertTestCommunityAgentPrompt,
+  insertTestAgentModeration,
 } from '@voucha/test-helpers'
+
+const responseContract =
+  backendResponseContracts[
+    'GET:/api/v1/communities/:communitySlug/posts/:postId/moderation-results'
+  ]!
 
 describe('moderation-results', () => {
   let owner: PrivateUser
@@ -86,9 +95,85 @@ describe('moderation-results', () => {
           .get(`/api/v1/communities/${community.slug}/posts/${post.id}/moderation-results`)
           .expect(200)
 
-        expect(Array.isArray(res.body.community_agent_moderations)).toBe(true)
+        expect(Array.isArray(res.body.results)).toBe(true)
+        expect(res.body.page_info).toEqual({
+          has_next_page: false,
+          start_cursor: null,
+          end_cursor: null,
+        })
         expect(res.body.platform_moderation).toEqual({ status: 'approved' })
         expect(res.body).not.toHaveProperty('openai_moderation')
+      })
+
+      it('returns schema-valid summary pages and rejects invalid or cross-post cursors', async () => {
+        const community = await insertTestCommunity({
+          createdById: owner.id,
+          slug: `mr-pages-${createRandomString(8)}`,
+        })
+        await insertTestCommunityMember({
+          communityId: community.id,
+          userId: owner.id,
+          role: 'owner',
+        })
+        const [post, otherPost] = await Promise.all([
+          createTestPost({ user: owner }),
+          createTestPost({ user: owner }),
+        ])
+        await Promise.all([
+          insertTestCommunityPostReview({ communityId: community.id, postId: post.id }),
+          insertTestCommunityPostReview({ communityId: community.id, postId: otherPost.id }),
+        ])
+        const prompt = await insertTestCommunityAgentPrompt({
+          communityId: community.id,
+          createdById: owner.id,
+          slotAllocated: true,
+        })
+        const ids = await Promise.all(
+          Array.from({ length: 3 }, () =>
+            insertTestAgentModeration({
+              postId: post.id,
+              promptId: prompt.id,
+              agentId: prompt.agent_id,
+              results: { flagged: false, provider_document: 'private' },
+              flagged: false,
+            }),
+          ),
+        )
+        const path = `/api/v1/communities/${community.slug}/posts/${post.id}/moderation-results`
+        const request = createRequest()
+        await request.authenticateAs(owner)
+        const first = await request.get(`${path}?limit=2`).expect(200)
+        const firstRows = first.body.results as { id: string; post_id: string }[]
+        expect(validateResponseContract(responseContract.schema, first.body)).toEqual([])
+        expect(firstRows).toHaveLength(2)
+        expect(firstRows.map(row => row.id)).toEqual(firstRows.map(row => row.id).toSorted())
+        expect(firstRows.every(row => row.post_id === post.id)).toBe(true)
+        expect(firstRows.every(row => !('results' in row))).toBe(true)
+        expect(first.body).not.toHaveProperty('community_agent_moderations')
+        expect(first.body.page_info.has_next_page).toBe(true)
+        const cursor = first.body.page_info.end_cursor as string
+        expect(cursor).toEqual(expect.any(String))
+
+        const second = await request
+          .get(`${path}?limit=2&after=${encodeURIComponent(cursor)}`)
+          .expect(200)
+        const secondRows = second.body.results as { id: string }[]
+        expect(validateResponseContract(responseContract.schema, second.body)).toEqual([])
+        expect(secondRows).toHaveLength(1)
+        expect(second.body.page_info.has_next_page).toBe(false)
+        expect(new Set([...firstRows, ...secondRows].map(row => row.id))).toEqual(new Set(ids))
+
+        await request.get(`${path}?after=invalid`).expect(400)
+        await request
+          .get(
+            `/api/v1/communities/${community.slug}/posts/${otherPost.id}/moderation-results?after=${encodeURIComponent(cursor)}`,
+          )
+          .expect(400)
+        const clamped = await request.get(`${path}?limit=1000`).expect(200)
+        expect(clamped.body.results).toHaveLength(3)
+        const exact = await request.get(`${path}?limit=3`).expect(200)
+        expect(exact.body.results).toHaveLength(3)
+        expect(exact.body.page_info.has_next_page).toBe(false)
       })
 
       it('returns 200 for moderator', async () => {
@@ -114,7 +199,7 @@ describe('moderation-results', () => {
           .get(`/api/v1/communities/${community.slug}/posts/${post.id}/moderation-results`)
           .expect(200)
 
-        expect(Array.isArray(res.body.community_agent_moderations)).toBe(true)
+        expect(Array.isArray(res.body.results)).toBe(true)
       })
 
       it('returns 200 for Plus+ community member with approved review', async () => {
@@ -141,7 +226,7 @@ describe('moderation-results', () => {
           .get(`/api/v1/communities/${community.slug}/posts/${post.id}/moderation-results`)
           .expect(200)
 
-        expect(Array.isArray(res.body.community_agent_moderations)).toBe(true)
+        expect(Array.isArray(res.body.results)).toBe(true)
         expect(res.body.platform_moderation).toEqual({ status: 'approved' })
         expect(res.body).not.toHaveProperty('openai_moderation')
       })

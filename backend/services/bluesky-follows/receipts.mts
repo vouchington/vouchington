@@ -163,8 +163,7 @@ export async function listBlueskyFollowReceiptsForFollower(
 // records live in the other follower's repo, so followeeUserId cannot delete them remotely. A
 // self-follow receipt is excluded because followeeUserId also owns that remote record;
 // disconnect.mts deletes it through the follower cleanup before dropping the local receipt. A
-// full page (`hasMore`) means more may remain after `lastFollowerUserId`; the caller continues
-// through a disconnect continuation job (disconnect.mts), never a loop here.
+// full page (`hasMore`) may leave more; the disconnect job resumes after `lastFollowerUserId`, never in a loop here.
 // The page rows are locked in the CTE, so their ctids stay valid for the delete in this statement;
 // deleting by ctid keeps the delete on the page instead of re-joining the whole table.
 export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPage(
@@ -187,6 +186,7 @@ export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowersPa
         LIMIT ${batchSize}
         FOR UPDATE
       )
+      -- no-mistakes-disable-next-line postgres-bounded-statements -- locked page selects at most the runtime backfill_batch_size (hard ceiling blueskyFollowsWorkMaxValues.backfill_batch_size); ctid membership deletes only those rows and the disconnect job persists the follower cursor
       DELETE FROM bluesky_follow_records
       WHERE ctid = ANY (ARRAY(SELECT row_id FROM page))
       RETURNING follower_user_id`,

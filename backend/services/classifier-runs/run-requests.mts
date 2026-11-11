@@ -15,7 +15,13 @@ function requestSubject(subject: ClassifierRunSubject): SQLStatement {
  */
 export async function requestClassifierRuns(
   query: QueryExecutor,
-  input: { subject: ClassifierRunSubject; inputSha256: Buffer; classifierSlugs: readonly string[] },
+  input: {
+    subject: ClassifierRunSubject
+    inputSha256: Buffer
+    classifierSlugs: readonly string[]
+    /** Automatic recovery preserves same-content progress, reopening only a stale request. */
+    rearmOnSameContent?: boolean
+  },
 ): Promise<void> {
   if (input.classifierSlugs.length === 0) return
   const slugs = [...input.classifierSlugs]
@@ -44,7 +50,9 @@ export async function requestClassifierRuns(
     ON CONFLICT `
       .append(conflict)
       .append(
-        ' DO UPDATE SET run_identity_id = NULL, run_settled_at = NULL, no_work_at = NULL, stale_at = NULL',
+        input.rearmOnSameContent === false
+          ? ' DO UPDATE SET stale_at = NULL WHERE classifier_run_requests.stale_at IS NOT NULL'
+          : ' DO UPDATE SET run_identity_id = NULL, run_settled_at = NULL, no_work_at = NULL, stale_at = NULL, cursor_community_prompt_activated_at = NULL, cursor_community_prompt_id = NULL, sweep_upper_bound_community_prompt_activated_at = NULL, sweep_upper_bound_community_prompt_id = NULL, has_flagged_community_prompt = false, has_new_community_prompt_decision = false, community_prompt_completed_at = NULL',
       ),
   )
 }

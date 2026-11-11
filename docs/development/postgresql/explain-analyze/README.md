@@ -15,6 +15,10 @@ The manifest establishes representative plan evidence for named production selec
 function-coverage inventory for every stage of a daily cleanup. Add a separate captured selector
 and realistic eligible and ineligible rows when a stage has a distinct access path.
 
+The seed phase needs headroom for hosted-runner variability and resource-sampler shutdown. When
+seeding reaches its completion message at the deadline, inspect the phase timings before treating
+the timeout as a query-plan failure or rerunning the job.
+
 ## How it works
 
 - **Capture.** Service functions run under query capture, which records annotated SQL with bound
@@ -45,6 +49,8 @@ and realistic eligible and ineligible rows when a stage has a distinct access pa
 - While each scenario builds its query, `Date` is pinned to the anchor noon so time-range
   cutoffs sit at a fixed offset from seeded rows. Under the wall clock a one-week window held a
   different number of posts per hour, which flipped a plan between a seq scan and a bitmap scan.
+  Fixture discovery must use the same clock: an initial lookup under wall time can age a fixture
+  out of its visibility window before capture begins.
 - After bulk seeding, the seed runs `VACUUM (ANALYZE)` on declared seeded relations before the first
   plan capture, instead of depending on autovacuum timing, and refreshes statistics after the
   first post batch because a fresh database plans the retained-identity trigger against empty-table

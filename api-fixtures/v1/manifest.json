@@ -13585,75 +13585,14 @@
     },
     "GET:/api/v1/communities/:communitySlug/posts/:postId/moderation-results": {
       "bodyKind": "content",
-      "hash": "4a2344b03782d1fa2a1f51220d984603aae0c5bff14f735d47caa622968969a7",
+      "hash": "fc9672e91eaefc0c453bcfc085700979e5619c857cad3373050156ba4912286d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/communities/:idOrSlug/posts/:postId/moderation-results",
       "schema": {
         "definitions": {
-          "AgentModerationResults": {
-            "additionalProperties": false,
-            "properties": {
-              "categories": {
-                "required": false,
-                "schema": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                }
-              },
-              "classification": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": "ai"
-                    },
-                    {
-                      "type": "literal",
-                      "value": "human"
-                    }
-                  ]
-                }
-              },
-              "confidence_score": {
-                "required": false,
-                "schema": {
-                  "type": "number"
-                }
-              },
-              "confidence_threshold": {
-                "required": false,
-                "schema": {
-                  "type": "number"
-                }
-              },
-              "detector": {
-                "required": false,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "detector_model_version": {
-                "required": false,
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "flagged": {
-                "required": true,
-                "schema": {
-                  "type": "boolean"
-                }
-              }
-            },
-            "type": "object"
-          },
-          "CommunityAgentModerationResult": {
+          "CommunityAgentModerationSummary": {
             "additionalProperties": false,
             "properties": {
               "community_prompt_id": {
@@ -13685,13 +13624,6 @@
                 "schema": {
                   "type": "string"
                 }
-              },
-              "results": {
-                "required": true,
-                "schema": {
-                  "name": "AgentModerationResults",
-                  "type": "ref"
-                }
               }
             },
             "type": "object"
@@ -13699,14 +13631,11 @@
           "ModerationResultsResponse": {
             "additionalProperties": false,
             "properties": {
-              "community_agent_moderations": {
+              "page_info": {
                 "required": true,
                 "schema": {
-                  "items": {
-                    "name": "CommunityAgentModerationResult",
-                    "type": "ref"
-                  },
-                  "type": "array"
+                  "name": "PageInfo",
+                  "type": "ref"
                 }
               },
               "platform_moderation": {
@@ -13740,6 +13669,56 @@
                     }
                   },
                   "type": "object"
+                }
+              },
+              "results": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "name": "CommunityAgentModerationSummary",
+                    "type": "ref"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               }
             },
@@ -106637,7 +106616,7 @@
       "migratedFrom": ["backend/api/v1/communities/moderation-results.mts"],
       "path": "/api/v1/communities/test-community/posts/post-1/moderation-results",
       "responseSchema": {
-        "hash": "5f6a88f44998409be073e64e2e741096acabe11b7c1c562b1a528ddf3c41a752",
+        "hash": "ddd0986699003e37fa4cdf00bdff6ec4205d1de3627cfae44c67097c1e2e82db",
         "key": "web.communities.moderation-results.default"
       },
       "route": {

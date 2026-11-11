@@ -78,6 +78,7 @@ export function communityModerationRequestEligibility(): SQLStatement {
 export async function requestCommunityModerationRun(
   query: TransactionQuery,
   postId: string,
+  intent: 'approval' | 'automatic-recovery' = 'approval',
 ): Promise<boolean> {
   const subject = { postId, rssFeedItemId: null }
   const current = await lockCommunityModerationInput(query, subject)
@@ -86,6 +87,7 @@ export async function requestCommunityModerationRun(
     subject,
     inputSha256: current.inputSha256,
     classifierSlugs: [COMMUNITY_MODERATION_CLASSIFIER_SLUG],
+    rearmOnSameContent: intent === 'approval',
   })
   registerPostCommitAction(query, async () => {
     await enqueueClassifierRunDispatcher({
@@ -104,7 +106,7 @@ export async function requestCommunityModerationRun(
  */
 export async function requestCommunityModerationRunForPost(postId: string): Promise<boolean> {
   await using query = await beginTransaction()
-  const requested = await requestCommunityModerationRun(query, postId)
+  const requested = await requestCommunityModerationRun(query, postId, 'automatic-recovery')
   await query.commit()
   return requested
 }

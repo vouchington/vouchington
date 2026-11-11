@@ -6,6 +6,7 @@ import type { CommunityAutomodAction } from '@voucha/types'
 import sql from 'sql-template-strings'
 import { isCommunityPromptFlagged } from './community-prompt-flagged.mts'
 import type { CommunityModerationRunConfiguration } from './moderation-run-configuration.mts'
+import { advanceCommunityModerationRequest } from './moderation-run-progress.mts'
 
 export type CommunityModerationEffects = {
   flaggedPromptIds: readonly string[]
@@ -17,10 +18,9 @@ type PromptResult = { promptId: string; flagged: boolean; probability: number; u
 
 /**
  * Applies the durable community moderation decision in the completion transaction: the per-prompt
- * `agent_moderations` projection first, then the community's `automod_action` for the prompts that
- * flagged the post. The action is read here, not pinned in the run, so changing it never re-bills
- * a classification. A completed run is replayed, never re-applied, so a post a moderator restored
- * is not acted on again until its content changes.
+ * `agent_moderations` projection first, then the community's `automod_action` after the final
+ * page if a newly evaluated decision occurred and any page flagged the post. The action is read
+ * here, not pinned in the run, so changing it never re-bills a classification.
  */
 export async function applyCommunityModerationEffects(
   query: OwnedTransaction,
@@ -32,22 +32,52 @@ export async function applyCommunityModerationEffects(
   const results = readPromptResults(outcomes)
   await recordAgentModerations(query, { postId, inputSha256: lease.inputSha256, results })
   const flaggedPromptIds = results.flatMap(result => (result.flagged ? [result.promptId] : []))
-  if (flaggedPromptIds.length === 0) return { flaggedPromptIds, appliedAction: null }
+  const { anyFlagged, hasMore, hasNewDecision, advanced } = await advanceCommunityModerationRequest(
+    query,
+    {
+      runId: lease.runId,
+      postId,
+      inputSha256: lease.inputSha256,
+      nextCursor: lease.resolved.configuration.nextCursor,
+      pageFlagged: flaggedPromptIds.length > 0,
+      newDecision: outcomes.remoteDecision !== null,
+    },
+  )
+  if (!advanced || hasMore || !anyFlagged || !hasNewDecision)
+    return { flaggedPromptIds, appliedAction: null }
   const { communityId, actorId } = lease.resolved.configuration
-  const action = await readCommunityAutomodAction(query, communityId)
-  const input = { communityId, postId, contentSha256: lease.inputSha256 }
+  const appliedAction = await applyCommunityModerationAction(query, {
+    communityId,
+    postId,
+    inputSha256: lease.inputSha256,
+    actorId,
+  })
+  return { flaggedPromptIds, appliedAction }
+}
+
+/** The final page may be a reused receipt; action still belongs to this traversal's new work. */
+export async function applyCommunityModerationAction(
+  query: OwnedTransaction,
+  input: { communityId: string; postId: string; inputSha256: Buffer; actorId: string },
+): Promise<CommunityModerationEffects['appliedAction']> {
+  const action = await readCommunityAutomodAction(query, input.communityId)
+  const target = {
+    communityId: input.communityId,
+    postId: input.postId,
+    contentSha256: input.inputSha256,
+  }
   if (action === 'review_queue') {
-    const flagged = await flagPostForAutomodReview(query, input)
-    return { flaggedPromptIds, appliedAction: flagged ? 'review_queue' : null }
+    const flagged = await flagPostForAutomodReview(query, target)
+    return flagged ? 'review_queue' : null
   }
   if (action === 'unpublish') {
     const removal = await unpublishPostForAutomodFlag(query, {
-      ...input,
-      moderationSystemUserId: actorId,
+      ...target,
+      moderationSystemUserId: input.actorId,
     })
-    return { flaggedPromptIds, appliedAction: removal === 'removed' ? 'unpublish' : null }
+    return removal === 'removed' ? 'unpublish' : null
   }
-  return { flaggedPromptIds, appliedAction: null }
+  return null
 }
 
 function readPromptResults(outcomes: ClassifierRunOutcomes<never>): PromptResult[] {
@@ -69,7 +99,7 @@ function readPromptResults(outcomes: ClassifierRunOutcomes<never>): PromptResult
 /**
  * One projection row per prompt asked, keyed by the post, its content digest and the prompt, so a
  * replay or a concurrent writer never duplicates or overwrites one. The row carries the model's
- * probability against the threshold it was judged by; the single-call classifier gives no reason.
+ * probability against the threshold it was judged by; a page's classifier call gives no reason.
  */
 async function recordAgentModerations(
   query: OwnedTransaction,

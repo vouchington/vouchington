@@ -35,7 +35,11 @@ export type ClassifierRunTarget = {
   configurationSha256: Buffer
 }
 
-export type LockedClassifierRun<C> = { row: ClassifierRunRow; resolved: ResolvedClassifierRun<C> }
+export type LockedClassifierRun<C> = {
+  row: ClassifierRunRow
+  /** Completed receipts replay their stored result without re-resolving a later page. */
+  resolved: ResolvedClassifierRun<C> | null
+}
 
 /**
  * Locks the classifier actor, the subject and the run in that order, then re-resolves the
@@ -78,6 +82,7 @@ export async function lockClassifierRun<C, L, E>(
   const row = rows[0]
   if (!row) return null
   assertRunMatchesTarget(adapter.slug, row, target)
+  if (row.completed_at) return { row, resolved: null }
   const resolved = await adapter.resolve(target.subject, current, query)
   if (
     !resolved ||

@@ -5,6 +5,7 @@ import type {
   StoryMemberRequest,
 } from '@services/feeds/rss-feed-items/story-member-pages'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
+import { withSeedAnchorClock } from '../seed-clock.mts'
 import { heavyFollowUser, runAndCapture } from '../run-support.mts'
 import {
   getPrivateUserByAny,
@@ -14,7 +15,6 @@ import {
   hydrateStoryMemberPage,
 } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { withSeedAnchorClock } from '../seed-clock.mts'
 
 const HYDRATION_QUERY_NAMES = [
   'getRssFeedItemsByIdBatch',

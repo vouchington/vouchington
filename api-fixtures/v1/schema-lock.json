@@ -298,7 +298,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/posts/:postId/moderation-results": {
       "fixtureIds": ["web.communities.moderation-results.default"],
-      "hash": "4a2344b03782d1fa2a1f51220d984603aae0c5bff14f735d47caa622968969a7"
+      "hash": "fc9672e91eaefc0c453bcfc085700979e5619c857cad3373050156ba4912286d"
     },
     "GET:/api/v1/communities/:communitySlug/restrictions": {
       "fixtureIds": ["web.communities.restrictions.default"],
@@ -3596,7 +3596,7 @@
     },
     "web.communities.moderation-results.default": {
       "fixtureIds": ["web.communities.moderation-results.default"],
-      "hash": "5f6a88f44998409be073e64e2e741096acabe11b7c1c562b1a528ddf3c41a752"
+      "hash": "ddd0986699003e37fa4cdf00bdff6ec4205d1de3627cfae44c67097c1e2e82db"
     },
     "web.communities.moderator-stats.default": {
       "fixtureIds": ["web.communities.moderator-stats.default"],

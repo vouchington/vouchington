@@ -125,6 +125,17 @@ export type ClassifierRunAdapter<C, L = never, E = void> = {
     current: CurrentClassifierRunInput,
     query?: QueryExecutor,
   ): Promise<ResolvedClassifierRun<C> | null>
+  /** Rebuilds a classifier-specific continuation after reusing an already completed receipt. */
+  replayCompleted?(
+    query: OwnedTransaction,
+    input: {
+      runId: string
+      subject: ClassifierRunSubject
+      inputSha256: Buffer
+      decisionBatchId: string | null
+      resolved: ResolvedClassifierRun<C>
+    },
+  ): Promise<void>
   /**
    * Chooses the topic candidates of a run that captures its own, once, when its receipt is first
    * reserved; a later search result can never change them. Null or empty means no work. It runs

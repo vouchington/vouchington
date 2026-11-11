@@ -95,7 +95,7 @@ export async function reserveLockedClassifierRun<C, L, E>(
     })
     return { kind: 'no-work' }
   }
-  const { inserted, retired, ...run } = await insertClassifierRun(
+  const { inserted, retired, completed, ...run } = await insertClassifierRun(
     query,
     adapter.slug,
     subject,
@@ -107,6 +107,15 @@ export async function reserveLockedClassifierRun<C, L, E>(
       kind: 'run',
       runId: run.runId,
       inputSha256: current.inputSha256,
+    })
+    // A retired payload cannot be re-billed or re-applied, but a paged classifier must still
+    // advance past its current page so later pages are not stranded behind this identity.
+    await adapter.replayCompleted?.(query, {
+      runId: run.runId,
+      subject,
+      inputSha256: current.inputSha256,
+      decisionBatchId: null,
+      resolved,
     })
     return { kind: 'no-work' }
   }
@@ -130,5 +139,15 @@ export async function reserveLockedClassifierRun<C, L, E>(
     runId: run.runId,
     inputSha256: current.inputSha256,
   })
+  if (completed && adapter.replayCompleted) {
+    await adapter.replayCompleted(query, {
+      runId: run.runId,
+      subject,
+      inputSha256: current.inputSha256,
+      decisionBatchId: run.decisionBatchId,
+      resolved,
+    })
+    return { kind: 'no-work' }
+  }
   return { kind: 'reserved', run }
 }

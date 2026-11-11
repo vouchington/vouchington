@@ -14843,8 +14843,11 @@
     },
     "classifier_run_requests": {
       "checkConstraints": {
+        "chk_classifier_run_requests__community_prompt_completion": "CHECK (((community_prompt_completed_at IS NULL) OR (run_settled_at IS NOT NULL)))",
+        "chk_classifier_run_requests__cursor_community_prompt_pair": "CHECK (((cursor_community_prompt_activated_at IS NULL) = (cursor_community_prompt_id IS NULL)))",
         "chk_classifier_run_requests__one_settlement": "CHECK (((num_nonnulls(run_settled_at, no_work_at, stale_at) <= 1) AND ((run_identity_id IS NULL) OR (run_settled_at IS NOT NULL))))",
         "chk_classifier_run_requests__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
+        "chk_classifier_run_requests__sweep_upper_bound_prompt_pair": "CHECK (((sweep_upper_bound_community_prompt_activated_at IS NULL) = (sweep_upper_bound_community_prompt_id IS NULL)))",
         "classifier_run_requests_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))"
       },
       "columns": {
@@ -14859,6 +14862,17 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
+        "community_prompt_completed_at": {
+          "collation": null,
+          "comment": "The final community prompt page completed; only a new explicit request rearms the traversal.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -14867,8 +14881,52 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
+        },
+        "cursor_community_prompt_activated_at": {
+          "collation": null,
+          "comment": "Activation timestamp after the last completed candidate page for this post request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "cursor_community_prompt_id": {
+          "collation": null,
+          "comment": "Tie-break key for the last completed candidate page; no foreign key because a retention cascade may delete the source prompt while this request position survives. Never joined or used for authorization.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "has_flagged_community_prompt": {
+          "collation": null,
+          "comment": "Whether a completed page in this community prompt traversal flagged the post.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "boolean"
+        },
+        "has_new_community_prompt_decision": {
+          "collation": null,
+          "comment": "Whether this traversal completed a newly evaluated community prompt decision; replayed receipts do not set it.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "boolean"
         },
         "id": {
           "collation": null,
@@ -14883,7 +14941,7 @@
         },
         "input_sha256": {
           "collation": null,
-          "comment": "Subject content digest current when the request was written; a request settles once per content version.",
+          "comment": "Subject content digest current when the request was written; community moderation may resume the request for another prompt page.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -14900,7 +14958,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "post_id": {
@@ -14944,7 +15002,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "stale_at": {
@@ -14955,8 +15013,30 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
+          "ordinalPosition": 16,
+          "type": "timestamp with time zone"
+        },
+        "sweep_upper_bound_community_prompt_activated_at": {
+          "collation": null,
+          "comment": "Activation timestamp of the upper position fixed when community prompt traversal starts.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
           "ordinalPosition": 9,
           "type": "timestamp with time zone"
+        },
+        "sweep_upper_bound_community_prompt_id": {
+          "collation": null,
+          "comment": "Tie-break key for the fixed upper position; no foreign key because a retention cascade may delete the source prompt while this request position survives. Never joined or used for authorization.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
         },
         "updated_at": {
           "collation": null,
@@ -14966,7 +15046,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         }
       },
@@ -17532,13 +17612,61 @@
         "idx_community_agent_prompts__active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_agent_prompts__active ON public.community_agent_prompts USING btree (community_id) WHERE ((is_slot_allocated = true) AND (activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
-          "includedColumns": [],
+          "definition": "CREATE INDEX idx_community_agent_prompts__active ON public.community_agent_prompts USING btree (community_id, activated_at, id) INCLUDE (created_by_id, deleted_by_id) WHERE ((is_slot_allocated = true) AND (activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "includedColumns": ["created_by_id", "deleted_by_id"],
           "keys": [
             {
               "column": "community_id",
               "descending": false,
               "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "activated_at",
+              "descending": false,
+              "expression": "activated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((is_slot_allocated = true) AND (activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_agent_prompts__active_creator_order": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_agent_prompts__active_creator_order ON public.community_agent_prompts USING btree (created_by_id, activated_at, id) WHERE ((is_slot_allocated = true) AND (activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "activated_at",
+              "descending": false,
+              "expression": "activated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }

@@ -1,5 +1,6 @@
 import {
   getClassifierRunFacts,
+  getClassifierRunConfigurationCommunityPromptIdsForTest,
   getClassifierRunRequestFacts,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { supersedeClassifierRunForTest } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-agent-fixture'
@@ -13,9 +14,27 @@ import {
   reserveSyntheticRun,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { setTestPostClearanceStatus } from '@voucha/test-helpers/entities/post-clearance'
-import { describe, expect, it, vi } from 'vitest'
+import {
+  createTestMembership,
+  createTestUser,
+  insertTestCommunityAgentPrompt,
+  updateTestMembershipExpiresAt,
+} from '@voucha/test-helpers'
+import {
+  createCommunityModerationFixture,
+  requestCommunityModerationFixtureRun,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
+import { setTestCommunityModerationPromptActivatedAt } from '@voucha/test-helpers/community-moderation-prompt-activation'
+import { getMembershipByUserId } from '../memberships/get.mts'
+import { communityAgentPromptsConfig } from '../community-agent-prompts/config.mts'
+import { createCommunityModerationRunAdapter } from '../community-agent-prompts/moderation-run-adapter.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { listPendingClassifierRunRequests } from './run-discovery.mts'
 import { reserveClassifierRun } from './run-reservation.mts'
+import { claimClassifierRun } from './run-claim.mts'
+import { persistClassifierRunOutcomes } from './run-outcomes.mts'
+import { completeClassifierRun } from './run-completion.mts'
 
 describe('classifier run reservation and requests (real PG)', () => {
   it('persists one receipt snapshot before any job runs and settles the request', async () => {
@@ -133,6 +152,54 @@ describe('classifier run reservation and requests (real PG)', () => {
     }
     const [facts] = await getClassifierRunFacts(setup.post.id, setup.slug)
     expect(facts!.superseded_at).toBeNull()
+  })
+
+  it('advances a retired completed prompt page before reserving later eligible rules', async () => {
+    await communityAgentPromptsConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(communityAgentPromptsConfig, { moderation_page_size: 1 }),
+    )
+    const fixture = await createCommunityModerationFixture({ ruleTexts: ['Expired owner rule'] })
+    const laterOwner = await createTestUser()
+    await createTestMembership({ user_id: laterOwner.id, plan: 'pro' })
+    const later = await insertTestCommunityAgentPrompt({
+      communityId: fixture.community.id,
+      createdById: laterOwner.id,
+      slotAllocated: true,
+    })
+    await setTestCommunityModerationPromptActivatedAt(
+      fixture.prompts[0]!.id,
+      new Date('2026-01-01T00:00:00Z'),
+    )
+    await setTestCommunityModerationPromptActivatedAt(later.id, new Date('2026-01-02T00:00:00Z'))
+    const ownerMembership = await getMembershipByUserId(fixture.creator.id, { readOnly: false })
+    if (!ownerMembership) throw new Error('fixture creator membership is missing')
+    await updateTestMembershipExpiresAt(ownerMembership.id, new Date(Date.now() - 60_000))
+
+    const adapter = createCommunityModerationRunAdapter()
+    await requestCommunityModerationFixtureRun(fixture)
+    const first = await reserveClassifierRun(adapter, fixture.subject)
+    if (first.kind !== 'reserved') throw new Error('ineligible first page was not reserved')
+    const claimed = await claimClassifierRun(adapter, { ...first.run, leaseSeconds: 60 })
+    if (claimed.kind !== 'claimed') throw new Error('ineligible first page was not claimed')
+    expect(claimed.lease.resolved.remote).toBeNull()
+    expect(await persistClassifierRunOutcomes(adapter, { lease: claimed.lease })).toBe('persisted')
+    expect((await completeClassifierRun(adapter, claimed.lease)).kind).toBe('completed')
+
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() + 91 * 24 * 60 * 60 * 1000 })
+    try {
+      await requestCommunityModerationFixtureRun(fixture)
+      expect(await reserveClassifierRun(adapter, fixture.subject)).toEqual({ kind: 'no-work' })
+    } finally {
+      vi.useRealTimers()
+    }
+    const next = await reserveClassifierRun(adapter, fixture.subject)
+    expect(next.kind).toBe('reserved')
+    if (next.kind !== 'reserved') throw new Error('later eligible page was not reserved')
+    expect(next.run.runId).not.toBe(first.run.runId)
+    expect(await getClassifierRunConfigurationCommunityPromptIdsForTest(next.run.runId)).toEqual([
+      later.id,
+    ])
   })
 
   it('marks an unsettled request for older content stale when newer content is requested', async () => {
