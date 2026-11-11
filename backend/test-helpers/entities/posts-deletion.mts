@@ -1,10 +1,6 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  lockPostPublicationPostScopes,
-  recordPostPublicationChanges,
-} from '../../services/post-publication/capture-posts.mts'
-import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
+import { recordPostPublicationChanges } from '../../services/post-publication/capture-posts.mts'
 
 export async function markTestPostDeletedBy(postId: string, deletedById: string): Promise<void> {
   await write(sql`/* markTestPostDeletedBy */
@@ -32,7 +28,6 @@ const HARD_DELETE_POST_BATCH_SIZE = 100
 export async function hardDeleteTestPosts(postIds: readonly string[]): Promise<void> {
   if (postIds.length === 0) return
   await using transaction = await beginTransaction()
-  await lockPostPublicationPostScopes(transaction, postIds)
   await recordPostPublicationChanges(
     transaction,
     'post_deleted',
@@ -50,41 +45,6 @@ export async function hardDeleteTestPosts(postIds: readonly string[]): Promise<v
 
 export async function hardDeleteTestPost(postId: string): Promise<void> {
   await hardDeleteTestPosts([postId])
-}
-
-/**
- * Pauses a vote-stats-worker-shaped transaction: it holds the post scope lock and a topic relation
- * row lock, then `complete()` retains an identity bridge (an FK key-share check on the post row)
- * and commits. Against a lock-free post delete that last step is the other half of a lock cycle.
- */
-export async function startPausedTestPostTopicRelationWriter(
-  postId: string,
-  relationId: string,
-): Promise<{ holderProcessId: number; complete(): Promise<void> }> {
-  const paused = Promise.withResolvers<number>()
-  const resume = Promise.withResolvers<void>()
-  const completed = (async () => {
-    await using transaction = await beginTransaction()
-    await lockPostPublicationPostScopes(transaction, [postId])
-    await transaction(sql`/* startPausedTestPostTopicRelationWriter:relation */
-      SELECT id FROM relation__post__category__topic WHERE id = ${relationId} FOR UPDATE
-    `)
-    paused.resolve(await getTestPostgresBackendProcessId(transaction))
-    await resume.promise
-    await transaction(sql`/* startPausedTestPostTopicRelationWriter:post */
-      SELECT id FROM posts WHERE id = ${postId} FOR KEY SHARE
-    `)
-    await transaction.commit()
-  })()
-  void completed.catch(paused.reject)
-  const holderProcessId = await paused.promise
-  return {
-    holderProcessId,
-    complete: () => {
-      resume.resolve()
-      return completed
-    },
-  }
 }
 
 export async function countTestPostsCreatedBy(userId: string): Promise<number> {

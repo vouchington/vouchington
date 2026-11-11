@@ -12,7 +12,6 @@ import {
 } from '@voucha/test-helpers'
 import { createEntityRelationElectionTarget } from '../elections-votes/entity-relation/target.mts'
 import { getEntityRelationElectionByTargetCachedBatch } from '../entity-fetch/get.mts'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
 import { assertPostRelatedUrlsAllowed } from './assert-post-related-urls-allowed.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import {
@@ -158,7 +157,6 @@ async function rollbackRelatedUrlRelationWrite(
   urlId: string,
 ): Promise<void> {
   await using query = await beginTransaction()
-  await lockPostPublicationPostScopes(query, [postId])
   const relation = getEntityRelationMetadataOrThrow({
     subjectType: 'post',
     predicate: 'related',

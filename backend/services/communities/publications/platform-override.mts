@@ -4,7 +4,6 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { lockPostPublication } from '@services/post-publication'
 import { assertPublicationModeratorAccess, getPublicationReview } from './access.mts'
 import { requestCommunityModerationRun } from './moderation-run.mts'
 import { recordCommunityPublicationChange } from './publication-change.mts'
@@ -31,7 +30,6 @@ export async function overridePublication(
   assert(await getPublicationReview(communityId, postId), 404, 'Community post review not found')
 
   await using query = await beginTransaction()
-  await lockPostPublication(query, postId)
   const { rowCount } = await write(
     createPlatformOverrideUpdate(communityId, postId, currentUser.id, override),
     { query },

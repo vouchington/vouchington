@@ -4,10 +4,7 @@ import { runSequentially } from '@modules/utils/run-sequentially'
 import { enqueueBulkOnPostUpdated } from '@queues/entity-listeners/enqueues'
 import { enqueueImageDeletionPage } from '@queues/background/enqueues/image-deletion'
 import { resetPostClearance } from '@services/post-clearance'
-import {
-  lockPostPublicationPostScopes,
-  recordPostPublicationChange,
-} from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { createPostModerationContent } from '@services/posts/content'
 import { getPostModerationInput } from '@services/posts/moderation-input'
 import sql from 'sql-template-strings'
@@ -87,7 +84,6 @@ export async function processImageDeletionPageWhileLocked(
       ])
       return
     }
-    await lockPostPublicationPostScopes(transaction, postIds)
     /* oxlint-disable no-await-in-loop -- the bounded page uses one transaction connection and each post revision depends on its preceding reset */
     for (const postId of postIds) {
       // no-mistakes-disable-next-line query-reached-per-item: the DynamicConfig-bounded page must preserve each locked post clearance transition and its publication capture atomically

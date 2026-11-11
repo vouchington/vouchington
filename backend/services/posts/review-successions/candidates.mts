@@ -3,7 +3,6 @@ import {
   buildOtherwisePublicPostEligibilityFilter,
   buildPublicPostEligibilityFilter,
 } from '@modules/feed-query-builders'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
 import sql from 'sql-template-strings'
 import type { ReviewSuccessionCandidate, ReviewSuccessionGroup } from './types.mts'
 
@@ -25,7 +24,6 @@ export async function lockReviewSuccessionCandidates(
   limit: number,
 ): Promise<void> {
   const candidateIds = await listReviewSuccessionCandidateIds(query, groups, limit)
-  await lockPostPublicationPostScopes(query, candidateIds)
   if (candidateIds.length === 0) return
   await query(
     `/* lockReviewSuccessionCandidateRows */

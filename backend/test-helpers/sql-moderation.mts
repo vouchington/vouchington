@@ -34,15 +34,6 @@ export async function setPostModerationFlaggedForTest(params: {
   `)
 }
 
-export async function countPostReviewTopicRatingsForTest(postId: string): Promise<number> {
-  const { rows } = await read<{ total: number }>(sql`/* countPostReviewTopicRatingsForTest */
-    SELECT COUNT(*)::int AS total
-    FROM post_review_topic_ratings
-    WHERE post_id = ${postId}
-  `)
-  return rows[0]?.total ?? 0
-}
-
 export async function getModeratorActionRowsForTest(params: {
   actorId?: string
   communityId?: string

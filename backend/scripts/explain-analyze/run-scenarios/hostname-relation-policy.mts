@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { runRelationPublicationMutation } from '@services/entity-relations/publication-mutation'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { runAndCapture, seedTopicId, seedUser } from '../run-support.mts'
+import { runAndCapture, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { deleteUrlRelationPage } from '@services/hostname-blocking/delete-url-relation-page'
 import {
@@ -21,7 +21,6 @@ export async function runHostnameRelationPolicyScenario(): Promise<void> {
         { query },
         'relation__topic__landing_page__url',
         'activate',
-        [seedTopicId],
         [seedUuid(0, '03'), seedUuid(1, '03')],
         [],
         async () => [],

@@ -98,7 +98,6 @@ export async function upsertPostCategoryRelationRows({
     writeOptions,
     aliasRelation.table_name,
     'activate',
-    [postId],
     aliasIds,
     [],
     async (transactionQuery: TransactionQuery) => {

@@ -38,7 +38,7 @@ export const processUserDeletionPhaseBatch: UserDeletionPhaseProcessor = async i
     case 'account-data':
       return processUserDeletionAccountDataBatch(input.userId, input.requestId, input.batchSize)
     case 'relation-impacts':
-      return processRelationImpacts(input.userId, input.requestId, input.batchSize)
+      return processRelationImpacts(input.requestId, input.batchSize)
     case 'external-work':
       return processUserDeletionExternalWork(input.requestId, input.processingAttemptId)
     case 'finalize':
@@ -49,7 +49,7 @@ export const processUserDeletionPhaseBatch: UserDeletionPhaseProcessor = async i
 }
 
 async function processPosts(userId: string, requestId: string, batchSize: number) {
-  return withUserDeletionTransaction(userId, async query => {
+  return withUserDeletionTransaction(async query => {
     const { rows } = await query<{
       prior_username: string | null
     }>(sql`/* processUserDeletionPosts:request */
@@ -66,7 +66,7 @@ async function processPosts(userId: string, requestId: string, batchSize: number
 }
 
 async function processVotes(userId: string, requestId: string, batchSize: number) {
-  return withUserDeletionTransaction(userId, async query => {
+  return withUserDeletionTransaction(async query => {
     const relationVotes = await deleteUserEntityRelationVotesBatch(
       requestId,
       userId,
@@ -93,7 +93,7 @@ async function processVotes(userId: string, requestId: string, batchSize: number
 }
 
 async function processUserRelations(userId: string, batchSize: number) {
-  return withUserDeletionTransaction(userId, async query => {
+  return withUserDeletionTransaction(async query => {
     const lists = await query(sql`/* processUserDeletionLists */
       WITH candidates AS (
         SELECT id FROM user_lists
@@ -119,8 +119,8 @@ async function processUserRelations(userId: string, batchSize: number) {
   })
 }
 
-async function processRelationImpacts(userId: string, requestId: string, batchSize: number) {
-  return withUserDeletionTransaction(userId, async query => ({
+async function processRelationImpacts(requestId: string, batchSize: number) {
+  return withUserDeletionTransaction(async query => ({
     hasMore: (await recomputeUserDeletionRelationImpactsBatch(requestId, batchSize, query)) > 0,
   }))
 }

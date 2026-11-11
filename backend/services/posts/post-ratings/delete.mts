@@ -2,7 +2,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { beginTransaction } from '@data-stores/psql'
 import { createPostRevision } from '@services/post-revisions'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 
 export async function deletePostRatingRecord(
   userId: string,
@@ -10,7 +10,6 @@ export async function deletePostRatingRecord(
   topicId: string,
 ): Promise<void> {
   await using query = await beginTransaction()
-  await lockPostPublication(query, postId)
   const { rows } = await query<{
     total_count: number
     has_rating: boolean

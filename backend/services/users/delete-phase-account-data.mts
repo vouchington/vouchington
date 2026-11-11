@@ -6,7 +6,7 @@ export async function processUserDeletionAccountDataBatch(
   requestId: string,
   batchSize: number,
 ) {
-  return withUserDeletionTransaction(userId, async query => {
+  return withUserDeletionTransaction(async query => {
     const referrals = await query(sql`/* processUserDeletionAccountData:referrals */
       WITH candidates AS (
         SELECT id FROM session_referral_attributions

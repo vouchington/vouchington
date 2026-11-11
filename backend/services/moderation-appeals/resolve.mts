@@ -20,13 +20,9 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { getModerationAppealAfterMutation } from './get.mts'
 import { rejectUnresolvableAppeal } from './assert-delivered.mts'
 import type { ModerationAppealResponse } from './types.mts'
-import {
-  liftCommunityBanById,
-  liftUserSuspensionById,
-  lockSuspensionAppealAuthorLifecycle,
-} from './lift-sanctions.mts'
+import { liftCommunityBanById, liftUserSuspensionById } from './lift-sanctions.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 
 export { dismissModerationAppeal } from './dismiss-appeal.mts'
 
@@ -38,7 +34,6 @@ export async function resolveModerationAppealAccept(
   const now = new Date()
   let afterCommit: (() => Promise<void>) | undefined
   const response = await runWithTransaction(undefined, async (query: TransactionQuery) => {
-    await lockSuspensionAppealAuthorLifecycle(query, appealId)
     const { rows } = await query<ModerationAppeal>(
       sql`/* resolveModerationAppealAccept */
       UPDATE moderation_appeals
@@ -68,7 +63,6 @@ export async function resolveModerationAppealAccept(
       await liftUserSuspensionById(staffUserId, row.user_suspension_id, { query })
     } else if (row.post_id) {
       if (row.post_removal_kind === 'community') {
-        await lockPostPublication(query, row.post_id)
         const { rows: reinstatedReviews } = await query<{ community_id: string }>(
           sql`/* resolveModerationAppealAccept:clearCommunityUnpublish */
   UPDATE community_post_reviews

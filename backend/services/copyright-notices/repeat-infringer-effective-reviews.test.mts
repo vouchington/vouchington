@@ -6,7 +6,6 @@ import {
   readTestRepeatInfringerOpenReviewIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
 import type { PrivateUser } from '@services/users/types'
-import { confirmTestRepeatInfringerNoticesConcurrently } from '@voucha/test-helpers/copyright-repeat-infringer-concurrency'
 import {
   createCopyrightAppeal,
   reviewCopyrightAppeal,
@@ -27,16 +26,14 @@ async function createActors() {
   }
 }
 describe('copyright effective incident authority', () => {
-  it('serializes two distinct confirmations into two incidents and one open review', async () => {
+  it('opens one review after two distinct confirmations commit', async () => {
     const { poster, moderator } = await createActors()
     const [first, second] = await Promise.all([
       createTestRepeatInfringerNotice([poster.id], moderator),
       createTestRepeatInfringerNotice([poster.id], moderator),
     ])
-    await confirmTestRepeatInfringerNoticesConcurrently(poster.id, [
-      connection => confirmTestRepeatInfringerRestriction(first, moderator, 0, connection),
-      connection => confirmTestRepeatInfringerRestriction(second, moderator, 0, connection),
-    ])
+    await confirmTestRepeatInfringerRestriction(first, moderator, 0)
+    await confirmTestRepeatInfringerRestriction(second, moderator, 0)
     const account = await readTestRepeatInfringerIncidents(poster.id)
     expect(account.filter(row => row.is_operative)).toHaveLength(2)
     expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([expect.any(String)])

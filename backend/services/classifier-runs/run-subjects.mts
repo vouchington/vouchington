@@ -1,5 +1,4 @@
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
-import { lockPostPublication } from '@services/post-publication'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { requestClassifierRuns } from './run-requests.mts'
 import type { ClassifierRunSubject, CurrentClassifierRunInput } from './types.mts'
@@ -13,7 +12,6 @@ export async function lockApprovedPostClassifierInput(
   subject: ClassifierRunSubject,
 ): Promise<CurrentClassifierRunInput | null> {
   if (subject.postId === null) throw new Error('post classifier subject must be a post')
-  await lockPostPublication(query, subject.postId)
   const { rows } = await query<{ input_sha256: Buffer; community_id: string | null }>(sql`
     /* lockApprovedPostClassifierInput */
     SELECT llm_moderation_content_sha256 AS input_sha256, community_id FROM posts

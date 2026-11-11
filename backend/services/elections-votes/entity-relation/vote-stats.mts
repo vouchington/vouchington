@@ -20,7 +20,6 @@ import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import { randomUUID } from 'node:crypto'
 import { entityRelationElectionTables } from './target.mts'
-import { lockEntityRelationVoteStatsPostPublicationScopes } from './vote-stats-batch-publication-locks.mts'
 
 const topHashtagRelationTables = new Set([
   'relation__post__category__topic_alias',
@@ -94,9 +93,6 @@ async function persistEntityRelationVoteStats(
   stats: EntityRelationVoteStats,
 ): Promise<UpdatedEntityRelationVoteStats | undefined> {
   await using query = await beginTransaction()
-  await lockEntityRelationVoteStatsPostPublicationScopes(query, target.relationTable, [
-    target.entityRelationId,
-  ])
   const updated = await updateEntityRelationVoteStatsIfChanged(target, stats, query)
   const nextVotesScoreNet = stats.votes_score_up - stats.votes_score_down
   if (

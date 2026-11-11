@@ -55,7 +55,6 @@ export const upsertEntityRelation = async (
       relationOptions,
       relation.table_name,
       'activate',
-      [subject.id],
       objects.map(object => object.id),
       relation.subject_type === 'user' ? [subject.id] : [],
       async transactionQuery => {

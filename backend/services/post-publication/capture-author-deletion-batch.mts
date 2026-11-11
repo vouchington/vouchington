@@ -6,8 +6,6 @@ import {
   getInitiatedStoryPostIds,
   type SourceCandidate,
 } from './capture-author-deletion-candidates.mts'
-import { lockPostPublicationPostScopes } from './capture-posts.mts'
-import { lockAuthorPublicationLifecycle } from './lock.mts'
 import { recordPostPublicationChange } from './capture.mts'
 import { recordAuthorDeletionWork } from './capture-author-deletion-work.mts'
 /** Removes one mutation-backed source or authored-post page per committed transaction. */
@@ -91,7 +89,6 @@ async function lockInitiatedStoryPosts(
 }
 
 async function lockAuthorForDeletion(query: TransactionQuery, authorUserId: string): Promise<void> {
-  await lockAuthorPublicationLifecycle(query, authorUserId)
   await query(
     `/* processAuthorDeletionPublicationBatch:lockAuthor */ SELECT id FROM users WHERE id = $1::uuid FOR UPDATE`,
     [authorUserId],
@@ -109,7 +106,6 @@ async function processAuthoredPostBatch(
 }
 
 async function lockAuthoredPostScopes(query: TransactionQuery, postIds: string[]): Promise<void> {
-  await lockPostPublicationPostScopes(query, postIds)
   await query(
     `/* processAuthorDeletionPublicationBatch:lockAuthoredPosts */
       SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
@@ -150,7 +146,6 @@ async function lockContributedSourcePosts(
   query: TransactionQuery,
   postIds: string[],
 ): Promise<void> {
-  await lockPostPublicationPostScopes(query, postIds)
   await query(
     `/* processAuthorDeletionPublicationBatch:lockSourcePosts */
       SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,

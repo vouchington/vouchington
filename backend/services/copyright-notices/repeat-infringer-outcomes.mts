@@ -13,7 +13,6 @@ import {
   accelerateUserSuspensionAfterCommit,
   ensureUserSuspendedInTransaction,
 } from '@services/users/suspension'
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import {
@@ -82,7 +81,6 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
   `)
   const identity = identities[0]
   assert(identity, 404, 'Copyright repeat-infringer review not found')
-  await lockAuthorPublicationLifecycle(transaction, identity.account_user_id)
   const { rows } = await transaction<{ account_user_id: string; opened_at: Date }>(sql`
     /* recordCopyrightRepeatInfringerReviewOutcome */
     SELECT identity.account_user_id, identity.created_at AS opened_at

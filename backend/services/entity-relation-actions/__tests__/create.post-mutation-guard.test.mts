@@ -3,11 +3,9 @@ import { describe, expect, it } from 'vitest'
 
 import { createEntityRelationAction } from '../create.mts'
 import {
-  beginTransaction,
   createTestPost,
   createTestUserWithAge,
   getEntityRelation,
-  getTestPostgresBackendProcessId,
   insertTestTopic,
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
@@ -15,10 +13,8 @@ import {
   makeRelationParticipantPrivateForTest,
   withRelationPairPrivacyChangeForTest,
 } from '@voucha/test-helpers/relation-read-context'
-import { withPublicationWait } from '@voucha/test-helpers/post-publication-lock-race'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { PrivateUser } from '@services/users/types'
-import { lockPostPublication } from '@services/post-publication'
 
 describe('createEntityRelationAction post mutation guard', () => {
   it.each(['subject', 'object'] as const)(
@@ -100,74 +96,4 @@ describe('createEntityRelationAction post mutation guard', () => {
       getEntityRelation('relation__post__related__post', object.id, subject.id),
     ).resolves.toEqual([])
   })
-
-  it('fails closed when a participant effective root changes while waiting for publication', async () => {
-    const owner = (await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)) as PrivateUser
-    const firstRoot = await createTestPost({ user: owner })
-    const secondRoot = await createTestPost({ user: owner })
-    const reply = await createTestPost({
-      user: owner,
-      post_type: 'comment',
-      parent_post_id: firstRoot.id,
-      root_post_id: firstRoot.id,
-    })
-    const topicId = await insertTestTopic({
-      name: `Effective root race ${crypto.randomUUID()}`,
-      slug: `effective-root-race-${crypto.randomUUID()}`,
-      topicType: 'card',
-      createdById: owner.id,
-    })
-    const relation = getEntityRelationMetadataOrThrow({
-      subjectType: 'post',
-      predicate: 'category',
-      objectType: 'topic',
-    })
-    const locked = Promise.withResolvers<number>()
-    const release = Promise.withResolvers<void>()
-    const holder = holdPublicationLockThenMutate(reply.id, locked, release, query =>
-      query(
-        `/* testCreate */ UPDATE posts SET root_post_id = $1, parent_post_id = $1 WHERE id = $2`,
-        [secondRoot.id, reply.id],
-      ),
-    )
-    const holderPid = await locked.promise
-
-    const creating = withPublicationWait(holderPid, reply.id, release, holder, () =>
-      createEntityRelationAction(
-        owner,
-        {
-          kind: 'delegated',
-          credentialOwnerId: owner.id,
-          grantedScopes: [
-            'entity-relations:read',
-            'entity-relations:write',
-            'post-relations.owned-private:write',
-          ],
-        },
-        {
-          entityType: 'post',
-          entityId: reply.id,
-          predicate: 'category',
-          objectType: 'topic',
-          objectId: topicId,
-        },
-      ).catch((err: unknown) => err),
-    )
-    await expect(creating).resolves.toMatchObject({ statusCode: 404 })
-    await expect(getEntityRelation(relation.table_name, reply.id, topicId)).resolves.toEqual([])
-  })
 })
-
-async function holdPublicationLockThenMutate(
-  postId: string,
-  locked: PromiseWithResolvers<number>,
-  release: PromiseWithResolvers<void>,
-  mutate: (query: Awaited<ReturnType<typeof beginTransaction>>) => Promise<unknown>,
-): Promise<void> {
-  await using query = await beginTransaction()
-  await lockPostPublication(query, postId)
-  locked.resolve(await getTestPostgresBackendProcessId(query))
-  await release.promise
-  await mutate(query)
-  await query.commit()
-}

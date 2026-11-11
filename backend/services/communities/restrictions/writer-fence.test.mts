@@ -19,7 +19,6 @@ import {
 } from '@voucha/test-helpers/entities/community-restrictions'
 import {
   withConcurrentActorDeletionForTest,
-  withConcurrentActorSuspensionForTest,
   withConcurrentCommunityArchiveForTest,
   withConcurrentCommunityMembershipRemovalForTest,
 } from '@voucha/test-helpers/post-delegated-write-race'
@@ -106,25 +105,19 @@ describe('community restriction writers and concurrent settings writes', () => {
     expect(await countTestCommunityRestrictions(community.id)).toBe(0)
     expect(await readStaffActionHistory(currentUser.id)).toEqual([])
   })
-  it.each([
-    ['deletion', withConcurrentActorDeletionForTest, 401, 'User not found'],
-    ['suspension', withConcurrentActorSuspensionForTest, 403, 'Your account has been suspended'],
-  ] as const)(
-    'refuses activation when moderator %s wins its lifecycle fence',
-    async (_label, race, status, message) => {
-      const { currentUser, loaded, community } = await fixture()
-      await expect(
-        race(currentUser.id, () =>
-          activateCommunityRestrictions(currentUser, loaded, {
-            restrictionTypes: ['no_links'],
-            expiresAt: null,
-          }),
-        ),
-      ).rejects.toMatchObject({ status, message })
-      expect(await countTestCommunityRestrictions(community.id)).toBe(0)
-      expect(await readStaffActionHistory(currentUser.id)).toEqual([])
-    },
-  )
+  it('refuses activation when moderator deletion wins its lifecycle fence', async () => {
+    const { currentUser, loaded, community } = await fixture()
+    await expect(
+      withConcurrentActorDeletionForTest(currentUser.id, () =>
+        activateCommunityRestrictions(currentUser, loaded, {
+          restrictionTypes: ['no_links'],
+          expiresAt: null,
+        }),
+      ),
+    ).rejects.toMatchObject({ status: 401, message: 'User not found' })
+    expect(await countTestCommunityRestrictions(community.id)).toBe(0)
+    expect(await readStaffActionHistory(currentUser.id)).toEqual([])
+  })
   it('activation waits until the community settings write releases', async () => {
     const { currentUser, loaded, community } = await fixture()
     const restrictions = await withHeldCommunityUpdateForTest(community.id, () =>

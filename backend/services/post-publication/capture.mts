@@ -2,7 +2,7 @@ import type { TransactionQuery } from '@data-stores/psql'
 import { POST_PUBLICATION_REASONS, type PostPublicationChange } from './types.mts'
 import { capturedPublicationKeys } from './captured-keys.mts'
 import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
-import { lockPostPublicationScopes, postPublicationScopeIdentifier } from './lock.mts'
+import { postPublicationScopeIdentifier } from './lock.mts'
 
 const reasons = new Set<string>(POST_PUBLICATION_REASONS)
 
@@ -14,7 +14,7 @@ export async function recordPostPublicationChange(
   return changeId!
 }
 
-/** Fences every scope in one ordered statement, then registers each captured change. */
+/** Registers each captured change on the caller's transaction. */
 export async function recordPostPublicationChangeBatch(
   query: TransactionQuery,
   changes: readonly PostPublicationChange[],
@@ -26,10 +26,6 @@ export async function recordPostPublicationChangeBatch(
     if (typeof id !== 'string' || id.length === 0)
       throw new TypeError('Post publication scope requires an identifier')
   }
-  await lockPostPublicationScopes(
-    query,
-    changes.map(change => change.scope),
-  )
   return changes.map(change =>
     enqueueCapturedPublicationChangeAfterCommit(query, {
       scope: change.scope,

@@ -163,9 +163,7 @@ describe('paged image deletion', () => {
     const restore = overrideDynamicConfigFieldsForTest(imagesWorkConfig, { deletion_page_size: 1 })
     try {
       await deleteImageById(paged.imageId, { beginTransaction: transactions.beginTransaction })
-      expect(transactions.statements[0]!.join('\n')).not.toMatch(
-        /lockPostPublicationPostScopes|FROM posts\b|UPDATE posts\b/i,
-      )
+      expect(transactions.statements[0]!.join('\n')).not.toMatch(/FROM posts\b|UPDATE posts\b/i)
       expect(transactions.postScopeKeys[0]).toEqual([])
       await expect(getImageByAny(paged.imageId)).resolves.toBeNull()
       await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([

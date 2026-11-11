@@ -37,7 +37,6 @@ describe('source hide after a hostname is attached', () => {
         await addAdditionalHostname(topic.id, child, admin.id, { query: owner })
       else
         await writeEntityRelations(landing, admin, [{ subject: topic, object: { id: url.id } }], {
-          query: owner,
           skipBlockedHostnameGuard: true,
         })
       await runTestRssFeedHideLockRace({

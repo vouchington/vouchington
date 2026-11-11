@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { describe, it, expect, beforeAll, vi } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import {
   beginTransaction,
   createTestUserDirect,
@@ -23,7 +23,6 @@ import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
 import { voteAggregation } from '../../../queues/vote-aggregation/queues.mts'
 import { notifications } from '@queues/notifications/queues'
-import * as postPublicationPosts from '@services/post-publication/capture-posts'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
@@ -219,65 +218,5 @@ describe('refreshStoryPostForStory', () => {
         data: { postId: post.id },
       }),
     ).resolves.toHaveLength(1)
-  })
-
-  it('takes the publication lock before waiting on story topic relation rows', async () => {
-    const random = Math.random().toString(36).slice(2, 10)
-    const story = await insertTestStory({ title: `Publication lock story ${random}` })
-    const topicId = await insertTestTopic({
-      name: `Publication lock topic ${random}`,
-      slug: `publication-lock-topic-${random}`,
-      createdById: testUser.id,
-    })
-    const categorizedItemId = await insertItem(story.id)
-    await addCategoryToRssFeedItem(categorizedItemId, topicId)
-    await insertItem(story.id)
-    const prepared = await prepareStoryPost(story.id, testUser)
-    await prepared.finalize()
-    const { post } = prepared.response
-    const relationLocked = Promise.withResolvers<void>()
-    const releaseRelation = Promise.withResolvers<void>()
-    async function holdStoryTopicRelation(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* refreshStoryPost publication lock test */
-        SELECT 1
-        FROM relation__post__category__topic
-        WHERE subject_id = $1::uuid
-        FOR UPDATE`,
-        [post.id],
-      )
-      relationLocked.resolve()
-      await releaseRelation.promise
-      await query.commit()
-    }
-    const holder = holdStoryTopicRelation()
-    await relationLocked.promise
-    const lockPosts = postPublicationPosts.lockPostPublicationPostScopes
-    const postsLocked = Promise.withResolvers<void>()
-    const postSpy = vi
-      .spyOn(postPublicationPosts, 'lockPostPublicationPostScopes')
-      .mockImplementation(async (query, postIds) => {
-        await lockPosts(query, postIds)
-        postsLocked.resolve()
-      })
-
-    const refreshing = refreshStoryPostForStory(story.id)
-    try {
-      await postsLocked.promise
-      await expect(contendForStoryPublicationLock()).rejects.toMatchObject({ code: '55P03' })
-    } finally {
-      releaseRelation.resolve()
-      postSpy.mockRestore()
-    }
-    await holder
-    await refreshing
-
-    async function contendForStoryPublicationLock(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(`/* refreshStoryPost publication lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockPosts(query, [post.id])
-      await query.commit()
-    }
   })
 })

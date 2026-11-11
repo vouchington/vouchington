@@ -14,11 +14,7 @@ import { createPostRevision } from '@services/post-revisions'
 import { dismissPendingReportsForDeletedEntity } from '@services/moderation-reports/resolve'
 import { dismissPendingDisputesForDeletedReview } from '@services/review-disputes/resolve'
 import { recordModeratorAction } from '@services/moderator-actions'
-import {
-  lockPostPublication,
-  recordPostPublicationChange,
-  lockAuthorPublicationLifecycle,
-} from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { retirePostImagePlacements } from './image-placements.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
@@ -42,13 +38,11 @@ export const deletePost = async (
         if (options?.delegated)
           await runSequentially([
             () => lockActiveUserSubjectsForMutation(query, [deleter.id]),
-            () => lockAuthorPublicationLifecycle(query, deleter.id),
             () => assertDelegatedPostActorActive(deleter.id, { query }),
           ])
       },
       () => preparePostImageDeliveryMutation(query, { postId: post.id, imageIds: [] }),
       async () => {
-        await lockPostPublication(query, post.id)
         if (options?.delegated) {
           await lockDelegatedPostThread(query, post.id)
           await loadWritablePost(deleter, post.id, 'delete', { query })

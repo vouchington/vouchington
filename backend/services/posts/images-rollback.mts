@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { compensatePostRevision } from '@services/post-revisions'
 import sql from 'sql-template-strings'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 import {
   admitAutomatedPostModeration,
   ensureCurrentPostModerationVersion,
@@ -60,7 +60,6 @@ export async function rollbackPostImages(
       const { rows: availableImages } = await imageLock
       rollbackImagesAvailable = availableImages.length === imageIds.length
     }
-    await lockPostPublication(query, postId)
     const { rows: postRows } = await query<{
       llm_moderation_content_sha256: Buffer | null
       clearance_version: string

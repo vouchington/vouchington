@@ -14,7 +14,6 @@ import {
   callRejectedMcpTool,
   optionArgs,
 } from '@voucha/test-helpers/mcp-tool-contract'
-import { withConcurrentActorSuspensionForTest } from '@voucha/test-helpers/post-delegated-write-race'
 import {
   archiveTestCommunity,
   deleteTestCommunity,
@@ -239,32 +238,4 @@ describe('delegated post mutation contracts and transaction fences', () => {
       ),
     ).toContain('Community is archived')
   })
-})
-
-describe('delegated actor suspension fences', () => {
-  it.each(['create_post', 'act_on_post', 'delete_post'] as const)(
-    '%s refuses suspension committed after preflight',
-    async tool => {
-      const user = await caller()
-      const id = await insertTestPost({
-        title: 'Owned root',
-        slug: crypto.randomUUID(),
-        markdown: 'Before',
-        createdById: user.id,
-        clearanceStatus: 'approved',
-      })
-      const args =
-        tool === 'create_post'
-          ? { idempotency_key: crypto.randomUUID(), title: 'Refused' }
-          : tool === 'act_on_post'
-            ? optionArgs('edit', { id, title: 'Refused' })
-            : { id }
-      const result = await withConcurrentActorSuspensionForTest(user.id, () =>
-        callRejectedMcpTool(user, tool, args, SCOPES),
-      )
-      expect(result).toContain('Your account has been suspended')
-      const post = await getPostByAny(id, { readOnly: false })
-      expect(post?.title).toBe('Owned root')
-    },
-  )
 })

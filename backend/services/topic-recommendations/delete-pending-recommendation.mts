@@ -5,7 +5,7 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import { createPostRevision } from '@services/post-revisions'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueOnPostDeleted } from '@queues/entity-listeners/enqueues'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { currentUserCanWithdrawTopicRecommendation } from './authorization.mts'
 import type { TopicRecommendationPost } from './types.mts'
 
@@ -36,7 +36,6 @@ export async function deletePendingRecommendation(
     RETURNING post_id
   `)
   assert(reviewed.rowCount === 1, 403, 'Forbidden')
-  await lockPostPublication(query, recommendation.id)
   const deleted = await query(sql`/* deletePendingRecommendation */
     UPDATE posts SET deleted_at = CURRENT_TIMESTAMP, deleted_by_id = ${currentUser.id}
     WHERE id = ${recommendation.id} AND deleted_at IS NULL RETURNING id

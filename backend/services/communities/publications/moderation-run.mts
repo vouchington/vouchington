@@ -5,7 +5,6 @@ import {
 } from '@data-stores/psql'
 import { enqueueClassifierRunDispatcher } from '@queues/ai-agents/enqueues/classifier-run'
 import { requestClassifierRuns, type CurrentClassifierRunInput } from '@services/classifier-runs'
-import { lockPostPublication } from '@services/post-publication'
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
@@ -36,7 +35,6 @@ export async function lockCommunityModerationInput(
   subject: { postId: string | null },
 ): Promise<CurrentClassifierRunInput | null> {
   if (subject.postId === null) throw new Error('community moderation subject must be a post')
-  await lockPostPublication(query, subject.postId)
   const { rows } = await query<{ input_sha256: Buffer; community_id: string }>(
     sql`/* lockCommunityModerationInput */
     SELECT post.llm_moderation_content_sha256 AS input_sha256, review.community_id

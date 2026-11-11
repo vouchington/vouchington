@@ -1,5 +1,4 @@
 import type { OwnedTransaction } from '@data-stores/psql'
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import sql from 'sql-template-strings'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 
@@ -21,10 +20,5 @@ export async function lockCopyrightRepeatInfringerNoticeAccounts(
     ORDER BY account_user_id
   `)
   const { rows } = await transaction<{ account_user_id: string }>(statement)
-  const accountIds = rows.map(row => row.account_user_id)
-  for (const accountId of accountIds) {
-    // oxlint-disable-next-line no-await-in-loop -- all notice owners acquire the canonical author locks in UUID order.
-    await lockAuthorPublicationLifecycle(transaction, accountId)
-  }
-  return accountIds
+  return rows.map(row => row.account_user_id)
 }

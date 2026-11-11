@@ -1,7 +1,6 @@
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
-  lockPostPublication,
   recordPostPublicationChange,
   recordRssFeedDiscoverabilityChanges,
 } from '@services/post-publication'
@@ -26,7 +25,6 @@ export async function updateElectionStatsIfChanged(
     entityTable === 'topics' ? await listTopicPublicationFeedsPage([entityId], null) : null
 
   const run = async (query: TransactionQuery): Promise<UpdatedElectionStats | undefined> => {
-    if (entityTable === 'posts') await lockPostPublication(query, entityId)
     const statement = buildElectionStatsUpdateQuery(config, entityId, stats)
 
     const { rows } = await query<UpdatedElectionStats>(statement)

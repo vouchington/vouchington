@@ -16,7 +16,6 @@ import {
   softDeleteTopic,
 } from '@voucha/test-helpers'
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { PUBLISHER_TYPE_SLUGS } from '@ts-shared/utils/publisher-types'
@@ -25,7 +24,7 @@ import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { upsertEntityRelation } from './upsert.mts'
 
 describe('entity relation publication mutation locks', () => {
-  it('publishes an RSS item alias change while the read-only alias scope is held', async () => {
+  it('publishes an RSS item alias change', async () => {
     const user = await createTestUser({ administrator: true })
     const suffix = randomUUID()
     const hostname = `relation-lock-${suffix}.example.test`
@@ -51,8 +50,6 @@ describe('entity relation publication mutation locks', () => {
       objectType: 'topic_alias',
       predicate: 'category',
     })
-    await using holder = await beginTransaction()
-    await lockTopicAliasPublicationScopes(holder, [aliasId])
     const jobs = await captureAddedPublicationEffectsForScope(aliasId, async () => {
       await upsertEntityRelation(user, relation, { id: itemId }, [{ id: aliasId }], { vote: false })
     })

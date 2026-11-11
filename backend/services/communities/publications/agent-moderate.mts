@@ -3,7 +3,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import type { CommunityPostReview } from '../types.mts'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 
 /**
  * Three-state result for agent-driven content removal:
@@ -63,7 +63,6 @@ async function unpublishInTransaction(
   flagAssignments: SQLStatement = sql``,
 ): Promise<Exclude<AgentRemovalResult, 'not-applicable'>> {
   const { communityId, postId, moderationSystemUserId } = input
-  await lockPostPublication(query, postId)
   const { rowCount } = await write(
     sql`/* unpublishPostAsAgent */
       UPDATE community_post_reviews

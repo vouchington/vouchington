@@ -40,7 +40,6 @@
     "@services/images": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
     "@services/notifications": "workspace:^",
-    "@services/post-publication": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/runtime-request-validation": "workspace:^",
     "@services/urls": "workspace:^",

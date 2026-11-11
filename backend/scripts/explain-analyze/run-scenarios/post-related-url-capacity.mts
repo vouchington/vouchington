@@ -8,7 +8,6 @@ import {
   assertRelationLimits,
   relationLimitsConfig,
 } from '@services/entity-relations/relation-limits'
-import { lockPostPublicationPostScopes } from '@services/post-publication'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import {
@@ -68,7 +67,6 @@ async function captureCapacity(
     ],
   })
   await using query = await beginTransaction()
-  await lockPostPublicationPostScopes(query, postIds)
   await runAndCapture(
     id,
     async () => {

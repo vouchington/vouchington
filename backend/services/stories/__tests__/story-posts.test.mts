@@ -15,7 +15,6 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '../story-posts.mts'
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { canViewPost } from '@services/posts/check-privacy-access'
 import { getPostStoryByStoryId } from '../get-post-stories.mts'
 
@@ -130,7 +129,6 @@ describe('story posts', () => {
       storyTeller.id,
       releaseDeletion.promise,
       deletionReady.resolve,
-      query => lockAuthorPublicationLifecycle(query, storyTeller.id),
     )
     try {
       await deletionReady.promise

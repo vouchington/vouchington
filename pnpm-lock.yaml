@@ -1118,9 +1118,6 @@ importers:
       '@services/post-clearance':
         specifier: workspace:^
         version: link:../services/post-clearance
-      '@services/post-publication':
-        specifier: workspace:^
-        version: link:../services/post-publication
       '@services/posts':
         specifier: workspace:^
         version: link:../services/posts
@@ -5597,9 +5594,6 @@ importers:
       '@services/notifications':
         specifier: workspace:^
         version: link:../notifications
-      '@services/post-publication':
-        specifier: workspace:^
-        version: link:../post-publication
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
@@ -7113,9 +7107,6 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
     devDependencies:
-      '@services/post-publication':
-        specifier: workspace:^
-        version: link:../post-publication
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -7504,9 +7495,6 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
-      '@services/post-publication':
-        specifier: workspace:^
-        version: link:../post-publication
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames
@@ -9741,9 +9729,6 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      '@vouchington/postgres':
-        specifier: ^0.4.0
-        version: 0.4.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2

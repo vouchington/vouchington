@@ -5,7 +5,6 @@ import {
   imageDeliveryAuthorityStartedSql,
   lockImageAssetAdmission,
 } from '@services/media-delivery-safety'
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import { runSequentially } from '@modules/utils/run-sequentially'
 
@@ -24,7 +23,6 @@ export async function lockActivePostAuthorImageAdmission(
         throw err
       }
     },
-    () => lockAuthorPublicationLifecycle(query, creatorId),
     () => lockImageAssetAdmission(imageIds, query),
   ])
   return assertActivePostAuthor(query, creatorId)

@@ -13,7 +13,7 @@ import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { deletePostRatingRecord } from './post-ratings/delete.mts'
 import { createPostRevision } from '@services/post-revisions'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import onError from '@modules/on-error'
 
@@ -66,7 +66,6 @@ export async function addPostRating(
   await using query = await beginTransaction()
   await assertReviewTopicsAllowReviews([input.topic_id], { query })
   // ast-grep-ignore: no-three-sequential-awaits -- Take the publication advisory lock before the post row lock, then reject an exceeded rating limit before inserting the rating.
-  await lockPostPublication(query, post.id)
   await lockPostRatingMutation(query, post.id)
   await assertRatingCountBelowLimit(query, post.id, review_topic_ratings_max_items)
   try {
@@ -153,7 +152,6 @@ export async function updatePostRating(
   }
 
   await using query = await beginTransaction()
-  await lockPostPublication(query, post.id)
   await lockPostRatingMutation(query, post.id)
   const updateQuery = sql`/* updatePostRating */ UPDATE post_review_topic_ratings SET`
   if (changes.rating !== undefined && changes.order_index !== undefined) {
