@@ -47,7 +47,7 @@ describe('backend Vitest project config', () => {
     const path = 'backend/test-helpers/election-vote-stats.test.mts'
     const owners = backendProjects().filter(project => projectOwnsPath(project, path))
     expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
-    expect(owners[0]?.test?.globalSetup).toBe('./test-helpers/vitest.setup.data-stores.mts')
+    expect(owners[0]?.test?.globalSetup).toContain('./test-helpers/vitest.setup.data-stores.mts')
     expect(owners[0]?.test?.setupFiles).toContain(
       './test-helpers/vitest.setup.glide-mq-workers.mts',
     )
@@ -119,12 +119,12 @@ describe('backend Vitest project config', () => {
     expect(
       forkLeakProjects.map(project => ({
         name: project.test?.name,
-        globalSetup: project.test?.globalSetup,
+        globalSetup: [project.test?.globalSetup].flat(),
       })),
     ).toEqual(
       forkLeakProjects.map(project => ({
         name: project.test?.name,
-        globalSetup: './test-helpers/vitest.setup.data-stores.mts',
+        globalSetup: expect.arrayContaining(['./test-helpers/vitest.setup.data-stores.mts']),
       })),
     )
   })
@@ -165,10 +165,13 @@ describe('backend Vitest project config', () => {
       pool: 'forks',
       setupFiles: [
         './backend/test-helpers/vitest.setup.sentry-mock.mts',
-        './backend/test-helpers/vitest.setup.aws-mocks.mts',
+        './backend/test-helpers/vitest.setup.aws-emulator.mts',
       ],
     })
-    expect(noDataMocks?.globalSetup).toBeUndefined()
+    // The AWS Emulator is the only service a no-data project starts.
+    expect(noDataMocks?.globalSetup).toBe(
+      './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+    )
     expect(noDataMocks?.setupFiles).not.toEqual(
       expect.arrayContaining([
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
@@ -194,7 +197,9 @@ describe('backend Vitest project config', () => {
     ]) {
       const owners = backendProjects().filter(project => projectOwnsPath(project, path))
       expect(owners.map(project => project.test?.name)).toEqual(['backend-no-data-mocks'])
-      expect(owners[0]?.test?.globalSetup).toBeUndefined()
+      expect(owners[0]?.test?.globalSetup).toBe(
+        './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+      )
     }
     expect(dataMocks?.include).toContain(
       'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,mcp,worker-runtime,workers}/**/*.mock.test.mts',
