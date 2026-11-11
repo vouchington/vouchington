@@ -23,6 +23,10 @@ obligations. The runbook owns the activation procedure.
 - A delivery worker can never decide that a counter-notice is compliant or that a hold is
   qualifying.
 
+Email thread assignment uses the references known when an intake is admitted. A later arriving
+message may extend or make that graph ambiguous without rewriting an immutable case link. The
+retained receipt prevents erased private evidence from being admitted again on replay.
+
 ## Current screening authority
 
 AI screening of a structured form is advisory unless a current, completed clear result, a compliant

@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
@@ -10,15 +9,11 @@ import {
   assertNoThreadCorrespondenceDecision,
   assertRecommendationScope,
   logCopyrightEmailGraphOverflow,
-  logCopyrightEmailTokenLockOverflow,
+  logCopyrightEmailTokenOverflow,
 } from './email-promotion-admission-guards.mts'
 import type { PromoteCopyrightEmailIntakeInput } from './email-promotion-input.mts'
 import { buildEmailNotice, recordEmailPromotion } from './email-promotion-record.mts'
-import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
 import {
-  assertCopyrightEmailGraphUnchanged,
-  copyrightEmailThreadChangedError,
-  lockCopyrightEmailGraphIntakes,
   readCopyrightEmailGraphTokens,
   readCopyrightEmailThreadGraph,
 } from './email-thread-graph.mts'
@@ -41,44 +36,9 @@ export async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailInta
   `)
   assert(existing[0], 404, 'Copyright email intake not found')
   const graph = await readCopyrightEmailThreadGraph(transaction, input.intakeId, maxGraphRows)
-  observeSharedDbScope(
-    'promoteCopyrightEmailIntakeGraph',
-    { kind: 'ids', ids: [input.intakeId] },
-    undefined,
-    transaction,
-  )
   const tokens = graph.overflow
     ? { digests: [], overflow: false }
     : await readCopyrightEmailGraphTokens(transaction, graph.intakeIds, maxGraphRows)
-  // Ingestion takes these same sorted token locks before it inserts a reference or an edge.
-  // Taking them before intake FOR UPDATE prevents an intake/token lock inversion.
-  if (!graph.overflow && !tokens.overflow)
-    await lockCopyrightEmailThreadTokens(transaction, tokens.digests)
-  await lockCopyrightEmailGraphIntakes(
-    transaction,
-    graph.overflow || tokens.overflow ? [input.intakeId] : graph.intakeIds,
-  )
-  observeSharedDbScope(
-    'promoteCopyrightEmailIntakeGraphLocked',
-    { kind: 'ids', ids: [input.intakeId] },
-    undefined,
-    transaction,
-  )
-  if (!graph.overflow && !tokens.overflow) {
-    const afterLock = await readCopyrightEmailThreadGraph(transaction, input.intakeId, maxGraphRows)
-    assertCopyrightEmailGraphUnchanged(graph, afterLock)
-    const afterTokens = await readCopyrightEmailGraphTokens(
-      transaction,
-      afterLock.intakeIds,
-      maxGraphRows,
-    )
-    if (
-      afterTokens.overflow ||
-      tokens.digests.length !== afterTokens.digests.length ||
-      tokens.digests.some((digest, index) => digest !== afterTokens.digests[index])
-    )
-      throw copyrightEmailThreadChangedError()
-  }
   const shouldLinkReplies = !graph.overflow && !tokens.overflow
   const { rows: intakeRows } =
     await transaction<CopyrightEmailIntake>(sql`/* promoteCopyrightEmailIntake:read */
@@ -158,7 +118,7 @@ export async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailInta
     await transaction.commit()
     if (graph.overflow) logCopyrightEmailGraphOverflow(prior.promoted_copyright_notice_id, graph)
     if (tokens.overflow)
-      logCopyrightEmailTokenLockOverflow(prior.promoted_copyright_notice_id, maxGraphRows)
+      logCopyrightEmailTokenOverflow(prior.promoted_copyright_notice_id, maxGraphRows)
     return {
       noticeId: prior.promoted_copyright_notice_id,
       submissionId: prior.submission_id,
@@ -186,6 +146,6 @@ export async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailInta
   )
   await transaction.commit()
   if (graph.overflow) logCopyrightEmailGraphOverflow(notice.id, graph)
-  if (tokens.overflow) logCopyrightEmailTokenLockOverflow(notice.id, maxGraphRows)
+  if (tokens.overflow) logCopyrightEmailTokenOverflow(notice.id, maxGraphRows)
   return { noticeId: notice.id, submissionId, evidenceErased: false, isDuplicate: false }
 }

@@ -1,10 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
-import {
-  lockCopyrightEmailThreadTokens,
-  resolveCopyrightEmailThreadTokenIds,
-} from './email-thread-ancestors.mts'
+import { resolveCopyrightEmailThreadTokenIds } from './email-thread-ancestors.mts'
 import { COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE } from './email-thread-references.mts'
 
 export async function insertCopyrightEmailIntakeNoticeLink(
@@ -19,7 +16,6 @@ export async function insertCopyrightEmailIntakeNoticeLink(
   let matchedTokenId: string | null = null
   if (input.matchedReference) {
     const digest = hashToken(COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE, input.matchedReference)
-    await lockCopyrightEmailThreadTokens(transaction, [digest])
     matchedTokenId = (await resolveCopyrightEmailThreadTokenIds(transaction, [digest])).get(digest)!
   }
   // A new thread link must serialize with retention on the notice. Locking its intake

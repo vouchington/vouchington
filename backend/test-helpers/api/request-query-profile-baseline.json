@@ -447,38 +447,6 @@
     "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
-    "annotation": "readCopyrightEmailGraphTokens:matchedLinks",
-    "maxCount": null,
-    "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
-    "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion-admission.mts:70",
-    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
-  },
-  {
-    "annotation": "readCopyrightEmailGraphTokens:references",
-    "maxCount": null,
-    "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
-    "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion-admission.mts:70",
-    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
-  },
-  {
-    "annotation": "readCopyrightEmailThreadGraph:incoming",
-    "maxCount": null,
-    "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
-    "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion-admission.mts:68",
-    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
-  },
-  {
-    "annotation": "readCopyrightEmailThreadGraph:outgoing",
-    "maxCount": null,
-    "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
-    "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion-admission.mts:68",
-    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
-  },
-  {
     "annotation": "readFirstOwedCopyrightEnforcementTarget",
     "maxCount": null,
     "reason": "Each owed target is restricted in its own transaction, and the next owed target is read only after that commit so a concurrent restriction or superseding decision settles it",

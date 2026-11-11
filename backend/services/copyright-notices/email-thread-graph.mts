@@ -13,7 +13,7 @@ export type CopyrightEmailThreadGraph = {
 
 type CopyrightEmailGraphTokens = { digests: string[]; overflow: boolean }
 
-/** Read the graph's reference and matched-link tokens before taking intake locks. */
+/** Bound reference and matched-link token membership before admitting automatic reply links. */
 export async function readCopyrightEmailGraphTokens(
   transaction: TransactionQuery,
   intakeIds: readonly string[],
@@ -122,37 +122,6 @@ export async function readCopyrightEmailThreadGraph(
       observedRows: intakeIds.size + edges.size,
       overflow,
     }
-  }
-}
-
-/** FOR UPDATE, unlike NO KEY UPDATE, fences FK inserts of new edges and thread links. */
-export async function lockCopyrightEmailGraphIntakes(
-  transaction: TransactionQuery,
-  intakeIds: readonly string[],
-): Promise<void> {
-  const { rows } = await transaction<{ id: string }>(sql`
-    /* lockCopyrightEmailGraphIntakes */
-    SELECT id FROM copyright_notice_email_intakes
-    WHERE id = ANY(${[...intakeIds].toSorted()}::uuid[])
-    ORDER BY id FOR UPDATE
-  `)
-  if (rows.length !== intakeIds.length) throw copyrightEmailThreadChangedError()
-}
-
-export function assertCopyrightEmailGraphUnchanged(
-  before: CopyrightEmailThreadGraph,
-  after: CopyrightEmailThreadGraph,
-): void {
-  if (
-    before.overflow !== after.overflow ||
-    before.intakeIds.length !== after.intakeIds.length ||
-    before.descendantIntakeIds.length !== after.descendantIntakeIds.length ||
-    before.edges.length !== after.edges.length ||
-    before.intakeIds.some((id, i) => id !== after.intakeIds[i]) ||
-    before.descendantIntakeIds.some((id, i) => id !== after.descendantIntakeIds[i]) ||
-    before.edges.some((edge, i) => edge !== after.edges[i])
-  ) {
-    throw copyrightEmailThreadChangedError()
   }
 }
 

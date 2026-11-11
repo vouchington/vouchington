@@ -6,7 +6,6 @@ import {
   deleteExpiredCopyrightGuestCapabilities,
   lockCopyrightGuestCapabilityCases,
 } from './operational-retention-guest-capabilities.mts'
-import { lockCopyrightOrphanTokenDigests } from './operational-retention-orphan-tokens.mts'
 
 export type CopyrightOperationalSweepKind =
   | 'form_screening_attempts'
@@ -141,8 +140,6 @@ async function sweepPage(
   const rawIds = rawRows.map(row => row.id)
   if (kind === 'guest_capabilities' && rawIds.length > 0)
     await lockCopyrightGuestCapabilityCases(transaction, rawIds)
-  if (kind === 'orphan_email_thread_tokens' && rawIds.length > 0)
-    await lockCopyrightOrphanTokenDigests(transaction, rawIds)
   // Lock only the already capped raw ID page. SKIP LOCKED cannot walk an unbounded
   // prefix of busy rows, and skipped rows become eligible again on the next pass.
   const { rows: lockedRows } =

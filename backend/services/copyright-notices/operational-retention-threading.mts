@@ -2,7 +2,6 @@ import { beginTransaction } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { copyrightOperationalThreadEligibleSql } from './operational-retention-thread-eligibility.mts'
-import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
 import {
   lockCopyrightOperationalThreadCase,
   lockCopyrightThreadPreservationGate,
@@ -67,11 +66,9 @@ async function sweepPage(
     id: string
     copyright_notice_email_intake_id: string
     matched_token_id: string | null
-    matched_lookup_digest: string | null
   }>(sql`/* scanCopyrightThreadCaseLink */
     WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id)
-    SELECT link.id, link.copyright_notice_email_intake_id, link.matched_token_id,
-      token.lookup_digest AS matched_lookup_digest
+    SELECT link.id, link.copyright_notice_email_intake_id, link.matched_token_id
     FROM owner CROSS JOIN LATERAL (
       SELECT id, copyright_notice_email_intake_id, matched_token_id
       FROM copyright_notice_email_intake_notice_links link
@@ -79,8 +76,7 @@ async function sweepPage(
         AND link.id > COALESCE(${cursor.cursor_child_id}::uuid,
           '00000000-0000-0000-0000-000000000000'::uuid)
       ORDER BY link.id LIMIT 1
-    ) link
-    LEFT JOIN copyright_notice_email_thread_tokens token ON token.id = link.matched_token_id`)
+    ) link`)
   const link = links[0]
   if (!link) {
     await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
@@ -91,24 +87,18 @@ async function sweepPage(
   const phase = cursor.cursor_phase ?? 'references'
   const { rows: references } =
     phase === 'references'
-      ? await transaction<{ id: string; lookup_digest: string | null }>(sql`
+      ? await transaction<{ id: string }>(sql`
         /* scanCopyrightThreadIntakeReferences */
         WITH owner AS MATERIALIZED (
           SELECT ${link.copyright_notice_email_intake_id}::uuid AS intake_id
         ), page AS MATERIALIZED (
-          SELECT id, token_id FROM copyright_notice_email_thread_references
+          SELECT id FROM copyright_notice_email_thread_references
           WHERE copyright_notice_email_intake_id = (SELECT intake_id FROM owner)
           ORDER BY id LIMIT ${batchSize}
         )
-        SELECT page.id, token.lookup_digest FROM page
-        LEFT JOIN copyright_notice_email_thread_tokens token ON token.id = page.token_id`)
+        SELECT page.id FROM page`)
       : { rows: [] }
-  // Token, case replay, then legal party locks match the ingestion order.
-  // ast-grep-ignore: no-three-sequential-awaits -- Acquire token, case-replay, then preservation locks in ingress order before locking activity and advancing the legal/blocker proof cursors.
-  await lockCopyrightEmailThreadTokens(transaction, [
-    ...references.flatMap(row => (row.lookup_digest ? [row.lookup_digest] : [])),
-    ...(link.matched_lookup_digest ? [link.matched_lookup_digest] : []),
-  ])
+  // The case replay and preservation locks fence the retirement sweep.
   await lockCopyrightOperationalThreadCase(transaction, noticeId)
   await lockCopyrightThreadPreservationGate(transaction, noticeId)
   // Thread writers advance this projection in their own transaction. Hold its row until

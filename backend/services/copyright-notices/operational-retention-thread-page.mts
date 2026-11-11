@@ -11,7 +11,7 @@ export async function deleteCaseThreadPage(
   phase: ThreadPhase,
   edgeCursor: string | null,
   batchSize: number,
-  lockedReferenceIds: readonly string[],
+  referenceIds: readonly string[],
   matchedTokenId: string | null,
 ): Promise<{ deleted: number; phase: ThreadPhase | null; edgeCursor: string | null }> {
   await transaction(sql`/* enableCopyrightCaseThreadErasure */
@@ -22,7 +22,7 @@ export async function deleteCaseThreadPage(
       /* deleteExpiredCopyrightCaseThreadReferences */
       DELETE FROM copyright_notice_email_thread_references
       WHERE copyright_notice_email_intake_id = ${intakeId}
-        AND id = ANY(${[...lockedReferenceIds]}::uuid[])
+        AND id = ANY(${[...referenceIds]}::uuid[])
       RETURNING token_id`)
     if (removed.length > 0) {
       await deleteOrphanTokens(
@@ -31,8 +31,8 @@ export async function deleteCaseThreadPage(
       )
       return { deleted: removed.length, phase, edgeCursor: null }
     }
-    // A reference may have committed while the token and case locks were being acquired.
-    // Leave this phase in place so the next bounded transaction locks its digest first.
+    // A reference may have committed after the page read. Leave this phase in place so
+    // the next bounded transaction rechecks the intake.
     const { rows: remaining } = await transaction<{ id: string }>(sql`
       /* recheckCopyrightThreadIntakeReferences */
       WITH owner AS MATERIALIZED (SELECT ${intakeId}::uuid AS intake_id)

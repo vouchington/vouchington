@@ -3,22 +3,6 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightEmailThreadReferenceRow } from './email-thread-references.mts'
 
-/** Both arrival orders take the same private-token locks before either reads for an edge. */
-export async function lockCopyrightEmailThreadTokens(
-  transaction: TransactionQuery,
-  lookupTokens: readonly string[],
-): Promise<void> {
-  const tokens = [...new Set(lookupTokens)].toSorted()
-  if (tokens.length === 0) return
-  await transaction(sql`/* lockCopyrightEmailThreadTokens */
-    SELECT pg_advisory_xact_lock(hashtextextended(ordered.lookup_token, 0))
-    FROM (
-      SELECT unnest(${tokens}::text[]) AS lookup_token
-      ORDER BY lookup_token
-    ) ordered
-  `)
-}
-
 export async function insertCopyrightEmailThreadReferences(
   transaction: TransactionQuery,
   intakeId: string,

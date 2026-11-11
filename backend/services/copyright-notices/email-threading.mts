@@ -3,7 +3,6 @@ import sql from 'sql-template-strings'
 import {
   copyrightEmailMessageIdIsAmbiguous,
   insertCopyrightEmailThreadReferences,
-  lockCopyrightEmailThreadTokens,
   recordCopyrightEmailAncestorEdges,
 } from './email-thread-ancestors.mts'
 import {
@@ -28,14 +27,8 @@ export async function recordCopyrightEmailThreadReferences(input: {
   const referenceRows = buildCopyrightEmailThreadReferenceRows(input)
   await using transaction = await beginTransaction()
   let tokenIds = new Map<string, string>()
-  if (referenceRows.length > 0) {
-    await lockCopyrightEmailThreadTokens(
-      transaction,
-      referenceRows.map(row => row.lookup_digest),
-    )
-  }
-  // Preserve the ingestion token-before-intake order. The intake lock fences a concurrent case
-  // link while its case-level advisory lock fences the retirement sweep.
+  // The intake lock fences a concurrent case link while its case-level advisory lock fences
+  // the retirement sweep.
   const { rows: liveIntakes } = await transaction<{ raw_storage_object_id: string | null }>(sql`
     /* recordCopyrightEmailThreadReferences:lockIntake */
     SELECT raw_storage_object_id FROM copyright_notice_email_intakes

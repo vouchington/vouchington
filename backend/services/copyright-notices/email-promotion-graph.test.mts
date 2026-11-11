@@ -1,14 +1,6 @@
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
-import {
-  readCopyrightEmailAncestorIds,
-  lockTestCopyrightEmailIntakeForGraphChange,
-} from '@voucha/test-helpers/copyright-email-ancestor-edges'
-import { createUnparsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import {
-  readCopyrightEmailIntakeNoticeLinks,
-  readCopyrightEmailIntakeReview,
-} from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import {
   copyrightEmailMessageId,
   copyrightEmailPromotionInput,
@@ -16,13 +8,6 @@ import {
   recordThreadedCopyrightEmail,
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it, vi } from 'vitest'
-import { installSharedDbScopeObserver } from '../../../test-helpers/vitest-shared-db-scope-observer.mts'
-import {
-  insertCopyrightEmailThreadReferences,
-  lockCopyrightEmailThreadTokens,
-  recordCopyrightEmailAncestorEdges,
-} from './email-thread-ancestors.mts'
-import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
 import { copyrightConfig } from './config.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { readBoundedCopyrightEmailAncestorIds } from './email-thread-ancestor-graph.mts'
@@ -76,65 +61,33 @@ describe('copyright email promotion graph bound', () => {
     }
   })
 
-  it('rejects a new edge committed between the graph read and intake locks, then accepts retry', async () => {
+  it('leaves a reply unlinked when reference tokens exceed the graph budget', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const root = await createUnparsedCopyrightEmailIntake()
     const messageId = copyrightEmailMessageId()
+    const root = await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
     const reply = await recordThreadedCopyrightEmail({
       messageId: copyrightEmailMessageId(),
-      replyReferences: [messageId],
+      replyReferences: [messageId, copyrightEmailMessageId(), copyrightEmailMessageId()],
     })
-    const referenceRows = buildCopyrightEmailThreadReferenceRows({
-      messageId,
-      inReplyTo: [],
-      references: [],
+    const restore = overrideDynamicConfigFieldsForTest(copyrightConfig, {
+      emailThreadGraphMaxRows: 3,
     })
-    await using ingestion = await beginTransaction()
-    await lockCopyrightEmailThreadTokens(ingestion, [referenceRows[0]!.lookup_digest])
-    await insertCopyrightEmailThreadReferences(ingestion, root.id, referenceRows)
-    await recordCopyrightEmailAncestorEdges(ingestion, root.id)
-    await lockTestCopyrightEmailIntakeForGraphChange(root.id, ingestion)
-
-    let graphRead!: () => void
-    const reachedGraphRead = new Promise<void>(resolve => {
-      graphRead = resolve
-    })
-    const dispose = installSharedDbScopeObserver(event => {
-      if (
-        event.operation === 'promoteCopyrightEmailIntakeGraph' &&
-        event.scope.kind === 'ids' &&
-        event.scope.ids[0] === root.id
-      )
-        graphRead()
-    })
-    const input = await copyrightEmailPromotionInput(moderator, root.id)
+    const log = vi.spyOn(console, 'info').mockImplementation(() => {})
     try {
-      const promotion = promoteCopyrightEmailIntake(input)
-        .then(() => new Error('Promotion unexpectedly succeeded during a graph change'))
-        .catch((err: unknown) => err)
-      await reachedGraphRead
-      await ingestion.commit()
-      expect(await promotion).toMatchObject({
-        status: 409,
-        code: 'copyright_email_thread_changed',
-      })
+      const promoted = await promoteCopyrightEmailIntake(
+        await copyrightEmailPromotionInput(moderator, root.intakeId),
+      )
+      expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
+      expect(log.mock.calls).toEqual([
+        [
+          'copyright_email_thread_token_lock_overflow',
+          { noticeId: promoted.noticeId, observedRows: 4 },
+        ],
+      ])
     } finally {
-      dispose()
+      restore()
+      log.mockRestore()
     }
-    await expect(readCopyrightEmailIntakeReview(root.id)).resolves.toEqual([])
-    await expect(readCopyrightEmailIntakeNoticeLinks(root.id)).resolves.toEqual([])
-    await expect(readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).resolves.toEqual([])
-    await expect(readCopyrightEmailAncestorIds(reply.intakeId)).resolves.toEqual([root.id])
-
-    const promoted = await promoteCopyrightEmailIntake(input)
-    const queue = await searchCopyrightStaffEmailIntakes(moderator, {
-      limit: 1,
-      intakeIds: [reply.intakeId],
-    })
-    expect(queue.intakes[0]).toMatchObject({
-      linked_notice_id: promoted.noticeId,
-      review_path: 'matched_thread',
-    })
   })
 
   it('leaves every reply unlinked when a two-reply graph exceeds the cap', async () => {
@@ -195,7 +148,7 @@ describe('copyright email promotion graph bound', () => {
     expect(graph.edges).toHaveLength(2)
   })
 
-  it('counts and locks a descendant’s outside ancestor before its notice can be linked', async () => {
+  it('counts a descendant’s outside ancestor before its notice can be linked', async () => {
     const rootMessageId = copyrightEmailMessageId()
     const outsideMessageId = copyrightEmailMessageId()
     const root = await recordThreadedCopyrightEmail({
