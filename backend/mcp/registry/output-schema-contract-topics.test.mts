@@ -67,12 +67,12 @@ describe('MCP output schema contract for topic reads — real DB', () => {
     await setTopicBestSortInputs(cardA, 7)
   })
 
-  it('returns populated read_data_points.topic_insights', async () => {
+  it('returns populated read_topic.data_point_insights', async () => {
     const result = await callStructuredMcpTool(
       caller,
-      'read_data_points',
-      optionArgs('topic_insights', { topic_id: cardA }),
-      ['data-points:read'],
+      'read_topic',
+      optionArgs('data_point_insights', { topic_id: cardA }),
+      ['topics:read'],
     )
 
     expect(result).toMatchObject({ success: true, topic_id: cardA, approved_count: 1 })
@@ -80,7 +80,7 @@ describe('MCP output schema contract for topic reads — real DB', () => {
     expect(Object.keys(result['credit_score_distribution'] as object).length).toBeGreaterThan(0)
   })
 
-  it('returns read_data_points.topic_insights for a topic without data points', async () => {
+  it('returns read_topic.data_point_insights for a topic without data points', async () => {
     const empty = await insertTestTopic({
       name: `Contract Empty ${suffix}`,
       slug: `contract-empty-${suffix}`,
@@ -89,9 +89,9 @@ describe('MCP output schema contract for topic reads — real DB', () => {
 
     const result = await callStructuredMcpTool(
       caller,
-      'read_data_points',
-      optionArgs('topic_insights', { topic_id: empty }),
-      ['data-points:read'],
+      'read_topic',
+      optionArgs('data_point_insights', { topic_id: empty }),
+      ['topics:read'],
     )
 
     expect(result).toMatchObject({ success: true, total_count: 0, approval_rate: null })
@@ -213,7 +213,7 @@ describe('MCP output schema contract for topic reads — real DB', () => {
   })
 
   it.each([
-    ['read_data_points', optionArgs('topic_insights', { topic_id: missing }), 'data-points:read'],
+    ['read_topic', optionArgs('data_point_insights', { topic_id: missing }), 'topics:read'],
     ['read_topic', optionArgs('metrics', { topic_id: missing }), 'topics:read'],
     ['read_topic', optionArgs('details', { topic_id: missing }), 'topics:read'],
     [

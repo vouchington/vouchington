@@ -186,7 +186,7 @@ describe('MCP output schema contract for the other read tools — real DB', () =
     expect(result).toEqual({ success: false, error: 'Topic not found' })
   })
 
-  it('returns non-empty read_data_points.search', async () => {
+  it('returns non-empty read_posts.search data-point filter', async () => {
     const topicId = await insertTestTopic({
       name: `Contract Data Topic ${suffix}`,
       slug: `contract-data-topic-${suffix}`,
@@ -205,29 +205,33 @@ describe('MCP output schema contract for the other read tools — real DB', () =
 
     const result = await callStructuredMcpTool(
       caller,
-      'read_data_points',
-      optionArgs('search', { topic_id: topicId }),
-      ['data-points:read'],
+      'read_posts',
+      optionArgs('search', {
+        data_point_topic: topicId,
+        data_point_result: 'approved',
+        data_point_credit_score_range: '740-799',
+        post_types: ['data_point'],
+      }),
+      ['posts:read'],
     )
 
     expect(result['results']).toEqual([
       {
         id,
         title: `Contract Data Point ${suffix}`,
-        data_point_vertical: 'credit_card',
-        structured_data: expect.objectContaining({ result: 'approved' }),
+        post_type: 'data_point',
       },
     ])
   })
 
-  it('returns the not-found result of read_data_points.search', async () => {
+  it('returns the not-found result of read_posts.search data-point filter', async () => {
     const result = await callStructuredMcpTool(
       caller,
-      'read_data_points',
-      optionArgs('search', { topic_id: `missing-topic-${suffix}` }),
-      ['data-points:read'],
+      'read_posts',
+      optionArgs('search', { data_point_topic: `missing-topic-${suffix}` }),
+      ['posts:read'],
     )
 
-    expect(result).toEqual({ success: false, error: 'Topic not found' })
+    expect(result).toMatchObject({ success: true, results: [] })
   })
 })

@@ -13,7 +13,6 @@ export const sdkMergedSuccessNames = {
     'read_feed',
     'read_posts',
     'read_hostnames',
-    'read_data_points',
     'read_my_review_disputes',
     'read_my_moderation_appeals',
     'read_my_lists',

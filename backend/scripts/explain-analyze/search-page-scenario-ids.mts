@@ -1,6 +1,7 @@
 export const SEARCH_PAGE_SCENARIO_IDS = [
   'search-data-points-credit-best',
   'search-data-points-credit-hot',
+  'search-data-points-credit-new',
   'search-data-points-filtered-page',
   'search-data-points-result-best',
   'search-data-points-result-hot',

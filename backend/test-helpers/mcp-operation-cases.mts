@@ -54,9 +54,9 @@ function mergedUserCases(): OperationCase[] {
     group.options.map(entry => `${group.name}.${entry.option}`),
   )
   if (
-    keys.length !== 64 ||
-    userFixtures.cases.length !== 69 ||
-    userFixtureKeys.size !== 64 ||
+    keys.length !== 63 ||
+    userFixtures.cases.length !== 68 ||
+    userFixtureKeys.size !== 63 ||
     keys.some(key => !userFixtureKeys.has(key)) ||
     [...userFixtureKeys].some(key => !keys.includes(key))
   ) {
@@ -177,8 +177,8 @@ export function currentOperationCases(): OperationCase[] {
     ...audiences.flatMap(audience => singleCases(audience, mergedNames)),
   ]
   if (
-    cases.length !== 339 ||
-    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 334
+    cases.length !== 338 ||
+    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 333
   )
     throw new Error('current operation inventory drift')
   for (const audience of audiences) {

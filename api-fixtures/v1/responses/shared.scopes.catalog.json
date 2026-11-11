@@ -199,15 +199,6 @@
       "audience": "user",
       "description_key": null,
       "requires": null,
-      "resource": "data-points",
-      "scope": "data-points:read",
-      "surfaces": ["api-key", "oauth"]
-    },
-    {
-      "action": "read",
-      "audience": "user",
-      "description_key": null,
-      "requires": null,
       "resource": "disputes",
       "scope": "disputes:read",
       "surfaces": ["api-key", "oauth"]

@@ -37,7 +37,7 @@ export const sdkCatalogCases = [
     scopes: preModerationScopes,
     plan: 'pro',
     admin: true,
-    count: 72,
+    count: 71,
   },
   {
     server: USER_MCP_SERVER_CONFIG,

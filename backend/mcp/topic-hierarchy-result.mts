@@ -30,19 +30,16 @@ export const HIERARCHY_ARGUMENT_PROPERTIES = {
   hierarchy: {
     type: 'string',
     enum: [...HIERARCHY_DIRECTIONS],
-    description:
-      'Also return related topics. "parents" = what this topic belongs to (for example the bank that issues a card), "children" = what belongs to this topic (for example every card a bank issues), "both" = each. Omit for no related topics.',
+    description: 'Parents, paged children or both.',
   },
   children_after: {
     type: 'string',
-    description:
-      'Cursor from a previous result children_page_info.end_cursor, for the next page of children. Only used when hierarchy is "children" or "both".',
+    description: 'children_page_info.end_cursor (children/both).',
   },
   children_limit: {
     type: 'integer',
     minimum: 1,
-    description:
-      'Maximum number of children per page. Defaults to 25; values over 100 are clamped to 100. Only used when hierarchy is "children" or "both".',
+    description: 'Children/both: default 25, clamped to 100.',
   },
 }
 

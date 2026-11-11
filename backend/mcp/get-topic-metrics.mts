@@ -38,8 +38,7 @@ type ToolResult =
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description:
-      'Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.',
+    description: 'Topic post/follower counts and star ratings.',
     parameters: {
       type: 'object',
       properties: {

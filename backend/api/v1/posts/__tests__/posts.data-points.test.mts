@@ -1,3 +1,4 @@
+import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -18,6 +19,53 @@ describe('posts.data-points', () => {
     user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     cardTopicId = await insertTestCard({ createdById: user.id })
     bankAccountTopicId = await insertTestBankAccount({ createdById: user.id })
+  })
+
+  it('narrows data-point search by result and credit score together', async () => {
+    const suffix = crypto.randomUUID()
+    const approvedId = await insertTestDataPoint({
+      title: `Filter approved ${suffix}`,
+      slug: `filter-approved-${suffix}`,
+      createdById: user.id,
+      topicId: cardTopicId,
+      result: 'approved',
+      creditScoreRange: '740-799',
+    })
+    await insertTestDataPoint({
+      title: `Filter denied ${suffix}`,
+      slug: `filter-denied-${suffix}`,
+      createdById: user.id,
+      topicId: cardTopicId,
+      result: 'denied',
+      creditScoreRange: '580-669',
+    })
+    const response = await createRequest()
+      .get('/api/v1/posts')
+      .query({
+        data_point_topic: cardTopicId,
+        creator: user.id,
+        data_point_result: 'approved',
+        data_point_credit_score_range: '740-799',
+      })
+      .expect(200)
+    expect(response.body.results.map((row: { id: string }) => row.id)).toEqual([approvedId])
+    const empty = await createRequest()
+      .get('/api/v1/posts')
+      .query({
+        data_point_topic: cardTopicId,
+        creator: user.id,
+        data_point_result: 'denied',
+        data_point_credit_score_range: '740-799',
+      })
+      .expect(200)
+    expect(empty.body.results).toEqual([])
+  })
+
+  it.each([
+    { data_point_result: 'not-a-result' },
+    { data_point_credit_score_range: 'not-a-range' },
+  ])('rejects unsupported data-point filter values: %j', async query => {
+    await createRequest().get('/api/v1/posts').query(query).expect(422)
   })
 
   const makeCreditCardPayload = (topicId: string) => ({

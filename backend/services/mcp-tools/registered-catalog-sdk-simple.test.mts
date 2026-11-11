@@ -185,8 +185,10 @@ describe('registered catalog SDK', () => {
     const client = await connect(cases[0]!, owner)
     try {
       const catalog = await createSdkCatalogAssertions(client)
-      const result = await callAndValidate(catalog, 'read_data_points', 'search', {
-        topic_id: topicId,
+      const result = await callAndValidate(catalog, 'read_posts', 'search', {
+        data_point_topic: topicId,
+        data_point_result: 'approved',
+        post_types: ['data_point'],
       })
       expect(result).toMatchObject({
         success: true,

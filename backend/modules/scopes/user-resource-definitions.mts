@@ -5,7 +5,6 @@ const USER_RESOURCE_SCOPES = {
   bookmarks: ['read', 'write'],
   cards: ['read', 'write'],
   communities: ['read', 'write'],
-  'data-points': ['read'],
   disputes: ['read', 'write'],
   'domain-ratings': ['read'],
   feeds: ['read'],

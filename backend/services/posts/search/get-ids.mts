@@ -94,13 +94,6 @@ export async function getPostIds(
     __entity_type: 'post',
     id: row.id,
     post_type: row.post_type,
-    ...(row.title === undefined
-      ? {}
-      : {
-          title: row.title,
-          data_point_vertical: row.data_point_vertical ?? null,
-          structured_data: row.structured_data ?? null,
-        }),
     ...(sort === 'trending' && options.include_trending_score
       ? { trending_score: Number(row.trending_score) }
       : {}),

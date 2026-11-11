@@ -6,7 +6,7 @@ import { ALL_TOOLS } from './index.mts'
 // MCP charges a tool call to the rate-limit bucket of each REST route in `meta.api`, so a tool that
 // forgets to declare its REST twin skips that route's limit. These tools are read-only aggregates
 // built from data stores, with no REST route to charge.
-const NO_REST_TWIN = new Set(['get_domain_ratings', 'read_data_points'])
+const NO_REST_TWIN = new Set(['get_domain_ratings'])
 
 const isMcpTool = (tool: Tool) => tool.meta?.audience != null
 const mcpTools = ALL_TOOLS.filter(isMcpTool)

@@ -66,17 +66,13 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
   },
   page_info: componentSchema('PageInfo'),
 })
-
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description:
-      'Search by keyword, meaning or similar item. Follow opaque end_cursor while has_next_page.',
+    description: 'Search posts; follow opaque end_cursor while has_next_page.',
     parameters: {
       type: 'object',
       properties: {
-        ...pagedSearchSchemaProperties(
-          'Keyword search. Same as GET /api/v1/posts q: matches post text and up to five #hashtags.',
-        ),
+        ...pagedSearchSchemaProperties('Search text and up to five #hashtags (REST q).'),
         ...postSearchFilterSchemaProperties(),
       },
       required: [],
@@ -123,6 +119,12 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
             }),
             ...(topics.data_point_topic && { data_point_topic: topics.data_point_topic }),
             ...(args.data_point_vertical && { data_point_vertical: args.data_point_vertical }),
+            ...(args.data_point_result !== undefined && {
+              data_point_result: args.data_point_result,
+            }),
+            ...(args.data_point_credit_score_range !== undefined && {
+              data_point_credit_score_range: args.data_point_credit_score_range,
+            }),
             ...(topics.review_topic && { review_topic: topics.review_topic }),
             ...(args.story_id && { story_id: args.story_id }),
             ...(args.topic_recommendation_status && {
@@ -144,7 +146,6 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           (await rejectMcpSimilarSeed(viewer !== undefined, searchOptions.similar_post_id))
         )
           return { results: [], page_info: EMPTY_PAGE_INFO }
-
         return getPostIds(viewer, {
           ...searchOptions,
           omitLimit: false,
@@ -158,7 +159,6 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       const visiblePosts = masked
         .slice(0, posts.length)
         .filter((post): post is NonNullable<typeof post> => post != null)
-
       const references = await getPostHackerNewsSummaries(visiblePosts.map(post => post.id))
       return {
         success: true,
@@ -174,5 +174,4 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       }
     },
 }
-
 export default tool

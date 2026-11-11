@@ -11102,6 +11102,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@ts-shared/data-points':
+        specifier: workspace:^
+        version: link:../../../ts-shared/data-points
       '@ts-shared/feed-capabilities':
         specifier: workspace:^
         version: link:../../../ts-shared/feed-capabilities
