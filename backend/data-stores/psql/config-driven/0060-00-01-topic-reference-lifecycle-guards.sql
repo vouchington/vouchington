@@ -176,7 +176,7 @@ BEGIN
     -- key-share lock on the topic row. Admission's FOR UPDATE then waits for this writer to commit, and a
     -- writer that waited for admission re-reads the committed reservation here and is rejected.
     EXECUTE format(
-      'CREATE OR REPLACE TRIGGER trigger_topic_references_after_fk AFTER INSERT OR UPDATE OR DELETE ON %s FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references(%s)',
+      'CREATE OR REPLACE TRIGGER trigger_topic_references_after_foreign_key AFTER INSERT OR UPDATE OR DELETE ON %s FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references(%s)',
       reference_table.qualified_name, reference_table.column_arguments
     );
   END LOOP;
