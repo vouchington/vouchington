@@ -119,10 +119,9 @@ describe('copyright email reference and retirement SSI', () => {
       inReplyTo: [],
       references: [],
     }
-    const writer = recordCopyrightEmailThreadReferences(input).then(
-      value => ({ status: 'fulfilled' as const, value }),
-      (err: unknown) => ({ status: 'rejected' as const, error: err }),
-    )
+    const writer = recordCopyrightEmailThreadReferences(input)
+      .then(value => ({ status: 'fulfilled' as const, value }))
+      .catch((err: unknown) => ({ status: 'rejected' as const, error: err }))
     try {
       await atInsert.promise
       const retired = await sweepCopyrightCaseThreads({
@@ -179,10 +178,9 @@ describe('copyright email reference and retirement SSI', () => {
       now: new Date(Date.now() + 181 * DAY_MS),
       limits: { batchSize: 10, maxBatches: 100 },
     }
-    const sweep = runCopyrightOperationalRetentionCleanup(options).then(
-      value => ({ status: 'fulfilled' as const, value }),
-      (err: unknown) => ({ status: 'rejected' as const, error: err }),
-    )
+    const sweep = runCopyrightOperationalRetentionCleanup(options)
+      .then(value => ({ status: 'fulfilled' as const, value }))
+      .catch((err: unknown) => ({ status: 'rejected' as const, error: err }))
     try {
       await atProof.promise
       const writerInput = {
@@ -191,10 +189,9 @@ describe('copyright email reference and retirement SSI', () => {
         inReplyTo: [],
         references: [],
       }
-      const writer = await recordCopyrightEmailThreadReferences(writerInput).then(
-        value => ({ status: 'fulfilled' as const, value }),
-        (err: unknown) => ({ status: 'rejected' as const, error: err }),
-      )
+      const writer = await recordCopyrightEmailThreadReferences(writerInput)
+        .then(value => ({ status: 'fulfilled' as const, value }))
+        .catch((err: unknown) => ({ status: 'rejected' as const, error: err }))
       if (writer.status === 'rejected') assertMappedSerializationConflict(writer.error)
       const afterWriter = await readCopyrightThreadReferenceState(intake.id)
       expect([before.referenceCount, before.referenceCount + 1]).toContain(

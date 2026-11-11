@@ -1,7 +1,7 @@
-import { randomBytes, randomInt } from 'node:crypto'
+import { randomBytes } from 'node:crypto'
 import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 
 type Token = { id: string; lookup_digest: string }
 
@@ -20,7 +20,7 @@ export async function seedCopyrightThreadTokenAtForTest(input: {
   intakeId?: string
   lookupDigest?: string
 }): Promise<string> {
-  const id = getMinUUIDv7ForDate(new Date(input.createdAt.getTime() + randomInt(1000)))
+  const id = uuidv7({ msecs: input.createdAt.getTime() })
   const digest = input.lookupDigest ?? randomBytes(32).toString('hex')
   await write(sql`/* seedCopyrightThreadTokenAtForTest */
     INSERT INTO copyright_notice_email_thread_tokens (id, lookup_digest)
