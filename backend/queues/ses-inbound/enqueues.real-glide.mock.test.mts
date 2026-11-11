@@ -2,6 +2,7 @@ import { Worker } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
+import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq/glide-mq-shared-client'
 import { background } from '@queues/background/queues'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import {
@@ -21,6 +22,10 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 
 describe('SES inbound reconciliation through real GlideMQ', () => {
   it('retries a retained failed process job for an object still in S3', async () => {
+    // The shared command client opens its pipe on its first command and keeps it for the life of
+    // the process, so a baseline taken before that command is an off-by-one that fails when the
+    // queue's first add opens it.
+    await workerQueueCommandClient.ping()
     const pipeWrapsBefore = countActivePipeWraps()
     // A graceful close waits out the worker's in-flight blocking read, so keep that read short.
     const workerOptions = {
