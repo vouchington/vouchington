@@ -1347,9 +1347,6 @@ importers:
       '@aws-sdk/client-dynamodb':
         specifier: ^3.1164.0
         version: 3.1164.0
-      '@aws-sdk/client-s3':
-        specifier: ^3.1164.0
-        version: 3.1164.0
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
         version: 1.32.2(supports-color@10.2.2)(zod@4.6.5)
@@ -12731,9 +12728,6 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1164.0
         version: 3.1164.0
-      '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1164.0
-        version: 3.1164.0
       '@data-stores/analytics':
         specifier: workspace:^
         version: link:../data-stores/analytics
@@ -13310,9 +13304,6 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
-      '@aws-sdk/client-s3':
-        specifier: ^3.1164.0
-        version: 3.1164.0
       '@valkey/valkey-glide':
         specifier: ^2.5.3
         version: 2.5.3
