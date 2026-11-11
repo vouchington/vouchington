@@ -1,3 +1,4 @@
+import { recordQueryErrorContext } from './query-error-context.mts'
 import type { QueryExecutor } from './types.mts'
 import { createCodedError } from '@vouchington/sentry'
 
@@ -28,6 +29,7 @@ export function normalizeTopicReferenceQuery<Query extends QueryExecutor>(query:
     apply(target, thisArg, args: Parameters<QueryExecutor>) {
       const pending: ReturnType<QueryExecutor> = Reflect.apply(target, thisArg, args)
       return pending.catch((err: unknown) => {
+        recordQueryErrorContext(err)
         throw normalizeTopicReferenceError(err)
       })
     },
