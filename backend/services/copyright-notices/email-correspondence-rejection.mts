@@ -31,7 +31,7 @@ export async function rejectCopyrightEmailCorrespondence(input: {
   assertRecommendationOrFallback(input.recommendationId, input.manualFallbackReason)
   await using transaction = await beginTransaction()
   const { rows: notices } = await transaction<{ id: string }>(sql`
-    /* rejectCopyrightEmailCorrespondence:lockNotice */
+    /* rejectCopyrightEmailCorrespondence:notice */
     SELECT notice.id FROM copyright_notice_email_intake_notice_links link
     JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
     WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
@@ -40,7 +40,7 @@ export async function rejectCopyrightEmailCorrespondence(input: {
   const { rows } = await transaction<{
     notice_id: string
     amazon_ses_message_id: string
-  }>(sql`/* rejectCopyrightEmailCorrespondence:lock */
+  }>(sql`/* rejectCopyrightEmailCorrespondence:pending */
     SELECT link.copyright_notice_id AS notice_id, intake.amazon_ses_message_id
     FROM copyright_notice_email_intakes intake
     JOIN copyright_notice_email_intake_notice_links link

@@ -47,3 +47,19 @@ export function copyrightCasePurgeEligibilitySql(noticeId: string, now: Date = n
             WHERE review.copyright_notice_form_intake_id = intake.id)))
   `
 }
+
+/** Fresh legal admission at each deletion claim or evidence marker statement. */
+export function copyrightCasePurgePreservationAllowedSql(noticeId: string) {
+  return sql`NOT EXISTS (
+    SELECT 1 FROM copyright_notice_party_identities party
+    JOIN retained_user_identities identity ON identity.id = party.account_user_id
+    WHERE party.copyright_notice_id = ${noticeId}::uuid
+      AND (identity.is_copyright_case_clock_sync_pending OR EXISTS (
+        SELECT 1 FROM user_legal_preservation_holds hold
+        WHERE hold.account_user_id = identity.id AND hold.released_at IS NULL
+      ))
+  ) AND NOT EXISTS (
+    SELECT 1 FROM copyright_case_preservation_holds hold
+    WHERE hold.copyright_notice_id = ${noticeId}::uuid AND hold.released_at IS NULL
+  )`
+}

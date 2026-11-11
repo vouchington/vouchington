@@ -27,7 +27,7 @@ describe('late legal-hold and restoration concurrency', () => {
       bodyCiphertext: `concurrent-hold-${crypto.randomUUID()}`,
     })
 
-    const [, holdOutcome] = await Promise.all([
+    const [restoreOutcome, holdOutcome] = await Promise.all([
       processCopyrightActionIntent(restore.id, restorationAt),
       appendCopyrightLegalHoldAssessment({
         currentUser: moderator,

@@ -56,7 +56,7 @@ function proofVersion(row: LockedNotice): string {
   ])
 }
 
-/** Each page starts a fresh transaction and rechecks the notice after the shared legal gates. */
+/** Each page proves current eligibility; deletion and marker statements recheck preservation. */
 export async function runCopyrightCasePurgePage(
   data: CopyrightCasePurgeJobData,
   now: Date = new Date(),

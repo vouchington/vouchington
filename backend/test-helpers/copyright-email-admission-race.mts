@@ -36,7 +36,7 @@ export async function admitCopyrightEmailWithConcurrentRecommendation(
         )
           return Reflect.apply(original, client, args)
         const pending = Reflect.apply(original, client, args)
-        if (statement.text.includes('/* admitCopyrightEmailCorrespondence:lockNotice */')) {
+        if (statement.text.includes('/* admitCopyrightEmailCorrespondence:notice */')) {
           requested = true
           admissionAtNotice.resolve()
         }

@@ -25,7 +25,7 @@ export async function insertCopyrightEmailIntakeNoticeLink(
     const { rows: live } = await transaction<{
       raw_storage_object_id: string | null
       reviewed: boolean
-    }>(sql`/* linkCopyrightEmailIntakeToNotice:liveThreadIntake */
+    }>(sql`/* linkCopyrightEmailIntakeToNotice:threadIntake */
       SELECT intake.raw_storage_object_id, receipt.review_decision IS NOT NULL AS reviewed
       FROM copyright_notice_email_intakes intake
       JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
@@ -57,15 +57,13 @@ export async function insertCopyrightEmailIntakeNoticeLink(
         AND retired_before_intake_bound > ${input.intakeId}::uuid LIMIT 1`)
     if (retired[0]) return false
   } else {
-    // The initial link keeps its KEY SHARE fence against a competing promotion.
     const { rows: live } = await transaction<{
       raw_storage_object_id: string | null
-    }>(sql`/* linkCopyrightEmailIntakeToNotice:lockIntake */
+    }>(sql`/* linkCopyrightEmailIntakeToNotice:intake */
       SELECT raw_storage_object_id FROM copyright_notice_email_intakes
       WHERE id = ${input.intakeId}
         AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
           WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
-      FOR KEY SHARE
     `)
     if (live.length === 0) return false
     if (live[0]!.raw_storage_object_id === null) {

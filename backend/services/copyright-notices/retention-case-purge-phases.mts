@@ -1,3 +1,4 @@
+import { copyrightCasePurgePreservationAllowedSql } from './retention-case-purge-eligibility.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql from 'sql-template-strings'
@@ -96,9 +97,17 @@ export async function runLockedPage(
       return verifyCopyrightCaseReportCoveragePage(query, data, notice.jurisdiction, pageSize)
     case 'evidence': {
       if (data.phaseIndex > 1) {
-        await query(sql`/* finishCopyrightCaseEvidenceErasure */
+        const marker = sql`/* finishCopyrightCaseEvidenceErasure */
           UPDATE copyright_notices SET evidence_erased_at = COALESCE(evidence_erased_at, clock_timestamp())
-          WHERE id = ${data.noticeId}::uuid`)
+          WHERE id = ${data.noticeId}::uuid AND `
+        marker.append(copyrightCasePurgePreservationAllowedSql(data.noticeId))
+        const { rowCount } = await query(marker)
+        if (rowCount !== 1)
+          return {
+            data: enterCopyrightCasePurgePhase(data, 'parties'),
+            hasMore: true,
+            deferred: true,
+          }
         return { data: enterCopyrightCasePurgePhase(data, 'pointers'), hasMore: true }
       }
       const page = await eraseCopyrightCaseEvidencePage(
@@ -109,6 +118,12 @@ export async function runLockedPage(
         data.evidenceOwner,
         pageSize,
       )
+      if (page.deferred)
+        return {
+          data: enterCopyrightCasePurgePhase(data, 'parties'),
+          hasMore: true,
+          deferred: true,
+        }
       return {
         data: {
           ...data,

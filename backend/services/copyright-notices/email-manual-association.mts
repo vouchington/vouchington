@@ -53,7 +53,7 @@ export async function associateCopyrightEmailIntakeWithNotice(
   `)
     assert(!erased[0], 404, 'Copyright notice not found')
     observeSharedDbScope(
-      'associateCopyrightEmailIntakeLocked',
+      'associateCopyrightEmailIntake',
       { kind: 'ids', ids: [intakeId] },
       undefined,
       transaction,

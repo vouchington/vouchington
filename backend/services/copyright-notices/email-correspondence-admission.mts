@@ -76,14 +76,14 @@ export async function admitCopyrightEmailCorrespondence(input: {
   )
   await using transaction = await beginTransaction()
   const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
-    /* admitCopyrightEmailCorrespondence:lockNotice */
+    /* admitCopyrightEmailCorrespondence:notice */
     SELECT notice.jurisdiction FROM copyright_notice_email_intake_notice_links link
     JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
     WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
   `)
   assert(notices[0], 404, 'Matched copyright email correspondence not found')
   const { rows } =
-    await transaction<PendingCorrespondence>(sql`/* admitCopyrightEmailCorrespondence:lock */
+    await transaction<PendingCorrespondence>(sql`/* admitCopyrightEmailCorrespondence:pending */
     SELECT intake.id, intake.amazon_ses_message_id, intake.received_at,
       COALESCE(object.storage_key, ${COPYRIGHT_ERASED_KEY_PREFIX} || intake.id::text) AS raw_storage_key,
       intake.raw_storage_object_id,
