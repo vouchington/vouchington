@@ -8,6 +8,7 @@ import {
   submitAndDispatchRssFeedImport,
 } from '@services/user-import-export/rss-feed-imports'
 import { submitRssFeedSource } from '@services/user-import-export/submit-rss-feed-source'
+import { RSS_FEED_IMPORT_MAX_URLS } from '@services/user-import-export/config'
 import { parseCreateSourceBody } from '@services/rss-feeds/request-body'
 import type {
   ToolApiEndpoint,
@@ -73,8 +74,7 @@ const importSource: MergedToolSource<
   Awaited<ReturnType<typeof submitAndDispatchRssFeedImport>>
 > = {
   schema: {
-    description:
-      'Import a JSON list of up to 500 feed URLs. Poll import_status with import.id. Follow defaults to false for administrators.',
+    description: `Import a JSON list of up to ${RSS_FEED_IMPORT_MAX_URLS} feed URLs. Poll import_status with import.id. Follow defaults to false for administrators.`,
     parameters: {
       type: 'object',
       properties: {
@@ -82,7 +82,7 @@ const importSource: MergedToolSource<
           type: 'array',
           items: { type: 'string', maxLength: 2083 },
           minItems: 1,
-          maxItems: 500,
+          maxItems: RSS_FEED_IMPORT_MAX_URLS,
         },
         follow: { type: 'boolean' },
       },

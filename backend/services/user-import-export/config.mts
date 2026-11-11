@@ -1,6 +1,8 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import onError from '@modules/on-error'
 
+export const RSS_FEED_IMPORT_MAX_URLS = 500
+
 export type UserImportExportConfig = {
   sync_export_max_items: number
   /** Largest JSON body, in bytes, the RSS feed import endpoint reads. */

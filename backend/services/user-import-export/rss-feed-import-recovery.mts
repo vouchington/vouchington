@@ -7,8 +7,6 @@ import { getUserImportExportConfig } from './config.mts'
 type RecoveryOptions = {
   /** How long an unfinished import may make no progress before it is re-dispatched. */
   staleAfterMs?: number
-  /** Scope a sweep to owned batches (used by focused tests). */
-  importIds?: string[]
   enqueueDispatches?: (importIds: string[]) => Promise<unknown>
 }
 
@@ -25,7 +23,10 @@ export async function recoverStalledUserRssFeedImports(
   const enqueue = enqueueDispatches ?? enqueueUserRssFeedImportDispatches
 
   // The primary: inspect only the bounded oldest set of stale batch markers.
-  const readQuery = sql`/* readStalledUserRssFeedImports */
+  const { rows } = await write<{
+    id: string
+    has_pending_rows: boolean
+  }>(sql`/* readStalledUserRssFeedImports */
       SELECT batch.id, EXISTS (
         SELECT 1 FROM user_rss_feed_import_rows pending
         WHERE pending.batch_id = batch.id AND pending.outcome IS NULL
@@ -33,13 +34,9 @@ export async function recoverStalledUserRssFeedImports(
       FROM user_rss_feed_import_batches batch
       WHERE batch.completed_at IS NULL
         AND batch.updated_at < CURRENT_TIMESTAMP - make_interval(secs => ${staleAfterMs / 1000})
-      `
-  if (options.importIds) readQuery.append(sql` AND batch.id = ANY(${options.importIds}::uuid[])`)
-  readQuery.append(sql`
       ORDER BY batch.updated_at
       LIMIT ${getUserImportExportConfig().import_recovery_batch_size}
     `)
-  const { rows } = await write<{ id: string; has_pending_rows: boolean }>(readQuery)
   if (rows.length === 0) return 0
 
   const completedIds: string[] = []

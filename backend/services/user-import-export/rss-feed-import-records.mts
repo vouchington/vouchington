@@ -3,6 +3,7 @@ import { isUUID } from '@modules/utils'
 import assert from 'http-assert'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import sql from 'sql-template-strings'
+import { RSS_FEED_IMPORT_MAX_URLS } from './config.mts'
 import {
   type CreateUserRssFeedImportResult,
   type UserRssFeedImportBatchRow,
@@ -16,7 +17,11 @@ export async function createRssFeedImport(
   urls: string[],
   should_follow_imported_feeds: boolean,
 ): Promise<CreateUserRssFeedImportResult> {
-  assert(urls.length <= 500, 422, 'No more than 500 URLs may be imported')
+  assert(
+    urls.length <= RSS_FEED_IMPORT_MAX_URLS,
+    422,
+    `No more than ${RSS_FEED_IMPORT_MAX_URLS} URLs may be imported`,
+  )
   await using query = await beginTransaction()
   const { rows } = await write(
     sql`/* createRssFeedImport */
