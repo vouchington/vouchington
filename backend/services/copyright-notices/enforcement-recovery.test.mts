@@ -7,8 +7,15 @@ import { createCopyrightFormIntake } from './form-intakes.mts'
 import { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { appendTestCopyrightAssessmentWhileRecoveryWaits } from '@voucha/test-helpers/copyright-recovery-concurrency'
+import {
+  copyrightEmailMessageId,
+  promoteInitialCopyrightEmail,
+} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 describe('durable copyright decision recovery', () => {
+  useCopyrightIntakeEnvironment()
   it('mutates only one page and resumes after the recovered submission without replaying it', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const submissionIds: string[] = []
@@ -51,7 +58,7 @@ describe('durable copyright decision recovery', () => {
       after: encodeUuidCursorBefore(submissionIds[0]!),
     })
     expect(emptyScope.results).toEqual([])
-    await appendTestCopyrightAssessmentWhileRecoveryWaits(
+    const raced = await appendTestCopyrightAssessmentWhileRecoveryWaits(
       {
         submissionId: submissionIds[4]!,
         assessedAt: new Date(),
@@ -65,6 +72,8 @@ describe('durable copyright decision recovery', () => {
           after: encodeUuidCursorBefore(submissionIds[4]!),
         }),
     )
+    expect(raced.results).toEqual([])
+    expect(raced.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
     // Sequential fixtures prove cap/resume independently of concurrent scheduling.
     const first = await recoverMissingDecisionAssessments({
       limit: 1,
@@ -114,6 +123,55 @@ describe('durable copyright decision recovery', () => {
       expect(aggregate?.assessments).toHaveLength(1)
       expect(
         aggregate?.lifecycleEvents.filter(event => event.change_type === 'submission_assessed'),
+      ).toHaveLength(1)
+    }
+  })
+
+  it('owns both actual submissions before case activity when a same-case writer owns the second', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const { noticeId } = await promoteInitialCopyrightEmail({
+      moderator,
+      messageId: copyrightEmailMessageId(),
+    })
+    const first = await appendTestCopyrightNoticeSubmission({
+      noticeId,
+      kind: 'notice',
+      sourceKind: 'staff',
+      submittedByUserId: null,
+      receivedAt: new Date(),
+      bodyCiphertext: 'First owned durable notice.',
+    })
+    const second = await appendTestCopyrightNoticeSubmission({
+      noticeId,
+      kind: 'notice',
+      sourceKind: 'staff',
+      submittedByUserId: null,
+      receivedAt: new Date(),
+      bodyCiphertext: 'Second owned durable notice.',
+    })
+    const result = await appendTestCopyrightAssessmentWhileRecoveryWaits(
+      {
+        submissionId: second.id,
+        currentUser: moderator,
+        substantiallyCompliant: true,
+        assessedAt: new Date(),
+      },
+      () => recoverMissingDecisionAssessments({ ids: [first.id, second.id], limit: 2 }),
+    )
+    expect(result.results).toEqual([first.id])
+    const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
+    for (const submission of [first, second]) {
+      const assessments = aggregate!.assessments.filter(
+        row => row.copyright_notice_submission_id === submission.id,
+      )
+      expect(assessments).toHaveLength(1)
+      expect(aggregate!.submissions.find(row => row.id === submission.id)).toMatchObject({
+        current_assessment_identity_id: assessments[0]!.id,
+      })
+      expect(
+        aggregate!.lifecycleEvents.filter(
+          event => event.copyright_notice_submission_assessment_identity_id === assessments[0]!.id,
+        ),
       ).toHaveLength(1)
     }
   })

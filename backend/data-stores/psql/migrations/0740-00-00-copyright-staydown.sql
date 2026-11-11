@@ -56,8 +56,7 @@ COMMENT ON COLUMN copyright_staydown_matches.copyright_staydown_entry_id IS 'The
 COMMENT ON COLUMN copyright_staydown_matches.image_id IS 'Retained identity of the matching image: the new upload for a perceptual match, or the existing image the upload deduplicated to for an exact match.';
 
 -- Every producer of a staff or business blocker invalidates the case's paged retention proof.
--- A KEY SHARE case lock fences the sweep's FOR UPDATE without upgrading the FK lock held
--- by concurrent child inserts. The generation UPSERT serializes writers for one case.
+-- The generation changes when a producer can introduce a blocker into an earlier proof page.
 CREATE FUNCTION fn_copyright_thread_blocker_case_id(source_table text, source_row jsonb)
 RETURNS uuid LANGUAGE plpgsql AS $$
 DECLARE case_id uuid;
@@ -108,6 +107,23 @@ CREATE FUNCTION fn_update_copyright_thread_blocker_generation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE old_case_id uuid; new_case_id uuid; case_id uuid;
 BEGIN
+  -- These proofs depend on work-item blocker membership, not lease metadata. A transition
+  -- that only retains or removes each proof's blocker cannot invalidate a negative proof.
+  IF TG_TABLE_NAME = 'copyright_notice_action_work_items' AND TG_OP = 'UPDATE' THEN
+    IF OLD.id = NEW.id AND OLD.copyright_notice_id = NEW.copyright_notice_id
+      AND (NEW.state NOT IN ('pending', 'claimed', 'failed')
+        OR OLD.state IN ('pending', 'claimed', 'failed'))
+      AND (NEW.state <> 'failed' OR OLD.state = 'failed') THEN
+      RETURN NEW;
+    END IF;
+  END IF;
+  IF TG_TABLE_NAME = 'copyright_notice_delivery_work_items' AND TG_OP = 'UPDATE' THEN
+    IF OLD.id = NEW.id
+      AND OLD.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id
+      AND (NEW.state NOT IN ('pending', 'claimed') OR OLD.state IN ('pending', 'claimed')) THEN
+      RETURN NEW;
+    END IF;
+  END IF;
   IF TG_OP <> 'INSERT' THEN
     old_case_id := fn_copyright_thread_blocker_case_id(TG_TABLE_NAME, to_jsonb(OLD));
   END IF;
@@ -118,7 +134,7 @@ BEGIN
     SELECT DISTINCT candidate.id FROM unnest(ARRAY[old_case_id, new_case_id]) candidate(id)
     WHERE candidate.id IS NOT NULL ORDER BY candidate.id
   LOOP
-    PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
+    PERFORM 1 FROM copyright_notices WHERE id = case_id;
     IF FOUND THEN
       INSERT INTO copyright_notice_thread_blocker_generations
         (copyright_notice_id, generation) VALUES (case_id, 1)

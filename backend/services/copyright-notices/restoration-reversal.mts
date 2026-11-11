@@ -33,7 +33,7 @@ export async function createCopyrightRestoreIntentForReversalInTransaction(
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     JOIN copyright_notices notice ON notice.id = target.copyright_notice_id
     WHERE restriction.id = ${restrictionId}
-    FOR UPDATE OF notice, target, restriction
+    FOR UPDATE OF notice
   `),
   )
   const restriction = rows[0]

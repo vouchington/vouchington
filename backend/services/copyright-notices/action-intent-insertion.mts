@@ -26,6 +26,12 @@ export async function insertCopyrightActionIntents(
     SELECT input.restriction_id, NULL, input.placement_revision, input.action
     FROM unnest(${restrictionIds}::uuid[], ${revisions}::integer[], ${actions}::copyright_notice_action_intent_actions[])
       WITH ORDINALITY AS input(restriction_id, placement_revision, action, ordinal)
+    WHERE NOT EXISTS (
+      SELECT 1 FROM copyright_notice_action_work_items existing
+      WHERE existing.copyright_restriction_id = input.restriction_id
+        AND existing.expected_placement_revision = input.placement_revision
+        AND existing.action = input.action
+    )
     ORDER BY input.restriction_id ASC NULLS LAST, input.placement_revision ASC NULLS LAST,
       input.action ASC NULLS LAST
     ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING

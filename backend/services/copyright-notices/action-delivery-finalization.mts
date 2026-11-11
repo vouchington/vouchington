@@ -103,6 +103,13 @@ async function completeCopyrightActionAndInvalidate(input: {
 }): Promise<void> {
   await runSequentially([
     () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        input.action === 'withhold' ? 'placement_withheld' : 'placement_restored',
+        input.transaction,
+      ),
+    () =>
       completeCopyrightActionIntentInTransaction({
         intentId: input.intentId,
         leaseToken: input.legal.lease_token,
@@ -111,13 +118,6 @@ async function completeCopyrightActionAndInvalidate(input: {
         query: input.transaction,
       }),
     () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.transaction),
-    () =>
-      insertCopyrightActionLifecycleEvent(
-        input.legal,
-        input.intentId,
-        input.action === 'withhold' ? 'placement_withheld' : 'placement_restored',
-        input.transaction,
-      ),
     () => invalidateCopyrightPlacementCache(input.legal.placement_id, input.transaction),
   ])
 }

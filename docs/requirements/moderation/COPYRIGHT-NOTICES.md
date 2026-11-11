@@ -215,6 +215,12 @@ The approved case clock retains each jurisdiction for six calendar years after i
 activity, including the final decision's complaint window. A new legal fact or hold release advances
 that clock. Detailed history has its own guarded partition retirement until the case is purged.
 
+Proof invalidation protects against obligations introduced behind a bounded cursor. It does not
+serve as a transaction mutex: renewing a worker lease or removing a blocker need not invalidate a
+negative proof. Case activity and its referenced legal source commit atomically; checking that
+reference at commit lets their substantive writes follow the same dependency direction as delivery
+work without adding a parent fence.
+
 - Staff may preserve a case for overlapping written litigation threats or court and regulator
   requests, including after evidence deletion has started. Each page checks the current hold and
   account state before removing anything else.

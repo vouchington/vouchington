@@ -1,3 +1,5 @@
+import { v7 as uuidv7 } from 'uuid'
+import { preemptCopyrightRestorations } from './restore-preemption.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
@@ -137,10 +139,20 @@ export async function admitCopyrightEmailCorrespondence(input: {
       AND correspondence_action = 'pending'
     FOR UPDATE`)
   assert(pendingDecisions === 1, 409, 'Copyright email correspondence was already reviewed')
-  const { submissionId, correspondenceId } = await insertAdmittedCopyrightEmailSubmission(
+  const correspondenceId = uuidv7()
+  // Keep actual work-item preemption before the event's existing case-clock write.
+  if (input.kind === 'court_or_ccb_hold')
+    await preemptCopyrightRestorations(pending.notice_id, transaction)
+  await transaction(sql`/* admitCopyrightEmailCorrespondence:event */
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
+      copyright_notice_correspondence_id)
+    VALUES (${pending.notice_id}, 'email_correspondence_admitted', ${input.currentUser.id}, ${correspondenceId})
+  `)
+  const { submissionId } = await insertAdmittedCopyrightEmailSubmission(
     transaction,
     input,
     pending,
+    correspondenceId,
   )
   const rationaleCiphertext = encryptSecret(
     input.rationale,
@@ -160,11 +172,6 @@ export async function admitCopyrightEmailCorrespondence(input: {
     rationaleCiphertext,
     manualFallbackCiphertext,
   })
-  await transaction(sql`/* admitCopyrightEmailCorrespondence:event */
-    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-      copyright_notice_correspondence_id)
-    VALUES (${pending.notice_id}, 'email_correspondence_admitted', ${input.currentUser.id}, ${correspondenceId})
-  `)
   if (input.kind === 'withdrawal') {
     await recordClaimantMisuseEvent(transaction, {
       noticeId: pending.notice_id,

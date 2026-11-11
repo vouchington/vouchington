@@ -1,4 +1,4 @@
-import createHttpError from 'http-errors'
+import { insertCopyrightSubmissionAssessment } from './compliance-assessment-insertion.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -107,27 +107,11 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     409,
     'Assessment must extend the current assessment tip',
   )
-  const { rows: identityRows } = await transaction<{ id: string }>(sql`
-    /* appendCopyrightSubmissionAssessment:identity */
-    INSERT INTO copyright_notice_submission_assessment_identities
-      (copyright_notice_id, copyright_notice_submission_id)
-    VALUES (${submissionRows[0].copyright_notice_id}, ${input.submissionId})
-    RETURNING id
-  `)
-  const assessmentId = identityRows[0]!.id
-  const { rows } = await transaction(sql`/* appendCopyrightSubmissionAssessment */
-    INSERT INTO copyright_notice_submission_assessments (
-      id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant,
-      supersedes_assessment_id, copyright_notice_form_screening_id
-    ) VALUES (
-      ${assessmentId}, ${input.submissionId}, ${input.assessedAt}, ${input.currentUser?.id ?? null}, ${input.substantiallyCompliant},
-      ${input.supersedesAssessmentId ?? null}, ${input.copyrightFormScreeningId ?? null}
-    )
-    RETURNING id, copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant,
-      supersedes_assessment_id, copyright_notice_form_screening_id
-  `)
-  const assessment = rows[0] as CopyrightNoticeSubmissionAssessmentRecord | undefined
-  assert(assessment, 500, 'Failed to append copyright submission assessment')
+  const assessment = await insertCopyrightSubmissionAssessment(
+    input,
+    submissionRows[0].copyright_notice_id,
+    transaction,
+  )
   await transaction(sql`/* appendCopyrightSubmissionAssessment:currentResult */
     UPDATE copyright_notice_submissions SET
       current_assessment_identity_id = ${assessment.id},
@@ -187,14 +171,6 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
         AND resolved_at IS NULL AND cancelled_at IS NULL
     `)
   }
-  await transaction(sql`/* appendCopyrightSubmissionAssessment:event */
-    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-      copyright_notice_submission_assessment_identity_id)
-    VALUES (${submissionRows[0].copyright_notice_id}, 'submission_assessed', ${input.currentUser?.id ?? null}, ${assessment.id})
-  `).catch((err: unknown) => {
-    if ((err as { constraint?: string } | null)?.constraint === 'copyright_assessment_active_case')
-      throw createHttpError(410, 'Copyright case evidence was erased', { cause: err })
-    throw err
-  })
+
   return assessment
 }

@@ -21,6 +21,13 @@ export async function completeUnavailableRestore(input: {
 }): Promise<void> {
   await runSequentially([
     () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        'restoration_unavailable',
+        input.query,
+      ),
+    () =>
       clearUnavailableImagePlacementCopyrightWithholding(input.legal.placement_id, {
         query: input.query,
       }),
@@ -37,13 +44,6 @@ export async function completeUnavailableRestore(input: {
         query: input.query,
       }),
     () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
-    () =>
-      insertCopyrightActionLifecycleEvent(
-        input.legal,
-        input.intentId,
-        'restoration_unavailable',
-        input.query,
-      ),
   ])
 }
 
@@ -82,6 +82,13 @@ async function completeRestoreRetainingPlacement(input: {
   if (!rows[0]?.blocked) return false
   await runSequentially([
     () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        'restriction_lifted_placement_retained',
+        input.query,
+      ),
+    () =>
       liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'still_hidden' }),
     () =>
       completeCopyrightActionIntentInTransaction({
@@ -92,13 +99,6 @@ async function completeRestoreRetainingPlacement(input: {
         query: input.query,
       }),
     () => syncCopyrightIncidentsAfterStatutoryRestoreInTransaction(input.legal, input.query),
-    () =>
-      insertCopyrightActionLifecycleEvent(
-        input.legal,
-        input.intentId,
-        'restriction_lifted_placement_retained',
-        input.query,
-      ),
   ])
   return true
 }
@@ -109,13 +109,13 @@ export async function authorizeRestoreBeforeDelivery(input: {
   now: Date
   query: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<void> {
-  await liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'visible' })
   await insertCopyrightActionLifecycleEvent(
     input.legal,
     input.intentId,
     'restoration_authorized_pending_delivery',
     input.query,
   )
+  await liftCopyrightRestrictionAndResolveDeadline({ ...input, restorationOutcome: 'visible' })
 }
 
 async function liftCopyrightRestrictionAndResolveDeadline(input: {

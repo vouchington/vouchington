@@ -1,8 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import {
-  advanceCopyrightLastLegalActivityAt,
-  lockCopyrightNoticeForLegalWrite,
-} from './last-legal-activity.mts'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
@@ -36,11 +33,6 @@ export async function reviewCopyrightCounterNotice(input: {
     WHERE id = ${input.submissionId} AND kind = 'counter_notice'
   `)
   assert(counterNotices[0], 404, 'Copyright counter-notice not found')
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(
-    transaction,
-    counterNotices[0].copyright_notice_id,
-  )
-  assert(lockedNotice, 404, 'Copyright counter-notice not found')
   const { rows: existingRows } = await transaction<{
     copyright_notice_id: string
     is_accepted: boolean
@@ -54,7 +46,6 @@ export async function reviewCopyrightCounterNotice(input: {
     JOIN copyright_notice_submissions submission
       ON submission.id = review.copyright_notice_submission_id
     WHERE review.copyright_notice_submission_id = ${input.submissionId}
-    FOR UPDATE OF review, submission
   `)
   const existing = existingRows[0]
   if (existing) {
@@ -89,12 +80,19 @@ export async function reviewCopyrightCounterNotice(input: {
   assert(submission.jurisdiction === 'us_dmca', 422, 'Only US DMCA counter-notices are supported')
   const reviewedAt = new Date()
   const aiAssisted = await copyrightSubmissionHasGuidance(input.submissionId, transaction)
-  const { rows: identityRows } = await transaction<{ id: string }>(sql`
+  const { rows: identityRows } = await transaction(sql`/* reviewCopyrightCounterNotice:event */
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
+      copyright_notice_submission_id, is_counter_notice_accepted)
+    VALUES (${submission.copyright_notice_id}, 'counter_notice_reviewed', ${input.currentUser.id},
+      ${input.submissionId}, ${input.is_accepted})
+  `).then(() =>
+    transaction<{ id: string }>(sql`
     /* reviewCopyrightCounterNotice:assessmentIdentity */
     INSERT INTO copyright_notice_submission_assessment_identities (
       copyright_notice_id, copyright_notice_submission_id
     ) VALUES (${submission.copyright_notice_id}, ${input.submissionId}) RETURNING id
-  `)
+  `),
+  )
   const { rows: assessmentRows } = await transaction<{
     id: string
   }>(sql`/* reviewCopyrightCounterNotice:assessment */
@@ -149,12 +147,7 @@ export async function reviewCopyrightCounterNotice(input: {
       ${input.currentUser.id}, ${input.is_accepted},
       ${encryptSecret(input.rationale, `copyright-counter-review:${input.submissionId}`)})
   `)
-  await transaction(sql`/* reviewCopyrightCounterNotice:event */
-    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-      copyright_notice_submission_id, is_counter_notice_accepted)
-    VALUES (${submission.copyright_notice_id}, 'counter_notice_reviewed', ${input.currentUser.id},
-      ${input.submissionId}, ${input.is_accepted})
-  `)
+
   const { rows: submitterRows } = await transaction<{ submitted_by_id: string | null }>(
     sql`/* reviewCopyrightCounterNotice:submitter */
       SELECT submitted_by_id FROM copyright_notice_submissions
@@ -189,7 +182,9 @@ export async function reviewCopyrightCounterNotice(input: {
       },
       transaction,
     )
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
+  await advanceCopyrightLastLegalActivityAt(transaction, {
+    noticeId: submission.copyright_notice_id,
+  })
   await transaction.commit()
   return { noticeId: submission.copyright_notice_id, assessmentId: assessment.id, deadlineId }
 }

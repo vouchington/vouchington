@@ -1,3 +1,4 @@
+import { runSequentially } from '@modules/utils/run-sequentially'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -12,10 +13,7 @@ import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues
 import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
 import { preemptCopyrightRestorations } from './restore-preemption.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
-import {
-  advanceCopyrightLastLegalActivityAt,
-  lockCopyrightNoticeForLegalWrite,
-} from './last-legal-activity.mts'
+import { advanceCopyrightLastLegalActivityAt } from './last-legal-activity.mts'
 import { encryptSecret } from '@modules/token-secrets'
 
 export async function appendCopyrightLegalHoldAssessment(input: {
@@ -45,18 +43,12 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     SELECT copyright_notice_id FROM copyright_notice_submissions WHERE id = ${input.submissionId}
   `)
   assert(identities[0], 404, 'Copyright legal-hold submission not found')
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(
-    transaction,
-    identities[0].copyright_notice_id,
-  )
-  assert(lockedNotice, 404, 'Copyright legal-hold submission not found')
   const { rows: submissionRows } = await transaction<{
     kind: string
     copyright_notice_id: string
-  }>(sql`/* appendCopyrightLegalHoldAssessment:lockSubmission */
+  }>(sql`/* appendCopyrightLegalHoldAssessment:submission */
     SELECT kind, copyright_notice_id FROM copyright_notice_submissions
     WHERE id = ${input.submissionId}
-    FOR UPDATE
   `)
   assert(submissionRows[0], 404, 'Copyright legal-hold submission not found')
   assert(
@@ -64,14 +56,20 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     422,
     'Submission is not a court or CCB hold',
   )
-  // Before any write the delivery worker also makes: it takes the work item row, then the case's
-  // blocker generation, so preempting first cannot form a cycle. Late activation below only adds
-  // restrictions, whose restore work does not exist yet.
-  await preemptCopyrightRestorations(
-    submissionRows[0].copyright_notice_id,
-    transaction,
-    input.targetIds,
-  )
+  // Preemption writes the current restore before the case clock. Late activation below only
+  // adds restrictions, whose restore work does not exist yet.
+  await runSequentially([
+    () =>
+      preemptCopyrightRestorations(
+        submissionRows[0].copyright_notice_id,
+        transaction,
+        input.targetIds,
+      ),
+    () =>
+      advanceCopyrightLastLegalActivityAt(transaction, {
+        noticeId: submissionRows[0].copyright_notice_id,
+      }),
+  ])
   const { rows } = await transaction(sql`/* appendCopyrightLegalHoldAssessment */
     INSERT INTO copyright_notice_legal_hold_assessments (
       copyright_notice_submission_id, assessed_at, assessed_by_id, is_from_original_claimant,
@@ -120,14 +118,13 @@ export async function appendCopyrightLegalHoldAssessment(input: {
       transaction,
     )
   }
-  // ast-grep-ignore: no-three-sequential-awaits -- insert the legal-hold lifecycle event before sampling legal activity; replay restore intents only after the hold decision and clock writes complete
+  // ast-grep-ignore: no-three-sequential-awaits -- replay restore intents only after the hold decision, clock and lifecycle writes complete
   await transaction(sql`/* appendCopyrightLegalHoldAssessment:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_legal_hold_assessment_id)
     VALUES (${submissionRows[0].copyright_notice_id}, 'legal_hold_assessed', ${input.currentUser.id},
       ${assessment.id})
   `)
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   const replayedIds = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId: submissionRows[0].copyright_notice_id,
     intentIds: await selectBlockedCopyrightRestoreIntentIds(

@@ -574,16 +574,19 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   ),
   CONSTRAINT fk_copyright_lifecycle_events__submission_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
-    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT
+    DEFERRABLE INITIALLY DEFERRED,
   CONSTRAINT fk_copyright_lifecycle_events__correspondence_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_correspondence_id)
-    REFERENCES copyright_notice_correspondence_messages(copyright_notice_id, id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_correspondence_messages(copyright_notice_id, id) ON DELETE RESTRICT
+    DEFERRABLE INITIALLY DEFERRED,
   CONSTRAINT fk_copyright_lifecycle_events__deadline_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_deadline_id)
     REFERENCES copyright_notice_deadlines(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_copyright_lifecycle_events__assessment_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_identity_id)
-    REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_id, id) ON DELETE RESTRICT
+    DEFERRABLE INITIALLY DEFERRED,
   CONSTRAINT fk_copyright_lifecycle_events__artifact_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_evidence_artifact_id)
     REFERENCES copyright_notice_evidence_artifacts(copyright_notice_id, id) ON DELETE RESTRICT,

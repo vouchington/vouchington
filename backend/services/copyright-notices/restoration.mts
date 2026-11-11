@@ -1,3 +1,4 @@
+import { runSequentially } from '@modules/utils/run-sequentially'
 import {
   advanceCopyrightLastLegalActivityAt,
   lockCopyrightNoticeForLegalWrite,
@@ -61,7 +62,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
       AND counter_notice.kind = 'counter_notice'
       AND counter_notice.current_assessment_identity_id = assessment.id
       AND counter_notice.current_assessment_is_substantially_compliant
-    FOR UPDATE OF n, t, r, d
+    FOR UPDATE OF n
   `)
   const locked = rows[0]
   assert(locked, 404, 'Copyright notice restoration record not found')
@@ -84,7 +85,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
 
   const qualifyingHolds = await transaction<{
     id: string
-  }>(sql`/* createEligibleCopyrightRestoreIntent:lockQualifyingHolds */
+  }>(sql`/* createEligibleCopyrightRestoreIntent:qualifyingHolds */
       SELECT h.id
       FROM copyright_notice_legal_hold_assessments h
       JOIN copyright_notice_submissions s ON s.id = h.copyright_notice_submission_id
@@ -101,7 +102,6 @@ export async function createEligibleCopyrightRestoreIntent(input: {
         AND h.commenced_at IS NOT NULL
         AND h.received_by_designated_agent_at IS NOT NULL
         AND h.received_by_designated_agent_at <= ${input.now}
-      FOR UPDATE OF h
     `)
   // Each case becomes independently eligible. The delivery worker lifts this case's restriction
   // while keeping the placement withheld until every other active restriction is resolved.
@@ -118,26 +118,34 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   // An unavailable placement still needs a durable, revision-fenced legal disposition. The worker
   // resolves it without allowing delivery, rather than leaving the deadline and restriction open.
   assert(currentPlacement, 409, 'Copyright placement is unavailable')
+  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   const { rows: intentRows } =
     await transaction<CopyrightActionIntentRecord>(sql`/* createEligibleCopyrightRestoreIntent */
     INSERT INTO copyright_notice_action_work_items (
       copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
-    ) VALUES (${input.restrictionId}, ${input.deadlineId}, ${currentPlacement.revision}, 'restore')
+    ) SELECT ${input.restrictionId}, ${input.deadlineId}, ${currentPlacement.revision}, 'restore'
+    WHERE NOT EXISTS (
+      SELECT 1 FROM copyright_notice_action_work_items existing
+      WHERE existing.copyright_restriction_id = ${input.restrictionId}
+        AND existing.expected_placement_revision = ${currentPlacement.revision}
+        AND existing.action = 'restore'
+    )
     ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING
     RETURNING id, copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision,
       action, completed_at
   `)
   const intent = intentRows[0]
   assert(intent, 409, 'A restore intent already exists for this placement revision')
-  // ast-grep-ignore: no-three-sequential-awaits -- record counter-notice restoration evidence before its lifecycle event, then sample legal activity after both writes complete
-  await recordCounterNoticeRestoration(transaction, input)
-  await transaction(sql`/* createEligibleCopyrightRestoreIntent:event */
+  await runSequentially([
+    () => recordCounterNoticeRestoration(transaction, input),
+    () =>
+      transaction(sql`/* createEligibleCopyrightRestoreIntent:event */
     INSERT INTO copyright_notice_lifecycle_changes
       (copyright_notice_id, change_type, copyright_notice_action_intent_id)
     VALUES (${input.noticeId}, 'restoration_intent_created', ${intent.id})
-  `)
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
-  await transaction.commit()
+  `),
+    () => transaction.commit(),
+  ])
   void enqueueApplyCopyrightAction(intent.id)
   return intent
 }

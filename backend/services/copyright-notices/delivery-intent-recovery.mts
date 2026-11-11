@@ -58,9 +58,9 @@ export function replayFailedCopyrightEmailIntakeReplyIntent(input: {
 }
 
 /**
- * The conditional update is the replay guard: a concurrent second replay waits on the row lock,
- * then matches nothing, so one reset writes exactly one audit row. The body and recipient stay as
- * stored, so the retry resends the exact text.
+ * The conditional update is the replay guard. The existing audit advances case activity before
+ * the reset invalidates retention proof; a losing reset rolls that audit back with its transaction.
+ * The body and recipient stay as stored, so the retry resends the exact text.
  */
 async function resetFailedCopyrightDeliveryIntent(
   scope: SQLStatement,
@@ -68,12 +68,10 @@ async function resetFailedCopyrightDeliveryIntent(
 ): Promise<string | null> {
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ id: string; copyright_notice_id: string | null }>(
-    sql`/* replayFailedCopyrightDeliveryIntent */
-    UPDATE copyright_notice_delivery_work_items
-    SET leased_at = NULL, failed_at = NULL, available_at = clock_timestamp(),
-      attempt_count = 0, failure_ciphertext = NULL
+    sql`/* replayFailedCopyrightDeliveryIntent:failed */
+    SELECT id, copyright_notice_id FROM copyright_notice_delivery_work_items
     WHERE `.append(scope).append(sql` AND state = 'failed'
-    RETURNING id, copyright_notice_id`),
+    `),
   )
   const intent = rows[0]
   if (!intent) return null
@@ -84,6 +82,13 @@ async function resetFailedCopyrightDeliveryIntent(
       ${intent.copyright_notice_id}, 'delivery_intent_replayed', ${actorUserId}, ${intent.id}
     )
   `)
+  const { rowCount } = await transaction(sql`/* replayFailedCopyrightDeliveryIntent */
+    UPDATE copyright_notice_delivery_work_items
+    SET leased_at = NULL, failed_at = NULL, available_at = clock_timestamp(),
+      attempt_count = 0, failure_ciphertext = NULL
+    WHERE id = ${intent.id} AND state = 'failed'
+  `)
+  if (rowCount !== 1) return null
   await transaction.commit()
   return intent.id
 }

@@ -9,19 +9,20 @@ import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 export async function appendTestCopyrightAssessmentWhileRecoveryWaits<Result>(
   input: AssessmentInput,
   recover: () => Promise<Result>,
+  queryMarker = 'recoverMissingCopyrightDecisionAssessments',
 ): Promise<Result> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* appendTestCopyrightAssessmentWhileRecoveryWaits:lock */
     SELECT submission.id FROM copyright_notice_submissions submission
     JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
-    WHERE submission.id = ${input.submissionId} FOR UPDATE OF notice, submission`)
+    WHERE submission.id = ${input.submissionId} FOR UPDATE OF submission`)
   const processId = await getTestPostgresBackendProcessId(transaction)
   return await withTestOwnedPostgresWait(
     {
       holderProcessId: processId,
       pool: 'write',
       lock: { kind: 'transaction' },
-      queryMarker: 'recoverMissingCopyrightDecisionAssessments',
+      queryMarker,
       releaseHolder: () => transaction[Symbol.asyncDispose](),
     },
     async waitForLock => {

@@ -53,10 +53,9 @@ async function resolveCopyrightLegalHoldInTransaction(
   )
   assert(lockedNotice, 404, 'Copyright legal hold assessment not found')
   const { rows: assessmentRows } = await transaction<{ id: string }>(sql`
-    /* resolveCopyrightLegalHold:lockAssessment */
+    /* resolveCopyrightLegalHold:assessment */
     SELECT id FROM copyright_notice_legal_hold_assessments
     WHERE id = ${input.assessmentId}
-    FOR UPDATE
   `)
   assert(assessmentRows[0], 404, 'Copyright legal hold assessment not found')
   const assessment = { copyright_notice_id: lockedNotice.noticeId }
@@ -90,6 +89,12 @@ async function resolveCopyrightLegalHoldInTransaction(
     JOIN media_placements placement ON placement.id = target.placement_id
     WHERE source.copyright_notice_legal_hold_assessment_id = ${input.assessmentId}
       AND restriction.lifted_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_action_work_items existing
+        WHERE existing.copyright_restriction_id = restriction.id
+          AND existing.expected_placement_revision = placement.revision
+          AND existing.action = 'restore'
+      )
     ORDER BY restriction.id, placement.revision
     ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING
   `)
