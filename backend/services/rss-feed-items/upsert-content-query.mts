@@ -1,3 +1,8 @@
+import {
+  RSS_ITEM_URL_WRITE_RETURNING,
+  RSS_ITEM_URL_WRITE_LOCKS,
+  RSS_ITEM_URL_WRITE_BARRIER,
+} from '@modules/feed-query-builders/rss-feed-item-url-write-barrier'
 import type { RssFeedItemWithHash } from './upsert-prepare.mts'
 
 export function buildUpsertRssFeedItemsQuery(
@@ -10,7 +15,7 @@ export function buildUpsertRssFeedItemsQuery(
     .toSorted((left, right) => left.id.localeCompare(right.id))
   return {
     text: `/* upsertRssFeedItems */
-      INSERT INTO rss_feed_items (
+      WITH written_rss_feed_items AS (INSERT INTO rss_feed_items (
         id,
         url_id,
         data,
@@ -60,11 +65,10 @@ export function buildUpsertRssFeedItemsQuery(
         video_id = EXCLUDED.video_id,
         video_platform = EXCLUDED.video_platform,
         deleted_at = NULL
-      RETURNING id,
-                url_id,
-                story_id,
-                (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AS has_embedding,
-                published_at
+      ${RSS_ITEM_URL_WRITE_RETURNING}
+      ), ${RSS_ITEM_URL_WRITE_LOCKS}
+      SELECT item.id, item.url_id, item.story_id, item.has_embedding, item.published_at
+      FROM written_rss_feed_items item WHERE ${RSS_ITEM_URL_WRITE_BARRIER}
     `,
     values: [
       rows.map(row => row.id),

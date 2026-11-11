@@ -5,15 +5,17 @@ import orderedShardScenarioIds from './explain-shard-scenario-ids.json' with { t
 
 // The ordinary scenarios run in one fixed order (run-ordered-scenarios.mts) that is cut into
 // contiguous segments, one per ordinary shard. `main` is the first segment and owns every
-// manifest scenario no other shard declares; the later segments list theirs in
-// explain-shard-scenario-ids.json.
+// manifest scenario no other shard declares. The JSON may also declare main ownership
+// explicitly; those entries must not overlap another shard.
 export const ORDINARY_EXPLAIN_SHARDS = ['main', 'main-2', 'main-3', 'main-4'] as const
 export const EXPLAIN_SHARDS = [...ORDINARY_EXPLAIN_SHARDS, 'partition', 'hn-scale'] as const
 export type ExplainShard = (typeof EXPLAIN_SHARDS)[number]
 export type OrdinaryExplainShard = (typeof ORDINARY_EXPLAIN_SHARDS)[number]
-/** Every shard that declares its scenarios; `main` owns the rest. */
+/** Shards that must declare their scenarios; main declarations are optional. */
 export type DeclaredExplainShard = Exclude<ExplainShard, 'main'>
-export type ShardDeclarations = Readonly<Record<DeclaredExplainShard, readonly string[]>>
+export type ShardDeclarations = Readonly<
+  Record<DeclaredExplainShard, readonly string[]> & { main?: readonly string[] }
+>
 
 // The partitioned comment fixture is additive: its monthly bounds start after the current UTC
 // month, so no other scenario reads it. runCommentDescendantPartitionedPages seeds and captures
@@ -57,7 +59,11 @@ export function getShardScenarioIds(
 ): readonly string[] {
   if (shard === undefined) return manifest
   if (shard === 'main') {
-    const declared = new Set(Object.values(declarations).flat())
+    const declared = new Set(
+      Object.entries(declarations)
+        .filter(([owner]) => owner !== 'main')
+        .flatMap(([, ids]) => ids),
+    )
     return manifest.filter(id => !declared.has(id))
   }
   const owned = new Set(declarations[shard])
@@ -88,8 +94,11 @@ export function assertShardDeclarations(
   declarations: ShardDeclarations = SHARD_DECLARATIONS,
 ): void {
   const manifestSet = new Set(manifest)
+  const mainIds = new Set(getShardScenarioIds('main', manifest, declarations))
   for (const [shard, ids] of Object.entries(declarations)) {
     const missing = ids.filter(id => !manifestSet.has(id))
+    if (shard === 'main' && ids.some(id => manifestSet.has(id) && !mainIds.has(id)))
+      throw new Error('EXPLAIN main shard declares scenarios assigned to another shard')
     if (missing.length > 0 || new Set(ids).size !== ids.length)
       throw new Error(
         `EXPLAIN ${shard} shard declares unknown or duplicate ids [${missing.join(', ')}]`,
