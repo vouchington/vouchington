@@ -102,7 +102,7 @@ commands:
       - 'test-helpers/vitest-config/storybook-browser-optimize-deps.mts'
   # Compares the live schema with the committed snapshot; migrate the worktree database first.
   - name: postgresql-schema-snapshot
-    command: [pnpm, run, db:snapshot:check]
+    command: [pnpm, --dir, backend, run, db:snapshot:check]
     fileArgs: none
     include:
       - 'backend/data-stores/psql/migrations/**'
