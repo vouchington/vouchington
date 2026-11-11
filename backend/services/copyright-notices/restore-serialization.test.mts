@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { beginTransaction, read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
+import { isTestCopyrightPlacementWithheld } from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
@@ -14,13 +14,6 @@ import {
   lockCopyrightActionDelivery,
 } from './action-delivery-state.mts'
 import { issueCopyrightGuestCapability } from './guest-capabilities.mts'
-
-async function placementIsWithheld(placementId: string): Promise<boolean> {
-  const { rows } = await read<{ withheld: boolean }>(
-    sql`/* placementIsWithheld */ SELECT copyright_withheld_at IS NOT NULL AS withheld FROM media_placements WHERE id = ${placementId}`,
-  )
-  return rows[0]!.withheld
-}
 
 async function restoreState(noticeId: string, intentId: string) {
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
@@ -44,7 +37,7 @@ describe('copyright restore serialization', () => {
     const now = new Date(
       Math.max(first.restorationAt.getTime(), second.restorationAt.getTime()) + 1000,
     )
-    expect(await placementIsWithheld(first.target.placement_id)).toBe(true)
+    expect(await isTestCopyrightPlacementWithheld(first.target.placement_id)).toBe(true)
 
     // Both restores read the other restriction as active before either lifts its own.
     const bothRead = Promise.withResolvers<void>()
@@ -65,12 +58,12 @@ describe('copyright restore serialization', () => {
     const rejected = settled.filter(outcome => outcome.status === 'rejected')
     expect(rejected).toHaveLength(1)
     expect(rejected[0]!.reason).toMatchObject({ code: '40001' })
-    expect(await placementIsWithheld(first.target.placement_id)).toBe(true)
+    expect(await isTestCopyrightPlacementWithheld(first.target.placement_id)).toBe(true)
 
     const later = new Date(now.getTime() + 60 * 60 * 1000)
     const retried = settled[0].status === 'rejected' ? first : second
     await expect(processCopyrightActionIntent(retried.restore.id, later)).resolves.toBe('applied')
-    expect(await placementIsWithheld(first.target.placement_id)).toBe(false)
+    expect(await isTestCopyrightPlacementWithheld(first.target.placement_id)).toBe(false)
   })
 
   it('lands a filing strictly after a restore whose finalization already holds the work item', async () => {

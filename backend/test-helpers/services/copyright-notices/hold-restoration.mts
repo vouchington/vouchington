@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { completeCopyrightActionIntentInTransaction } from '../../../services/copyright-notices/action-delivery-locking.mts'
 import { replayEligibleCopyrightRestoreIntentsInTransaction } from '../../../services/copyright-notices/court-hold-restore-replay.mts'
@@ -81,4 +81,11 @@ export async function completeTestClaimedCopyrightAction(input: {
     query: transaction,
   })
   await transaction.commit()
+}
+
+export async function isTestCopyrightPlacementWithheld(placementId: string): Promise<boolean> {
+  const { rows } = await read<{ withheld: boolean }>(
+    sql`/* isTestCopyrightPlacementWithheld */ SELECT copyright_withheld_at IS NOT NULL AS withheld FROM media_placements WHERE id = ${placementId}`,
+  )
+  return rows[0]!.withheld
 }
