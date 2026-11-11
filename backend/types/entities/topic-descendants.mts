@@ -37,16 +37,9 @@ export function appendTopicDescendantsCte(
       topic_descendants.root_post_id,
       child_edge.subject_id AS topic_id
     FROM topic_descendants
-    JOIN LATERAL (
-      -- Preserve every child and the UNION cycle guard. A keyed materialized read keeps the
-      -- reverse-index probe per discovered parent in both prepared plan modes.
-      WITH keyed_children AS MATERIALIZED (
-        SELECT subject_id FROM relation__topic__parent__topic relation_edge
-        WHERE relation_edge.object_id = topic_descendants.topic_id
-          AND relation_edge.deleted_at IS NULL
-      )
-      SELECT subject_id FROM keyed_children
-    ) child_edge ON TRUE
+    JOIN relation__topic__parent__topic child_edge
+      ON child_edge.object_id = topic_descendants.topic_id
+     AND child_edge.deleted_at IS NULL
     JOIN topics
       ON topics.id = child_edge.subject_id
     WHERE topics.deleted_at IS NULL
