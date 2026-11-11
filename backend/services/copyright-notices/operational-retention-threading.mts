@@ -2,10 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { copyrightOperationalThreadEligibleSql } from './operational-retention-thread-eligibility.mts'
-import {
-  lockCopyrightOperationalThreadCase,
-  lockCopyrightThreadPreservationGate,
-} from './operational-retention-thread-lock.mts'
+import { lockCopyrightThreadPreservationGate } from './operational-retention-thread-lock.mts'
 import { deleteCaseThreadPage, type ThreadPhase } from './operational-retention-thread-page.mts'
 import {
   advanceCopyrightThreadCaseCursor,
@@ -25,7 +22,7 @@ async function sweepPage(
   cutoffId: string,
   batchSize: number,
 ): Promise<PageResult> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   await transaction(sql`/* seedCopyrightThreadRetentionCursor */
     INSERT INTO copyright_notice_operational_retention_cursors (kind)
     VALUES ('email_thread_references') ON CONFLICT DO NOTHING`)
@@ -98,8 +95,7 @@ async function sweepPage(
         )
         SELECT page.id FROM page`)
       : { rows: [] }
-  // The case replay and preservation locks fence the retirement sweep.
-  await lockCopyrightOperationalThreadCase(transaction, noticeId)
+  // Preservation coordination remains scoped to the case and its actual legal holds.
   await lockCopyrightThreadPreservationGate(transaction, noticeId)
   // Thread writers advance this projection in their own transaction. Hold its row until
   // deletion commits so a late review, link, reference or edge cannot pass the recheck.
@@ -142,6 +138,7 @@ async function sweepPage(
         EXCLUDED.retired_before_intake_bound)`)
   const result = await deleteCaseThreadPage(
     transaction,
+    now,
     noticeId,
     link.copyright_notice_email_intake_id,
     phase,
@@ -174,8 +171,15 @@ export async function sweepCopyrightCaseThreads(options: {
   let deleted = 0
   let hasMore = false
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each transaction advances the durable keyset.
-    const page = await sweepPage(now, cutoff, cutoffId, options.batchSize) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
+    let page: PageResult
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- each transaction advances the durable keyset.
+      page = await sweepPage(now, cutoff, cutoffId, options.batchSize) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
+    } catch (err) {
+      if ((err as { code?: string } | null)?.code !== '40001') throw err
+      // The aborted page did not advance its cursor. Let the next scheduled run resume it.
+      return { scanned, deleted, hasMore: false }
+    }
     scanned += page.scanned
     deleted += page.deleted
     hasMore = page.hasMore

@@ -1,94 +1,18 @@
-import { beginTransaction } from '@data-stores/psql'
-import sql from 'sql-template-strings'
-import {
-  copyrightEmailMessageIdIsAmbiguous,
-  insertCopyrightEmailThreadReferences,
-  recordCopyrightEmailAncestorEdges,
-} from './email-thread-ancestors.mts'
-import {
-  findCopyrightEmailThreadMatch,
-  type CopyrightEmailThreadMatch,
-} from './email-thread-match.mts'
+import { admitCopyrightEmailReferenceFacts } from './email-thread-reference-facts.mts'
+import { deriveCopyrightEmailThread } from './email-thread-derive.mts'
 import {
   buildCopyrightEmailThreadReferenceRows,
-  normalizedCopyrightEmailReplyValues,
+  type CopyrightEmailThreadInput,
 } from './email-thread-references.mts'
-import { lockCopyrightOperationalThreadCase } from './operational-retention-thread-lock.mts'
-import { insertCopyrightEmailIntakeNoticeLink } from './email-thread-link.mts'
+import type { CopyrightEmailThreadMatch } from './email-thread-match.mts'
 
 export type { CopyrightEmailThreadMatch } from './email-thread-match.mts'
 
-export async function recordCopyrightEmailThreadReferences(input: {
-  intakeId: string
-  messageId: string | null
-  inReplyTo: string[]
-  references: string[]
-}): Promise<CopyrightEmailThreadMatch | null> {
+export async function recordCopyrightEmailThreadReferences(
+  input: CopyrightEmailThreadInput,
+): Promise<CopyrightEmailThreadMatch | null> {
   const referenceRows = buildCopyrightEmailThreadReferenceRows(input)
-  await using transaction = await beginTransaction()
-  let tokenIds = new Map<string, string>()
-  // The intake lock fences a concurrent case link while its case-level advisory lock fences
-  // the retirement sweep.
-  const { rows: liveIntakes } = await transaction<{ raw_storage_object_id: string | null }>(sql`
-    /* recordCopyrightEmailThreadReferences:lockIntake */
-    SELECT raw_storage_object_id FROM copyright_notice_email_intakes
-    WHERE id = ${input.intakeId}
-      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
-        WHERE receipt.id = ${input.intakeId} AND receipt.erased_at IS NULL)
-    FOR UPDATE`)
-  if (!liveIntakes[0]?.raw_storage_object_id) {
-    await transaction.commit()
-    return null
-  }
-  const { rows: links } = await transaction<{ copyright_notice_id: string }>(sql`
-    /* recordCopyrightEmailThreadReferences:caseLink */
-    SELECT copyright_notice_id FROM copyright_notice_email_intake_notice_links
-    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
-  if (links[0]) {
-    await lockCopyrightOperationalThreadCase(transaction, links[0].copyright_notice_id)
-    const { rows: retired } = await transaction<{ copyright_notice_id: string }>(sql`
-      /* recordCopyrightEmailThreadReferences:retired */
-      SELECT copyright_notice_id FROM copyright_notice_email_thread_retirements
-      WHERE copyright_notice_id = ${links[0].copyright_notice_id}
-        AND retired_before_intake_bound > ${input.intakeId}::uuid`)
-    if (retired.length > 0) {
-      await transaction.commit()
-      return null
-    }
-  }
-  if (referenceRows.length > 0) {
-    tokenIds = await insertCopyrightEmailThreadReferences(
-      transaction,
-      input.intakeId,
-      referenceRows,
-    )
-  }
-  const ambiguous = await copyrightEmailMessageIdIsAmbiguous(transaction, input.intakeId)
-  if (ambiguous) {
-    await transaction.commit()
-    return null
-  }
-  if (referenceRows.length > 0) {
-    await recordCopyrightEmailAncestorEdges(transaction, input.intakeId)
-  }
-  const match = await findCopyrightEmailThreadMatch(
-    input.intakeId,
-    normalizedCopyrightEmailReplyValues(input),
-    tokenIds,
-    transaction,
-  )
-  if (match) {
-    const linked = await insertCopyrightEmailIntakeNoticeLink(transaction, {
-      intakeId: input.intakeId,
-      noticeId: match.noticeId,
-      linkKind: 'thread',
-      matchedReference: match.matchedReference,
-    })
-    if (!linked) {
-      await transaction.commit()
-      return null
-    }
-  }
-  await transaction.commit()
-  return match
+  if (referenceRows.length === 0) return null
+  if (!(await admitCopyrightEmailReferenceFacts(input.intakeId, referenceRows))) return null
+  return deriveCopyrightEmailThread(input, referenceRows)
 }

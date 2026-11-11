@@ -1,35 +1,51 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { copyrightEmailThreadChangedError } from './email-thread-graph.mts'
 import type { CopyrightEmailThreadReferenceRow } from './email-thread-references.mts'
+import { throwIfCopyrightEmailThreadWriteConflict } from './email-thread-write-conflict.mts'
 
-export async function insertCopyrightEmailThreadReferences(
+export async function insertResolvedCopyrightEmailThreadReferences(
   transaction: TransactionQuery,
   intakeId: string,
   rows: readonly CopyrightEmailThreadReferenceRow[],
-): Promise<Map<string, string>> {
-  const tokenIds = await resolveCopyrightEmailThreadTokenIds(
-    transaction,
-    rows.map(row => row.lookup_digest),
-  )
+  tokenIds: ReadonlyMap<string, string>,
+): Promise<void> {
   const payload = JSON.stringify(
     rows.map(row => ({
       token_id: tokenIds.get(row.lookup_digest)!,
       reference_kind: row.reference_kind,
     })),
   )
-  await transaction(sql`/* insertCopyrightEmailThreadReferences */
-    INSERT INTO copyright_notice_email_thread_references (
-      copyright_notice_email_intake_id, token_id, reference_kind
-    )
-    SELECT ${intakeId}::uuid AS intake_id, reference.token_id, reference.reference_kind
-    FROM jsonb_to_recordset(${payload}::jsonb) AS reference(
-      token_id uuid, reference_kind copyright_notice_email_thread_reference_kinds
-    )
-    ORDER BY intake_id, reference.token_id, reference.reference_kind
-    ON CONFLICT (copyright_notice_email_intake_id, token_id, reference_kind) DO NOTHING
-  `)
-  return tokenIds
+  try {
+    const { rowCount } = await transaction(sql`/* insertCopyrightEmailThreadReferences */
+      INSERT INTO copyright_notice_email_thread_references (
+        copyright_notice_email_intake_id, token_id, reference_kind
+      )
+      SELECT ${intakeId}::uuid AS intake_id, reference.token_id, reference.reference_kind
+      FROM jsonb_to_recordset(${payload}::jsonb) AS reference(
+        token_id uuid, reference_kind copyright_notice_email_thread_reference_kinds
+      )
+      WHERE EXISTS (
+        SELECT 1 FROM copyright_notice_email_intakes intake
+        JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
+        WHERE intake.id = ${intakeId} AND intake.raw_storage_object_id IS NOT NULL
+          AND receipt.erased_at IS NULL
+      )
+      ORDER BY intake_id, reference.token_id, reference.reference_kind
+      ON CONFLICT (copyright_notice_email_intake_id, token_id, reference_kind) DO NOTHING
+    `)
+    if (rowCount === 0) {
+      const { rows: live } = await transaction(sql`/* insertCopyrightEmailThreadReferences:live */
+        SELECT 1 FROM copyright_notice_email_intakes intake
+        JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
+        WHERE intake.id = ${intakeId} AND intake.raw_storage_object_id IS NOT NULL
+          AND receipt.erased_at IS NULL LIMIT 1`)
+      if (live.length === 0) throw copyrightEmailThreadChangedError()
+    }
+  } catch (err) {
+    throwIfCopyrightEmailThreadWriteConflict(err)
+    throw err
+  }
 }
 
 /** Resolve private input digests once at ingestion; persisted joins use only token UUIDs. */
@@ -48,7 +64,7 @@ export async function resolveCopyrightEmailThreadTokenIds(
       SELECT id, lookup_digest FROM copyright_notice_email_thread_tokens
       WHERE lookup_digest = ANY(${digests}::text[])`,
   )
-  assert(rows.length === digests.length, 500, 'Copyright email thread token resolution incomplete')
+  if (rows.length !== digests.length) throw copyrightEmailThreadChangedError()
   return new Map(rows.map(row => [row.lookup_digest, row.id]))
 }
 

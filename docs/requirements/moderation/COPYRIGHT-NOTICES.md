@@ -26,6 +26,10 @@ obligations. The runbook owns the activation procedure.
 Email thread assignment uses the references known when an intake is admitted. A later arriving
 message may extend or make that graph ambiguous without rewriting an immutable case link. The
 retained receipt prevents erased private evidence from being admitted again on replay.
+Reference digests are admitted against the live receipt and case retirement boundary before
+thread ancestry and case matching are derived from committed references. An interrupted derivation
+may leave hash-only references for replay; they do not authorize a case link or private evidence
+processing.
 
 ## Current screening authority
 
@@ -178,7 +182,9 @@ export. See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-reco
 The daily operational cleanup separately expires screening and transport attempts, unused guest
 capabilities, and case-exclusive email threading after the case has no open work and its reply
 window has passed. Appeal and counter-notice retry keys are stored only as digests; exact
-replay remains available while the case exists. A per-case intake-age high-water prevents old
+replay remains available while the case exists. Orphan thread digests age before deletion so
+concurrent intake can finish reference admission; a disappearing digest results in a conflict.
+A per-case intake-age high-water prevents old
 SES replays from rebuilding expired references while fresh email can still thread through an eligible case. An unlinked email
 intake loses its original object and private MIME parse and attachment data after inactivity; a
 minimal SES receipt remains to prevent re-admission on replay. Erasure intent is committed before

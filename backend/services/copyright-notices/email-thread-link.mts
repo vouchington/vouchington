@@ -2,6 +2,7 @@ import type { TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { resolveCopyrightEmailThreadTokenIds } from './email-thread-ancestors.mts'
+import { throwIfCopyrightEmailThreadWriteConflict } from './email-thread-write-conflict.mts'
 import { COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE } from './email-thread-references.mts'
 
 export async function insertCopyrightEmailIntakeNoticeLink(
@@ -26,12 +27,11 @@ export async function insertCopyrightEmailIntakeNoticeLink(
     const { rows: live } = await transaction<{
       raw_storage_object_id: string | null
       reviewed: boolean
-    }>(sql`/* linkCopyrightEmailIntakeToNotice:lockThreadIntake */
+    }>(sql`/* linkCopyrightEmailIntakeToNotice:liveThreadIntake */
       SELECT intake.raw_storage_object_id, receipt.review_decision IS NOT NULL AS reviewed
       FROM copyright_notice_email_intakes intake
       JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
       WHERE intake.id = ${input.intakeId} AND receipt.erased_at IS NULL
-      FOR UPDATE OF intake
     `)
     if (live.length === 0) return false
     const { rows: retained } = await transaction<{
@@ -90,19 +90,26 @@ export async function insertCopyrightEmailIntakeNoticeLink(
       )
     }
   }
-  const { rows: inserted } = await transaction<{
-    copyright_notice_id: string
-    link_kind: string
-  }>(sql`/* linkCopyrightEmailIntakeToNotice */
-    INSERT INTO copyright_notice_email_intake_notice_links (
-      copyright_notice_email_intake_id, copyright_notice_id, link_kind,
-      matched_token_id, correspondence_action
-    ) VALUES (
-      ${input.intakeId}, ${input.noticeId}, ${input.linkKind},
-      ${matchedTokenId}, ${input.linkKind === 'thread' ? 'pending' : null}
-    ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
-    RETURNING copyright_notice_id, link_kind
-  `)
+  let inserted: Array<{ copyright_notice_id: string; link_kind: string }>
+  try {
+    const result = await transaction<{
+      copyright_notice_id: string
+      link_kind: string
+    }>(sql`/* linkCopyrightEmailIntakeToNotice */
+      INSERT INTO copyright_notice_email_intake_notice_links (
+        copyright_notice_email_intake_id, copyright_notice_id, link_kind,
+        matched_token_id, correspondence_action
+      ) VALUES (
+        ${input.intakeId}, ${input.noticeId}, ${input.linkKind},
+        ${matchedTokenId}, ${input.linkKind === 'thread' ? 'pending' : null}
+      ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+      RETURNING copyright_notice_id, link_kind
+    `)
+    inserted = result.rows
+  } catch (err) {
+    throwIfCopyrightEmailThreadWriteConflict(err)
+    throw err
+  }
   const retained =
     inserted[0] ??
     (

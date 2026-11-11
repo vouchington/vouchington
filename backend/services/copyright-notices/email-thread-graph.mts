@@ -125,8 +125,11 @@ export async function readCopyrightEmailThreadGraph(
   }
 }
 
-export function copyrightEmailThreadChangedError() {
-  return Object.assign(createError(409, 'Copyright email thread changed; retry staff approval'), {
-    code: COPYRIGHT_EMAIL_THREAD_CHANGED,
-  })
+export function copyrightEmailThreadChangedError(cause?: unknown) {
+  return Object.assign(
+    createError(409, 'Copyright email thread changed; retry staff approval', { cause }),
+    {
+      code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+    },
+  )
 }

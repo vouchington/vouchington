@@ -3,26 +3,25 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
+  copyrightEmailTokenGcCutoffId,
+  deleteOrphanCopyrightEmailThreadTokens,
+} from './operational-retention-token-gc.mts'
+import {
   deleteExpiredCopyrightGuestCapabilities,
   lockCopyrightGuestCapabilityCases,
 } from './operational-retention-guest-capabilities.mts'
 
-export type CopyrightOperationalSweepKind =
-  | 'form_screening_attempts'
-  | 'action_attempts'
-  | 'delivery_attempts'
-  | 'guest_capabilities'
-  | 'orphan_email_thread_tokens'
-
 type SweepResult = { scanned: number; deleted: number; hasMore: boolean }
 
-const TABLES: Record<CopyrightOperationalSweepKind, string> = {
+const TABLES = {
   form_screening_attempts: 'copyright_notice_form_screening_attempts',
   action_attempts: 'copyright_notice_action_attempts',
   delivery_attempts: 'copyright_notice_delivery_attempts',
   guest_capabilities: 'copyright_notice_guest_capabilities',
   orphan_email_thread_tokens: 'copyright_notice_email_thread_tokens',
-}
+} as const
+
+export type CopyrightOperationalSweepKind = keyof typeof TABLES
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -77,6 +76,7 @@ async function deleteSelected(
   kind: CopyrightOperationalSweepKind,
   ids: readonly string[],
   cutoff: Date,
+  tokenGcCutoffId: string,
 ): Promise<number> {
   if (kind === 'action_attempts' || kind === 'delivery_attempts') {
     return deleteAttemptBatch(transaction, kind, ids, cutoff)
@@ -97,14 +97,7 @@ async function deleteSelected(
     return rowCount ?? 0
   }
   if (kind === 'orphan_email_thread_tokens') {
-    const { rowCount } = await transaction(sql`/* deleteOrphanCopyrightEmailThreadTokens */
-      DELETE FROM copyright_notice_email_thread_tokens token
-      WHERE token.id = ANY(${[...ids]}::uuid[])
-        AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_thread_references reference
-          WHERE reference.token_id = token.id)
-        AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-          WHERE link.matched_token_id = token.id)`)
-    return rowCount ?? 0
+    return deleteOrphanCopyrightEmailThreadTokens(transaction, ids, tokenGcCutoffId)
   }
   return deleteExpiredCopyrightGuestCapabilities(transaction, ids, cutoff)
 }
@@ -114,6 +107,7 @@ async function sweepPage(
   batchSize: number,
   cutoffId: string,
   cutoff: Date,
+  tokenGcCutoffId: string,
   recordIds?: readonly string[],
 ): Promise<SweepResult> {
   await using transaction = await beginTransaction()
@@ -155,7 +149,7 @@ async function sweepPage(
   if (ids.length > 0) {
     await transaction(sql`/* enableCopyrightOperationalRetention */
       SET LOCAL app.copyright_operational_retention = 'on'`)
-    deleted = await deleteSelected(transaction, kind, ids, cutoff)
+    deleted = await deleteSelected(transaction, kind, ids, cutoff, tokenGcCutoffId)
   }
   const hasMore = rawIds.length === batchSize
   await transaction(sql`/* advanceCopyrightOperationalRetentionCursor */
@@ -181,16 +175,26 @@ export async function sweepCopyrightOperationalRetention(
   const now = options.now ?? new Date()
   const cutoff = new Date(now.getTime() - options.retentionDays * DAY_MS)
   const cutoffId = getMinUUIDv7ForDate(cutoff)
+  const tokenGcCutoffId = copyrightEmailTokenGcCutoffId(now)
   let scanned = 0
   let deleted = 0
   let hasMore = false
+  // oxlint-disable no-await-in-loop -- the committed cursor determines the next page.
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- the committed cursor determines the next page.
-    const page = await sweepPage(kind, options.batchSize, cutoffId, cutoff, options.recordIds) // no-mistakes-disable-line query-reached-per-item: each capped transaction commits its durable keyset cursor before the next page.
+    // no-mistakes-disable-next-line query-reached-per-item: each capped transaction commits its durable keyset cursor before the next page.
+    const page = await sweepPage(
+      kind,
+      options.batchSize,
+      cutoffId,
+      cutoff,
+      tokenGcCutoffId,
+      options.recordIds,
+    )
     scanned += page.scanned
     deleted += page.deleted
     hasMore = page.hasMore
     if (!hasMore) break
   }
+  // oxlint-enable no-await-in-loop
   return { scanned, deleted, hasMore }
 }

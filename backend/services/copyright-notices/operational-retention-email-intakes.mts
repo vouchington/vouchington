@@ -85,8 +85,15 @@ export async function sweepUnlinkedCopyrightEmailIntakes(options: {
   let erased = 0
   let hasMore = false
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each committed cursor selects the next intake.
-    const page = await sweepPage(cutoffId, cutoff, options.childLimit, options.queryAfterStorage) // no-mistakes-disable-line query-reached-per-item: each bounded intake transaction commits its durable keyset cursor before the next page.
+    let page: PageResult
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- each committed cursor selects the next intake.
+      page = await sweepPage(cutoffId, cutoff, options.childLimit, options.queryAfterStorage) // no-mistakes-disable-line query-reached-per-item: each bounded intake transaction commits its durable keyset cursor before the next page.
+    } catch (err) {
+      if ((err as { code?: string } | null)?.code !== '40001') throw err
+      // The aborted page left its cursor unchanged; the next scheduled run resumes it.
+      return { scanned, erased, hasMore: false }
+    }
     scanned += page.scanned
     erased += page.erased
     hasMore = page.hasMore
