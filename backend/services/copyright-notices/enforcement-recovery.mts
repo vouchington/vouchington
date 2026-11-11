@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors'
 import { getCopyrightSweepLimits } from './work-limits.mts'
 import { buildPageInfo } from '@modules/pagination'
 import {
@@ -48,6 +49,10 @@ export async function recoverMissingDecisionAssessments(
   if (options.ids !== undefined)
     candidateQuery.append(sql` AND submission_id = ANY(${options.ids}::uuid[])`)
   candidateQuery.append(sql`
+        AND EXISTS (
+          SELECT 1 FROM copyright_notices notice
+          WHERE notice.id = durable_decisions.copyright_notice_id AND notice.evidence_erased_at IS NULL
+        )
         AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_submissions submission
         WHERE submission.id = durable_decisions.submission_id
@@ -117,7 +122,11 @@ export async function recoverMissingDecisionAssessments(
       current_results.id, 'durable_decision'
     FROM current_results
     LIMIT ${limit}
-  `)
+  `).catch((err: unknown) => {
+    if ((err as { constraint?: string } | null)?.constraint === 'copyright_assessment_active_case')
+      throw createHttpError(410, 'Copyright case evidence was erased', { cause: err })
+    throw err
+  })
   await transaction.commit()
   return {
     results: page.map(row => row.id),

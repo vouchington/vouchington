@@ -1,8 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
-import { copyrightOperationalThreadEligibleSql } from './operational-retention-thread-eligibility.mts'
-import { lockCopyrightThreadPreservationGate } from './operational-retention-thread-lock.mts'
+import { copyrightOperationalThreadAdmissionSql } from './operational-retention-thread-eligibility.mts'
 import { deleteCaseThreadPage, type ThreadPhase } from './operational-retention-thread-page.mts'
 import { isCopyrightEmailTokenGcConflict } from './operational-retention-token-gc.mts'
 import {
@@ -96,14 +95,6 @@ async function sweepPage(
         )
         SELECT page.id FROM page`)
       : { rows: [] }
-  // Preservation coordination remains scoped to the case and its actual legal holds.
-  await lockCopyrightThreadPreservationGate(transaction, noticeId)
-  // Thread writers advance this projection in their own transaction. Hold its row until
-  // deletion commits so a late review, link, reference or edge cannot pass the recheck.
-  const { rows: activityRows } = await transaction<{ copyright_notice_id: string }>(sql`
-    /* lockCopyrightThreadRetentionActivity */
-    SELECT copyright_notice_id FROM copyright_notice_thread_retention_activities
-    WHERE copyright_notice_id = ${noticeId} FOR UPDATE`)
   const proof = await checkCopyrightThreadProofPage(
     transaction,
     noticeId,
@@ -117,10 +108,22 @@ async function sweepPage(
     await transaction.commit()
     return { scanned: 1, deleted: 0, hasMore: true }
   }
-  const { rows: eligible } = await transaction<{ id: string }>(
-    copyrightOperationalThreadEligibleSql(cutoff, noticeId),
+  const { rows: admissions } = await transaction<{
+    proof_is_current: boolean
+    is_eligible: boolean
+  }>(
+    copyrightOperationalThreadAdmissionSql(cutoff, noticeId, {
+      holdGeneration: proof.legal.holdGeneration,
+      partyGeneration: proof.legal.partyGeneration,
+      blockerGeneration: proof.blocker.generation,
+    }),
   )
-  if (eligible.length === 0 || activityRows.length === 0) {
+  if (!admissions[0]?.proof_is_current) {
+    // Keep this case selected; the next page observes changed generations and restarts proof.
+    await transaction.commit()
+    return { scanned: 1, deleted: 0, hasMore: true }
+  }
+  if (!admissions[0]?.is_eligible) {
     // The next fixed sweep rechecks this case if the blocker later clears.
     await advanceCopyrightThreadCaseCursor(transaction, noticeId, upperBound)
     await transaction.commit()

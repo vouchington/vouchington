@@ -1585,7 +1585,12 @@ BEGIN
     -- Virtual generated columns are absent from trigger NEW records; derive the same event clock.
     SET last_lifecycle_activity_at = GREATEST(notice.last_lifecycle_activity_at, uuid_extract_timestamp(NEW.id)),
       last_legal_activity_at = GREATEST(notice.last_legal_activity_at, uuid_extract_timestamp(NEW.id), clock_timestamp())
-    WHERE notice.id = NEW.copyright_notice_id;
+    WHERE notice.id = NEW.copyright_notice_id
+      AND (NEW.change_type <> 'submission_assessed' OR notice.evidence_erased_at IS NULL);
+    IF NOT FOUND AND NEW.change_type = 'submission_assessed' THEN
+      RAISE EXCEPTION 'copyright case evidence was erased'
+        USING ERRCODE = 'check_violation', CONSTRAINT = 'copyright_assessment_active_case';
+    END IF;
   END IF;
   RETURN NEW;
 END;

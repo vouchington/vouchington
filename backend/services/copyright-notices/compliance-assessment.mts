@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -57,7 +58,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     JOIN copyright_notices n ON n.id = s.copyright_notice_id
     LEFT JOIN copyright_notice_form_intakes intake ON intake.copyright_notice_submission_id = s.id
     WHERE s.id = ${input.submissionId}
-    FOR UPDATE OF n, s
+    FOR UPDATE OF s
   `)
   assert(submissionRows[0], 404, 'Copyright submission not found')
   assert(!submissionRows[0].evidence_erased, 410, 'Copyright case evidence was erased')
@@ -190,6 +191,10 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_submission_assessment_identity_id)
     VALUES (${submissionRows[0].copyright_notice_id}, 'submission_assessed', ${input.currentUser?.id ?? null}, ${assessment.id})
-  `)
+  `).catch((err: unknown) => {
+    if ((err as { constraint?: string } | null)?.constraint === 'copyright_assessment_active_case')
+      throw createHttpError(410, 'Copyright case evidence was erased', { cause: err })
+    throw err
+  })
   return assessment
 }

@@ -23,13 +23,13 @@ export async function checkCopyrightThreadLegalPage(
   const { rows: generations } = await transaction<{
     preservation_generation: string
     party_generation: string
-  }>(sql`/* lockCopyrightThreadLegalGenerations */
+  }>(sql`/* readCopyrightThreadLegalGenerations */
     SELECT global.preservation_generation,
       COALESCE(parties.generation, 0) AS party_generation
     FROM copyright_notice_retention_generations global
     LEFT JOIN copyright_notice_thread_party_generations parties
       ON parties.copyright_notice_id = ${noticeId}
-    WHERE global.is_global FOR UPDATE OF global`)
+    WHERE global.is_global`)
   const current = generations[0]!
   const changed =
     cursor.holdGeneration !== current.preservation_generation ||
