@@ -37,7 +37,11 @@ export function mergeShardResults(
     )
   const ordered = EXPLAIN_SHARDS.map(name => shards.find(shard => shard.shard === name)!)
   for (const shard of ordered)
-    assertScenarioManifest(shard.completedScenarioIds, getShardScenarioIds(shard.shard, manifest))
+    assertScenarioManifest(
+      shard.completedScenarioIds,
+      getShardScenarioIds(shard.shard, manifest),
+      shard.shard,
+    )
   const completedScenarioIds = ordered.flatMap(shard => [...shard.completedScenarioIds])
   assertScenarioManifest(completedScenarioIds, manifest)
   return {

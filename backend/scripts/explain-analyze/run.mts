@@ -53,6 +53,7 @@ async function main() {
       assertScenarioManifest(
         getCompletedScenarioIds(),
         getShardScenarioIds(shard, EXPLAIN_SCENARIO_MANIFEST),
+        shard,
       )
     } catch (err) {
       runErrors.push(err)

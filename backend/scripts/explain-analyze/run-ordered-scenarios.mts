@@ -22,6 +22,9 @@ export type OrderedRunner = () => Promise<unknown>
 
 // Order matters: earlier scenarios mutate the one shared corpus. See the comments in the
 // early and late files before moving a runner.
+//
+// A scenario that needs a corpus seeds it itself or names it in an explicit shard prelude; it
+// never relies on another segment's leftovers. Each shard runs on its own database.
 export const BEFORE_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   ...EARLY_RUNNERS,
   ...LATE_RUNNERS,
@@ -42,20 +45,27 @@ export const ORDERED_SHARD_STARTS = [
 ] as const
 
 // The referral link plans read the crawl and referral link volume the dispatch work plan seeds
-// add in the first segment, so the last shard replays those seeds without their captures.
+// add in main-2, so the last shard replays those seeds without their captures. Without them the
+// referral-links follow scan (hostname-exclusion-referral-links) stopped being a near tie.
 async function replayDispatchWorkPlanSeeds(): Promise<void> {
   await prepareCrawlDispatchScale()
   await prepareReferralCrawlScale()
   await prepareReferralUnfurlScale()
 }
 
-// The last shard's plans (membership renewal selection, orphaned queued grants) need the mixed
-// membership corpus that the vote weight seed writes in the first segment, and its large-table
-// scan baseline needs the vacuumed statistics that notification visibility settles before it, so
-// that shard replays both, and the dispatch seeds, before its own segment. Only add a step here that is deterministic and
-// idempotent.
+// Steps a later shard replays before its own segment, in the original order, because plans in it
+// read corpora that main-2 or main-3 wrote. Only add a step that is deterministic and idempotent.
 const SHARD_PRELUDES: Partial<Record<OrdinaryExplainShard, readonly OrderedRunner[]>> = {
-  'main-4': [replayDispatchWorkPlanSeeds, seedVoteWeightDispatch, runAnalyze],
+  'main-4': [
+    // main-2 seeds this: the referral-links follow scan (hostname-exclusion-referral-links).
+    replayDispatchWorkPlanSeeds,
+    // main-2 seeds this: the membership renewal selection and orphaned queued grant plans chose
+    // sequential scans without the mixed membership corpus.
+    seedVoteWeightDispatch,
+    // Notification visibility (main-3) runs this. Kept for fidelity with the original order; on
+    // its own it fixed no flip.
+    runAnalyze,
+  ],
 }
 
 export function getShardPrelude(shard: OrdinaryExplainShard): readonly OrderedRunner[] {
