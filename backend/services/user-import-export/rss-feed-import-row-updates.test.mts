@@ -1,9 +1,18 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { createTestUser, insertTestRssFeedDirect, WEB_PROVENANCE } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestUser,
+  getTestPostgresBackendProcessId,
+  insertTestRssFeedDirect,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import {
   getFirstRssFeedImportRowId,
+  failRssFeedImportRowForLimitForTest,
   getRssFeedImportRowIds,
+  lockRssFeedImportRowForTest,
 } from '@voucha/test-helpers/rss-feed-import-rows'
 import { createRssFeedImport } from './rss-feed-import-records.mts'
 import { getRssFeedImport, getRssFeedImportSummary } from './rss-feed-import-status.mts'
@@ -118,6 +127,43 @@ describe('RSS import skipped counters', () => {
       updateRssFeedImportRowFailed(rowId, 'RELATION_LIMIT_REACHED', { isFinalAttempt: true }),
       updateRssFeedImportRowCompleted(rowId, 'followed', feed.id),
     ])
+    expect(await getRssFeedImportSummary(user.id, created.import.id)).toMatchObject({
+      completed_rows: 1,
+      failed_rows: 0,
+      skipped_rows: 0,
+      pending_rows: 0,
+    })
+  })
+
+  it('keeps the lifecycle check when completion resumes after a committed final failure', async () => {
+    const user = await createTestUser()
+    const created = await createRssFeedImport(
+      user.id,
+      WEB_PROVENANCE,
+      [`https://counter-${randomUUID()}.example.com/rss`],
+      true,
+    )
+    const rowId = await getFirstRssFeedImportRowId(created.import.id)
+    const feed = await insertTestRssFeedDirect({})
+    await using holder = await beginTransaction()
+    await lockRssFeedImportRowForTest(holder, rowId)
+    const holderProcessId = await getTestPostgresBackendProcessId(holder)
+    await withTestOwnedPostgresWait(
+      {
+        holderProcessId,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'updateRssFeedImportRowCompleted',
+        releaseHolder: () => holder[Symbol.asyncDispose](),
+      },
+      async waitForLock => {
+        const completion = updateRssFeedImportRowCompleted(rowId, 'followed', feed.id)
+        await waitForLock(completion)
+        await failRssFeedImportRowForLimitForTest(holder, rowId)
+        await holder.commit()
+        await completion
+      },
+    )
     expect(await getRssFeedImportSummary(user.id, created.import.id)).toMatchObject({
       completed_rows: 1,
       failed_rows: 0,

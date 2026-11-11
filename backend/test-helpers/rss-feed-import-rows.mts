@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { randomUUID } from 'node:crypto'
 
@@ -37,6 +37,36 @@ export async function createRssFeedImportRowForTest(
   const rowId = rows[0]?.id
   if (!rowId) throw new Error('Could not create RSS import row fixture')
   return rowId
+}
+
+/** Hold the import row a completion update writes, so a lock observer can see that wait. */
+export async function lockRssFeedImportRowForTest(
+  query: TransactionQuery,
+  rowId: string,
+): Promise<void> {
+  await query(sql`/* lockRssFeedImportRowForTest */
+    SELECT id FROM user_rss_feed_import_rows WHERE id = ${rowId} FOR UPDATE
+  `)
+}
+
+/** Commit a final RELATION_LIMIT_REACHED failure and its batch counters on the caller's transaction. */
+export async function failRssFeedImportRowForLimitForTest(
+  query: TransactionQuery,
+  rowId: string,
+): Promise<void> {
+  const { rows } = await query<{ batch_id: string }>(sql`/* failRssFeedImportRowForLimitForTest */
+    UPDATE user_rss_feed_import_rows
+    SET failed_at = CURRENT_TIMESTAMP, outcome = 'error', error_message = 'RELATION_LIMIT_REACHED'
+    WHERE id = ${rowId}
+    RETURNING batch_id
+  `)
+  await query(sql`/* failRssFeedImportRowForLimitForTestBatch */
+    UPDATE user_rss_feed_import_batches
+    SET failed_rows = failed_rows + 1, skipped_rows = skipped_rows + 1,
+        completed_at = CASE WHEN completed_rows + failed_rows + 1 = total_rows
+          THEN CURRENT_TIMESTAMP ELSE NULL END
+    WHERE id = ${rows[0]!.batch_id}
+  `)
 }
 
 export async function deleteOwnedRssFeedImportRowForTest(
