@@ -152,9 +152,12 @@ describe('durable moderation rerun terminal outcomes', () => {
         'active',
       )
       const runtime = await startAIAgentWorkerForTest({ blockTimeout: 100, promotionInterval: 100 })
+      const retries = Array.from({ length: 2 }, () => Promise.withResolvers<Job>())
       const finished = Promise.withResolvers<Job>()
       runtime.worker.on('failed', (job: Job | undefined) => {
-        if (job?.id === admitted.jobId && job.attemptsMade + 1 >= 3) finished.resolve(job)
+        if (job?.id !== admitted.jobId) return
+        if (job.attemptsMade < retries.length) retries[job.attemptsMade]?.resolve(job)
+        else finished.resolve(job)
       })
       for (const [index, attempt] of attempts.entries()) {
         await waitForRealGlideEvent(attempt.entered.promise, `${kind} provider attempt ${index}`)
@@ -162,6 +165,15 @@ describe('durable moderation rerun terminal outcomes', () => {
           'active',
         )
         attempt.response.reject(new Error(`Owned transient failure ${index}`))
+        if (index < retries.length) {
+          const retry = await waitForRealGlideEvent(
+            retries[index]!.promise,
+            `${kind} delayed retry ${index}`,
+          )
+          const state = await retry.getState()
+          if (state !== 'delayed') throw new Error(`Expected delayed retry, got ${state}`)
+          await retry.promote()
+        }
       }
       const failed = await waitForRealGlideEvent(finished.promise, `${kind} final failure`)
       expect(provider.generateJson).toHaveBeenCalledTimes(3)
