@@ -4,6 +4,7 @@ import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { getPostsWorkLimit } from '@services/posts/work-limits'
 import sql from 'sql-template-strings'
 import { seedUuid } from './common.mts'
+import { publicPostDiscoveryDiscussionIds } from './post-discovery-search.mts'
 import {
   POST_TOPIC_OWNED_IDS,
   POST_TOPIC_FEED_POST_ID,
@@ -13,7 +14,7 @@ import {
 
 const ALIASES_PER_TOPIC = 40
 const SPARSE_POST_COUNT = 5
-const MIN_NEWEST_POST_COHORT_SIZE = 10_000
+const DENSE_POST_COUNT = 10_000
 const FIXTURE_ID_START = 800_000
 const SEED_VIEWER_ID = seedUuid(0, '01')
 
@@ -62,28 +63,19 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
     [aliasIds, aliasTopicIds, aliasNames],
   )
 
-  const newestPostsQuery = sql`/* seedPostTopicSemiJoinFixture:newest-posts */
-    WITH newest_posts AS MATERIALIZED (
-      SELECT posts.id FROM posts
-      WHERE posts.deleted_at IS NULL
-        AND posts.id >= ${getMinUUIDv7ForDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))}::uuid
-      ORDER BY posts.id DESC
-      LIMIT ${MIN_NEWEST_POST_COHORT_SIZE}
-    )
-    SELECT posts.id, posts.created_by_id
-    FROM newest_posts JOIN posts ON posts.id = newest_posts.id
-    WHERE posts.root_post_id IS NULL
-      AND posts.id <> ${POST_TOPIC_FEED_POST_ID}::uuid
+  const densePostIds = [
+    ...POST_TOPIC_OWNED_IDS.slice(1),
+    ...publicPostDiscoveryDiscussionIds(DENSE_POST_COUNT - (POST_TOPIC_OWNED_IDS.length - 1)),
+  ]
+  const densePostsQuery = sql`/* seedPostTopicSemiJoinFixture:dense-posts */
+    SELECT posts.id FROM posts
+    WHERE posts.id = ANY(${densePostIds}::uuid[])
+      AND posts.root_post_id IS NULL
       AND posts.post_type = 'discussion'
-      AND posts.community_id IS NULL
-      AND `
-    .append(buildPublicPostEligibilityFilter('posts', 'posts'))
-    .append(sql` ORDER BY posts.id DESC`)
-  const { rows: newestPosts } = await transaction<{ id: string }>(newestPostsQuery)
-  if (newestPosts.length < SPARSE_POST_COUNT + 1)
-    throw new Error(
-      'Post topic fixture needs recent public discussion posts inside the raw feed window',
-    )
+      AND `.append(buildPublicPostEligibilityFilter('posts', 'posts'))
+  const { rows: densePosts } = await transaction<{ id: string }>(densePostsQuery)
+  if (new Set(densePostIds).size !== DENSE_POST_COUNT || densePosts.length !== DENSE_POST_COUNT)
+    throw new Error('Post topic fixture needs exactly 10000 distinct public discussion posts')
 
   const sparsePostIds = POST_TOPIC_OWNED_IDS.slice(-SPARSE_POST_COUNT).toReversed()
   const sparseAliasIds = fixture.sparseAliasIds.slice(0, SPARSE_POST_COUNT)
@@ -97,9 +89,6 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
     [sparsePostIds, sparseAliasIds, seedUuid(0, '01')],
   )
 
-  const densePostIds = [
-    ...new Set([...POST_TOPIC_OWNED_IDS.slice(1), ...newestPosts.map(post => post.id)]),
-  ]
   const denseAliasIds = densePostIds.map(
     (_, index) => fixture.denseAliasIds[index % ALIASES_PER_TOPIC]!,
   )
@@ -112,6 +101,17 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
      ON CONFLICT DO NOTHING`,
     [densePostIds, denseAliasIds, seedUuid(0, '01')],
   )
+  const { rows: denseMembershipCounts } = await transaction<{ count: number }>(
+    `/* seedPostTopicSemiJoinFixture:verify-dense-memberships */
+     SELECT count(*)::int AS count
+     FROM UNNEST($1::uuid[], $2::uuid[]) AS expected(post_id, alias_id)
+     JOIN relation__post__category__topic_alias relation
+       ON relation.subject_id = expected.post_id AND relation.object_id = expected.alias_id
+     WHERE relation.deleted_at IS NULL AND relation.votes_score_net > 0`,
+    [densePostIds, denseAliasIds],
+  )
+  if (denseMembershipCounts[0]?.count !== DENSE_POST_COUNT)
+    throw new Error('Post topic fixture needs exactly 10000 active positive dense memberships')
   const feedCap = getPostsWorkLimit('feed_inspected_row_cap')
   const lowerCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const { rows: sharedDeliveries } = await transaction<{ count: number }>(

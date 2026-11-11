@@ -3,6 +3,7 @@ import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { partitionIndexLeavesOf } from '../partition-index-leaves.mts'
 import { POST_TOPIC_SEMI_JOIN_FIXTURE } from '../seed-data/post-topic-semi-join-fixture.mts'
+import { POST_TOPIC_FEED_POST_ID } from '../seed-data/post-topic-owned-posts.mts'
 import { POST_TOPIC_FIXTURES_SEEDED_ROWS } from '../post-discovery-seeded-rows.mts'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 
@@ -165,6 +166,12 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
   const feedPage = await getPostFeedIds(seedUser, multiTopicFeedOptions)
   if (feedPage.results.length === 0)
     throw new Error('Two-topic post feed omitted its owned, followed-topic raw-prefix post')
+  if (
+    !feedPage.results.some(
+      row => row.entity_id === POST_TOPIC_FEED_POST_ID && row.delivery_type === 'direct',
+    )
+  )
+    throw new Error('Two-topic post feed omitted its specific owned direct delivery')
   if (feedPage.results.length > PAGE_SIZE)
     throw new Error('Two-topic post feed page exceeded its limit')
   if (feedPage.page_info.has_next_page && !feedPage.page_info.end_cursor)

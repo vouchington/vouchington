@@ -10,8 +10,6 @@ const RECOMMENDATION_COUNT = 200
 const COMMUNITY_COUNT = 2
 const CLEANUP_BATCH_SIZE = 500
 
-// Tombstone one quarter of each cohort, but keep every 200th ordinal as a status witness.
-
 function fixturePostId(index: number): string {
   return seedUuidAtTimestamp(postSeedTimestampMs(0) + 1000, index)
 }
@@ -19,6 +17,22 @@ function fixturePostId(index: number): string {
 /** Oldest id in the first discovery community. It sits above the main corpus. */
 export function oldestPostDiscoveryCommunityPostId(): string {
   return fixturePostId(START_INDEX)
+}
+
+/** Deterministic nondeleted discussions with approved or absent community membership. */
+export function publicPostDiscoveryDiscussionIds(count: number): string[] {
+  if (!Number.isInteger(count) || count < 1 || count > COMMUNITY_POSTS_PER_COMMUNITY)
+    throw new Error('Discovery public cohort count must fit the bounded fixture window')
+  const ids: string[] = []
+  for (let ordinal = 1; ordinal <= COMMUNITY_POSTS_PER_COMMUNITY * COMMUNITY_COUNT; ordinal++) {
+    const approvedOrStandalone =
+      ordinal <= COMMUNITY_POSTS_PER_COMMUNITY ||
+      ordinal > COMMUNITY_POSTS_PER_COMMUNITY + SPARSE_COMMUNITY_POSTS
+    if (approvedOrStandalone && ordinal % 4 !== 1)
+      ids.push(fixturePostId(START_INDEX + ordinal - 1))
+    if (ids.length === count) return ids
+  }
+  throw new Error('Discovery public cohort is smaller than the requested bounded count')
 }
 
 export async function seedPostDiscoverySearchFixture(): Promise<void> {
