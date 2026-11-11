@@ -3,7 +3,10 @@ import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { FINAL_USER_PURGE_LOCK_KEY } from '@services/users/final-purge-lock'
 import { isCopyrightEvidenceRetentionDeletionEnabled } from './config.mts'
-import { copyrightCasePurgeEligibilitySql } from './retention-case-purge-eligibility.mts'
+import {
+  copyrightCasePurgeEligibilitySql,
+  copyrightCasePurgePreservationAllowedSql,
+} from './retention-case-purge-eligibility.mts'
 import { getCopyrightCasePurgePageSize } from '@queues/psql/enqueues/ordering-config'
 import { runLockedPage } from './retention-case-purge-phases.mts'
 import { enterCopyrightCasePurgePhase } from './retention-case-purge-phase-state.mts'
@@ -56,7 +59,7 @@ function proofVersion(row: LockedNotice): string {
   ])
 }
 
-/** Each page proves current eligibility; deletion and marker statements recheck preservation. */
+/** Destructive pages recheck current preservation after their older eligibility proof. */
 export async function runCopyrightCasePurgePage(
   data: CopyrightCasePurgeJobData,
   now: Date = new Date(),
@@ -106,6 +109,20 @@ export async function runCopyrightCasePurgePage(
         proofVersion: beforeVersion,
       }
     : { ...data, legalClockAt: clock, proofVersion: beforeVersion }
+  if (current.phase === 'pointers' || current.phase === 'children' || current.phase === 'final') {
+    const admission = sql`/* readCopyrightCaseDestructionPreservation */ SELECT `
+      .append(copyrightCasePurgePreservationAllowedSql(data.noticeId))
+      .append(sql` AS is_allowed`)
+    const { rows: preservation } = await query<{ is_allowed: boolean }>(admission)
+    if (!preservation[0]?.is_allowed) {
+      await query.commit()
+      return {
+        data: enterCopyrightCasePurgePhase(current, 'parties'),
+        hasMore: true,
+        deferred: true,
+      }
+    }
+  }
   const result = await runLockedPage(query, current, eligible[0]!, pageSize)
   const { rows: after } = await query<LockedNotice>(
     copyrightCasePurgeProofSql(data.noticeId, false),

@@ -36,11 +36,11 @@ export async function admitCopyrightEmailDuringThreadProof<Result>(
           return Reflect.apply(original, client, args)
         if (!admission && statement.text.includes('/* readCopyrightThreadBlockerGeneration */')) {
           admission = admitCopyrightEmailCorrespondence(input)
-          void admission.then(
-            () =>
+          void admission
+            .then(() =>
               submissionWritten.reject(new Error('Reviewer did not write its owned submission')),
-            (err: unknown) => submissionWritten.reject(err),
-          )
+            )
+            .catch((err: unknown) => submissionWritten.reject(err))
           return submissionWritten.promise.then(() => Reflect.apply(original, client, args))
         }
         const pending = Reflect.apply(original, client, args)

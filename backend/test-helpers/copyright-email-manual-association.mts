@@ -18,10 +18,9 @@ export async function associateAndThreadCopyrightEmail(
   first: 'manual' | 'thread',
 ) {
   const manual = () =>
-    associateCopyrightEmailIntakeWithNotice(currentUser, intakeId, noticeId).then(
-      value => ({ status: 'fulfilled' as const, value }),
-      (err: unknown) => ({ status: 'rejected' as const, reason: err }),
-    )
+    associateCopyrightEmailIntakeWithNotice(currentUser, intakeId, noticeId)
+      .then(value => ({ status: 'fulfilled' as const, value }))
+      .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
   const thread = () => linkCopyrightEmailIntakeToNotice({ intakeId, noticeId, linkKind: 'thread' })
   if (first === 'thread') {
     const [threaded, association] = await overlapCopyrightWriters(
