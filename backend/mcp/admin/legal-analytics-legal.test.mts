@@ -10,6 +10,8 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
 import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { recordCopyrightStaydownExactMatch } from '@services/copyright-notices/staydown-matches'
+import { encodeScopedUuidCursor } from '@modules/pagination'
+import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
 import { findSchemaViolation } from '@vouchington/mcp-server/schema'
 import { ALL_TOOLS } from '../registry/index.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
@@ -39,19 +41,24 @@ describe('copyright association search REST and MCP parity', () => {
     const phone = '+1 415-555-0138'
     const workDescription = `${workMarker}. Contact ${email} or ${phone}. Case 24-cv-01234.`
     const claimantDisplayName = 'Claimant legal name'.padEnd(200, '!')
+    const window = createTestUuidWindow()
     const noticeId = await createCopyrightNoticeForManualAssociation(
       false,
       'us_dmca',
       workDescription,
-      undefined,
+      window.firstId,
       claimantDisplayName,
     )
+    await createCopyrightNoticeForManualAssociation(false, 'us_dmca', 'Other work', window.thirdId)
+    const scope = `copyright-notice-association:${workMarker.toLowerCase()}`
+    const after = encodeScopedUuidCursor(window.thirdId, scope)
     const request = createRequest()
     await request.authenticateAs(administrator)
     const response = await request
       .get('/api/v1/copyright-notices/association-targets')
-      .query({ q: workMarker })
+      .query({ q: workMarker, after })
       .expect(200)
+    expect(response.body.page_info.start_cursor).toBe(encodeScopedUuidCursor(window.firstId, scope))
     const restNotice = response.body.copyright_notices.find(
       (notice: { id: string }) => notice.id === noticeId,
     )
@@ -61,7 +68,7 @@ describe('copyright association search REST and MCP parity', () => {
       work_description: workDescription,
     })
     const tool = readTool<{ q: string; after?: string }>('search_copyright_notices_for_association')
-    const result = (await tool.function(administrator)({ q: workMarker })) as {
+    const result = (await tool.function(administrator)({ q: workMarker, after })) as {
       copyright_notices: Array<{
         id: string
         jurisdiction: string
