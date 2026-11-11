@@ -64,6 +64,14 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     422,
     'Submission is not a court or CCB hold',
   )
+  // Before any write the delivery worker also makes: it takes the work item row, then the case's
+  // blocker generation, so preempting first cannot form a cycle. Late activation below only adds
+  // restrictions, whose restore work does not exist yet.
+  await preemptCopyrightRestorations(
+    submissionRows[0].copyright_notice_id,
+    transaction,
+    input.targetIds,
+  )
   const { rows } = await transaction(sql`/* appendCopyrightLegalHoldAssessment */
     INSERT INTO copyright_notice_legal_hold_assessments (
       copyright_notice_submission_id, assessed_at, assessed_by_id, is_from_original_claimant,
@@ -112,12 +120,6 @@ export async function appendCopyrightLegalHoldAssessment(input: {
       transaction,
     )
   }
-  // Work item last, matching the delivery worker's restriction-then-work-item row order.
-  await preemptCopyrightRestorations(
-    submissionRows[0].copyright_notice_id,
-    transaction,
-    input.targetIds,
-  )
   // ast-grep-ignore: no-three-sequential-awaits -- insert the legal-hold lifecycle event before sampling legal activity; replay restore intents only after the hold decision and clock writes complete
   await transaction(sql`/* appendCopyrightLegalHoldAssessment:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,

@@ -5,7 +5,7 @@ import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggrega
 import { markJwtStale } from '@data-stores/valkey/jwt-stale'
 import onError from '@modules/on-error'
 import { getUserMfaStatus } from '@services/mfa/status'
-import { conflictOnSerializationFailure } from '@services/mfa/serialization-conflict'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 
 export const addUserRole = async (userId: string, role: string) => {
   await conflictOnSerializationFailure(() => grantUserRole(userId, role))

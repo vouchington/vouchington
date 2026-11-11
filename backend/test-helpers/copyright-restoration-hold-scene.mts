@@ -8,9 +8,13 @@ import {
 } from './copyright-restoration-hold-fixtures.mts'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
-export async function openHeldCounterNoticeRestore(targetCount = 1) {
+/** With `shared`, the notice restricts a placement another scene already withheld. */
+export async function openHeldCounterNoticeRestore(
+  targetCount = 1,
+  shared?: Parameters<typeof createCopyrightRestorationHoldFixture>[1],
+) {
   const { aggregate, assessment, claimant, moderator, notice } =
-    await createCopyrightRestorationHoldFixture(targetCount)
+    await createCopyrightRestorationHoldFixture(targetCount, shared)
   const target = aggregate.targets[0]!
   const restriction = await acceptCopyrightNoticeAndImposeRestriction({
     noticeId: notice.id,
@@ -23,7 +27,7 @@ export async function openHeldCounterNoticeRestore(targetCount = 1) {
     intent => intent.action === 'withhold',
   )
   if (!initialWithhold) throw new Error('initial withhold intent disappeared')
-  await deliverInitialCopyrightWithhold(notice.id)
+  if (!shared) await deliverInitialCopyrightWithhold(notice.id)
   for (const other of aggregate.targets.slice(1)) {
     await acceptCopyrightNoticeAndImposeRestriction({
       noticeId: notice.id,

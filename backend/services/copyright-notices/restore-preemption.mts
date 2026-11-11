@@ -3,10 +3,14 @@ import sql from 'sql-template-strings'
 
 const PREEMPTED_MESSAGE = 'A court or CCB filing or legal hold preempted this restoration.'
 
-/** A filing or hold wins against any restoration that has not finished. The conditional UPDATE
- * keys on the work item's own state, so an in-flight restore completes only if it commits first;
- * otherwise its lease-conditional completion matches no row and the worker repairs the edge to deny.
- * A restore a worker is applying right now holds its row; it is skipped rather than waited on, because the worker would be waiting on this transaction's notice lock, and its restored tuple is re-withheld by the late-hold activation. The row is left blocked, so resolving the hold replays it. Without target ids the whole case is preempted, as an unassessed filing has no target scope. */
+/** A filing or hold wins against any restoration that has not finished. `FOR UPDATE OF candidate`
+ * waits on the work item row, which both this write and the delivery worker's lease-conditional
+ * completion write. Admission preempting first makes that completion match no row; the worker
+ * completing first makes this UPDATE re-evaluate after the wait, see `completed_at` set, and
+ * preempt nothing, so the filing commits strictly after the restore and an unassessed filing
+ * then reaches the placement through its assessment (late-hold activation). Callers lock the
+ * notice with FOR NO KEY UPDATE so the worker's foreign-key checks on it never wait on them.
+ * Without target ids the whole case is preempted, as an unassessed filing has no target scope. */
 export async function preemptCopyrightRestorations(
   noticeId: string,
   query: TransactionQuery,
@@ -24,7 +28,7 @@ export async function preemptCopyrightRestorations(
         AND (${targetIds}::uuid[] IS NULL
           OR restriction.copyright_notice_target_id = ANY(${targetIds}::uuid[]))
         AND candidate.action = 'restore' AND candidate.state IN ('pending', 'claimed')
-      FOR UPDATE OF candidate SKIP LOCKED
+      FOR UPDATE OF candidate
     )
     RETURNING work.id
   `)

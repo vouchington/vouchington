@@ -1,10 +1,9 @@
+import { createTestUserDirect } from '@voucha/test-helpers'
 import {
-  createTestUserDirect,
-  getTestPostImagePlacement,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
+  createFixtureTargets,
+  currentSharedTarget,
+  type SharedPlacement,
+} from './copyright-restoration-hold-targets.mts'
 import {
   createCopyrightCounterNotice,
   processCopyrightActionIntent,
@@ -17,35 +16,20 @@ import { createOutboundCopyrightCorrespondence } from '../services/copyright-not
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
-export async function createCopyrightRestorationHoldFixture(targetCount = 1) {
-  const [claimant, moderatorRecord] = await Promise.all([
+/** A `shared` placement gives the notice one target on a placement another notice already restricts. */
+export async function createCopyrightRestorationHoldFixture(
+  targetCount = 1,
+  shared?: SharedPlacement,
+) {
+  const [newClaimant, moderatorRecord] = await Promise.all([
     createTestUserDirect(),
     createTestUserDirect(),
   ])
+  const claimant = shared?.claimant ?? newClaimant
   const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-  const [imageIds, postId] = await Promise.all([
-    Promise.all(Array.from({ length: targetCount }, () => insertTestImage(claimant.id))),
-    insertTestPost({
-      title: `copyright hold ${crypto.randomUUID()}`,
-      slug: `copyright-hold-${crypto.randomUUID()}`,
-      createdById: claimant.id,
-      markdown: 'images',
-    }),
-  ])
-  const targets = await Promise.all(
-    imageIds.map(async (imageId, orderIndex) => {
-      await insertTestPostImage({ postId, imageId, orderIndex })
-      const placement = await getTestPostImagePlacement(postId, imageId)
-      if (!placement) throw new Error('fixture image placement disappeared')
-      return {
-        placementId: placement.placement_id,
-        placementRevision: placement.placement_revision,
-        imageId,
-        bindingFamily: 'post' as const,
-        hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
-      }
-    }),
-  )
+  const targets = shared
+    ? [await currentSharedTarget(shared)]
+    : await createFixtureTargets(claimant.id, targetCount)
   const notice = await createCopyrightNoticeAggregate({
     jurisdiction: 'us_dmca',
     receivedAt: new Date('2026-06-30T16:00:00.000Z'),

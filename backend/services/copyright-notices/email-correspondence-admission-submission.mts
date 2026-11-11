@@ -39,6 +39,10 @@ export async function insertAdmittedCopyrightEmailSubmission(
   pending: AdmittedEmailCorrespondencePending,
 ): Promise<{ submissionId: string; correspondenceId: string }> {
   const submissionId = uuidv7()
+  // Preempt before anything the delivery worker also writes: the worker takes the work item row,
+  // then the case's blocker generation, so this order cannot form a cycle.
+  if (input.kind === 'court_or_ccb_hold')
+    await preemptCopyrightRestorations(pending.notice_id, transaction)
   const { rows: submissions } = await transaction<{
     id: string
   }>(sql`/* admitCopyrightEmailCorrespondence:submission */
@@ -51,8 +55,6 @@ export async function insertAdmittedCopyrightEmailSubmission(
   `)
   const submission = submissions[0]
   assert(submission, 500, 'Failed to record copyright email submission')
-  if (input.kind === 'court_or_ccb_hold')
-    await preemptCopyrightRestorations(pending.notice_id, transaction)
   if (input.kind === 'complaint')
     await createGuestTerritorialComplaintFromEmail(
       {

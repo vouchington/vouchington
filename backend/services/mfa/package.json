@@ -29,6 +29,7 @@
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/token-secrets": "workspace:^",
+    "@modules/utils": "workspace:^",
     "@queues/emails": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/jwt-session": "workspace:^",

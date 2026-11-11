@@ -47,7 +47,21 @@ export async function completeUnavailableRestore(input: {
   ])
 }
 
-export async function completeRestoreRetainingPlacement(input: {
+/** Reads the placement's other restrictions, then lifts this one. Two restores doing that at once
+ * would each see the other still active and leave the placement withheld, so SSI aborts one and
+ * its job retries. The lease-conditional completion rolls the lift back if the lease was lost. */
+export async function retainRestoreWhenOtherRestrictionsActive(input: {
+  intentId: string
+  legal: LockedCopyrightActionDelivery
+  now: Date
+}): Promise<boolean> {
+  await using query = await beginTransaction({ serializable: true })
+  const retained = await completeRestoreRetainingPlacement({ ...input, query })
+  await query.commit()
+  return retained
+}
+
+async function completeRestoreRetainingPlacement(input: {
   intentId: string
   legal: LockedCopyrightActionDelivery
   now: Date

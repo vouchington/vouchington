@@ -17,7 +17,7 @@ import {
 } from './action-delivery-state.mts'
 import {
   authorizeRestoreBeforeDelivery,
-  completeRestoreRetainingPlacement,
+  retainRestoreWhenOtherRestrictionsActive,
   completeUnavailableRestore,
 } from './action-delivery-restore.mts'
 import {
@@ -68,6 +68,7 @@ export async function executeCopyrightActionIntent(
 async function prepareCopyrightAction(
   intent: CopyrightClaimedActionIntent,
   now: Date,
+  retainChecked = false,
 ): Promise<
   | 'applied'
   | 'stale'
@@ -136,14 +137,13 @@ async function prepareCopyrightAction(
     return await commitOutcome(transaction, 'blocked')
   }
   await prepublishWithholdIfNeeded({ legal, placement: current, query: transaction })
-  if (legal.action === 'restore') {
-    const retained = await completeRestoreRetainingPlacement({
-      intentId: intent.id,
-      legal,
-      now,
-      query: transaction,
-    })
-    if (retained) return await commitOutcome(transaction, 'applied')
+  if (legal.action === 'restore' && !retainChecked) {
+    // The intent lock is released first: the short SERIALIZABLE retention transaction
+    // completes the work item by lease, then the rest of the preparation runs again.
+    await transaction.commit()
+    if (await retainRestoreWhenOtherRestrictionsActive({ intentId: intent.id, legal, now }))
+      return 'applied'
+    return await prepareCopyrightAction(intent, now, true)
   }
   const mutation = await mutateCopyrightPlacement({
     intentId: intent.id,

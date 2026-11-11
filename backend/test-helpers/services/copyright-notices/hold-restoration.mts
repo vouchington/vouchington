@@ -80,4 +80,5 @@ export async function completeTestClaimedCopyrightAction(input: {
     completedAt: input.completedAt,
     query: transaction,
   })
+  await transaction.commit()
 }

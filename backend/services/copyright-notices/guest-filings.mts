@@ -67,6 +67,10 @@ export async function appendCopyrightGuestFiling(input: {
   await using transaction = await beginTransaction()
   const capabilityId = await lockGuestCapability(transaction, input)
   if (input.kind === 'court_or_ccb_hold') await assertNoGuestCourtHold(transaction, capabilityId)
+  // Preempt before the filing writes anything the delivery worker also writes: the worker takes
+  // the work item row, then the case's blocker generation, so this order cannot form a cycle.
+  if (input.kind === 'court_or_ccb_hold')
+    await preemptCopyrightRestorations(input.noticeId, transaction)
   const { rows } = await transaction<{ id: string; kind: GuestFilingKind; received_at: Date }>(
     sql`/* appendCopyrightGuestFiling */
     INSERT INTO copyright_notice_submissions (
@@ -87,7 +91,6 @@ export async function appendCopyrightGuestFiling(input: {
     ) VALUES (${input.noticeId}, ${guestFilingEvent(input.kind)}, ${submission.id})
   `)
   if (input.kind === 'court_or_ccb_hold') {
-    await preemptCopyrightRestorations(input.noticeId, transaction)
     await transaction(sql`/* appendCopyrightGuestFiling:urgent */
       INSERT INTO copyright_notice_urgent_filings (copyright_notice_submission_id, classified_at)
       VALUES (${submission.id}, ${input.now})
