@@ -86,6 +86,12 @@ describe('EXPLAIN scenario manifest', () => {
     expect(() => assertScenarioManifest(['first', 'first'], ['first'])).toThrow(
       'duplicates=[first]',
     )
+    expect(() => assertScenarioManifest(['first', 'late'], ['first'], 'main-3')).toThrow(
+      'add [late] to explain-shard-scenario-ids.json under "main-3"',
+    )
+    expect(() => assertScenarioManifest(['first'], ['first', 'late'], 'main')).toThrow(
+      'if [late] now run in a later segment, add them to explain-shard-scenario-ids.json',
+    )
     expect(() =>
       assertScenarioManifest(EXPLAIN_SCENARIO_MANIFEST, EXPLAIN_SCENARIO_MANIFEST),
     ).not.toThrow()
