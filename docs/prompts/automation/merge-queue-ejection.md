@@ -84,6 +84,9 @@ continue at all, such as lost `gh` access.
 - **The ejected pull request is the root cause** when its own change fails deterministically, or
   conflicts with an entry ahead of it or with `main`. Post the analysis comment below; this group is
   done. Never fix it.
+- **A flaky-test group** follows the shared Flaky tests flow: file or find the issue first, then
+  delegate the fix through the triage loop or open a fix PR. The loop merges a flake-fix PR only
+  when it is test-only.
 - **A transient group:** say each pull request still out of the queue at its ejected head is safe
   to re-enqueue.
 - **Fix base:** `{{MAIN_SHA}}`.

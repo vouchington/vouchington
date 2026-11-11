@@ -82,7 +82,7 @@ This supplemental heading must not count as another core section.
       '<details>\n<summary>Context</summary>\n\n## Background\n\nSupporting context.\n\n</details>\n\nNo source issue; scheduled prompt run.\n<!-- related-issues-validation: no-source-scheduled-prompt -->',
     ).replace(
       'Workspace setup: ./dev/initialize monorepo',
-      'Workspace setup: Auto Harness scheduled prompt',
+      'Workspace setup: Triage loop scheduled prompt',
     )
     expect(validatePrBody(body).ok).toBe(true)
   })

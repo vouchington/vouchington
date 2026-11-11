@@ -144,8 +144,8 @@ const hasStorybookBrowserWatchdogHangAfterViteStartup = (log: string): boolean =
 // Vite dev-server localhost fetch failure, not just setup-file-with-project-annotations.js.
 // maxAttempts: 1 means exactly ONE automatic rerun (decide.mts evaluates maxAttempts >= runAttempt,
 // so attempt 1 is auto-retried → attempt 2 checks the same fingerprint → if it matches again, the
-// rule is exhausted and Harness is dispatched). Do not raise to 3 without confirmed evidence of a
-// real three-attempt flake run; increasing it would delay Harness dispatch for genuine bugs.
+// rule is exhausted and the triage loop is dispatched). Do not raise to 3 without confirmed evidence of a
+// real three-attempt flake run; increasing it would delay triage-loop dispatch for genuine bugs.
 export const storybookBrowserStartupTransientRule: TransientRetryRule = {
   id: 'storybook-browser-startup-transient',
   consumerKey: 'storybook-browser-startup',

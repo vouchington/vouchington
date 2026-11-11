@@ -16,7 +16,7 @@ Developers receive clearer workflow feedback; product behavior is unchanged.
 No source issue; scheduled prompt run.
 <!-- related-issues-validation: no-source-scheduled-prompt -->
 
-Workspace setup: Auto Harness scheduled prompt
+Workspace setup: Triage loop scheduled prompt
 ${VALID_PROVENANCE_BLOCK}
 
 `
@@ -31,12 +31,20 @@ describe('scheduled no-source PR validation', () => {
     })
   })
 
+  it('accepts the retired Auto Harness workspace line during the transition', () => {
+    const body = VALID_SCHEDULED_NO_SOURCE_BODY.replace(
+      'Triage loop scheduled prompt',
+      'Auto Harness scheduled prompt',
+    )
+    expect(validatePrBody(body).ok).toBe(true)
+  })
+
   it.each([
     ['missing visible line', 'No source issue; scheduled prompt run.\n', ''],
     ['misspelled marker', 'no-source-scheduled-prompt', 'no-source-schedule-prompt'],
     [
       'partial workspace line',
-      'Workspace setup: Auto Harness scheduled prompt',
+      'Workspace setup: Triage loop scheduled prompt',
       'Workspace setup: GitHub Actions scheduled prompt',
     ],
   ])('rejects scheduled no-source bodies with a %s', (_name, search, replacement) => {
@@ -68,7 +76,7 @@ No source issue; scheduled prompt run.
 \`\`\`
 
 \`\`\`text
-Workspace setup: Auto Harness scheduled prompt
+Workspace setup: Triage loop scheduled prompt
 \`\`\`
 `
     const result = validatePrBody(body)

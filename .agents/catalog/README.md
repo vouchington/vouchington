@@ -34,7 +34,6 @@ Vouchington-specific policy and pointers.
 - [`skills/postgres-partitioning-uuid-v7/SKILL.md`](../skills/postgres-partitioning-uuid-v7/SKILL.md)
 - [`skills/postgres-schema-design/SKILL.md`](../skills/postgres-schema-design/SKILL.md)
 - [`skills/pr-description/SKILL.md`](../skills/pr-description/SKILL.md)
-- [`skills/ready-and-shepherd/SKILL.md`](../skills/ready-and-shepherd/SKILL.md)
 - [Retrospective distilling reference](../skills/retrospective-distill/distilling.md)
 - [`skills/retrospective-distill/SKILL.md`](../skills/retrospective-distill/SKILL.md)
 - [Retrospective fact contracts](../skills/retrospective/fact-contracts.md)

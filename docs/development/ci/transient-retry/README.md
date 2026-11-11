@@ -3,7 +3,7 @@
 Source entrypoint: [ci/transient-retry/README.md](../../../../ci/transient-retry/README.md). The
 rules live in `ci/transient-retry/rules.mts`, and the scoped
 [invariants](../../../../ci/transient-retry/AGENTS.md) govern changing them. Automatic `main`
-recovery is off unless both Harness gates are enabled; the manual helper for non-`main` PR branches
+recovery runs only when the attended triage loop is running; the manual helper for non-`main` PR branches
 always works.
 
 ## Design rationale

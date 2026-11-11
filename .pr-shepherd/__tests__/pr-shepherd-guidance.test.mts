@@ -2,12 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   DEPRECATED_INVOCATIONS,
-  LOCAL_HANDOFF_FLAG,
-  LOCAL_HANDOFF_SKILLS,
-  localHandoffFlagViolations,
   prShepherdGuidanceViolations,
   REVISIT_FOLLOWUPS_SKILL,
-  TRUSTED_HOST_SHEPHERD_PROMPT,
+  SHEPHERD_SUBAGENT_PROMPT,
   WORKSPACE_JOURNAL_EXTRACT_COMMAND,
 } from '../../ci/pr-shepherd-guidance-policy.mts'
 
@@ -69,36 +66,10 @@ describe('pr-shepherd guidance', () => {
       prShepherdGuidanceViolations([
         ...currentGuidance,
         {
-          path: TRUSTED_HOST_SHEPHERD_PROMPT,
+          path: SHEPHERD_SUBAGENT_PROMPT,
           text: 'The host may document `pr-shepherd iterate 42`.',
         },
       ]),
     ).toEqual([])
-  })
-
-  it('limits the disabled security-triage handoff flag to the two adapter skills', () => {
-    const allowed = LOCAL_HANDOFF_SKILLS.map(path => ({ path, text: `use ${LOCAL_HANDOFF_FLAG}` }))
-    expect(localHandoffFlagViolations(allowed)).toEqual([])
-    expect(
-      localHandoffFlagViolations([
-        ...allowed,
-        {
-          path: '.agents/skills/triage-prs/SKILL.md',
-          text: LOCAL_HANDOFF_FLAG,
-        },
-      ]),
-    ).toEqual([
-      `${LOCAL_HANDOFF_FLAG} belongs only to ${LOCAL_HANDOFF_SKILLS.toSorted().join(' and ')}; found ${[
-        ...LOCAL_HANDOFF_SKILLS,
-        '.agents/skills/triage-prs/SKILL.md',
-      ]
-        .toSorted()
-        .join(', ')}`,
-    ])
-    expect(
-      localHandoffFlagViolations([{ path: 'docs/example.md', text: LOCAL_HANDOFF_FLAG }]),
-    ).toEqual([
-      `${LOCAL_HANDOFF_FLAG} belongs only to ${LOCAL_HANDOFF_SKILLS.toSorted().join(' and ')}; found none`,
-    ])
   })
 })

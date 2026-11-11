@@ -21,6 +21,10 @@ Claude Code sets it to `1` for an interactive session and `0` for `claude -p`, i
 `claude -p` nested inside an interactive session. That is observed behavior, not a documented contract, so the check fails safe: if
 Claude Code stops setting the variable, the allow disappears and the harness prompts.
 
+The attended local triage loop (`triage-loop` skill) merges only within the scoped grant the human
+gave it for that session. Every other agent, including the subagents the loop dispatches and any
+agent that posts `/shepherd`, never merges or arms auto-merge.
+
 ## Contents
 
 - <a id="why-automation-means-github-actions"></a>[Automation contexts](reference-merge-authority-why-automation-means-github-actions.md)

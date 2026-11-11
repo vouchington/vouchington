@@ -3,15 +3,12 @@ import { unprovisionedSecretsWithoutReadinessStep as publishedUnprovisionedSecre
 
 import { SECRET_INVENTORY, type SecretInventoryEntry } from './workflow-secrets-inventory.mts'
 
-const PUBLISHED_READINESS_SHAPE = '`if [ -z "$VAR" ]; then ...; exit 1; fi`)'
-const VOUCHINGTON_READINESS_SHAPE =
-  '`if [ -z "$VAR" ]; then ...; exit 1; fi` — see harness-dispatch.yml)'
 const VIOLATION_PREFIX = /^(.+?): "([^"]+)" is unprovisioned with no early-fail readiness step /
 
 /**
  * `SECRET_INVENTORY` entries marked `provisioned: false` whose consuming workflow has no
  * early-fail readiness step. The published evaluator owns the step shape; this adapter keeps
- * the repo inventory default and the operator hint that points at the real preflight example.
+ * the repo inventory default.
  *
  * A `uses:` job cannot host that step. When its only reference forwards the secret on an
  * explicit local `workflow_call` to a callee that declares the same secret `required: false`,
@@ -32,11 +29,7 @@ export function unprovisionedSecretsWithoutReadinessStep(
       ) {
         return []
       }
-      return [
-        violation.endsWith(PUBLISHED_READINESS_SHAPE)
-          ? violation.replace(PUBLISHED_READINESS_SHAPE, VOUCHINGTON_READINESS_SHAPE)
-          : violation,
-      ]
+      return [violation]
     },
   )
 }

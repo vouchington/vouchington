@@ -1,6 +1,6 @@
 ## CI failure rules
 
-These rules are shared by every CI-failure session. The text above it names the failing runs, the
+These rules are shared by every CI-failure subagent the triage loop dispatches. The text above it names the failing runs, the
 change under test, the fix base (the commit to branch fixes from), how to handle a failure the
 change under test caused, and the fix PR's title and `Workspace setup:` line.
 
@@ -47,6 +47,20 @@ it.
 
 ### Fix
 
+### Flaky tests
+
+A flaky test follows this flow, in order, and the triage loop owns its merge decision:
+
+1. **Issue first.** Find or file one issue for the flake, with the failing runs, fingerprint, and
+   proposed fix, before any fix work.
+2. **Fix.** Either return the issue to the loop so it delegates the fix to a subagent, or make the
+   fix PR yourself using the steps below. The fix PR closes the issue.
+3. **Report the scope.** State in the PR body and in your report whether the fix touches only test
+   files. The loop merges a flake-fix PR only when it is test-only; a PR that changes product code,
+   CI configuration, or shared tooling is handed back for human review.
+
+### Every fix
+
 Every flaky test and every defect in this repository gets one fix PR per group:
 
 1. **Check for existing work.** Search open pull requests and issues for the same test, dependency,
@@ -74,9 +88,9 @@ Every flaky test and every defect in this repository gets one fix PR per group:
    renders `details` under `## Details`; use only `###` headings there, never `##`. The body needs those three
    sections (options with pros and cons),
    implementation details, the failing runs, validation evidence, `## Related issues` with the
-   closing reference, remaining follow-ups, and the `Workspace setup:` line named above. Apply both
-   the `automation` and `automation:auto-fix` labels, then re-fetch the PR and require both labels.
-   Never merge or arm auto-merge.
+   closing reference, remaining follow-ups, and the `Workspace setup:` line named above. Apply the
+   `automation` label, then re-fetch the PR and require it. Never merge or arm auto-merge; the
+   triage loop decides within its grant.
 
 When the PR body defers work to another repository, resolve the target per
 [Implementation](../../../.agents/skills/agent-workflow/implementation.md)'s deferral-target
@@ -87,6 +101,6 @@ For any PR body this session is authorized to create or update, follow the
 `## Impact` visible, including the concrete outcome, affected audience, and material risks. Keep
 the required `### Root cause`, `### Implementation choice`, and `### Options considered` headings
 in `details`, with long supporting evidence inside a collapsed `<details>` element there. Use before/after tables and
-Mermaid when useful. After CI diagnosis, refresh conditional Harness gaps through the approved
+Mermaid when useful. After CI diagnosis, refresh the conditional Harness gaps section (the canonical pr-description skill owns its heading) through the approved
 description helper and retain established gaps after green checks. Do not add routine successful
 local-check lists. This standard does not expand this session's mutation authority.

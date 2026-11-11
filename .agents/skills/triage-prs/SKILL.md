@@ -17,12 +17,16 @@ parameters after reading it:
   canonical no-argument default.
 
 - **Repository and automation label:** `vouchington/vouchington`; `automation`.
-- **Orphan issues:** automation-owned labels are `automation:auto-fix` and
-  `automation:scheduled`, or a title beginning `Automation` (ASCII case
-  insensitive). `needs-human` marks intentionally PR-free backlog items.
-- **Ready and shepherd:** use [ready-and-shepherd](../ready-and-shepherd/SKILL.md)
-  with `--arm-auto-merge`. Shepherding is local: the authoring session or a
-  triage-loop subagent runs pr-shepherd on the PR; never post a `/shepherd` comment.
+- **Orphan issues:** `needs-human` marks intentionally PR-free backlog items; no issue label
+  or title marks automation ownership.
+- **Ready and shepherd:** the canonical skill owns the ready, steer, arm and shepherd mechanics.
+  Here, apply the `automation` label (`gh pr edit <N> --add-label automation`, idempotent) to
+  every PR it hands off; it marks agent- and loop-created PRs. This skill is run by the loop's own batch
+  callers, which run the shepherd worker directly, so it never posts a `/shepherd` comment. Any
+  other author hands a PR over with the standard `/shepherd` handoff in
+  [Git and PRs](../agent-workflow/git-and-prs.md#shepherding), once, and stops.
+- **Provider-PR handoff:** [triage-security](../triage-security/SKILL.md) applies its own
+  ready-and-label check; this skill never accepts that handoff.
 - **Feedback source and rubric:** only exact paths in `docs/prompts/**` can be
   changed by the bounded feedback flow. Apply
   [agent-authored PR creation feedback](../agent-workflow/code-review.md#agent-authored-pr-creation-feedback)

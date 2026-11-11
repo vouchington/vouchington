@@ -28,8 +28,8 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   Cursor and Grok hook source.
 - Stay static-config-driven. Reconciling policy against real observed escalations needs local
   session transcripts read by `pnpm exec vouchington sandbox-command-audit --rules dev/sandbox-command-audit/rules.mts`
-  ([sandbox-audit.md](../../../.agents/skills/retrospective/sandbox-audit.md)), which a scheduled
-  Harness session cannot reach. Scope this rotation to what a repo checkout alone can verify:
+  ([sandbox-audit.md](../../../.agents/skills/retrospective/sandbox-audit.md)), which this scheduled
+  triage-loop subagent does not read. Scope this rotation to what a repo checkout alone can verify:
   staleness (an entry naming a script, path, or tool no longer in the repo), breadth drift against
   the documented narrowness rule, doc-vs-config drift in `agent-sandbox.md`, and missing guard
   coverage. Treat `sandbox-audit.md` as the complementary human-run half; it reads the machine
