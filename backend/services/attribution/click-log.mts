@@ -29,6 +29,12 @@ export async function getReferralClickLog(
       sra.signed_up_at,
       sra.user_id,
       sra.created_at,
+      NOT EXISTS (
+        SELECT 1 FROM session_referral_attributions earlier
+        WHERE earlier.session_id = sra.session_id
+          AND earlier.referrer_user_id = sra.referrer_user_id
+          AND earlier.id < sra.id
+      ) AS is_first_attribution,
       users.id AS user__id,
       users.username AS user__username,
       users.profile_image_id AS user__profile_image_id,
@@ -56,14 +62,15 @@ export async function getReferralClickLog(
   `)
 
   const { rows } = await read(query)
+  const inspectedRows = rows.slice(0, limit)
   const hasNextPage = rows.length > limit
 
   const results: Array<{ __entity_type: 'referral_click_log'; id: string }> = []
   const clicks: Record<string, ReferralClickLogEntry> = {}
   const users: Record<string, PublicUser> = {}
 
-  for (const row of rows) {
-    if (results.length >= limit) break
+  for (const row of inspectedRows) {
+    if (!row.is_first_attribution) continue
     const id = row.id as string
     results.push({ __entity_type: 'referral_click_log', id })
     clicks[id] = {
@@ -94,7 +101,10 @@ export async function getReferralClickLog(
     page_info: {
       has_next_page: hasNextPage,
       start_cursor: results[0] ? encodeCursor({ id: results[0].id }) : null,
-      end_cursor: hasNextPage && results.at(-1) ? encodeCursor({ id: results.at(-1)!.id }) : null,
+      end_cursor:
+        hasNextPage && inspectedRows.at(-1)
+          ? encodeCursor({ id: inspectedRows.at(-1)!.id as string })
+          : null,
     },
   }
 }

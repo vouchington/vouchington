@@ -45,7 +45,7 @@ export function ReferralClicksPage({ initialData }: { initialData: ReferralClick
         </p>
       </div>
 
-      {results.length === 0 ? (
+      {results.length === 0 && !hasNextPage ? (
         <p className='rounded-lg border p-6 text-center text-sm text-muted-foreground'>
           {t('extracted.my.referralClicksPage.noReferralClicksYet_a38e7431')}
         </p>

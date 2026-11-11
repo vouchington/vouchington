@@ -1,5 +1,10 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import { createTestUserDirect, insertSessionReferralAttribution } from '@voucha/test-helpers'
+import {
+  createTestUserDirect,
+  deleteReferralAttributionsByIds,
+  insertAnonymousReferralAttributionForSessionAt,
+  insertSessionReferralAttribution,
+} from '@voucha/test-helpers'
 import { v7 as uuidv7 } from 'uuid'
 import { getReferralClickLog } from './click-log.mts'
 import { createSessionReferralAttribution } from './create.mts'
@@ -96,6 +101,52 @@ describe('click-log', () => {
     })
     expect(page2.results).toHaveLength(1)
     expect(page2.page_info.has_next_page).toBe(false)
+  })
+
+  it('pages each raced session and referrer pair by its earliest click', async () => {
+    const pairReferrer = await createTestUserDirect()
+    const sessionId = uuidv7()
+    const firstTime = new Date(Date.now())
+    const ids: string[] = []
+    try {
+      ids.push(
+        await insertAnonymousReferralAttributionForSessionAt(sessionId, pairReferrer.id, firstTime),
+      )
+      ids.push(
+        await insertAnonymousReferralAttributionForSessionAt(
+          sessionId,
+          pairReferrer.id,
+          new Date(firstTime.getTime() + 1_000),
+        ),
+      )
+      ids.push(
+        await insertAnonymousReferralAttributionForSessionAt(
+          uuidv7(),
+          pairReferrer.id,
+          new Date(firstTime.getTime() + 2_000),
+        ),
+      )
+
+      const page1 = await getReferralClickLog(pairReferrer.id, { limit: 1 })
+      expect(page1.results.map(row => row.id)).toEqual([ids[2]])
+      expect(page1.page_info.has_next_page).toBe(true)
+
+      const page2 = await getReferralClickLog(pairReferrer.id, {
+        limit: 1,
+        after: page1.page_info.end_cursor!,
+      })
+      expect(page2.results).toEqual([])
+      expect(page2.page_info.has_next_page).toBe(true)
+
+      const page3 = await getReferralClickLog(pairReferrer.id, {
+        limit: 1,
+        after: page2.page_info.end_cursor!,
+      })
+      expect(page3.results.map(row => row.id)).toEqual([ids[0]])
+      expect(page3.page_info.has_next_page).toBe(false)
+    } finally {
+      await deleteReferralAttributionsByIds(ids)
+    }
   })
 
   it('moves a re-clicked session to the front of recency order (most-recent-first display)', async () => {

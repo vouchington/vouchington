@@ -96,6 +96,29 @@ describe('ReferralClicksPage', () => {
     expect(screen.getByText('No referral clicks yet.')).toBeInTheDocument()
   })
 
+  it('continues from an empty nonterminal page to the first visible click', async () => {
+    vi.mocked(getPaginatedPage).mockResolvedValueOnce(dataWithResults)
+    render(
+      <ReferralClicksPage
+        initialData={{
+          ...emptyData,
+          page_info: { has_next_page: true, end_cursor: 'duplicate-cursor', start_cursor: null },
+        }}
+      />,
+    )
+
+    expect(screen.queryByText('No referral clicks yet.')).not.toBeInTheDocument()
+    const loadMore = mockReceiveLoadMore.mock.calls.at(-1)![0] as () => Promise<void>
+    await act(async () => {
+      await loadMore()
+    })
+
+    expect(getPaginatedPage).toHaveBeenCalledWith('/api/v1/my/referral-clicks', {
+      after: 'duplicate-cursor',
+    })
+    expect(screen.getByText('example.com/landing')).toBeInTheDocument()
+  })
+
   it('renders table with click data', () => {
     render(<ReferralClicksPage initialData={dataWithResults} />)
     expect(screen.getByText('example.com/landing')).toBeInTheDocument()
