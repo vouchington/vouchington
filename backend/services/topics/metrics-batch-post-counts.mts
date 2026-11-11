@@ -86,11 +86,14 @@ export function topicCountLaterals(probeParam: string): string {
           SELECT TRUE
           FROM rss_feed_item_sources source
           WHERE source.rss_feed_item_id = bounded.rss_feed_item_id
-            AND (
-              SELECT source_feed.deleted_at IS NULL AND source_feed.is_enabled AND source_feed.is_discoverable
-              FROM rss_feeds source_feed
-              WHERE source_feed.id = source.rss_feed_id
-            ) IS TRUE
+            -- IS TRUE retains one hashed eligibility set instead of per-source feed probes.
+            AND (source.rss_feed_id IN (
+              SELECT feed.id
+              FROM rss_feeds feed
+              WHERE feed.deleted_at IS NULL
+                AND feed.is_enabled
+                AND feed.is_discoverable
+            )) IS TRUE
           LIMIT 1
         ) IS TRUE
     ) news_counts ON TRUE
