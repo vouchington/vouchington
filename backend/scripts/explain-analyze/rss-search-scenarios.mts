@@ -4,6 +4,7 @@ export const RSS_SEARCH_SCENARIOS = [
   'rss-feed-search-by-publisher-type',
   'rss-feed-search-by-topic',
   'rss-feed-search-by-topic-descendants',
+  'rss-feed-search-topic-match-all',
   'rss-feed-search-current-user',
   'rss-feed-search-disabled',
   'rss-feed-text-search',
