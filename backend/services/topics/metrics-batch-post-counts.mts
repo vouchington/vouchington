@@ -75,17 +75,24 @@ export function topicCountLaterals(probeParam: string): string {
         ORDER BY category.rss_feed_item_id DESC, category.category_identity_id DESC
         LIMIT ${probeParam}
       ) bounded
-      WHERE EXISTS (
-        SELECT 1
+      -- Scalar probes, not a join: a correlated EXISTS is flattened into a semi-join that can
+      -- scan every enabled feed's sources instead of probing the bounded rows.
+      WHERE (
+        SELECT item.deleted_at IS NULL
         FROM rss_feed_items item
-        JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id
-        JOIN rss_feeds source_feed ON source_feed.id = source.rss_feed_id
         WHERE item.id = bounded.rss_feed_item_id
-          AND item.deleted_at IS NULL
-          AND source_feed.deleted_at IS NULL
-          AND source_feed.is_enabled
-          AND source_feed.is_discoverable
-      )
+      ) IS TRUE
+        AND (
+          SELECT TRUE
+          FROM rss_feed_item_sources source
+          WHERE source.rss_feed_item_id = bounded.rss_feed_item_id
+            AND (
+              SELECT source_feed.deleted_at IS NULL AND source_feed.is_enabled AND source_feed.is_discoverable
+              FROM rss_feeds source_feed
+              WHERE source_feed.id = source.rss_feed_id
+            ) IS TRUE
+          LIMIT 1
+        ) IS TRUE
     ) news_counts ON TRUE
     LEFT JOIN LATERAL (
       SELECT COUNT(*)::bigint AS count
