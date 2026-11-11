@@ -16,6 +16,18 @@ jobs:
     # this job (repository default cap is 10m) for the step-budget accounting
     # behind this value.
     timeout-minutes: 23
+    # These idle services only pre-pull the images ./dev/initialize and prepare-postgres.sh start.
+    # The runner retries a failed service image pull, while their own `docker run` fails on one
+    # reset GHCR blob fetch (#5513). Keep the refs identical so `docker run` finds them locally;
+    # dependency-pin.test.mts checks the Valkey pin. No ports are published, so they cannot
+    # collide with the containers the steps start.
+    services:
+      valkey-image:
+        image: ghcr.io/vouchington/dependency-valkey:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+      pgvector-image:
+        image: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
