@@ -182,7 +182,7 @@ describe('composite build infrastructure shell scripts', () => {
       'printf "<%s>" "$@" >> "$TIMEOUT_ARGV_LOG"',
       'printf "\\n" >> "$TIMEOUT_ARGV_LOG"',
       'if [[ "${1-}" == "--kill-after=2s" ]]; then shift 2; exec "$@"; fi',
-      'if [[ "${1-}" == "60" ]]; then shift; if [[ "$FAKE_READINESS_TIMEOUT" == "true" ]]; then exit 124; fi; exec "$@"; fi',
+      'if [[ "${1-}" == "20" ]]; then shift; if [[ "$FAKE_READINESS_TIMEOUT" == "true" ]]; then exit 124; fi; exec "$@"; fi',
       'echo "unexpected timeout arguments" >&2',
       'exit 99',
     ])
@@ -211,7 +211,7 @@ describe('composite build infrastructure shell scripts', () => {
     expect(dockerCalls).toContain('<exec><voucha-valkey-test><valkey-cli><config><set><save><>')
     expect(dockerCalls).toContain('<port><voucha-valkey-test><6379/tcp>')
     expect(readFileSync(timeoutLog, 'utf8')).toBe(
-      `<--kill-after=2s><50s><docker><pull><${image}>\n<60><sh><-c><until docker exec "$0" valkey-cli ping >/dev/null 2>&1; do sleep 0.5; done><voucha-valkey-test>\n`,
+      `<--kill-after=2s><90s><docker><pull><${image}>\n<20><sh><-c><until docker exec "$0" valkey-cli ping >/dev/null 2>&1; do sleep 0.5; done><voucha-valkey-test>\n`,
     )
     expect(readFileSync(githubEnv, 'utf8')).toBe('VALKEY_URL=redis://127.0.0.1:49152\n')
     expect(readFileSync(githubOutput, 'utf8')).toBe('url=redis://127.0.0.1:49152\n')
@@ -233,7 +233,7 @@ describe('composite build infrastructure shell scripts', () => {
       'printf "<%s>" "$@" >> "$TIMEOUT_ARGV_LOG"',
       'printf "\\n" >> "$TIMEOUT_ARGV_LOG"',
       'if [[ "${1-}" == "--kill-after=2s" ]]; then shift 2; exec "$@"; fi',
-      'if [[ "${1-}" == "60" ]]; then exit 124; fi',
+      'if [[ "${1-}" == "20" ]]; then exit 124; fi',
       'exit 99',
     ])
     const result = runScript(scripts.valkey, root, bin, {
@@ -248,7 +248,7 @@ describe('composite build infrastructure shell scripts', () => {
     })
 
     expect(result.status).toBe(1)
-    expect(result.stdout).toContain('::error::Valkey did not answer PING within 60s\n')
+    expect(result.stdout).toContain('::error::Valkey did not answer PING within 20s\n')
     expect(result.stdout).toContain('# Failed to bind port\n')
     expect(result.stdout).not.toContain('Defined Info Field')
     expect(readFileSync(dockerLog, 'utf8')).toContain('<logs><voucha-valkey-test>')
