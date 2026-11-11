@@ -134,3 +134,16 @@ The story representative is selected independently of the page cursor from eligi
 - docs/requirements/community/community-lists.md -- community list feed scopes
 - [Backend rules](../../../backend/AGENTS.md) -- pagination, transaction, and service conventions
 - [Web rules](../../../web/AGENTS.md) -- feed list components and infinite-scroll patterns
+
+## Hostname URL ranking
+
+A hostname's top URLs use the stored publication maximum so an ordered index walk can stop at the
+requested boundary. Deriving that maximum at read time requires probing RSS items for every URL
+on the hostname before sorting, even when the response contains only a few URLs. The maintained
+maximum is therefore a measured exception to read-time aggregation.
+
+RSS item mutations maintain the exact maximum transactionally, including soft-deleted items.
+Bulk changes consolidate work by affected URL. An insertion that does not advance the maximum
+still participates in that URL's write, because a concurrent downward recomputation must observe
+the committed insertion. These writes protect the ranking row they change; they do not lock the
+hostname or RSS item read set.

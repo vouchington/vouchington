@@ -6,5 +6,6 @@ export const TOP_URL_RANKING_SCENARIO_IDS = [
   'top-url-move-batch',
   'top-url-delete-batch',
   'top-url-insert-later-item',
+  'top-url-insert-batch',
   'top-url-feed-move',
 ] as const

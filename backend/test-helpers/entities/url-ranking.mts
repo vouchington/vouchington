@@ -78,16 +78,3 @@ export async function holdTestRssFeedItemInsert(
     throw err
   }
 }
-
-/** Whether a separate connection can lock the URL row as a downward recompute would. */
-export async function canLockTestUrlRow(urlId: string): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  try {
-    await transaction(sql`/* canLockTestUrlRow */
-      SELECT 1 FROM urls WHERE id = ${urlId} FOR NO KEY UPDATE NOWAIT`)
-    return true
-  } catch (err) {
-    if ((err as { code?: string }).code === '55P03') return false
-    throw err
-  }
-}

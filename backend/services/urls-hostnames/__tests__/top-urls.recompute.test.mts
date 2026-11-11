@@ -7,7 +7,6 @@ import {
 import { insertTestRssFeedItem } from '@voucha/test-helpers/entities/rss-feed-items'
 import { insertTestUrl, insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import {
-  canLockTestUrlRow,
   getTestUrlRanking,
   holdTestRssFeedItemInsert,
   hardDeleteTestRssFeedItem,
@@ -90,12 +89,12 @@ describe('top URL ranking recomputation', () => {
     expect(await getTestUrlRanking(feed.rss_feed_url_id)).toMatchObject({ feedRank: 1 })
   })
 
-  it('row-locks the URL on an insert older than the current maximum so recomputes wait for it', async () => {
+  it('keeps the older publication after a concurrent insert and deletion of the maximum', async () => {
     const hostname = `top-url-insert-lock-${randomUUID()}.example.com`
     const source = await insertTestUrlDirect(null, `https://${hostname}/source`)
     if (!source) throw new Error('Failed to create ranking URL')
     const feed = await insertTestRssFeedDirect({})
-    await insertTestRssFeedItem({
+    const newestId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: source.id,
       guid: `ranking-${randomUUID()}`,
@@ -103,20 +102,15 @@ describe('top URL ranking recomputation', () => {
       contentSha256: createHash('sha256').update(randomUUID()).digest(),
     })
 
-    const held = await holdTestRssFeedItemInsert(
+    await using held = await holdTestRssFeedItemInsert(
       source.id,
       source.hostname.id,
       '2020-01-01T00:00:00Z',
     )
-    try {
-      expect(await canLockTestUrlRow(source.id)).toBe(false)
-    } finally {
-      await held.commit()
-    }
+    await Promise.all([hardDeleteTestRssFeedItem(newestId), held.commit()])
 
-    expect(await canLockTestUrlRow(source.id)).toBe(true)
     expect((await getTestUrlRanking(source.id)).latestPublishedAt?.toISOString()).toBe(
-      '2025-01-01T00:00:00.000Z',
+      '2020-01-01T00:00:00.000Z',
     )
   })
 })
