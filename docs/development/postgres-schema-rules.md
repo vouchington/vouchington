@@ -155,6 +155,9 @@ state from the latest history row.
   by those ids. Filtering, sorting, paging, or counting on view columns computes every row before
   the page is cut, so cost grows with the table. Whole-table totals read precomputed results.
   Enforced by `postgres-required-predicates` (`requireColumns`).
+- When a measured query needs a different index, review the query, index, and plans together. The
+  index is part of the query's performance claim; separating them leaves either the reader or its
+  access path unreviewable at the point of change.
 - Never bound ids in SQL with `uuidv7(...)`: it is volatile, so the predicate is only a filter that
   cannot use an index or skip partitions. Pass a TypeScript-computed bound or a STABLE inlinable
   helper.
