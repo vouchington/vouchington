@@ -13,6 +13,7 @@ import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/t
 import { spendCapConfig } from '@services/ai-usage'
 import { communityAgentPromptsConfig } from '@services/community-agent-prompts/config'
 import { getActiveCommunityAgentPromptPage } from '@services/community-agent-prompts/get-active-prompts'
+import { resolveCommunityModerationRunConfiguration } from '@services/community-agent-prompts/moderation-run-configuration'
 import { requestCommunityModerationRunForPost } from '@services/communities/publications/moderation-run'
 import { classifierRunJobFor } from '@voucha/test-helpers/classifier-run-worker'
 import {
@@ -35,6 +36,7 @@ import {
   getClassifierRunRequestFacts,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { setTestCommunityModerationPromptActivatedAt } from '@voucha/test-helpers/community-moderation-prompt-activation'
 import { toClassifierRunJobData } from './classifier-run-handler.mts'
 import { getClassifierRunHandler } from './classifier-run-registry.mts'
 import { processClassifierRun } from './process-classifier-run.mts'
@@ -105,17 +107,26 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     const fixture = await createCommunityModerationFixture({
       ruleTexts: ['First rule', 'Second rule', 'Third rule'],
     })
+    const activatedAt = '2026-01-01T00:00:00.123456Z'
+    for (const prompt of fixture.prompts) {
+      await setTestCommunityModerationPromptActivatedAt(prompt.id, activatedAt)
+    }
     await requestCommunityModerationFixtureRun(fixture)
     const first = await handler.reserve(fixture.subject)
     expect(first.kind).toBe('reserved')
     if (first.kind !== 'reserved') throw new Error('first moderation page was not reserved')
     await expect(processRun(first.run)).resolves.toEqual({ kind: 'completed' })
-
+    const continuation = await resolveCommunityModerationRunConfiguration(
+      fixture.community.id,
+      undefined,
+      { postId: fixture.postId, inputSha256: fixture.inputSha256 },
+    )
+    expect(continuation?.configuration.afterCursor?.activatedAt).toBe(activatedAt)
+    expect(continuation?.configuration.endCursor?.activatedAt).toBe(activatedAt)
     const second = await handler.reserve(fixture.subject)
     expect(second.kind).toBe('reserved')
     if (second.kind !== 'reserved') throw new Error('second moderation page was not reserved')
     await expect(processRun(second.run)).resolves.toEqual({ kind: 'completed' })
-
     expect(asked).toHaveLength(2)
     expect(new Set(asked.flat()).size).toBe(3)
     expect(asked.flat().toSorted()).toEqual(idsOf(fixture.prompts))
@@ -241,9 +252,7 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     const fixture = await createCommunityModerationFixture({ ruleTexts: ['Only rule'] })
     await deactivateTestCommunityPrompt(fixture.prompts[0]!.id)
     await requestCommunityModerationFixtureRun(fixture)
-
     await expect(handler.reserve(fixture.subject)).resolves.toEqual({ kind: 'no-work' })
-
     expect(provider).not.toHaveBeenCalled()
     expect(await runFacts(fixture.postId)).toEqual([])
     expect(await getClassifierRunRequestFacts(fixture.postId)).toMatchObject([
@@ -256,9 +265,7 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
       createCommunityModerationFixture({ ruleTexts: ['Ours one', 'Ours two'] }),
       createCommunityModerationFixture({ ruleTexts: ['Theirs one', 'Theirs two', 'Theirs three'] }),
     ])
-
     await processRun(await reserveCommunityModerationFixtureRun(fixture))
-
     expect(asked.map(ids => ids.toSorted())).toEqual([idsOf(fixture.prompts)])
     expect(await readCommunityModerationProjection(other.postId)).toEqual([])
   })

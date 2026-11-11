@@ -42,7 +42,8 @@ export async function advanceCommunityModerationRequest(
   }>(sql`
     /* advanceCommunityModerationRequest */
     UPDATE classifier_run_requests request
-    SET community_prompt_cursor = ${input.nextCursor ? JSON.stringify(input.nextCursor) : null}::jsonb,
+    SET community_prompt_cursor_activated_at = ${input.nextCursor?.activatedAt ?? null}::timestamptz,
+      community_prompt_cursor_prompt_id = ${input.nextCursor?.id ?? null}::uuid,
       has_flagged_community_prompt = request.has_flagged_community_prompt OR ${input.pageFlagged},
       has_new_community_prompt_decision = request.has_new_community_prompt_decision OR ${input.newDecision},
       community_prompt_completed_at = CASE

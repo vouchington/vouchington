@@ -59,8 +59,10 @@ function selectCommunityModerationPrompts(
 
 type RequestProgress = {
   id: string
-  community_prompt_cursor: ActiveCommunityAgentPromptCursor | null
-  community_prompt_end_cursor: ActiveCommunityAgentPromptCursor | null
+  community_prompt_cursor_activated_at: string | null
+  community_prompt_cursor_prompt_id: string | null
+  community_prompt_end_cursor_activated_at: string | null
+  community_prompt_end_cursor_prompt_id: string | null
 }
 
 /** The progress row is unique by classifier, post and content digest. */
@@ -75,7 +77,11 @@ async function readCommunityModerationProgress(
 }> {
   const { rows } = await query<RequestProgress>(sql`
     /* readCommunityModerationProgress */
-    SELECT request.id, request.community_prompt_cursor, request.community_prompt_end_cursor
+    SELECT request.id,
+      to_char(request.community_prompt_cursor_activated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS community_prompt_cursor_activated_at,
+      request.community_prompt_cursor_prompt_id,
+      to_char(request.community_prompt_end_cursor_activated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS community_prompt_end_cursor_activated_at,
+      request.community_prompt_end_cursor_prompt_id
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE classifier.slug = ${COMMUNITY_MODERATION_CLASSIFIER_SLUG}
@@ -84,12 +90,17 @@ async function readCommunityModerationProgress(
   `)
   const request = rows[0]
   if (!request) return { afterCursor: null, endCursor: null }
-  if (request.community_prompt_end_cursor) {
-    return {
-      afterCursor: request.community_prompt_cursor,
-      endCursor: request.community_prompt_end_cursor,
-    }
-  }
+  const cursor = (activatedAt: string | null, id: string | null) =>
+    activatedAt && id ? { activatedAt, id } : null
+  const afterCursor = cursor(
+    request.community_prompt_cursor_activated_at,
+    request.community_prompt_cursor_prompt_id,
+  )
+  const pinnedEndCursor = cursor(
+    request.community_prompt_end_cursor_activated_at,
+    request.community_prompt_end_cursor_prompt_id,
+  )
+  if (pinnedEndCursor) return { afterCursor, endCursor: pinnedEndCursor }
   const { rows: latest } = await query<{ activated_at_cursor: string; id: string }>(sql`
     /* readCommunityModerationEndCursor */
     SELECT to_char(activated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
@@ -104,15 +115,16 @@ async function readCommunityModerationProgress(
     LIMIT 1
   `)
   const last = latest[0]
-  if (!last) return { afterCursor: request.community_prompt_cursor, endCursor: null }
+  if (!last) return { afterCursor, endCursor: null }
   const endCursor = { activatedAt: last.activated_at_cursor, id: last.id }
   await query(sql`
     /* pinCommunityModerationEndCursor */
     UPDATE classifier_run_requests
-    SET community_prompt_end_cursor = ${JSON.stringify(endCursor)}::jsonb
-    WHERE id = ${request.id} AND community_prompt_end_cursor IS NULL
+    SET community_prompt_end_cursor_activated_at = ${endCursor.activatedAt}::timestamptz,
+      community_prompt_end_cursor_prompt_id = ${endCursor.id}::uuid
+    WHERE id = ${request.id} AND community_prompt_end_cursor_activated_at IS NULL
   `)
-  return { afterCursor: request.community_prompt_cursor, endCursor }
+  return { afterCursor, endCursor }
 }
 
 /**

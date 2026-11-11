@@ -3,11 +3,11 @@ import sql from 'sql-template-strings'
 
 export async function setTestCommunityModerationPromptActivatedAt(
   promptId: string,
-  activatedAt: Date,
+  activatedAt: Date | string,
 ): Promise<void> {
   await write(sql`/* setTestCommunityModerationPromptActivatedAt */
     UPDATE community_agent_prompts
-    SET activated_at = ${activatedAt}
+    SET activated_at = ${activatedAt}::timestamptz
     WHERE id = ${promptId}
   `)
 }

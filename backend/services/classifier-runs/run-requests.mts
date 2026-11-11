@@ -52,7 +52,7 @@ export async function requestClassifierRuns(
       .append(
         input.rearmOnSameContent === false
           ? ' DO UPDATE SET stale_at = NULL WHERE classifier_run_requests.stale_at IS NOT NULL'
-          : ' DO UPDATE SET run_identity_id = NULL, run_settled_at = NULL, no_work_at = NULL, stale_at = NULL, community_prompt_cursor = NULL, community_prompt_end_cursor = NULL, has_flagged_community_prompt = false, has_new_community_prompt_decision = false, community_prompt_completed_at = NULL',
+          : ' DO UPDATE SET run_identity_id = NULL, run_settled_at = NULL, no_work_at = NULL, stale_at = NULL, community_prompt_cursor_activated_at = NULL, community_prompt_cursor_prompt_id = NULL, community_prompt_end_cursor_activated_at = NULL, community_prompt_end_cursor_prompt_id = NULL, has_flagged_community_prompt = false, has_new_community_prompt_decision = false, community_prompt_completed_at = NULL',
       ),
   )
 }

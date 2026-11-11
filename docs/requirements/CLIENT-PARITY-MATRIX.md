@@ -38,8 +38,10 @@ follow-up that does not gate the producer change.
 
 The moderation-results read returns keyset-paged summaries and platform status. Native views that
 show the moderation result count must follow every page before computing that count. This changes
-the shared response contract without adding a native UI parity claim; the producer may land before
-native adoption.
+the shared response contract without adding a native UI parity claim. Land the producer change
+back-to-back in lockstep with the client adoption PR tracked by
+[vouchington-clients#571](https://github.com/vouchington/vouchington-clients/issues/571), never
+before the client PR.
 
 | Behavior                                                                        | Web                                           | Swift                                                                         | .NET                                                                          |
 | ------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
