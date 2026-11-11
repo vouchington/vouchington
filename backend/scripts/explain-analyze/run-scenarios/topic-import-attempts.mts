@@ -1,11 +1,12 @@
 import { write } from '@data-stores/psql'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { resolveSeedAnchor, SEED_ANCHOR_DATE_ENV } from '../seed-data/seed-anchor.mts'
 
 const EXPLAIN_TOPIC_IMPORT_ATTEMPT_KEY = '019e0000-1800-7000-8000-000000000000'
 
 export async function runTopicImportAttemptScenarios(): Promise<void> {
-  const now = new Date()
+  const now = new Date(resolveSeedAnchor(process.env[SEED_ANCHOR_DATE_ENV]).dayAnchorMs)
   const lowerBoundDate = new Date(now.getTime() - 2 * 60 * 60 * 1000)
   registerScenarioContract('topic-import-attempts-retention', {
     expectations: [

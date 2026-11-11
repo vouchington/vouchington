@@ -1,4 +1,5 @@
 import { write } from '@data-stores/psql'
+import { resolveSeedAnchor, SEED_ANCHOR_DATE_ENV } from './seed-anchor.mts'
 
 const EXPLAIN_TOPIC_IMPORT_ATTEMPT_SEED_COUNT = 25_000
 
@@ -6,6 +7,7 @@ export async function seedTopicImportAttempts(
   count = EXPLAIN_TOPIC_IMPORT_ATTEMPT_SEED_COUNT,
 ): Promise<void> {
   console.log(`Seeding ${count} topic import attempts...`)
+  const anchor = new Date(resolveSeedAnchor(process.env[SEED_ANCHOR_DATE_ENV]).dayAnchorMs)
   await write(
     `/* seedExplainData */ WITH attempt_indexes AS (
       SELECT generate_series(0, $1 - 1) AS seed_index
@@ -18,13 +20,13 @@ export async function seedTopicImportAttempts(
       format('019e0000-1800-7000-8000-%s', lpad(seed_index::text, 12, '0'))::uuid,
       repeat('0', 64),
       CASE
-        WHEN seed_index < 20000 THEN NOW() - INTERVAL '1 hour' - seed_index % 60 * INTERVAL '1 minute'
-        ELSE NOW() + INTERVAL '48 hours'
+        WHEN seed_index < 20000 THEN $2::timestamptz - INTERVAL '1 hour' - seed_index % 60 * INTERVAL '1 minute'
+        ELSE $2::timestamptz + INTERVAL '48 hours'
       END
     FROM attempt_indexes
     INNER JOIN users seed_user ON seed_user.username = format('seeduser%s', seed_index % 20000)
     ON CONFLICT DO NOTHING`,
-    [count],
+    [count, anchor],
   )
   await write(
     `/* seedExplainData */ INSERT INTO user_topic_import_attempts (
@@ -32,9 +34,10 @@ export async function seedTopicImportAttempts(
     )
     SELECT
       id, '019e0000-1900-7000-8000-000000000000'::uuid, repeat('0', 64),
-      NOW() + INTERVAL '48 hours'
+      $1::timestamptz + INTERVAL '48 hours'
     FROM users
     WHERE username = 'seeduser0'
     ON CONFLICT DO NOTHING`,
+    [anchor],
   )
 }
