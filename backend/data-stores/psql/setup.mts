@@ -32,11 +32,11 @@ export async function beginTransaction(
   options: BeginTransactionOptions & { serializable?: boolean } = {},
 ): Promise<OwnedTransaction> {
   const { serializable, ...adapterOptions } = options
-  const transaction = ownTransaction(await psql.beginTransaction(adapterOptions))
-  // Must run before the transaction's first query so its snapshot is SERIALIZABLE.
-  if (serializable)
-    await transaction('/* beginSerializable */ SET TRANSACTION ISOLATION LEVEL SERIALIZABLE')
-  return transaction
+  return ownTransaction(
+    await psql.beginTransaction(
+      serializable ? { ...adapterOptions, isolationLevel: 'serializable' } : adapterOptions,
+    ),
+  )
 }
 
 export async function beginBoundedTransaction(
