@@ -75,14 +75,11 @@ export async function admitCopyrightEmailCorrespondence(input: {
     'Review rationale is required',
   )
   await using transaction = await beginTransaction()
-  // The immutable thread link identifies the parent before any intake lock. Agent
-  // completion and retention take that same parent-to-child order.
   const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
     /* admitCopyrightEmailCorrespondence:lockNotice */
     SELECT notice.jurisdiction FROM copyright_notice_email_intake_notice_links link
     JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
     WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
-    FOR NO KEY UPDATE OF notice
   `)
   assert(notices[0], 404, 'Matched copyright email correspondence not found')
   const { rows } =
@@ -100,7 +97,6 @@ export async function admitCopyrightEmailCorrespondence(input: {
     JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
     WHERE intake.id = ${input.intakeId}
-    FOR UPDATE OF intake
   `)
   const pending = rows[0]
   assert(pending, 404, 'Matched copyright email correspondence not found')

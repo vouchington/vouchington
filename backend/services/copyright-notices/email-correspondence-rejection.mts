@@ -30,14 +30,11 @@ export async function rejectCopyrightEmailCorrespondence(input: {
   )
   assertRecommendationOrFallback(input.recommendationId, input.manualFallbackReason)
   await using transaction = await beginTransaction()
-  // Rejection also writes case-linked review/event rows; fence retention before
-  // locking the intake rather than obtaining the parent FK lock afterward.
   const { rows: notices } = await transaction<{ id: string }>(sql`
     /* rejectCopyrightEmailCorrespondence:lockNotice */
     SELECT notice.id FROM copyright_notice_email_intake_notice_links link
     JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
     WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
-    FOR KEY SHARE OF notice
   `)
   assert(notices[0], 404, 'Matched copyright email correspondence not found')
   const { rows } = await transaction<{
@@ -49,7 +46,6 @@ export async function rejectCopyrightEmailCorrespondence(input: {
     JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id AND link.link_kind = 'thread'
     WHERE intake.id = ${input.intakeId}
-    FOR UPDATE OF intake
   `)
   const pending = rows[0]
   assert(pending, 404, 'Matched copyright email correspondence not found')

@@ -94,8 +94,6 @@ export async function placeUserPreservationHold(
   if (!account) {
     throw createHttpError(404, 'User not found')
   }
-  await query(sql`/* lockCopyrightThreadPreservationGate:place */
-    SELECT pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0))`)
   const { rows } = await query<HoldRow>(sql`/* placeUserPreservationHold */
     WITH placed AS (
       INSERT INTO user_legal_preservation_holds (id, account_user_id, placed_by_id, reference_ciphertext)
@@ -133,8 +131,6 @@ export async function releaseUserPreservationHold(
   if (!(await lockPreservationHoldUser(query, userId))) {
     throw createHttpError(404, 'User not found')
   }
-  await query(sql`/* lockCopyrightThreadPreservationGate:release */
-    SELECT pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0))`)
   const { rows } = await query<HoldRow>(sql`/* releaseUserPreservationHold */
     WITH released AS (
       UPDATE user_legal_preservation_holds

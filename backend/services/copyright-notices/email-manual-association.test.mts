@@ -6,7 +6,6 @@ import {
   readCopyrightEmailManualAssociationEvent,
   readCopyrightEmailManualAssociationReview,
 } from '@voucha/test-helpers/copyright-email-manual-association'
-import { lockTestCopyrightEmailIntakeForGraphChange } from '@voucha/test-helpers/copyright-email-ancestor-edges'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -15,8 +14,10 @@ import {
   recordThreadedCopyrightEmail,
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
-import { runWithCapturedQueries } from '../../data-stores/psql/query-capture.mts'
-import { installSharedDbScopeObserver } from '../../../test-helpers/vitest-shared-db-scope-observer.mts'
+import {
+  eraseTestCopyrightEmailIntakeOriginal,
+  markTestCopyrightEmailIntakeReceiptErased,
+} from '@voucha/test-helpers/copyright-email-intake-retention'
 import { associateCopyrightEmailIntakeWithNotice } from './email-manual-association.mts'
 import { searchCopyrightNoticeAssociationTargets } from './association-search.mts'
 import { copyrightConfig } from './config.mts'
@@ -83,7 +84,7 @@ describe('manual copyright email association', () => {
     expect(await readCopyrightEmailManualAssociationEvent(initial.intakeId)).toEqual([])
   })
 
-  it('does not attach an intake after a competing retention erasure commits', async () => {
+  it('does not attach an intake to an already erased case', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation()
@@ -111,6 +112,21 @@ describe('manual copyright email association', () => {
     } finally {
       dispose()
     }
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
+  })
+
+  it.each([
+    ['original evidence', eraseTestCopyrightEmailIntakeOriginal],
+    ['receipt', markTestCopyrightEmailIntakeReceiptErased],
+  ] as const)('does not attach an intake after retention erased its %s', async (_kind, erase) => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const intake = await createManualReply()
+    const noticeId = await createCopyrightNoticeForManualAssociation()
+    await erase(intake.id)
+    await expect(
+      associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId),
+    ).rejects.toMatchObject({ status: 404 })
     expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
     expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
   })
@@ -166,7 +182,7 @@ describe('manual copyright email association', () => {
     expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
   })
 
-  it('returns the stable conflict when a thread link wins between preflight and intake lock', async () => {
+  it('keeps exactly one association when threading and staff compete for an intake', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation()
@@ -224,8 +240,11 @@ describe('manual copyright email association', () => {
     expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
       { copyright_notice_id: noticeId, link_kind: 'thread' },
     ])
-    expect(await readCopyrightEmailManualAssociationReview(intake.id)).toEqual(reviewsFromThreading)
-    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationReview(intake.id)).toEqual([
+      { copyright_notice_id: noticeId, action: 'pending' },
+    ])
+    const events = await readCopyrightEmailManualAssociationEvent(intake.id)
+    expect(events).toHaveLength(manual.status === 'fulfilled' ? 1 : 0)
   })
 
   it('lets staff associate an unlinked reply after graph overflow, then use the existing review', async () => {

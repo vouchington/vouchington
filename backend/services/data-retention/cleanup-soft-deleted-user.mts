@@ -57,10 +57,6 @@ export async function cleanupSoftDeletedUser(
       ...(preserved.userPurge ? { userPurge: preserved.userPurge } : {}),
     }
   }
-  // Account finalization changes the legal clock of every linked copyright case. The gate
-  // serializes its dirty signal with each bounded case purge page.
-  await query(sql`/* lockCopyrightCaseClockSyncAtFinalUserPurge */
-    SELECT pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0))`)
   const deleted = await deletePurgedUser(query, targetId)
   budget.remainingRows -= deleted
   await query.commit()

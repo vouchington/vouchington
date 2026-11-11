@@ -1,5 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import assert from 'http-assert'
 import type { CopyrightEmailCorrespondenceKind } from './email-correspondence-guards.mts'
 
 type CopyrightEmailCorrespondenceReviewInput = {
@@ -42,7 +43,7 @@ export async function recordAdmittedCopyrightCorrespondenceReview(
       ${manualFallbackCiphertext}
     )
   `)
-  await transaction(sql`/* admitCopyrightEmailCorrespondence:currentDecision */
+  const { rowCount } = await transaction(sql`/* admitCopyrightEmailCorrespondence:currentDecision */
     UPDATE copyright_notice_email_intake_notice_links SET
       correspondence_action = 'admitted', correspondence_kind = ${input.kind},
       correspondence_submission_id = ${submissionId},
@@ -51,7 +52,9 @@ export async function recordAdmittedCopyrightCorrespondenceReview(
       correspondence_reviewed_by_id = ${input.currentUser.id},
       correspondence_rationale_ciphertext = ${rationaleCiphertext},
       correspondence_manual_fallback_reason_ciphertext = ${manualFallbackCiphertext}
-    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+    WHERE copyright_notice_email_intake_id = ${input.intakeId}
+      AND correspondence_action = 'pending'`)
+  assert(rowCount === 1, 409, 'Copyright email correspondence was already reviewed')
 }
 
 /** A rejected link also owns its final review result after finite review history expires. */
@@ -75,12 +78,15 @@ export async function recordRejectedCopyrightCorrespondenceReview(
       ${rationaleCiphertext},
       ${manualFallbackCiphertext})
   `)
-  await transaction(sql`/* rejectCopyrightEmailCorrespondence:currentDecision */
+  const { rowCount } =
+    await transaction(sql`/* rejectCopyrightEmailCorrespondence:currentDecision */
     UPDATE copyright_notice_email_intake_notice_links SET
       correspondence_action = 'rejected', correspondence_kind = ${input.kind},
       correspondence_reviewed_at = CURRENT_TIMESTAMP,
       correspondence_reviewed_by_id = ${input.currentUser.id},
       correspondence_rationale_ciphertext = ${rationaleCiphertext},
       correspondence_manual_fallback_reason_ciphertext = ${manualFallbackCiphertext}
-    WHERE copyright_notice_email_intake_id = ${input.intakeId}`)
+    WHERE copyright_notice_email_intake_id = ${input.intakeId}
+      AND correspondence_action = 'pending'`)
+  assert(rowCount === 1, 409, 'Copyright email correspondence was already reviewed')
 }

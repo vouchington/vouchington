@@ -208,7 +208,7 @@ BEGIN
     WHERE id = NEW.copyright_notice_id AND evidence_erased_at IS NULL;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'
-      USING ERRCODE = 'check_violation';
+      USING ERRCODE = 'check_violation', CONSTRAINT = 'copyright_email_link_active_case';
   END IF;
   RETURN NEW;
 END;

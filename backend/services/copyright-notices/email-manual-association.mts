@@ -23,61 +23,47 @@ export async function associateCopyrightEmailIntakeWithNotice(
   noticeId: string,
 ): Promise<{ copyright_notice: { id: string }; copyright_email_intake: { id: string } }> {
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
-  await using transaction = await beginTransaction()
-  const before = await readIntakeDecision(transaction, intakeId)
-  assert(before, 404, 'Copyright email intake not found')
-  if (before.linked || before.reviewed) throw copyrightEmailThreadChangedError()
-  observeSharedDbScope(
-    'associateCopyrightEmailIntakePreflight',
-    { kind: 'ids', ids: [intakeId] },
-    undefined,
-    transaction,
-  )
+  try {
+    await using transaction = await beginTransaction()
+    const before = await readIntakeDecision(transaction, intakeId)
+    assert(before, 404, 'Copyright email intake not found')
+    if (before.linked || before.reviewed) throw copyrightEmailThreadChangedError()
+    observeSharedDbScope(
+      'associateCopyrightEmailIntakePreflight',
+      { kind: 'ids', ids: [intakeId] },
+      undefined,
+      transaction,
+    )
 
-  const { rows: lockedIntakes } = await transaction<{ id: string }>(sql`
-    /* associateCopyrightEmailIntakeWithNotice:lockIntake */
-    SELECT id FROM copyright_notice_email_intakes
-    WHERE id = ${intakeId} AND raw_storage_object_id IS NOT NULL
-      AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_receipts receipt
-        WHERE receipt.id = ${intakeId} AND receipt.erased_at IS NULL)
-    FOR UPDATE
+    const { rows: notices } = await transaction<{ id: string; jurisdiction: string }>(sql`
+    /* associateCopyrightEmailIntakeWithNotice:notice */
+    SELECT id, jurisdiction FROM copyright_notices WHERE id = ${noticeId}
   `)
-  assert(lockedIntakes[0], 404, 'Copyright email intake not found')
-  // Erasure updates only intakes already linked to its case. A link committed
-  // while this lock was pending must be rejected before waiting for that case.
-  const lockedDecision = await readIntakeDecision(transaction, intakeId)
-  if (!lockedDecision || lockedDecision.linked || lockedDecision.reviewed)
-    throw copyrightEmailThreadChangedError()
-  const { rows: lockedNotices } = await transaction<{ id: string; jurisdiction: string }>(sql`
-    /* associateCopyrightEmailIntakeWithNotice:lockNotice */
-    SELECT id, jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
-  `)
-  assert(lockedNotices[0], 404, 'Copyright notice not found')
-  assert(
-    lockedNotices[0].jurisdiction === 'us_dmca' || lockedNotices[0].jurisdiction === 'eu_dsa',
-    422,
-    'Correspondence kind does not apply to this jurisdiction',
-  )
-  // A retention erasure takes the notice lock first. This fresh statement sees a marker
-  // committed while this association waited and fences a new marker until commit.
-  const { rows: erased } = await transaction(sql`
+    assert(notices[0], 404, 'Copyright notice not found')
+    assert(
+      notices[0].jurisdiction === 'us_dmca' || notices[0].jurisdiction === 'eu_dsa',
+      422,
+      'Correspondence kind does not apply to this jurisdiction',
+    )
+    // The link trigger conditionally advances the case clock and rejects an erased case.
+    const { rows: erased } = await transaction(sql`
     /* associateCopyrightEmailIntakeWithNotice:erasure */
     SELECT 1 FROM copyright_notices
     WHERE id = ${noticeId} AND evidence_erased_at IS NOT NULL LIMIT 1
   `)
-  assert(!erased[0], 404, 'Copyright notice not found')
-  observeSharedDbScope(
-    'associateCopyrightEmailIntakeLocked',
-    { kind: 'ids', ids: [intakeId] },
-    undefined,
-    transaction,
-  )
+    assert(!erased[0], 404, 'Copyright notice not found')
+    observeSharedDbScope(
+      'associateCopyrightEmailIntakeLocked',
+      { kind: 'ids', ids: [intakeId] },
+      undefined,
+      transaction,
+    )
 
-  const after = await readIntakeDecision(transaction, intakeId)
-  if (!after || after.linked || after.reviewed) throw copyrightEmailThreadChangedError()
-  const reviewPath = await readManualAssociationReviewPath(transaction, intakeId)
-  assert(reviewPath !== 'initial', 409, 'Initial copyright email needs case approval')
-  const { rows: links } = await transaction<{ id: string }>(sql`
+    const after = await readIntakeDecision(transaction, intakeId)
+    if (!after || after.linked || after.reviewed) throw copyrightEmailThreadChangedError()
+    const reviewPath = await readManualAssociationReviewPath(transaction, intakeId)
+    assert(reviewPath !== 'initial', 409, 'Initial copyright email needs case approval')
+    const { rows: links } = await transaction<{ id: string }>(sql`
     /* associateCopyrightEmailIntakeWithNotice:link */
     INSERT INTO copyright_notice_email_intake_notice_links (
       copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action
@@ -85,18 +71,23 @@ export async function associateCopyrightEmailIntakeWithNotice(
     ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
     RETURNING id
   `)
-  if (!links[0]) throw copyrightEmailThreadChangedError()
-  await transaction(sql`
+    if (!links[0]) throw copyrightEmailThreadChangedError()
+    await transaction(sql`
     /* associateCopyrightEmailIntakeWithNotice:audit */
     INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, changed_by_id, copyright_notice_email_intake_id
     ) VALUES (${noticeId}, 'email_intake_manually_associated', ${currentUser.id}, ${intakeId})
   `)
-  await transaction.commit()
-  return { copyright_notice: { id: noticeId }, copyright_email_intake: { id: intakeId } }
+    await transaction.commit()
+    return { copyright_notice: { id: noticeId }, copyright_email_intake: { id: intakeId } }
+  } catch (err) {
+    if ((err as { constraint?: string } | null)?.constraint === 'copyright_email_link_active_case')
+      throw Object.assign(copyrightEmailThreadChangedError(), { cause: err })
+    throw err
+  }
 }
 
-/** Eligibility is recomputed after both row locks; a new reply or claimant changes this result. */
+/** Recompute eligibility from the transaction snapshot before inserting the immutable link. */
 async function readManualAssociationReviewPath(transaction: TransactionQuery, intakeId: string) {
   const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
   const query = sql`/* readManualAssociationReviewPath */
@@ -130,6 +121,7 @@ async function readIntakeDecision(
     FROM copyright_notice_email_intakes intake
     JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
     WHERE intake.id = ${intakeId}
+      AND intake.raw_storage_object_id IS NOT NULL AND receipt.erased_at IS NULL
   `)
   return rows[0]
 }

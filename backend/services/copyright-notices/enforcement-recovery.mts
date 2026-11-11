@@ -59,9 +59,8 @@ export async function recoverMissingDecisionAssessments(
     SELECT submission.id, candidate.assessed_by_id, candidate.screening_id
     FROM candidate_page candidate
     JOIN copyright_notice_submissions submission ON submission.id = candidate.submission_id
-    JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
     ORDER BY submission.id LIMIT ${limit + 1}
-    FOR UPDATE OF notice, submission
+    FOR UPDATE OF submission
   `)
   const { rows } = await transaction<{
     id: string
@@ -69,7 +68,7 @@ export async function recoverMissingDecisionAssessments(
     screening_id: string | null
   }>(candidateQuery)
   const page = rows.slice(0, limit)
-  // Parent locks match normal assessment writers; this separate statement observes their commits.
+  // The submission is written below; this separate statement observes competing assessment commits.
   await transaction(sql`/* recoverMissingCopyrightDecisionAssessments:insert */
     WITH candidates AS (
       SELECT * FROM unnest(${page.map(row => row.id)}::uuid[],

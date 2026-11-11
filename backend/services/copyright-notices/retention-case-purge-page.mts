@@ -70,8 +70,6 @@ export async function runCopyrightCasePurgePage(
   if (data.phase === 'final')
     await query(sql`/* lockCopyrightCasePurgeAccountFinalization */
       SELECT pg_advisory_xact_lock(hashtextextended(${FINAL_USER_PURGE_LOCK_KEY}, 0))`)
-  await query(sql`/* lockCopyrightCasePurgePreservation */
-    SELECT pg_advisory_xact_lock_shared(hashtextextended('copyright-preservation-retention', 0))`)
   const { rows: dirtyAccounts } = await query<{ id: string }>(sql`
     /* readPendingCopyrightAccountClockSync */
     SELECT identity.id FROM copyright_notice_party_identities party

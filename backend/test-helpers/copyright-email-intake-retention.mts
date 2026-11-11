@@ -14,3 +14,14 @@ export async function eraseTestCopyrightEmailIntakeOriginal(intakeId: string) {
   )
   await transaction.commit()
 }
+
+/** First retention tick marks the receipt before physical evidence removal. */
+export async function markTestCopyrightEmailIntakeReceiptErased(intakeId: string) {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* markTestCopyrightEmailIntakeReceiptErased:permit */
+    SET LOCAL app.copyright_retention_erasure = 'on'`)
+  await transaction(sql`/* markTestCopyrightEmailIntakeReceiptErased */
+    UPDATE copyright_notice_email_intake_receipts SET erased_at = CURRENT_TIMESTAMP
+    WHERE id = ${intakeId}`)
+  await transaction.commit()
+}

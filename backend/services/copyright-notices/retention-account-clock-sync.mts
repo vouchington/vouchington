@@ -21,8 +21,6 @@ export async function runCopyrightAccountClockSyncPage(
   })
   await query(sql`/* lockCopyrightAccountClockSync */
     SELECT pg_advisory_xact_lock(hashtextextended(${data.accountUserId}, 0))`)
-  await query(sql`/* lockCopyrightAccountClockSyncPreservationGate */
-    SELECT pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0))`)
   const { rows: sources } = await query<Source>(sql`/* readCopyrightAccountClockSyncSource */
     SELECT identity.id,
       identity.last_legal_preservation_hold_released_at::text,

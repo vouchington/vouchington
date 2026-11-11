@@ -1,3 +1,6 @@
+import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
+import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
+import { linkCopyrightEmailIntakeToNotice } from './copyright-email-intake-link.mts'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
@@ -102,4 +105,63 @@ export async function searchTestCopyrightAssociationsInTimeZone(
   return await searchCopyrightNoticeAssociationTargets(currentUser, query, after, {
     query: transaction,
   })
+}
+
+/** Commit a selected erasure while the real link's existing case-clock write is pending. */
+export async function associateCopyrightEmailAfterErasure<Result>(
+  noticeId: string,
+  associate: () => Promise<Result>,
+): Promise<Result> {
+  await using erasure = await beginTransaction()
+  await markTestCopyrightNoticeErased(noticeId, erasure)
+  const processId = await getTestPostgresBackendProcessId(erasure)
+  return await withTestOwnedPostgresWait(
+    {
+      holderProcessId: processId,
+      pool: 'write',
+      lock: { kind: 'transaction' },
+      queryMarker: 'associateCopyrightEmailIntakeWithNotice:link',
+      releaseHolder: () => erasure[Symbol.asyncDispose](),
+    },
+    async waitForLock => {
+      const pending = associate()
+      await waitForLock(pending)
+      await erasure.commit()
+      return pending
+    },
+  )
+}
+
+/** Publish a real link while an already selected marker page waits for its written case. */
+export async function purgeCopyrightCaseAfterEmailLink<Result>(
+  intakeId: string,
+  noticeId: string,
+  purge: () => Promise<Result>,
+): Promise<Result> {
+  await using linking = await beginTransaction()
+  await linkCopyrightEmailIntakeToNotice({ intakeId, noticeId, linkKind: 'thread' }, linking)
+  const processId = await getTestPostgresBackendProcessId(linking)
+  return await withTestOwnedPostgresWait(
+    {
+      holderProcessId: processId,
+      pool: 'write',
+      lock: { kind: 'transaction' },
+      queryMarker: 'readCopyrightCasePurgeProof',
+      releaseHolder: () => linking[Symbol.asyncDispose](),
+    },
+    async waitForLock => {
+      const pending = purge()
+      await waitForLock(pending)
+      await linking.commit()
+      return pending
+    },
+  )
+}
+
+/** Read the durable erasure fact, including while the private staff aggregate hides it. */
+export async function isTestCopyrightCaseEvidenceErased(noticeId: string): Promise<boolean> {
+  const { rows } = await read<{ erased: boolean }>(sql`/* isTestCopyrightCaseEvidenceErased */
+    SELECT evidence_erased_at IS NOT NULL AS erased FROM copyright_notices WHERE id = ${noticeId}`)
+  if (!rows[0]) throw new Error('Owned copyright notice is missing')
+  return rows[0].erased
 }

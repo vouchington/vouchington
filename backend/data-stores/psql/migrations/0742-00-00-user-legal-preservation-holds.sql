@@ -30,14 +30,13 @@ CREATE TABLE copyright_notice_retention_generations (
   preservation_generation bigint NOT NULL DEFAULT 0 CHECK (preservation_generation >= 0)
 );
 INSERT INTO copyright_notice_retention_generations (is_global) VALUES (true);
-COMMENT ON TABLE copyright_notice_retention_generations IS 'Global legal-preservation change generation for bounded case-party proof; the gate serializes concurrent hold writes with retention.';
+COMMENT ON TABLE copyright_notice_retention_generations IS 'Global legal-preservation change generation for bounded case-party proof; hold changes invalidate earlier proof pages.';
 COMMENT ON COLUMN copyright_notice_retention_generations.is_global IS 'True for the single global legal-preservation generation row.';
 COMMENT ON COLUMN copyright_notice_retention_generations.preservation_generation IS 'Monotonic generation invalidating paged case-party proof after a hold change.';
 
 CREATE FUNCTION fn_update_copyright_preservation_generation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-  PERFORM pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0));
   UPDATE copyright_notice_retention_generations
     SET preservation_generation = preservation_generation + 1 WHERE is_global;
   RETURN NEW;
