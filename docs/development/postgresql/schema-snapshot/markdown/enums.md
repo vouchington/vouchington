@@ -88,7 +88,6 @@
 - `community-moderation:write`
 - `copyright-notices:read`
 - `copyright-notices:write`
-- `data-points:read`
 - `disputes:read`
 - `disputes:write`
 - `domain-ratings:read`
