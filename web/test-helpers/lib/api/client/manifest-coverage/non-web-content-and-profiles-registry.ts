@@ -1,6 +1,20 @@
 import { endpoint, type ManifestEndpoint } from './endpoint-registry'
 
 export const contentAndProfilesEndpointRegistry = {
+  'native.posts.topic-recommendation.create': {
+    method: 'POST',
+    path: '/api/v1/posts',
+    requestHeaders: { 'Idempotency-Key': '70000000-0000-7000-8000-000000005598' },
+    requestBody: {
+      post_type: 'topic_recommendation',
+      title: 'Native recommendation',
+      topic_markdown: 'Recommendation body',
+      topic_aliases: ['native topic'],
+      markdown: 'Recommendation body',
+      topic_title: 'Native Topic',
+      topic_slug: 'native-topic',
+    },
+  },
   'native.comments.post-detail.default': { method: 'GET', path: '/api/v1/posts/comment-root' },
   'native.comments.descendants.default': {
     method: 'GET',

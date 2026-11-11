@@ -69,13 +69,12 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts')
   const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
+  const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
   const parsedBody = await parseJsonBody(ctx, '1mb')
   const body = parsedBody as CreatePostRequestBody
   if (!currentUserCanCreatePostWrite(currentUser, body)) {
     ctx.throw(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
   }
-
-  const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
 
   if (isHoneypotTriggered(body as Record<string, unknown>)) {
     validateRequestContract(ctx, 'POST:/api/v1/posts', { body })

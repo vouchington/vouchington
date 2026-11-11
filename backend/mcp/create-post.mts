@@ -88,9 +88,9 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
   function: currentUser => async (args, invocationContext) => {
     const user = await requireActiveToolUser(currentUser)
     const authority = getDelegatedToolAuthority(user, invocationContext)
+    const membershipPlan = await getAuthorizedPostContributionMembershipPlan(user)
     if (!currentUserCanCreatePostWrite(user, args))
       throw createCodedError(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
-    const membershipPlan = await getAuthorizedPostContributionMembershipPlan(user)
     const { idempotency_key, ...body } = args
     let communityId = body.community_id
     if (communityId) {
