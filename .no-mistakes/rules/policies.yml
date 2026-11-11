@@ -4492,7 +4492,7 @@
     # Wrangler binds the CachedOrigin WorkerEntrypoint that src/index.mts (`main`) re-exports.
     # Named at its declaring file until jonathanong/no-mistakes#3225 follows entry re-exports.
     platformConsumedExports:
-      - file: cloudflare-worker/src/cached-origin.mts
+      - file: cloudflare-worker/src/index.mts
         exports: [CachedOrigin]
     unanalyzable: advise
 # Source: #3160. Fix React compiler and hook findings in web source instead of suppressing them.
