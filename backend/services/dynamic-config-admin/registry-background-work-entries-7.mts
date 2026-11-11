@@ -34,6 +34,7 @@ export const backgroundWorkRegistryEntries7 = {
     maxValues: postsWorkMaxValues,
     descriptions: {
       semantic_post_candidate_limit: 'Maximum post candidates in a semantic search window.',
+      feed_inspected_row_cap: 'Maximum sort-index rows inspected per post feed page.',
       review_succession_candidate_page_size:
         'Review succession candidate page size for posts processing.',
     },
@@ -67,6 +68,8 @@ export const backgroundWorkRegistryEntries7 = {
         'Alias post invalidation batch size for topics processing.',
       parent_merge_cycle_max_depth:
         'Maximum ancestry depth inspected before a topic merge fails closed.',
+      viewer_count_input_cap:
+        'Maximum aliases and relation rows inspected per topic viewer discussion count.',
     },
   }),
   'topic-merge-work-config': defineBoundedWorkNamespace({

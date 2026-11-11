@@ -8,6 +8,7 @@ import { webCommunityApiFixtureCases } from './web-community-cases.mts'
 import { webCommunityModerationApiFixtureCases } from './web-community-moderation-cases.mts'
 import { growthMetricsBody } from './web-growth-metrics-data.mts'
 import { webMembershipRefundApiFixtureCases } from './web-membership-refund-cases.mts'
+import { webTopicViewerCountApiFixtureCases } from './web-topic-viewer-count-cases.mts'
 import { webRssFeedCategoryApiFixtureCases } from './web-rss-feed-category-cases.mts'
 
 const publicTopicWithLogoPlacement = {
@@ -27,6 +28,7 @@ const publicTopicWithLogoPlacement = {
 }
 
 export const webApiFixtureCases: ApiFixtureCase[] = [
+  ...webTopicViewerCountApiFixtureCases,
   ...webMembershipRefundApiFixtureCases,
   ...webRssFeedCategoryApiFixtureCases,
   ...entityProvenanceApiFixtureCases,

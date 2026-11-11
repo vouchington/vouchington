@@ -34,20 +34,21 @@ export function pushPostTab(
   const publicCount = metrics?.count?.[options.countKey] ?? 0
   const viewerCount = metrics?.viewer_count?.[options.countKey] ?? 0
 
-  if (publicCount === 0 && viewerCount === 0 && !options.isActive) {
+  const lowerBound =
+    metrics?.count_capped?.[options.countKey] === true ||
+    metrics?.viewer_count_capped?.[options.countKey] === true
+  if (publicCount === 0 && viewerCount === 0 && !lowerBound && !options.isActive) {
     return
   }
 
   tabs.push({
     name: options.name,
     label:
-      publicCount > 0 || viewerCount > 0
+      publicCount > 0 || viewerCount > 0 || lowerBound
         ? formatTabLabel(
             options.label,
             publicCount,
-            viewerCount > publicCount ||
-              metrics?.count_capped?.[options.countKey] === true ||
-              metrics?.viewer_count_capped?.[options.countKey] === true,
+            viewerCount > publicCount || lowerBound,
             options.uiLocale,
           )
         : options.label,

@@ -55,6 +55,7 @@ export const SEARCH_AND_TOPICS_SCENARIOS = [
   'topic-search-text',
   'topic-viewer-counts',
   'topic-viewer-counts-dense',
+  'topic-viewer-counts-many-aliases',
   'topic-votes-by-user',
   ...TOP_URL_RANKING_SCENARIO_IDS,
   ...(['search-communities-trending', 'trending-posts', 'trending-posts-by-topic'] as const),

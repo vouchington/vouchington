@@ -1,13 +1,21 @@
 import { beginTransaction } from '@data-stores/psql'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
+import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getPostsWorkLimit } from '@services/posts/work-limits'
 import sql from 'sql-template-strings'
 import { seedUuid } from './common.mts'
+import {
+  POST_TOPIC_OWNED_IDS,
+  POST_TOPIC_FEED_POST_ID,
+  POST_TOPIC_FEED_RELATION_IDS,
+  seedPostTopicOwnedPosts,
+} from './post-topic-owned-posts.mts'
 
-// Forty aliases times a 26-row page stays inside the 1,200 alias-relation cap.
 const ALIASES_PER_TOPIC = 40
 const SPARSE_POST_COUNT = 5
 const MIN_NEWEST_POST_COHORT_SIZE = 10_000
 const FIXTURE_ID_START = 800_000
+const SEED_VIEWER_ID = seedUuid(0, '01')
 
 export const POST_TOPIC_SEMI_JOIN_FIXTURE = {
   sparseTopicId: seedUuid(FIXTURE_ID_START, 'e2'),
@@ -34,8 +42,8 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
     ...fixture.sparseAliasIds.map((_, index) => `post-semi-join-sparse-${index}`),
     ...fixture.denseAliasIds.map((_, index) => `post-semi-join-dense-${index}`),
   ]
-  const newestPostCohortSize = MIN_NEWEST_POST_COHORT_SIZE
 
+  await seedPostTopicOwnedPosts()
   await using transaction = await beginTransaction()
   await transaction(
     `/* seedPostTopicSemiJoinFixture:topics */
@@ -55,82 +63,110 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
   )
 
   const newestPostsQuery = sql`/* seedPostTopicSemiJoinFixture:newest-posts */
-    SELECT posts.id FROM posts
+    WITH newest_posts AS MATERIALIZED (
+      SELECT posts.id FROM posts
+      WHERE posts.deleted_at IS NULL
+        AND posts.id >= ${getMinUUIDv7ForDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))}::uuid
+      ORDER BY posts.id DESC
+      LIMIT ${MIN_NEWEST_POST_COHORT_SIZE}
+    )
+    SELECT posts.id, posts.created_by_id
+    FROM newest_posts JOIN posts ON posts.id = newest_posts.id
     WHERE posts.root_post_id IS NULL
-      AND posts.post_type != 'comment'
+      AND posts.id <> ${POST_TOPIC_FEED_POST_ID}::uuid
+      AND posts.post_type = 'discussion'
+      AND posts.community_id IS NULL
       AND `
     .append(buildPublicPostEligibilityFilter('posts', 'posts'))
-    .append(sql` ORDER BY posts.id DESC LIMIT ${newestPostCohortSize}`)
+    .append(sql` ORDER BY posts.id DESC`)
   const { rows: newestPosts } = await transaction<{ id: string }>(newestPostsQuery)
-  if (newestPosts.length !== newestPostCohortSize)
-    throw new Error('Post topic fixture needs enough eligible newest posts for both raw windows')
+  if (newestPosts.length < SPARSE_POST_COUNT + 1)
+    throw new Error(
+      'Post topic fixture needs recent public discussion posts inside the raw feed window',
+    )
 
-  const directPostId = newestPosts[SPARSE_POST_COUNT]?.id
-  if (!directPostId) throw new Error('Post topic fixture needs a newest direct member')
-  const sparsePostIds = newestPosts.slice(0, SPARSE_POST_COUNT).map(post => post.id)
+  const sparsePostIds = POST_TOPIC_OWNED_IDS.slice(-SPARSE_POST_COUNT).toReversed()
   const sparseAliasIds = fixture.sparseAliasIds.slice(0, SPARSE_POST_COUNT)
   await transaction(
     `/* seedPostTopicSemiJoinFixture:sparse-memberships */
      INSERT INTO relation__post__category__topic_alias
-       (subject_id, object_id, created_by_id, votes_score_up)
-     SELECT membership.post_id, membership.alias_id, $3::uuid, 1
+       (id, subject_id, object_id, created_by_id, votes_score_up)
+     SELECT uuidv7(GREATEST(uuid_extract_timestamp(membership.post_id) - clock_timestamp() + interval '1 second', interval '0 seconds')), membership.post_id, membership.alias_id, $3::uuid, 1
      FROM UNNEST($1::uuid[], $2::uuid[]) AS membership(post_id, alias_id)
      ON CONFLICT DO NOTHING`,
     [sparsePostIds, sparseAliasIds, seedUuid(0, '01')],
   )
 
-  const densePostIds = newestPosts.map(post => post.id)
-  const denseAliasIds = newestPosts.map(
+  const densePostIds = [
+    ...new Set([...POST_TOPIC_OWNED_IDS.slice(1), ...newestPosts.map(post => post.id)]),
+  ]
+  const denseAliasIds = densePostIds.map(
     (_, index) => fixture.denseAliasIds[index % ALIASES_PER_TOPIC]!,
   )
   await transaction(
     `/* seedPostTopicSemiJoinFixture:dense-memberships */
      INSERT INTO relation__post__category__topic_alias
-       (subject_id, object_id, created_by_id, votes_score_up)
-     SELECT membership.post_id, membership.alias_id, $3::uuid, 1
+       (id, subject_id, object_id, created_by_id, votes_score_up)
+     SELECT uuidv7(GREATEST(uuid_extract_timestamp(membership.post_id) - clock_timestamp() + interval '1 second', interval '0 seconds')), membership.post_id, membership.alias_id, $3::uuid, 1
      FROM UNNEST($1::uuid[], $2::uuid[]) AS membership(post_id, alias_id)
      ON CONFLICT DO NOTHING`,
     [densePostIds, denseAliasIds, seedUuid(0, '01')],
   )
-  // Reuse an actual feed delivery rather than assuming a seeded author/post remains
-  // eligible after earlier scenarios. Only this fixture owns the two added memberships.
+  const feedCap = getPostsWorkLimit('feed_inspected_row_cap')
+  const lowerCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const { rows: sharedDeliveries } = await transaction<{ count: number }>(
+    `/* seedPostTopicSemiJoinFixture:shared-delivery-count */
+     SELECT count(*)::int AS count FROM (
+       SELECT 1 FROM post_feed_shares
+       WHERE recipient_user_id = $1::uuid AND shared_by_id IS NOT NULL AND sort_at >= $2
+       LIMIT $3
+     ) shares`,
+    [SEED_VIEWER_ID, lowerCutoff, feedCap],
+  )
+  const sharedDeliveryCount = sharedDeliveries[0]?.count ?? 0
+  if (sharedDeliveryCount >= feedCap)
+    throw new Error('Post topic fixture needs room for a direct row in the capped feed prefix')
+  const rawDirectPrefix = feedCap - sharedDeliveryCount
+  const firstRawDirectCandidates = sql`/* seedPostTopicSemiJoinFixture:feed-prefix-witness */
+    WITH raw_direct_prefix AS MATERIALIZED (
+      SELECT posts.id FROM posts
+      WHERE posts.deleted_at IS NULL
+        AND posts.id >= ${getMinUUIDv7ForDate(lowerCutoff)}::uuid
+      ORDER BY posts.id DESC
+      LIMIT ${rawDirectPrefix}
+    )
+    SELECT posts.id FROM raw_direct_prefix
+    JOIN posts ON posts.id = raw_direct_prefix.id
+    WHERE posts.id = ${POST_TOPIC_FEED_POST_ID}::uuid
+      AND posts.root_post_id IS NULL AND posts.post_type = 'discussion'
+      AND posts.community_id IS NULL
+      AND `
+    .append(buildPublicPostEligibilityFilter('posts', 'posts'))
+    .append(sql` ORDER BY posts.id DESC LIMIT 1`)
+  const { rows: feedEligiblePosts } = await transaction<{ id: string }>(firstRawDirectCandidates)
+  const feedPostId = feedEligiblePosts[0]?.id
+  if (!feedPostId)
+    throw new Error('Post topic fixture could not find a public post inside the capped feed prefix')
+
   await transaction(
-    `/* seedPostTopicSemiJoinFixture:feed-topic-membership */
+    `/* seedPostTopicSemiJoinFixture:feed-topic-membership-witness */
      INSERT INTO relation__post__category__topic
-       (subject_id, object_id, created_by_id, votes_score_up, votes_count_up)
-     SELECT $1::uuid, topic.topic_id, $2::uuid, 1, 1
-     FROM UNNEST($3::uuid[]) AS topic(topic_id)
+       (id, subject_id, object_id, created_by_id, votes_score_up, votes_count_up)
+     SELECT topic.relation_id, $1::uuid, topic.topic_id, $2::uuid, 1, 1
+     FROM UNNEST($3::uuid[], $4::uuid[]) AS topic(topic_id, relation_id)
      ON CONFLICT DO NOTHING`,
-    [directPostId, seedUuid(0, '01'), topicIds],
+    [feedPostId, SEED_VIEWER_ID, topicIds, POST_TOPIC_FEED_RELATION_IDS],
+  )
+  await transaction(
+    `/* seedPostTopicSemiJoinFixture:viewer-topic-follows */
+     INSERT INTO relation__user__follow__topic (subject_id, object_id, created_by_id)
+     SELECT $1::uuid, topic.topic_id, $1::uuid
+     FROM UNNEST($2::uuid[]) AS topic(topic_id)
+     ON CONFLICT DO NOTHING`,
+    [SEED_VIEWER_ID, topicIds],
   )
   await transaction(
     '/* seedPostTopicSemiJoinFixture:analyze */ ANALYZE topic_aliases, relation__post__category__topic_alias, posts',
-  )
-  await transaction.commit()
-}
-
-/** Delete only this fixture's relation, aliases, and topic rows after late EXPLAIN captures. */
-export async function cleanupPostTopicSemiJoinFixture(): Promise<void> {
-  const fixture = POST_TOPIC_SEMI_JOIN_FIXTURE
-  const aliasIds = [...fixture.sparseAliasIds, ...fixture.denseAliasIds]
-  const topicIds = [fixture.sparseTopicId, fixture.denseTopicId]
-
-  await using transaction = await beginTransaction()
-  await transaction(
-    '/* cleanupPostTopicSemiJoinFixture:relations */ DELETE FROM relation__post__category__topic_alias WHERE object_id = ANY($1::uuid[])',
-    [aliasIds],
-  )
-  await transaction(
-    '/* cleanupPostTopicSemiJoinFixture:feed-topic-relation */ DELETE FROM relation__post__category__topic WHERE object_id = ANY($1::uuid[])',
-    [topicIds],
-  )
-  await transaction(
-    '/* cleanupPostTopicSemiJoinFixture:aliases */ DELETE FROM topic_aliases WHERE id = ANY($1::uuid[])',
-    [aliasIds],
-  )
-  await transaction(
-    '/* cleanupPostTopicSemiJoinFixture:topics */ DELETE FROM topics WHERE id = ANY($1::uuid[])',
-    [topicIds],
   )
   await transaction.commit()
 }

@@ -148,6 +148,7 @@ export async function runFeedAndMetricScenarios() {
       { kind: 'maxProcessedRows', relation: 'posts', max: 100 },
       { kind: 'maxProcessedRows', relation: 'post_review_topic_ratings', max: 20 },
       { kind: 'maxProcessedRows', relation: 'post_data_point_topics', max: 20 },
+      { kind: 'custom', name: 'topicViewerBoundedInputs' },
     ],
     crossPartition: {
       relation__post__category__topic:

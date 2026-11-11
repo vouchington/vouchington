@@ -81,13 +81,12 @@ export function mapPostFeedResponse(
   safeLimit: number,
   sort: PostFeedWalkSort,
   asOf: Date,
-  inspectedRowCap: number = Number.POSITIVE_INFINITY,
 ): PostFeedResponse {
   const metadata = rows[0]
   const deliveries = rows.filter(row => row.result_id)
   const hasMoreResults = deliveries.length > safeLimit
   const inspectedTail =
-    metadata && Number(metadata.inspected_rows) >= inspectedRowCap
+    metadata?.inspected_has_more === true
       ? {
           result_id: metadata.inspected_result_id,
           entity_id: metadata.inspected_entity_id,

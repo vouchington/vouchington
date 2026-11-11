@@ -12,6 +12,8 @@ export const POST_DISCOVERY_FIXTURE_SEEDED_ROWS: Readonly<Record<string, number>
 /** Row totals while the discovery and topic-semi-join fixtures overlap. */
 export const POST_TOPIC_FIXTURES_SEEDED_ROWS: Readonly<Record<string, number>> = {
   ...POST_DISCOVERY_FIXTURE_SEEDED_ROWS,
+  posts: POST_DISCOVERY_FIXTURE_SEEDED_ROWS.posts! + 65,
+  post_clearance_changes: POST_DISCOVERY_FIXTURE_SEEDED_ROWS.post_clearance_changes! + 65,
   topics: SEEDED_ROWS_BY_RELATION.topics! + 2,
   topic_aliases: SEEDED_ROWS_BY_RELATION.topic_aliases! + 80,
   relation__post__category__topic_alias:

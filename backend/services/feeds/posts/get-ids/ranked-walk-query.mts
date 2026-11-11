@@ -39,7 +39,7 @@ export function buildRankedPostFeedPageQuery(
     .append(sql` DESC, posts.id DESC
     LIMIT ${inspectedRowCap}
   ), inspected_tail AS (
-    SELECT inspected_posts.id, inspected_posts.rank_score, count(*) OVER () AS inspected_rows
+    SELECT inspected_posts.id, inspected_posts.rank_score, count(*) OVER () >= ${inspectedRowCap} AS inspected_has_more
     FROM inspected_posts ORDER BY rank_score ASC, id ASC LIMIT 1
   )
   SELECT page.result_id, page.entity_id, page.post_type, page.delivery_type,
@@ -49,7 +49,7 @@ export function buildRankedPostFeedPageQuery(
         ? sql`page.rank_score AS hot_score, NULL::float8 AS best_score`
         : sql`NULL::float8 AS hot_score, page.rank_score AS best_score`,
     )
-    .append(sql`, tail.inspected_rows, ${EXHAUSTED_POST_DELIVERY_ID}::uuid AS inspected_result_id,
+    .append(sql`, tail.inspected_has_more, ${EXHAUSTED_POST_DELIVERY_ID}::uuid AS inspected_result_id,
       tail.id AS inspected_entity_id, `)
     .append(
       hot

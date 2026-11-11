@@ -5,7 +5,11 @@ import type { PrivateUser } from '@services/users/types'
 import type { TopicMetrics } from './types.mts'
 import { getTopicMetricsByAnyBatch } from './metrics-batch.mts'
 import { buildViewerPostDiscoveryEligibilityFilter } from '@modules/feed-query-builders'
-import { buildTopicViewerDiscussionCount } from './metrics-viewer-discussions.mts'
+import {
+  buildTopicViewerDiscussionCount,
+  buildTopicViewerDiscussionInputs,
+} from './metrics-viewer-discussions.mts'
+import { getTopicsWorkLimit } from './work-limits.mts'
 import {
   getProfileCountCap,
   profileCountProbeLimit,
@@ -31,15 +35,22 @@ export async function getTopicViewerCounts(
 > {
   const cap = getProfileCountCap()
   const probeLimit = profileCountProbeLimit(cap)
+  const inputCap = getTopicsWorkLimit('viewer_count_input_cap')
   const eligibility = buildViewerPostDiscoveryEligibilityFilter('candidate_post', 'root_post', {
     currentUserId: currentUser.id,
     isAdministrator: currentUser.roles.includes('administrator'),
   })
-  const query = sql`/* getTopicViewerCounts */
+  const query = sql`/* getTopicViewerCounts */ WITH `.append(
+    buildTopicViewerDiscussionInputs(topicId, inputCap),
+  ).append(sql`
       SELECT
+        (SELECT COUNT(*) >= ${inputCap} FROM viewer_alias_inputs)
+          OR (SELECT COUNT(*) >= ${inputCap} FROM viewer_direct_inputs)
+          OR (SELECT COUNT(*) >= ${inputCap} FROM viewer_alias_relation_inputs)
+          AS discussions_input_capped,
         (
-        `
-  query.append(buildTopicViewerDiscussionCount(topicId, probeLimit, eligibility)).append(sql`
+        `)
+  query.append(buildTopicViewerDiscussionCount(probeLimit, eligibility)).append(sql`
         ) AS count__discussions,
         (
           SELECT COUNT(*)::bigint FROM (
@@ -84,7 +95,7 @@ export async function getTopicViewerCounts(
     reviews: reviews.count,
     'data-points': dataPoints.count,
     count_capped: {
-      discussions: discussions.capped,
+      discussions: discussions.capped || row.discussions_input_capped === true,
       reviews: reviews.capped,
       'data-points': dataPoints.capped,
     },

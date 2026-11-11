@@ -80,15 +80,20 @@ trailing plus when a shown count is capped. Swift and .NET render it the same wa
 that native work does not gate this producer change.
 
 Authenticated topic metrics also expose `viewer_count_capped`, parallel to `viewer_count`.
-A true flag means the viewer count is a lower bound. Topic tab labels retain a plus when either
-the public count or viewer count is capped, including when the two capped numbers are equal.
+A true viewer flag means the displayed count is a conservative lower bound: either the output
+count cap or an input work limit was reached. It may be true at zero or when the observed number
+happens to equal the actual total; it does not prove another visible post exists. A false flag
+means the viewer count is exact. Public `count_capped` keeps its output-overflow meaning. Topic tab labels retain a plus when either
+the public count or viewer count is capped, including when the two numbers are equal or zero ("0+").
 Swift and .NET must preserve these flags and the same lower-bound presentation; native adoption
 does not gate this producer change. Feed clients must continue through short or empty pages when
 `has_next_page` is true, using the supplied opaque cursor. Hot feeds use the same immutable
 rank as post search, including future-dated posts. Equal ranks order by post identity, then by
 that post's delivery identity, so direct and shared deliveries of one post stay together. Clients
 preserve the returned order and treat the continuation as opaque; the cursor's decision instant
-anchors the time window.
+anchors the time window. Ranked feeds may return a short page within a narrow time range because
+old posts can still qualify through recent shares; clients continue until the continuation flag
+is false.
 
 The owner and administrators also get `user_metrics.private_count` (saved, hidden, blocked, muted,
 viewed and similar), read to the same cap. `user_metrics.private_count_capped` carries one boolean

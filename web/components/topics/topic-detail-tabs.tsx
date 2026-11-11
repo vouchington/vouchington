@@ -53,15 +53,16 @@ export function TopicDetailTabs({
     (metrics?.viewer_count?.['data-points'] ?? 0)
   const isOnPostsRoute = isActiveSegment(pathname, 'posts')
   const postsLabel = t('extracted.topics.topicDetailTabs.posts_a80811cf')
-  if (totalPostCount > 0 || totalViewerCount > 0 || isOnPostsRoute) {
+  const lowerBound = hasCappedPostCounts(metrics)
+  if (totalPostCount > 0 || totalViewerCount > 0 || lowerBound || isOnPostsRoute) {
     tabs.push({
       name: 'posts',
       label:
-        totalPostCount > 0 || totalViewerCount > 0
+        totalPostCount > 0 || totalViewerCount > 0 || lowerBound
           ? formatTabLabel(
               postsLabel,
               totalPostCount,
-              totalViewerCount > totalPostCount || hasCappedPostCounts(metrics),
+              totalViewerCount > totalPostCount || lowerBound,
               uiLocale,
             )
           : postsLabel,

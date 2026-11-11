@@ -10,6 +10,7 @@ import { assertClaimantMisuseCursorSeek } from './plan-custom/claimant-misuse-cu
 import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-custom/embedding-reconciliation.mts'
 import { assertPaginationPlanShape } from './plan-custom/pagination-gates.mts'
 import { assertPostTopicMembershipIsReused } from './plan-custom/post-topic-membership.mts'
+import { assertTopicViewerInputsAreBounded } from './plan-custom/topic-viewer-bounded-inputs.mts'
 import { assertPostCreationBypassPointRead } from './plan-custom/post-creation-bypass.mts'
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-custom/remote-followers.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-custom/review-succession.mts'
@@ -41,6 +42,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   referralFeedInspectedWalk: assertReferralFeedInspectedWalk,
   postCreationBypassPointRead: assertPostCreationBypassPointRead,
   postTopicMembership: assertPostTopicMembershipIsReused,
+  topicViewerBoundedInputs: assertTopicViewerInputsAreBounded,
   remoteFollowers: assertRemoteFollowerPagePlanShapeIfApplicable,
   reviewSuccession: assertReviewSuccessionCandidatePlanIfApplicable,
   rssFeedPageWorkload: assertRssFeedPageWorkloadIsBounded,

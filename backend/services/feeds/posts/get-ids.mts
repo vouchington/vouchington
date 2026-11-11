@@ -7,7 +7,7 @@ import type { PostFeedWalkSort } from './get-ids/eligible-posts-cte.mts'
 import { mapPostFeedResponse, parsePostFeedCursor } from './get-ids/feed-cursor.mts'
 import { buildRankedPostFeedPageQuery } from './get-ids/ranked-walk-query.mts'
 import { buildTopicPostFeedPageQuery } from './get-ids/topic-walk-query.mts'
-import { TOPIC_WALK_ROW_CAP } from '@services/posts/search/query-builder/topic-walk'
+import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { hasTopicMembershipFilters } from '@services/posts/search/query-builder/topic-filters'
 import { buildPostFeedPageQuery } from './get-ids/page-query.mts'
 
@@ -19,7 +19,6 @@ export async function getPostFeedIds(
   currentUser: PrivateUser,
   options: PostFeedOptions = {},
   asOf: Date = new Date(),
-  inspectedRowCap: number = TOPIC_WALK_ROW_CAP,
 ): Promise<PostFeedResponse> {
   const requestedInstant = new Date(asOf)
   if (!Number.isFinite(requestedInstant.getTime()))
@@ -42,6 +41,7 @@ export async function getPostFeedIds(
   const cutoff =
     sort === 'hot' && (!requestedCutoff || requestedCutoff < hotFloor) ? hotFloor : requestedCutoff
   const safeLimit = clampLimit(limit)
+  const inspectedRowCap = getPostsWorkLimit('feed_inspected_row_cap')
 
   const pageOptions = {
     communityId: options.community_id,
@@ -72,5 +72,5 @@ export async function getPostFeedIds(
         ? buildTopicPostFeedPageQuery(pageOptions, inspectedRowCap)
         : buildPostFeedPageQuery(pageOptions)
   const { rows } = await read(query)
-  return mapPostFeedResponse(rows, safeLimit, sort, decisionInstant, inspectedRowCap)
+  return mapPostFeedResponse(rows, safeLimit, sort, decisionInstant)
 }

@@ -22,7 +22,7 @@ export function buildTopicPostFeedPageQuery(
     .append(sql`), inspected_tail AS (
     SELECT inspected_deliveries.result_id, inspected_deliveries.entity_id,
       inspected_deliveries.sort_at, inspected_deliveries.hot_score, inspected_deliveries.best_score,
-      count(*) OVER () AS inspected_rows
+      count(*) OVER () >= ${inspectedRowCap} AS inspected_has_more
     FROM inspected_deliveries
     ORDER BY `)
     .append(orderBy('inspected_deliveries', true))
@@ -30,7 +30,7 @@ export function buildTopicPostFeedPageQuery(
   )
   SELECT page.result_id, page.entity_id, page.post_type, page.delivery_type,
     page.shared_by_id, page.shared_at, page.hot_score, page.best_score, page.cursor_sort_at,
-    tail.inspected_rows,
+    tail.inspected_has_more,
     tail.result_id AS inspected_result_id, tail.entity_id AS inspected_entity_id,
     tail.hot_score AS inspected_hot_score, tail.best_score AS inspected_best_score,
     to_char(tail.sort_at AT TIME ZONE 'UTC', `)

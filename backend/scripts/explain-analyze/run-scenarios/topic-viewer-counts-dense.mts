@@ -17,6 +17,7 @@ export async function runDenseTopicViewerCountsScenario(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'posts', max: 7_000 },
       { kind: 'maxProcessedRows', relation: 'post_review_topic_ratings', max: 1_000 },
       { kind: 'maxProcessedRows', relation: 'post_data_point_topics', max: 1_000 },
+      { kind: 'custom', name: 'topicViewerBoundedInputs' },
     ],
     seededRows: {
       relation__post__category__topic: 70_100,

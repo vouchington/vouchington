@@ -41,6 +41,7 @@ import { runPrioritizedReferralCacheMeasurement } from './run-scenarios/prioriti
 import { runModerationReportContextScenarios } from './run-scenarios/moderation-report-contexts.mts'
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
+import { runManyAliasTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-many-aliases.mts'
 import { runLargeTopicRatingStatsScenario } from './run-scenarios/topic-rating-stats-large.mts'
 
 export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
@@ -78,6 +79,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runNotificationVisibilityScenarios,
   runPublicationScopePageScenarios,
   runDenseTopicViewerCountsScenario,
+  runManyAliasTopicViewerCountsScenario,
   runLargeTopicRatingStatsScenario,
   runTopicAliasCategoryWorkScenarios,
   runHackerNewsFilterScenarios,

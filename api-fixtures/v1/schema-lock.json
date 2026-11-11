@@ -987,7 +987,7 @@
       "hash": "5772ff96e271be256fce9ab3452a5abcdbc70231813e4769cc40f87ffccdae8f"
     },
     "GET:/api/v1/topics/:idOrSlug": {
-      "fixtureIds": ["web.topics.show.default"],
+      "fixtureIds": ["web.topics.show.default", "web.topics.show.viewer-lower-bound"],
       "hash": "ded5b0aa7009e21f2a95014ffd6d1169b75ea30e2a0552d31082d36f838bf830"
     },
     "GET:/api/v1/topics/:idOrSlug/claims": {
@@ -3921,6 +3921,10 @@
     "web.topics.show.default": {
       "fixtureIds": ["web.topics.show.default"],
       "hash": "998c0a50e211530753ab9f0715f2f902b610c2c4b62740b5338af7207821b6c7"
+    },
+    "web.topics.show.viewer-lower-bound": {
+      "fixtureIds": ["web.topics.show.viewer-lower-bound"],
+      "hash": "8aba6e5dab177f39b1e5fb0939f9bcbb61e2cbe272f6acd730f7a569b25a78ed"
     }
   },
   "source": {

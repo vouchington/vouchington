@@ -57,7 +57,6 @@ function registerTopicSemiJoinScenario(
 function registerMultiTopicFeedScenario(id: string): void {
   registerScenarioContract(id, {
     seededRows: POST_TOPIC_FIXTURES_SEEDED_ROWS,
-    allowEmptyResult: true,
     expectations: [
       { kind: 'maxProcessedRows', relation: 'posts', max: MAX_FEED_POST_ROWS },
       {
@@ -164,6 +163,8 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
     limit: PAGE_SIZE,
   }
   const feedPage = await getPostFeedIds(seedUser, multiTopicFeedOptions)
+  if (feedPage.results.length === 0)
+    throw new Error('Two-topic post feed omitted its owned, followed-topic raw-prefix post')
   if (feedPage.results.length > PAGE_SIZE)
     throw new Error('Two-topic post feed page exceeded its limit')
   if (feedPage.page_info.has_next_page && !feedPage.page_info.end_cursor)
