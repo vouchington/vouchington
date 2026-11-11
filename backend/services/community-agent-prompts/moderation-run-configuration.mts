@@ -59,10 +59,10 @@ function selectCommunityModerationPrompts(
 
 type RequestProgress = {
   id: string
-  community_prompt_cursor_activated_at: string | null
-  community_prompt_cursor_prompt_id: string | null
-  community_prompt_end_cursor_activated_at: string | null
-  community_prompt_end_cursor_prompt_id: string | null
+  cursor_community_prompt_activated_at: string | null
+  cursor_community_prompt_id: string | null
+  sweep_upper_bound_community_prompt_activated_at: string | null
+  sweep_upper_bound_community_prompt_id: string | null
 }
 
 /** The progress row is unique by classifier, post and content digest. */
@@ -78,10 +78,10 @@ async function readCommunityModerationProgress(
   const { rows } = await query<RequestProgress>(sql`
     /* readCommunityModerationProgress */
     SELECT request.id,
-      to_char(request.community_prompt_cursor_activated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS community_prompt_cursor_activated_at,
-      request.community_prompt_cursor_prompt_id,
-      to_char(request.community_prompt_end_cursor_activated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS community_prompt_end_cursor_activated_at,
-      request.community_prompt_end_cursor_prompt_id
+      to_char(request.cursor_community_prompt_activated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_community_prompt_activated_at,
+      request.cursor_community_prompt_id,
+      to_char(request.sweep_upper_bound_community_prompt_activated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS sweep_upper_bound_community_prompt_activated_at,
+      request.sweep_upper_bound_community_prompt_id
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE classifier.slug = ${COMMUNITY_MODERATION_CLASSIFIER_SLUG}
@@ -93,12 +93,12 @@ async function readCommunityModerationProgress(
   const cursor = (activatedAt: string | null, id: string | null) =>
     activatedAt && id ? { activatedAt, id } : null
   const afterCursor = cursor(
-    request.community_prompt_cursor_activated_at,
-    request.community_prompt_cursor_prompt_id,
+    request.cursor_community_prompt_activated_at,
+    request.cursor_community_prompt_id,
   )
   const pinnedEndCursor = cursor(
-    request.community_prompt_end_cursor_activated_at,
-    request.community_prompt_end_cursor_prompt_id,
+    request.sweep_upper_bound_community_prompt_activated_at,
+    request.sweep_upper_bound_community_prompt_id,
   )
   if (pinnedEndCursor) return { afterCursor, endCursor: pinnedEndCursor }
   const { rows: latest } = await query<{ activated_at_cursor: string; id: string }>(sql`
@@ -120,9 +120,9 @@ async function readCommunityModerationProgress(
   await query(sql`
     /* pinCommunityModerationEndCursor */
     UPDATE classifier_run_requests
-    SET community_prompt_end_cursor_activated_at = ${endCursor.activatedAt}::timestamptz,
-      community_prompt_end_cursor_prompt_id = ${endCursor.id}::uuid
-    WHERE id = ${request.id} AND community_prompt_end_cursor_activated_at IS NULL
+    SET sweep_upper_bound_community_prompt_activated_at = ${endCursor.activatedAt}::timestamptz,
+      sweep_upper_bound_community_prompt_id = ${endCursor.id}::uuid
+    WHERE id = ${request.id} AND sweep_upper_bound_community_prompt_activated_at IS NULL
   `)
   return { afterCursor, endCursor }
 }

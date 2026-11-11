@@ -204,10 +204,10 @@ CREATE TABLE IF NOT EXISTS classifier_run_requests (
   rss_feed_item_id UUID REFERENCES retained_rss_feed_item_identities (id) ON DELETE RESTRICT,
   input_sha256 BYTEA NOT NULL CHECK (OCTET_LENGTH(input_sha256) = 32),
   run_identity_id UUID REFERENCES classifier_run_identities (id) ON DELETE SET NULL,
-  community_prompt_cursor_activated_at TIMESTAMPTZ,
-  community_prompt_cursor_prompt_id UUID,
-  community_prompt_end_cursor_activated_at TIMESTAMPTZ,
-  community_prompt_end_cursor_prompt_id UUID,
+  cursor_community_prompt_activated_at TIMESTAMPTZ,
+  cursor_community_prompt_id UUID,
+  sweep_upper_bound_community_prompt_activated_at TIMESTAMPTZ,
+  sweep_upper_bound_community_prompt_id UUID,
   has_flagged_community_prompt BOOLEAN NOT NULL DEFAULT false,
   has_new_community_prompt_decision BOOLEAN NOT NULL DEFAULT false,
   community_prompt_completed_at TIMESTAMPTZ,
@@ -226,10 +226,10 @@ CREATE TABLE IF NOT EXISTS classifier_run_requests (
     ),
   CONSTRAINT chk_classifier_run_requests__community_prompt_completion
     CHECK (community_prompt_completed_at IS NULL OR run_settled_at IS NOT NULL),
-  CONSTRAINT chk_classifier_run_requests__community_prompt_cursor_pair
-    CHECK ((community_prompt_cursor_activated_at IS NULL) = (community_prompt_cursor_prompt_id IS NULL)),
-  CONSTRAINT chk_classifier_run_requests__community_prompt_end_cursor_pair
-    CHECK ((community_prompt_end_cursor_activated_at IS NULL) = (community_prompt_end_cursor_prompt_id IS NULL))
+  CONSTRAINT chk_classifier_run_requests__cursor_community_prompt_pair
+    CHECK ((cursor_community_prompt_activated_at IS NULL) = (cursor_community_prompt_id IS NULL)),
+  CONSTRAINT chk_classifier_run_requests__sweep_upper_bound_prompt_pair
+    CHECK ((sweep_upper_bound_community_prompt_activated_at IS NULL) = (sweep_upper_bound_community_prompt_id IS NULL))
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_run_requests__identity_post
@@ -398,14 +398,14 @@ COMMENT ON COLUMN classifier_run_requests.rss_feed_item_id IS
   'Retained feed-item identity in the request deduplication key; deleting the live item does not erase it or authorize replay.';
 COMMENT ON COLUMN classifier_run_requests.input_sha256 IS
   'Subject content digest current when the request was written; community moderation may resume the request for another prompt page.';
-COMMENT ON COLUMN classifier_run_requests.community_prompt_cursor_activated_at IS
+COMMENT ON COLUMN classifier_run_requests.cursor_community_prompt_activated_at IS
   'Activation timestamp after the last completed candidate page for this post request.';
-COMMENT ON COLUMN classifier_run_requests.community_prompt_cursor_prompt_id IS
-  'Tie-break key for the last completed candidate page; retained after prompt deletion, never joined to or used to authorize the prompt.';
-COMMENT ON COLUMN classifier_run_requests.community_prompt_end_cursor_activated_at IS
+COMMENT ON COLUMN classifier_run_requests.cursor_community_prompt_id IS
+  'Tie-break key for the last completed candidate page; no foreign key because a retention cascade may delete the source prompt while this request position survives. Never joined or used for authorization.';
+COMMENT ON COLUMN classifier_run_requests.sweep_upper_bound_community_prompt_activated_at IS
   'Activation timestamp of the upper position fixed when community prompt traversal starts.';
-COMMENT ON COLUMN classifier_run_requests.community_prompt_end_cursor_prompt_id IS
-  'Tie-break key for the fixed upper position; retained after prompt deletion, never joined to or used to authorize the prompt.';
+COMMENT ON COLUMN classifier_run_requests.sweep_upper_bound_community_prompt_id IS
+  'Tie-break key for the fixed upper position; no foreign key because a retention cascade may delete the source prompt while this request position survives. Never joined or used for authorization.';
 COMMENT ON COLUMN classifier_run_requests.has_flagged_community_prompt IS
   'Whether a completed page in this community prompt traversal flagged the post.';
 COMMENT ON COLUMN classifier_run_requests.has_new_community_prompt_decision IS
