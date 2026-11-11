@@ -4,6 +4,7 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getUserMfaStatus } from './status.mts'
 import { withReauthenticatedAccountChange } from './account-change.mts'
+import { conflictOnSerializationFailure } from './serialization-conflict.mts'
 import { deletePasskey } from '@services/passkeys'
 import { deleteTotpAuthenticator } from '@services/totp'
 import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggregation/enqueues/vote-weight'
@@ -34,10 +35,18 @@ export async function deletePasskeyWithMfaProtection(
   reAuthToken: string | undefined,
   session: AccountChangeSession,
 ): Promise<void> {
-  await withReauthenticatedAccountChange(userId, session, reAuthToken, async query => {
-    await assertAdministratorKeepsMfa(userId, query)
-    await deletePasskey(userId, passkeyId, query)
-  })
+  await conflictOnSerializationFailure(() =>
+    withReauthenticatedAccountChange(
+      userId,
+      session,
+      reAuthToken,
+      async query => {
+        await assertAdministratorKeepsMfa(userId, query)
+        await deletePasskey(userId, passkeyId, query)
+      },
+      { serializable: true },
+    ),
+  )
   // Enqueue after the transaction commits so the job sees the committed delete.
   await enqueueRecalculateUserVoteWeightBestEffort(userId)
 }
@@ -48,8 +57,16 @@ export async function deleteTotpAuthenticatorWithMfaProtection(
   reAuthToken: string | undefined,
   session: AccountChangeSession,
 ): Promise<void> {
-  await withReauthenticatedAccountChange(userId, session, reAuthToken, async query => {
-    await assertAdministratorKeepsMfa(userId, query, authenticatorId)
-    await deleteTotpAuthenticator(userId, authenticatorId, query)
-  })
+  await conflictOnSerializationFailure(() =>
+    withReauthenticatedAccountChange(
+      userId,
+      session,
+      reAuthToken,
+      async query => {
+        await assertAdministratorKeepsMfa(userId, query, authenticatorId)
+        await deleteTotpAuthenticator(userId, authenticatorId, query)
+      },
+      { serializable: true },
+    ),
+  )
 }
