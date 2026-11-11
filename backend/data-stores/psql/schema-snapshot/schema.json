@@ -14844,10 +14844,10 @@
     "classifier_run_requests": {
       "checkConstraints": {
         "chk_classifier_run_requests__community_prompt_completion": "CHECK (((community_prompt_completed_at IS NULL) OR (run_settled_at IS NOT NULL)))",
-        "chk_classifier_run_requests__community_prompt_cursor_pair": "CHECK (((community_prompt_cursor_activated_at IS NULL) = (community_prompt_cursor_prompt_id IS NULL)))",
-        "chk_classifier_run_requests__community_prompt_end_cursor_pair": "CHECK (((community_prompt_end_cursor_activated_at IS NULL) = (community_prompt_end_cursor_prompt_id IS NULL)))",
+        "chk_classifier_run_requests__cursor_community_prompt_pair": "CHECK (((cursor_community_prompt_activated_at IS NULL) = (cursor_community_prompt_id IS NULL)))",
         "chk_classifier_run_requests__one_settlement": "CHECK (((num_nonnulls(run_settled_at, no_work_at, stale_at) <= 1) AND ((run_identity_id IS NULL) OR (run_settled_at IS NOT NULL))))",
         "chk_classifier_run_requests__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
+        "chk_classifier_run_requests__sweep_upper_bound_prompt_pair": "CHECK (((sweep_upper_bound_community_prompt_activated_at IS NULL) = (sweep_upper_bound_community_prompt_id IS NULL)))",
         "classifier_run_requests_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))"
       },
       "columns": {
@@ -14873,50 +14873,6 @@
           "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
-        "community_prompt_cursor_activated_at": {
-          "collation": null,
-          "comment": "Activation timestamp after the last completed candidate page for this post request.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        },
-        "community_prompt_cursor_prompt_id": {
-          "collation": null,
-          "comment": "Tie-break key for the last completed candidate page; retained after prompt deletion, never joined to or used to authorize the prompt.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "uuid"
-        },
-        "community_prompt_end_cursor_activated_at": {
-          "collation": null,
-          "comment": "Activation timestamp of the upper position fixed when community prompt traversal starts.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "timestamp with time zone"
-        },
-        "community_prompt_end_cursor_prompt_id": {
-          "collation": null,
-          "comment": "Tie-break key for the fixed upper position; retained after prompt deletion, never joined to or used to authorize the prompt.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "uuid"
-        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -14927,6 +14883,28 @@
           "nullable": true,
           "ordinalPosition": 17,
           "type": "timestamp with time zone"
+        },
+        "cursor_community_prompt_activated_at": {
+          "collation": null,
+          "comment": "Activation timestamp after the last completed candidate page for this post request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "cursor_community_prompt_id": {
+          "collation": null,
+          "comment": "Tie-break key for the last completed candidate page; no foreign key because a retention cascade may delete the source prompt while this request position survives. Never joined or used for authorization.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
         },
         "has_flagged_community_prompt": {
           "collation": null,
@@ -15037,6 +15015,28 @@
           "nullable": true,
           "ordinalPosition": 16,
           "type": "timestamp with time zone"
+        },
+        "sweep_upper_bound_community_prompt_activated_at": {
+          "collation": null,
+          "comment": "Activation timestamp of the upper position fixed when community prompt traversal starts.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "sweep_upper_bound_community_prompt_id": {
+          "collation": null,
+          "comment": "Tie-break key for the fixed upper position; no foreign key because a retention cascade may delete the source prompt while this request position survives. Never joined or used for authorization.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
         },
         "updated_at": {
           "collation": null,
