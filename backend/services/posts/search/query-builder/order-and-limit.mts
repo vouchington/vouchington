@@ -15,6 +15,7 @@ export function appendPostSearchOrderAndLimit(
     sort,
     idRelation = 'posts',
     outputColumns = false,
+    reverse = false,
   }: {
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
@@ -26,10 +27,13 @@ export function appendPostSearchOrderAndLimit(
     idRelation?: string
     /** Order a page subquery by its selected aliases instead of posts columns. */
     outputColumns?: boolean
+    /** Read the page subquery from its far end, to find its last row. */
+    reverse?: boolean
   },
 ): void {
   if (!omitOrderBy)
     appendOrderBy(query, {
+      reverse,
       followingRankExpression,
       hasSemanticSearch,
       hasTextSearch,
@@ -46,16 +50,26 @@ export function appendPostSearchOrderAndLimit(
 
 function appendOrderBy(
   query: SQLStatement,
-  options: {
+  {
+    reverse,
+    ...options
+  }: {
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
     hasTextSearch: boolean
     sort: PostSearchSort
     idRelation: string
     outputColumns: boolean
+    reverse: boolean
   },
 ): void {
-  query.append(orderByClause(options))
+  const clause = orderByClause(options)
+  // Output-column orders carry no bound values, so flipping the direction in the text is safe.
+  query.append(
+    reverse && options.outputColumns
+      ? sql``.append(clause.text.replaceAll(' DESC', ' ASC'))
+      : clause,
+  )
 }
 
 function orderByClause({

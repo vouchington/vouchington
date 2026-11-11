@@ -154,24 +154,27 @@ function appendCommunityCandidatePage(
   if (ranking) query.append(sql`,\n      candidate_posts.ranking_score`)
   if (followingRankExpression) query.append(sql`,\n      candidate_posts.following_rank`)
   query.append(communitySortColumns(sort))
+  // The tail only counts when the walk filled its cap; a shorter walk reached the end.
+  if (outerPage?.tail) query.append(sql`,\n      count(*) OVER () AS walk_rows`)
   query.append(sql`
     FROM candidate_posts`)
   if (outerPage && !outerPage.tail) {
     query.append(sql`\n    JOIN posts ON posts.id = candidate_posts.id`)
     outerPage.appendWhere()
   }
+  // The tail is the last row the walk inspected: the far end of its ordered rows.
   appendPostSearchOrderAndLimit(query, {
     followingRankExpression,
     hasSemanticSearch,
     hasTextSearch,
-    omitLimit: true,
+    limit: outerPage?.tail ? 1 : outerPage?.limit,
+    omitLimit: outerPage === null,
     omitOrderBy: false,
     sort,
     idRelation: 'candidate_posts',
     outputColumns: true,
+    reverse: outerPage?.tail === true,
   })
-  if (outerPage?.tail) query.append(sql`\n    OFFSET ${TOPIC_WALK_ROW_CAP - 1} LIMIT 1`)
-  else if (outerPage) query.append(sql`\n    LIMIT ${outerPage.limit}`)
 }
 
 function communitySortColumns(sort: PostSearchSort): SQLStatement {

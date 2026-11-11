@@ -99,7 +99,9 @@ describe('discovery search branches', () => {
       limit: 25,
       inspectedTail: true,
     })
-    expect(tail.sql).toMatch(/OFFSET \?\s+LIMIT 1/)
+    expect(tail.sql).toMatch(/ORDER BY candidate_posts\.id ASC\s+LIMIT \?/)
+    expect(tail.sql).not.toContain('OFFSET')
+    expect(tail.sql).toContain('count(*) OVER () AS walk_rows')
     expect(tail.sql).not.toContain('JOIN posts ON posts.id = candidate_posts.id')
   })
 
