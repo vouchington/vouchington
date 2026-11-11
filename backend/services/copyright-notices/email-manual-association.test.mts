@@ -5,6 +5,7 @@ import {
   markTestCopyrightNoticeErased,
   readCopyrightEmailManualAssociationEvent,
   readCopyrightEmailManualAssociationReview,
+  associateAndThreadCopyrightEmail,
 } from '@voucha/test-helpers/copyright-email-manual-association'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -22,7 +23,6 @@ import { associateCopyrightEmailIntakeWithNotice } from './email-manual-associat
 import { searchCopyrightNoticeAssociationTargets } from './association-search.mts'
 import { copyrightConfig } from './config.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
-import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 
 async function createManualReply(): Promise<{ id: string }> {
   const reply = await recordThreadedCopyrightEmail({
@@ -182,69 +182,52 @@ describe('manual copyright email association', () => {
     expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
   })
 
-  it('keeps exactly one association when threading and staff compete for an intake', async () => {
+  it('rejects staff association when the competing thread link commits first', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation()
-    await using threading = await beginTransaction()
-    await lockTestCopyrightEmailIntakeForGraphChange(intake.id, threading)
-    let resolvePreflight!: () => void
-    const preflight = new Promise<void>(resolve => {
-      resolvePreflight = resolve
+    const result = await associateAndThreadCopyrightEmail(moderator, intake.id, noticeId, 'thread')
+    expect(result).toMatchObject({
+      threaded: true,
+      manual: {
+        status: 'rejected',
+        reason: { status: 409, code: 'copyright_email_thread_changed' },
+      },
     })
-    let reviewsFromThreading: Awaited<
-      ReturnType<typeof readCopyrightEmailManualAssociationReview>
-    > = []
-    const dispose = installSharedDbScopeObserver(event => {
-      if (
-        event.operation === 'associateCopyrightEmailIntakePreflight' &&
-        event.scope.kind === 'ids' &&
-        event.scope.ids[0] === intake.id
-      )
-        resolvePreflight()
-    })
-    try {
-      const association = runWithCapturedQueries(async () =>
-        associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId)
-          .then(() => new Error('Manual association unexpectedly won'))
-          .catch((err: unknown) => err),
-      )
-      await preflight
-      expect(
-        await linkCopyrightEmailIntakeToNotice(
-          {
-            intakeId: intake.id,
-            noticeId,
-            linkKind: 'thread',
-          },
-          threading,
-        ),
-      ).toBe(true)
-      await threading.commit()
-      reviewsFromThreading = await readCopyrightEmailManualAssociationReview(intake.id)
-      const { result, queries } = await association
-      expect(result).toMatchObject({ status: 409, code: 'copyright_email_thread_changed' })
-      expect(
-        queries.some(query =>
-          query.text.includes('associateCopyrightEmailIntakeWithNotice:lockIntake'),
-        ),
-      ).toBe(true)
-      expect(
-        queries.filter(query =>
-          query.text.includes('associateCopyrightEmailIntakeWithNotice:lockNotice'),
-        ),
-      ).toEqual([])
-    } finally {
-      dispose()
-    }
     expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
       { copyright_notice_id: noticeId, link_kind: 'thread' },
     ])
     expect(await readCopyrightEmailManualAssociationReview(intake.id)).toEqual([
       { copyright_notice_id: noticeId, action: 'pending' },
     ])
-    const events = await readCopyrightEmailManualAssociationEvent(intake.id)
-    expect(events).toHaveLength(manual.status === 'fulfilled' ? 1 : 0)
+    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
+  })
+
+  it('retains one staff audit when manual association commits before the competing thread link', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const intake = await createManualReply()
+    const noticeId = await createCopyrightNoticeForManualAssociation()
+    const result = await associateAndThreadCopyrightEmail(moderator, intake.id, noticeId, 'manual')
+    expect(result).toEqual({
+      threaded: true,
+      manual: {
+        status: 'fulfilled',
+        value: { copyright_notice: { id: noticeId }, copyright_email_intake: { id: intake.id } },
+      },
+    })
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
+      { copyright_notice_id: noticeId, link_kind: 'thread' },
+    ])
+    expect(await readCopyrightEmailManualAssociationReview(intake.id)).toEqual([
+      { copyright_notice_id: noticeId, action: 'pending' },
+    ])
+    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([
+      {
+        copyright_notice_id: noticeId,
+        changed_by_id: moderator.id,
+        copyright_notice_email_intake_id: intake.id,
+      },
+    ])
   })
 
   it('lets staff associate an unlinked reply after graph overflow, then use the existing review', async () => {

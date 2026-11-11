@@ -33,7 +33,11 @@ describe('copyright association and erasure final states', () => {
       associateCopyrightEmailAfterErasure(noticeId, () =>
         associateCopyrightEmailIntakeWithNotice(moderator, intakeId, noticeId),
       ),
-    ).rejects.toMatchObject({ status: 409 })
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'copyright_email_thread_changed',
+      cause: { constraint: 'copyright_email_link_active_case' },
+    })
     expect(await readCopyrightEmailIntakeNoticeLinks(intakeId)).toEqual([])
     expect(await readCopyrightEmailManualAssociationEvent(intakeId)).toEqual([])
     expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(true)

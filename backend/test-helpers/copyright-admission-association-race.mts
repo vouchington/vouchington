@@ -109,7 +109,7 @@ export async function replayDeliveryAndAssociateCopyrightEmail(
   return { replayed, association }
 }
 
-async function overlapCopyrightWriters<First, Second>(
+export async function overlapCopyrightWriters<First, Second>(
   firstMarker: string,
   firstOperation: () => Promise<First>,
   secondOperation: () => Promise<Second>,

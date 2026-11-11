@@ -7,6 +7,39 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
 import { searchCopyrightNoticeAssociationTargets } from '../services/copyright-notices/association-search.mts'
+import { associateCopyrightEmailIntakeWithNotice } from '../services/copyright-notices/email-manual-association.mts'
+import { overlapCopyrightWriters } from './copyright-admission-association-race.mts'
+
+/** Keep the first real insertion uncommitted until its contender reaches the native wait. */
+export async function associateAndThreadCopyrightEmail(
+  currentUser: PrivateUser,
+  intakeId: string,
+  noticeId: string,
+  first: 'manual' | 'thread',
+) {
+  const manual = () =>
+    associateCopyrightEmailIntakeWithNotice(currentUser, intakeId, noticeId).then(
+      value => ({ status: 'fulfilled' as const, value }),
+      (err: unknown) => ({ status: 'rejected' as const, reason: err }),
+    )
+  const thread = () => linkCopyrightEmailIntakeToNotice({ intakeId, noticeId, linkKind: 'thread' })
+  if (first === 'thread') {
+    const [threaded, association] = await overlapCopyrightWriters(
+      'linkCopyrightEmailIntakeToNotice',
+      thread,
+      manual,
+      [intakeId, noticeId],
+    )
+    return { threaded, manual: association }
+  }
+  const [association, threaded] = await overlapCopyrightWriters(
+    'associateCopyrightEmailIntakeWithNotice:link',
+    manual,
+    thread,
+    [intakeId, noticeId],
+  )
+  return { threaded, manual: association }
+}
 
 /** The smallest accepted case row for a staff association boundary. */
 export async function createCopyrightNoticeForManualAssociation(
