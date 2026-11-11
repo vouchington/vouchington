@@ -199,23 +199,25 @@ jobs:
 
   # Every shard starts PostgreSQL on a copy of the seeded data directory, so the shared corpus,
   # its physical layout and its planner statistics are identical.
-  # `main` runs every scenario except the two fixtures below, `partition` runs only the
-  # partitioned comment fixture and `hn-scale` runs only the million-post Hacker News fixture
-  # (backend/scripts/explain-analyze/explain-shards.mts), so the slowest scenario groups no
-  # longer extend one serial run past its step budget. The `explain-analyze-gates` job
-  # merges all shards and enforces the plan gates, so `backend.yml` still needs one result.
+  # The ordinary scenarios run in one fixed order that explain-shards.mts and
+  # run-ordered-scenarios.mts cut into the contiguous segments `main`, `main-2`, `main-3` and
+  # `main-4`; `partition` runs only the partitioned comment fixture and `hn-scale` runs only the
+  # million-post Hacker News fixture. The segments are sized so every shard stays under the 10 minute
+  # performance ceiling, far from the runner timeout that once ejected a group.
+  # The `explain-analyze-gates` job merges all shards and enforces the plan gates, so
+  # `backend.yml` still needs one result.
   explain-analyze:
     name: explain-analyze (${{ matrix.shard }})
     needs: [seed-explain]
     if: ${{ !cancelled() && needs.seed-explain.result == 'success' }}
     runs-on: ubuntu-latest
-    # Main: about 6 minutes of setup and data directory transfer plus up to 20 minutes of scenarios
-    # on a slow runner. The partition shard needs less than the main shard's budget (see its steps).
-    timeout-minutes: 30
+    # About 1.5 minutes of setup and data directory transfer plus a step of at most 10 minutes on
+    # a slow runner; the partition and hn-scale shards fit the same cap (see their steps).
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        shard: [main, partition, hn-scale]
+        shard: [main, main-2, main-3, main-4, partition, hn-scale]
     env:
       S3_BUCKET_IMAGES: test-images
       S3_BUCKET_IMAGE_UPLOADS: test-image-uploads
@@ -261,14 +263,14 @@ jobs:
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           run-id: ${{ github.run_id }}
-      - name: Run main EXPLAIN scenarios
-        if: ${{ matrix.shard == 'main' }}
-        # Every scenario but the partition fixture took about 14.4 minutes on the slow run
-        # 42533590490; 20 minutes leaves headroom for slower runners.
-        timeout-minutes: 20
+      - name: Run ordinary EXPLAIN scenarios
+        if: ${{ startsWith(matrix.shard, 'main') }}
+        # Each segment of the ordinary scenarios took 4.7 to 5.4 minutes in the run that measured
+        # them (the unsplit step took 19.4 minutes); 10 minutes leaves headroom for a slow runner.
+        timeout-minutes: 10
         run: node backend/scripts/explain-analyze/run.mts
         env:
-          EXPLAIN_SHARD: main
+          EXPLAIN_SHARD: ${{ matrix.shard }}
           NODE_DISABLE_COMPILE_CACHE: '1'
           # Both canonical native runners append stock V8 records to the existing native coverage input.
           NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
@@ -291,9 +293,9 @@ jobs:
           VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake explain-analyze CI OTP HMAC secret
       - name: Run million-post Hacker News scale scenarios
         if: ${{ matrix.shard == 'hn-scale' }}
-        # Seeding about a million posts and capturing cold and warm plans; sized like the main
-        # shard's step budget until a CI run measures it.
-        timeout-minutes: 20
+        # Seeding about a million posts and capturing cold and warm plans took about 6.5 minutes in
+        # the run that measured it; 12 minutes covers a runner nearly twice as slow.
+        timeout-minutes: 12
         run: node backend/scripts/explain-analyze/run.mts
         env:
           EXPLAIN_SHARD: hn-scale

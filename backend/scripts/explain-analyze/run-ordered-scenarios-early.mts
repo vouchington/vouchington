@@ -33,45 +33,43 @@ import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runSpamSignalScenarios } from './run-scenarios/spam-signals.mts'
 import { runAgentModerationRetentionScenarios } from './run-scenarios/agent-moderation-retention.mts'
-import { continueAfterFailure as runStep } from './scenario-failures.mts'
 
-export async function runEarlyScenarios(): Promise<void> {
-  await runStep(runCopyrightAcceptedPageScenarios.name, runCopyrightAcceptedPageScenarios)
-  await runStep(runSitemapPageScenarios.name, runSitemapPageScenarios)
-  await runStep(runStoryProjectionWorkScenarios.name, runStoryProjectionWorkScenarios)
-  await runStep(runImageQuarantineScenarios.name, runImageQuarantineScenarios)
-  await runStep(runBloomReconciliationScenarios.name, runBloomReconciliationScenarios)
-  await runStep(runMaterializedViewRefreshScenarios.name, runMaterializedViewRefreshScenarios)
-  await runStep(runIngestionRawPageScenarios.name, runIngestionRawPageScenarios)
-  await runStep(runHostnameBlocklistScenario.name, runHostnameBlocklistScenario)
-  await runStep(runHostnameCrawlSweepScenarios.name, runHostnameCrawlSweepScenarios)
-  await runStep(runCrawlerBoilerplateScenario.name, runCrawlerBoilerplateScenario)
-  await runStep(runFeedAndMetricScenarios.name, runFeedAndMetricScenarios)
-  await runStep(runModerationRerunOutcomeScenarios.name, runModerationRerunOutcomeScenarios)
-  await runStep(runHeavyFollowScenarios.name, runHeavyFollowScenarios)
-  await runStep(runPostFeedShareScenarios.name, runPostFeedShareScenarios)
-  await runStep(runStoryMemberPageScenarios.name, runStoryMemberPageScenarios)
-  await runStep(runStoryByIdScenario.name, runStoryByIdScenario)
-  await runStep(runSearchAndFacetScenarios.name, runSearchAndFacetScenarios)
-  await runStep(runSpamSignalScenarios.name, runSpamSignalScenarios)
-  await runStep(runOAuthClientVerificationScenarios.name, runOAuthClientVerificationScenarios)
-  await runStep(runFollowerDistributionScenarios.name, runFollowerDistributionScenarios)
-  await runStep(runEntityAndCommunityScenarios.name, runEntityAndCommunityScenarios)
-  await runStep(runQueryShapeNoOpScenarios.name, runQueryShapeNoOpScenarios)
-  await runStep(runViewDrivenReadScenarios.name, runViewDrivenReadScenarios)
-  await runStep(runTopicImportAttemptScenarios.name, runTopicImportAttemptScenarios)
-  await runStep(runImportRequestRetentionScenarios.name, runImportRequestRetentionScenarios)
-  await runStep(runPostModerationRetentionScenarios.name, runPostModerationRetentionScenarios)
-  const analyzeAgentModerationRetention = seedAndAnalyzeAgentModerationRetention
-  await runStep(analyzeAgentModerationRetention.name, analyzeAgentModerationRetention)
-  await runStep(runAgentModerationRetentionScenarios.name, runAgentModerationRetentionScenarios)
-  await runStep(runHotPathLoaderScenarios.name, runHotPathLoaderScenarios)
+export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
+  runCopyrightAcceptedPageScenarios,
+  runSitemapPageScenarios,
+  runStoryProjectionWorkScenarios,
+  runImageQuarantineScenarios,
+  runBloomReconciliationScenarios,
+  runMaterializedViewRefreshScenarios,
+  runIngestionRawPageScenarios,
+  runHostnameBlocklistScenario,
+  runHostnameCrawlSweepScenarios,
+  runCrawlerBoilerplateScenario,
+  runFeedAndMetricScenarios,
+  runModerationRerunOutcomeScenarios,
+  runHeavyFollowScenarios,
+  runPostFeedShareScenarios,
+  runStoryMemberPageScenarios,
+  runStoryByIdScenario,
+  runSearchAndFacetScenarios,
+  runSpamSignalScenarios,
+  runOAuthClientVerificationScenarios,
+  runFollowerDistributionScenarios,
+  runEntityAndCommunityScenarios,
+  runQueryShapeNoOpScenarios,
+  runViewDrivenReadScenarios,
+  runTopicImportAttemptScenarios,
+  runImportRequestRetentionScenarios,
+  runPostModerationRetentionScenarios,
+  seedAndAnalyzeAgentModerationRetention,
+  runAgentModerationRetentionScenarios,
+  runHotPathLoaderScenarios,
   // Hidden-feed story search leaves 240 story_posts rows. Profile collection pages join
   // that table, and the generic plan sorts once those rows exist.
-  await runStep(runStorySearchScenarios.name, runStorySearchScenarios)
-  await runStep(runSharedLoaderScenarios.name, runSharedLoaderScenarios)
-  await runStep(runMembershipWorkSelectionScenarios.name, runMembershipWorkSelectionScenarios)
-  await runStep(runEngagementEmailRecipientScenarios.name, runEngagementEmailRecipientScenarios)
-  await runStep(runRemoteFollowerScenarios.name, runRemoteFollowerScenarios)
-  await runStep(runReviewSuccessionScenarios.name, runReviewSuccessionScenarios)
-}
+  runStorySearchScenarios,
+  runSharedLoaderScenarios,
+  runMembershipWorkSelectionScenarios,
+  runEngagementEmailRecipientScenarios,
+  runRemoteFollowerScenarios,
+  runReviewSuccessionScenarios,
+]

@@ -42,55 +42,50 @@ import { runModerationReportContextScenarios } from './run-scenarios/moderation-
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
 import { runLargeTopicRatingStatsScenario } from './run-scenarios/topic-rating-stats-large.mts'
-import { continueAfterFailure as runStep } from './scenario-failures.mts'
 
-export async function runLateScenarios(): Promise<void> {
-  const runClassifierHumanVoteComparison = runClassifierHumanVoteComparisonScenarios
-  await runStep(runClassifierHumanVoteComparison.name, runClassifierHumanVoteComparison)
-  await runStep(runCopyrightStatementFactsScenarios.name, runCopyrightStatementFactsScenarios)
-  await runStep(runCopyrightDeliveryBatchScenarios.name, runCopyrightDeliveryBatchScenarios)
-  await runStep(runCopyrightCasePurgeScenarios.name, runCopyrightCasePurgeScenarios)
-  await runStep(runClaimantMisuseWindowScenarios.name, runClaimantMisuseWindowScenarios)
-  await runStep(seedMediaDeliveryReplay.name, seedMediaDeliveryReplay)
-  await runStep(runMediaDeliveryReplayScenarios.name, runMediaDeliveryReplayScenarios)
-  await runStep(runMediaDeliveryScopedPageScenarios.name, runMediaDeliveryScopedPageScenarios)
-  await runStep(runMediaDeliveryGlobalPageScenarios.name, runMediaDeliveryGlobalPageScenarios)
-  await runStep(runMediaDeliveryPopularImageScenario.name, runMediaDeliveryPopularImageScenario)
-  await runStep(runRoundTripShapeScenarios.name, runRoundTripShapeScenarios)
-  await runStep(runRequestContextFoldScenarios.name, runRequestContextFoldScenarios)
-  await runStep(runCommunityRoundTripScenarios.name, runCommunityRoundTripScenarios)
-  await runStep(runSessionLimitScenarios.name, runSessionLimitScenarios)
-  await runStep(runImageDeliveryFoldScenarios.name, runImageDeliveryFoldScenarios)
-  await runStep(runUserProfileRoundTripScenarios.name, runUserProfileRoundTripScenarios)
-  await runStep(runUploadCleanupScenarios.name, runUploadCleanupScenarios)
-  await runStep(runRelationReadBatchScenarios.name, runRelationReadBatchScenarios)
-  await runStep(runDispatchWorkPlanScenarios.name, runDispatchWorkPlanScenarios)
-  await runStep(runModerationReportContextScenarios.name, runModerationReportContextScenarios)
-  await runStep(runModerationReportDetailScenarios.name, runModerationReportDetailScenarios)
-  await runStep(runMcpAdmissionScenario.name, runMcpAdmissionScenario)
-  await runStep(runRssFeedStateChangeScenarios.name, runRssFeedStateChangeScenarios)
+export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
+  runClassifierHumanVoteComparisonScenarios,
+  runCopyrightStatementFactsScenarios,
+  runCopyrightDeliveryBatchScenarios,
+  runCopyrightCasePurgeScenarios,
+  runClaimantMisuseWindowScenarios,
+  seedMediaDeliveryReplay,
+  runMediaDeliveryReplayScenarios,
+  runMediaDeliveryScopedPageScenarios,
+  runMediaDeliveryGlobalPageScenarios,
+  runMediaDeliveryPopularImageScenario,
+  runRoundTripShapeScenarios,
+  runRequestContextFoldScenarios,
+  runCommunityRoundTripScenarios,
+  runSessionLimitScenarios,
+  runImageDeliveryFoldScenarios,
+  runUserProfileRoundTripScenarios,
+  runUploadCleanupScenarios,
+  runRelationReadBatchScenarios,
+  runDispatchWorkPlanScenarios,
+  runModerationReportContextScenarios,
+  runModerationReportDetailScenarios,
+  runMcpAdmissionScenario,
+  runRssFeedStateChangeScenarios,
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
-  await runStep(seedVoteWeightDispatch.name, seedVoteWeightDispatch)
-  await runStep(runVoteWeightDispatchScenarios.name, runVoteWeightDispatchScenarios)
-  const runMembershipProviderRecovery = runMembershipProviderRecoveryScenarios
-  await runStep(runMembershipProviderRecovery.name, runMembershipProviderRecovery)
+  seedVoteWeightDispatch,
+  runVoteWeightDispatchScenarios,
+  runMembershipProviderRecoveryScenarios,
   // Hot publication fixtures live only after all ordinary corpus plans and clean up on failure.
-  await runStep(runNotificationVisibilityScenarios.name, runNotificationVisibilityScenarios)
-  await runStep(runPublicationScopePageScenarios.name, runPublicationScopePageScenarios)
-  await runStep(runDenseTopicViewerCountsScenario.name, runDenseTopicViewerCountsScenario)
-  await runStep(runLargeTopicRatingStatsScenario.name, runLargeTopicRatingStatsScenario)
-  await runStep(runTopicAliasCategoryWorkScenarios.name, runTopicAliasCategoryWorkScenarios)
-  await runStep(runHackerNewsFilterScenarios.name, runHackerNewsFilterScenarios)
-  await runStep(runRetentionStagePageScenarios.name, runRetentionStagePageScenarios)
-  await runStep(runEmbeddingReconciliationScenarios.name, runEmbeddingReconciliationScenarios)
-  await runStep(runStripeEventRecoveryScenario.name, runStripeEventRecoveryScenario)
-  const runMembershipRenewalSelection = runMembershipRenewalSelectionScenario
-  await runStep(runMembershipRenewalSelection.name, runMembershipRenewalSelection)
-  const measureReferralCache = runPrioritizedReferralCacheMeasurement
-  await runStep(measureReferralCache.name, measureReferralCache)
-  await runStep(runReferralValidationPages.name, runReferralValidationPages)
-  await runStep(runFkActorIndexScenarios.name, runFkActorIndexScenarios)
-  await runStep(runPaymentLedgerRetentionScenarios.name, runPaymentLedgerRetentionScenarios)
-  await runStep(runVoteScoreRankingScenarios.name, runVoteScoreRankingScenarios)
-  await runStep(runLatePostPageScenarios.name, runLatePostPageScenarios)
-}
+  runNotificationVisibilityScenarios,
+  runPublicationScopePageScenarios,
+  runDenseTopicViewerCountsScenario,
+  runLargeTopicRatingStatsScenario,
+  runTopicAliasCategoryWorkScenarios,
+  runHackerNewsFilterScenarios,
+  runRetentionStagePageScenarios,
+  runEmbeddingReconciliationScenarios,
+  runStripeEventRecoveryScenario,
+  runMembershipRenewalSelectionScenario,
+  runPrioritizedReferralCacheMeasurement,
+  runReferralValidationPages,
+  runFkActorIndexScenarios,
+  runPaymentLedgerRetentionScenarios,
+  runVoteScoreRankingScenarios,
+  runLatePostPageScenarios,
+]

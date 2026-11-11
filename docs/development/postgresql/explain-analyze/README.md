@@ -205,18 +205,27 @@ Add service calls through `runAndCapture()` and register the new stable scenario
 The `EXPLAIN ANALYZE` workflow is called by `test-explain-analyze` in `backend.yml`, gated by the
 `explain-analyze:` path filter. The `seed-explain` job seeds the corpus once, so a slow runner can
 fail only one seed and the shards do not each pay for it. It then stops PostgreSQL cleanly and
-archives the data directory, and each of the three parallel shards starts its own PostgreSQL on a
+archives the data directory, and each parallel shard starts its own PostgreSQL on a
 copy. Plans depend on the seeded server's physical state as much as its rows: page counts, the
 visibility map, index creation order (which breaks cost ties) and the statistics the seed collected
 on only the relations it fills. A `pg_dump` restore rebuilds all of that and flipped near-tie plans,
-so the shards never restore or re-analyze the corpus. `main` runs every scenario except
-the partitioned comment fixture and the million-post Hacker News fixture, `partition` runs only the
-comment fixture plus the pruning proof, and `hn-scale` runs only the Hacker News fixture
-(`explain-shards.mts` declares the split). Both fixtures are additive, so no other scenario reads
-them. A scenario listed in no shard or in two fails the manifest checks. The `explain-analyze-gates`
-job merges the shard artifacts, requires every manifest scenario once, and enforces the plan gates,
-baselines and native coverage over the merged results. It uploads them as `explain-analyze-results`;
-a failed shard leaves only its `explain-analyze-results-main`, `-partition` or `-hn-scale` artifact.
+so the shards never restore or re-analyze the corpus. The ordinary scenarios run in one fixed order
+because earlier runners mutate the shared corpus; `explain-shards.mts` and
+`run-ordered-scenarios.mts` cut that order into contiguous segments, one per ordinary shard. The
+first segment (`main`) owns every manifest scenario no other shard declares; the later segments list
+theirs in `explain-shard-scenario-ids.json`. A segment starts from the seeded corpus without the
+writes of the segments before it, so open one only at a runner that reads none of what earlier
+segments leave behind, and keep a runner with the predecessor whose writes its plan needs. A plan
+that changes because a shard lost a predecessor's writes is fixed by regrouping, never by loosening
+its contract. The partitioned comment fixture plus the pruning proof (`partition`) and the
+million-post Hacker News fixture (`hn-scale`) are additive, so no other scenario reads them and each
+has its own shard. The late fixture writers that must follow every ordinary plan close the last
+ordinary segment. Size the segments from per-runner timings in a recent run so every shard job stays
+under the ten-minute ceiling. A scenario listed in no shard or in two fails the manifest checks. The
+`explain-analyze-gates` job merges the shard artifacts, requires every manifest scenario once, and
+enforces the plan gates, baselines and native coverage over the merged results. It uploads them as
+`explain-analyze-results`; a failed shard leaves only its own `explain-analyze-results-<shard>`
+artifact.
 Unsharded `explain:run` runs everything in the original order. The seed records per-batch timing and
 resource samples to the `explain-seed-diagnostics` artifact so a seed that hits the CI step limit
 shows which operation was interrupted. The capture step leaves bounded headroom for fixture setup

@@ -30,7 +30,7 @@ If PostgreSQL cannot run in this session, download the `explain-analyze-results`
 newest `main` run of the Nightly workflow (`nightly.yml`, which calls the backend workflow), whatever
 that run's conclusion, and review its `results-*.json`. The merged artifact is uploaded even when a
 plan gate fails, and it is kept for 1 day. If a run-level shard fails, only the per-shard
-`explain-analyze-results-main` and `explain-analyze-results-partition` artifacts exist, each with
+`explain-analyze-results-<shard>` artifacts exist (one per matrix shard), each with
 its own `results-*.json`. The pruning proof runs in the partition shard after its scenarios pass,
 so `pruning-proof-*.json` is missing from a failed run; review it when it is present. If neither works, report `Outcome: incomplete`.
 

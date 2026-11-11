@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { ExplainResult } from '@data-stores/psql'
 import {
+  EXPLAIN_SHARDS,
   PARTITION_SHARD_SCENARIO_IDS,
   getShardScenarioIds,
   type ExplainShard,
@@ -30,13 +31,18 @@ function shard(name: ExplainShard, ids: readonly string[]) {
   }
 }
 
+// The remaining shards complete nothing in a manifest that only names `main` and `partition`.
+function emptyShards(...except: readonly ExplainShard[]) {
+  return EXPLAIN_SHARDS.filter(name => !except.includes(name)).map(name => shard(name, []))
+}
+
 describe('mergeShardResults', () => {
   it('concatenates complete shards in shard order', () => {
     const merged = mergeShardResults(
       [
         shard('partition', PARTITION_SHARD_SCENARIO_IDS),
         shard('main', getShardScenarioIds('main', manifest)),
-        shard('hn-scale', []),
+        ...emptyShards('main', 'partition'),
       ],
       manifest,
     )
@@ -53,7 +59,7 @@ describe('mergeShardResults', () => {
         [
           shard('main', ['a']),
           shard('partition', PARTITION_SHARD_SCENARIO_IDS),
-          shard('hn-scale', []),
+          ...emptyShards('main', 'partition'),
         ],
         manifest,
       ),
@@ -63,7 +69,7 @@ describe('mergeShardResults', () => {
         [
           shard('main', ['a', 'b', 'c']),
           shard('partition', PARTITION_SHARD_SCENARIO_IDS),
-          shard('hn-scale', []),
+          ...emptyShards('main', 'partition'),
         ],
         manifest,
       ),
@@ -78,7 +84,7 @@ describe('mergeShardDirectories', () => {
   it('writes one results and repeat pair plus prefixed native coverage', () => {
     const root = mkdtempSync(join(tmpdir(), 'explain-shards-'))
     try {
-      for (const name of ['main', 'partition', 'hn-scale'] as const) {
+      for (const name of EXPLAIN_SHARDS) {
         const ids = getShardScenarioIds(name, EXPLAIN_SCENARIO_MANIFEST)
         const directory = join(root, 'shards', `${SHARD_ARTIFACT_PREFIX}${name}`)
         mkdirSync(join(directory, 'pruning-v8'), { recursive: true })
@@ -98,11 +104,9 @@ describe('mergeShardDirectories', () => {
         completedScenarioIds: string[]
       }
       expect(merged.completedScenarioIds.toSorted()).toEqual(EXPLAIN_SCENARIO_MANIFEST.toSorted())
-      expect(readdirSync(join(output, 'pruning-v8')).toSorted()).toEqual([
-        'coverage-hn-scale-1.json',
-        'coverage-main-1.json',
-        'coverage-partition-1.json',
-      ])
+      expect(readdirSync(join(output, 'pruning-v8')).toSorted()).toEqual(
+        EXPLAIN_SHARDS.map(name => `coverage-${name}-1.json`).toSorted(),
+      )
       expect(readdirSync(output).filter(file => file.startsWith('repeat-'))).toHaveLength(1)
       expect(readdirSync(output)).toContain('pruning-proof-1.json')
     } finally {
