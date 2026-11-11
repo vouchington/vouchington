@@ -1,5 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
+import assert from 'http-assert'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import sql from 'sql-template-strings'
 import { getUserImportExportConfig } from './config.mts'
@@ -16,6 +17,7 @@ export async function createRssFeedImport(
   urls: string[],
   should_follow_imported_feeds: boolean,
 ): Promise<CreateUserRssFeedImportResult> {
+  assert(urls.length <= 500, 422, 'No more than 500 URLs may be imported')
   const chunkSize = getUserImportExportConfig().import_insert_chunk_size
   await using query = await beginTransaction()
   const { rows } = await write(
@@ -34,7 +36,7 @@ export async function createRssFeedImport(
         ${should_follow_imported_feeds},
         ${urls.length}
       )
-      RETURNING id, total_rows, completed_rows, failed_rows, skipped_rows, completed_at, created_at
+      RETURNING id, total_rows, completed_at, created_at
       `,
     { query },
   )
@@ -58,7 +60,15 @@ export async function createRssFeedImport(
   }
 
   await query.commit()
-  return { import: toImportSummary(batch) }
+  return {
+    import: toImportSummary({
+      ...batch,
+      completed_rows: 0,
+      failed_rows: 0,
+      skipped_rows: 0,
+      pending_rows: batch.total_rows,
+    }),
+  }
 }
 
 export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{

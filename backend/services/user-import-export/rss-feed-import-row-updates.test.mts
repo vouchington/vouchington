@@ -21,8 +21,8 @@ import {
   updateRssFeedImportRowFailed,
 } from './rss-feed-import-row-updates.mts'
 
-describe('RSS import skipped counters', () => {
-  it('decrements failed and skipped counters when a limit-failed row completes', async () => {
+describe('RSS import row-derived progress', () => {
+  it('reclassifies a limit-failed row when it completes', async () => {
     const user = await createTestUser()
     const created = await createRssFeedImport(
       user.id,
@@ -55,7 +55,7 @@ describe('RSS import skipped counters', () => {
     expect(status?.rows[0]).toMatchObject({ status: 'followed', entity_id: feed.id })
     expect(status?.rows[0]).not.toHaveProperty('error_code')
   })
-  it('counts only newly final limit failures, including replays', async () => {
+  it('counts terminal limit failures from rows, including replays', async () => {
     const user = await createTestUser()
     const created = await createRssFeedImport(
       user.id,
@@ -113,7 +113,7 @@ describe('RSS import skipped counters', () => {
     })
   })
 
-  it('keeps counters consistent when final failure and completion overlap', async () => {
+  it('keeps progress consistent when final failure and completion overlap', async () => {
     const user = await createTestUser()
     const created = await createRssFeedImport(
       user.id,
@@ -132,6 +132,29 @@ describe('RSS import skipped counters', () => {
       failed_rows: 0,
       skipped_rows: 0,
       pending_rows: 0,
+    })
+  })
+
+  it('marks the batch complete after distinct rows finish concurrently', async () => {
+    const user = await createTestUser()
+    const created = await createRssFeedImport(
+      user.id,
+      WEB_PROVENANCE,
+      [0, 1].map(() => `https://concurrent-${randomUUID()}.example.com/rss`),
+      false,
+    )
+    const [firstRow, secondRow] = await getRssFeedImportRowIds(created.import.id)
+
+    await Promise.all([
+      updateRssFeedImportRowFailed(firstRow!, 'first failure', { isFinalAttempt: true }),
+      updateRssFeedImportRowFailed(secondRow!, 'second failure', { isFinalAttempt: true }),
+    ])
+
+    expect(await getRssFeedImportSummary(user.id, created.import.id)).toMatchObject({
+      completed_rows: 0,
+      failed_rows: 2,
+      pending_rows: 0,
+      completed_at: expect.any(Date),
     })
   })
 

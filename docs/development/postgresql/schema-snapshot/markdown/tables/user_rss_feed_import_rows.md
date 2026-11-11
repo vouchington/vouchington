@@ -33,7 +33,7 @@ Not partitioned — growth: bounded.
 - `user_rss_feed_import_rows_error_message_check`: `CHECK (((error_message IS NULL) OR (error_message = TRIM(BOTH FROM error_message))))`
 - `user_rss_feed_import_rows_input_url_check`: `CHECK ((input_url = TRIM(BOTH FROM input_url)))`
 - `user_rss_feed_import_rows_input_url_check1`: `CHECK ((char_length(input_url) > 0))`
-- `user_rss_feed_import_rows_row_index_check`: `CHECK ((row_index >= 0))`
+- `user_rss_feed_import_rows_row_index_check`: `CHECK (((row_index >= 0) AND (row_index <= 499)))`
 
 **Foreign keys:**
 

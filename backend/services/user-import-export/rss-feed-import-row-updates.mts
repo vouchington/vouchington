@@ -1,4 +1,4 @@
-import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import type { ImportRssFeedStatus } from './import-rss-feeds.mts'
 import sql from 'sql-template-strings'
 
@@ -7,10 +7,7 @@ export async function updateRssFeedImportRowCompleted(
   outcome: Exclude<ImportRssFeedStatus, 'error'>,
   rssFeedId: string,
 ): Promise<void> {
-  await withRssFeedImportRowWrite(async query => {
-    // Each write names the one transition it applies, so the matched row decides the
-    // batch delta and no pre-image of a row that changed while this statement waited is read.
-    const pending = await query<{ batch_id: string }>(sql`/* updateRssFeedImportRowCompleted */
+  const pending = await write(sql`/* updateRssFeedImportRowCompleted */
       UPDATE user_rss_feed_import_rows
       SET completed_at = CURRENT_TIMESTAMP,
           outcome = ${outcome},
@@ -19,17 +16,9 @@ export async function updateRssFeedImportRowCompleted(
       WHERE id = ${rowId}
         AND completed_at IS NULL
         AND failed_at IS NULL
-      RETURNING batch_id
     `)
-    if (pending.rows[0]) {
-      await applyRssFeedImportBatchDelta(query, pending.rows[0].batch_id, {
-        completed: 1,
-        failed: 0,
-        skipped: 0,
-      })
-      return
-    }
-    const limited = await query<{ batch_id: string }>(
+  if (pending.rowCount === 0)
+    await write(
       sql`/* updateRssFeedImportRowCompleted/fromRelationLimit */
       UPDATE user_rss_feed_import_rows
       SET completed_at = CURRENT_TIMESTAMP,
@@ -41,16 +30,9 @@ export async function updateRssFeedImportRowCompleted(
         AND completed_at IS NULL
         AND failed_at IS NOT NULL
         AND error_message = 'RELATION_LIMIT_REACHED'
-      RETURNING batch_id
     `,
     )
-    if (!limited.rows[0]) return
-    await applyRssFeedImportBatchDelta(query, limited.rows[0].batch_id, {
-      completed: 1,
-      failed: -1,
-      skipped: -1,
-    })
-  })
+  await completeRssFeedImportBatch(rowId)
 }
 
 export async function updateRssFeedImportRowFailed(
@@ -72,8 +54,7 @@ export async function updateRssFeedImportRowFailed(
     return
   }
 
-  await withRssFeedImportRowWrite(async query => {
-    const { rows } = await query<{ batch_id: string }>(sql`/* updateRssFeedImportRowFailed */
+  await write(sql`/* updateRssFeedImportRowFailed */
       UPDATE user_rss_feed_import_rows
       SET failed_at = COALESCE(failed_at, CURRENT_TIMESTAMP),
           outcome = 'error',
@@ -82,43 +63,22 @@ export async function updateRssFeedImportRowFailed(
       WHERE id = ${rowId}
         AND completed_at IS NULL
         AND failed_at IS NULL
-      RETURNING batch_id
     `)
-    const updated = rows[0]
-    if (!updated) return
-    await applyRssFeedImportBatchDelta(query, updated.batch_id, {
-      completed: 0,
-      failed: 1,
-      skipped: trimmed === 'RELATION_LIMIT_REACHED' ? 1 : 0,
-    })
-  })
+  await completeRssFeedImportBatch(rowId)
 }
 
-// The row write and its batch delta share a transaction. The batch statement starts after the
-// row write, so its counters include any final failure or completion that committed meanwhile.
-async function withRssFeedImportRowWrite(
-  run: (query: TransactionQuery) => Promise<void>,
-): Promise<void> {
-  await using owned = await beginTransaction()
-  await run(owned)
-  await owned.commit()
-}
-
-async function applyRssFeedImportBatchDelta(
-  query: TransactionQuery,
-  batchId: string,
-  delta: { completed: number; failed: number; skipped: number },
-): Promise<void> {
-  await query(sql`/* applyRssFeedImportBatchDelta */
+// Row transitions commit first. The last committer can see every preceding terminal row,
+// including when two distinct final rows finish concurrently. Replays also reconcile completion.
+async function completeRssFeedImportBatch(rowId: string): Promise<void> {
+  await write(sql`/* completeRssFeedImportBatch */
     UPDATE user_rss_feed_import_batches
-    SET completed_rows = completed_rows + ${delta.completed},
-        failed_rows = failed_rows + ${delta.failed},
-        skipped_rows = skipped_rows + ${delta.skipped},
-        completed_at = CASE
-          WHEN completed_rows + ${delta.completed} + failed_rows + ${delta.failed} = total_rows
-            THEN COALESCE(completed_at, CURRENT_TIMESTAMP)
-          ELSE NULL
-        END
-    WHERE id = ${batchId}
+    SET completed_at = CURRENT_TIMESTAMP
+    WHERE id = (SELECT batch_id FROM user_rss_feed_import_rows WHERE id = ${rowId})
+      AND completed_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM user_rss_feed_import_rows pending
+        WHERE pending.batch_id = user_rss_feed_import_batches.id
+          AND pending.outcome IS NULL
+      )
   `)
 }

@@ -34,9 +34,16 @@ describe('RSS feed import records', () => {
   })
 
   it('continues rejecting an empty direct-service batch', async () => {
-    // Both total_rows and terminal lifecycle checks reject zero; PostgreSQL reports the first.
+    // The batch size constraint rejects zero rows.
     await expect(createRssFeedImport(user.id, WEB_PROVENANCE, [], false)).rejects.toMatchObject({
       code: '23514',
+    })
+  })
+
+  it('rejects a direct-service batch above the progress count bound', async () => {
+    const urls = Array.from({ length: 501 }, (_, index) => `https://example.com/rss/${index}`)
+    await expect(createRssFeedImport(user.id, WEB_PROVENANCE, urls, false)).rejects.toMatchObject({
+      status: 422,
     })
   })
 
@@ -44,7 +51,7 @@ describe('RSS feed import records', () => {
     const importId = await insertRssFeedImportBatchWithoutRowsForTest(user.id)
     try {
       await expect(getRssFeedImport(user.id, importId)).resolves.toMatchObject({
-        import: { id: importId, total_rows: 1, pending_rows: 1 },
+        import: { id: importId, total_rows: 1, pending_rows: 0 },
         rows: [],
       })
     } finally {

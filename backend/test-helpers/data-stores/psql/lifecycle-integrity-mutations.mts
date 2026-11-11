@@ -119,8 +119,8 @@ export async function rewriteTerminalRssImportBatch(userId: string): Promise<voi
   const { rows } = await write<{ id: string }>(
     sql`/* rewriteTerminalRssImportBatch:setup */
     INSERT INTO user_rss_feed_import_batches (
-      user_id, created_via, total_rows, completed_rows, completed_at
-    ) VALUES (${userId}, 'system', 1, 1, CURRENT_TIMESTAMP)
+      user_id, created_via, total_rows, completed_at
+    ) VALUES (${userId}, 'system', 1, CURRENT_TIMESTAMP)
     RETURNING id
   `,
   )

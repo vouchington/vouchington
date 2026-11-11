@@ -99197,7 +99197,7 @@
         "idx_posts__community_id__stable_hot_rank__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__community_id__stable_hot_rank__id ON ONLY public.posts USING btree (community_id, (\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((community_id IS NOT NULL) AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "definition": "CREATE INDEX idx_posts__community_id__stable_hot_rank__id ON ONLY public.posts USING btree (community_id, (\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((community_id IS NOT NULL) AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "immediate": true,
           "keys": [
             {
@@ -99213,7 +99213,7 @@
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
+              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
               "nullsFirst": true,
               "opclass": "pg_catalog.float8_ops",
               "orderingSupported": true
@@ -99759,14 +99759,14 @@
         "idx_posts__hacker_news_references__stable_hot_rank__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__hacker_news_references__stable_hot_rank__id ON ONLY public.posts USING btree ((\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "definition": "CREATE INDEX idx_posts__hacker_news_references__stable_hot_rank__id ON ONLY public.posts USING btree ((\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "immediate": true,
           "keys": [
             {
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
+              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
               "nullsFirst": true,
               "opclass": "pg_catalog.float8_ops",
               "orderingSupported": true
@@ -99974,7 +99974,7 @@
         "idx_posts__post_type__stable_hot_rank__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__post_type__stable_hot_rank__id ON ONLY public.posts USING btree (post_type, (\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "definition": "CREATE INDEX idx_posts__post_type__stable_hot_rank__id ON ONLY public.posts USING btree (post_type, (\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "immediate": true,
           "keys": [
             {
@@ -99990,7 +99990,7 @@
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
+              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
               "nullsFirst": true,
               "opclass": "pg_catalog.float8_ops",
               "orderingSupported": true
@@ -100207,14 +100207,14 @@
         "idx_posts__stable_hot_rank__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__stable_hot_rank__id ON ONLY public.posts USING btree ((\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "definition": "CREATE INDEX idx_posts__stable_hot_rank__id ON ONLY public.posts USING btree ((\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "immediate": true,
           "keys": [
             {
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
+              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
               "nullsFirst": true,
               "opclass": "pg_catalog.float8_ops",
               "orderingSupported": true
@@ -153401,7 +153401,7 @@
         "idx_urls__hostname_feed_rank_latest_published_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_urls__hostname_feed_rank_latest_published_id ON public.urls USING btree (hostname_id, feed_rank, COALESCE(latest_published_at, '1970-01-01 00:00:00+00'::timestamp with time zone) DESC, id DESC)",
+          "definition": "CREATE INDEX idx_urls__hostname_feed_rank_latest_published_id ON public.urls USING btree (hostname_id, feed_rank, COALESCE(latest_published_at, '1969-12-31 16:00:00-08'::timestamp with time zone) DESC, id DESC)",
           "immediate": true,
           "keys": [
             {
@@ -153426,7 +153426,7 @@
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "COALESCE(latest_published_at, '1970-01-01 00:00:00+00'::timestamp with time zone)",
+              "expression": "COALESCE(latest_published_at, '1969-12-31 16:00:00-08'::timestamp with time zone)",
               "nullsFirst": true,
               "opclass": "pg_catalog.timestamptz_ops",
               "orderingSupported": true
@@ -162671,28 +162671,12 @@
     },
     "user_rss_feed_import_batches": {
       "checkConstraints": {
-        "chk_user_rss_feed_import_batches__lifecycle": {
-          "definition": "CHECK ((((completed_rows + failed_rows) <= total_rows) AND ((completed_at IS NOT NULL) = ((completed_rows + failed_rows) = total_rows))))",
-          "validated": true
-        },
-        "user_rss_feed_import_batches_check": {
-          "definition": "CHECK (((skipped_rows >= 0) AND (skipped_rows <= failed_rows)))",
-          "validated": true
-        },
-        "user_rss_feed_import_batches_completed_rows_check": {
-          "definition": "CHECK ((completed_rows >= 0))",
-          "validated": true
-        },
         "user_rss_feed_import_batches_created_via_oauth_client_id_check": {
           "definition": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
           "validated": true
         },
-        "user_rss_feed_import_batches_failed_rows_check": {
-          "definition": "CHECK ((failed_rows >= 0))",
-          "validated": true
-        },
         "user_rss_feed_import_batches_total_rows_check": {
-          "definition": "CHECK ((total_rows > 0))",
+          "definition": "CHECK (((total_rows >= 1) AND (total_rows <= 500)))",
           "validated": true
         }
       },
@@ -162705,16 +162689,6 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
-        },
-        "completed_rows": {
-          "comment": "Number of rows that completed with a non-error outcome.",
-          "dataType": "integer",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
           "ordinalPosition": 7
         },
         "created_at": {
@@ -162725,7 +162699,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 8
         },
         "created_via": {
           "comment": "Immutable channel of the request that submitted the import; every feed the import creates carries it.",
@@ -162747,16 +162721,6 @@
           "nullable": true,
           "ordinalPosition": 4
         },
-        "failed_rows": {
-          "comment": "Number of rows that reached a terminal error outcome.",
-          "dataType": "integer",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 8
-        },
         "id": {
           "comment": null,
           "dataType": "uuid",
@@ -162777,16 +162741,6 @@
           "nullable": false,
           "ordinalPosition": 5
         },
-        "skipped_rows": {
-          "comment": "Number of failed rows skipped because the follow relation limit was reached; included in failed_rows.",
-          "dataType": "integer",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9
-        },
         "total_rows": {
           "comment": "Total number of URLs in this import batch.",
           "dataType": "integer",
@@ -162805,7 +162759,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 9
         },
         "user_id": {
           "comment": "The user who submitted the RSS feed import.",
@@ -163279,7 +163233,7 @@
           "validated": true
         },
         "user_rss_feed_import_rows_row_index_check": {
-          "definition": "CHECK ((row_index >= 0))",
+          "definition": "CHECK (((row_index >= 0) AND (row_index <= 499)))",
           "validated": true
         }
       },

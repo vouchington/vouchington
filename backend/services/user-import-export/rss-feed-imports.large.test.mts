@@ -8,7 +8,7 @@ import { userImportExportConfig } from './config.mts'
 import { getRssFeedImport } from './rss-feed-imports.mts'
 
 describe('large RSS feed imports', () => {
-  it('stores an import above 500 URLs in bounded insert chunks and lists it in row order', async () => {
+  it('stores the largest allowed import in bounded insert chunks and lists it in row order', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(userImportExportConfig, {
         import_insert_chunk_size: 100,
@@ -18,7 +18,7 @@ describe('large RSS feed imports', () => {
     const user = await createTestUser()
     const suffix = Date.now()
     const urls = Array.from(
-      { length: 501 },
+      { length: 500 },
       (_, index) => `https://scale-import-${suffix}-${index}.example.com/rss`,
     )
 
@@ -30,7 +30,7 @@ describe('large RSS feed imports', () => {
     let pages = 0
     do {
       const status = await getRssFeedImport(user.id, created.import.id, { after: cursor })
-      expect(status?.import).toMatchObject({ total_rows: 501, pending_rows: 501 })
+      expect(status?.import).toMatchObject({ total_rows: 500, pending_rows: 500 })
       expect(status!.rows.length).toBeLessThanOrEqual(100)
       inputs.push(...status!.rows.map(row => row.input))
       cursor = status!.page_info.has_next_page
@@ -39,7 +39,7 @@ describe('large RSS feed imports', () => {
       pages += 1
     } while (cursor)
 
-    expect(pages).toBe(6)
+    expect(pages).toBe(5)
     expect(inputs).toEqual(urls)
   })
 

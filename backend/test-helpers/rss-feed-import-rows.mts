@@ -49,23 +49,15 @@ export async function lockRssFeedImportRowForTest(
   `)
 }
 
-/** Commit a final RELATION_LIMIT_REACHED failure and its batch counters on the caller's transaction. */
+/** Commit a final RELATION_LIMIT_REACHED failure on the caller's transaction. */
 export async function failRssFeedImportRowForLimitForTest(
   query: TransactionQuery,
   rowId: string,
 ): Promise<void> {
-  const { rows } = await query<{ batch_id: string }>(sql`/* failRssFeedImportRowForLimitForTest */
+  await query(sql`/* failRssFeedImportRowForLimitForTest */
     UPDATE user_rss_feed_import_rows
     SET failed_at = CURRENT_TIMESTAMP, outcome = 'error', error_message = 'RELATION_LIMIT_REACHED'
     WHERE id = ${rowId}
-    RETURNING batch_id
-  `)
-  await query(sql`/* failRssFeedImportRowForLimitForTestBatch */
-    UPDATE user_rss_feed_import_batches
-    SET failed_rows = failed_rows + 1, skipped_rows = skipped_rows + 1,
-        completed_at = CASE WHEN completed_rows + failed_rows + 1 = total_rows
-          THEN CURRENT_TIMESTAMP ELSE NULL END
-    WHERE id = ${rows[0]!.batch_id}
   `)
 }
 
