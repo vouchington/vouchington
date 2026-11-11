@@ -65,12 +65,12 @@
       },
       "read_topic": {
         "measured": {
-          "list": 7684,
-          "core": 1971
+          "list": 7679,
+          "core": 1966
         },
         "max": {
           "list": 8000,
-          "core": 3000
+          "core": 2000
         }
       },
       "discover_communities": {
@@ -135,8 +135,8 @@
       },
       "read_posts": {
         "measured": {
-          "list": 11558,
-          "core": 4882
+          "list": 11677,
+          "core": 4896
         },
         "max": {
           "list": 12000,

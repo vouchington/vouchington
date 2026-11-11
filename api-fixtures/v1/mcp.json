@@ -2927,7 +2927,7 @@
           "tool": {
             "name": "read_topic",
             "title": "Read Topic",
-            "description": "compare: Compare recent public data-point statistics (capped).\ndetails: Read topic details and hierarchy.\nmetrics: Read topic post/follower counts and star ratings.\ndata_point_insights: Recent public data-point statistics (capped).",
+            "description": "compare: Compare recent public data-point statistics (capped).\ndetails: Read topic details and hierarchy.\nmetrics: Topic post/follower counts and star ratings.\ndata_point_insights: Recent public data-point statistics (capped).",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -5934,7 +5934,7 @@
           "tool": {
             "name": "read_posts",
             "title": "Read Posts",
-            "description": "ancestors: Page root and nearest parents, root first/repeated. Use end_cursor as after for older parents. Roots have none. Deleted/unmoderated parents: placeholders; nonpublic/missing: Post not found.\ndescendants: Page child heads with bounded previews; follow end_cursor even on empty pages. has_next_page means more heads, not replies. Expand via post_id. Deleted/unmoderated replies are placeholders.\ndetails: Read id/slug with REST viewer access. Hidden/missing/deleted: Post not found. Deleted/unmoderated comments with replies are placeholders unless viewer access permits their content.\nsearch: Search by keyword, meaning or similar item. Follow opaque end_cursor while has_next_page.",
+            "description": "ancestors: Page root and nearest parents, root first/repeated. Use end_cursor as after for older parents. Roots have none. Deleted/unmoderated parents: placeholders; nonpublic/missing: Post not found.\ndescendants: Page child heads/previews. Follow end_cursor even for empty pages. has_next_page signals more heads, not replies; expand via post_id. Hidden replies are placeholders.\ndetails: Read details/structured data by id/slug with REST viewer access. Hidden/missing/deleted: Post not found. Deleted/unmoderated comments with replies are placeholders unless viewer access permits their content.\nsearch: Search posts; follow opaque end_cursor while has_next_page.",
             "inputSchema": {
               "type": "object",
               "oneOf": [

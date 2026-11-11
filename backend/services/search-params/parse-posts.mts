@@ -99,7 +99,6 @@ export async function resolvePostsSearchParams(
     isRecommendationOnly(postTypes) ? undefined : q,
     { maxMentions: MAX_TOPIC_SEARCH_TERMS, limitStatus: 400 },
   )
-
   const [
     creatorId,
     urlId,
@@ -153,7 +152,6 @@ export async function resolvePostsSearchParams(
     ]),
   ]
   const relatedIds = [...new Set(resolvedCategoryIds.filter((id): id is string => id !== null))]
-
   const searchOptions = {
     ...paginationOptions,
     ...(postTypes && { post_types: postTypes }),

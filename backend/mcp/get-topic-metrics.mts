@@ -38,7 +38,7 @@ type ToolResult =
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: 'Read topic post/follower counts and star ratings.',
+    description: 'Topic post/follower counts and star ratings.',
     parameters: {
       type: 'object',
       properties: {
