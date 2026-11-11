@@ -107,17 +107,10 @@ CREATE TABLE IF NOT EXISTS user_rss_feed_import_batches (
   created_via_oauth_client_id UUID,
   CONSTRAINT user_rss_feed_import_batches_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   should_follow_imported_feeds BOOLEAN NOT NULL DEFAULT TRUE,
-  total_rows INT NOT NULL CHECK (total_rows > 0),
-  completed_rows INT NOT NULL DEFAULT 0 CHECK (completed_rows >= 0),
-  failed_rows INT NOT NULL DEFAULT 0 CHECK (failed_rows >= 0),
-  skipped_rows INT NOT NULL DEFAULT 0 CHECK (skipped_rows >= 0 AND skipped_rows <= failed_rows),
+  total_rows INT NOT NULL CHECK (total_rows BETWEEN 1 AND 500),
   completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT chk_user_rss_feed_import_batches__lifecycle CHECK (
-    completed_rows + failed_rows <= total_rows
-    AND (completed_at IS NOT NULL) = (completed_rows + failed_rows = total_rows)
-  )
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE OR REPLACE TRIGGER trigger_user_rss_feed_import_batches_updated_at
@@ -149,7 +142,7 @@ WHERE created_via_oauth_client_id IS NOT NULL;
 CREATE TABLE IF NOT EXISTS user_rss_feed_import_rows (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   batch_id UUID NOT NULL REFERENCES user_rss_feed_import_batches(id) ON DELETE CASCADE,
-  row_index INT NOT NULL CHECK (row_index >= 0),
+  row_index INT NOT NULL CHECK (row_index BETWEEN 0 AND 499),
   input_url TEXT NOT NULL,
   outcome user_rss_feed_import_row_outcomes,
   rss_feed_id UUID REFERENCES rss_feeds(id) ON DELETE SET NULL,
@@ -283,9 +276,6 @@ COMMENT ON COLUMN user_rss_feed_import_batches.created_via IS 'Immutable channel
 COMMENT ON COLUMN user_rss_feed_import_batches.created_via_oauth_client_id IS 'Immutable OAuth client that submitted the import through the API or MCP; NULL for session and API-key submissions.';
 COMMENT ON COLUMN user_rss_feed_import_batches.should_follow_imported_feeds IS 'Whether successful imported feeds should be followed by the submitting user.';
 COMMENT ON COLUMN user_rss_feed_import_batches.total_rows IS 'Total number of URLs in this import batch.';
-COMMENT ON COLUMN user_rss_feed_import_batches.completed_rows IS 'Number of rows that completed with a non-error outcome.';
-COMMENT ON COLUMN user_rss_feed_import_batches.failed_rows IS 'Number of rows that reached a terminal error outcome.';
-COMMENT ON COLUMN user_rss_feed_import_batches.skipped_rows IS 'Number of failed rows skipped because the follow relation limit was reached; included in failed_rows.';
 COMMENT ON COLUMN user_rss_feed_import_batches.completed_at IS 'When every row reached a terminal success or error outcome.';
 COMMENT ON TABLE user_rss_feed_import_rows IS 'Individual RSS feed import URLs and per-row processing outcomes.';
 COMMENT ON COLUMN user_rss_feed_import_rows.batch_id IS 'The RSS feed import batch this row belongs to.';

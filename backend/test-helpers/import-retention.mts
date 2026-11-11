@@ -65,7 +65,7 @@ export async function createCompletedImportRetentionFixture(
       (import_row_id, batch_id, discovery_url_id, generation)
     VALUES (${importedRows.find(row => row.row_index === 0)!.id}, ${batchId}, ${discoveryUrlId}, uuidv7())`)
   await query(sql`/* createCompletedRssImportRetentionFixture:complete */
-    UPDATE user_rss_feed_import_batches SET failed_rows = 2, completed_at = ${completedAt}
+    UPDATE user_rss_feed_import_batches SET completed_at = ${completedAt}
     WHERE id = ${batchId}`)
   await query.commit()
   return batchId

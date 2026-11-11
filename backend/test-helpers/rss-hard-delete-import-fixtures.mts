@@ -45,7 +45,7 @@ async function insertOpenUserImportAndRow(
 async function completeUserImportAndCommit(query: TestTransaction, batchId: string): Promise<void> {
   await query(
     `/* completeTestUserImportBatch */ UPDATE user_rss_feed_import_batches
-     SET completed_rows = 1, completed_at = CURRENT_TIMESTAMP WHERE id = $1::uuid`,
+     SET completed_at = CURRENT_TIMESTAMP WHERE id = $1::uuid`,
     [batchId],
   )
   await query.commit()

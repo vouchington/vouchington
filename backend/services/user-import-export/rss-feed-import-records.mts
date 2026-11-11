@@ -1,8 +1,9 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
+import assert from 'http-assert'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import sql from 'sql-template-strings'
-import { getUserImportExportConfig } from './config.mts'
+import { RSS_FEED_IMPORT_MAX_URLS } from './config.mts'
 import {
   type CreateUserRssFeedImportResult,
   type UserRssFeedImportBatchRow,
@@ -16,7 +17,11 @@ export async function createRssFeedImport(
   urls: string[],
   should_follow_imported_feeds: boolean,
 ): Promise<CreateUserRssFeedImportResult> {
-  const chunkSize = getUserImportExportConfig().import_insert_chunk_size
+  assert(
+    urls.length <= RSS_FEED_IMPORT_MAX_URLS,
+    422,
+    `No more than ${RSS_FEED_IMPORT_MAX_URLS} URLs may be imported`,
+  )
   await using query = await beginTransaction()
   const { rows } = await write(
     sql`/* createRssFeedImport */
@@ -34,31 +39,35 @@ export async function createRssFeedImport(
         ${should_follow_imported_feeds},
         ${urls.length}
       )
-      RETURNING id, total_rows, completed_rows, failed_rows, skipped_rows, completed_at, created_at
+      RETURNING id, total_rows, completed_at, created_at
       `,
     { query },
   )
   const batch = rows[0] as UserRssFeedImportBatchRow
 
-  // Bounded chunks keep one statement from carrying every URL of a large import.
-  for (let start = 0; start < urls.length; start += chunkSize) {
-    const chunk = urls.slice(start, start + chunkSize)
-    // oxlint-disable-next-line no-await-in-loop -- chunks of one transaction insert in row order
-    await write(
-      sql`/* createRssFeedImportRows */
+  // The import cap bounds both arrays, so all rows fit in one set-based write.
+  await write(
+    sql`/* createRssFeedImportRows */
         INSERT INTO user_rss_feed_import_rows (batch_id, row_index, input_url)
         SELECT ${batch.id}, input.row_index, input.input_url
         FROM UNNEST(
-          ${chunk.map((_, offset) => start + offset)}::int[],
-          ${chunk}::text[]
+          ${urls.map((_, index) => index)}::int[],
+          ${urls}::text[]
         ) AS input(row_index, input_url)
         `,
-      { query },
-    )
-  }
+    { query },
+  )
 
   await query.commit()
-  return { import: toImportSummary(batch) }
+  return {
+    import: toImportSummary({
+      ...batch,
+      completed_rows: 0,
+      failed_rows: 0,
+      skipped_rows: 0,
+      pending_rows: batch.total_rows,
+    }),
+  }
 }
 
 export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{

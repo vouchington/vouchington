@@ -1,4 +1,8 @@
-import { createRssFeedImportBatchForTest } from '@voucha/test-helpers/rss-feed-import-batches'
+import { randomUUID } from 'node:crypto'
+import {
+  createStaleRssFeedImportBatchForTest,
+  deleteStaleRssFeedImportBatchForTest,
+} from '@voucha/test-helpers/rss-feed-import-batches'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
@@ -14,6 +18,9 @@ import { USER_RSS_FEED_IMPORT_DISPATCH_ID_PREFIX } from '@queues/user-rss-feed-i
 import { userImportExportConfig } from '@services/user-import-export/config'
 import { dispatchUserRssFeedImport } from '@services/user-import-export/rss-feed-import-dispatch'
 import { recoverStalledUserRssFeedImports } from '@services/user-import-export/rss-feed-import-recovery'
+import { createRssFeedImport } from '@services/user-import-export/rss-feed-import-records'
+import { updateRssFeedImportRowFailed } from '@services/user-import-export/rss-feed-import-row-updates'
+import { getRssFeedImportSummary } from '@services/user-import-export/rss-feed-import-status'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   startBackgroundHarness,
@@ -32,6 +39,8 @@ vi.hoisted(() => {
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
+const callsFor = (enqueue: ReturnType<typeof vi.fn>, id: string) =>
+  enqueue.mock.calls.filter(([called]) => (called as string[]).includes(id)).length
 
 describe('import recovery on a real shared queue', () => {
   let harness: BackgroundHarness | undefined
@@ -48,12 +57,11 @@ describe('import recovery on a real shared queue', () => {
     )
     const user = await createTestUser()
     const stamp = crypto.randomUUID()
-    const submitted = await createRssFeedImportBatchForTest(
-      user,
-      WEB_PROVENANCE,
+    const importId = await createStaleRssFeedImportBatchForTest(
+      user.id,
       Array.from({ length: 3 }, (_, index) => `https://recover-${stamp}-${index}.example.com/rss`),
     )
-    const importId = submitted.import.id
+    onTestFinished(() => deleteStaleRssFeedImportBatchForTest(user.id, importId))
     const rowIds = await getRssFeedImportRowIds(importId)
     const started: string[] = []
     const allRowsRan = Promise.withResolvers<void>()
@@ -119,11 +127,7 @@ describe('import recovery on a real shared queue', () => {
     expect(started).toEqual([])
 
     dispatcherBroken = false
-    // A sweep takes a bounded number of imports, oldest first; repeating it reaches this one
-    // however many unfinished imports the shared database holds.
-    while (added.length === 0) {
-      await recoverStalledUserRssFeedImports({ staleAfterMs: 0, enqueueDispatches })
-    }
+    await recoverStalledUserRssFeedImports({ staleAfterMs: 1, enqueueDispatches })
     await allRowsRan.promise
 
     expect(added).toEqual([importId])
@@ -132,5 +136,57 @@ describe('import recovery on a real shared queue', () => {
     // The sweep marked the import as just touched, so the next one leaves it alone.
     await recoverStalledUserRssFeedImports({ enqueueDispatches })
     expect(added).toEqual([importId])
+  })
+
+  it('re-dispatches a stalled import once, then leaves it alone until it stalls again', async () => {
+    const user = await createTestUser()
+    const importId = await createStaleRssFeedImportBatchForTest(user.id, [
+      `https://recover-${randomUUID()}.example.com/feed`,
+    ])
+    onTestFinished(() => deleteStaleRssFeedImportBatchForTest(user.id, importId))
+    const enqueueDispatches = vi.fn<(ids: string[]) => Promise<undefined>>(async () => undefined)
+
+    await recoverStalledUserRssFeedImports({ staleAfterMs: 1, enqueueDispatches })
+    await recoverStalledUserRssFeedImports({ enqueueDispatches })
+
+    expect(callsFor(enqueueDispatches, importId)).toBe(1)
+  })
+
+  it('does not re-dispatch an import that finished', async () => {
+    const user = await createTestUser()
+    const created = await createRssFeedImport(
+      user.id,
+      WEB_PROVENANCE,
+      [`https://recover-done-${randomUUID()}.example.com/feed`],
+      false,
+    )
+    const [rowId] = await getRssFeedImportRowIds(created.import.id)
+    await updateRssFeedImportRowFailed(rowId!, 'No feed found', { isFinalAttempt: true })
+    const enqueueDispatches = vi.fn<(ids: string[]) => Promise<undefined>>(async () => undefined)
+
+    await recoverStalledUserRssFeedImports({ staleAfterMs: 0, enqueueDispatches })
+
+    expect(callsFor(enqueueDispatches, created.import.id)).toBe(0)
+  })
+
+  it('fills in a completion marker missed after the final row committed', async () => {
+    const user = await createTestUser()
+    const importId = await createStaleRssFeedImportBatchForTest(
+      user.id,
+      [`https://recover-terminal-${randomUUID()}.example.com/feed`],
+      true,
+    )
+    onTestFinished(() => deleteStaleRssFeedImportBatchForTest(user.id, importId))
+    const enqueueDispatches = vi.fn<(ids: string[]) => Promise<undefined>>(async () => undefined)
+
+    await recoverStalledUserRssFeedImports({ staleAfterMs: 1, enqueueDispatches })
+
+    expect(await getRssFeedImportSummary(user.id, importId)).toMatchObject({
+      failed_rows: 1,
+      skipped_rows: 1,
+      pending_rows: 0,
+      completed_at: expect.any(Date),
+    })
+    expect(callsFor(enqueueDispatches, importId)).toBe(0)
   })
 })

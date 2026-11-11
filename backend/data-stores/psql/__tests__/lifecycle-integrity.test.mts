@@ -28,7 +28,6 @@ const lifecycleConstraints = [
   'images.chk_images__upload_lifecycle',
   'moderation_training_feedbacks.chk_moderation_training_feedbacks__targets',
   'user_data_requests.chk_user_data_requests__lifecycle',
-  'user_rss_feed_import_batches.chk_user_rss_feed_import_batches__lifecycle',
   'user_rss_feed_import_rows.chk_user_rss_feed_import_rows__lifecycle',
 ] as const
 

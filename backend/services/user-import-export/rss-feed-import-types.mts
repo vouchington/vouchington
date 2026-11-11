@@ -48,12 +48,12 @@ export type UserRssFeedImportBatchRow = {
   created_via_oauth_client_id: string | null
   should_follow_imported_feeds: boolean
   total_rows: number
-  completed_rows: number
-  failed_rows: number
-  skipped_rows: number
   completed_at: Date | null
   created_at: Date
 }
+
+export type UserRssFeedImportSummaryRow = UserRssFeedImportBatchRow &
+  Pick<UserRssFeedImportSummary, 'completed_rows' | 'failed_rows' | 'skipped_rows' | 'pending_rows'>
 
 export type UserRssFeedImportRow = {
   id: string
@@ -82,14 +82,14 @@ export function getBatchProvenance(
   } as ContentProvenance
 }
 
-export function toImportSummary(batch: UserRssFeedImportBatchRow): UserRssFeedImportSummary {
+export function toImportSummary(batch: UserRssFeedImportSummaryRow): UserRssFeedImportSummary {
   return {
     id: batch.id,
     total_rows: batch.total_rows,
     completed_rows: batch.completed_rows,
     failed_rows: batch.failed_rows,
     skipped_rows: batch.skipped_rows,
-    pending_rows: batch.total_rows - batch.completed_rows - batch.failed_rows,
+    pending_rows: batch.pending_rows,
     completed_at: batch.completed_at,
     created_at: batch.created_at,
   }

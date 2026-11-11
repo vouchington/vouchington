@@ -6,7 +6,7 @@ import sql from 'sql-template-strings'
 import { getUserImportExportConfig } from './config.mts'
 import {
   type UserRssFeedImport,
-  type UserRssFeedImportBatchRow,
+  type UserRssFeedImportSummaryRow,
   type UserRssFeedImportRow,
   type UserRssFeedImportSummary,
   toImportRowResult,
@@ -19,7 +19,7 @@ export const rssFeedImportStatusPagination = createPaginationParser({
   limit: { default: 100, max: 1000 },
 })
 
-type StatusRow = UserRssFeedImportBatchRow &
+type StatusRow = UserRssFeedImportSummaryRow &
   Pick<UserRssFeedImportRow, 'input_url' | 'outcome' | 'error_message' | 'rss_feed_id'> & {
     row_id: string | null
     cursor_found: boolean | null
@@ -30,26 +30,32 @@ function importRowCursorScope(importId: string): string {
   return `rss-feed-import-rows:${importId}:row-index-asc`
 }
 
-/** The import's counters alone: one row, however large the import is. */
+/** Progress is counted from this batch's bounded set of rows. */
 export async function getRssFeedImportSummary(
   currentUserId: string,
   importId: string,
 ): Promise<UserRssFeedImportSummary | null> {
   if (!isUUID(importId)) return null
 
-  const { rows } = await write<UserRssFeedImportBatchRow>(
+  const { rows } = await write<UserRssFeedImportSummaryRow>(
     sql`/* getRssFeedImportSummary */
-      SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows, batch.completed_at, batch.created_at, batch.skipped_rows
+      SELECT batch.id, batch.total_rows, batch.completed_at, batch.created_at,
+        COUNT(import_row.id) FILTER (WHERE import_row.outcome IS NOT NULL AND import_row.outcome <> 'error')::int AS completed_rows,
+        COUNT(import_row.id) FILTER (WHERE import_row.outcome = 'error')::int AS failed_rows,
+        COUNT(import_row.id) FILTER (WHERE import_row.outcome = 'error' AND import_row.error_message = 'RELATION_LIMIT_REACHED')::int AS skipped_rows,
+        COUNT(import_row.id) FILTER (WHERE import_row.outcome IS NULL)::int AS pending_rows
       FROM user_rss_feed_import_batches batch
+      LEFT JOIN user_rss_feed_import_rows import_row ON import_row.batch_id = batch.id
       WHERE batch.id = ${importId}
         AND batch.user_id = ${currentUserId}
+      GROUP BY batch.id
     `,
   )
   return rows[0] ? toImportSummary(rows[0]) : null
 }
 
 /**
- * The import's counters plus one keyset page of its rows, in input order. The page size is the
+ * The import's progress plus one keyset page of its rows, in input order. The page size is the
  * configured one; a smaller `limit` narrows it. `after` is the cursor of the previous page. One
  * statement reads both on the primary, so a just-created import is immediately pollable.
  */
@@ -68,8 +74,8 @@ export async function getRssFeedImport(
     : null
 
   const query = sql`/* getRssFeedImport */
-    SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows,
-      batch.completed_at, batch.created_at, batch.skipped_rows,
+    SELECT batch.id, batch.total_rows, batch.completed_at, batch.created_at,
+      progress.completed_rows, progress.failed_rows, progress.skipped_rows, progress.pending_rows,
       page.id AS row_id, page.input_url, page.outcome,
       page.error_message, page.rss_feed_id, page.topic_slug,
       EXISTS (
@@ -78,6 +84,15 @@ export async function getRssFeedImport(
           AND cursor_row.batch_id = batch.id
       ) AS cursor_found
     FROM user_rss_feed_import_batches batch
+    CROSS JOIN LATERAL (
+      SELECT
+        COUNT(*) FILTER (WHERE outcome IS NOT NULL AND outcome <> 'error')::int AS completed_rows,
+        COUNT(*) FILTER (WHERE outcome = 'error')::int AS failed_rows,
+        COUNT(*) FILTER (WHERE outcome = 'error' AND error_message = 'RELATION_LIMIT_REACHED')::int AS skipped_rows,
+        COUNT(*) FILTER (WHERE outcome IS NULL)::int AS pending_rows
+      FROM user_rss_feed_import_rows
+      WHERE batch_id = batch.id
+    ) progress
     LEFT JOIN LATERAL (
       SELECT import_row.id, import_row.row_index, import_row.input_url, import_row.outcome,
         import_row.error_message, import_row.rss_feed_id, topic.slug AS topic_slug
