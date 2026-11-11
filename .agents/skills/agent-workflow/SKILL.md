@@ -39,7 +39,8 @@ do not reload a canonical skill or adapter already read in this task.
 - Implementation and validation: [implementation](implementation.md).
 - Substantive or risky review: [code review](code-review.md).
 - Commit and push: [before pushing](before-pushing.md).
-- PR creation, shepherding, and merge authority: [Git and PRs](git-and-prs.md).
+- PR creation, shepherding (or the optional `/shepherd` delegation to the triage loop), and merge
+  authority: [Git and PRs](git-and-prs.md).
 - Native stack: [stacked PRs](../stacked-prs/SKILL.md).
 
 Use the [skill catalog](../../catalog/README.md) to select another task-specific procedure rather

@@ -51,7 +51,7 @@ export const cloudflareWorkerCancelledBeforeJobSignalRule: TransientRetryRule = 
   rootCauseKey: 'cancelled-before-failure-signal',
   description: 'Cloudflare Worker retry was cancelled before GitHub created deploy jobs.',
   rationale:
-    'A jobless Main CI (cloudflare-worker) run cannot have mutated staging state, so there is no deploy or rollback evidence for Harness to fix.',
+    'A jobless Main CI (cloudflare-worker) run cannot have mutated staging state, so there is no deploy or rollback evidence for the triage loop to fix.',
   exampleRunIds: ['29221718444', '29221555057'],
   maxAttempts: cloudflareWorkerCancelledBeforeJobSignalMaxAttempts,
   match: ctx => {
@@ -67,7 +67,7 @@ export const workflowCancelledWithoutFailureSignalRule: TransientRetryRule = {
   description:
     'CI retry was cancelled with every unsuccessful job reported as cancelled and no producer job concluding failure.',
   rationale:
-    'GitHub cancelled running jobs after the retry was superseded or before any producer job ran; because no job concluded failure or timed_out, the run has no test, build, or deploy failure signal for Harness to fix. Replaces narrower detect-changes and static-analysis-setup allowlist variants that were strict subsets of this no-signal rule.',
+    'GitHub cancelled running jobs after the retry was superseded or before any producer job ran; because no job concluded failure or timed_out, the run has no test, build, or deploy failure signal for the triage loop to fix. Replaces narrower detect-changes and static-analysis-setup allowlist variants that were strict subsets of this no-signal rule.',
   exampleRunIds: [
     '27465574571',
     '27496931635',

@@ -179,8 +179,10 @@ works; the model-quality evals spend a call per fixture, so `evals-backend.yml` 
 Repository automation no longer dispatches agent sessions from GitHub Actions. The
 hook-harness event relay and the attended
 `triage-loop` session own what the retired dispatch workflows did: ejections, `main` failures, and
-`/shepherd` handling. Agents shepherd their own PRs, and the triage loop runs the
-[prompts](../prompts/README.md) on its own schedule. Rerunning a transient failure follows
+`/shepherd`, `/plan` and `/fix` handling. An agent shepherds the PR it authored with pr-shepherd;
+posting a literal `/shepherd` comment is an optional delegation to the loop (for example when the
+session must end or the owner asks), after which the agent stops and the loop owns the PR. The loop
+runs the [prompts](../prompts/README.md) on its own schedule. Rerunning a transient failure follows
 [Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md).
 
 - **Merge queue ejection** is triaged by the attended triage loop, which groups recent ejections by

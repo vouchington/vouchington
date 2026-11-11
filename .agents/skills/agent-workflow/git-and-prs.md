@@ -81,9 +81,17 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
   it lands. See [merge authority](../../../docs/development/merge-authority.md) and
   [stacked-prs](../stacked-prs/SKILL.md#merge-every-ready-bottom-layer-at-once).
 - After PR creation, set `pnpm exec vouchington tmux name <topic>-pr<number>` outside the sandbox.
-  For an ordinary authored PR, mark ready when required checks pass and actionable review is resolved. Authorized [triage handoffs](../ready-and-shepherd/SKILL.md) follow their recovery criteria.
+  For an ordinary authored PR, mark ready when required checks pass and actionable review is resolved. Hand-off: the authoring agent shepherds its own PR with pr-shepherd (see
+  [Shepherding](#shepherding)). Posting a literal `/shepherd` comment is an optional delegation to the
+  attended triage loop, for example when the session must end or the owner asks.
 
 ## Shepherding
+
+- By default the agent that authored a PR shepherds it with pr-shepherd until a terminal action.
+  To hand the PR to the attended triage loop instead, mark it ready and post the fixed literal once
+  (`gh pr comment <N> --body '/shepherd'`; never twice, and never any other text), then stop: the
+  loop owns the PR from that comment on. For a stack, post once on the top PR. The loop checks the
+  sender's login, shepherds the PR, and is the only agent that merges, within its grant.
 
 - Load the [pr-shepherd plugin](https://github.com/jonathanong/pr-shepherd) for its action contract.
   Resolve the workspace version with `pnpm exec pr-shepherd`, never a global binary.
@@ -106,7 +114,8 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
 
 - Follow the canonical Close-out (`node_modules/vouchington-tooling/skills/agent-workflow/SKILL.md#close-out`)
   rules for validation reporting, the hand-off retrospective, and the merge note. A stack's
-  retrospective uses its top PR's number in `handoff-pr<number>`.
+  retrospective uses its top PR's number in `handoff-pr<number>`. Close out after shepherding
+  reaches its terminal action, or after posting `/shepherd` when delegating to the triage loop.
 - Hook mechanics and limitations belong in [agent sandbox](../../../docs/development/agent-sandbox.md)
   and [harness parity](../../../docs/development/agent-harness-parity.md). Do not restate their parser
   implementation here or add new auto-formatting hooks as part of ordinary feature work.

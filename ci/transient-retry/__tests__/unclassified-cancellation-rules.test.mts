@@ -21,7 +21,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 
 describe('unclassified timeouts and cancellations', () => {
   for (const runAttempt of [1, 2]) {
-    it(`routes an unclassified attempt ${runAttempt} timeout to Harness`, async () => {
+    it(`routes an unclassified attempt ${runAttempt} timeout to the triage loop`, async () => {
       const result = await decide(makeCtx({ conclusion: 'timed_out', runAttempt }), rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
@@ -48,7 +48,7 @@ describe('unclassified timeouts and cancellations', () => {
     expect(result.matchedRule).toBe('')
   })
 
-  it('routes an unclassified failure to Harness', async () => {
+  it('routes an unclassified failure to the triage loop', async () => {
     const result = await decide(makeCtx(), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -131,7 +131,7 @@ describe('unclassified timeouts and cancellations', () => {
     expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
   })
 
-  it('routes jobless Main CI cloudflare-worker cancellations to Harness without known rerun-rule exhaustion', async () => {
+  it('routes jobless Main CI cloudflare-worker cancellations to the triage loop without known rerun-rule exhaustion', async () => {
     const result = await decide(
       makeCtx({
         workflowName: 'Main CI (cloudflare-worker)',

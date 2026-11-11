@@ -9,7 +9,11 @@ const RELATED_ISSUES_HEADING_RE = /^##\s+Related\s+issues\s*$/i
 
 const SCHEDULED_NO_SOURCE_VISIBLE_LINE = 'No source issue; scheduled prompt run.'
 const SCHEDULED_NO_SOURCE_MARKER = '<!-- related-issues-validation: no-source-scheduled-prompt -->'
-const SCHEDULED_WORKSPACE_SETUP_LINE = 'Workspace setup: Auto Harness scheduled prompt'
+const SCHEDULED_WORKSPACE_SETUP_LINES = new Set([
+  'Workspace setup: Triage loop scheduled prompt',
+  // Transition: accepted until open scheduled PRs written with the retired name have merged.
+  'Workspace setup: Auto Harness scheduled prompt',
+])
 
 export function extractRelatedIssuesLines(body: string): string[] {
   const section = parseMarkdownSections(body).sections.find(candidate =>
@@ -29,6 +33,6 @@ export function isScheduledPromptNoSourceBody(body: string): boolean {
       (line, index) =>
         line === SCHEDULED_NO_SOURCE_VISIBLE_LINE &&
         relatedIssuesLines[index + 1] === SCHEDULED_NO_SOURCE_MARKER,
-    ) && bodyLines.includes(SCHEDULED_WORKSPACE_SETUP_LINE)
+    ) && bodyLines.some(line => SCHEDULED_WORKSPACE_SETUP_LINES.has(line))
   )
 }

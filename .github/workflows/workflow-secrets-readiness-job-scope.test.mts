@@ -40,7 +40,7 @@ describe('unprovisionedSecretsWithoutReadinessStep — job-scope-only reference'
     ).toEqual([
       'fixture/wf-u.yml: "R2_DOCS_ACCESS_KEY_ID" is unprovisioned with no early-fail readiness step ' +
         '(expected a step binding `secrets.R2_DOCS_ACCESS_KEY_ID` to an env var, then ' +
-        '`if [ -z "$VAR" ]; then ...; exit 1; fi` — see harness-dispatch.yml)',
+        '`if [ -z "$VAR" ]; then ...; exit 1; fi`)',
     ])
   })
 
@@ -85,7 +85,7 @@ describe('unprovisionedSecretsWithoutReadinessStep — workflow-scope reference 
     ).toEqual([
       'fixture/wf-w.yml: "R2_DOCS_ACCESS_KEY_ID" is unprovisioned with no early-fail readiness step ' +
         '(expected a step binding `secrets.R2_DOCS_ACCESS_KEY_ID` to an env var, then ' +
-        '`if [ -z "$VAR" ]; then ...; exit 1; fi` — see harness-dispatch.yml)',
+        '`if [ -z "$VAR" ]; then ...; exit 1; fi`)',
     ])
   })
 
@@ -142,7 +142,7 @@ describe("unprovisionedSecretsWithoutReadinessStep — job-scoped reference alon
     ).toEqual([
       'fixture/wf-y.yml: "R2_DOCS_ACCESS_KEY_ID" is unprovisioned with no early-fail readiness step ' +
         '(expected a step binding `secrets.R2_DOCS_ACCESS_KEY_ID` to an env var, then ' +
-        '`if [ -z "$VAR" ]; then ...; exit 1; fi` — see harness-dispatch.yml)',
+        '`if [ -z "$VAR" ]; then ...; exit 1; fi`)',
     ])
   })
 

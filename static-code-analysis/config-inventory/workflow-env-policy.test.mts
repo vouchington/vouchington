@@ -24,7 +24,7 @@ describe('workflow env policy', () => {
         '          STALE_WORKFLOW_ENV: value',
         '          CODE_ENV: value',
         '          DOCKER_BUILD_SUMMARY: "false"',
-        '          HARNESS_CANCEL_CONFIRMATION: cancel-active-filaments-sessions',
+        '          UNREFERENCED_FIXTURE_ENV: cancel-active-filaments-sessions',
         '          GH_RETRY_BACKOFF_SECONDS: "1"',
         '          KEEP_MIN: "10"',
         '          GIT_CONFIG_COUNT: "1"',
@@ -67,7 +67,7 @@ describe('workflow env policy', () => {
       'workflow env STALE_WORKFLOW_ENV in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason',
     )
     expect(errors).toContain(
-      'workflow env HARNESS_CANCEL_CONFIRMATION in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason',
+      'workflow env UNREFERENCED_FIXTURE_ENV in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason',
     )
     for (const name of [
       'GH_RETRY_BACKOFF_SECONDS',

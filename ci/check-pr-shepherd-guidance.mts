@@ -1,10 +1,7 @@
 import { globSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import {
-  localHandoffFlagViolations,
-  prShepherdGuidanceViolations,
-} from './pr-shepherd-guidance-policy.mts'
+import { prShepherdGuidanceViolations } from './pr-shepherd-guidance-policy.mts'
 
 const GUIDANCE_GLOBS = ['.agents/skills/**/*.md', 'docs/**/*.md'] as const
 
@@ -15,7 +12,7 @@ export function checkPrShepherdGuidance(root: string): string[] {
     path,
     text: readFileSync(join(root, path), 'utf8'),
   }))
-  return [...prShepherdGuidanceViolations(files), ...localHandoffFlagViolations(files)]
+  return prShepherdGuidanceViolations(files)
 }
 
 if (import.meta.main) {

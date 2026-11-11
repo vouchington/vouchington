@@ -54,14 +54,22 @@ For every provider-created PR record, require `disposition: 'provider_fix_pr'`,
 `execution.status: 'completed'`, and `providerPullRequest`, plus a verified
 number, URL, and provenance that match the handoff and a nonempty execution
 receipt. Immediately before
-`ready-and-shepherd`, re-read the live PR state and current diff from
+the handoff, re-read the live PR state and current diff from
 `vouchington/vouchington`; require `OPEN`, the exact canonical repository, matching
 provider provenance, number, and URL, a diff that still addresses the source
-finding and evidence, and no unrelated changes. Block on mismatch before invoking:
+finding and evidence, and no unrelated changes. Block on mismatch. Then perform only these
+mutations, with no steering comment, no auto-merge, and no `/shepherd` post:
 
+```bash
+if [ "$(gh pr view <N> --json isDraft --jq .isDraft)" = "true" ]; then
+  gh pr ready <N> || exit 1
+fi
+gh pr edit <N> --add-label automation || exit 1
 ```
-ready-and-shepherd <N> --codex-security-local-handoff
-```
+
+Verify the PR is still `OPEN`, not a draft, and labeled `automation`
+(`gh pr view <N> --json isDraft,labels,state`); fail closed otherwise. Shepherding and merging stay
+with the attended triage loop, within its grant.
 
 This is Vouchington post-processing only: it does not create, repair, or replace
 the provider PR. Preserve the canonical
@@ -71,8 +79,6 @@ final report.
 
 ## See Also
 
-- [ready-and-shepherd](../ready-and-shepherd/SKILL.md) — shared
-  provider-PR post-processing flow.
 - [github-issue](../github-issue/SKILL.md) — issue search and creation
   conventions for grouped-issue dispositions.
 - [SECURITY.md](../../../docs/requirements/security/SECURITY.md) —

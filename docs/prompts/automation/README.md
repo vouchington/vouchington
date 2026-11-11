@@ -1,6 +1,6 @@
 # Automation Prompt Templates
 
-These templates are filled in and run locally by the attended triage loop or a self-shepherding agent. The prompt surface and consumer contract
+These are the prompts the attended triage loop fills in and hands to local subagents. The loop receives events (merge-queue ejections, main CI failures, new Dependabot PRs, and the owner's `/shepherd`, `/plan` and `/fix` comments), verifies each sender's login itself, and dispatches the matching prompt; the prompts therefore carry no trigger-comment or author-association checks. The prompt surface and consumer contract
 live in the [prompt catalog](../README.md); scheduled prompts have their single complete list in
 [Scheduled prompt catalog](../SCHEDULED.md).
 

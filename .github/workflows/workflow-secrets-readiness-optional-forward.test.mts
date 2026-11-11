@@ -56,7 +56,7 @@ function readinessViolation(): string {
   return (
     `${CALLER_PATH}: "${SECRET}" is unprovisioned with no early-fail readiness step ` +
     '(expected a step binding `secrets.PROVIDER_API_TOKEN` to an env var, then ' +
-    '`if [ -z "$VAR" ]; then ...; exit 1; fi` — see harness-dispatch.yml)'
+    '`if [ -z "$VAR" ]; then ...; exit 1; fi`)'
   )
 }
 

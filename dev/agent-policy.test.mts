@@ -207,7 +207,7 @@ describe('renderNoSourceIssue', () => {
     [
       'scheduled prompt run',
       isScheduledPromptNoSourceBody,
-      'Workspace setup: Auto Harness scheduled prompt\n',
+      'Workspace setup: Triage loop scheduled prompt\n',
     ],
   ])('renders the %s pair the body policy accepts', (reason, accepts, setup) => {
     const body = `## Related issues\n\n${renderNoSourceIssue({ reason })}\n\n${setup}`

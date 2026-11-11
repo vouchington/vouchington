@@ -28,8 +28,7 @@
 - Each recommendation names the PR, concrete evidence, verified source, preventive change, and
   whether the finding recurs. Group repeated causes for [retrospective](../retrospective/SKILL.md).
 - Source changes require the calling workflow's authority. [PR triage](../triage-prs/SKILL.md)
-  owns its bounded feedback-PR behavior; [ready-and-shepherd](../ready-and-shepherd/SKILL.md)
-  stays a mechanical handoff.
+  owns its bounded feedback-PR behavior.
 
 ## Automated review
 
