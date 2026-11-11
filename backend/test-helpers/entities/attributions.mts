@@ -2,7 +2,7 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
-import { referralSummarySql } from '@services/growth-metrics/get-network-effects'
+import { referralSummarySql } from '../../services/growth-metrics/get-network-effects.mts'
 
 export async function setUserReferrerId(userId: string, referrerId: string): Promise<void> {
   await write(
