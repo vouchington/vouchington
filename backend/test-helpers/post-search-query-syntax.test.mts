@@ -105,7 +105,7 @@ describe('post search SQL composition', () => {
       limit: 26,
     })
     expect(query.sql).toContain('hackerNewsHotWindow')
-    expect(query.sql).not.toContain('1e300::DOUBLE PRECISION')
+    expect(query.sql).toContain('hot_score')
     expect(query.sql).not.toContain('posts.id >=')
     const facts = await parsePostgresSql({ sql: query.text })
     expect(facts.diagnostics).toEqual([])
