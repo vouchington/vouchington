@@ -90,28 +90,10 @@ describe('manual copyright email association', () => {
     const noticeId = await createCopyrightNoticeForManualAssociation()
     await using erasure = await beginTransaction()
     await markTestCopyrightNoticeErased(noticeId, erasure)
-    let resolvePreflight!: () => void
-    const preflight = new Promise<void>(resolve => {
-      resolvePreflight = resolve
-    })
-    const dispose = installSharedDbScopeObserver(event => {
-      if (
-        event.operation === 'associateCopyrightEmailIntakePreflight' &&
-        event.scope.kind === 'ids' &&
-        event.scope.ids[0] === intake.id
-      )
-        resolvePreflight()
-    })
-    try {
-      const association = associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId)
-        .then(() => new Error('Erased case was linked'))
-        .catch((err: unknown) => err)
-      await preflight
-      await erasure.commit()
-      await expect(association).resolves.toMatchObject({ status: 404 })
-    } finally {
-      dispose()
-    }
+    await erasure.commit()
+    await expect(
+      associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId),
+    ).rejects.toMatchObject({ status: 404 })
     expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
     expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
   })

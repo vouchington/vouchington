@@ -86,7 +86,7 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
       ON review.copyright_notice_form_intake_id = intake.id
       AND NOT review.is_accepted
     WHERE intake.id = ${intakeId} AND notice.evidence_erased_at IS NULL
-    FOR UPDATE OF notice, submission, intake, review
+    FOR UPDATE OF notice, submission
   `)
   const state = rows[0]
   if (!state) {
