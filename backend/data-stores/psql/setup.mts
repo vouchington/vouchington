@@ -29,9 +29,19 @@ const postCommitActionScopes = new AsyncLocalStorage<PostCommitActionScope>()
 const runWithTransactionOptions = psql.withTransactionOptions as AdapterTransactionOptions
 
 export async function beginTransaction(
-  options: BeginTransactionOptions = {},
+  options: BeginTransactionOptions & { serializable?: boolean } = {},
 ): Promise<OwnedTransaction> {
-  return ownTransaction(await psql.beginTransaction(options))
+  const { serializable, ...adapterOptions } = options
+  const transaction = ownTransaction(await psql.beginTransaction(adapterOptions))
+  if (!serializable) return transaction
+  try {
+    // Must run before the transaction's first query so its snapshot is SERIALIZABLE.
+    await transaction('/* beginSerializable */ SET TRANSACTION ISOLATION LEVEL SERIALIZABLE')
+  } catch (err) {
+    await transaction.rollback()
+    throw err
+  }
+  return transaction
 }
 
 export async function beginBoundedTransaction(

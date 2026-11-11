@@ -47,11 +47,16 @@ export async function withActiveAccountSession<T>(
   currentUserId: string,
   session: AccountChangeSession,
   work: (query: TransactionQuery) => Promise<T>,
+  options?: { serializable?: boolean },
 ): Promise<T> {
-  return runWithTransaction(undefined, async query => {
-    await lockActiveAccountSession(currentUserId, session, query)
-    return work(query)
-  })
+  return runWithTransaction(
+    undefined,
+    async query => {
+      await lockActiveAccountSession(currentUserId, session, query)
+      return work(query)
+    },
+    options,
+  )
 }
 
 async function readLockedAccountSession(

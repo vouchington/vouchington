@@ -5,6 +5,7 @@ import { v7 } from 'uuid'
 import {
   createTestUser,
   getTestPrivateUserById,
+  insertTestPasskey,
   insertTestTotpAuthenticator,
 } from '@voucha/test-helpers'
 import { addVerifiedEmailForUser } from '@voucha/test-helpers/entities/email-addresses'
@@ -18,7 +19,10 @@ import {
   consumeTestAccountChangeProof,
 } from '@voucha/test-helpers/account-change'
 import { withReauthenticatedAccountChange } from './account-change.mts'
-import { deleteTotpAuthenticatorWithMfaProtection } from './protected-mfa-delete.mts'
+import {
+  deletePasskeyWithMfaProtection,
+  deleteTotpAuthenticatorWithMfaProtection,
+} from './protected-mfa-delete.mts'
 
 // Exercise the shared mutation boundary with the real stores and email queue.
 describe('account settings changes', () => {
@@ -109,7 +113,7 @@ describe('account settings changes', () => {
     await expect(addUserRole(user.id, 'administrator')).rejects.toMatchObject({ status: 403 })
   })
 
-  it('serializes an administrator grant with removal of the last factor', async () => {
+  it('never leaves an administrator without MFA when a grant races removal of the last factor', async () => {
     const user = await createTestUser()
     const factor = await insertTestTotpAuthenticator(user.id, 'role-race')
     const actor = await createTestAccountChangeActor(user.id)
@@ -118,10 +122,28 @@ describe('account settings changes', () => {
       addUserRole(user.id, 'administrator'),
       deleteTotpAuthenticatorWithMfaProtection(user.id, factor.id, token, actor.session),
     ])
-    expect(outcomes.filter(result => result.status === 'fulfilled')).toHaveLength(1)
-    const current = await getTestPrivateUserById(user.id)
-    const mfa = await getUserMfaStatus(user.id)
-    expect(current?.roles.includes('administrator') && !mfa.hasMfa).toBe(false)
+    expect(settledSummary(outcomes)).toMatchObject({ winners: 1 })
+    expect([403, 409]).toContain(settledSummary(outcomes).loserStatus)
+    await expect(administratorWithoutMfa(user.id)).resolves.toBe(false)
+  })
+
+  it('never removes both factors of an administrator when passkey and TOTP removals race', async () => {
+    const user = await createTestUser()
+    const passkey = await insertTestPasskey(user.id, `factor-race-${v7()}`)
+    const totp = await insertTestTotpAuthenticator(user.id, 'factor-race')
+    await addUserRole(user.id, 'administrator')
+    const actor = await createTestAccountChangeActor(user.id)
+    const [passkeyToken, totpToken] = await Promise.all([
+      createTestAccountChangeProof(user.id, actor.session),
+      createTestAccountChangeProof(user.id, actor.session),
+    ])
+    const outcomes = await Promise.allSettled([
+      deletePasskeyWithMfaProtection(user.id, passkey.id, passkeyToken, actor.session),
+      deleteTotpAuthenticatorWithMfaProtection(user.id, totp.id, totpToken, actor.session),
+    ])
+    expect(settledSummary(outcomes)).toMatchObject({ winners: 1 })
+    expect([403, 409]).toContain(settledSummary(outcomes).loserStatus)
+    await expect(administratorWithoutMfa(user.id)).resolves.toBe(false)
   })
 
   it('keeps the last administrator factor even with fresh authentication', async () => {
@@ -139,3 +161,17 @@ describe('account settings changes', () => {
     ).rejects.toMatchObject({ status: 403 })
   })
 })
+
+function settledSummary(outcomes: PromiseSettledResult<unknown>[]) {
+  const loser = outcomes.find(outcome => outcome.status === 'rejected')
+  return {
+    winners: outcomes.filter(outcome => outcome.status === 'fulfilled').length,
+    loserStatus: (loser?.reason as { status?: number } | undefined)?.status,
+  }
+}
+
+async function administratorWithoutMfa(userId: string) {
+  const current = await getTestPrivateUserById(userId)
+  const mfa = await getUserMfaStatus(userId)
+  return Boolean(current?.roles.includes('administrator')) && !mfa.hasMfa
+}

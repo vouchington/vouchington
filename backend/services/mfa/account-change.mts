@@ -18,22 +18,28 @@ export async function withReauthenticatedAccountChange<T>(
   session: AccountChangeSession,
   reAuthToken: string | undefined,
   change: (query: TransactionQuery) => Promise<T>,
+  options?: { serializable?: boolean },
 ): Promise<T> {
-  return withActiveAccountSession(currentUserId, session, async query => {
-    const actorSessionLocked = await lockSessionsAccountChangeWillWrite(
-      query,
-      currentUserId,
-      session.sid,
-    )
-    return finishReauthenticatedAccountChange(
-      currentUserId,
-      session,
-      reAuthToken,
-      change,
-      query,
-      actorSessionLocked,
-    )
-  })
+  return withActiveAccountSession(
+    currentUserId,
+    session,
+    async query => {
+      const actorSessionLocked = await lockSessionsAccountChangeWillWrite(
+        query,
+        currentUserId,
+        session.sid,
+      )
+      return finishReauthenticatedAccountChange(
+        currentUserId,
+        session,
+        reAuthToken,
+        change,
+        query,
+        actorSessionLocked,
+      )
+    },
+    options,
+  )
 }
 
 async function finishReauthenticatedAccountChange<T>(

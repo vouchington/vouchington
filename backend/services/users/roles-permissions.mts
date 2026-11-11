@@ -5,9 +5,19 @@ import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggrega
 import { markJwtStale } from '@data-stores/valkey/jwt-stale'
 import onError from '@modules/on-error'
 import { getUserMfaStatus } from '@services/mfa/status'
+import { conflictOnSerializationFailure } from '@services/mfa/serialization-conflict'
 
 export const addUserRole = async (userId: string, role: string) => {
-  await using query = await beginTransaction()
+  await conflictOnSerializationFailure(() => grantUserRole(userId, role))
+  await Promise.all([
+    enqueueRecalculateUserVoteWeightBestEffort(userId),
+    markJwtStale(userId).catch(onError),
+  ])
+}
+
+async function grantUserRole(userId: string, role: string) {
+  // Only the administrator grant reads MFA state that factor removal can invalidate.
+  await using query = await beginTransaction({ serializable: role === 'administrator' })
   await query(sql`/* lockRoleGrantUser */ SELECT fn_lock_active_user_for_mutation(${userId})`)
   const { rows } = await query<{
     platform_account_kind: 'official' | 'system' | null
@@ -37,8 +47,4 @@ export const addUserRole = async (userId: string, role: string) => {
     await query(sql`/* addUserRole: mark vote weight dirty */
       UPDATE users SET vote_weight_recalculated_at = NULL WHERE id = ${userId}::uuid`)
   await query.commit()
-  await Promise.all([
-    enqueueRecalculateUserVoteWeightBestEffort(userId),
-    markJwtStale(userId).catch(onError),
-  ])
 }
