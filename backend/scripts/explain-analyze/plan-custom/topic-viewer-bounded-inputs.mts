@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { getTopicsWorkLimit } from '@services/topics/work-limits'
 import { baseRelationName, collectPlanNodes, type PlanNode } from '../plan-nodes.mts'
 import {
   validRecursiveWalk,
@@ -36,9 +37,12 @@ const INPUTS = [
 /** Structural seek evidence complements the scenario's unchanged physical-row budgets. */
 export function assertTopicViewerInputsAreBounded(result: ExplainResult): void {
   const nodes = collectPlanNodes(result.plan)
+  const inputCap = getTopicsWorkLimit('viewer_count_input_cap')
   const missing = INPUTS.filter(input => {
     const raw = nodes.find(node => node['Subplan Name'] === `CTE ${input.cte}`)
     if (!raw || raw['Node Type'] !== 'Limit') return true
+    // Actual Rows is per invocation, matching the raw input limit's scope.
+    if (typeof raw['Actual Rows'] !== 'number' || raw['Actual Rows'] > inputCap) return true
     if (collectPlanNodes(raw).some(node => baseRelationName(node) === 'posts')) return true
     let walks = 0
     function visit(node: PlanNode, limits = 0, inLoop = false, localLimit = false): boolean {

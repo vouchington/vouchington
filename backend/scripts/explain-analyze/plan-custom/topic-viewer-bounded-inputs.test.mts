@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ExplainResult } from '@data-stores/psql'
+import { getTopicsWorkLimit } from '@services/topics/work-limits'
 import { assertTopicViewerInputsAreBounded } from './topic-viewer-bounded-inputs.mts'
 
 type Node = Record<string, unknown>
@@ -61,6 +62,7 @@ function fixture(): ExplainResult {
           : body,
       ),
       'Subplan Name': `CTE ${cte}`,
+      'Actual Rows': 1,
     }
   })
   return {
@@ -90,6 +92,12 @@ const aliasWalk = (result: ExplainResult) =>
 describe('bounded viewer input plans', () => {
   it('accepts owned raw bounds and first/next keyed seeks', () => {
     expect(() => assertTopicViewerInputsAreBounded(fixture())).not.toThrow()
+  })
+  it.each(specs)('rejects %s emitting more rows than the configured input cap', cte => {
+    const result = fixture()
+    const raw = nodes(result).find(node => node['Subplan Name'] === `CTE ${cte}`)!
+    raw['Actual Rows'] = getTopicsWorkLimit('viewer_count_input_cap') + 1
+    expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound keyed reads')
   })
   it('accepts partition Merge Append paths below the one-row seek', () => {
     const result = fixture()
