@@ -1,8 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
-import { referralSummarySql } from '../../services/growth-metrics/get-network-effects.mts'
 
 export async function setUserReferrerId(userId: string, referrerId: string): Promise<void> {
   await write(
@@ -87,16 +85,6 @@ export async function deleteReferralAttributionsByIds(ids: string[]): Promise<vo
   await write(sql`/* deleteReferralAttributionsByIds */
     DELETE FROM session_referral_attributions WHERE id = ANY(${ids}::uuid[])
   `)
-}
-
-export async function getReferralSummaryForReferrer(
-  referrerId: string,
-  periodStart: Date,
-): Promise<{ attributions: number; unique_links: number }> {
-  const { rows } = await read<{ attributions: number; unique_links: number }>(
-    referralSummarySql(getMinUUIDv7ForDate(periodStart), referrerId),
-  )
-  return rows[0]!
 }
 
 export async function clearReferralAttributionUserId(id: string): Promise<void> {

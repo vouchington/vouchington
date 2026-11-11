@@ -65,8 +65,8 @@ export async function getNetworkEffects(
   }
 }
 
-export function referralSummarySql(periodStartUuid: string, referrerId?: string): SQLStatement {
-  const statement = sql`/* referralSummarySql */
+function referralSummarySql(periodStartUuid: string): SQLStatement {
+  return sql`/* referralSummarySql */
     SELECT
       COUNT(*)::INT AS attributions,
       COUNT(DISTINCT sra.referrer_user_id)::INT AS unique_links
@@ -79,6 +79,4 @@ export function referralSummarySql(periodStartUuid: string, referrerId?: string)
           AND earlier.id < sra.id
       )
   `
-  if (referrerId) statement.append(sql` AND sra.referrer_user_id = ${referrerId}`)
-  return statement
 }
