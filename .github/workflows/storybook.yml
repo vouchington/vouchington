@@ -83,7 +83,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.checkout_ref || github.sha }}
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@9430c3ba680eb5db4e051ad302e7e9c971ea6953 # v0.87.1
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -114,7 +114,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9430c3ba680eb5db4e051ad302e7e9c971ea6953 # v0.87.1
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
         with:
           suite: web-storybook
       - name: Upload full web-storybook LCOV to GitHub (attempt 2)
@@ -122,7 +122,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9430c3ba680eb5db4e051ad302e7e9c971ea6953 # v0.87.1
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
         with:
           suite: web-storybook
           name-suffix: -retry
@@ -137,7 +137,7 @@ jobs:
           RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Install Playwright Chromium
-        uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@9430c3ba680eb5db4e051ad302e7e9c971ea6953 # v0.87.1
+        uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
         timeout-minutes: 5
       - name: Clear stale coverage before browser run
         timeout-minutes: 1
@@ -193,7 +193,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9430c3ba680eb5db4e051ad302e7e9c971ea6953 # v0.87.1
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
         with:
           suite: web-storybook-browser
       - name: Upload full web-storybook-browser LCOV to GitHub (attempt 2)
@@ -201,7 +201,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-2.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9430c3ba680eb5db4e051ad302e7e9c971ea6953 # v0.87.1
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
         with:
           suite: web-storybook-browser
           name-suffix: -retry
