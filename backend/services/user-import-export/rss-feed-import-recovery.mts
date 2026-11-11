@@ -47,16 +47,7 @@ export async function recoverStalledUserRssFeedImports(
   }
   if (completedIds.length > 0) {
     // A crash after the final row commits can leave the completion marker unset.
-    await write(sql`/* completeStalledUserRssFeedImports */
-      UPDATE user_rss_feed_import_batches batch
-      SET completed_at = CURRENT_TIMESTAMP
-      WHERE batch.id = ANY(${completedIds}::uuid[])
-        AND batch.completed_at IS NULL
-        AND NOT EXISTS (
-          SELECT 1 FROM user_rss_feed_import_rows pending
-          WHERE pending.batch_id = batch.id AND pending.outcome IS NULL
-        )
-    `)
+    await completeStalledUserRssFeedImports(completedIds)
   }
   if (ids.length === 0) return 0
   // The marker follows the enqueue: a crash between them only repeats an idempotent dispatch.
@@ -71,4 +62,17 @@ export async function recoverStalledUserRssFeedImports(
     `,
   )
   return ids.length
+}
+
+async function completeStalledUserRssFeedImports(completedIds: string[]): Promise<void> {
+  await write(sql`/* completeStalledUserRssFeedImports */
+    UPDATE user_rss_feed_import_batches batch
+    SET completed_at = CURRENT_TIMESTAMP
+    WHERE batch.id = ANY(${completedIds}::uuid[])
+      AND batch.completed_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM user_rss_feed_import_rows pending
+        WHERE pending.batch_id = batch.id AND pending.outcome IS NULL
+      )
+  `)
 }
