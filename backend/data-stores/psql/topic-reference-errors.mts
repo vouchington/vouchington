@@ -12,10 +12,7 @@ export function normalizeTopicReferenceError(error: unknown): unknown {
     return error
   }
   if (typeof detail !== 'object' || detail === null || !('code' in detail)) return error
-  if (
-    detail.code !== 'topic_reference_inactive' &&
-    detail.code !== 'topic_merge_in_progress'
-  ) {
+  if (detail.code !== 'topic_reference_inactive' && detail.code !== 'topic_merge_in_progress') {
     return error
   }
   const normalized = createCodedError(409, error.message, detail.code)
