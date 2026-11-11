@@ -8,19 +8,19 @@ const guidance = [
 ].toSorted()
 
 describe('shepherd handoff guidance', () => {
-  it('has no retired dispatch gates or checkpoints', () => {
+  it('has no retired dispatch gates, checkpoints, labels, or skill references', () => {
     expect(guidance.length).toBeGreaterThan(0)
-    for (const path of guidance) {
-      const text = read(path)
-      expect(text, path).not.toContain('HARNESS_')
-      expect(text, path).not.toContain('shepherd-checkpoint')
-      expect(text, path).not.toContain('automation:auto-fix')
-      expect(text, path).not.toContain('automation:scheduled')
-    }
-  })
-
-  it('keeps the retired ready-and-shepherd skill gone', () => {
-    for (const path of guidance) expect(read(path), path).not.toContain('ready-and-shepherd')
+    const banned = [
+      'HARNESS_',
+      'shepherd-checkpoint',
+      'automation:auto-fix',
+      'automation:scheduled',
+      'ready-and-shepherd',
+    ]
+    const hits = guidance.flatMap(path =>
+      banned.filter(term => read(path).includes(term)).map(term => `${path}: ${term}`),
+    )
+    expect(hits).toEqual([])
   })
 
   it('documents shepherding by the author with an optional /shepherd delegation', () => {
