@@ -4,12 +4,12 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { request } from 'node:https'
 import { platform, tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { setTimeout as delay } from 'node:timers/promises'
 import tls from 'node:tls'
 import { ensureAwsEmulatorBinary } from './aws-emulator-package.mts'
 import {
   AWS_EMULATOR_IDLE_TIMEOUT_SECONDS,
   startAwsEmulatorInDocker,
+  readAnnouncedPort,
   type StartedAwsEmulatorProcess,
 } from './aws-emulator-docker.mts'
 
@@ -38,7 +38,7 @@ export async function startAwsEmulator(): Promise<RunningAwsEmulator> {
       await readFile(join(stateDir, 'emulator_credentials'), 'utf8'),
     )
     const endpoint = `https://127.0.0.1:${port}`
-    await waitForHealth(endpoint, caPem)
+    await checkHealth(endpoint, caPem)
     return {
       endpoint,
       region: 'us-west-2',
@@ -76,64 +76,33 @@ async function startNative(home: string): Promise<StartedAwsEmulatorProcess> {
   return { port: readAnnouncedPort(child), stop: () => stopChild(child) }
 }
 
-function readAnnouncedPort(child: ChildProcess): Promise<number> {
-  return new Promise((resolvePort, reject) => {
-    let output = ''
-    const timer = setTimeout(() => {
-      reject(new Error(`AWS Emulator did not announce its endpoint:\n${output}`))
-    }, READY_DEADLINE_MS)
-    const onData = (chunk: Buffer) => {
-      output += chunk.toString()
-      const match = /"endpoint_url":"https:\/\/127\.0\.0\.1:(\d+)"/.exec(output)
-      if (!match) return
-      clearTimeout(timer)
-      child.stdout?.off('data', onData)
-      child.stderr?.off('data', onData)
-      // Keep draining so a full pipe never blocks the emulator.
-      child.stdout?.resume()
-      child.stderr?.resume()
-      resolvePort(Number(match[1]))
-    }
-    child.stdout?.on('data', onData)
-    child.stderr?.on('data', onData)
-    child.once('exit', code => {
-      clearTimeout(timer)
-      reject(new Error(`AWS Emulator exited with ${code} before it was ready:\n${output}`))
-    })
-  })
-}
-
 async function stopChild(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null || child.signalCode !== null) return
   const exited = once(child, 'exit')
   child.kill('SIGTERM')
-  const timer = setTimeout(() => child.kill('SIGKILL'), 5_000)
+  // The runtime owns the timer behind AbortSignal.timeout; a stuck emulator is killed outright.
+  const forceKill = AbortSignal.timeout(5_000)
+  const onForceKill = () => child.kill('SIGKILL')
+  forceKill.addEventListener('abort', onForceKill, { once: true })
   await exited
-  clearTimeout(timer)
+  forceKill.removeEventListener('abort', onForceKill)
 }
 
-async function waitForHealth(endpoint: string, caPem: string): Promise<void> {
-  const deadline = Date.now() + READY_DEADLINE_MS
-  let lastError: unknown
-  while (Date.now() < deadline) {
-    try {
-      const status = await new Promise<number | undefined>((resolveStatus, reject) => {
-        const req = request(`${endpoint}/__admin/health`, { ca: caPem, timeout: 2_000 }, res => {
-          res.resume()
-          resolveStatus(res.statusCode)
-        })
-        req.once('timeout', () => req.destroy(new Error('health check timed out')))
-        req.once('error', reject)
-        req.end()
-      })
-      if (status === 200) return
-      lastError = new Error(`health returned ${status}`)
-    } catch (err) {
-      lastError = err
-    }
-    await delay(100)
-  }
-  throw new Error(`AWS Emulator at ${endpoint} never became healthy`, { cause: lastError })
+// The emulator logs its endpoint once it listens, so one request confirms it serves.
+async function checkHealth(endpoint: string, caPem: string): Promise<void> {
+  const status = await new Promise<number | undefined>((resolveStatus, reject) => {
+    const req = request(
+      `${endpoint}/__admin/health`,
+      { ca: caPem, signal: AbortSignal.timeout(READY_DEADLINE_MS) },
+      res => {
+        res.resume()
+        resolveStatus(res.statusCode)
+      },
+    )
+    req.once('error', reject)
+    req.end()
+  })
+  if (status !== 200) throw new Error(`AWS Emulator at ${endpoint} answered health with ${status}`)
 }
 
 function parseCredentials(file: string): { accessKeyId: string; secretAccessKey: string } {

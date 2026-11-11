@@ -1,7 +1,4 @@
-import { execFile } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
-import { setTimeout as delay } from 'node:timers/promises'
+import { execFile, spawn, type ChildProcess } from 'node:child_process'
 import { promisify } from 'node:util'
 import { ensureAwsEmulatorBinary } from './aws-emulator-package.mts'
 
@@ -68,6 +65,13 @@ export async function startAwsEmulatorInDocker(home: string): Promise<StartedAws
     await execFileAsync('docker', ['rm', '--force', name]).catch(() => undefined)
   }
   const port = (async () => {
+    // Follow the container log until the server announces it listens; the state files exist then.
+    const logs = spawn('docker', ['logs', '--follow', name], { stdio: ['ignore', 'pipe', 'pipe'] })
+    try {
+      await readAnnouncedPort(logs)
+    } finally {
+      logs.kill()
+    }
     const { stdout } = await execFileAsync('docker', [
       'port',
       name,
@@ -75,17 +79,40 @@ export async function startAwsEmulatorInDocker(home: string): Promise<StartedAws
     ])
     const match = /:(\d+)\s*$/m.exec(stdout)
     if (!match) throw new Error(`Could not read the published AWS Emulator port: ${stdout}`)
-    // The state files appear once the server listens; health polling below waits for both.
-    await waitForFile(join(home, '.aws', 'emulator', String(EMULATOR_PORT_IN_CONTAINER), 'ca.pem'))
     return Number(match[1])
   })()
   return { port, statePort: EMULATOR_PORT_IN_CONTAINER, stop }
 }
 
-async function waitForFile(path: string): Promise<void> {
-  const deadline = Date.now() + READY_DEADLINE_MS
-  while (!existsSync(path)) {
-    if (Date.now() > deadline) throw new Error(`AWS Emulator did not write ${path}`)
-    await delay(100)
-  }
+/** Resolves with the port in the emulator's startup log line, or rejects past the deadline. */
+export function readAnnouncedPort(child: ChildProcess): Promise<number> {
+  return new Promise((resolvePort, reject) => {
+    let output = ''
+    // The runtime owns the timer behind AbortSignal.timeout, so the deadline is an abort event.
+    const deadline = AbortSignal.timeout(READY_DEADLINE_MS)
+    const settle = new AbortController()
+    deadline.addEventListener(
+      'abort',
+      () => reject(new Error(`AWS Emulator did not announce its endpoint:\n${output}`)),
+      { once: true, signal: settle.signal },
+    )
+    const onData = (chunk: Buffer) => {
+      output += chunk.toString()
+      const match = /"endpoint_url":"https:\/\/[^"]+:(\d+)"/.exec(output)
+      if (!match) return
+      settle.abort()
+      child.stdout?.off('data', onData)
+      child.stderr?.off('data', onData)
+      // Keep draining so a full pipe never blocks the emulator.
+      child.stdout?.resume()
+      child.stderr?.resume()
+      resolvePort(Number(match[1]))
+    }
+    child.stdout?.on('data', onData)
+    child.stderr?.on('data', onData)
+    child.once('exit', code => {
+      settle.abort()
+      reject(new Error(`AWS Emulator exited with ${code} before it was ready:\n${output}`))
+    })
+  })
 }

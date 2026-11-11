@@ -32,10 +32,13 @@ vi.doMock(awsPackage.resolve('@vouchington/aws/request-handler'), async importOr
   ...(await importOriginal<object>()),
   AWS_DUALSTACK_CLIENT_CONFIG: { useDualstackEndpoint: false },
 }))
-vi.doMock(awsPackage.resolve('@vouchington/aws/sqs'), async importOriginal => {
-  const actual = await importOriginal<{ SQS_CLIENT_CONFIG: object }>()
-  return {
-    ...actual,
-    SQS_CLIENT_CONFIG: { ...actual.SQS_CLIENT_CONFIG, useDualstackEndpoint: false },
-  }
-})
+// Service presets spread the dual-stack constant internally, so each one is overridden too.
+for (const [subpath, presetName] of [
+  ['sqs', 'SQS_CLIENT_CONFIG'],
+  ['ses', 'SES_CLIENT_CONFIG'],
+] as const) {
+  vi.doMock(awsPackage.resolve(`@vouchington/aws/${subpath}`), async importOriginal => {
+    const actual = await importOriginal<Record<string, object>>()
+    return { ...actual, [presetName]: { ...actual[presetName], useDualstackEndpoint: false } }
+  })
+}
