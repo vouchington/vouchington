@@ -38,10 +38,10 @@ type ClusterLookup = {
 /** Read-only copies of the writer's target predicates guard its indexed access paths. */
 export async function runModerationClusterWriteScenarios(): Promise<void> {
   await runModerationCaseWriterScenario()
-  // Earlier cluster updates leave dead index TIDs. Vacuum before the lookup so the bitmap
-  // count follows live rows rather than autovacuum timing.
+  // Earlier cluster updates leave dead index TIDs. AUTO can skip a small remainder, so force
+  // index cleanup before measuring bitmap work against live rows.
   await write(
-    '/* prepareModerationClusterWriterPlans */ VACUUM (ANALYZE) moderation_report_clusters',
+    '/* prepareModerationClusterWriterPlans */ VACUUM (ANALYZE, INDEX_CLEANUP ON) moderation_report_clusters',
   )
   const rssItem = (await loadReportContextEntities()).find(
     entity => entity.entityType === 'rss_feed_item',
