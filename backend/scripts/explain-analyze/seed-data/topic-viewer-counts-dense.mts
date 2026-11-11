@@ -14,6 +14,11 @@ export const DENSE_TOPIC_VIEWER_COUNTS = {
   discussions: DIRECT_DISCUSSIONS + ALIAS_DISCUSSIONS,
   reviews: REVIEWS,
   'data-points': DATA_POINTS,
+  count_capped: {
+    discussions: false,
+    reviews: false,
+    'data-points': false,
+  },
 } as const
 
 // Topic 2400 has no positively voted direct/alias post relation or review/data-point attachment

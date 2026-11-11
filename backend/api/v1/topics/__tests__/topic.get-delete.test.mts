@@ -102,6 +102,7 @@ describe('topic', () => {
         const anonResponse = await anonRequest.get(`/api/v1/topics/${topic.id}`).expect(200)
         expect(anonResponse.body.topic_metrics.count.discussions).toBe(1)
         expect(anonResponse.body.topic_metrics).not.toHaveProperty('viewer_count')
+        expect(anonResponse.body.topic_metrics).not.toHaveProperty('viewer_count_capped')
 
         const authRequest = createRequest()
         await authRequest.authenticateAs(viewer!)
@@ -114,6 +115,12 @@ describe('topic', () => {
           'data-points': 0,
         })
         expect(authResponse.body.topic_metrics.viewer_count).not.toHaveProperty('news')
+        expect(authResponse.body.topic_metrics.viewer_count_capped).toEqual({
+          discussions: false,
+          reviews: false,
+          'data-points': false,
+        })
+        expect(authResponse.body.topic_metrics.viewer_count).not.toHaveProperty('count_capped')
       })
 
       it('returns the authenticated user topic vote in the consolidated payload', async () => {

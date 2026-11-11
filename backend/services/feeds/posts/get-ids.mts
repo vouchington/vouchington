@@ -5,6 +5,9 @@ import { read } from '@data-stores/psql'
 import { getTimeRangeLowerBoundDate } from '../time-range-utils.mts'
 import type { PostFeedWalkSort } from './get-ids/eligible-posts-cte.mts'
 import { mapPostFeedResponse, parsePostFeedCursor } from './get-ids/feed-cursor.mts'
+import { buildTopicPostFeedPageQuery } from './get-ids/topic-walk-query.mts'
+import { TOPIC_WALK_ROW_CAP } from '@services/posts/search/query-builder/topic-walk'
+import { hasTopicMembershipFilters } from '@services/posts/search/query-builder/topic-filters'
 import { buildPostFeedPageQuery } from './get-ids/page-query.mts'
 
 const DEFAULT_MIN_SCORE_FOLLOW_USERS = -5
@@ -15,6 +18,7 @@ export async function getPostFeedIds(
   currentUser: PrivateUser,
   options: PostFeedOptions = {},
   asOf: Date = new Date(),
+  inspectedRowCap: number = TOPIC_WALK_ROW_CAP,
 ): Promise<PostFeedResponse> {
   const requestedInstant = new Date(asOf)
   if (!Number.isFinite(requestedInstant.getTime()))
@@ -38,7 +42,7 @@ export async function getPostFeedIds(
     sort === 'hot' && (!requestedCutoff || requestedCutoff < hotFloor) ? hotFloor : requestedCutoff
   const safeLimit = clampLimit(limit)
 
-  const query = buildPostFeedPageQuery({
+  const pageOptions = {
     communityId: options.community_id,
     currentUserId: currentUser.id,
     cursor,
@@ -59,7 +63,10 @@ export async function getPostFeedIds(
     minScoreFollowTopics: options.min_score_follow_topics ?? DEFAULT_MIN_SCORE_FOLLOW_TOPICS,
     minScoreFollowUsers: options.min_score_follow_users ?? DEFAULT_MIN_SCORE_FOLLOW_USERS,
     safeLimit,
-  })
+  }
+  const query = hasTopicMembershipFilters(options)
+    ? buildTopicPostFeedPageQuery(pageOptions, inspectedRowCap)
+    : buildPostFeedPageQuery(pageOptions)
   const { rows } = await read(query)
-  return mapPostFeedResponse(rows, safeLimit, sort, decisionInstant)
+  return mapPostFeedResponse(rows, safeLimit, sort, decisionInstant, inspectedRowCap)
 }

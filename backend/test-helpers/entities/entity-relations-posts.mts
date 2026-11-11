@@ -1,5 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { getEntityRelation } from './entity-relations.mts'
 
 export type ScoredPostTopicCategoryRelation = {
@@ -13,12 +14,13 @@ export async function insertScoredPostTopicCategoryRelation(
   postId: string,
   topicId: string,
   createdById?: string,
+  relationDate?: Date,
 ): Promise<ScoredPostTopicCategoryRelation> {
   const query = sql`/* insertScoredPostTopicCategoryRelation */
       INSERT INTO relation__post__category__topic (
-        subject_id, object_id, created_by_id, votes_score_up, votes_count_up
+        id, subject_id, object_id, created_by_id, votes_score_up, votes_count_up
       )
-      VALUES (${postId}, ${topicId}, ${createdById ?? null}, 1, 1)
+      VALUES (COALESCE(${relationDate ? uuidv7({ msecs: relationDate.getTime() }) : null}::uuid, uuidv7()), ${postId}, ${topicId}, ${createdById ?? null}, 1, 1)
       ON CONFLICT (subject_id, object_id) DO UPDATE SET
         created_by_id = EXCLUDED.created_by_id,
         votes_score_up = EXCLUDED.votes_score_up,

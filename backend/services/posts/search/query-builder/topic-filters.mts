@@ -3,7 +3,7 @@ import {
   keyedTopicAliasMembershipExists,
   keyedTopicMembershipExists,
   keyedUniversalTopicMembershipExists,
-} from './topic-membership-probes.mts'
+} from '@modules/feed-query-builders/topic-membership-probes'
 import type { PostSearchOptions } from '../types.mts'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/metadata'
 

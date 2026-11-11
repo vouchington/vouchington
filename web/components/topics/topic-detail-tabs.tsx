@@ -7,6 +7,7 @@ import { isActivePath, isActiveSegment } from '@/lib/utils/path'
 import type { TopicMetrics, TopicTypes } from '@/types/topics'
 import {
   formatTabLabel,
+  hasCappedPostCounts,
   pushCrawlHistoryTab,
   pushPostTab,
   type TopicDetailTab,
@@ -57,7 +58,12 @@ export function TopicDetailTabs({
       name: 'posts',
       label:
         totalPostCount > 0 || totalViewerCount > 0
-          ? formatTabLabel(postsLabel, totalPostCount, totalViewerCount > totalPostCount, uiLocale)
+          ? formatTabLabel(
+              postsLabel,
+              totalPostCount,
+              totalViewerCount > totalPostCount || hasCappedPostCounts(metrics),
+              uiLocale,
+            )
           : postsLabel,
       path: `/${topicType}/${idOrSlug}/posts`,
     })

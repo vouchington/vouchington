@@ -22,7 +22,6 @@ import {
 import { assertSemanticPostCandidatePlan } from './plan-custom/semantic-post.mts'
 import { assertStoryMemberPagePlan } from './plan-custom/story-member-pages.mts'
 import { assertStoryProjectionClaimCandidates } from './plan-custom/story-projection-claim.mts'
-import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-custom/topic-viewer-counts.mts'
 import { assertCorePlanCheck } from './plan-custom/core-special.mts'
 import { assertUsernamePrefixCandidates } from './plan-custom/username-prefix.mts'
 import { assertReferralFeedInspectedWalk } from './plan-custom/referral-feed.mts'
@@ -52,7 +51,6 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   semanticPost: assertSemanticPostCandidatePlan,
   storyMemberPages: assertStoryMemberPagePlan,
   storyProjectionClaimCandidates: assertStoryProjectionClaimCandidates,
-  topicViewerCandidateBind: assertTopicViewerCountsDiscussionsUsesCandidateBind,
   universalTopicCandidates: result => assertCorePlanCheck('universalTopicCandidates', result),
   rssStateProjection: result => assertCorePlanCheck('rssStateProjection', result),
   rssTextCandidates: result => assertCorePlanCheck('rssTextCandidates', result),

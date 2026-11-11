@@ -84,6 +84,11 @@
       "data-points": 0,
       "discussions": 1,
       "reviews": 0
+    },
+    "viewer_count_capped": {
+      "data-points": false,
+      "discussions": false,
+      "reviews": false
     }
   },
   "topic_parents": []

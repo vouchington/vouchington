@@ -3,10 +3,12 @@ import { buildHotScoreExpression } from '@modules/feed-query-builders/hot-score'
 import {
   buildViewerPostDiscoveryEligibilityFilter,
   buildHostnameExclusionExists,
-  buildTopicMembershipExists,
-  buildTopicAliasMembershipExists,
-  buildUniversalTopicMembershipExists,
 } from '@modules/feed-query-builders'
+import {
+  keyedTopicMembershipExists,
+  keyedTopicAliasMembershipExists,
+  keyedUniversalTopicMembershipExists,
+} from '@modules/feed-query-builders/topic-membership-probes'
 import type { PrivateUser } from '@services/users/types'
 import type { PostFeedOptions } from '../../types.mts'
 import {
@@ -160,16 +162,16 @@ export function appendEligiblePostsSelect(
   }
   if (hasUnknownHashtag) query.append(sql`\n      AND FALSE`)
   for (const topicId of [...new Set(hashtagTopicIds ?? [])]) {
-    query.append(sql`\n      AND `).append(buildTopicMembershipExists('posts.id', topicId))
+    query.append(sql`\n      AND `).append(keyedTopicMembershipExists('posts.id', topicId))
   }
   for (const aliasId of [...new Set(hashtagAliasIds ?? [])]) {
-    query.append(sql`\n      AND `).append(buildTopicAliasMembershipExists('posts.id', aliasId))
+    query.append(sql`\n      AND `).append(keyedTopicAliasMembershipExists('posts.id', aliasId))
   }
   for (const topicId of uniqueUniversalTopicIds) {
     query
       .append(sql`
       AND `)
-      .append(buildUniversalTopicMembershipExists('posts.id', topicId))
+      .append(keyedUniversalTopicMembershipExists('posts.id', topicId))
   }
 }
 

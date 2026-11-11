@@ -22,6 +22,7 @@ export const topicMetricsFor = (id: string) => ({ ...topicMetrics, id })
 
 export const topicMetricsWithViewerCount = {
   ...topicMetrics,
+  viewer_count_capped: { discussions: false, reviews: false, 'data-points': false },
   viewer_count: {
     discussions: 1,
     reviews: 0,

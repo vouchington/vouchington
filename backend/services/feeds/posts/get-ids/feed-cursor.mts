@@ -71,15 +71,31 @@ export function mapPostFeedResponse(
   safeLimit: number,
   sort: PostFeedWalkSort,
   asOf: Date,
+  inspectedRowCap: number = Number.POSITIVE_INFINITY,
 ): PostFeedResponse {
-  const hasNextPage = rows.length > safeLimit
-  const pageRows = rows.slice(0, safeLimit)
+  const metadata = rows[0]
+  const deliveries = rows.filter(row => row.result_id)
+  const hasMoreResults = deliveries.length > safeLimit
+  const inspectedTail =
+    metadata && Number(metadata.inspected_rows) >= inspectedRowCap
+      ? {
+          result_id: metadata.inspected_result_id,
+          entity_id: metadata.inspected_entity_id,
+          cursor_sort_at: metadata.inspected_sort_at,
+          hot_score: metadata.inspected_hot_score,
+          best_score: metadata.inspected_best_score,
+        }
+      : undefined
+  const hasNextPage = hasMoreResults || inspectedTail !== undefined
+  const pageRows = deliveries.slice(0, safeLimit)
   const last = pageRows.at(-1)
   const first = pageRows[0]
+  const continuation = hasMoreResults ? last : (inspectedTail ?? last)
   const pageInfo: PageInfo = {
     has_next_page: hasNextPage,
     start_cursor: first ? encodeCursor(cursorOf(first, sort, asOf)) : null,
-    end_cursor: hasNextPage && last ? encodeCursor(cursorOf(last, sort, asOf)) : null,
+    end_cursor:
+      hasNextPage && continuation ? encodeCursor(cursorOf(continuation, sort, asOf)) : null,
   }
   return {
     results: pageRows.map(row => ({

@@ -143,6 +143,9 @@ export type TopicMetrics = {
     reviews: number
     'data-points': number
   }
+  viewer_count_capped?: {
+    [Key in keyof NonNullable<TopicMetrics['viewer_count']>]: boolean
+  }
   ratings: {
     count: {
       '1': number

@@ -30,7 +30,7 @@ export function buildCategoryTopicFilter(ids: string[]): SQLStatement {
  * Uses a candidate-bind `IN (…)` shape via `buildRssFeedItemTopicMembershipExists` rather than a
  * correlated `EXISTS (… UNION ALL …)`: Postgres cannot pull a `UNION ALL` body into a semijoin, so
  * the old shape materialized the full candidate set once per outer row instead of once per query.
- * See the doc comment on `buildTopicMembershipExists` in `topic-post-candidates.mts` for the
+ * See the doc comment on `keyedTopicMembershipExists` in the post-search topic membership probes for the
  * anti-pattern this avoids (`no-mistakes`' `postgres-sql-shape-policy`, #11082).
  */
 export function buildHashtagTopicFilter(topicId: string): SQLStatement {

@@ -11,7 +11,6 @@ export async function runDenseTopicViewerCountsScenario(): Promise<void> {
   await seedDenseTopicViewerCounts()
   registerScenarioContract('topic-viewer-counts-dense', {
     expectations: [
-      { kind: 'custom', name: 'topicViewerCandidateBind' },
       { kind: 'maxBitmapIndexRows', max: 5_000 },
       { kind: 'maxProcessedRows', relation: 'relation__post__category__topic', max: 1_500 },
       { kind: 'maxProcessedRows', relation: 'relation__post__category__topic_alias', max: 1_000 },
