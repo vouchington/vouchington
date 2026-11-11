@@ -54,9 +54,9 @@ function mergedUserCases(): OperationCase[] {
     group.options.map(entry => `${group.name}.${entry.option}`),
   )
   if (
-    keys.length !== 64 ||
-    userFixtures.cases.length !== 69 ||
-    userFixtureKeys.size !== 64 ||
+    keys.length !== 63 ||
+    userFixtures.cases.length !== 68 ||
+    userFixtureKeys.size !== 63 ||
     keys.some(key => !userFixtureKeys.has(key)) ||
     [...userFixtureKeys].some(key => !keys.includes(key))
   ) {
