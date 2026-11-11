@@ -71,6 +71,9 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   seedVoteWeightDispatch,
   runVoteWeightDispatchScenarios,
   runMembershipProviderRecoveryScenarios,
+  // The actor probes read the agent moderation and report context corpora seeded earlier in this
+  // segment, so they stay in it, ahead of the hot publication fixtures.
+  runFkActorIndexScenarios,
   // Hot publication fixtures live only after all ordinary corpus plans and clean up on failure.
   runNotificationVisibilityScenarios,
   runPublicationScopePageScenarios,
@@ -84,7 +87,6 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runMembershipRenewalSelectionScenario,
   runPrioritizedReferralCacheMeasurement,
   runReferralValidationPages,
-  runFkActorIndexScenarios,
   runPaymentLedgerRetentionScenarios,
   runVoteScoreRankingScenarios,
   runLatePostPageScenarios,

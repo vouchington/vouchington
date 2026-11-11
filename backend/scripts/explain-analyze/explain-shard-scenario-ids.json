@@ -254,7 +254,10 @@
     "membership-verification-recovery-page",
     "membership-google-active-source-recovery",
     "membership-microsoft-source-recovery",
-    "membership-google-acknowledgement-recovery"
+    "membership-google-acknowledgement-recovery",
+    "fk-actor-images-deleted-by-no-match",
+    "fk-actor-agent-moderations-deleted-by-no-match",
+    "fk-actor-moderation-cases-resolved-by-no-match"
   ],
   "main-3": [
     "notification-post-content-page",
@@ -392,9 +395,6 @@
     "referral-program-validation-slug-missing",
     "referral-program-validation-slug-foreign",
     "referral-program-attributes-key",
-    "fk-actor-images-deleted-by-no-match",
-    "fk-actor-agent-moderations-deleted-by-no-match",
-    "fk-actor-moderation-cases-resolved-by-no-match",
     "membership-reversal-case-creation",
     "membership-reversal-case-read",
     "membership-reversal-case-locked-read",
