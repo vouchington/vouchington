@@ -146,7 +146,8 @@ describe('automatic hold restoration preserves provider failures', () => {
             ]
           : [],
       )
-      expect(blockedResult).toBe('blocked')
+      // A recorded hold preempts the pending restore; a filing alone is only rechecked at delivery.
+      expect(blockedResult).toBe(transition === 'resolution' ? 'not_claimed' : 'blocked')
       const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
       expect(after?.actionIntents.find(intent => intent.id === scene.restore.id)).toEqual(
         scene.failed,

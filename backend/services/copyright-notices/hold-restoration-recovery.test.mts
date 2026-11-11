@@ -2,7 +2,6 @@ import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyri
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
-  replayTestFailedCopyrightActionBehindHoldFence,
   cancelTestCopyrightRestorationDeadline,
   quarantineTestCopyrightRestorationImage,
   makeTestCopyrightRestorationImageUnready,
@@ -15,7 +14,10 @@ import {
   recoverBlockedCopyrightHoldRestoration,
 } from './index.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import { claimCopyrightActionIntent } from './action-delivery-state.mts'
+import {
+  claimCopyrightActionIntent,
+  replayFailedCopyrightActionIntent,
+} from './action-delivery-state.mts'
 import { failCopyrightActionIntent } from './action-delivery-completion.mts'
 import {
   openHeldCounterNoticeRestore,
@@ -124,11 +126,11 @@ describe('blocked copyright restoration recovery', () => {
     ).toEqual([])
   })
 
-  it('makes manual failed replay wait at placement before taking its intent row', async () => {
+  it('replays a failed held restore on operator request', async () => {
     const scene = await openHeldCounterNoticeRestore()
     await exhaustDelivery(scene.restore.id, scene.restorationAt)
     await expect(
-      replayTestFailedCopyrightActionBehindHoldFence({
+      replayFailedCopyrightActionIntent({
         intentId: scene.restore.id,
         noticeId: scene.notice.id,
         actorUserId: scene.moderator.id,

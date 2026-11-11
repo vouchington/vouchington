@@ -11,7 +11,6 @@ import type { CopyrightHoldResolutionKind, CopyrightLegalHoldResolutionRecord } 
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
-import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
 import {
   replayEligibleCopyrightRestoreIntentsInTransaction,
   selectBlockedCopyrightRestoreIntentIds,
@@ -48,7 +47,6 @@ async function resolveCopyrightLegalHoldInTransaction(
     WHERE assessment.id = ${input.assessmentId}
   `)
   assert(identities[0], 404, 'Copyright legal hold assessment not found')
-  await lockCopyrightNoticeHoldPlacements(identities[0].copyright_notice_id, transaction)
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(
     transaction,
     identities[0].copyright_notice_id,

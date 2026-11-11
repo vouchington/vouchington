@@ -1,8 +1,6 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import sql from 'sql-template-strings'
-import { getImagePlacementKey } from '@services/images/placements'
-import { lockAdvisoryKeysInOrder } from './advisory-key-locks.mts'
 import { buildCopyrightReviewOutcomeDeliveries } from './review-outcome-notices.mts'
 import { createCopyrightStatementDeliveriesInTransaction } from './statement-delivery.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
@@ -34,25 +32,6 @@ export async function reverseAutomatedCopyrightRestrictionsInTransaction(
   input: { noticeId: string; submissionId: string; moderatorId: string | null; reviewedAt: Date },
 ): Promise<{ restrictionIds: string[]; intentIds: string[] }> {
   const { noticeId, submissionId, moderatorId, reviewedAt } = input
-  const { rows: placements } = await transaction<{ placement_id: string }>(sql`
-    /* reviewCopyrightFormIntake:reverseAutomatedRestrictions:placements */
-    SELECT DISTINCT target.placement_id
-    FROM copyright_restrictions restriction
-    JOIN copyright_notice_submission_assessment_identities authority
-      ON authority.id = restriction.authorizing_assessment_id
-    JOIN copyright_notice_targets target
-      ON target.id = restriction.copyright_notice_target_id
-    WHERE authority.copyright_notice_submission_id = ${submissionId}
-      AND target.copyright_notice_id = ${noticeId}
-      AND restriction.is_authorizing_assessment_automated
-      AND restriction.lifted_at IS NULL AND restriction.human_review_action IS NULL
-    ORDER BY target.placement_id
-  `)
-  // Placement locks use the canonical placement order of the query above.
-  await lockAdvisoryKeysInOrder(
-    transaction,
-    placements.map(placement => getImagePlacementKey(placement.placement_id)),
-  )
   const { rows } = await transaction<{ id: string }>(sql`
     /* reviewCopyrightFormIntake:reverseAutomatedRestrictions */
     UPDATE copyright_restrictions restriction

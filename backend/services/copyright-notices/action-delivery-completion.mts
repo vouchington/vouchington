@@ -1,6 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { lockCopyrightActionClaim } from './action-delivery-locking.mts'
 import type { CopyrightActionIntentRecord } from './types.mts'
 
 const MAX_ATTEMPTS = 5
@@ -14,7 +13,6 @@ export async function failCopyrightActionIntent(input: {
   beforeRelease?: () => Promise<void>
 }): Promise<'retrying' | 'failed' | 'not_claimed'> {
   await using transaction = await beginTransaction()
-  await lockCopyrightActionClaim(input.intentId, transaction)
   const { rows } = await transaction<Pick<CopyrightActionIntentRecord, 'attempt_count'>>(
     sql`/* failCopyrightActionIntent:lock */
       SELECT attempt_count
@@ -24,8 +22,7 @@ export async function failCopyrightActionIntent(input: {
   )
   const intent = rows[0]
   if (!intent) return 'not_claimed'
-  // The claim domain protects worker ownership through compensation without holding a row
-  // or placement lock across its independently transactional media repairs.
+  // The lease-conditional UPDATE below rejects a worker whose lease lapsed during compensation.
   await input.beforeRelease?.()
   const failed = intent.attempt_count >= MAX_ATTEMPTS
   const { rows: released } = await transaction(sql`/* failCopyrightActionIntent */

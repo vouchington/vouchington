@@ -6,17 +6,14 @@ import {
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
 import type { CopyrightActionIntentRecord } from './types.mts'
-import { tryLockCopyrightActionClaim } from './action-delivery-locking.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 export {
   completeCopyrightActionIntentInTransaction,
-  getCopyrightActionPlacementKey,
   hasCopyrightActionBlocker,
   hasOtherActiveCopyrightRestrictions,
   insertCopyrightActionLifecycleEvent,
   liftCopyrightRestrictionInTransaction,
   lockCopyrightActionDelivery,
-  lockCopyrightActionClaim,
 } from './action-delivery-locking.mts'
 export type { LockedCopyrightActionDelivery } from './action-delivery-locking.mts'
 export { failCopyrightActionIntent } from './action-delivery-completion.mts'
@@ -38,7 +35,6 @@ export async function claimCopyrightActionIntent(
   now: Date,
 ): Promise<CopyrightClaimedActionIntent | null> {
   await using transaction = await beginTransaction()
-  if (!(await tryLockCopyrightActionClaim(intentId, transaction))) return null
   const { rows } = await transaction<CopyrightClaimedActionIntent>(sql`
     /* claimCopyrightActionIntent */
     WITH exhausted AS (
@@ -139,17 +135,6 @@ export async function replayFailedCopyrightActionIntent(input: {
   actorUserId: string
 }): Promise<boolean> {
   await using transaction = await beginTransaction()
-  const { rows: targets } = await transaction<{ placement_id: string }>(sql`
-    /* replayFailedCopyrightActionIntent:identity */
-    SELECT target.placement_id FROM copyright_notice_action_work_items intent
-    JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE intent.id = ${input.intentId} AND target.copyright_notice_id = ${input.noticeId}
-  `)
-  if (!targets[0]) return false
-  await transaction(sql`/* replayFailedCopyrightActionIntent:placementLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${`image-placement:${targets[0].placement_id}`}, 0))
-  `)
   const { rows } = await transaction<{ copyright_notice_id: string }>(sql`
     /* replayFailedCopyrightActionIntent */
     UPDATE copyright_notice_action_work_items

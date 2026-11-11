@@ -8,9 +8,9 @@ import {
   replayEligibleCopyrightRestoreIntentsInTransaction,
   selectBlockedCopyrightRestoreIntentIds,
 } from './court-hold-restore-replay.mts'
-import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
+import { preemptCopyrightRestorations } from './restore-preemption.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
 import {
   advanceCopyrightLastLegalActivityAt,
@@ -45,7 +45,6 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     SELECT copyright_notice_id FROM copyright_notice_submissions WHERE id = ${input.submissionId}
   `)
   assert(identities[0], 404, 'Copyright legal-hold submission not found')
-  await lockCopyrightNoticeHoldPlacements(identities[0].copyright_notice_id, transaction)
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(
     transaction,
     identities[0].copyright_notice_id,
@@ -104,6 +103,11 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     linkedTargets.length === input.targetIds.length,
     422,
     'A legal hold target does not belong to this copyright notice',
+  )
+  await preemptCopyrightRestorations(
+    submissionRows[0].copyright_notice_id,
+    transaction,
+    input.targetIds,
   )
   if (isQualifyingCopyrightLegalHold(input)) {
     lateHoldIntentIds = await activateLateCopyrightLegalHoldRestrictions(

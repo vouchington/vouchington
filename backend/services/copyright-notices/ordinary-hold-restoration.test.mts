@@ -30,7 +30,7 @@ describe('ordinary copyright hold restoration', () => {
     const firstHold = await recordHold(scene)
     const secondHold = await recordHold(scene)
     await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
-      'blocked',
+      'not_claimed',
     )
 
     await resolveCopyrightLegalHold({
@@ -92,7 +92,7 @@ describe('ordinary copyright hold restoration', () => {
     )
     const hold = await recordHold(scene, [scene.target.id, otherTarget.id])
     await expect(processCopyrightActionIntent(scene.restore.id, scene.restorationAt)).resolves.toBe(
-      'blocked',
+      'not_claimed',
     )
     await resolveCopyrightLegalHold({
       currentUser: scene.moderator,

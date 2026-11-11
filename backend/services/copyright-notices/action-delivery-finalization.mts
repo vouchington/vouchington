@@ -1,17 +1,15 @@
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
-import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/images/placements'
+import { getImagePlacementForCopyright } from '@services/images/placements'
 import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
 import {
   completeCopyrightActionIntentInTransaction,
-  getCopyrightActionPlacementKey,
   hasCopyrightActionBlocker,
   hasOtherActiveCopyrightRestrictions,
   insertCopyrightActionLifecycleEvent,
   lockCopyrightActionDelivery,
-  lockCopyrightActionClaim,
 } from './action-delivery-state.mts'
 import { syncCopyrightIncidentsAfterStatutoryRestoreInTransaction } from './statutory-restoration-incidents.mts'
 
@@ -22,17 +20,11 @@ export async function finalizeCopyrightActionAfterDelivery(
   now: Date,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  await lockCopyrightActionClaim(intentId, transaction)
-  const placementId = await getCopyrightActionPlacementKey(intentId, leaseToken, transaction)
-  if (placementId) await lockCopyrightActionPlacement(placementId, transaction)
   const legal = await lockCopyrightActionDelivery(intentId, leaseToken, transaction)
   if (!legal) {
     await transaction.commit()
     return false
   }
-  await transaction(sql`/* finalizeCopyrightActionAfterDelivery:noticeLock */
-    SELECT id FROM copyright_notices WHERE id = ${legal.copyright_notice_id} FOR UPDATE
-  `)
   const current = await getImagePlacementForCopyright(legal.placement_id, {
     query: transaction,
   })
@@ -150,15 +142,6 @@ export async function resolveCopyrightDeadlineIfComplete(
         WHERE assessment_target.copyright_notice_submission_assessment_identity_id = deadline.qualifying_counter_notice_assessment_identity_id
           AND restriction.lifted_at IS NULL
       )
-  `)
-}
-
-export async function lockCopyrightActionPlacement(
-  placementId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-): Promise<void> {
-  await query(sql`/* processCopyrightActionIntent:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(placementId)}, 0))
   `)
 }
 

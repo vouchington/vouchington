@@ -3,10 +3,8 @@ import {
   advanceCopyrightLastLegalActivityAt,
   lockCopyrightNoticeForLegalWrite,
 } from './last-legal-activity.mts'
-import { lockAdvisoryKeysInOrder } from './advisory-key-locks.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
-import { getImagePlacementKey } from '@services/images/placements'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
@@ -60,20 +58,6 @@ export async function recordTerritorialCopyrightRedressDecision(
   )
   assert(requests[0], 404, labels.redressNotFound)
   assert(requests[0].decision_is_live, 409, 'The decision was superseded')
-  const { rows: placements } = await transaction<{ placement_id: string }>(sql`
-    /* recordTerritorialCopyrightRedressDecision:placementLocks */
-    SELECT DISTINCT target.placement_id
-    FROM copyright_territorial_redress_requests request
-    JOIN copyright_notice_targets target ON target.copyright_notice_id = request.copyright_notice_id
-    WHERE request.id = ${redressId}
-      AND request.authorizing_assessment_identity_id IS NOT NULL
-    ORDER BY target.placement_id
-  `)
-  // Advisory locks use the canonical placement order of the query above.
-  await lockAdvisoryKeysInOrder(
-    transaction,
-    placements.map(placement => getImagePlacementKey(placement.placement_id)),
-  )
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
   assert(lockedNotice, 404, labels.noticeNotFound)
   const { rows: currentRequests } = await transaction<{ decision_is_live: boolean }>(

@@ -2,7 +2,6 @@ import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightRestrictionRecord } from './types.mts'
 import { createCopyrightRestrictionDecisionNoticesInTransaction } from './restriction-outcome-notices.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
@@ -30,9 +29,6 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   )
   const target = targetRows[0]
   assert(target, 404, 'Copyright notice target not found')
-  await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(target.placement_id)}, 0))
-  `)
   const { rows: formAuthorities } = await transaction<{
     copyright_notice_submission_id: string
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:formAuthority */

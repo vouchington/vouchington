@@ -185,46 +185,6 @@ describe('copyright queue lease fencing', () => {
     )
   })
 
-  it('keeps an expired competing claim out while compensation is running', async () => {
-    const edge = installTestMediaDeliveryEdge()
-    const { intent, now } = await createActionClaimFixture('restore')
-    const old = (await claimCopyrightActionIntent(intent.id, now))!
-    const later = new Date(now.getTime() + 16 * 60 * 1000)
-    const entered = Promise.withResolvers<void>()
-    const resume = Promise.withResolvers<void>()
-    const error = new Error('provider failure')
-    edge.put.mockImplementation(async input => {
-      entered.resolve()
-      await resume.promise
-      edge.accept(input)
-      return { $metadata: {} }
-    })
-    const compensation = compensateCopyrightActionFailure(
-      old,
-      now,
-      {
-        placementId: old.placement_id,
-        revision: old.expected_placement_revision,
-        imageId: old.image_id,
-      },
-      error,
-    ).catch((err: unknown) => err)
-    try {
-      await Promise.race([
-        entered.promise,
-        compensation.then(() => {
-          throw new Error('Compensation ended before denial')
-        }),
-      ])
-      expect(await claimCopyrightActionIntent(intent.id, later)).toBeNull()
-    } finally {
-      resume.resolve()
-      expect(await compensation).toBe(error)
-    }
-    const current = (await claimCopyrightActionIntent(intent.id, later))!
-    expect(current.lease_token).not.toBe(old.lease_token)
-  })
-
   it.each(['complete', 'fail'])(
     'keeps the concurrent enforcer result when the first enforcer then %ss',
     async outcome => {

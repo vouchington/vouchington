@@ -8,16 +8,11 @@ import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safe
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import { compensateCopyrightActionFailure } from './action-delivery-compensation.mts'
 import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
-import {
-  finalizeCopyrightActionAfterDelivery,
-  lockCopyrightActionPlacement,
-} from './action-delivery-finalization.mts'
+import { finalizeCopyrightActionAfterDelivery } from './action-delivery-finalization.mts'
 import {
   completeCopyrightActionIntentInTransaction,
-  getCopyrightActionPlacementKey,
   hasCopyrightActionBlocker,
   lockCopyrightActionDelivery,
-  lockCopyrightActionClaim,
   type CopyrightClaimedActionIntent,
 } from './action-delivery-state.mts'
 import {
@@ -85,13 +80,6 @@ async function prepareCopyrightAction(
     }
 > {
   await using transaction = await beginTransaction()
-  await lockCopyrightActionClaim(intent.id, transaction)
-  const placementId = await getCopyrightActionPlacementKey(
-    intent.id,
-    intent.lease_token,
-    transaction,
-  )
-  if (placementId) await lockCopyrightActionPlacement(placementId, transaction)
   const legal = await lockCopyrightActionDelivery(intent.id, intent.lease_token, transaction)
   if (!legal) return await commitOutcome(transaction, 'not_claimed')
   if (legal.action === 'withhold' && legal.restriction_lifted_at !== null) {

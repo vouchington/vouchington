@@ -2,7 +2,7 @@ import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/images/placements'
+import { getImagePlacementForCopyright } from '@services/images/placements'
 import type { CopyrightActionIntentRecord } from './types.mts'
 import { removeCopyrightStaydownEntryInTransaction } from './staydown-registration.mts'
 import { anyReversalSourceSql } from './restriction-reversal-sources-sql.mts'
@@ -19,9 +19,6 @@ export async function createCopyrightRestoreIntentForReversalInTransaction(
   `)
   const targetPlacement = placementRows[0]
   assert(targetPlacement, 404, 'Copyright restriction not found')
-  await transaction(sql`/* createCopyrightRestoreIntentForReversalInTransaction:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(targetPlacement.placement_id)}, 0))
-  `)
   const { rows } = await transaction<{
     copyright_notice_id: string
     placement_id: string
