@@ -221,7 +221,7 @@ its contract. The partitioned comment fixture plus the pruning proof (`partition
 million-post Hacker News fixture (`hn-scale`) are additive, so no other scenario reads them and each
 has its own shard. The late fixture writers that must follow every ordinary plan close the last
 ordinary segment. Size the segments from per-runner timings in a recent run so every shard job stays
-under the ten-minute ceiling. A scenario listed in no shard or in two fails the manifest checks. The
+within the CI runtime budget in [CI](../../ci.md). A scenario listed in no shard or in two fails the manifest checks. The
 `explain-analyze-gates` job merges the shard artifacts, requires every manifest scenario once, and
 enforces the plan gates, baselines and native coverage over the merged results. It uploads them as
 `explain-analyze-results`; a failed shard leaves only its own `explain-analyze-results-<shard>`
