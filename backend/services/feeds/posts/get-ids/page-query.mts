@@ -23,38 +23,30 @@ export function buildPostFeedPageQuery(options: PostFeedPageQueryOptions): SQLSt
   return query
 }
 
-const sortSelect = (sort: 'new' | 'hot', alias: string) =>
-  sort === 'hot' ? `,\n        ${alias}.hot_score` : ''
-
 /**
- * Direct posts and recipient shares each walk their own sort index, newest or hottest first.
+ * Direct posts and recipient shares each walk their own sort index, newest first.
  * The page is the first `limit + 1` rows of the merged order, so each walk needs at most that many.
  */
 function appendDeliveryWalk(query: SQLStatement, options: PostFeedPageQueryOptions): void {
-  const sort = options.eligibilityOptions.sort as 'new' | 'hot'
   query.append(sql`
     SELECT deliveries.result_id, deliveries.entity_id, deliveries.post_type, deliveries.sort_at,
       deliveries.delivery_type, deliveries.shared_by_id, deliveries.shared_at`)
-  query.append(
-    sort === 'hot'
-      ? sql`, deliveries.hot_score`
-      : sql`,
-      to_char(deliveries.sort_at AT TIME ZONE 'UTC', `.append(CURSOR_TIME_FORMAT).append(sql`)
-        AS cursor_sort_at`),
-  )
+  query
+    .append(sql`, to_char(deliveries.sort_at AT TIME ZONE 'UTC', `)
+    .append(CURSOR_TIME_FORMAT)
+    .append(sql`) AS cursor_sort_at`)
   query.append(sql`
     FROM (`)
-  appendDirectArm(query, options, sort)
+  appendDirectArm(query, options)
   if (options.includeSharedPosts) {
     query.append(sql`
       UNION ALL`)
-    appendShareArm(query, options, sort)
+    appendShareArm(query, options)
   }
   query.append(
     sql`
     ) deliveries
-    ORDER BY `.append(sort === 'hot' ? 'deliveries.hot_score DESC' : 'deliveries.sort_at DESC')
-      .append(sql`, deliveries.result_id DESC
+    ORDER BY deliveries.sort_at DESC`.append(sql`, deliveries.result_id DESC
     LIMIT ${options.safeLimit + 1}`),
   )
 }
@@ -62,12 +54,10 @@ function appendDeliveryWalk(query: SQLStatement, options: PostFeedPageQueryOptio
 function appendDirectArm(
   query: SQLStatement,
   { cursor, cutoff, safeLimit, ...options }: PostFeedPageQueryOptions,
-  sort: 'new' | 'hot',
 ): void {
   query.append(sql`(
       SELECT eligible_posts.id AS result_id, eligible_posts.id AS entity_id,
         eligible_posts.post_type, eligible_posts.created_at AS sort_at`)
-  query.append(sortSelect(sort, 'eligible_posts'))
   query
     .append(sql`,
         'direct'::text AS delivery_type, NULL::uuid AS shared_by_id,
@@ -88,29 +78,23 @@ function appendDirectArm(
         AND eligible_posts.id < ${getMinUUIDv7ForDate(new Date(cursorDate.getTime() + 1))}::uuid
         AND (eligible_posts.created_at, eligible_posts.id)
           < (${cursor.sortAt}::timestamptz, ${cursor.id}::uuid)`)
-  } else if (cursor?.sort === 'hot')
-    query.append(sql`
-        AND (eligible_posts.hot_score, eligible_posts.id)
-          < (${cursor.score}::float8, ${cursor.id}::uuid)`)
+  }
   query.append(
     sql`
-      ORDER BY `.append(sort === 'hot' ? 'eligible_posts.hot_score DESC, ' : '')
-      .append(sql`eligible_posts.id DESC
+      ORDER BY eligible_posts.id DESC
       LIMIT ${safeLimit + 1}
-    )`),
+    )`,
   )
 }
 
 function appendShareArm(
   query: SQLStatement,
   { cursor, cutoff, currentUserId, eligibilityOptions, safeLimit }: PostFeedPageQueryOptions,
-  sort: 'new' | 'hot',
 ): void {
   query.append(sql`
     (
       SELECT post_feed_shares.id AS result_id, eligible_target.id AS entity_id,
         eligible_target.post_type, post_feed_shares.sort_at`)
-  query.append(sortSelect(sort, 'eligible_target'))
   query.append(sql`,
         'share'::text AS delivery_type, post_feed_shares.shared_by_id,
         post_feed_shares.created_at AS shared_at
@@ -138,16 +122,10 @@ function appendShareArm(
     query.append(sql`
         AND (post_feed_shares.sort_at, post_feed_shares.id)
           < (${cursor.sortAt}::timestamptz, ${cursor.id}::uuid)`)
-  else if (cursor?.sort === 'hot')
-    query.append(sql`
-        AND (eligible_target.hot_score, post_feed_shares.id)
-          < (${cursor.score}::float8, ${cursor.id}::uuid)`)
   query.append(
     sql`
-      ORDER BY `.append(
-      sort === 'hot' ? 'eligible_target.hot_score DESC' : 'post_feed_shares.sort_at DESC',
-    ).append(sql`, post_feed_shares.id DESC
+      ORDER BY post_feed_shares.sort_at DESC, post_feed_shares.id DESC
       LIMIT ${safeLimit + 1}
-    )`),
+    )`,
   )
 }

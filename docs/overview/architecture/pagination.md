@@ -44,13 +44,16 @@ requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATR
 - UUID-only public cursors whose dataset identity can vary by resource, owner, or filters must carry
   an exact resource scope built from normalized identifiers, filters, and ordering. Reject scoped
   cursors with missing, additional, tampered, or mismatched fields.
-- Post-search hot and trending ranks use a fixed epoch, keeping order stable across requests
-  when vote scores are unchanged. Future timestamps participate in the rank; near ties can differ
-  from an age-decayed calculation. Their opaque cursor binds that ordering. The page is one walk
-  ordered by that rank, then id, and stops at `limit + 1`.
-- Personalized post feeds walk eligible deliveries in sort order and stop at `limit + 1`. A short
-  page has `has_next_page` false. REST and MCP continue with `end_cursor` only while that flag is
-  true, and they keep the same feed filters.
+- Post hot and trending ranks use a fixed epoch, keeping order stable across requests when vote
+  scores are unchanged. Future timestamps participate in the rank; near ties can differ from an
+  age-decayed calculation. Search orders and continues by rank then post id. Hot feeds extend that
+  key with the post id and delivery id, so direct and shared deliveries of the same post have
+  distinct positions. The hot cursor keeps the time-window decision instant fixed across pages.
+- Personalized post feeds walk in sort order and keep eligibility in the same statement. Topic
+  filters and ranked hot walks have an inspected-row cap; if it stops before a full page, the API
+  may return a short or empty page with `has_next_page` true and a cursor at the last inspected
+  position. Other pages use the result lookahead. REST and MCP continue with `end_cursor` only
+  while `has_next_page` is true, and they keep the same feed filters.
 - Post search walks the requested sort key with eligibility in the same statement and stops at
   `limit + 1`. Topic membership is an `EXISTS` on that walk. Keyword relevance orders by the
   ranking score, then id. Semantic search keeps its finite vector window and then the same page

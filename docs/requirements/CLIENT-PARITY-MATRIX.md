@@ -84,7 +84,11 @@ A true flag means the viewer count is a lower bound. Topic tab labels retain a p
 the public count or viewer count is capped, including when the two capped numbers are equal.
 Swift and .NET must preserve these flags and the same lower-bound presentation; native adoption
 does not gate this producer change. Feed clients must continue through short or empty pages when
-`has_next_page` is true, using the supplied opaque cursor.
+`has_next_page` is true, using the supplied opaque cursor. Hot feeds use the same immutable
+rank as post search, including future-dated posts. Equal ranks order by post identity, then by
+that post's delivery identity, so direct and shared deliveries of one post stay together. Clients
+preserve the returned order and treat the continuation as opaque; the cursor's decision instant
+anchors the time window.
 
 The owner and administrators also get `user_metrics.private_count` (saved, hidden, blocked, muted,
 viewed and similar), read to the same cap. `user_metrics.private_count_capped` carries one boolean

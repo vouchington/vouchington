@@ -5,6 +5,7 @@ import { read } from '@data-stores/psql'
 import { getTimeRangeLowerBoundDate } from '../time-range-utils.mts'
 import type { PostFeedWalkSort } from './get-ids/eligible-posts-cte.mts'
 import { mapPostFeedResponse, parsePostFeedCursor } from './get-ids/feed-cursor.mts'
+import { buildRankedPostFeedPageQuery } from './get-ids/ranked-walk-query.mts'
 import { buildTopicPostFeedPageQuery } from './get-ids/topic-walk-query.mts'
 import { TOPIC_WALK_ROW_CAP } from '@services/posts/search/query-builder/topic-walk'
 import { hasTopicMembershipFilters } from '@services/posts/search/query-builder/topic-filters'
@@ -33,7 +34,7 @@ export async function getPostFeedIds(
       results: [],
       page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     }
-  // Hot scores keep one decision instant across pages, carried in the cursor.
+  // The hot rank is immutable; keep one time-window decision instant across pages.
   const decisionInstant =
     cursor?.sort === 'hot' ? new Date(cursor.asOf ?? Number.NaN) : requestedInstant
   const requestedCutoff = getTimeRangeLowerBoundDate(time_range, decisionInstant)
@@ -51,7 +52,6 @@ export async function getPostFeedIds(
       currentUser,
       postTypes: post_types,
       sort,
-      scoreReferenceDate: sort === 'hot' ? decisionInstant : undefined,
       textSearchQuery: options.text_search_query,
       universalTopicIds: options.universal_topic_ids,
       hashtagTopicIds: options.hashtag_topic_ids,
@@ -64,9 +64,13 @@ export async function getPostFeedIds(
     minScoreFollowUsers: options.min_score_follow_users ?? DEFAULT_MIN_SCORE_FOLLOW_USERS,
     safeLimit,
   }
-  const query = hasTopicMembershipFilters(options)
-    ? buildTopicPostFeedPageQuery(pageOptions, inspectedRowCap)
-    : buildPostFeedPageQuery(pageOptions)
+  const topicFiltered = hasTopicMembershipFilters(options)
+  const query =
+    sort === 'hot' || (sort === 'best' && topicFiltered)
+      ? buildRankedPostFeedPageQuery(pageOptions, inspectedRowCap)
+      : topicFiltered
+        ? buildTopicPostFeedPageQuery(pageOptions, inspectedRowCap)
+        : buildPostFeedPageQuery(pageOptions)
   const { rows } = await read(query)
   return mapPostFeedResponse(rows, safeLimit, sort, decisionInstant, inspectedRowCap)
 }

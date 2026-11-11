@@ -12,16 +12,20 @@ import type { PostFeedWalkSort } from './eligible-posts-cte.mts'
 /** Plain keysets: each cursor is the last returned row's sort key. */
 export type PostFeedCursor =
   | { sort: 'new'; sortAt: string; id: string }
-  | { sort: 'hot'; score: number; id: string; asOf: number }
+  | { sort: 'hot'; score: number; postId: string; id: string; asOf: number }
   | { sort: 'best'; score: number; postId: string; id: string }
 
 const INVALID = 'Invalid cursor format for post feed'
 
 type Fields = Record<string, unknown> & { id: string }
 
-const isHotCursor = (row: unknown): row is Fields & { score: number; as_of: number } =>
+const isHotCursor = (
+  row: unknown,
+): row is Fields & { score: number; post_id: string; as_of: number } =>
   isRecord(row) &&
-  hasExactKeys(row, ['score', 'id', 'as_of']) &&
+  hasExactKeys(row, ['score', 'post_id', 'id', 'as_of']) &&
+  typeof row.post_id === 'string' &&
+  isUUID(row.post_id) &&
   isFiniteNumber(row.score) &&
   Number.isSafeInteger(row.as_of) &&
   Number.isFinite(new Date(row.as_of as number).getTime())
@@ -47,7 +51,7 @@ export function parsePostFeedCursor(
   }
   if (sort === 'hot') {
     const row = decodeUuidCursor(after, isHotCursor, INVALID)
-    return { sort, score: row.score, id: row.id, asOf: row.as_of }
+    return { sort, score: row.score, postId: row.post_id, id: row.id, asOf: row.as_of }
   }
   const row = decodeUuidCursor(after, isBestCursor, INVALID)
   return { sort, score: row.score, postId: row.post_id, id: row.id }
@@ -62,7 +66,13 @@ type Row = Record<string, unknown>
 function cursorOf(row: Row, sort: PostFeedWalkSort, asOf: Date): Record<string, unknown> {
   const id = row.result_id as string
   if (sort === 'new') return { timestamp: row.cursor_sort_at as string, id }
-  if (sort === 'hot') return { score: Number(row.hot_score), id, as_of: asOf.getTime() }
+  if (sort === 'hot')
+    return {
+      score: Number(row.hot_score),
+      post_id: row.entity_id as string,
+      id,
+      as_of: asOf.getTime(),
+    }
   return { score: Number(row.best_score), post_id: row.entity_id as string, id }
 }
 

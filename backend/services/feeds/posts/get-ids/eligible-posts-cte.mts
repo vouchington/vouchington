@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { buildHotScoreExpression } from '@modules/feed-query-builders/hot-score'
+import { buildStablePostHotRankExpression } from '@services/posts/search/stable-hot-rank'
 import {
   buildViewerPostDiscoveryEligibilityFilter,
   buildHostnameExclusionExists,
@@ -22,7 +22,6 @@ export type PostFeedEligibilityOptions = {
   currentUser: Pick<PrivateUser, '__entity_type' | 'id' | 'roles'>
   postTypes: PostFeedOptions['post_types']
   sort: PostFeedWalkSort
-  scoreReferenceDate?: Date
   textSearchQuery: PostFeedOptions['text_search_query']
   universalTopicIds: PostFeedOptions['universal_topic_ids']
   hashtagTopicIds: PostFeedOptions['hashtag_topic_ids']
@@ -45,7 +44,6 @@ export function appendEligiblePostsSelect(
     currentUser,
     postTypes,
     sort,
-    scoreReferenceDate,
     textSearchQuery,
     universalTopicIds,
     hashtagTopicIds,
@@ -70,7 +68,7 @@ export function appendEligiblePostsSelect(
   if (sort === 'hot')
     query
       .append(sql`,\n        `)
-      .append(buildHotScoreExpression('posts', scoreReferenceDate))
+      .append(buildStablePostHotRankExpression('posts'))
       .append(sql` AS hot_score`)
   const uniqueUniversalTopicIds = [...new Set(universalTopicIds ?? [])]
   query.append(sql`

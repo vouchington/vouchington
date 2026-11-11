@@ -4,7 +4,7 @@ Personalized post and RSS feed item feeds for logged-in users. Feeds are filtere
 
 ## Query Pipeline
 
-Both feeds combine direct and shared deliveries with the viewer's follow and exclusion relations. Personalized RSS reads the recent publication window in one SQL statement. Followed sources and topics are indexed membership filters, combined as a union. Eligibility, score thresholds, search, media and related-post filters are conditions on each ordered item walk. Direct and shared walks each stop after a page and its lookahead, then merge in delivery order. Selective filters can inspect the publication window without exposing an empty continuation page.
+Both feeds combine direct and shared deliveries with the viewer's follow and exclusion relations. Personalized RSS reads the recent publication window in one SQL statement. Followed sources and topics are indexed membership filters, combined as a union. For chronological post feeds, direct and shared deliveries are ordered separately and merged. Hot and best post feeds walk posts by rank, then apply live eligibility and probe the viewer's deliveries. A delivery's order extends the post rank with the post identity and delivery identity, so sharing does not change which post ranks first and every delivery has its own continuation position. Selective filters inspect a bounded ordered set and can return a short or empty page with a continuation cursor.
 
 The item publication window bounds the RSS read instead of a candidate budget. Longer requested ranges use the personal feed's maximum horizon; narrower ranges remain narrower. Direct items use their publication tuple, while shares retain their independent delivery tuple and metadata. Both the target item and the share delivery must fit the requested horizon. Live item, follow or score changes can change results between requests.
 
@@ -15,12 +15,12 @@ flowchart TD
         PE["eligible_posts (inlined): visibility, mute/block, hostname block, post_type, search filters"] --> PWalk
         PWalk{"Sort"}
         PWalk -- new --> PNew["Direct arm by id DESC + share arm by sort_at DESC, each LIMIT page+1"]
-        PWalk -- hot --> PHot["Positive-score window: ORDER BY hot_score DESC, id DESC LIMIT page+1"]
+        PWalk -- hot --> PHot["Stable post-rank walk, then eligibility and delivery probes"]
         PWalk -- best --> PBest["Score index walk: votes_score_sort DESC, id DESC LIMIT page+1"]
         PNew --> PCursor
         PHot --> PCursor
         PBest --> PCursor
-        PCursor["LIMIT+1 -> page_info (plain keyset cursor of the last row)"]
+        PCursor["Result lookahead or inspected-row continuation -> opaque keyset cursor"]
     end
 
     subgraph RSS["RSS item feed - getRssFeedItemFeedIds"]
@@ -67,29 +67,20 @@ flowchart TD
 
 Users can share posts or RSS feed items with their followers. Share requests persist a bounded follower-distribution intent and workers fan it out in chunks to `post_feed_shares` and `rss_feed_item_feed_shares`. Only public, broadly-visible posts can be shared, users cannot share their own posts, and shared post deliveries still respect the post's current broadcast audience if the creator later tightens visibility.
 
-Post feeds include share delivery only for `follow_users` and `any`. A feed read is one SQL
-walk: every filter is an index-backed `WHERE` condition and the outer query is
-`ORDER BY <sort key>, id DESC LIMIT page + 1`, so a page is empty only when nothing is left.
-Direct posts and recipient shares each walk their own sort index (each arm needs at most
-`page + 1` rows of the merged order) through the same
-[eligibility SELECT builder](../../../backend/services/feeds/posts/get-ids/eligible-posts-cte.mts).
-Repeated shares and a direct delivery of the same post remain separate delivery events with their
-own ids. Hot ranks only a recent window (`HOT_WINDOW_MS` in
-[`get-ids.mts`](../../../backend/services/feeds/posts/get-ids.mts); decay makes older posts
-irrelevant), and `time_range` of
-`1y` or `all` with `sort=hot` is the `best` walk by `votes_score_sort`. An old post can appear
-through a recent share because the share cutoff uses delivery time rather than target creation time.
+Post feeds include share delivery only for `follow_users` and `any`. Chronological feeds order direct and shared deliveries separately, then merge them. Hot and best feeds start with a post-rank walk, apply live eligibility to those candidates, and probe recipient shares by post. Repeated shares and a direct delivery of the same post remain separate delivery events with their own ids.
+
+Hot ordering uses the same immutable rank as post search: vote score and the UUIDv7 timestamp contribute to a fixed-epoch rank, so future timestamps participate without changing order as wall time advances. The rank is followed by post identity and then delivery identity. The selected time range still bounds eligible posts, and the continuation cursor keeps that window's decision instant fixed. An old post can appear through a recent share because the share cutoff uses delivery time rather than target creation time. A `time_range` of `1y` or `all` with `sort=hot` continues to use the best-score walk by `votes_score_sort`.
 
 ## Post Feed Sort Options
 
-- `sort=new` (default) — chronological descending. Cursor encodes `{ timestamp: number, id: string }`.
-- `sort=hot` — exponential time-decay ranking with a half-life. Higher-scored recent posts rank above older high-score posts. Cursor encodes `{ score: number, id: string }`. Search, feeds, and trending posts share the canonical hot-score builder, including its future-timestamp handling.
+- `sort=new` (default) — chronological descending.
+- `sort=hot` — stable rank shared with post search, ordered by rank, post identity, and delivery identity. Future UUIDv7 timestamps participate in that rank. Longer time ranges use the best-score walk.
 
 ## Pagination
 
 Cursor-based pagination with opaque base64-encoded cursors (industry standard: GraphQL Relay, GitHub API, Stripe).
 
-- Cursor structure varies by sort: `{ timestamp: number, id: string }` for `sort=new`, `{ score: number, id: string }` for `sort=hot`
+- Cursors are opaque and carry the selected sort's ordering keys. A hot cursor also preserves the time-window decision instant across pages.
 - Use `after` parameter with `page_info.end_cursor` to get the next page
 - Check `page_info.has_next_page` before fetching
 - Limit: 1-100 (default 25)
