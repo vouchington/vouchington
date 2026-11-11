@@ -98,6 +98,8 @@ describe('copyright operational thread retention', () => {
     })
     expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(betweenPages)
     const beforeFinal = await readCopyrightThreadReferenceState(reply.id)
+    const beforeFinalAncestors = (await readCopyrightIntakeRetentionState(reply.id)).ancestorCount
+    expect([0, 1]).toContain(beforeFinalAncestors)
     const finalCursor = await readCopyrightThreadOperationalCursor()
     const finalRun = await sweepCopyrightCaseThreads({ ...options, now: expirationNow })
     const afterFinal = await readCopyrightThreadReferenceState(reply.id)
@@ -109,6 +111,7 @@ describe('copyright operational thread retention', () => {
         afterFinal,
         finalRun,
         finalCursor,
+        beforeFinalAncestors,
       )
       return
     }

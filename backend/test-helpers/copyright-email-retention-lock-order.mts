@@ -80,11 +80,12 @@ export async function writeCopyrightEmailDuringErasure<T>(
 }
 
 /** Commit the real erasure marker while an agent write waits on the same intake lock. */
-export async function waitForCopyrightEmailMarkerBeforeWriter<T>(
+export async function waitForCopyrightEmailMarkerBeforeWriter<T, WriterResult>(
   intakeId: string,
   erase: () => Promise<T>,
-  append: () => Promise<boolean>,
-): Promise<{ erasure: T; appended: boolean }> {
+  append: () => Promise<WriterResult>,
+  writerStatementMarker = '/* appendCopyrightEmailIntakeRecommendation:lockIntake */',
+): Promise<{ erasure: T; appended: WriterResult }> {
   return runPoolObservationExclusively(async () => {
     const markerWritten = Promise.withResolvers<void>()
     const writerWaiting = Promise.withResolvers<void>()
@@ -120,7 +121,7 @@ export async function waitForCopyrightEmailMarkerBeforeWriter<T>(
           })
         if (
           typeof text === 'string' &&
-          text.includes('/* appendCopyrightEmailIntakeRecommendation:lockIntake */') &&
+          text.includes(writerStatementMarker) &&
           Array.isArray(values) &&
           values.includes(intakeId)
         )
@@ -131,7 +132,7 @@ export async function waitForCopyrightEmailMarkerBeforeWriter<T>(
     }
     writePool.on('acquire', observe)
     const erasure = erase()
-    let writer: Promise<boolean> | undefined
+    let writer: Promise<WriterResult> | undefined
     try {
       void erasure.catch((err: unknown) => markerWritten.reject(err))
       await markerWritten.promise

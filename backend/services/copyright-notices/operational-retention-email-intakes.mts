@@ -17,6 +17,7 @@ async function sweepPage(
   await using transaction = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
     statementTimeoutMs: 20_000,
+    isolationLevel: 'serializable',
   })
   await transaction(sql`/* seedUnlinkedCopyrightEmailRetentionCursor */
     INSERT INTO copyright_notice_operational_retention_cursors (kind)

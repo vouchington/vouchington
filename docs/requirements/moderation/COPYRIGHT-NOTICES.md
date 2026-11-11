@@ -189,7 +189,9 @@ SES replays from rebuilding expired references while fresh email can still threa
 intake loses its original object and private MIME parse and attachment data after inactivity; a
 minimal SES receipt remains to prevent re-admission on replay. Erasure intent is committed before
 the first object-version delete, and the receipt blocks new processing while bounded cleanup
-continues. Case-linked ancestry can retain a receipt endpoint without keeping the unlinked private
+continues. Unlinked erasure and source admission use serializable boundaries around their receipt
+decisions; a conflicted cleanup page leaves its cursor unchanged for the next scheduled run.
+Case-linked ancestry can retain a receipt endpoint without keeping the unlinked private
 intake. A standalone unlinked email receipt keeps its final review decision, reviewer, time, and
 encrypted explanation for six years from the latest receipt, review, delivery, or preservation
 release activity. An active legal preservation hold, a linked case, live private intake, or pending

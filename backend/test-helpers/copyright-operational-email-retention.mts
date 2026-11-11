@@ -93,6 +93,13 @@ export async function readCopyrightIntakeAuditRecommendation(id: string): Promis
   return rows[0] ?? null
 }
 
+export async function readCopyrightIntakeRecommendationCount(intakeId: string): Promise<number> {
+  const { rows } = await read<{ count: number }>(sql`/* readCopyrightIntakeRecommendationCount */
+    SELECT COUNT(*)::integer AS count FROM copyright_notice_email_intake_recommendations
+    WHERE copyright_notice_email_intake_receipt_id = ${intakeId}`)
+  return rows[0]!.count
+}
+
 export async function readCopyrightIntakeAuditReview(id: string): Promise<{
   id: string
   reviewed_at: Date

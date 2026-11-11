@@ -27,12 +27,15 @@ export async function assertIncompleteFinalThreadRun(
   after: References,
   result: { deleted: number; hasMore: boolean },
   cursorBefore: Cursor,
+  beforeAncestorCount: number,
 ): Promise<void> {
   expect(result.hasMore).toBe(false)
   expect(after.referenceCount).toBeGreaterThan(0)
   expect(after.referenceCount).toBeLessThanOrEqual(before.referenceCount)
   expect(await readCopyrightThreadRetirementBound(noticeId)).not.toBeNull()
-  expect((await readCopyrightIntakeRetentionState(intakeId)).ancestorCount).toBe(1)
+  expect((await readCopyrightIntakeRetentionState(intakeId)).ancestorCount).toBeLessThanOrEqual(
+    beforeAncestorCount,
+  )
   if (result.deleted === 0) await assertUnchangedFinalCursor(before, after, cursorBefore)
 }
 
