@@ -1,5 +1,5 @@
 import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
-import { S3Buckets, S3ImagesClient } from '@modules/aws'
+import { discardAwsResponseBody, S3Buckets, S3ImagesClient } from '@modules/aws'
 
 const ARTICLE_KEY_PREFIX = 'articles/'
 const README_FILE = 'README.md'
@@ -63,7 +63,12 @@ export async function getArticleMarkdown(article: ArticleMarkdownFile): Promise<
   )
   if (!response.Body) throw new Error(`Article object ${article.key} has no body`)
 
-  rejectOversizedArticle(response.ContentLength)
+  try {
+    rejectOversizedArticle(response.ContentLength)
+  } catch (err) {
+    discardAwsResponseBody(response.Body)
+    throw err
+  }
   const markdown = await readS3BodyAsString(response.Body)
   rejectOversizedArticle(Buffer.byteLength(markdown, 'utf8'))
   setCacheEntry(article.key, { cacheToken: article.cacheToken, markdown })

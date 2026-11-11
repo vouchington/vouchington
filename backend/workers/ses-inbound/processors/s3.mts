@@ -4,7 +4,7 @@ import {
   GetObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
-import { S3ImagesClient } from '@modules/aws'
+import { discardAwsResponseBody, S3ImagesClient } from '@modules/aws'
 import { isAwsThrottlingError, wrapHttpForRetry } from '@modules/queue-errors'
 import type { Readable } from 'node:stream'
 import {
@@ -38,18 +38,23 @@ async function loadSesInboundObjectWithMetadata(
         : {}),
     }),
   ).catch(wrapS3HttpForRetry)
-  rejectOversizedRawEmail(response.ContentLength)
-  if (!response.Body) throw new SesInboundTerminalError('Raw SES object has no body')
-  if (!response.LastModified)
-    throw new SesInboundTerminalError('Raw SES object has no receipt time')
-  if (!response.ETag) throw new SesInboundTerminalError('Raw SES object has no entity tag')
-  return {
-    body: boundedBodyStream(response.Body),
-    receivedAt: response.LastModified,
-    sourceIdentity: {
-      eTag: response.ETag,
-      ...(response.VersionId ? { versionId: response.VersionId } : {}),
-    },
+  try {
+    rejectOversizedRawEmail(response.ContentLength)
+    if (!response.Body) throw new SesInboundTerminalError('Raw SES object has no body')
+    if (!response.LastModified)
+      throw new SesInboundTerminalError('Raw SES object has no receipt time')
+    if (!response.ETag) throw new SesInboundTerminalError('Raw SES object has no entity tag')
+    return {
+      body: boundedBodyStream(response.Body),
+      receivedAt: response.LastModified,
+      sourceIdentity: {
+        eTag: response.ETag,
+        ...(response.VersionId ? { versionId: response.VersionId } : {}),
+      },
+    }
+  } catch (err) {
+    discardAwsResponseBody(response.Body)
+    throw err
   }
 }
 

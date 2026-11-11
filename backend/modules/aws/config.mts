@@ -1,6 +1,7 @@
 import type { NodeHttpHandler, NodeHttpHandlerOptions } from '@smithy/node-http-handler'
 import { createAwsRequestHandler, AWS_SOCKET_TIMEOUT_MS } from '@vouchington/aws/request-handler'
 import type { IncomingMessage } from 'node:http'
+import { Readable } from 'node:stream'
 
 export const AWS_REGION = process.env.AWS_REGION ?? 'us-west-2'
 export const BEDROCK_AWS_REGION = process.env.BEDROCK_AWS_REGION ?? 'us-east-1'
@@ -22,8 +23,11 @@ function armResponseBodyTimeout(body: IncomingMessage, timeoutMs: number): void 
     `AWS response body was inactive for ${timeoutMs} ms`,
   )
   let released = false
+  // An abandoned body has no error listener; destroying it with an error would
+  // surface as an uncaught exception, so it only releases the socket.
   const onTimeout = () => {
-    body.destroy(timeoutError)
+    if (body.listenerCount('error') === 0) body.destroy()
+    else body.destroy(timeoutError)
   }
   const release = () => {
     if (released) return
@@ -51,6 +55,11 @@ function armResponseBodyTimeout(body: IncomingMessage, timeoutMs: number): void 
 
   body.once('end', release)
   body.once('close', release)
+}
+
+// Releases the socket of a response body the caller will not read.
+export function discardAwsResponseBody(body: unknown): void {
+  if (body instanceof Readable) body.destroy()
 }
 
 // The application bounds bodies after headers; the platform owns SDK handler configuration.
