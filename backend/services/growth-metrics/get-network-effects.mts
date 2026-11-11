@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import { query } from '@data-stores/analytics'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import type { GrowthRange, NetworkEffects } from './types.mts'
 
 export async function getNetworkEffects(
@@ -9,16 +9,8 @@ export async function getNetworkEffects(
   periodStart: Date,
 ): Promise<NetworkEffects> {
   const periodStartUuid = getMinUUIDv7ForDate(periodStart)
-
-  const [{ rows }, lpVisitRows] = await Promise.all([
-    read(sql`/* getNetworkEffects */
-      WITH referral_summary AS (
-        SELECT
-          COUNT(DISTINCT (session_id, referrer_user_id))::INT AS attributions,
-          COUNT(DISTINCT referrer_user_id)::INT AS unique_links
-        FROM session_referral_attributions
-        WHERE id > ${periodStartUuid} AND referrer_user_id IS NOT NULL
-      ),
+  const statement = sql`/* getNetworkEffects */ WITH referral_summary AS (`
+  statement.append(referralSummarySql(periodStartUuid)).append(sql`),
       topic_coverage AS (
         SELECT
           COUNT(*) FILTER (WHERE
@@ -43,7 +35,10 @@ export async function getNetworkEffects(
         (SELECT covered FROM topic_coverage) AS topics_covered,
         (SELECT total FROM topic_coverage) AS topics_total,
         (SELECT cnt FROM new_users_in_period) AS new_users
-    `),
+    `)
+
+  const [{ rows }, lpVisitRows] = await Promise.all([
+    read(statement),
     query<{ cnt: number }>(
       `SELECT COUNT(*)::INT AS cnt FROM web_page_view WHERE page_kind = 'landing_page' AND event_time >= TIMESTAMP '${periodStart.toISOString()}'`,
     ),
@@ -68,4 +63,20 @@ export async function getNetworkEffects(
     new_signups: newUsers,
     signup_visit_ratio: lpVisits > 0 ? newUsers / lpVisits : 0,
   }
+}
+
+function referralSummarySql(periodStartUuid: string): SQLStatement {
+  return sql`/* referralSummarySql */
+    SELECT
+      COUNT(*)::INT AS attributions,
+      COUNT(DISTINCT sra.referrer_user_id)::INT AS unique_links
+    FROM session_referral_attributions sra
+    WHERE sra.id > ${periodStartUuid} AND sra.referrer_user_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM session_referral_attributions earlier
+        WHERE earlier.session_id = sra.session_id
+          AND earlier.referrer_user_id = sra.referrer_user_id
+          AND earlier.id < sra.id
+      )
+  `
 }

@@ -27,7 +27,9 @@ policy lives in `schema-growth-registry.mts`. This page only defines query-writi
   exists before attribution insert, and `referrer_user_id` is never reassigned (deletion only sets it
   to null). Session-only and converted-user lookups lack that parent bound and intentionally probe
   every child once explicit ranges are attached. The default-only launch layout has one child.
-  `getNetworkEffects` already bounds `id > $periodStartUuid` and prunes correctly.
+  `getNetworkEffects` bounds attribution candidates by `id > $periodStartUuid`; its earliest-pair
+  check can probe earlier partitions by session and referrer, since a prior click may predate the
+  reporting period.
   `deleteOldReferralAttributionBatch()` binds `id < cutoffId` and will also prune correctly once
   explicit ranges exist; the batch-delete path benefits most because it is the highest-volume reader.
 

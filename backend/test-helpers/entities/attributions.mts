@@ -81,6 +81,12 @@ export async function insertAnonymousReferralAttributionForSessionAt(
   return id
 }
 
+export async function deleteReferralAttributionsByIds(ids: string[]): Promise<void> {
+  await write(sql`/* deleteReferralAttributionsByIds */
+    DELETE FROM session_referral_attributions WHERE id = ANY(${ids}::uuid[])
+  `)
+}
+
 export async function clearReferralAttributionUserId(id: string): Promise<void> {
   await write(
     sql`/* clearReferralAttributionUserId */
