@@ -93,6 +93,45 @@ function assertCommittedWriterReferenceCount(previousCount: number, currentCount
 describe('copyright email reference and retirement SSI', () => {
   useCopyrightOperationalCursorReservation()
 
+  it('ends a retention run after a serialization abort without advancing its page', async () => {
+    const notice = await createRetentionMinimalCase()
+    const intake = await createRetentionThreadSeedEmail('retention-page-conflict', {
+      sesMessageId: notice.initialEmailSesMessageId,
+      messageId: `<seed-${randomUUID()}@example.test>`,
+    })
+    await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
+    await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
+    const beforeReferences = await readCopyrightThreadReferenceState(intake.id)
+    const beforeCursor = await readCopyrightThreadOperationalCursor()
+    const failure = Object.assign(new Error('retirement serialization conflict'), {
+      code: '40001',
+    })
+    let reachedProofPage = false
+    const restore = runBeforePostgresStatementForTest(
+      '/* advanceCopyrightThreadLegalProof */',
+      async () => {
+        reachedProofPage = true
+        throw failure
+      },
+    )
+    onTestFinished(restore)
+    try {
+      const result = await runCopyrightOperationalRetentionCleanup({
+        activeFamilies: ['copyrightCaseThreads'],
+        now: new Date(Date.now() + 181 * DAY_MS),
+        limits: { batchSize: 10, maxBatches: 1 },
+      })
+      expect(reachedProofPage).toBe(true)
+      expect(result.copyrightCaseThreads).toEqual({ scanned: 0, deleted: 0, hasMore: false })
+      await assertAbortedThreadPage(notice.noticeId, intake.id, beforeReferences, beforeCursor)
+      expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
+        { copyright_notice_id: notice.noticeId, link_kind: 'initial' },
+      ])
+    } finally {
+      restore()
+    }
+  })
+
   it('rejects a stale reference admission after retirement commits', async () => {
     const notice = await createRetentionMinimalCase()
     const intake = await createRetentionThreadSeedEmail('retirement-first', {

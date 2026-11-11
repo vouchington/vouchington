@@ -103,16 +103,16 @@ describe('copyright email promotion graph bound', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()
     const root = await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
-    const replies = await Promise.all([
-      recordThreadedCopyrightEmail({
+    const replies = [
+      await recordThreadedCopyrightEmail({
         messageId: copyrightEmailMessageId(),
         replyReferences: [messageId],
       }),
-      recordThreadedCopyrightEmail({
+      await recordThreadedCopyrightEmail({
         messageId: copyrightEmailMessageId(),
         replyReferences: [messageId],
       }),
-    ])
+    ]
     const restore = overrideDynamicConfigFieldsForTest(copyrightConfig, {
       emailThreadGraphMaxRows: 3,
     })

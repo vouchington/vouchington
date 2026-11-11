@@ -105,6 +105,43 @@ describe('copyright email reference admission and graph derivation', () => {
     }
   })
 
+  it('maps an admission serialization failure to 409 and rolls back reference facts', async () => {
+    const intake = await createRetentionThreadSeedEmail('phase-admission-conflict', {
+      messageId: `<seed-${randomUUID()}@example.test>`,
+    })
+    const before = await readCopyrightThreadReferenceState(intake.id)
+    const beforeRetention = await readCopyrightIntakeRetentionState(intake.id)
+    const failure = Object.assign(new Error('reference admission serialization conflict'), {
+      code: '40001',
+    })
+    let reachedInsert = false
+    const restore = runBeforePostgresStatementForTest(
+      '/* insertCopyrightEmailThreadReferences */',
+      async () => {
+        reachedInsert = true
+        throw failure
+      },
+    )
+    onTestFinished(restore)
+    try {
+      await expect(
+        recordCopyrightEmailThreadReferences({
+          intakeId: intake.id,
+          messageId: `<new-${randomUUID()}@example.test>`,
+          inReplyTo: [],
+          references: [],
+        }),
+      ).rejects.toMatchObject({ status: 409, cause: failure })
+      expect(reachedInsert).toBe(true)
+      expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(before)
+      expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
+      expect(await readCopyrightIntakeRetentionState(intake.id)).toEqual(beforeRetention)
+      expect(await readCopyrightEmailReceiptErasedAt(intake.id)).toBeNull()
+    } finally {
+      restore()
+    }
+  })
+
   it('derives the same case on replay after references commit without a graph link', async () => {
     const notice = await createRetentionMinimalCase()
     const parentMessageId = `<${randomUUID()}@example.test>`
