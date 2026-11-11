@@ -168,10 +168,12 @@ BEGIN
     ORDER BY namespace.nspname, source.relname
   LOOP
     EXECUTE format(
-      'CREATE OR REPLACE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OR DELETE ON %s FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references(%s)',
+      'CREATE OR REPLACE TRIGGER trigger_active_topic_references AFTER INSERT OR UPDATE OR DELETE ON %s FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references(%s)',
       reference_table.qualified_name, reference_table.column_arguments
     );
-    -- Current reference changes serialize with merge capture and reject a new inactive target.
+    -- AFTER triggers fire once the foreign-key check (RI_ConstraintTrigger_*, sorted first) holds its
+    -- key-share lock on the topic row. Admission's FOR UPDATE then waits for this writer to commit, and a
+    -- writer that waited for admission re-reads the committed reservation here and is rejected.
   END LOOP;
 END;
 $$;
