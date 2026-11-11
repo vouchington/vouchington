@@ -4,7 +4,10 @@ import {
   countDataRequestAttemptsForRetention,
   createDataRequestAttemptRetentionFixture,
 } from '@voucha/test-helpers/account-data-request-attempt-retention'
-import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
+import {
+  createExactRetentionWindow,
+  createIsolatedRetentionWindow,
+} from '@voucha/test-helpers/retention-window'
 import { cleanupExpiredUserDataRequestAttempts } from '../cleanup-user-data-request-attempts.mts'
 
 describe('export attempt retention', () => {
@@ -53,17 +56,21 @@ describe('export attempt retention', () => {
   })
 
   it('resumes its persisted composite UUIDv7 position on the next invocation', async () => {
-    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    // Fixture ids are the minimum UUIDv7 of their createdAt, and the sweep's rows are only
+    // those inside [lowerBoundDate, cutoff). A two-millisecond window cannot contain another
+    // fixture's leftover rows, unlike a 120-day one that the shared database can land in.
+    const { aged, now: windowNow, lowerBoundDate } = createExactRetentionWindow(30)
+    const now = new Date(windowNow.getTime() + 1)
     const user = await createTestUser()
     const first = await createDataRequestAttemptRetentionFixture(user.id, {
-      createdAt: at(50),
-      terminalAt: at(40),
-      attemptStartedAt: at(45),
+      createdAt: aged,
+      terminalAt: aged,
+      attemptStartedAt: aged,
     })
     const second = await createDataRequestAttemptRetentionFixture(user.id, {
-      createdAt: at(49),
-      terminalAt: at(40),
-      attemptStartedAt: at(45),
+      createdAt: new Date(aged.getTime() + 1),
+      terminalAt: aged,
+      attemptStartedAt: aged,
     })
     const firstPage = await cleanupExpiredUserDataRequestAttempts({
       now,
