@@ -8,8 +8,6 @@ const sharedDbScopeTables = {
   listCopyrightStaffQueue: 'copyright_notices',
   readCopyrightReviewTargetBreaches: 'copyright_notices',
   searchCopyrightStaffEmailIntakes: 'copyright_notice_email_intakes',
-  promoteCopyrightEmailIntakeGraph: 'copyright_notice_email_message_ancestors',
-  promoteCopyrightEmailIntakeGraphLocked: 'copyright_notice_email_intakes',
   associateCopyrightEmailIntakePreflight: 'copyright_notice_email_intakes',
   associateCopyrightEmailIntakeLocked: 'copyright_notice_email_intakes',
   getPendingCopyrightAgentDispatches: 'copyright_notice_dispatch_sources',

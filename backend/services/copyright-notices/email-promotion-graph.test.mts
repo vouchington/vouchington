@@ -90,14 +90,8 @@ describe('copyright email promotion graph bound', () => {
       expect(after).toEqual(before)
       expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
       expect(log.mock.calls).toEqual([
-        [
-          'copyright_email_thread_token_lock_overflow',
-          { noticeId: promoted.noticeId, observedRows: 4 },
-        ],
-        [
-          'copyright_email_thread_token_lock_overflow',
-          { noticeId: promoted.noticeId, observedRows: 4 },
-        ],
+        ['copyright_email_thread_token_overflow', { noticeId: promoted.noticeId, observedRows: 4 }],
+        ['copyright_email_thread_token_overflow', { noticeId: promoted.noticeId, observedRows: 4 }],
       ])
     } finally {
       restore()

@@ -1,5 +1,5 @@
 import { createTestUser, insertTestImage, insertTestPost, insertTestPostImage } from './index.mts'
-import { beginTransaction, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { DELETED_USER_ID } from '../services/users/constants.mts'
 import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
@@ -79,17 +79,4 @@ export async function reassignStatementTargetToTombstone(targetId: string): Prom
     FROM image_placements image, copyright_notice_targets target
     WHERE posts.id = image.post_id AND image.placement_id = target.placement_id AND target.id = ${targetId}
   `)
-}
-
-/** Hold the real account lifecycle key while a separate legal transition must fail without waiting. */
-export async function withStatementPosterLifecycleFence(
-  userId: string,
-  operation: () => Promise<void>,
-): Promise<void> {
-  await using transaction = await beginTransaction()
-  await transaction(
-    sql`/* withStatementPosterLifecycleFence */ SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))`,
-  )
-  await operation()
-  await transaction.commit()
 }

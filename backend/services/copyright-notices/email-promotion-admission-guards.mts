@@ -14,7 +14,7 @@ export function logCopyrightEmailGraphOverflow(
 }
 
 export function logCopyrightEmailTokenOverflow(noticeId: string, maxRows: number): void {
-  console.info('copyright_email_thread_token_lock_overflow', {
+  console.info('copyright_email_thread_token_overflow', {
     noticeId,
     observedRows: maxRows + 1,
   })
