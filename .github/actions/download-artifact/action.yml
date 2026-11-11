@@ -3,8 +3,9 @@ description: >
   Downloads same-run artifacts through the REST API with curl, verifies each archive against the
   SHA-256 digest GitHub recorded at upload, extracts it, and exits. It replaces
   `actions/download-artifact`, whose Node process stays alive after logging success (#4328, #5453).
-  There is no retry and no forced exit: every request has a finite curl deadline and any failure,
-  missing digest or digest mismatch fails the step. Set `name` for one artifact (extracted into
+  There is no forced exit: each request has a finite curl deadline and curl's own bounded retry
+  (`--retry 3 --retry-all-errors`, #5531), and any lasting failure, missing digest or digest
+  mismatch fails the step. Set `name` for one artifact (extracted into
   `path`) or `pattern` for a glob of names (one subdirectory per artifact unless `merge-multiple`).
 inputs:
   name:

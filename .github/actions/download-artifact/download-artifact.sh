@@ -13,8 +13,11 @@ if [[ -n "$name" && -n "$pattern" ]]; then
   exit 1
 fi
 
+# curl's own retry covers one transport blip (a DNS resolve timeout or a 5xx, #5531); plain
+# --retry skips DNS failures, hence --retry-all-errors. Each attempt keeps its --max-time deadline.
 call() {
   curl --fail --silent --show-error --location --connect-timeout 10 --max-time "$1" \
+    --retry 3 --retry-all-errors \
     --header "Authorization: Bearer ${GH_TOKEN}" \
     --header 'Accept: application/vnd.github+json' \
     --header 'X-GitHub-Api-Version: 2022-11-28' "${@:2}"
