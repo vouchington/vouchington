@@ -268,8 +268,10 @@ correctness, and the prohibition on periodic recount remain unenforced.
 Lock only to stop a concurrent write corrupting data the transaction writes: row locks on written
 rows only, no advisory locks. Per-user and per-entity caps and "last X" guards check a capped count
 and then write, with no lock, counter row, slot table, or admission-only constraint; overshoot under
-a true race is accepted. Removing a lock deletes it rather than swapping in another serializer. Why
-and owner words: [lock scope](postgresql/reference-transactions.md#lock-scope). Unenforced.
+a true race is accepted. Removing a lock deletes it rather than swapping in another serializer. A
+rare race that must not break an invariant (write skew, such as an administrator keeping MFA) runs
+the conflicting transactions at SERIALIZABLE; a serialization failure returns 409 with no retry,
+and never a lock, advisory lock, or conflict-forcing column. Why and owner words: [lock scope](postgresql/reference-transactions.md#lock-scope). Unenforced.
 
 ## No per-row queries while holding locks
 
