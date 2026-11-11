@@ -28,6 +28,7 @@ export async function runViewDrivenHostnameScenarios(): Promise<void> {
   )
   registerScenarioContract('search-hostnames-topic-match-all', {
     expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_url_hostnames__topic_id__votes_score_sort__id'] },
       { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 100 },
       { kind: 'maxProcessedRows', relation: 'topics', max: 3 },
       { kind: 'maxProcessedRows', relation: 'relation__topic__parent__topic', max: 2 },
@@ -35,6 +36,7 @@ export async function runViewDrivenHostnameScenarios(): Promise<void> {
   })
   await runAndCapture('search-hostnames-topic-match-all', async () => {
     const page = await searchUrlHostnames({
+      sort: 'trust',
       topic_ids: [seedTopicId, seedParentTopicId],
       topic_match: 'all',
       include_descendants: true,

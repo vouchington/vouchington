@@ -8,7 +8,9 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
   const { limit, topic_id, topic_ids = [], include_descendants = false, sort } = options
   const effectiveLimit = limit || 50
   const effectiveTopicIds = Array.from(new Set(topic_id ? [topic_id] : topic_ids))
-  const filters = buildSearchFilters(options, effectiveTopicIds)
+  const textQuery = options.query || options.hostname
+  const walkTopics = effectiveTopicIds.length > 0 && include_descendants && !textQuery
+  const filters = buildSearchFilters(options, effectiveTopicIds, walkTopics)
   const searchQuery = sql`/* searchUrlHostnames */
     `
 
@@ -19,7 +21,6 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
     searchQuery.append(sql`WITH `)
   }
 
-  const textQuery = options.query || options.hostname
   if (typeof textQuery === 'string' && textQuery) {
     searchQuery.append(sql`text_match_ids AS MATERIALIZED (
       SELECT id FROM url_hostnames
@@ -27,11 +28,25 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
     ), `)
   }
 
+  const order =
+    sort === 'trust' ? sql`h.votes_score_sort DESC, h.id DESC` : sql`h.hostname ASC, h.id ASC`
   searchQuery.append(sql`
     candidate_hostnames AS MATERIALIZED (
     SELECT h.id, h.hostname, h.votes_score_sort
   `)
-  if (typeof textQuery === 'string' && textQuery) {
+  if (walkTopics) {
+    // One keyed top-N read per matching topic, so a page never scans hostnames outside its topics.
+    searchQuery.append(sql`FROM (
+      SELECT DISTINCT topic_descendants.topic_id FROM topic_descendants`)
+    appendDescendantRootFilter(searchQuery, options, effectiveTopicIds)
+    searchQuery.append(sql`) matched_topic
+      JOIN LATERAL (
+        SELECT h.* FROM url_hostnames h`)
+    appendWhereClause(searchQuery, [sql`h.topic_id = matched_topic.topic_id`, ...filters])
+    searchQuery.append(sql` ORDER BY `).append(order)
+    searchQuery.append(sql` LIMIT ${effectiveLimit + 1}
+      ) h ON true`)
+  } else if (typeof textQuery === 'string' && textQuery) {
     searchQuery.append(sql`FROM text_match_ids text_match
       JOIN LATERAL (
         SELECT * FROM url_hostnames WHERE id = text_match.id LIMIT 1
@@ -40,11 +55,8 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
     searchQuery.append(sql`FROM url_hostnames h`)
   }
 
-  appendWhereClause(searchQuery, filters)
-  searchQuery.append(sql` ORDER BY `)
-  searchQuery.append(
-    sort === 'trust' ? sql`h.votes_score_sort DESC, h.id DESC` : sql`h.hostname ASC, h.id ASC`,
-  )
+  if (!walkTopics) appendWhereClause(searchQuery, filters)
+  searchQuery.append(sql` ORDER BY `).append(order)
   searchQuery.append(sql` LIMIT ${effectiveLimit + 1}`)
   searchQuery.append(sql`
     )
@@ -66,12 +78,13 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
 function buildSearchFilters(
   options: SearchUrlHostnamesOptions,
   effectiveTopicIds: string[],
+  walkTopics: boolean,
 ): ReturnType<typeof sql>[] {
   const filters: ReturnType<typeof sql>[] = []
   if (!options.includePrivate) filters.push(sql`publicly_introduced_at IS NOT NULL`)
   appendBooleanFilter(filters, 'is_blocked', options.is_blocked)
   appendBooleanFilter(filters, 'is_crawlable', options.is_crawlable)
-  appendTopicFilters(filters, options, effectiveTopicIds)
+  if (!walkTopics) appendTopicFilters(filters, options, effectiveTopicIds)
   appendCursorFilter(filters, options)
   return filters
 }
@@ -111,6 +124,23 @@ function appendTopicFilters(
       SELECT 1
       FROM topic_descendants
       WHERE topic_descendants.topic_id = h.topic_id
+    )`)
+  }
+}
+
+function appendDescendantRootFilter(
+  query: ReturnType<typeof sql>,
+  { topic_match = 'any' }: SearchUrlHostnamesOptions,
+  effectiveTopicIds: string[],
+): void {
+  if (topic_match !== 'all' || effectiveTopicIds.length < 2) return
+  const [first, ...others] = effectiveTopicIds
+  query.append(sql` WHERE topic_descendants.root_post_id = ${first}`)
+  for (const topicId of others) {
+    query.append(sql` AND EXISTS (
+      SELECT 1 FROM topic_descendants other_root
+      WHERE other_root.root_post_id = ${topicId}
+        AND other_root.topic_id = topic_descendants.topic_id
     )`)
   }
 }

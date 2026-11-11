@@ -175,11 +175,13 @@ export function buildRootDiscoveryAudienceAccessClause(
 
 export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
   return sql`(`
-    .append(`${rootAlias}.post_type <> 'story'`)
-    .append(sql`
-    OR EXISTS (
+    .append(`${rootAlias}.post_type <> 'story' OR EXISTS (
       SELECT 1
-      FROM story_posts post_story
+      FROM LATERAL ( -- fences the OR branch into a per-row probe, not a hashed SubPlan over every item
+        SELECT story_link.story_id FROM story_posts story_link
+        WHERE story_link.post_id = ${rootAlias}.id
+        LIMIT 1
+      ) post_story
       JOIN stories publication_story
         ON publication_story.id = post_story.story_id
        AND publication_story.deleted_at IS NULL
@@ -187,14 +189,12 @@ export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
       JOIN rss_feed_items story_item
         ON story_item.story_id = publication_story.id
        AND story_item.deleted_at IS NULL
-      WHERE post_story.post_id = `)
-    .append(`${rootAlias}.id`)
-    .append(sql`
-        AND `)
+      WHERE `)
     .append(itemHasDiscoverableSourceSql('story_item.id')).append(sql`
     )
   )`)
 }
+
 export function assertSafeSqlAlias(alias: string): void {
   if (!SAFE_SQL_IDENTIFIER.test(alias)) throw new Error(`Unsafe SQL alias: ${alias}`)
 }

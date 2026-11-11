@@ -258,7 +258,7 @@ describe('query-builder (pagination and moderation)', () => {
   it('keeps public story search on a discoverable source', () => {
     const query = buildPostSearchQuery(undefined, { post_types: ['story'] })
 
-    expect(query.sql).toContain('story_posts post_story')
+    expect(query.sql).toContain('story_posts story_link')
     expect(query.sql).toContain('is_discoverable')
     expect(query.sql).toContain('approved_at IS NOT NULL')
   })
@@ -269,7 +269,7 @@ describe('query-builder (pagination and moderation)', () => {
       { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
       { post_types: ['story'] },
     )
-    expect(moderator.sql).toContain('story_posts post_story')
+    expect(moderator.sql).toContain('story_posts story_link')
     expect(moderator.sql).toContain('rss_feed_items story_item')
     expect(moderator.sql).toContain('is_discoverable')
     expect(moderator.sql).toContain("posts.post_type = 'story'")
@@ -286,14 +286,14 @@ describe('query-builder (pagination and moderation)', () => {
     expect(administrator.sql).not.toContain('approved_at IS NOT NULL')
 
     const signedOut = buildPostSearchQuery(undefined, { post_types: ['story'] })
-    expect(signedOut.sql).toContain('story_posts post_story')
+    expect(signedOut.sql).toContain('story_posts story_link')
     expect(signedOut.sql).toContain('is_discoverable')
 
     const lookup = buildPostSearchQuery(
       { id: userId, roles: ['moderator'] } as unknown as PrivateUser,
       { post_types: ['story'], story_id: userId },
     )
-    expect(lookup.sql).toContain('story_posts post_story')
+    expect(lookup.sql).toContain('story_posts story_link')
     expect(lookup.sql).toContain('is_discoverable')
   })
 })

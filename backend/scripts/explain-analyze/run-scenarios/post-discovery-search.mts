@@ -1,6 +1,6 @@
 import { encodeCursor } from '@modules/pagination'
 import { postSearchCursorScope } from '@services/posts/search/get-ids-cursor'
-import { partitionIndexLeaves } from '../partition-index-leaves.mts'
+import { partitionIndexLeaves, postIdOrderLeaves } from '../partition-index-leaves.mts'
 import {
   registerNamedPostIndexExpectations,
   registerPostDiscoveryGate,
@@ -141,7 +141,7 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
   const [globalHotLeaves, typeHotLeaves, primaryKeyLeaves] = await Promise.all([
     partitionIndexLeaves('idx_posts__stable_hot_rank__id'),
     partitionIndexLeaves('idx_posts__post_type__stable_hot_rank__id'),
-    partitionIndexLeaves('posts_pkey'),
+    postIdOrderLeaves(),
   ])
   const leavesByIndex = new Map<string, readonly string[]>([
     ['idx_posts__stable_hot_rank__id', globalHotLeaves],

@@ -1,5 +1,5 @@
 import { registerScenarioContract } from './plan-expectations.mts'
-import { partitionIndexLeaves } from './partition-index-leaves.mts'
+import { partitionIndexLeaves, postIdOrderLeaves } from './partition-index-leaves.mts'
 import { POST_DISCOVERY_FIXTURE_SEEDED_ROWS } from './post-discovery-seeded-rows.mts'
 
 export type PostDiscoveryScope = 'community' | 'recommendation'
@@ -93,6 +93,11 @@ export async function registerNamedPostIndexGate(
   indexName: string,
   options: { allowEmpty?: boolean; follows?: boolean; rowCap?: number | null } = {},
 ): Promise<void> {
-  const leaves = indexName === '' ? [] : await partitionIndexLeaves(indexName)
+  const leaves =
+    indexName === ''
+      ? []
+      : indexName === 'posts_pkey'
+        ? await postIdOrderLeaves()
+        : await partitionIndexLeaves(indexName)
   registerNamedPostIndexExpectations(id, leaves, options)
 }
