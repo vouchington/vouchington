@@ -52,7 +52,7 @@ export async function searchCopyrightStaffEmailIntakes(
   if (options.intakeIds?.length === 0) return { intakes: [], hasNextPage: false }
   const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
   const intakeIds = options.intakeIds ? [...options.intakeIds] : null
-  const query = sql`/* searchCopyrightStaffEmailIntakes */
+  const query = sql`
     SELECT intake.id, intake.received_at, COALESCE(parse.status::text, 'unparsed') AS parse_status,
       intake.current_recommendation_identity_id AS recommendation_id,
       link.link_kind, link.copyright_notice_id AS linked_notice_id,
@@ -121,7 +121,7 @@ export async function searchCopyrightStaffEmailIntakes(
     has_duplicate_message_id: boolean
     has_ancestor_notice_conflict: boolean
     has_reply_reference: boolean
-  }>(query)
+  }>(sql`/* searchCopyrightStaffEmailIntakes */`.append(query))
   await transaction.commit()
   observeSharedDbScope('searchCopyrightStaffEmailIntakes', scope, {
     phase: 'completed',

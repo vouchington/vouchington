@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import sql from 'sql-template-strings'
 import {
   completeCopyrightThreadBlockerPage,
   type BlockerCursor,
@@ -14,22 +14,28 @@ export async function readCopyrightThreadBusinessPage(
   batchSize: number,
   cursor: BlockerCursor,
 ): Promise<BlockerCursor & { blocked: boolean }> {
-  const { rows } = await transaction<Row>(
-    businessPageSql(cursor.phase!, noticeId, now, cursor.childId, batchSize),
+  const { rows } = await businessPageSql(
+    transaction,
+    cursor.phase!,
+    noticeId,
+    now,
+    cursor.childId,
+    batchSize,
   )
   return completeCopyrightThreadBlockerPage(cursor, rows, batchSize)
 }
 
 function businessPageSql(
+  transaction: TransactionQuery,
   phase: NonNullable<BlockerCursor['phase']>,
   noticeId: string,
   now: Date,
   childId: string | null,
   batchSize: number,
-): SQLStatement {
+): Promise<{ rows: Row[] }> {
   const after = childId ?? '00000000-0000-0000-0000-000000000000'
   if (phase === 'deadlines')
-    return sql`/* scanCopyrightThreadDeadlineBlockers */
+    return transaction<Row>(sql`/* scanCopyrightThreadDeadlineBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, resolved_at, cancelled_at, escalation_at
@@ -37,9 +43,9 @@ function businessPageSql(
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
         )
-        SELECT id, (resolved_at IS NULL AND cancelled_at IS NULL) AS blocked FROM page`
+        SELECT id, (resolved_at IS NULL AND cancelled_at IS NULL) AS blocked FROM page`)
   if (phase === 'email_links')
-    return sql`/* scanCopyrightThreadEmailLinkBlockers */
+    return transaction<Row>(sql`/* scanCopyrightThreadEmailLinkBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, copyright_notice_email_intake_id, link_kind
@@ -56,30 +62,30 @@ function businessPageSql(
           SELECT 1 FROM copyright_notice_email_intake_notice_links reviewed
           WHERE reviewed.copyright_notice_email_intake_id = page.copyright_notice_email_intake_id
             AND reviewed.correspondence_action IN ('admitted', 'rejected') LIMIT 1
-        )) AS blocked FROM page`
+        )) AS blocked FROM page`)
   if (phase === 'incidents')
-    return sql`/* scanCopyrightThreadIncidentBlockers */
+    return transaction<Row>(sql`/* scanCopyrightThreadIncidentBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, is_operative FROM copyright_repeat_infringer_incidents
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
-        ) SELECT id, is_operative AS blocked FROM page`
+        ) SELECT id, is_operative AS blocked FROM page`)
   if (phase === 'delivery_work_items')
-    return sql`/* scanCopyrightThreadDeliveryBlockers */
+    return transaction<Row>(sql`/* scanCopyrightThreadDeliveryBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, state FROM copyright_notice_delivery_work_items
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
-        ) SELECT id, state IN ('pending', 'claimed') AS blocked FROM page`
+        ) SELECT id, state IN ('pending', 'claimed') AS blocked FROM page`)
   if (phase === 'guest_capabilities')
-    return sql`/* scanCopyrightThreadGuestCapabilityBlockers */
+    return transaction<Row>(sql`/* scanCopyrightThreadGuestCapabilityBlockers */
         WITH owner AS MATERIALIZED (SELECT ${noticeId}::uuid AS notice_id),
         page AS MATERIALIZED (
           SELECT id, revoked_at, expires_at FROM copyright_notice_guest_capabilities
           WHERE copyright_notice_id = (SELECT notice_id FROM owner) AND id > ${after}::uuid
           ORDER BY id LIMIT ${batchSize}
-        ) SELECT id, (revoked_at IS NULL AND expires_at > ${now}) AS blocked FROM page`
+        ) SELECT id, (revoked_at IS NULL AND expires_at > ${now}) AS blocked FROM page`)
   throw new Error(`Unexpected copyright business blocker phase: ${phase}`)
 }

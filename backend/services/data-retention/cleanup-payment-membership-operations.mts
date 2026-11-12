@@ -18,7 +18,10 @@ export function cleanupMembershipOperationPage(
     kind: 'membership_operation_ledger',
     pageSize,
     recordIds,
-    permitDelete: sql`/* permitExpiredMembershipOperationDelete */ SET LOCAL app.billing_retention_delete = 'on'`,
+    permitDelete: query =>
+      query(
+        sql`/* permitExpiredMembershipOperationDelete */ SET LOCAL app.billing_retention_delete = 'on'`,
+      ),
     selectPage: async (query, cursorId) => {
       const statement = sql`/* selectExpiredMembershipOperationLedgerPage */
         SELECT operation.id, fn_membership_operation_fiscal_retention_due(operation.id) AS due
