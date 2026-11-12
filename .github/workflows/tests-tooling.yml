@@ -83,7 +83,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@8a48840ca216dfaa119d6cacd2789cb3c0dcdba1 # v2.0.0
         with:
           suite: tooling
       - name: Upload full tooling LCOV to GitHub (attempt 2)
@@ -91,7 +91,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@8a48840ca216dfaa119d6cacd2789cb3c0dcdba1 # v2.0.0
         with:
           suite: tooling
           name-suffix: -retry
