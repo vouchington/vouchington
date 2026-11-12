@@ -15215,11 +15215,11 @@ importers:
         version: 0.3.0(react@19.3.1)
     devDependencies:
       '@react-email/render':
-        specifier: ^2.2.0
-        version: 2.2.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: ^2.3.0
+        version: 2.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@react-email/ui':
-        specifier: ^6.11.8
-        version: 6.11.8(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: ^6.11.10
+        version: 6.11.10(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@ts-shared/languages':
         specifier: workspace:^
         version: link:../ts-shared/languages
@@ -15234,7 +15234,7 @@ importers:
         version: 19.3.0(@types/react@19.3.0)
       '@vouchington/email':
         specifier: ^0.2.1
-        version: 0.2.1(@react-email/render@2.2.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-email@6.11.8(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2))(react@19.3.1)
+        version: 0.2.1(@react-email/render@2.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-email@6.11.10(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2))(react@19.3.1)
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
@@ -15245,8 +15245,8 @@ importers:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
       react-email:
-        specifier: ^6.11.8
-        version: 6.11.8(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)
+        specifier: ^6.11.10
+        version: 6.11.10(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)
       vitest:
         specifier: ^5.1.0
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.7(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -19459,15 +19459,15 @@ packages:
   '@radix-ui/rect@1.1.3':
     resolution: {integrity: sha512-JtyZR+mqgBibTo8xea3B6ZRmzZiM/YeVBtUkas6zMuXjAlfIFIW2FgqeM9eLyvEaYX66vr6DJMK+4U6LV0KhNw==}
 
-  '@react-email/render@2.2.0':
-    resolution: {integrity: sha512-WCtHV8ww0OYajz+idpx1jQNlO3RrvcjTihlEWozgLQZlM/1QveLU5ZdVyLTmm6WWY0wohGV0cIx9CB0HpfLJcw==}
+  '@react-email/render@2.3.0':
+    resolution: {integrity: sha512-JmvK+X/VIh0EpruB/iYB5nmnlY6AniMUDPhEOvKP5llEHweOfo/cIy24gdrh6RnpMjJfoGv7xNpMs8+lC3gIwA==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
       react-dom: ^18.0 || ^19.0 || ^19.0.0-rc
 
-  '@react-email/ui@6.11.8':
-    resolution: {integrity: sha512-orE3x9EKUE6GO84UXMcJmhaaFzfusPYc+QZ/k1rJOtk7Bywk6YXx8uoaQCt4zUsQ673n7Vpj8DzxadlAb/CPyQ==}
+  '@react-email/ui@6.11.10':
+    resolution: {integrity: sha512-I+YFOf/YAJmNKDsUQMKQ04S59EpruJ79vlE0zt2dNVmIDqm+vZiy8S4cild75KWxXNiWywnrFZbHuRhO00ijQg==}
 
   '@reduxjs/toolkit@2.12.0':
     resolution: {integrity: sha512-KiT+RzZbp6mQET+Mg+h2c97+9j1sNflUxQkIHI7Yuzf6Peu+OYpmkn6nbHWmLLWj+1ZODUJFwGZ7gx3L9R9EOw==}
@@ -23641,8 +23641,8 @@ packages:
     peerDependencies:
       react: ^19.3.1
 
-  react-email@6.11.8:
-    resolution: {integrity: sha512-dkVwUHe4hSjgydSkVs1cm8w6KK6AnXrhJ9QnAQVDW1wkaoGbqevqJ5lj4yf6WqAlaHWtJVjHcXKsz9/GTKObEQ==}
+  react-email@6.11.10:
+    resolution: {integrity: sha512-v10bjJRibHZrzyB4vVvreGMBcUb/fMIfCrMW7TgY4A7prbdbJ5G0eFRgBWdZDks2Jd6fyJCKQ0aAMcfMeVeDcA==}
     engines: {node: '>=20.19.0'}
     hasBin: true
     peerDependencies:
@@ -25322,12 +25322,12 @@ snapshots:
 
   '@aws-sdk/client-sqs@3.1164.0':
     dependencies:
-      '@aws-sdk/core': 3.980.1
-      '@aws-sdk/credential-provider-node': 3.972.94
+      '@aws-sdk/core': 3.980.2
+      '@aws-sdk/credential-provider-node': 3.972.95
       '@aws-sdk/middleware-sdk-sqs': 3.972.48
-      '@aws-sdk/types': 3.975.0
+      '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.39.0
-      '@smithy/fetch-http-handler': 5.8.0
+      '@smithy/fetch-http-handler': 5.8.1
       '@smithy/node-http-handler': 4.14.2
       '@smithy/types': 4.20.0
       tslib: 2.8.1
@@ -25464,13 +25464,13 @@ snapshots:
 
   '@aws-sdk/credential-provider-node@3.972.91':
     dependencies:
-      '@aws-sdk/credential-provider-env': 3.972.82
-      '@aws-sdk/credential-provider-http': 3.972.84
-      '@aws-sdk/credential-provider-ini': 3.973.27
-      '@aws-sdk/credential-provider-process': 3.972.82
-      '@aws-sdk/credential-provider-sso': 3.973.26
-      '@aws-sdk/credential-provider-web-identity': 3.972.88
-      '@aws-sdk/types': 3.975.0
+      '@aws-sdk/credential-provider-env': 3.972.83
+      '@aws-sdk/credential-provider-http': 3.972.85
+      '@aws-sdk/credential-provider-ini': 3.973.28
+      '@aws-sdk/credential-provider-process': 3.972.83
+      '@aws-sdk/credential-provider-sso': 3.973.27
+      '@aws-sdk/credential-provider-web-identity': 3.972.89
+      '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.39.0
       '@smithy/credential-provider-imds': 4.5.2
       '@smithy/types': 4.20.0
@@ -25612,7 +25612,7 @@ snapshots:
 
   '@aws-sdk/middleware-sdk-sqs@3.972.48':
     dependencies:
-      '@aws-sdk/types': 3.975.0
+      '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.39.0
       '@smithy/types': 4.20.0
       tslib: 2.8.1
@@ -28622,7 +28622,7 @@ snapshots:
 
   '@radix-ui/rect@1.1.3': {}
 
-  '@react-email/render@2.2.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@react-email/render@2.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       entities: 4.5.0
       html-to-text: 10.0.1
@@ -28631,7 +28631,7 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@react-email/ui@6.11.8(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@react-email/ui@6.11.10(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       esbuild: 0.28.2
       jiti: 2.6.1
@@ -29898,12 +29898,12 @@ snapshots:
     dependencies:
       '@vouchington/utils': 0.12.0
 
-  '@vouchington/email@0.2.1(@react-email/render@2.2.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-email@6.11.8(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2))(react@19.3.1)':
+  '@vouchington/email@0.2.1(@react-email/render@2.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-email@6.11.10(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2))(react@19.3.1)':
     dependencies:
-      '@react-email/render': 2.2.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@react-email/render': 2.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@vouchington/localization': 0.3.1(react@19.3.1)
       react: 19.3.1
-      react-email: 6.11.8(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)
+      react-email: 6.11.10(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)
 
   '@vouchington/embeds@0.1.0':
     dependencies:
@@ -33027,11 +33027,11 @@ snapshots:
       react: 19.3.1
       scheduler: 0.28.0
 
-  react-email@6.11.8(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2):
+  react-email@6.11.10(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2):
     dependencies:
       '@babel/parser': 7.29.2
       '@babel/traverse': 7.29.0(supports-color@10.2.2)
-      '@react-email/render': 2.2.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@react-email/render': 2.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       chokidar: 5.0.0
       commander: 13.1.0
       conf: 15.1.0
@@ -34179,41 +34179,6 @@ snapshots:
       pg: 8.23.1
       react: 19.3.1
       typescript: '@typescript/typescript6@6.0.2'
-      vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.7(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - '@vitest/coverage-v8'
-      - eslint
-      - supports-color
-      - zod
-
-  vouchington-tooling@1.0.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.65.0)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.0)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1164.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.44(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.1.0)(zod@4.6.5):
-    dependencies:
-      '@types/mdast': 4.0.4
-      '@types/unist': 3.0.3
-      '@typescript-eslint/parser': 8.72.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
-      agent-blackboard: 0.7.0(supports-color@10.2.2)(zod@4.6.5)
-      coverage-check: 0.18.0(@vitest/coverage-v8@5.1.0)(vitest@5.1.0)
-      csv-parse: 7.0.3
-      csv-stringify: 6.9.0
-      dockerfile-ast: 0.7.1
-      picomatch: 4.0.7
-      remark: 15.0.1(supports-color@10.2.2)
-      remark-gfm: 4.0.1(supports-color@10.2.2)
-      spdx-expression-parse: 5.0.0
-      yaml: 2.9.1
-    optionalDependencies:
-      '@libpg-query/parser': 18.0.0
-      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@4.6.5)
-      '@playwright/test': 1.65.0
-      '@typescript/typescript6': 6.0.2
-      '@vouchington/postgres': 0.6.0
-      '@vouchington/worker-runtime': 0.3.1(@aws-sdk/client-sqs@3.1164.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
-      next: 16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.0)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      no-mistakes: 0.109.44(vitest@5.1.0)
-      pg: 8.23.1
-      react: 19.3.1
-      typescript: 6.0.3
       vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.7(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     transitivePeerDependencies:
       - '@cfworker/json-schema'
