@@ -5,6 +5,7 @@ import {
   type AwsEmulatorConnection,
   type RunningAwsEmulator,
 } from './aws-emulator.mts'
+import { provisionAnalyticsFirehose } from './aws-emulator-firehose.mts'
 import { testS3BucketNames } from './s3-test-environment.mts'
 
 declare module 'vitest' {
@@ -58,6 +59,7 @@ async function startAndProvision(): Promise<RunningAwsEmulator> {
     } finally {
       client.destroy()
     }
+    await provisionAnalyticsFirehose(emulator)
     return emulator
   } catch (err) {
     await emulator.stop()

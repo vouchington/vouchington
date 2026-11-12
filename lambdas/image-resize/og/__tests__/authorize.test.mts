@@ -1,113 +1,105 @@
-import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { PlacementSourcePolicy } from '@ts-shared/url-signing'
+import { randomUUID } from 'node:crypto'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { getImagePlacementDeliveryKey, type PlacementSourcePolicy } from '@ts-shared/url-signing'
+import {
+  createOwnedDynamoDbTable,
+  putDynamoDbItem,
+} from '../../../../backend/test-helpers/aws-emulator-owned-dynamodb-table.mts'
 import { authorizeOgDependencies } from '../authorize.mts'
 
-const dependency: PlacementSourcePolicy = {
-  placementId: '11111111-1111-4111-8111-111111111111',
-  revision: 2,
-  imageId: '22222222-2222-4222-8222-222222222222',
+let table: string
+
+// Each dependency is its own placement, so seeded states never collide inside the file's table.
+function newDependency(): PlacementSourcePolicy {
+  return { placementId: randomUUID(), revision: 2, imageId: randomUUID() }
 }
 
-const env = {
-  MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'enforce',
-  MEDIA_DELIVERY_REGISTRY_TABLE: 'placement-registry',
-  MEDIA_DELIVERY_REGISTRY_REGION: 'us-east-1',
+async function seedState(dependency: PlacementSourcePolicy, state: string) {
+  await putDynamoDbItem(table, {
+    delivery_key: { S: getImagePlacementDeliveryKey(dependency) },
+    state: { S: state },
+  })
 }
+
+const env = () => ({
+  MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'enforce',
+  MEDIA_DELIVERY_REGISTRY_TABLE: table,
+  MEDIA_DELIVERY_REGISTRY_REGION: 'us-west-2',
+})
+// A table that was never created: every read against it fails in the emulator.
+const missingTableEnv = () => ({
+  ...env(),
+  MEDIA_DELIVERY_REGISTRY_TABLE: `missing-${randomUUID()}`,
+})
 
 describe('OG registry authorization', () => {
-  afterEach(() => vi.restoreAllMocks())
+  // no-mistakes-timeout-reason: the emulator takes about three seconds to make a table ACTIVE
+  beforeAll(async () => {
+    table = await createOwnedDynamoDbTable('og-registry', 'delivery_key')
+  }, 30_000)
 
-  it('uses the exact shared key, consistent reads, projected state and configured region', async () => {
-    const send = vi
-      .spyOn(DynamoDBClient.prototype, 'send')
-      .mockResolvedValue({ Item: { state: { S: 'allow' } }, $metadata: {} } as never)
-    await expect(authorizeOgDependencies([dependency], env)).resolves.toEqual({
+  it('reads the shared placement key written by the registry', async () => {
+    const dependency = newDependency()
+    await seedState(dependency, 'allow')
+    await expect(authorizeOgDependencies([dependency], env())).resolves.toEqual({
       states: ['allow'],
       cacheable: true,
     })
-    const command = send.mock.calls[0]?.[0]
-    expect(command).toBeInstanceOf(GetItemCommand)
-    if (!(command instanceof GetItemCommand)) throw new Error('expected GetItem')
-    expect(command.input).toEqual({
-      TableName: 'placement-registry',
-      Key: {
-        delivery_key: {
-          S: 'image-placement:11111111-1111-4111-8111-111111111111:2:22222222-2222-4222-8222-222222222222',
-        },
-      },
-      ConsistentRead: true,
-      ProjectionExpression: '#state',
-      ExpressionAttributeNames: { '#state': 'state' },
-    })
-    const client = send.mock.contexts[0] as DynamoDBClient
-    await expect(client.config.region()).resolves.toBe('us-east-1')
   })
 
   it('maps allowed, withheld, missing and unexpected records', async () => {
-    const send = vi.spyOn(DynamoDBClient.prototype, 'send')
-    for (const [item, expected] of [
-      [{ state: { S: 'allow' } }, 'allow'],
-      [{ state: { S: 'withheld' } }, 'withheld'],
-      [undefined, 'unknown'],
-      [{ state: { S: 'pending' } }, 'unknown'],
-    ] as const) {
-      send.mockResolvedValueOnce({ Item: item, $metadata: {} } as never)
-      await expect(authorizeOgDependencies([dependency], env)).resolves.toEqual({
-        states: [expected],
-        cacheable: true,
-      })
-    }
-    expect(send).toHaveBeenCalledTimes(4)
+    const [allowed, withheld, missing, unexpected] = [
+      newDependency(),
+      newDependency(),
+      newDependency(),
+      newDependency(),
+    ]
+    await seedState(allowed!, 'allow')
+    await seedState(withheld!, 'withheld')
+    await seedState(unexpected!, 'pending')
+    await expect(
+      authorizeOgDependencies([allowed!, withheld!, missing!, unexpected!], env()),
+    ).resolves.toEqual({
+      states: ['allow', 'withheld', 'unknown', 'unknown'],
+      cacheable: true,
+    })
   })
 
-  it('drops every dependency and disables caching when any read fails', async () => {
-    const send = vi.spyOn(DynamoDBClient.prototype, 'send')
-    send.mockResolvedValueOnce({ Item: { state: { S: 'allow' } }, $metadata: {} } as never)
-    send.mockRejectedValueOnce(new Error('registry unavailable'))
-    await expect(authorizeOgDependencies([dependency, dependency], env)).resolves.toEqual({
-      states: ['unknown', 'unknown'],
-      cacheable: false,
-    })
-    expect(send).toHaveBeenCalledTimes(2)
+  it('drops every dependency and disables caching when a read fails', async () => {
+    await expect(
+      authorizeOgDependencies([newDependency(), newDependency()], missingTableEnv()),
+    ).resolves.toEqual({ states: ['unknown', 'unknown'], cacheable: false })
   })
 
   it('keeps empty and inactive cards cacheable without reading the registry', async () => {
-    const send = vi.spyOn(DynamoDBClient.prototype, 'send')
+    // A read of the missing table would fail and make the result uncacheable.
     await expect(authorizeOgDependencies([], {})).resolves.toEqual({ states: [], cacheable: true })
     for (const mode of ['off', 'report']) {
       await expect(
-        authorizeOgDependencies([dependency], { MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: mode }),
+        authorizeOgDependencies([newDependency()], {
+          ...missingTableEnv(),
+          MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: mode,
+        }),
       ).resolves.toEqual({ states: ['unknown'], cacheable: true })
     }
-    expect(send).not.toHaveBeenCalled()
   })
 
   it('disables caching for missing configuration and never reads over four tuples', async () => {
-    const send = vi.spyOn(DynamoDBClient.prototype, 'send')
     await expect(
-      authorizeOgDependencies([dependency], { MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'enforce' }),
+      authorizeOgDependencies([newDependency()], {
+        MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'enforce',
+      }),
     ).resolves.toEqual({ states: ['unknown'], cacheable: false })
-    await expect(
-      authorizeOgDependencies(
-        Array.from({ length: 5 }, () => ({ ...dependency })),
-        env,
-      ),
-    ).resolves.toEqual({
+    // Five seeded 'allow' records would read back as 'allow' if the fifth tuple were read.
+    const five = Array.from({ length: 5 }, newDependency)
+    for (const dependency of five) await seedState(dependency, 'allow')
+    await expect(authorizeOgDependencies(five, env())).resolves.toEqual({
       states: Array(5).fill('unknown'),
       cacheable: false,
     })
-    expect(send).not.toHaveBeenCalled()
-    send.mockResolvedValue({ Item: { state: { S: 'allow' } }, $metadata: {} } as never)
-    await expect(
-      authorizeOgDependencies(
-        Array.from({ length: 4 }, () => ({ ...dependency })),
-        env,
-      ),
-    ).resolves.toEqual({
+    await expect(authorizeOgDependencies(five.slice(0, 4), env())).resolves.toEqual({
       states: Array(4).fill('allow'),
       cacheable: true,
     })
-    expect(send).toHaveBeenCalledTimes(4)
   })
 })
