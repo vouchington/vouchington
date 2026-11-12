@@ -2,3 +2,9 @@ reviews:
   high_level_summary: false
   poem: false
   review_status: true
+  path_instructions:
+    - path: 'backend/**/*'
+      instructions: |
+        For PostgreSQL SQL, including SQL in TypeScript services, follow docs/development/postgres-schema-rules.md and its lock-scope link.
+        Lock only rows the statement writes. Never request FOR UPDATE on read sets or parents, advisory locks, lock-order helpers, or replacement claim/fence/counter/slot tables or columns.
+        Rare legal, money or security invariants use SERIALIZABLE and return 409 on serialization failure, with no retry. Caps and "last X" guards remain best effort.
