@@ -125,7 +125,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_23 = [
   { key: 'native.swift.settings.localModelTestPassed', consumers: ['swift'] },
   { key: 'native.swift.settings.localModels', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.settings.mcp', consumers: ['swift'] },
-  { key: 'native.swift.settings.message8CharacterCode', consumers: ['dotnet', 'swift'] },
+  { key: 'native.swift.settings.verificationCodeLength', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.settings.moderationCadence', consumers: ['swift'] },
   { key: 'native.swift.settings.moderationDays', consumers: ['swift'] },
   { key: 'native.swift.settings.moderationEmails', consumers: ['swift'] },
