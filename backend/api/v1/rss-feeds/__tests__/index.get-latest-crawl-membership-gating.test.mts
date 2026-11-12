@@ -110,6 +110,7 @@ describe('index', () => {
           await request.authenticateAs(admin)
           const response = await request.delete(`/api/v1/rss-feeds/${feedId}`).expect(409)
           expect(response.body.message).toBe('Feed is referenced by admin import history')
+          expect(response.body.code).toBe('RSS_FEED_ADMIN_IMPORT_REFERENCED')
           const { stack: _stack, ...deployedBody } = response.body
           expect(
             validateResponseContract(

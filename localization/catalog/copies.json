@@ -6272,6 +6272,8 @@
 {"descriptor":null,"id":"copy.shared.relationLimit.importResult"},
 {"descriptor":null,"id":"copy.shared.relationLimit.importSkipped"},
 {"descriptor":null,"id":"copy.shared.relationLimit.subscribe"},
+{"descriptor":null,"id":"copy.shared.rssFeedDeletion.accepted"},
+{"descriptor":null,"id":"copy.shared.rssFeedDeletion.blockedByAdminImports"},
 {"descriptor":{"cases":["minute","hour","day","week","month","year"],"kind":"select-plural","numberParameters":[],"selectParameter":"unit","valueParameter":"value"},"id":"copy.shared.timeAgo.relativeDuration"},
 {"descriptor":null,"id":"copy.shared.topic.unavailable"},
 {"descriptor":null,"id":"copy.shared.user.deletedUser"},

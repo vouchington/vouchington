@@ -11,7 +11,10 @@ export const nativeRssDeleteConflictApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-admin',
     status: 409,
     backendResponseContractKey: 'DELETE:/api/v1/rss-feeds/:id#conflict',
-    body: { message: 'Feed is referenced by admin import history' },
+    body: {
+      message: 'Feed is referenced by admin import history',
+      code: 'RSS_FEED_ADMIN_IMPORT_REFERENCED',
+    },
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['backend/services/rss-feeds/delete.mts'],
   },
