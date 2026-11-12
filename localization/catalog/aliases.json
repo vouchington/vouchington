@@ -9444,6 +9444,8 @@
 {"alias":"shared.relationLimit.importResult","consumer":"web","copyId":"copy.shared.relationLimit.importResult"},
 {"alias":"shared.relationLimit.importSkipped","consumer":"web","copyId":"copy.shared.relationLimit.importSkipped"},
 {"alias":"shared.relationLimit.subscribe","consumer":"web","copyId":"copy.shared.relationLimit.subscribe"},
+{"alias":"shared.rssFeedDeletion.accepted","consumer":"web","copyId":"copy.shared.rssFeedDeletion.accepted"},
+{"alias":"shared.rssFeedDeletion.blockedByAdminImports","consumer":"web","copyId":"copy.shared.rssFeedDeletion.blockedByAdminImports"},
 {"alias":"shared.timeAgo.relativeDuration","consumer":"web","copyId":"copy.shared.timeAgo.relativeDuration"},
 {"alias":"shared.topic.unavailable","consumer":"web","copyId":"copy.shared.topic.unavailable"},
 {"alias":"shared.user.deletedUser","consumer":"web","copyId":"copy.shared.user.deletedUser"}

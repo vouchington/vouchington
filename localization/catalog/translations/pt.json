@@ -6272,6 +6272,8 @@
 {"id":"copy.shared.relationLimit.importResult","value":"Concluído. {completed} importados, {failed} com falha, {skipped} ignorados."},
 {"id":"copy.shared.relationLimit.importSkipped","value":"{count} ignorados porque o limite de itens seguidos foi atingido."},
 {"id":"copy.shared.relationLimit.subscribe","value":"Limite de assinaturas atingido. Cancele outra assinatura deste tipo para continuar."},
+{"id":"copy.shared.rssFeedDeletion.accepted","value":"Excluindo o feed… Ele continua na lista até a exclusão terminar."},
+{"id":"copy.shared.rssFeedDeletion.blockedByAdminImports","value":"Não é possível excluir este feed porque importações de administração ainda fazem referência a ele."},
 {"id":"copy.shared.timeAgo.relativeDuration","value":{"day":{"one":"há {value} dia","other":"há {value} dias"},"hour":{"one":"há {value} hora","other":"há {value} horas"},"minute":{"one":"há {value} minuto","other":"há {value} minutos"},"month":{"one":"há {value} mês","other":"há {value} meses"},"week":{"one":"há {value} semana","other":"há {value} semanas"},"year":{"one":"há {value} ano","other":"há {value} anos"}}},
 {"id":"copy.shared.topic.unavailable","value":"Tópico indisponível"},
 {"id":"copy.shared.user.deletedUser","value":"Usuário excluído"},

@@ -4,6 +4,8 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
+import createHttpError from 'http-errors'
+import { RSS_FEED_ADMIN_IMPORT_REFERENCED } from '@modules/on-error/error-codes'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { markRssFeedCategorySnapshotsForReconciliation } from '@services/rss-feed-items/category-snapshot-reconciliations'
 import { enqueueReconcileRssFeedItemCategorySnapshots } from '@queues/rss-feed-maintenance/enqueues/item-categories'
@@ -68,7 +70,11 @@ export async function hardDeleteRssFeedById(id: string): Promise<boolean> {
     SELECT id FROM admin_import_rows WHERE rss_feed_id = $1::uuid LIMIT 1`,
     [id],
   )
-  assert(referencedImports.length === 0, 409, 'Feed is referenced by admin import history')
+  if (referencedImports.length > 0) {
+    throw createHttpError(409, 'Feed is referenced by admin import history', {
+      code: RSS_FEED_ADMIN_IMPORT_REFERENCED,
+    })
+  }
   const { rowCount } = await query(sql`/* hardDeleteRssFeedById:start */
     UPDATE rss_feeds
     SET deleted_at = COALESCE(deleted_at, CURRENT_TIMESTAMP),
