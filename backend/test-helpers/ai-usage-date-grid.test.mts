@@ -90,12 +90,19 @@ describe('AI usage date reservation capacity', () => {
     const now = new Date(value)
     const { ordinarySlots, controlSlot } = getTestAiUsageSlotGridForDate(now)
     const months = getTestAiUsageReservationMonths(now).map(date => date.toISOString().slice(0, 7))
-    expect(months.length).toBeLessThanOrEqual(4)
-    for (const slot of [...ordinarySlots, controlSlot]) {
-      for (let day = 0; day < 3; day++) {
-        const ownedDay = new Date(slot * AI_USAGE_SLOT_MS + day * AI_USAGE_DAY_MS)
-        expect(months).toContain(ownedDay.toISOString().slice(0, 7))
+    const forward = getTestAiUsageSlotGridForDate(now, { notBefore: now }).ordinarySlots
+    expect(forward).toHaveLength(25)
+    for (const slots of [[...ordinarySlots, controlSlot], forward]) {
+      const touchedMonths = new Set<string>()
+      for (const slot of slots) {
+        for (let day = 0; day < 3; day++) {
+          const ownedDay = new Date(slot * AI_USAGE_SLOT_MS + day * AI_USAGE_DAY_MS)
+          const month = ownedDay.toISOString().slice(0, 7)
+          touchedMonths.add(month)
+          expect(months).toContain(month)
+        }
       }
+      expect(touchedMonths.size).toBeLessThanOrEqual(4)
     }
   })
 })

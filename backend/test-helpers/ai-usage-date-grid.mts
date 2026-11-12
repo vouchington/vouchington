@@ -42,8 +42,9 @@ export function getTestAiUsageSlotGridForDate(
 /** Monthly preparation includes every day owned by a block, not just its middle test day. */
 export function getTestAiUsageReservationMonths(date: Date): Date[] {
   const { controlSlot, ordinarySlots } = getTestAiUsageSlotGridForDate(date)
+  const forward = getTestAiUsageSlotGridForDate(date, { notBefore: date }).ordinarySlots
   const months = new Map<number, Date>()
-  for (const slot of [...ordinarySlots, controlSlot]) {
+  for (const slot of [...ordinarySlots, controlSlot, ...forward]) {
     for (const timestamp of [slot * AI_USAGE_SLOT_MS, (slot + 1) * AI_USAGE_SLOT_MS - 1]) {
       const day = new Date(timestamp)
       const month = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), 1)

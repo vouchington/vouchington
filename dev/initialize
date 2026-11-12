@@ -1663,6 +1663,7 @@ main() {
         source .env
         set +a
         (cd backend && pnpm run db:migrate)
+        node backend/test-helpers/prepare-ai-usage-date-partitions.mts
         write_initialized_migration_snapshot
         echo ""
 

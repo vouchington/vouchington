@@ -2,10 +2,10 @@ import { prepareAiUsageMonth } from '@data-stores/psql/ai-usage-monthly-partitio
 import { shutdownDataStoresForOneOffCommand } from '@data-stores/graceful-shutdown'
 import { getTestAiUsageReservationMonths } from './ai-usage-date-grid.mts'
 
-// CI prepares these fixture children before dumping the baseline, never in concurrent tests.
+// Local setup and CI prepare fixture children before workers, never in concurrent tests.
 try {
   for (const month of getTestAiUsageReservationMonths(new Date())) {
-    // At most four fixture months, prepared serially before workers start.
+    // Both bounded reservation grids are prepared serially before workers start.
     await prepareAiUsageMonth(month)
   }
 } finally {
