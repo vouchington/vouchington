@@ -75,6 +75,7 @@ backend-credentialed:
   - 'backend/test-helpers/**'
   - 'backend/data-stores/psql/migrations/**'
   - 'backend/data-stores/psql/config-driven/**'
+  # #5635 retained live Bedrock suite; top removal deletes this original provider pattern.
   - 'backend/**/*.bedrock.test.mts'
   - 'backend/**/*.anthropic*.test.mts'
   - 'backend/**/*.openai*.test.mts'
@@ -91,7 +92,7 @@ backend-credentialed:
   - 'backend/modules/structured-decisions/**'
   - 'backend/agents/autotagger/**'
   - 'backend/services/openai-moderation/**'
-  - 'backend/services/bedrock-embeddings/**'
+  - 'backend/services/embeddings/**'
   - 'backend/services/topics/tools/**'
   - 'backend/services/stripe/**'
 web:
@@ -273,7 +274,7 @@ tooling:
   - 'backend/**'
   - 'backend/agents/AGENTS.md'
   - 'docs/overview/architecture/ai-agents/README.md'
-  - 'docs/development/local-development/{README,reference-bedrock-embeddings-local}.md'
+  - 'docs/development/local-development/{README,reference-gemini-embeddings-local}.md'
   - 'docs/development/postgresql/{reference-migrations-views-and-config-driven,schema-snapshot/README}.md'
   - 'AGENTS.md'
   - 'docs/development/ci.md'

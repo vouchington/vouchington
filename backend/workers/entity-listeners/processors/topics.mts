@@ -1,7 +1,7 @@
 import { repairEntityBloomKeys } from '@services/entity-cache/repair-entity-keys'
 import type { CreateTopicUpdates } from '@services/topics/types'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { enqueueCreateTopicEmbedding } from '@queues/bedrock-embeddings/enqueues'
+import { enqueueCreateTopicEmbedding } from '@queues/gemini-embeddings/enqueues'
 import {
   enqueueBackfillCategoriesForTopicAliases,
   enqueueBackfillRssFeedCategoriesForTopicAlias,

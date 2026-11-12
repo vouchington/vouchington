@@ -39,7 +39,6 @@ async function runUntilStartupBanner(scriptPath: string, cwd: string): Promise<S
     cwd,
     env: {
       ...process.env,
-      BEDROCK_AWS_SECRET_ACCESS_KEY: 'parent-bedrock-secret',
       PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}`,
       S3_AWS_SECRET_ACCESS_KEY: 'parent-s3-secret',
       TMPDIR: cwd,

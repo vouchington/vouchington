@@ -31,8 +31,12 @@ describe('beforeRetireMonthlyPartition', () => {
       partition('crawl_chunks', 'crawl_chunks__p_2019_01'),
     )
     expect(statements.map(statement => statement.trim())).toEqual([
-      `/* retireMonthlyPartition:deleteChunkBatchEntities */
+      `/* retireMonthlyPartition:deleteBedrockChunkBatchEntities */
       DELETE FROM bedrock_embedding_batch_entities AS entity
+      USING crawl_chunks__p_2019_01 AS chunk
+      WHERE entity.crawl_id = chunk.crawl_id AND entity.crawl_order_index = chunk.order_index`,
+      `/* retireMonthlyPartition:deleteChunkBatchEntities */
+      DELETE FROM gemini_embedding_batch_entities AS entity
       USING crawl_chunks__p_2019_01 AS chunk
       WHERE entity.crawl_id = chunk.crawl_id AND entity.crawl_order_index = chunk.order_index`,
     ])
@@ -47,7 +51,8 @@ describe('beforeRetireMonthlyPartition', () => {
     const normalize = (statement: string) => statement.replaceAll(/\s+/gu, ' ').trim()
     expect(statements.slice(0, -1).map(normalize).toSorted()).toEqual(
       [
-        '/* retireMonthlyPartition:clearBatchCrawls */ UPDATE bedrock_embedding_batches SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)',
+        '/* retireMonthlyPartition:clearBedrockBatchCrawls */ UPDATE bedrock_embedding_batches SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)',
+        '/* retireMonthlyPartition:clearBatchCrawls */ UPDATE gemini_embedding_batches SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)',
         '/* retireMonthlyPartition:clearReferralCrawls */ UPDATE user_referral_program_links SET last_crawl_id = NULL WHERE last_crawl_id IN (SELECT id FROM crawls__p_2019_01)',
         '/* retireMonthlyPartition:clearImportDiscoveryCrawls */ UPDATE user_rss_feed_import_row_discoveries SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)',
       ].toSorted(),

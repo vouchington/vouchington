@@ -45,8 +45,8 @@ describe('config inventory', () => {
         'export const ttl = env.SITEMAP_CACHE_TTL_SECONDS\n',
       'cloudflare-worker/wrangler.local.jsonc':
         '{\n  "vars": {\n    "GEO_BLOCKED_COUNTRIES": "[]"\n  }\n}\n',
-      'lambdas/bedrock-batch-bridge/index.mts': 'const url = process.env.BACKEND_URL\n',
-      'lambdas/bedrock-batch-bridge/__tests__/index.test.mts':
+      'lambdas/embedding-batch-bridge/index.mts': 'const url = process.env.BACKEND_URL\n',
+      'lambdas/embedding-batch-bridge/__tests__/index.test.mts':
         'process.env.BACKEND_URL = "https://example.com"\n',
       'static-code-analysis/config-inventory/index.test.mts':
         'const synthetic = process.env.SYNTHETIC_FIXTURE_ENV\n',
@@ -135,8 +135,8 @@ describe('config inventory', () => {
         }),
         expect.objectContaining({
           name: 'BACKEND_URL',
-          deployment: ['lambdas/bedrock-batch-bridge/index.mts'],
-          readers: ['lambdas/bedrock-batch-bridge/index.mts'],
+          deployment: ['lambdas/embedding-batch-bridge/index.mts'],
+          readers: ['lambdas/embedding-batch-bridge/index.mts'],
         }),
         expect.objectContaining({
           name: 'VOUCHA_SIDELOAD_SIGNING_KEYS',
@@ -203,7 +203,7 @@ describe('config inventory', () => {
         expect.objectContaining({ name: 'PORT', docs: [environmentVariablesIndexDoc] }),
         expect.objectContaining({
           name: 'BACKEND_URL',
-          deployment: ['lambdas/bedrock-batch-bridge/__tests__/index.test.mts'],
+          deployment: ['lambdas/embedding-batch-bridge/__tests__/index.test.mts'],
         }),
       ]),
     )

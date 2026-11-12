@@ -39,6 +39,8 @@
     "@services/bluesky-follows": "workspace:^",
     "@services/captcha": "workspace:^",
     "@services/classifier-runs": "workspace:^",
+    "@services/embeddings": "workspace:^",
+    "@services/embeddings-batch": "workspace:^",
     "@services/entity-listener-reconciliation": "workspace:^",
     "@services/entity-relation-actions": "workspace:^",
     "@services/fediverse-instances": "workspace:^",

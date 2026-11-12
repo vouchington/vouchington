@@ -62,7 +62,7 @@ describe('0080-00-01-publisher-type-topics', () => {
 
   it('uses ON CONFLICT for idempotent topic upserts', () => {
     const sql = generatePublisherTypeTopicsSQL()
-    expect(sql).toContain('bedrock_nova_multimodal_v1_content_sha256')
+    expect(sql).toContain('gemini_embedding_2_content_sha256')
     expect(sql).toContain('decode(')
   })
 })

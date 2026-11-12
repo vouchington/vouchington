@@ -309,6 +309,15 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
   bedrock_nova_multimodal_v1_input_token_count INT,
   CONSTRAINT chk_rss_feed_item__bedrock_nova_multimodal_v1_input_token_count CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
 
+  gemini_embedding_2_content_sha256 BYTEA NOT NULL,
+  CHECK (OCTET_LENGTH(gemini_embedding_2_content_sha256) = 32),
+  gemini_embedding_2_input_sha256 BYTEA,
+  CHECK (gemini_embedding_2_input_sha256 IS NULL OR OCTET_LENGTH(gemini_embedding_2_input_sha256) = 32),
+  gemini_embedding_2_embedding halfvec(1536),
+  gemini_embedding_2_embedding_created_at TIMESTAMPTZ,
+  gemini_embedding_2_input_token_count INT,
+  CONSTRAINT chk_rss_feed_item__gemini_embedding_2_input_token_count CHECK (gemini_embedding_2_input_token_count IS NULL OR gemini_embedding_2_input_token_count >= 0),
+
   -- full text search vector; trigger-maintained by fn_update_rss_feed_items_search_vector so
   -- unrelated updates (embeddings, language detection) skip the tsvector rebuild
   search_vector TSVECTOR,
@@ -420,30 +429,30 @@ WHERE deleted_at IS NULL;
 
 -- find existing embeddings by input hash
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_input_sha256
-ON rss_feed_items (bedrock_nova_multimodal_v1_input_sha256)
-WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__gemini_embedding_2_input_sha256
+ON rss_feed_items (gemini_embedding_2_input_sha256)
+WHERE gemini_embedding_2_input_sha256 IS NOT NULL;
 
--- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
+-- index embeddings for similarity search (halfvec_cosine_ops matches <=> queries)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_embedding
-ON rss_feed_items USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
-WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__gemini_embedding_2_embedding
+ON rss_feed_items USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops)
+WHERE gemini_embedding_2_embedding IS NOT NULL;
 
 -- similar-item candidates by published_at window
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__embedding_candidates__published_at__id
 ON rss_feed_items (published_at DESC, id DESC)
 WHERE deleted_at IS NULL
-  AND bedrock_nova_multimodal_v1_embedding IS NOT NULL;
+  AND gemini_embedding_2_embedding IS NOT NULL;
 
 -- find out of date embeddings
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_to_update
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__gemini_embedding_2_to_update
 ON rss_feed_items (id)
 WHERE (
-  bedrock_nova_multimodal_v1_input_sha256 IS NULL
-  OR (bedrock_nova_multimodal_v1_input_sha256 != bedrock_nova_multimodal_v1_content_sha256)
+  gemini_embedding_2_input_sha256 IS NULL
+  OR (gemini_embedding_2_input_sha256 != gemini_embedding_2_content_sha256)
 );
 
 -- for filtering by media type
@@ -895,3 +904,23 @@ WHERE story_id IS NOT NULL AND deleted_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_rss_feed_items__enclosure_media_type_id ON rss_feed_items (enclosure_media_type_id);
+
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_input_sha256
+ON rss_feed_items (bedrock_nova_multimodal_v1_input_sha256)
+WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_embedding
+ON rss_feed_items USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
+WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__embedding_candidates__published_at__id
+ON rss_feed_items (published_at DESC, id DESC)
+WHERE deleted_at IS NULL
+  AND bedrock_nova_multimodal_v1_embedding IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_to_update
+ON rss_feed_items (id)
+WHERE (
+  bedrock_nova_multimodal_v1_input_sha256 IS NULL
+  OR (bedrock_nova_multimodal_v1_input_sha256 != bedrock_nova_multimodal_v1_content_sha256)
+);

@@ -185,7 +185,7 @@ export type TopicElection = {
 }
 
 // Pure content-hashing helper (no service dependencies) so that
-// backend/services/bedrock-embeddings can compute topic embedding content without
+// backend/services/embeddings can compute topic embedding content without
 // depending on @services/topics. Avoid a @modules/utils dependency here (it already
 // depends on @voucha/types) by hashing directly with node:crypto.
 export function createTopicEmbeddingContent(

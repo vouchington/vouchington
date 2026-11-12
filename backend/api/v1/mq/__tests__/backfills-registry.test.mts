@@ -6,8 +6,8 @@ import {
 } from '@voucha/test-helpers'
 import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { scheduledJobManifest as activitypubScheduledJobManifest } from '@queues/activitypub/enqueues/schedules'
-import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
-import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
+import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/gemini-embeddings-batch/enqueues/schedules'
+import { backgroundCpu as gemini_embeddings_batch } from '@queues/background-cpu/queues'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { EXISTING_DISPATCHER_BACKFILLS } from '@services/queue-monitoring/backfills-existing-dispatchers'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
@@ -20,8 +20,8 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
   'sitemaps-nightly-week',
   'sitemaps-weekly-month',
   'sitemaps-monthly-archive',
-  'bedrock-embeddings-poll-dispatch',
-  'bedrock-embedding-reconciliation',
+  'gemini-embeddings-poll-dispatch',
+  'gemini-embedding-reconciliation',
   'bloom-filters-posts',
   'bloom-filters-topics',
   'bloom-filters-users',
@@ -40,16 +40,16 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
 describe('BACKFILL_REGISTRY', () => {
   it('starts all four embedding reconciliation roots from its operator entry', async () => {
     const entry = BACKFILL_REGISTRY.find(
-      candidate => candidate.id === 'bedrock-embedding-reconciliation',
+      candidate => candidate.id === 'gemini-embedding-reconciliation',
     )
     if (!entry) throw new Error('Embedding reconciliation backfill missing')
     const enqueued = await entry.trigger()
     if (!Array.isArray(enqueued)) throw new Error('Expected all four root enqueues')
     const expected = [
-      { name: 'bedrock-embeddings.reconcile_existing', data: { entityType: 'topics' } },
-      { name: 'bedrock-embeddings.reconcile_existing', data: { entityType: 'posts' } },
-      { name: 'bedrock-embeddings.reconcile_existing', data: { entityType: 'rss_feed_items' } },
-      { name: 'bedrock-embeddings.post_trigger_recovery', data: {} },
+      { name: 'gemini-embeddings.reconcile_existing', data: { entityType: 'topics' } },
+      { name: 'gemini-embeddings.reconcile_existing', data: { entityType: 'posts' } },
+      { name: 'gemini-embeddings.reconcile_existing', data: { entityType: 'rss_feed_items' } },
+      { name: 'gemini-embeddings.post_trigger_recovery', data: {} },
     ]
     expect(enqueued).toHaveLength(expected.length)
     expect(
@@ -59,7 +59,7 @@ describe('BACKFILL_REGISTRY', () => {
     ).toEqual(expected)
     for (const [index, result] of enqueued.entries()) {
       if (isDeduplicatedEnqueue(result)) continue
-      await expect(readEnqueuedJob(bedrock_embeddings_batch, result)).resolves.toMatchObject(
+      await expect(readEnqueuedJob(gemini_embeddings_batch, result)).resolves.toMatchObject(
         expected[index]!,
       )
     }

@@ -1,5 +1,5 @@
 import { read, beginTransaction, write } from '@data-stores/psql'
-import { insertTestCentralizedEmbeddingsBulk } from './_bedrock-embeddings-support.mts'
+import { insertTestCentralizedEmbeddingsBulk } from './_gemini-embeddings-support.mts'
 import sql from 'sql-template-strings'
 import pgvector from 'pgvector/pg'
 import { v7 as uuidv7 } from 'uuid'
@@ -67,11 +67,11 @@ export async function insertTestRssFeedItem(data: {
             id,
             url_id,
             data,
-            bedrock_nova_multimodal_v1_content_sha256,
-            bedrock_nova_multimodal_v1_input_sha256,
-            bedrock_nova_multimodal_v1_embedding,
-            bedrock_nova_multimodal_v1_embedding_created_at
-          ) VALUES (
+            gemini_embedding_2_content_sha256,
+            gemini_embedding_2_input_sha256,
+            gemini_embedding_2_embedding,
+            gemini_embedding_2_embedding_created_at
+          , bedrock_nova_multimodal_v1_content_sha256) VALUES (
             ${itemId},
             ${data.urlId},
             ${JSON.stringify(data.itemData)}::jsonb,
@@ -79,7 +79,7 @@ export async function insertTestRssFeedItem(data: {
             ${inputSha},
             ${pgvector.toSql(data.embedding)},
             CURRENT_TIMESTAMP
-          )
+          , ${data.contentSha256})
           ON CONFLICT (id) DO UPDATE
             SET data = EXCLUDED.data
         `,
@@ -91,13 +91,13 @@ export async function insertTestRssFeedItem(data: {
             id,
             url_id,
             data,
-            bedrock_nova_multimodal_v1_content_sha256
-          ) VALUES (
+            gemini_embedding_2_content_sha256
+          , bedrock_nova_multimodal_v1_content_sha256) VALUES (
             ${itemId},
             ${data.urlId},
             ${JSON.stringify(data.itemData)}::jsonb,
             ${data.contentSha256}
-          )
+          , ${data.contentSha256})
           ON CONFLICT (id) DO UPDATE
             SET data = EXCLUDED.data
         `,
@@ -129,8 +129,8 @@ export async function addDummyEmbeddingToRssFeedItem(
   await write(
     sql`/* addDummyEmbeddingToRssFeedItem */
     UPDATE rss_feed_items
-    SET bedrock_nova_multimodal_v1_embedding = ${dummyEmbedding}::vector,
-        bedrock_nova_multimodal_v1_embedding_created_at = CURRENT_TIMESTAMP
+    SET gemini_embedding_2_embedding = ${dummyEmbedding}::halfvec(1536),
+        gemini_embedding_2_embedding_created_at = CURRENT_TIMESTAMP
     WHERE id = ${rssFeedItemId}
   `,
   )

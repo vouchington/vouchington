@@ -379,9 +379,9 @@
   ],
   "main-4": [
     "first-community-post-id-index",
-    "bedrock-copy-existing-topics",
-    "bedrock-copy-existing-posts",
-    "bedrock-copy-existing-rss_feed_items",
+    "gemini-copy-existing-topics",
+    "gemini-copy-existing-posts",
+    "gemini-copy-existing-rss_feed_items",
     "membership-stripe-event-recovery",
     "membership-renewal-selection",
     "prioritized-referral-links-cache-miss",

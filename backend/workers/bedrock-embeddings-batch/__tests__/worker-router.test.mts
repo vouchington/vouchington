@@ -1,6 +1,6 @@
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { createAwsReplayRequestHandler } from '@voucha/test-helpers/aws-replay-request-handler'
-import { createOwnedBedrockRouterFixtures } from '@voucha/test-helpers/bedrock-router-owned-fixtures'
+import { createOwnedBedrockRouterFixtures } from '@voucha/test-helpers/bedrock-legacy-bedrock-router-owned-fixtures'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
@@ -13,7 +13,7 @@ import {
   insertTestEmbeddings,
   insertTestTopic,
   setTopicEmbeddingContentSha256,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/uuid-cursors'
 import { processBedrockEmbeddingsBatchJob } from '../processors/worker-router.mts'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
@@ -24,7 +24,7 @@ import {
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
-} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+} from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
 const createdBatchIds: string[] = []
 
 describe('bedrock embeddings batch worker processor', () => {

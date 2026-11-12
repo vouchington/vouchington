@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import { insertTestCentralizedEmbeddingsBulk } from './_bedrock-embeddings-support.mts'
+import { insertTestCentralizedEmbeddingsBulk } from './_gemini-embeddings-support.mts'
 import sql from 'sql-template-strings'
 import pgvector from 'pgvector/pg'
 
@@ -20,9 +20,9 @@ export async function updatePostEmbeddingData(data: {
   await write(
     sql`/* updatePostEmbeddingData */
     UPDATE posts
-    SET bedrock_nova_multimodal_v1_input_sha256 = ${data.inputSha256},
-      bedrock_nova_multimodal_v1_embedding = ${pgvector.toSql(data.embedding)},
-      bedrock_nova_multimodal_v1_embedding_created_at = ${createdAt}
+    SET gemini_embedding_2_input_sha256 = ${data.inputSha256},
+      gemini_embedding_2_embedding = ${pgvector.toSql(data.embedding)},
+      gemini_embedding_2_embedding_created_at = ${createdAt}
     WHERE id = ${data.postId}
   `,
   )
@@ -48,8 +48,8 @@ export async function getPostEmbeddingData(postId: string): Promise<{
   }>(
     sql`/* getPostEmbeddingData */
     SELECT
-      bedrock_nova_multimodal_v1_input_sha256 AS input_sha,
-      bedrock_nova_multimodal_v1_embedding_created_at AS created_at,
+      gemini_embedding_2_input_sha256 AS input_sha,
+      gemini_embedding_2_embedding_created_at AS created_at,
       ban_evasion_post_embedding_input_sha256 AS ban_evasion_post_embedding_input_sha
     FROM posts
     WHERE id = ${postId}

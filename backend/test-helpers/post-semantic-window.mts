@@ -26,15 +26,15 @@ export async function insertSemanticWindowPosts(
   const { rows } = await transaction<{ id: string }>(sql`/* insertSemanticWindowPosts */
     INSERT INTO posts (
       id, post_type, title, markdown, created_by_id, created_via,
-      bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256,
-      bedrock_nova_multimodal_v1_embedding
-    )
+      gemini_embedding_2_content_sha256, llm_moderation_content_sha256,
+      gemini_embedding_2_embedding
+    , bedrock_nova_multimodal_v1_content_sha256)
     SELECT COALESCE((${explicitIds}::uuid[])[ordinal], uuidv7()),
       'discussion', 'Semantic window fixture', 'Semantic window fixture', ${userId}::uuid,
       'system', decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex'),
       (${embedding.slice(0, 32)}::real[] || ARRAY[ordinal::real / ${count}::real]
-        || array_fill(0::real, ARRAY[991]))::vector(1024)
-    FROM generate_series(1, ${count}::integer) AS ordinal
+        || array_fill(0::real, ARRAY[991]))::halfvec(1536)
+    , decode(repeat('00', 32), 'hex') FROM generate_series(1, ${count}::integer) AS ordinal
     RETURNING id
   `)
   const ids = rows.map(row => row.id)
@@ -50,7 +50,7 @@ export async function insertSemanticWindowPosts(
   `)
   const { rows: ordered } = await transaction<{ id: string }>(sql`/* insertSemanticWindowPosts */
     SELECT id FROM posts WHERE id = ANY(${ids}::uuid[])
-    ORDER BY bedrock_nova_multimodal_v1_embedding <=> ${pgvector.toSql(embedding)}::vector, id DESC
+    ORDER BY gemini_embedding_2_embedding <=> ${pgvector.toSql(embedding)}::halfvec(1536), id DESC
   `)
   await transaction.commit()
   return ordered.map(row => row.id)

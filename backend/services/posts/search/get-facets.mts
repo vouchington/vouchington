@@ -2,7 +2,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { PostSearchOptions } from './types.mts'
 import { buildPostSearchQuery } from './query-builder.mts'
 import { executePostSearchQuery } from './execute-query.mts'
-import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
+import { getCachedSearchEmbedding } from '@services/embeddings/search/get-cached'
 import { buildCountQuery, hasSemanticSearch } from '@modules/search-utils'
 import { read } from '@data-stores/psql'
 import {

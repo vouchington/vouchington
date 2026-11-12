@@ -2,12 +2,12 @@ import { mintUUIDv7 } from '@modules/utils/ids'
 import { expect } from 'vitest'
 import { beginTransaction, read, type OwnedTransaction } from '@data-stores/psql'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { getActiveBatchStats } from '../services/bedrock-embeddings/batch/orchestrator/poll-queries.mts'
-import { getBatchCreationLimits } from '../services/bedrock-embeddings-batch/rate-limits.mts'
-import { createBatch } from '../services/bedrock-embeddings-batch/orchestrator/create.mts'
-import type { BatchCreationDependencies } from '../services/bedrock-embeddings-batch/types.mts'
+import { getActiveBatchStats } from '../services/embeddings/batch/orchestrator/poll-queries.mts'
+import { getBatchCreationLimits } from '../services/embeddings-batch/rate-limits.mts'
+import { createBatch } from '../services/embeddings-batch/orchestrator/create.mts'
+import type { BatchCreationDependencies } from '../services/embeddings-batch/types.mts'
 import type { acquireEmbeddingQuotaFixture } from './embedding-creation-quota.mts'
-import { insertTestEmbeddingsBatch } from './entities/bedrock-embeddings-batches.mts'
+import { insertTestEmbeddingsBatch } from './entities/gemini-embeddings-batches.mts'
 
 /** Unfiltered production admission and one owned count reservation share a stable snapshot. */
 export async function createEmbeddingCountSnapshot(
@@ -59,14 +59,14 @@ export async function createEmbeddingCountSnapshot(
         await insertTestEmbeddingsBatch(
           {
             id,
-            bedrockStatus: 'Submitted',
+            vertexState: 'JOB_STATE_PENDING',
             batchData: { metadata: { inputSizeMB: 1 } },
           },
           { query: transaction! },
         )
         const { rows } = await transaction!<{ id: string; input_size_mb: number }>(
           allowUnannotatedQuery(`SELECT id, (data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION AS input_size_mb
-         FROM bedrock_embedding_batches WHERE id = $1 AND submitted_at IS NOT NULL
+         FROM gemini_embedding_batches WHERE id = $1 AND submitted_at IS NOT NULL
            AND completed_at IS NULL AND failed_at IS NULL AND cancelled_at IS NULL`),
           [id],
         )
@@ -75,11 +75,11 @@ export async function createEmbeddingCountSnapshot(
     removeOwnedReservations: () =>
       start(async () => {
         await transaction!(
-          allowUnannotatedQuery('DELETE FROM bedrock_embedding_batches WHERE id = $1'),
+          allowUnannotatedQuery('DELETE FROM gemini_embedding_batches WHERE id = $1'),
           [id],
         )
         const { rows } = await transaction!(
-          allowUnannotatedQuery('SELECT id FROM bedrock_embedding_batches WHERE id = $1'),
+          allowUnannotatedQuery('SELECT id FROM gemini_embedding_batches WHERE id = $1'),
           [id],
         )
         expect(rows).toEqual([])
@@ -93,7 +93,7 @@ export async function createEmbeddingCountSnapshot(
     await Promise.allSettled(operations)
     await transaction?.[Symbol.asyncDispose]()
     const { rows } = await read(
-      '/* createEmbeddingCountSnapshot:verifyDisposed */ SELECT id FROM bedrock_embedding_batches WHERE id = $1',
+      '/* createEmbeddingCountSnapshot:verifyDisposed */ SELECT id FROM gemini_embedding_batches WHERE id = $1',
       [id],
     )
     expect(rows).toEqual([])

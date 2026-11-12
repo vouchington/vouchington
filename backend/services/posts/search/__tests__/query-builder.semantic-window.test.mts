@@ -20,12 +20,10 @@ describe('semantic candidate window', () => {
     const candidateSql = query.sql.slice(windowStart, outerStart)
     expect(candidateSql).toContain('posts.search_vector @@ text_search_tsquery.tsquery')
     expect(candidateSql).toContain('deleted_at IS NULL')
-    expect(candidateSql).toContain(
-      'ORDER BY semantic_vector_post.bedrock_nova_multimodal_v1_embedding <=>',
-    )
+    expect(candidateSql).toContain('ORDER BY semantic_vector_post.gemini_embedding_2_embedding <=>')
     expect(candidateSql).toContain('FROM posts semantic_vector_post')
     expect(candidateSql).toContain(
-      'WHERE semantic_vector_post.bedrock_nova_multimodal_v1_embedding IS NOT NULL',
+      'WHERE semantic_vector_post.gemini_embedding_2_embedding IS NOT NULL',
     )
     expect(candidateSql).toContain('AND posts.id = semantic_vector_post.id')
     expect(candidateSql).toContain('AND semantic_vector_post.created_by_id =')

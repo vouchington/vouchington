@@ -1,3 +1,4 @@
+// Similarity thresholds await Gemini recalibration in #5635.
 import type { QueryExecutor } from '@data-stores/psql'
 import type { ClassifierRunSubject, StoryRunCandidate } from '@services/classifier-runs'
 import { itemHasDiscoverableSourceSql } from '@services/rss-feeds/discoverability-sql'
@@ -31,7 +32,7 @@ async function readClusterableItem(
         sql`) AS is_cluster_eligible
     FROM rss_feed_items item
     WHERE item.id = ${rssFeedItemId} AND item.deleted_at IS NULL
-      AND item.bedrock_nova_multimodal_v1_embedding IS NOT NULL`,
+      AND item.gemini_embedding_2_embedding IS NOT NULL`,
       ),
   )
   const item = rows[0]
@@ -55,7 +56,7 @@ async function findNeighbors(
     sql`/* findStoryClusteringNeighbors */
     SELECT neighbor.id, neighbor.story_id
     FROM (
-      SELECT bedrock_nova_multimodal_v1_embedding AS embedding
+      SELECT gemini_embedding_2_embedding AS embedding
       FROM rss_feed_items
       WHERE id = ${rssFeedItemId}
       LIMIT 1
@@ -64,13 +65,13 @@ async function findNeighbors(
       SELECT
         c.id,
         c.story_id,
-        (c.bedrock_nova_multimodal_v1_embedding <=> source.embedding) AS distance
+        (c.gemini_embedding_2_embedding <=> source.embedding) AS distance
       -- no-mistakes-disable-next-line postgres-required-predicates: nearest-neighbor search over every partition; story members can be older than any published_at window, and splitting the OR would change the approximate HNSW top-K
       FROM rss_feed_items c
       LEFT JOIN stories s ON s.id = c.story_id AND s.deleted_at IS NULL
       WHERE c.deleted_at IS NULL
         AND c.story_locked_at IS NULL
-        AND c.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+        AND c.gemini_embedding_2_embedding IS NOT NULL
         AND c.id != ${rssFeedItemId}
         AND (c.story_id IS NULL OR s.id IS NOT NULL)
         AND `

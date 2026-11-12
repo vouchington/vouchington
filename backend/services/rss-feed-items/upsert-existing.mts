@@ -15,7 +15,7 @@ export async function getExistingRssFeedItems(
       chunkArray(guids, RSS_FEED_ITEM_SQL_BATCH_SIZE).map(async guidChunk => {
         const { rows } = await read<ExistingRssFeedItemRow>(sql`/* upsertRssFeedItems */
           SELECT rss_feed_item_guids.id, rss_feed_item_guids.guid, rss_feed_items.url_id,
-                 rss_feed_items.bedrock_nova_multimodal_v1_content_sha256,
+                 rss_feed_items.gemini_embedding_2_content_sha256,
                  rss_feed_items.data->'media:starRating' AS media_star_rating,
                  rss_feed_items.data->'media:statistics' AS media_statistics,
                  rss_feed_items.data->>'chapters_url' AS chapters_url,
@@ -26,7 +26,7 @@ export async function getExistingRssFeedItems(
                  rss_feed_items.media_type::text AS media_type,
                  rss_feed_items.video_id,
                  rss_feed_items.video_platform,
-                 (rss_feed_items.bedrock_nova_multimodal_v1_embedding IS NOT NULL) AS has_embedding,
+                 (rss_feed_items.gemini_embedding_2_embedding IS NOT NULL) AS has_embedding,
                  rss_feed_items.published_at,
                  EXISTS (
                    SELECT 1

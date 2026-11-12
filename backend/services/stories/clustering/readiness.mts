@@ -4,9 +4,9 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 
 /** The item's embedding was built from its current content (a candidate search needs it). */
 function currentEmbedding(alias: string): string {
-  return `${alias}.bedrock_nova_multimodal_v1_input_sha256 = ${alias}.bedrock_nova_multimodal_v1_content_sha256
-    AND ${alias}.bedrock_nova_multimodal_v1_embedding IS NOT NULL
-    AND ${alias}.bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL`
+  return `${alias}.gemini_embedding_2_input_sha256 = ${alias}.gemini_embedding_2_content_sha256
+    AND ${alias}.gemini_embedding_2_embedding IS NOT NULL
+    AND ${alias}.gemini_embedding_2_embedding_created_at IS NOT NULL`
 }
 
 /** Reservation-time gate: a neighbor search before the embedding exists would find nothing. */
@@ -34,7 +34,7 @@ export function storyClusteringRequestEligibility(): SQLStatement {
   return sql`EXISTS (
       SELECT 1 FROM rss_feed_items item
       WHERE item.id = request.rss_feed_item_id AND item.deleted_at IS NULL
-        AND item.bedrock_nova_multimodal_v1_content_sha256 = request.input_sha256
+        AND item.gemini_embedding_2_content_sha256 = request.input_sha256
         AND `
     .append(currentEmbedding('item'))
     .append(')')

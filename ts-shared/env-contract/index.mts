@@ -41,6 +41,20 @@ export interface EnvVarContractGroup {
 
 export const ENV_VAR_CONTRACT_GROUPS = [
   group(
+    'vouchington-infra',
+    'internal',
+    ['ecs-backend-environment', 'ecs-worker-environment'],
+    [
+      'VERTEX_PROJECT_ID',
+      'VERTEX_PROJECT_NUMBER',
+      'VERTEX_LOCATION',
+      'VERTEX_BATCH_BUCKET',
+      'VERTEX_WIF_POOL_ID',
+      'VERTEX_WIF_PROVIDER_ID',
+      'VERTEX_SERVICE_ACCOUNT_EMAIL',
+    ],
+  ),
+  group(
     'local-init',
     'internal',
     ['local-worktree'],

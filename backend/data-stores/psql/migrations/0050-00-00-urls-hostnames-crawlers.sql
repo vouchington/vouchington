@@ -763,6 +763,15 @@ CREATE TABLE IF NOT EXISTS crawl_chunks (
   bedrock_nova_multimodal_v1_input_token_count INT,
   CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
 
+  gemini_embedding_2_content_sha256 BYTEA NOT NULL,
+  CHECK (OCTET_LENGTH(gemini_embedding_2_content_sha256) = 32),
+  gemini_embedding_2_input_sha256 BYTEA,
+  CHECK (gemini_embedding_2_input_sha256 IS NULL OR OCTET_LENGTH(gemini_embedding_2_input_sha256) = 32),
+  gemini_embedding_2_embedding halfvec(1536),
+  gemini_embedding_2_embedding_created_at TIMESTAMPTZ,
+  gemini_embedding_2_input_token_count INT,
+  CHECK (gemini_embedding_2_input_token_count IS NULL OR gemini_embedding_2_input_token_count >= 0),
+
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) PARTITION BY RANGE (crawl_id);
@@ -778,20 +787,20 @@ ON crawl_chunks USING GIN (search_vector);
 
 -- find existing embeddings by input hash
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256
-ON crawl_chunks (bedrock_nova_multimodal_v1_input_sha256)
-WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_crawl_chunks__gemini_embedding_2_input_sha256
+ON crawl_chunks (gemini_embedding_2_input_sha256)
+WHERE gemini_embedding_2_input_sha256 IS NOT NULL;
 
 -- Partition retirement must retain chunks until embedding finishes.
 CREATE INDEX IF NOT EXISTS idx_crawl_chunks__embedding_pending
 ON crawl_chunks (crawl_id)
-WHERE bedrock_nova_multimodal_v1_embedding_created_at IS NULL;
+WHERE gemini_embedding_2_embedding_created_at IS NULL;
 
--- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
+-- index embeddings for similarity search (halfvec_cosine_ops matches <=> queries)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_crawl_chunks__bedrock_nova_multimodal_v1_embedding
-ON crawl_chunks USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
-WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_crawl_chunks__gemini_embedding_2_embedding
+ON crawl_chunks USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops)
+WHERE gemini_embedding_2_embedding IS NOT NULL;
 
 COMMENT ON TABLE crawl_chunks IS 'Chunked content from crawls for embedding and search. RANGE-partitioned by crawl_id.';
 COMMENT ON COLUMN crawl_chunks.crawl_id IS 'The crawl this chunk was extracted from.';
@@ -822,3 +831,15 @@ CREATE INDEX IF NOT EXISTS idx_urls__media_type_id
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__age_threshold_days_id_crawlable
 ON url_hostnames (age_threshold_days, id) INCLUDE (crawl_swept_at)
 WHERE is_crawlable AND NOT is_blocked;
+
+CREATE INDEX IF NOT EXISTS idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256
+ON crawl_chunks (bedrock_nova_multimodal_v1_input_sha256)
+WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_crawl_chunks__embedding_pending
+ON crawl_chunks (crawl_id)
+WHERE bedrock_nova_multimodal_v1_embedding_created_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_crawl_chunks__bedrock_nova_multimodal_v1_embedding
+ON crawl_chunks USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
+WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;

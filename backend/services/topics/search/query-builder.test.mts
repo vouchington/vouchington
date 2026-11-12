@@ -2,7 +2,7 @@ import { expect, it, describe } from 'vitest'
 import { buildTopicSearchQuery } from './query-builder.mts'
 
 describe('query-builder', () => {
-  const testEmbedding = Array.from({ length: 1024 }, (_, i) => ((i % 7) + 1) / 10)
+  const testEmbedding = Array.from({ length: 1536 }, (_, i) => ((i % 7) + 1) / 10)
 
   it('buildTopicSearchQuery includes relevance_tier in SELECT only for sort=relevance with text search', () => {
     const relevanceWithSearch = buildTopicSearchQuery({ text_search_query: 'amex' }, 'relevance')
@@ -27,9 +27,9 @@ describe('query-builder', () => {
     expect(query.sql).toContain('semantic_search_embedding AS')
     expect(query.sql).toContain('CROSS JOIN semantic_search_embedding')
     expect(query.sql).toContain('AS ranking_score')
-    expect(query.sql).toContain('t.bedrock_nova_multimodal_v1_embedding IS NOT NULL')
+    expect(query.sql).toContain('t.gemini_embedding_2_embedding IS NOT NULL')
     expect(query.sql).toContain(
-      '(t.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding) < ?',
+      '(t.gemini_embedding_2_embedding <=> semantic_search_embedding.embedding) < ?',
     )
     expect(query.sql).toContain('ORDER BY ranking_score DESC, t.id DESC')
   })
@@ -48,10 +48,10 @@ describe('query-builder', () => {
     expect(query.sql).toContain('CROSS JOIN similar_post_embedding')
     expect(query.sql).toContain('CROSS JOIN similar_topic_embedding')
     expect(query.sql).toContain(
-      '(t.bedrock_nova_multimodal_v1_embedding <=> similar_post_embedding.embedding) < ?',
+      '(t.gemini_embedding_2_embedding <=> similar_post_embedding.embedding) < ?',
     )
     expect(query.sql).toContain(
-      '(t.bedrock_nova_multimodal_v1_embedding <=> similar_topic_embedding.embedding) < ?',
+      '(t.gemini_embedding_2_embedding <=> similar_topic_embedding.embedding) < ?',
     )
     expect(query.sql).toContain('t.id <> ?')
   })
@@ -68,7 +68,7 @@ describe('query-builder', () => {
     expect(query.sql).toContain('similar_rss_feed_item_embedding AS')
     expect(query.sql).toContain('CROSS JOIN similar_rss_feed_item_embedding')
     expect(query.sql).toContain(
-      '(t.bedrock_nova_multimodal_v1_embedding <=> similar_rss_feed_item_embedding.embedding) < ?',
+      '(t.gemini_embedding_2_embedding <=> similar_rss_feed_item_embedding.embedding) < ?',
     )
     expect(query.values).toContain(rssFeedItemId)
   })
@@ -88,7 +88,7 @@ describe('query-builder', () => {
     expect(query.sql).toContain('semantic_search_embedding AS')
     expect(query.sql).toContain('CROSS JOIN semantic_search_embedding')
     expect(query.sql).toContain(
-      '(t.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding) < ?',
+      '(t.gemini_embedding_2_embedding <=> semantic_search_embedding.embedding) < ?',
     )
     expect(query.sql).toContain('ORDER BY')
     expect(query.sql).toContain('tier_calc.relevance_tier ASC')

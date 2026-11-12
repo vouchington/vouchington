@@ -1,27 +1,26 @@
 import { randomUUID } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
-import { CreateModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
 import { Worker } from 'glide-mq'
 import { throwRateLimited } from '@vouchington/queue-errors'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { BedrockControlClient } from '@modules/aws/bedrock-control'
-import { S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
-import { creationJobOptions } from '@queues/bedrock-embeddings-batch/enqueues'
+import { creationJobOptions } from '@queues/gemini-embeddings-batch/enqueues'
 import {
-  BEDROCK_BATCH_MAX_VALUES,
-  bedrockEmbeddingsBatchConfig,
-} from '@services/bedrock-embeddings/batch/config'
-import { getBatchIdByJobArn } from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
-import { getCpuProviderCooldownRemainingMs } from '@services/bedrock-embeddings/provider-cooldown'
+  GEMINI_BATCH_MAX_VALUES,
+  geminiEmbeddingsBatchConfig,
+} from '@services/embeddings/batch/config'
+import { getCpuProviderCooldownRemainingMs } from '@services/embeddings/provider-cooldown'
 import { acquireEmbeddingCreationCooldown } from '@voucha/test-helpers/embedding-creation-cooldown'
 import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { cleanupTestEmbeddingsBatches } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+import {
+  getTestBatchIdByJobName,
+  cleanupTestEmbeddingsBatches,
+} from '@voucha/test-helpers/entities/gemini-embeddings-batches'
 import {
   createTestUserDirect,
   hardDeleteTestTopic,
@@ -30,29 +29,10 @@ import {
 } from '@voucha/test-helpers'
 import { BACKGROUND_CPU_HANDLERS } from '../processors/handlers.mts'
 import { createBackgroundCpuWorker } from '../workers/create-worker.mts'
-
-vi.mock<typeof import('@modules/aws/s3-bedrock-batch')>(
-  import('@modules/aws/s3-bedrock-batch'),
-  async importOriginal => ({
-    ...(await importOriginal<typeof import('@modules/aws/s3-bedrock-batch')>()),
-    S3BedrockBatchClient: {
-      send: vi.fn<VitestLooseMock>(),
-    } as unknown as typeof S3BedrockBatchClient,
-  }),
-)
-vi.mock<typeof import('@modules/aws/bedrock-control')>(
-  import('@modules/aws/bedrock-control'),
-  async importOriginal => ({
-    ...(await importOriginal<typeof import('@modules/aws/bedrock-control')>()),
-    BedrockControlClient: {
-      send: vi.fn<VitestLooseMock>(),
-    } as unknown as typeof BedrockControlClient,
-  }),
-)
+import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
 
 describe('creation admission on real GlideMQ', () => {
   beforeEach(() => {
-    vi.stubEnv('BEDROCK_BATCH_ROLE_ARN', 'arn:aws:iam::123456789012:role/test-bedrock-role')
     vi.stubEnv('ENVIRONMENT', 'staging')
   })
   afterEach(() => vi.unstubAllEnvs())
@@ -73,11 +53,11 @@ describe('creation admission on real GlideMQ', () => {
       },
       BACKGROUND_CPU_QUEUE_NAME,
     )
-    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+    const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, {
       min_records_per_job: 1,
-      max_requests_per_hour: BEDROCK_BATCH_MAX_VALUES.max_requests_per_hour,
-      max_inflight_jobs: BEDROCK_BATCH_MAX_VALUES.max_inflight_jobs,
-      max_job_size_gb: BEDROCK_BATCH_MAX_VALUES.max_job_size_gb,
+      max_requests_per_hour: GEMINI_BATCH_MAX_VALUES.max_requests_per_hour,
+      max_inflight_jobs: GEMINI_BATCH_MAX_VALUES.max_inflight_jobs,
+      max_job_size_gb: GEMINI_BATCH_MAX_VALUES.max_job_size_gb,
       max_scan_rows_per_run: 10_000,
     })
     const user = await createTestUserDirect()
@@ -87,27 +67,32 @@ describe('creation admission on real GlideMQ', () => {
       slug: `cooldown-${randomUUID()}`,
       createdById: user.id,
     })
-    const jobArn = `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`
+    const jobName = `projects/synthetic-project/locations/us/batchPredictionJobs/${randomUUID().replaceAll('-', '')}`
     const uploadEntered = Promise.withResolvers<void>()
     const releaseUpload = Promise.withResolvers<void>()
     owned.releaseOnCleanup(() => releaseUpload.resolve())
-    vi.mocked(S3BedrockBatchClient.send)
-      .mockImplementationOnce(() => {
-        uploadEntered.resolve()
-        return releaseUpload.promise as never
-      })
-      .mockResolvedValue(undefined as never)
-    vi.mocked(BedrockControlClient.send).mockResolvedValue({ jobArn } as never)
+    const vertex = createVertexHttpFixture()
+    let uploadCount = 0
+    const requests = vertex.batchCreationResponses({
+      onUpload: async () => {
+        if (uploadCount++ === 0) {
+          uploadEntered.resolve()
+          await releaseUpload.promise
+        }
+      },
+      onSubmit: () => jobName,
+    })
+    const restoreHttp = vertex.activate()
     fixture.beforeRelease(async () => {
-      const batchId = await getBatchIdByJobArn(jobArn)
+      const batchId = await getTestBatchIdByJobName(jobName)
       if (batchId) await cleanupTestEmbeddingsBatches([batchId])
       await hardDeleteTestTopic(topicId)
       await hardDeleteTestUser(user.id)
       restore()
     })
     try {
-      const topicDefinition = requireBackgroundCpuJob('bedrock-embeddings.create_topics')
-      const imageDefinition = requireBackgroundCpuJob('bedrock-embeddings.create_images')
+      const topicDefinition = requireBackgroundCpuJob('gemini-embeddings.create_topics')
+      const imageDefinition = requireBackgroundCpuJob('gemini-embeddings.create_images')
       let imageAttempts = 0
       const handlers = BACKGROUND_CPU_HANDLERS.map(handler =>
         handler.job.name === imageDefinition.name
@@ -116,7 +101,7 @@ describe('creation admission on real GlideMQ', () => {
               handle: () => {
                 imageAttempts += 1
                 if (imageAttempts === 1)
-                  throwRateLimited(3_000, new Error('Bedrock throttled'), {
+                  throwRateLimited(3_000, new Error('Vertex request throttled'), {
                     RateLimitError: Worker.RateLimitError,
                   })
               },
@@ -126,7 +111,7 @@ describe('creation admission on real GlideMQ', () => {
       const firstWorker = await owned.createWorker(() =>
         createBackgroundCpuWorker({
           handlers,
-          domains: ['bedrock-embeddings'],
+          domains: ['gemini-embeddings'],
           prefix: owned.options.prefix,
           concurrency: 1,
           blockTimeout: 1_000,
@@ -149,7 +134,7 @@ describe('creation admission on real GlideMQ', () => {
       const secondWorker = await owned.createWorker(() =>
         createBackgroundCpuWorker({
           handlers,
-          domains: ['bedrock-embeddings'],
+          domains: ['gemini-embeddings'],
           prefix: owned.options.prefix,
           concurrency: 1,
           blockTimeout: 1_000,
@@ -166,13 +151,13 @@ describe('creation admission on real GlideMQ', () => {
       await owned.waitFor(image.id, 'delay-changed')
       expect(imageAttempts).toBe(1)
       await cooldown.witnessOwnWrite()
-      expect(
-        await getCpuProviderCooldownRemainingMs('bedrock-embeddings:creation'),
-      ).toBeGreaterThan(0)
+      expect(await getCpuProviderCooldownRemainingMs('gemini-embeddings:creation')).toBeGreaterThan(
+        0,
+      )
 
       releaseUpload.resolve()
       await owned.waitFor(topic.id, 'delay-changed')
-      expect(vi.mocked(BedrockControlClient.send)).not.toHaveBeenCalled()
+      expect(requests.submissions).not.toHaveBeenCalled()
       const delayedTopic = await owned.queue.getJob(topic.id)
       expect(delayedTopic?.data).toEqual({ cursor })
       expect(delayedTopic?.opts.deduplication).toEqual(topic.opts.deduplication)
@@ -189,12 +174,12 @@ describe('creation admission on real GlideMQ', () => {
       await cooldown.promote(image, imageCompleted)
       await topicCompleted
       await imageCompleted
-      expect(vi.mocked(BedrockControlClient.send)).toHaveBeenCalledExactlyOnceWith(
-        expect.any(CreateModelInvocationJobCommand),
-      )
-      expect(await getBatchIdByJobArn(jobArn)).toBeTruthy()
+      expect(requests.submissions).toHaveBeenCalledTimes(1)
+      expect(requests.uploads).toHaveBeenCalledTimes(3)
+      expect(await getTestBatchIdByJobName(jobName)).toBeTruthy()
     } finally {
       releaseUpload.resolve()
+      restoreHttp()
       await cooldown.close()
     }
   }, 30_000)

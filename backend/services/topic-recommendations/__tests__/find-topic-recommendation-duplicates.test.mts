@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestTopic, makeNearbyEmbedding, makeRandomEmbedding } from '@voucha/test-helpers'
 import { updateTopicEmbeddingData } from '@voucha/test-helpers/entities/topics'
 import { findTopicRecommendationDuplicates } from '../find-topic-recommendation-duplicates.mts'
-import * as bedrockRequest from '../../bedrock-embeddings/single/request.mts'
+import * as geminiRequest from '../../embeddings/single/request.mts'
 
 let queryEmbedding: number[]
 
@@ -25,14 +25,14 @@ describe('findTopicRecommendationDuplicates', () => {
     vi.restoreAllMocks()
   })
 
-  function stubBedrockEmbedding() {
+  function stubEmbedding() {
     return vi
-      .spyOn(bedrockRequest, 'createBedrockEmbedding')
+      .spyOn(geminiRequest, 'createEmbedding')
       .mockResolvedValue({ embedding: queryEmbedding, tokens: 5 })
   }
 
   it('populates similar_topics from semantic search results', async () => {
-    stubBedrockEmbedding()
+    stubEmbedding()
     const random = `similar-${crypto.randomUUID()}`
     const similarTopic = await createTestTopic()
     await seedTopicEmbedding(similarTopic.id)
@@ -54,7 +54,7 @@ describe('findTopicRecommendationDuplicates', () => {
   })
 
   it('excludes exact_topic from similar_topics', async () => {
-    stubBedrockEmbedding()
+    stubEmbedding()
     const topic = await createTestTopic()
     const otherTopic = await createTestTopic()
     await seedTopicEmbedding(topic.id)
@@ -82,14 +82,14 @@ describe('findTopicRecommendationDuplicates', () => {
   })
 
   it('returns empty similar_topics when semantic search throws', async () => {
-    vi.spyOn(bedrockRequest, 'createBedrockEmbedding').mockRejectedValue(
-      new Error('Bedrock service unavailable'),
+    vi.spyOn(geminiRequest, 'createEmbedding').mockRejectedValue(
+      new Error('Gemini service unavailable'),
     )
-    const random = `bedrock-fail-${crypto.randomUUID()}`
+    const random = `gemini-fail-${crypto.randomUUID()}`
 
     const result = await findTopicRecommendationDuplicates({
-      topic_title: `Bedrock Fail Topic ${random}`,
-      topic_slug: `bedrock-fail-topic-${random}`,
+      topic_title: `Gemini Fail Topic ${random}`,
+      topic_slug: `gemini-fail-topic-${random}`,
     })
 
     expect(result.similar_topics).toEqual([])

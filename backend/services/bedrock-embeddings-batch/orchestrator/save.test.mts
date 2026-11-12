@@ -10,15 +10,15 @@ import {
   insertTestPost,
   makeRandomEmbedding,
   setPostEmbeddingContentOnlySha256,
-} from '@voucha/test-helpers'
-import { getPostEmbeddingData } from '@voucha/test-helpers/entities/posts-embeddings'
+} from '@voucha/test-helpers/bedrock-legacy'
+import { getPostEmbeddingData } from '@voucha/test-helpers/bedrock-legacy-entities-posts-embeddings'
 import { deletePost } from '@services/posts/delete'
 import { getPostByAny } from '@services/posts/get'
 import {
   anonymizeTestAuthorPostBatch,
   createTestBanEvasionEmbeddingChain,
   getTestBanEvasionJobsFor,
-} from '@voucha/test-helpers/post-ban-evasion-embeddings'
+} from '@voucha/test-helpers/bedrock-legacy-post-ban-evasion-embeddings'
 import { DELETED_USER_ID } from '../../../types/entities/user-constants.mts'
 import {
   decodeScopedUuidCursor,

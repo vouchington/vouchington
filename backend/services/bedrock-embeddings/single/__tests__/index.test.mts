@@ -11,7 +11,7 @@ import {
   getTopicEmbeddingData,
   insertTestTopic,
   updateTopicEmbeddingData,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createSingleEmbedding } from '../index.mts'
 

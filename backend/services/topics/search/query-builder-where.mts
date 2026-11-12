@@ -78,26 +78,26 @@ function appendSemanticFilters(
 ) {
   if (!state.hasSemanticSignal) return
 
-  whereClauses.push(sql`t.bedrock_nova_multimodal_v1_embedding IS NOT NULL`)
+  whereClauses.push(sql`t.gemini_embedding_2_embedding IS NOT NULL`)
   if (state.hasSemanticSearch) {
     whereClauses.push(
-      sql`(t.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+      sql`(t.gemini_embedding_2_embedding <=> semantic_search_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
     )
   }
   if (state.hasSimilarPostSearch) {
     whereClauses.push(
-      sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_post_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+      sql`(t.gemini_embedding_2_embedding <=> similar_post_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
     )
   }
   if (state.hasSimilarTopicSearch) {
     whereClauses.push(
-      sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_topic_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+      sql`(t.gemini_embedding_2_embedding <=> similar_topic_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
     )
     whereClauses.push(sql`t.id <> ${options.similar_topic_id!}`)
   }
   if (state.hasSimilarRssFeedItemSearch) {
     whereClauses.push(
-      sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_rss_feed_item_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+      sql`(t.gemini_embedding_2_embedding <=> similar_rss_feed_item_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
     )
   }
 }

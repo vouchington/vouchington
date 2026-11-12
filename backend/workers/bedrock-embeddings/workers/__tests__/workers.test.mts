@@ -16,9 +16,9 @@ import {
   setPostEmbeddingContentSha256,
   setTopicEmbeddingContentAndInputSha256,
   updatePostEmbeddingData,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { updateTopicEmbeddingData } from '@voucha/test-helpers/entities/topics/embeddings'
+import { updateTopicEmbeddingData } from '@voucha/test-helpers/bedrock-legacy-entities-topics-embeddings'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { createPostTextEmbeddingContent } from '@services/posts/content'
 import { createRssFeedItemEmbeddingContent } from '@services/rss-feed-items/content'

@@ -3,12 +3,12 @@ import { randomInt, randomUUID } from 'node:crypto'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CreateModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
-import { createTestUser, insertTestImage } from '@voucha/test-helpers'
+import { createTestUser, insertTestImage } from '@voucha/test-helpers/bedrock-legacy'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   cleanupTestEmbeddingsBatches,
   getTestBatchEntities,
-} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+} from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
 import { S3ImagesClient } from '@modules/aws'
 import { S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'

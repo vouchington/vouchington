@@ -20,14 +20,14 @@ export const createTestBatch = async (
   // Create the batch first
   await write(
     `/* createTestBatch */
-    INSERT INTO bedrock_embedding_batches (id, model_id, job_type, data, records, submitted_at)
+    INSERT INTO gemini_embedding_batches (id, model_id, job_type, data, records, submitted_at)
     VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
   `,
     [
       batchId,
-      'amazon.nova-2-multimodal-embeddings-v1:0',
+      'gemini-embedding-2',
       jobType,
-      JSON.stringify({ status: 'Submitted' }),
+      JSON.stringify({ status: 'JOB_STATE_PENDING' }),
       records,
     ],
   )
@@ -42,7 +42,7 @@ export const createTestBatch = async (
         SELECT $1::uuid, $2::text, entity_id, input_order
         FROM UNNEST($3::text[]) WITH ORDINALITY AS input(entity_id, input_order)
       )
-      INSERT INTO bedrock_embedding_batch_entities (
+      INSERT INTO gemini_embedding_batch_entities (
         batch_id,
         entity_type,
         topic_id,
@@ -54,7 +54,7 @@ export const createTestBatch = async (
       )
       SELECT
         batch_id::uuid,
-        entity_type::bedrock_embedding_batch_job_types,
+        entity_type::gemini_embedding_batch_job_types,
         CASE WHEN entity_type = 'topics' THEN entity_id::uuid ELSE NULL END,
         CASE WHEN entity_type = 'posts' THEN entity_id::uuid ELSE NULL END,
         CASE WHEN entity_type = 'rss_feed_items' THEN entity_id::uuid ELSE NULL END,
@@ -78,7 +78,7 @@ export const countBatchEntities = async (batchId: string): Promise<number> => {
   const { rows } = await read<{ count: number }>(
     `/* countBatchEntities */
     SELECT COUNT(*)::int as count
-    FROM bedrock_embedding_batch_entities
+    FROM gemini_embedding_batch_entities
     WHERE batch_id = $1
   `,
     [batchId],

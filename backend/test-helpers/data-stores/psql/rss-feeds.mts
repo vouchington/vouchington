@@ -8,7 +8,7 @@ import sql from 'sql-template-strings'
 // with is_enabled = TRUE and deleted_at IS NULL. topics.created_by_id and rss_feeds' home-page URL
 // are both skipped — the materialized view never reads them. is_enabled is trigger-maintained from
 // rss_feed_setting_changes (see rss_feeds.is_enabled in migrations/0080-00-00-rss-feeds-items.sql),
-// never written directly. bedrock_nova_multimodal_v1_content_sha256 is NOT NULL with no column
+// never written directly. gemini_embedding_2_content_sha256 is NOT NULL with no column
 // default (migrations/0060-00-00-topics-taxonomy.sql); test-helpers' insertTestTopic defaults it to
 // an all-zero 32-byte value when the caller has no real embedding — reused verbatim here.
 export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
@@ -17,8 +17,8 @@ export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
 
   const { rows: topicRows } = await write<{ id: string }>(
     sql`/* insertLocalTestRssFeedTopic */
-    INSERT INTO topics (name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
-    VALUES (${`Test Feed Topic ${random}`}, ${`test-feed-topic-${random}`}, ${embeddingSha256}, 'system')
+    INSERT INTO topics (name, slug, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
+    VALUES (${`Test Feed Topic ${random}`}, ${`test-feed-topic-${random}`}, ${embeddingSha256}, 'system', ${embeddingSha256})
     RETURNING id
   `,
   )

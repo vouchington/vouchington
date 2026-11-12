@@ -2,23 +2,23 @@ import { randomUUID } from 'node:crypto'
 import { channel } from 'node:diagnostics_channel'
 import { v7 as uuidv7 } from 'uuid'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { BedrockControlClient } from '@modules/aws/bedrock-control'
-import { S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import { embeddingCreationLeaseValkeyClient } from '@data-stores/valkey/clients'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
-import { creationJobOptions } from '@queues/bedrock-embeddings-batch/enqueues'
+import { creationJobOptions } from '@queues/gemini-embeddings-batch/enqueues'
 import {
-  BEDROCK_BATCH_MAX_VALUES,
-  bedrockEmbeddingsBatchConfig,
-} from '@services/bedrock-embeddings/batch/config'
-import { getBatchIdByJobArn } from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
+  GEMINI_BATCH_MAX_VALUES,
+  geminiEmbeddingsBatchConfig,
+} from '@services/embeddings/batch/config'
 import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { cleanupTestEmbeddingsBatches } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+import {
+  getTestBatchIdByJobName,
+  cleanupTestEmbeddingsBatches,
+} from '@voucha/test-helpers/entities/gemini-embeddings-batches'
 import {
   createTestUserDirect,
   hardDeleteTestPost,
@@ -29,41 +29,23 @@ import {
 } from '@voucha/test-helpers'
 import { createBackgroundCpuWorker } from '../workers/create-worker.mts'
 import { BACKGROUND_CPU_HANDLERS } from '../processors/handlers.mts'
-vi.mock<typeof import('@modules/aws/s3-bedrock-batch')>(
-  import('@modules/aws/s3-bedrock-batch'),
-  async importOriginal => ({
-    ...(await importOriginal<typeof import('@modules/aws/s3-bedrock-batch')>()),
-    S3BedrockBatchClient: {
-      send: vi.fn<VitestLooseMock>(),
-    } as unknown as typeof S3BedrockBatchClient,
-  }),
-)
-vi.mock<typeof import('@modules/aws/bedrock-control')>(
-  import('@modules/aws/bedrock-control'),
-  async importOriginal => ({
-    ...(await importOriginal<typeof import('@modules/aws/bedrock-control')>()),
-    BedrockControlClient: {
-      send: vi.fn<VitestLooseMock>(),
-    } as unknown as typeof BedrockControlClient,
-  }),
-)
-const LEASE_KEY = 'bedrock-embeddings:creation:lease'
+import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
+const LEASE_KEY = 'gemini-embeddings:creation:lease'
 const textCursor = {
   sweepStartedAt: '1970-01-01T00:00:02.000Z',
   afterId: uuidv7({ msecs: 1_500 }),
 }
 const emptyImageCursor = { sweepStartedAt: '1970-01-01T00:00:00.000Z' }
 const definition = (type: 'topics' | 'posts' | 'images') =>
-  requireBackgroundCpuJob(`bedrock-embeddings.create_${type}`)
+  requireBackgroundCpuJob(`gemini-embeddings.create_${type}`)
 describe('embedding creation lease loss through real background CPU workers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubEnv('BEDROCK_BATCH_ROLE_ARN', 'arn:aws:iam::123456789012:role/test-bedrock-role')
     vi.stubEnv('ENVIRONMENT', 'staging')
   })
   afterEach(() => vi.unstubAllEnvs())
   // no-mistakes-timeout-reason: real GlideMQ worker drain for embedding creation lease loss
-  it('defers pre-submit loss, then records a Bedrock receipt after in-flight loss', async () => {
+  it('defers pre-submit loss, then records a Vertex receipt after in-flight loss', async () => {
     const fixture = await acquireEmbeddingQuotaFixture()
     const connection = {
       connection: workerQueueConnection,
@@ -75,35 +57,43 @@ describe('embedding creation lease loss through real background CPU workers', ()
       connection,
       BACKGROUND_CPU_QUEUE_NAME,
     )
-    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+    const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, {
       min_records_per_job: 1,
-      max_requests_per_hour: BEDROCK_BATCH_MAX_VALUES.max_requests_per_hour,
-      max_inflight_jobs: BEDROCK_BATCH_MAX_VALUES.max_inflight_jobs,
-      max_job_size_gb: BEDROCK_BATCH_MAX_VALUES.max_job_size_gb,
+      max_requests_per_hour: GEMINI_BATCH_MAX_VALUES.max_requests_per_hour,
+      max_inflight_jobs: GEMINI_BATCH_MAX_VALUES.max_inflight_jobs,
+      max_job_size_gb: GEMINI_BATCH_MAX_VALUES.max_job_size_gb,
       max_scan_rows_per_run: 10_000,
       creation_lease_renewal_interval_ms: 100,
       creation_lease_retry_delay_ms: 1_000,
     })
-    const s3Entered = Promise.withResolvers<void>()
-    const releaseS3 = Promise.withResolvers<void>()
-    owned.releaseOnCleanup(() => releaseS3.resolve())
-    vi.mocked(S3BedrockBatchClient.send)
-      .mockImplementationOnce(() => {
-        s3Entered.resolve()
-        return releaseS3.promise as never
-      })
-      .mockResolvedValue(undefined as never)
-    const postArn = `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`
-    const topicArn = `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`
-    const topicSendEntered = Promise.withResolvers<void>()
-    const releaseTopicSend = Promise.withResolvers<{ jobArn: string }>()
-    owned.releaseOnCleanup(() => releaseTopicSend.resolve({ jobArn: topicArn }))
-    vi.mocked(BedrockControlClient.send)
-      .mockResolvedValueOnce({ jobArn: postArn } as never)
-      .mockImplementationOnce(() => {
-        topicSendEntered.resolve()
-        return releaseTopicSend.promise as never
-      })
+    const uploadEntered = Promise.withResolvers<void>()
+    const releaseUpload = Promise.withResolvers<void>()
+    owned.releaseOnCleanup(() => releaseUpload.resolve())
+    const postJobName = `projects/synthetic-project/locations/us/batchPredictionJobs/${randomUUID().replaceAll('-', '')}`
+    const topicJobName = `projects/synthetic-project/locations/us/batchPredictionJobs/${randomUUID().replaceAll('-', '')}`
+    const topicSubmitEntered = Promise.withResolvers<void>()
+    const releaseTopicSubmit = Promise.withResolvers<string>()
+    owned.releaseOnCleanup(() => releaseTopicSubmit.resolve(topicJobName))
+    let uploadCount = 0
+    let submitCount = 0
+    const vertex = createVertexHttpFixture()
+    const requests = vertex.batchCreationResponses({
+      onUpload: async () => {
+        if (uploadCount++ === 0) {
+          uploadEntered.resolve()
+          await releaseUpload.promise
+        }
+      },
+      onSubmit: async () => {
+        if (submitCount++ === 0) return postJobName
+        if (submitCount === 2) {
+          topicSubmitEntered.resolve()
+          return releaseTopicSubmit.promise
+        }
+        return `projects/synthetic-project/locations/us/batchPredictionJobs/${randomUUID().replaceAll('-', '')}`
+      },
+    })
+    const restoreHttp = vertex.activate()
     const user = await createTestUserDirect()
     const topicId = await insertTestTopic({
       id: uuidv7({ msecs: 1_000 }),
@@ -119,7 +109,10 @@ describe('embedding creation lease loss through real background CPU workers', ()
       createdById: user.id,
     })
     fixture.beforeRelease(async () => {
-      const batches = await Promise.all([getBatchIdByJobArn(postArn), getBatchIdByJobArn(topicArn)])
+      const batches = await Promise.all([
+        getTestBatchIdByJobName(postJobName),
+        getTestBatchIdByJobName(topicJobName),
+      ])
       await cleanupTestEmbeddingsBatches(batches.filter((id): id is string => Boolean(id)))
       await hardDeleteTestPost(postId)
       await hardDeleteTestTopic(topicId)
@@ -143,7 +136,7 @@ describe('embedding creation lease loss through real background CPU workers', ()
         owned.createWorker(() =>
           createBackgroundCpuWorker({
             handlers: BACKGROUND_CPU_HANDLERS,
-            domains: ['bedrock-embeddings'],
+            domains: ['gemini-embeddings'],
             prefix: connection.prefix,
             concurrency: 1,
             blockTimeout: 1_000,
@@ -153,7 +146,7 @@ describe('embedding creation lease loss through real background CPU workers', ()
         owned.createWorker(() =>
           createBackgroundCpuWorker({
             handlers: BACKGROUND_CPU_HANDLERS,
-            domains: ['bedrock-embeddings'],
+            domains: ['gemini-embeddings'],
             prefix: connection.prefix,
             concurrency: 1,
             blockTimeout: 1_000,
@@ -173,7 +166,7 @@ describe('embedding creation lease loss through real background CPU workers', ()
       )
       if (!first) throw new Error('Expected first creation job')
       firstJobId = first.id
-      await s3Entered.promise
+      await uploadEntered.promise
       expect(await embeddingCreationLeaseValkeyClient.pexpire(LEASE_KEY, 0)).toBe(true)
       const postDefinition = definition('posts')
       const post = await owned.add(
@@ -186,11 +179,11 @@ describe('embedding creation lease loss through real background CPU workers', ()
       )
       if (!post) throw new Error('Expected post creation job')
       await waitForRealGlideEvent(owned.waitFor(post.id, 'completed'), 'successor post completion')
-      expect(await getBatchIdByJobArn(postArn)).toBeTruthy()
+      expect(await getTestBatchIdByJobName(postJobName)).toBeTruthy()
       expect(await firstLoss.promise).toBe('not-owner')
-      releaseS3.resolve()
+      releaseUpload.resolve()
       await owned.waitFor(first.id, 'delay-changed')
-      expect(vi.mocked(BedrockControlClient.send)).toHaveBeenCalledTimes(1)
+      expect(requests.submissions).toHaveBeenCalledTimes(1)
       const storedFirst = await owned.queue.getJob(first.id)
       expect(storedFirst?.data).toEqual({ cursor: textCursor })
       expect(storedFirst?.opts.deduplication).toEqual(first.opts.deduplication)
@@ -199,7 +192,7 @@ describe('embedding creation lease loss through real background CPU workers', ()
         'former holder topic completion',
       )
       await owned.promote(first)
-      await topicSendEntered.promise
+      await topicSubmitEntered.promise
       expect(await embeddingCreationLeaseValkeyClient.pexpire(LEASE_KEY, 0)).toBe(true)
       const imageDefinition = definition('images')
       const image = await owned.add(
@@ -216,14 +209,15 @@ describe('embedding creation lease loss through real background CPU workers', ()
         'successor image completion',
       )
       expect(await secondLoss.promise).toBe('not-owner')
-      releaseTopicSend.resolve({ jobArn: topicArn })
+      releaseTopicSubmit.resolve(topicJobName)
       await firstCompleted
-      expect(vi.mocked(BedrockControlClient.send)).toHaveBeenCalledTimes(2)
-      expect(await getBatchIdByJobArn(topicArn)).toBeTruthy()
+      expect(requests.submissions).toHaveBeenCalledTimes(2)
+      expect(await getTestBatchIdByJobName(topicJobName)).toBeTruthy()
     } finally {
       losses.unsubscribe(onLoss)
-      releaseS3.resolve()
-      releaseTopicSend.resolve({ jobArn: topicArn })
+      releaseUpload.resolve()
+      releaseTopicSubmit.resolve(topicJobName)
+      restoreHttp()
       await fixture.close()
     }
   }, 30_000)

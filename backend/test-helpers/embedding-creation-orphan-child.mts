@@ -1,7 +1,7 @@
 import { embeddingCreationLeaseValkeyClient } from '@data-stores/valkey/clients'
 import { acquireRenewableLease } from 'valkyries/lease'
 
-const lease = await acquireRenewableLease('bedrock-embeddings:creation:lease', {
+const lease = await acquireRenewableLease('gemini-embeddings:creation:lease', {
   ttlMs: 300_000,
   renewalIntervalMs: 10_000,
   client: embeddingCreationLeaseValkeyClient,

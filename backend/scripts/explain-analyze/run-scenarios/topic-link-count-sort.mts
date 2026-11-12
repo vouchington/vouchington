@@ -17,11 +17,11 @@ const topicId = (suffix: number) =>
 async function seedLinkCountPrograms(): Promise<void> {
   await write(
     `/* seedLinkCountPrograms */ INSERT INTO topics
-       (id, topic_type, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
+       (id, topic_type, name, slug, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
      SELECT ('019e0000-8a00-7000-8000-' || lpad(to_hex(100 + g), 12, '0'))::uuid,
        'referral_program', 'Link count ' || g, 'link-count-sort-' || g,
        digest('link-count-sort-' || g, 'sha256'), 'system'
-     FROM generate_series(0, $1 - 1) AS g
+     , digest('link-count-sort-' || g, 'sha256') FROM generate_series(0, $1 - 1) AS g
      ON CONFLICT (id) DO UPDATE SET
        deleted_at = NULL, deleted_by_id = NULL, merged_into_topic_id = NULL,
        merged_at = NULL, merged_by_id = NULL

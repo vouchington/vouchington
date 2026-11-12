@@ -59,11 +59,11 @@ export async function insertPost({
     sql`/* createPost */
       INSERT INTO posts (
         post_type, title, markdown, created_by_id, parent_post_id, root_post_id, community_id,
-        broadcast, privacy, is_anonymous, bedrock_nova_multimodal_v1_content_sha256,
+        broadcast, privacy, is_anonymous, gemini_embedding_2_content_sha256,
         llm_moderation_content_sha256,
         data_point_vertical, structured_data, declared_language, url_id, creation_source_url_id,
         created_via, created_via_oauth_client_id
-      )
+      , bedrock_nova_multimodal_v1_content_sha256)
       VALUES (
         ${defaults.postType}, ${updates.title || ''}, ${updates.markdown || ''}, ${creator.id},
         ${scope.parentId}, ${scope.rootId}, ${scope.communityId}, ${defaults.broadcast},
@@ -73,7 +73,7 @@ export async function insertPost({
         ${normalizeContentLanguageTag(updates.declared_language ?? null)},
         ${defaults.postType === 'link' ? (updates.url_id ?? null) : null}, ${sourceUrlId ?? null},
         ${provenance.createdVia}, ${provenance.oauthClientId}
-      )
+      , ${embeddingContentSha})
       RETURNING id, title, markdown, ai_summary_markdown, broadcast, privacy, is_anonymous, structured_data,
         data_point_vertical, declared_language, deleted_at, archived_at, community_id, root_post_id
     `,

@@ -39,6 +39,7 @@
     "@queues/crawl-browser": "workspace:^",
     "@queues/crawl-dispatch": "workspace:^",
     "@queues/crawl-referral-links": "workspace:^",
+    "@queues/gemini-embeddings-batch": "workspace:^",
     "@queues/heartbeat": "workspace:^",
     "@queues/image-uploads": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",

@@ -28,6 +28,7 @@
     "@queues/crawl-dispatch": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
+    "@queues/gemini-embeddings": "workspace:^",
     "@queues/moderation-signals": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/openai-moderation": "workspace:^",

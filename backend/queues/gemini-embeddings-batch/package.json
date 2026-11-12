@@ -1,0 +1,31 @@
+{
+  "name": "@queues/gemini-embeddings-batch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/scheduled-job-manifest": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "@vouchington/worker-runtime": "^0.3.1",
+    "glide-mq": "^0.20.0"
+  },
+  "devDependencies": {
+    "@data-stores/valkey-core": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

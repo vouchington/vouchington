@@ -8,6 +8,7 @@ export const MAX_EXTERNAL_LINKS = 5
 export const LINK_TO_TEXT_RATIO_THRESHOLD = 0.3
 
 /** Cosine similarity above this threshold with another user's post → flagged */
+// Keep the current threshold until the live Gemini recalibration in #5635.
 export const EMBEDDINGS_SIMILARITY_THRESHOLD = 0.99
 
 /**

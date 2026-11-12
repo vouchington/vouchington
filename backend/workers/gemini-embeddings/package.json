@@ -1,0 +1,33 @@
+{
+  "name": "@workers/gemini-embeddings",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@queues/ai-agents": "workspace:^",
+    "@queues/gemini-embeddings-batch": "workspace:^",
+    "@services/embeddings": "workspace:^",
+    "@services/embeddings-batch": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/stories": "workspace:^",
+    "@services/topics": "workspace:^",
+    "glide-mq": "^0.20.0"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

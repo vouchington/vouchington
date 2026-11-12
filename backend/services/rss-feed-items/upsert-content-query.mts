@@ -14,7 +14,7 @@ export function buildUpsertRssFeedItemsQuery(
         id,
         url_id,
         data,
-        bedrock_nova_multimodal_v1_content_sha256,
+        gemini_embedding_2_content_sha256,
         media_type,
         enclosure_url,
         enclosure_media_type_id,
@@ -23,12 +23,12 @@ export function buildUpsertRssFeedItemsQuery(
         thumbnail_url,
         video_id,
         video_platform
-      )
+      , bedrock_nova_multimodal_v1_content_sha256)
       SELECT
         input.id,
         input.url_id,
         input.data,
-        input.bedrock_nova_multimodal_v1_content_sha256,
+        input.gemini_embedding_2_content_sha256,
         input.media_type,
         input.enclosure_url,
         input.enclosure_media_type_id,
@@ -37,11 +37,11 @@ export function buildUpsertRssFeedItemsQuery(
         input.thumbnail_url,
         input.video_id,
         input.video_platform
-      FROM unnest(
+      , input.gemini_embedding_2_content_sha256 FROM unnest(
         $1::uuid[], $2::uuid[], $3::jsonb[], $4::bytea[], $5::rss_feed_item_media_types[],
         $6::text[], $7::bigint[], $8::bigint[], $9::integer[], $10::text[], $11::text[], $12::text[]
       ) AS input(
-        id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, media_type,
+        id, url_id, data, gemini_embedding_2_content_sha256, media_type,
         enclosure_url, enclosure_media_type_id, enclosure_length, duration_seconds, thumbnail_url,
         video_id, video_platform
       )
@@ -50,7 +50,8 @@ export function buildUpsertRssFeedItemsQuery(
       DO UPDATE SET
         url_id = EXCLUDED.url_id,
         data = EXCLUDED.data,
-        bedrock_nova_multimodal_v1_content_sha256 = EXCLUDED.bedrock_nova_multimodal_v1_content_sha256,
+        gemini_embedding_2_content_sha256 = EXCLUDED.gemini_embedding_2_content_sha256,
+        bedrock_nova_multimodal_v1_content_sha256 = EXCLUDED.gemini_embedding_2_content_sha256,
         media_type = EXCLUDED.media_type,
         enclosure_url = EXCLUDED.enclosure_url,
         enclosure_media_type_id = EXCLUDED.enclosure_media_type_id,
@@ -63,7 +64,7 @@ export function buildUpsertRssFeedItemsQuery(
       RETURNING id,
                 url_id,
                 story_id,
-                (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AS has_embedding,
+                (gemini_embedding_2_embedding IS NOT NULL) AS has_embedding,
                 published_at
     `,
     values: [

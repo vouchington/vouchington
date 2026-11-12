@@ -28,6 +28,7 @@ export const REGISTRY_ORDER = [
   'rss-feed-discoverability-config',
   'moderation-config',
   'bedrock-embeddings-batch-config',
+  'gemini-embeddings-batch-config',
   'rss-feed-crawl-config',
   'user-import-export-config',
   'data-retention-config',

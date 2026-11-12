@@ -92,10 +92,10 @@ export async function insertTestStoryRssFeedItemsBatch(options: {
         RETURNING id
       )
       INSERT INTO rss_feed_items (
-        id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, story_id
-      )
+        id, url_id, data, gemini_embedding_2_content_sha256, story_id
+      , bedrock_nova_multimodal_v1_content_sha256)
       SELECT id, ${options.urlId}, '{}'::jsonb, decode(repeat('00', 32), 'hex'), ${options.storyId}
-      FROM identities
+      , decode(repeat('00', 32), 'hex') FROM identities
     `)
     if (rowCount !== batchSize) {
       throw new Error(

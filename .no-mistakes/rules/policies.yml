@@ -6,6 +6,22 @@
     exemptCappedCursorPageReads: true
     effects: [postgres, valkey]
     allow:
+      # #5635 lower stack retains the original bounded Bedrock reconciler unchanged.
+      # Its page is capped by getBatchListingPageSize(); provider cancellation is serial per batch.
+      # Remove these three exact allowances with the top Bedrock removal PR.
+      - {
+          file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
+          callee: 'processBatch',
+        }
+      - {
+          file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
+          callee: 'cleanupBatchLocks',
+        }
+      - {
+          file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
+          callee: 'write',
+          line: 65,
+        }
       # Each capped retention page locks, deletes, and checkpoints in one transaction.
       # A per-page PostgreSQL effect is required; the loop is bounded by maxBatches.
       - { file: backend/services/data-retention/cleanup-auth-sessions.mts, callee: 'cleanupPage' }
@@ -258,13 +274,13 @@
       - { file: backend/services/articles/sync-process.mts, callee: 'updatePost' }
       # Chunk loop: advances batchSize markdown files per iteration (sync.mts:50), one prepared batch per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/services/articles/sync.mts, callee: 'processPreparedArticles' }
-      # Per stale batch (stale-cleanup.mts:26): the Bedrock provider stop and lock cleanup differ per batch and run serially so one quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in bedrock-embeddings-batch/orchestrator/find-stale.mts:13.
+      # Per stale batch (stale-cleanup.mts:26): the Bedrock provider stop and lock cleanup differ per batch and run serially so one quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in gemini-embeddings-batch/orchestrator/find-stale.mts:13.
       - {
-          file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
+          file: backend/services/embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'cleanupBatchLocks',
         }
       - {
-          file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
+          file: backend/services/embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'processBatch',
         }
       # Closed set: allRelations is the static user is_bookmark subset of entityRelationMetadatum (bloom-filter.mts:80); each relation has its own table, streamed in BOOKMARK_BLOOM_BATCH_SIZE batches. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
@@ -545,9 +561,9 @@
         }
       # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: loops the fixed literal statements array of processUserDeletionCredentialsBatch; each statement deletes at most batchSize rows and the first non-empty one ends the page.
       - { file: backend/services/users/delete-phase-credentials.mts, callee: 'query', line: 63 }
-      # Real exception: one UPDATE per stale batch after that batch provider stop and lock cleanup, serial by design so one Bedrock quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in bedrock-embeddings-batch/orchestrator/find-stale.mts:13.
+      # Real exception: one UPDATE per stale batch after that batch provider stop and lock cleanup, serial by design so one Bedrock quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in gemini-embeddings-batch/orchestrator/find-stale.mts:13.
       - {
-          file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
+          file: backend/services/embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'write',
           line: 65,
         }
@@ -617,7 +633,7 @@
     randomUUID()/v4() are reserved for temporary markers, tokens, and other opaque non-durable values; mint durable app-owned IDs as UUIDv7.
   options:
     roots:
-      - file: backend/services/bedrock-embeddings-batch/orchestrator/create.mts
+      - file: backend/services/embeddings-batch/orchestrator/create.mts
       - file: backend/services/admin-imports/seed-csvs.mts
       - file: backend/api/v1/posts/posts-routes/posts-create-post.mts
       - file: backend/api/v1/communities/posts-honeypot-response.mts
@@ -1001,6 +1017,8 @@
 - name: scheduled job manifests are registered in the API catalog
   rule: required-entrypoint-reachability
   scope: repository
+  # #5635 retained provider definition is deliberately not registered; remove with the top PR.
+  exclude: [backend/queues/bedrock-embeddings-batch/enqueues/schedules.mts]
   options:
     sourceGlobs:
       - backend/queues/*/enqueues/schedules.mts
@@ -1011,6 +1029,8 @@
 - name: scheduled job manifests are registered in a worker runtime
   rule: required-entrypoint-reachability
   scope: repository
+  # #5635 retained provider definition is deliberately not registered; remove with the top PR.
+  exclude: [backend/queues/bedrock-embeddings-batch/enqueues/schedules.mts]
   options:
     sourceGlobs:
       - backend/queues/*/enqueues/schedules.mts
@@ -1024,6 +1044,8 @@
   rule: required-entrypoint-reachability
   scope: repository
   exclude:
+    # #5635 retained SQS consumer is deliberately disabled; top removal deletes this exception.
+    - backend/workers/bedrock-batch-sqs/workers.mts
     - backend/workers/**/*.test.mts
     - backend/workers/**/__tests__/**
   options:
@@ -1804,6 +1826,8 @@
   exclude:
     - backend/queues/bedrock-embeddings/**
     - backend/queues/bedrock-embeddings-batch/**
+    - backend/queues/gemini-embeddings/**
+    - backend/queues/gemini-embeddings-batch/**
     - backend/queues/content-analysis/**
     - backend/queues/crawl-dispatch/**
     - backend/queues/crawl-referral-links/**
@@ -1811,6 +1835,8 @@
     - backend/queues/unfurl-referral-links/**
     - backend/workers/bedrock-embeddings/**
     - backend/workers/bedrock-embeddings-batch/**
+    - backend/workers/gemini-embeddings/**
+    - backend/workers/gemini-embeddings-batch/**
     - backend/workers/content-analysis/**
     - backend/workers/crawl-dispatch/**
     - backend/workers/crawl-referral-links/**
@@ -2963,6 +2989,7 @@
     exemptColumnNamePatterns:
       - '^(id|created_at|updated_at|created_by_id|updated_by_id|deleted_at|deleted_by_id)$'
       - '^bedrock_nova_multimodal_v1_'
+      - '^gemini_embedding_2_'
       - '^lingua_rs_'
       - '^llm_moderation_'
       - '^(search_vector$|votes_(count|score)_)'
@@ -4487,6 +4514,12 @@
   rule: production-exports-only-used-by-tests
   scope: repository
   severity: error
+  # #5635 lower stack retains these replaced Bedrock APIs; top removal deletes these exact exclusions.
+  exclude:
+    - backend/services/bedrock-embeddings-batch/image-similarity.mts
+    - backend/services/bedrock-embeddings/bloom-filter/warmup.mts
+    - backend/services/bedrock-embeddings/search/get-cached.mts
+    - backend/workers/bedrock-batch-sqs/workers.mts
   options:
     ignoreExportsUsedInFile: true
     productionRoots:

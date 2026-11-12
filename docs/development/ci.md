@@ -172,7 +172,7 @@ reruns them because a rerun of a non-gating job gains nothing. The failed job st
 check, the Nightly run, and the Nightly alert still report it. Recorded provider responses replayed
 through `createProviderReplay` gate the
 same request handling deterministically; see [live-provider smoke checks](tests.md#live-provider-smoke-checks)
-for the conversion rules. The paid providers (Bedrock, OpenAI, OpenRouter, Anthropic, Lightpanda) are out of per-PR CI because they
+for the conversion rules. The paid providers (OpenAI, OpenRouter, Anthropic, Lightpanda) are out of per-PR CI because they
 cost money and rate-limit: `tests-backend-live-providers.yml` runs one job per provider from the
 Nightly run (`backend-live-providers`, after `backend` publishes the prepared database) and from
 `workflow_dispatch` with a `provider` input, never on a pull request or merge group. The credentialed jobs run live-provider tests, which only prove each call

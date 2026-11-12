@@ -58,10 +58,10 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
   )
   await query(
     `/* seedHiddenFeedStorySearch:topics */ INSERT INTO topics (
-       id, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
+       id, name, slug, created_via, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
      VALUES
-       ($1, 'Hidden disabled feed', 'story-search-hidden-disabled', 'system', decode(repeat('ab', 32), 'hex')),
-       ($2, 'Hidden quiet feed', 'story-search-hidden-quiet', 'system', decode(repeat('ab', 32), 'hex'))
+       ($1, 'Hidden disabled feed', 'story-search-hidden-disabled', 'system', decode(repeat('ab', 32), 'hex'), decode(repeat('ab', 32), 'hex')),
+       ($2, 'Hidden quiet feed', 'story-search-hidden-quiet', 'system', decode(repeat('ab', 32), 'hex'), decode(repeat('ab', 32), 'hex'))
      ON CONFLICT DO NOTHING`,
     [disabledTopicId, quietTopicId],
   )
@@ -107,9 +107,9 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
   )
   await query(
     `/* seedHiddenFeedStorySearch:items */ INSERT INTO rss_feed_items (
-       id, url_id, data, story_id, bedrock_nova_multimodal_v1_content_sha256)
+       id, url_id, data, story_id, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
      SELECT id, url_id, '{"title":"Story search seed"}'::jsonb, story_id, decode(repeat('ab', 32), 'hex')
-     FROM UNNEST($1::uuid[], $2::uuid[], $3::uuid[]) AS seed(id, url_id, story_id)
+     , decode(repeat('ab', 32), 'hex') FROM UNNEST($1::uuid[], $2::uuid[], $3::uuid[]) AS seed(id, url_id, story_id)
      ON CONFLICT DO NOTHING`,
     [itemIds, itemUrlIds, storyIds],
   )
@@ -124,10 +124,10 @@ export async function seedHiddenFeedStorySearch(initiatedById: string): Promise<
   await query(
     `/* seedHiddenFeedStorySearch:posts */ INSERT INTO posts (
        id, created_via, post_type, title, created_by_id, approved_at, votes_score_up,
-       bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
+       gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
      SELECT id, 'system', 'story', title, $2, CURRENT_TIMESTAMP, votes,
        decode(repeat('ab', 32), 'hex'), decode(repeat('ab', 32), 'hex')
-     FROM UNNEST($1::uuid[], $3::text[], $4::float8[]) AS seed(id, title, votes)
+     , decode(repeat('ab', 32), 'hex') FROM UNNEST($1::uuid[], $3::text[], $4::float8[]) AS seed(id, title, votes)
      ON CONFLICT DO NOTHING`,
     [postIds, initiatedById, titles, votes],
   )

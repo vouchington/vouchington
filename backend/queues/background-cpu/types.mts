@@ -9,8 +9,8 @@ import type {
   UnfurlDispatchCursor,
   UnfurlReferralLinkEntry,
 } from '../unfurl-referral-links/types.mts'
-import type { DefaultBedrockEmbeddingsJobData } from '../bedrock-embeddings/types.mts'
-import type { ReconciliationEntityType } from '../bedrock-embeddings-batch/types.mts'
+import type { DefaultEmbeddingsJobData } from '../gemini-embeddings/types.mts'
+import type { ReconciliationEntityType } from '../gemini-embeddings-batch/types.mts'
 import type {
   CleanupAbandonedUploadsData,
   LanguageDetectionBackfillCursor,
@@ -81,9 +81,9 @@ export type BackgroundCpuJobPayloads = {
   'crawl.crawl_cleanup': { cutoffId?: string }
   'crawl.boilerplate_removal_dispatcher': Empty
   'crawl.boilerplate_removal': { hostname_id: string; parent_path: string }
-  'bedrock-embeddings.topic': DefaultBedrockEmbeddingsJobData
-  'bedrock-embeddings.post': DefaultBedrockEmbeddingsJobData
-  'bedrock-embeddings.rss_feed_item': DefaultBedrockEmbeddingsJobData
+  'bedrock-embeddings.topic': DefaultEmbeddingsJobData
+  'bedrock-embeddings.post': DefaultEmbeddingsJobData
+  'bedrock-embeddings.rss_feed_item': DefaultEmbeddingsJobData
   'bedrock-embeddings.create_topics': Empty
   'bedrock-embeddings.create_posts': Empty
   'bedrock-embeddings.create_rss_feed_items': Empty
@@ -96,6 +96,21 @@ export type BackgroundCpuJobPayloads = {
   'bedrock-embeddings.stale_cleanup_dispatcher': { cursor?: BatchCursor }
   'bedrock-embeddings.reconcile_existing': { entityType: ReconciliationEntityType; after?: string }
   'bedrock-embeddings.post_trigger_recovery': { after?: string }
+  'gemini-embeddings.topic': DefaultEmbeddingsJobData
+  'gemini-embeddings.post': DefaultEmbeddingsJobData
+  'gemini-embeddings.rss_feed_item': DefaultEmbeddingsJobData
+  'gemini-embeddings.create_topics': Empty
+  'gemini-embeddings.create_posts': Empty
+  'gemini-embeddings.create_rss_feed_items': Empty
+  'gemini-embeddings.create_crawl_chunks': Empty
+  'gemini-embeddings.create_images': Empty
+  'gemini-embeddings.poll_batch': { batch_id: string }
+  'gemini-embeddings.poll_dispatcher': { cursor?: BatchCursor }
+  'gemini-embeddings.creation_dispatcher': { cursor?: BatchCursor }
+  'gemini-embeddings.backlog_dispatcher': { cursor?: BatchCursor }
+  'gemini-embeddings.stale_cleanup_dispatcher': { cursor?: BatchCursor }
+  'gemini-embeddings.reconcile_existing': { entityType: ReconciliationEntityType; after?: string }
+  'gemini-embeddings.post_trigger_recovery': { after?: string }
   'ai-spend-cap.recheck': SpendCapRecheckJobData
   'content-analysis.post': { id: string }
   'content-analysis.rss_feed_item': { id: string }

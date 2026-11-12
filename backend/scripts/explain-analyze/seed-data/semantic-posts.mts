@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
-const HNSW_INDEX = 'idx_posts__bedrock_nova_multimodal_v1_embedding'
+const HNSW_INDEX = 'idx_posts__gemini_embedding_2_embedding'
 const SEMANTIC_POST_COUNT = 40_000
 
 /**
@@ -22,7 +22,7 @@ export async function seedSemanticPosts(): Promise<void> {
     await transaction(
       `/* seedSemanticPosts */
     UPDATE posts
-    SET bedrock_nova_multimodal_v1_embedding = (
+    SET gemini_embedding_2_embedding = (
       ARRAY[CASE WHEN seed.ordinal % 20 = 0 THEN 1::real ELSE 0.15::real END,
         1::real + seed.ordinal::real / 100000]
       || ARRAY(
@@ -31,7 +31,7 @@ export async function seedSemanticPosts(): Promise<void> {
         FROM generate_series(1, 30) AS coordinate
       )
       || array_fill(0::real, ARRAY[992])
-    )::vector(1024)
+    )::halfvec(1536)
     FROM (SELECT id, ordinal + $2::integer AS ordinal
       FROM unnest($1::uuid[]) WITH ORDINALITY AS page(id, ordinal)) AS seed
     WHERE posts.id = seed.id
@@ -44,8 +44,8 @@ export async function seedSemanticPosts(): Promise<void> {
   // Posts 0 and 2 are recent and belong to users 0 and 2, rather than the excluded user 1.
   await transaction(
     `/* seedSemanticPosts */ UPDATE posts
-     SET bedrock_nova_multimodal_v1_embedding =
-       (ARRAY[1::real, 1::real] || array_fill(0::real, ARRAY[1022]))::vector(1024)
+     SET gemini_embedding_2_embedding =
+       (ARRAY[1::real, 1::real] || array_fill(0::real, ARRAY[1534]))::halfvec(1536)
      WHERE id = ANY($1::uuid[])`,
     [[seedUuid(0, '05'), seedUuid(2, '05')]],
   )
@@ -53,8 +53,8 @@ export async function seedSemanticPosts(): Promise<void> {
   await transaction(`/* seedSemanticPosts */ SET LOCAL max_parallel_maintenance_workers = 0`)
   await transaction(
     `/* seedSemanticPosts */ CREATE INDEX ${HNSW_INDEX}
-     ON posts USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
-     WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL`,
+     ON posts USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops)
+     WHERE gemini_embedding_2_embedding IS NOT NULL`,
   )
   await transaction.commit()
 }

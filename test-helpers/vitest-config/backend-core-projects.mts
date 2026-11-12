@@ -89,7 +89,10 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         ...backendNoDataUnitTestFiles,
       ],
       exclude: ['**/node_modules/**', '**/.git/**'],
-      globalSetup: './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+      globalSetup: [
+        './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+        './backend/test-helpers/vitest.setup.gcs-emulator-server.mts',
+      ],
       setupFiles: [
         './backend/test-helpers/vitest.setup.sentry-mock.mts',
         './backend/test-helpers/vitest.setup.aws-emulator.mts',

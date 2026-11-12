@@ -1,3 +1,4 @@
+// Similarity thresholds await Gemini recalibration in #5635.
 import { write, type TransactionQuery } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
@@ -28,10 +29,10 @@ export async function markSkippedPostBanEvasionEmbeddings(
     sql`/* markSkippedPostBanEvasionEmbeddings */
     WITH locked_posts AS MATERIALIZED (
       SELECT id, created_by_id, community_id, deleted_at,
-        bedrock_nova_multimodal_v1_input_sha256,
-        bedrock_nova_multimodal_v1_content_sha256,
-        bedrock_nova_multimodal_v1_embedding IS NOT NULL
-          AND bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL AS has_embedding
+        gemini_embedding_2_input_sha256,
+        gemini_embedding_2_content_sha256,
+        gemini_embedding_2_embedding IS NOT NULL
+          AND gemini_embedding_2_embedding_created_at IS NOT NULL AS has_embedding
       FROM posts
       WHERE id = ANY(${lockedIds}::uuid[])
       ORDER BY id
@@ -50,8 +51,8 @@ export async function markSkippedPostBanEvasionEmbeddings(
       AND target.created_by_id = skipped.user_id
       AND target.community_id = skipped.community_id
       AND target.has_embedding
-      AND target.bedrock_nova_multimodal_v1_input_sha256 = skipped.input_sha256
-      AND target.bedrock_nova_multimodal_v1_content_sha256 = skipped.input_sha256
+      AND target.gemini_embedding_2_input_sha256 = skipped.input_sha256
+      AND target.gemini_embedding_2_content_sha256 = skipped.input_sha256
       AND earlier.id < target.id
       AND earlier.deleted_at IS NULL
       AND earlier.created_by_id = skipped.user_id
@@ -113,8 +114,8 @@ export async function markEnqueuedPostBanEvasionEmbeddings(
     SET ban_evasion_post_embedding_input_sha256 = enqueued.input_sha256
     FROM (VALUES `.append(updates).append(sql`) AS enqueued(post_id, input_sha256)
     WHERE p.id = enqueued.post_id
-      AND p.bedrock_nova_multimodal_v1_input_sha256 = enqueued.input_sha256
-      AND p.bedrock_nova_multimodal_v1_content_sha256 = enqueued.input_sha256
+      AND p.gemini_embedding_2_input_sha256 = enqueued.input_sha256
+      AND p.gemini_embedding_2_content_sha256 = enqueued.input_sha256
   `),
   )
 }

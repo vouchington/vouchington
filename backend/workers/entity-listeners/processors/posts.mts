@@ -1,5 +1,5 @@
 import { repairEntityBloomKeys } from '@services/entity-cache/repair-entity-keys'
-import { enqueueCreatePostEmbedding } from '@queues/bedrock-embeddings/enqueues'
+import { enqueueCreatePostEmbedding } from '@queues/gemini-embeddings/enqueues'
 import { enqueuePostMentions } from '@queues/post-mentions/enqueues'
 import { enqueueClassifierRunDispatcher } from '@queues/ai-agents/enqueues/classifier-run'
 import { requestApprovedPostClassifierRuns } from '@services/classifier-runs'

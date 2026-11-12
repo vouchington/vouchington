@@ -49,7 +49,7 @@ for (const config of ALL_MONTHLY_PARTITION_TABLES) {
       inFlightPredicates: ['completed_at IS NULL', 'has_pending_embeddings = TRUE'],
     }),
     ...(config.table === 'crawl_chunks' && {
-      inFlightPredicates: ['bedrock_nova_multimodal_v1_embedding_created_at IS NULL'],
+      inFlightPredicates: ['gemini_embedding_2_embedding_created_at IS NULL'],
     }),
   }
 }

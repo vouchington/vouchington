@@ -42,7 +42,7 @@ export async function insertTestPost(data: {
       id,
       post_type, title, markdown, created_by_id,
       root_post_id, parent_post_id, community_id, broadcast, privacy, is_anonymous,
-      bedrock_nova_multimodal_v1_content_sha256,
+      gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256,
       llm_moderation_content_sha256,
       created_via, created_via_oauth_client_id
   `
@@ -56,7 +56,7 @@ export async function insertTestPost(data: {
       ${data.parentId === undefined ? null : data.parentId},
       ${data.communityId === undefined ? null : data.communityId},
       ${data.broadcast ?? 'everyone'}, ${data.privacy ?? 'public'}, ${data.isAnonymous ?? false},
-      ${sha256}, ${sha256}, ${data.provenance?.createdVia ?? 'system'},
+      ${sha256}, ${sha256}, ${sha256}, ${data.provenance?.createdVia ?? 'system'},
       ${data.provenance?.oauthClientId ?? null}
   `)
   if (data.urlId) insertPostQuery.append(sql`, ${data.urlId}`)

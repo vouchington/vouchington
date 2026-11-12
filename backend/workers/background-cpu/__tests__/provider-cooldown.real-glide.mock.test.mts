@@ -8,7 +8,7 @@ import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registr
 import {
   extendCpuProviderCooldownMs,
   getCpuProviderCooldownRemainingMs,
-} from '@services/bedrock-embeddings/provider-cooldown'
+} from '@services/embeddings/provider-cooldown'
 import type { BackgroundCpuHandler, BackgroundCpuJobDefinition } from '@queues/background-cpu/types'
 import {
   startRealGlideBackgroundLifecycle,
@@ -20,15 +20,15 @@ import {
 } from '@voucha/test-helpers/queue-domain-controls'
 import { acquireEmbeddingCreationCooldown } from '@voucha/test-helpers/embedding-creation-cooldown'
 import { createBackgroundCpuProcessor } from '../processors.mts'
-import { withBedrockRateLimit } from '../processors/bedrock-rate.mts'
+import { withVertexRateLimit } from '../processors/vertex-rate.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
-const single = requireBackgroundCpuJob('bedrock-embeddings.post')
-const singleTopic = requireBackgroundCpuJob('bedrock-embeddings.topic')
+const single = requireBackgroundCpuJob('gemini-embeddings.post')
+const singleTopic = requireBackgroundCpuJob('gemini-embeddings.topic')
 const contentPost = requireBackgroundCpuJob('content-analysis.post')
-const creationImage = requireBackgroundCpuJob('bedrock-embeddings.create_images')
-const creationPost = requireBackgroundCpuJob('bedrock-embeddings.create_posts')
+const creationImage = requireBackgroundCpuJob('gemini-embeddings.create_images')
+const creationPost = requireBackgroundCpuJob('gemini-embeddings.create_posts')
 
 describe('background-cpu groups through real GlideMQ', () => {
   let harness: RealGlideBackgroundHarness<BackgroundCpuJobDefinition> | undefined
@@ -70,17 +70,17 @@ describe('background-cpu groups through real GlideMQ', () => {
     return operation
   }
 
-  it('cools the throttled Bedrock ordering group while another CPU domain keeps running', async ({
+  it('cools the throttled Gemini ordering group while another CPU domain keeps running', async ({
     signal,
   }) => {
-    const startedBedrock: string[] = []
+    const startedGemini: string[] = []
     const defaultOrdering = single.options.ordering
-    if (!defaultOrdering) throw new Error('Expected Bedrock ordering lane')
+    if (!defaultOrdering) throw new Error('Expected Gemini ordering lane')
     const ordering = {
       ...defaultOrdering,
-      key: `bedrock-embeddings:single:${randomUUID()}`,
+      key: `gemini-embeddings:single:${randomUUID()}`,
     }
-    const throttle = Object.assign(new Error('Bedrock request throttled'), {
+    const throttle = Object.assign(new Error('Gemini request throttled'), {
       name: 'ThrottlingException',
       $metadata: { httpStatusCode: 429 },
     })
@@ -90,21 +90,21 @@ describe('background-cpu groups through real GlideMQ', () => {
         {
           job: single,
           handle: job => {
-            startedBedrock.push(job.id)
-            if (startedBedrock.length === 1)
-              return withBedrockRateLimit(async () => {
+            startedGemini.push(job.id)
+            if (startedGemini.length === 1)
+              return withVertexRateLimit(async () => {
                 throw throttle
               })
             return undefined
           },
         },
       ],
-      [singleTopic.name, { job: singleTopic, handle: job => startedBedrock.push(job.id) }],
+      [singleTopic.name, { job: singleTopic, handle: job => startedGemini.push(job.id) }],
       [contentPost.name, { job: contentPost, handle: () => undefined }],
     ])
     const starting = trackWork(signal, () =>
       startRealGlideBackgroundLifecycle<BackgroundCpuJobDefinition>({
-        queueNamePrefix: 'background_cpu_bedrock_cooldown',
+        queueNamePrefix: 'background_cpu_gemini_cooldown',
         connection,
         processor: createBackgroundCpuProcessor(handlers),
       }),
@@ -167,7 +167,7 @@ describe('background-cpu groups through real GlideMQ', () => {
     ).resolves.toBe('completed')
     const [secondCompletionEvent] = await secondUnrelatedCompleted
     expect(secondCompletionEvent).toMatchObject({ jobId: secondUnrelated.id })
-    expect(startedBedrock).toEqual([limited.id])
+    expect(startedGemini).toEqual([limited.id])
     expect((await harness.queue.getJob(limited.id))?.attemptsMade).toBe(0)
     expect((await harness.queue.getJob(sameGroup.id))?.attemptsMade).toBe(0)
     expect(await (await harness.queue.getJob(sameGroup.id))?.getState()).toBe('delayed')
@@ -189,7 +189,7 @@ describe('background-cpu groups through real GlideMQ', () => {
             handle: () => {
               imageAttempts += 1
               if (imageAttempts === 1)
-                throwRateLimited(3_000, new Error('Bedrock throttled'), {
+                throwRateLimited(3_000, new Error('Gemini throttled'), {
                   RateLimitError: Worker.RateLimitError,
                 })
             },
@@ -234,9 +234,9 @@ describe('background-cpu groups through real GlideMQ', () => {
       const image = await trackWork(signal, () => harness!.add(creationImage, {}))
       expect((await imageDelayed)[0]).toMatchObject({ jobId: image.id })
       await cooldown.witnessOwnWrite()
-      expect(
-        await getCpuProviderCooldownRemainingMs('bedrock-embeddings:creation'),
-      ).toBeGreaterThan(0)
+      expect(await getCpuProviderCooldownRemainingMs('gemini-embeddings:creation')).toBeGreaterThan(
+        0,
+      )
 
       const postDelayed = waitForQueueDomainTestResult(
         once(events!, 'delay-changed', { signal }),

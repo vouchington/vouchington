@@ -48,9 +48,9 @@ export async function seedAliasUnlinkFixture(): Promise<void> {
   )
   await query(
     `/* seedAliasUnlinkItems */
-     INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
+     INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
      SELECT id, $1::uuid, '{}'::jsonb, decode(repeat('00', 32), 'hex')
-     FROM rss_feed_item_guids WHERE id >= $2::uuid AND id < $3::uuid
+     , decode(repeat('00', 32), 'hex') FROM rss_feed_item_guids WHERE id >= $2::uuid AND id < $3::uuid
      ON CONFLICT DO NOTHING`,
     [seed.url, '019e0000-ed00-7000-8000-000000000000', itemEndId()],
   )

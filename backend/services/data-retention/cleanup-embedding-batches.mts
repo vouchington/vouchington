@@ -36,7 +36,7 @@ async function deleteTerminalEmbeddingBatchPage(
   const candidatesQuery = sql`
     /* selectEmbeddingBatchRetentionPage */
     SELECT id, COALESCE(completed_at, failed_at, cancelled_at)::text AS terminal_at
-    FROM bedrock_embedding_batches
+    FROM gemini_embedding_batches
     WHERE (completed_at IS NOT NULL OR failed_at IS NOT NULL OR cancelled_at IS NOT NULL)
       AND COALESCE(completed_at, failed_at, cancelled_at) < ${cutoff}`
   if (options.lowerBoundDate) {
@@ -55,19 +55,19 @@ async function deleteTerminalEmbeddingBatchPage(
   await query(
     `/* deleteEmbeddingBatchEntityPage */
     WITH selected AS (
-      SELECT ctid FROM bedrock_embedding_batch_entities
+      SELECT ctid FROM gemini_embedding_batch_entities
       WHERE batch_id = ANY($1::uuid[])
       ORDER BY batch_id LIMIT $2
     )
-    DELETE FROM bedrock_embedding_batch_entities entity
+    DELETE FROM gemini_embedding_batch_entities entity
     USING selected WHERE entity.ctid = selected.ctid`,
     [ids, batchSize],
   )
   const { rowCount } = await query(
     `/* deleteTerminalEmbeddingBatchPage */
-    DELETE FROM bedrock_embedding_batches batch
+    DELETE FROM gemini_embedding_batches batch
     WHERE batch.id = ANY($1::uuid[])
-      AND NOT EXISTS (SELECT 1 FROM bedrock_embedding_batch_entities entity
+      AND NOT EXISTS (SELECT 1 FROM gemini_embedding_batch_entities entity
         WHERE entity.batch_id = batch.id)`,
     [ids],
   )

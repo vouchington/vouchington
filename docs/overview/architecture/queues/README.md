@@ -101,7 +101,7 @@ job. A separate bounded refresh readmission lane revisits known lookup state wit
 refresh window, recovering dropped refresh chains from persisted timestamps. It does not backfill
 URLs whose initial lookup was missed; those may remain without references until normal admission.
 
-Moderation reconciliation and Bedrock batch polling carry a fixed sweep boundary through bounded
+Moderation reconciliation and embedding batch polling carry a fixed sweep boundary through bounded
 continuations, so unchanged active rows cannot monopolize every page. Moderation reconciliation
 indexes unfinished work so completed history cannot dominate page reads. Invalid-crawl cleanup
 retains its age cutoff while committed deletions advance the remaining-work predicate; its candidate
@@ -112,7 +112,7 @@ RSS dispatch carries its lane, raw feed position, and fixed upper bound in Glide
 Each job reads a bounded raw page before due, tier, and hostname eligibility, while the sweep's
 remaining capacity counts admitted fetches. An empty eligible page advances the cursor without
 consuming fetch capacity, and lower-priority lanes wait until earlier raw lanes finish.
-Friend-account dispatch and Bedrock stale cleanup also advance by raw source IDs. A full page may
+Friend-account dispatch and embedding stale cleanup also advance by raw source IDs. A full page may
 need one empty continuation to confirm the tail while keeping the physical read bound exact.
 
 Moderation-history retention uses the existing PostgreSQL maintenance queue and a serial ordering
@@ -213,7 +213,7 @@ deletion from cascading into communities or requiring a worker to hold the whole
   concurrency. Provider 429s and domain pauses defer the single job (`moveToDelayed`, which spends no
   attempt), never `RateLimitError` or `worker.rateLimit()`, because those idle the whole shared
   worker and one slow provider would stall unrelated domains.
-  Bedrock Retry-After state is shared by its ordering lane and checked before provider work, so
+  Provider retry-after state is shared by its ordering lane and checked before provider work, so
   newly queued priority jobs observe the same cooldown while unrelated CPU domains keep running.
   Embedding batch creation uses one ordering lane per entity type for fair admission, a shared
   provider cooldown for 429 responses, and a renewable Valkey lease for its cross-type creation

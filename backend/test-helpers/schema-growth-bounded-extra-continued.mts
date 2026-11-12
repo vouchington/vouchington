@@ -4,11 +4,11 @@ export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
     'A checked singleton bounds the scheduled boilerplate removal hostname sweep to one row.',
   ],
   [
-    'bedrock_embedding_batches',
+    'gemini_embedding_batches',
     'Terminal batches are deleted after 30 days by capped deletion batches; in-flight batches remain until terminal.',
   ],
   [
-    'bedrock_embedding_batch_entities',
+    'gemini_embedding_batch_entities',
     'Batch member rows cascade when a terminal parent batch expires.',
   ],
   [

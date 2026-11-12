@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { createTestPost, makeRandomEmbedding, updatePostEmbeddingData } from '@voucha/test-helpers'
+import {
+  createTestPost,
+  makeRandomEmbedding,
+  updatePostEmbeddingData,
+} from '@voucha/test-helpers/bedrock-legacy'
 import { createPostTextEmbeddingContent } from '@services/posts/content'
 import { upsertPostEmbedding } from './posts.mts'
 

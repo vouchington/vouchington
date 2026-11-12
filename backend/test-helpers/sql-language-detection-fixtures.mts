@@ -14,11 +14,11 @@ export async function insertLanguageDetectionPostForTest(params: {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionPostForTest */
     INSERT INTO posts (id, created_via,
       post_type, title, markdown, declared_language, created_by_id, broadcast, privacy, is_anonymous,
-      bedrock_nova_multimodal_v1_content_sha256,
+      gemini_embedding_2_content_sha256,
       llm_moderation_content_sha256,
       lingua_rs_input_sha256,
       deleted_at
-    ) VALUES (COALESCE(${params.id ?? null}::uuid, uuidv7()), 'system',
+    , bedrock_nova_multimodal_v1_content_sha256) VALUES (COALESCE(${params.id ?? null}::uuid, uuidv7()), 'system',
       'discussion',
       ${params.title},
       ${params.markdown},
@@ -29,7 +29,7 @@ export async function insertLanguageDetectionPostForTest(params: {
       ${`\\x${'0'.repeat(64)}`},
       ${params.inputSha256 ?? null},
       ${params.deleted ? new Date() : null}
-    )
+    , ${`\\x${'0'.repeat(64)}`})
     RETURNING id
   `)
   return rows[0]!.id
@@ -107,8 +107,8 @@ export async function insertLanguageDetectionTopicForTest(params: {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionTopicForTest */
     INSERT INTO topics (id, created_via,
       name, slug, created_by_id, topic_type, is_noindexed, should_allow_reviews,
-      bedrock_nova_multimodal_v1_content_sha256, lingua_rs_input_sha256
-    )
+      gemini_embedding_2_content_sha256, lingua_rs_input_sha256
+    , bedrock_nova_multimodal_v1_content_sha256)
     VALUES (COALESCE(${params.id ?? null}::uuid, uuidv7()), 'system',
       ${params.name},
       ${params.slug},
@@ -118,7 +118,7 @@ export async function insertLanguageDetectionTopicForTest(params: {
       true,
       ${`\\x${'0'.repeat(64)}`},
       ${params.inputSha256 ?? null}
-    )
+    , ${`\\x${'0'.repeat(64)}`})
     RETURNING id
   `)
   const topicId = rows[0]!.id

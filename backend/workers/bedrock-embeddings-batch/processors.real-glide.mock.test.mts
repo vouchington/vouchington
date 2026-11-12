@@ -7,7 +7,11 @@ import {
   isSingleEmbeddingBackedUp,
 } from '@queues/bedrock-embeddings/enqueues/single-backlog'
 import { streamPendingPosts } from '@services/bedrock-embeddings-batch/entities/posts'
-import { createTestUserDirect, deleteTestPost, insertTestPost } from '@voucha/test-helpers'
+import {
+  createTestUserDirect,
+  deleteTestPost,
+  insertTestPost,
+} from '@voucha/test-helpers/bedrock-legacy'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { getMinUUIDv7ForDate } from '../../modules/utils/ids.mts'
 import { uuidAfter } from '@voucha/test-helpers/uuid-before'
@@ -17,7 +21,7 @@ import {
   cleanupTestEmbeddingsBatches,
   getTestBatchSummary,
   insertTestEmbeddingsBatch,
-} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+} from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { processBatchPollingDispatcher, processStaleCleanupDispatcher } from './processors.mts'
 import { processBedrockEmbeddingsBatchJob } from './processors/worker-router.mts'

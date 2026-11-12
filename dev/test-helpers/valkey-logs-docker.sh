@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-for name in DATABASE_URL S3_AWS_SECRET_ACCESS_KEY BEDROCK_AWS_SECRET_ACCESS_KEY; do
+for name in DATABASE_URL S3_AWS_SECRET_ACCESS_KEY; do
   if [ -n "${!name:-}" ]; then
     printf "%s leaked to docker\n" "$name" >&2
     exit 2

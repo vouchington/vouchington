@@ -9,9 +9,9 @@ export async function seedSharedLoaders(): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(
     `/* seedSharedLoaderTopics */ INSERT INTO topics
-      (id, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
-    VALUES ($1, 'Shared loader source', 'seed-shared-loader-source', 'system', $3),
-      ($2, 'Shared loader destination', 'seed-shared-loader-destination', 'system', $4)
+      (id, name, slug, created_via, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+    VALUES ($1, 'Shared loader source', 'seed-shared-loader-source', 'system', $3, $3),
+      ($2, 'Shared loader destination', 'seed-shared-loader-destination', 'system', $4, $4)
     ON CONFLICT (id) DO NOTHING`,
     [
       SHARED_LOADER_SOURCE_ID,

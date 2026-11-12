@@ -56,14 +56,14 @@ updated_topic AS (
     name = '${safeName}',
     slug = '${safeSlug}',
     topic_type = 'topic',
-    bedrock_nova_multimodal_v1_content_sha256 = decode('${hash}', 'hex')
+    gemini_embedding_2_content_sha256 = decode('${hash}', 'hex')
   WHERE id = (SELECT id FROM existing_topic)
   RETURNING id
 ),
 inserted_topic AS (
-  INSERT INTO topics (name, slug, topic_type, bedrock_nova_multimodal_v1_content_sha256, created_via)
+  INSERT INTO topics (name, slug, topic_type, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
   SELECT '${safeName}', '${safeSlug}', 'topic', decode('${hash}', 'hex'), 'system'
-  WHERE NOT EXISTS (SELECT 1 FROM existing_topic)
+  , decode('${hash}', 'hex') WHERE NOT EXISTS (SELECT 1 FROM existing_topic)
   RETURNING id
 )
 SELECT id FROM updated_topic

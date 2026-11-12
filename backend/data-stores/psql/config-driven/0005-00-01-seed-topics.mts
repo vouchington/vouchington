@@ -41,14 +41,14 @@ updated_topic AS (
     name = '${safeName}',
     slug = '${safeSlug}',
     topic_type = 'topic',
-    bedrock_nova_multimodal_v1_content_sha256 = decode('${contentHash}', 'hex')
+    gemini_embedding_2_content_sha256 = decode('${contentHash}', 'hex')
   WHERE id = (SELECT id FROM existing_topic)
   RETURNING id
 ),
 inserted_topic AS (
-  INSERT INTO topics (name, slug, topic_type, bedrock_nova_multimodal_v1_content_sha256, created_via)
+  INSERT INTO topics (name, slug, topic_type, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
   SELECT '${safeName}', '${safeSlug}', 'topic', decode('${contentHash}', 'hex'), 'system'
-  WHERE NOT EXISTS (SELECT 1 FROM existing_topic)
+  , decode('${contentHash}', 'hex') WHERE NOT EXISTS (SELECT 1 FROM existing_topic)
   RETURNING id
 )
 SELECT id FROM updated_topic
@@ -81,19 +81,19 @@ updated AS (
   UPDATE topics SET
     name = 'Amex Referral Program',
     topic_type = 'referral_program',
-    bedrock_nova_multimodal_v1_content_sha256 = decode('${amexContentHash}', 'hex'),
+    gemini_embedding_2_content_sha256 = decode('${amexContentHash}', 'hex'),
     deleted_at = NULL
   WHERE id = (SELECT id FROM existing)
     AND (name IS DISTINCT FROM 'Amex Referral Program'
       OR topic_type IS DISTINCT FROM 'referral_program'
-      OR bedrock_nova_multimodal_v1_content_sha256 IS DISTINCT FROM decode('${amexContentHash}', 'hex')
+      OR gemini_embedding_2_content_sha256 IS DISTINCT FROM decode('${amexContentHash}', 'hex')
       OR deleted_at IS NOT NULL)
   RETURNING id
 ),
 inserted AS (
-  INSERT INTO topics (name, slug, topic_type, bedrock_nova_multimodal_v1_content_sha256, created_via)
+  INSERT INTO topics (name, slug, topic_type, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
   SELECT 'Amex Referral Program', 'amex-referral-program', 'referral_program', decode('${amexContentHash}', 'hex'), 'system'
-  WHERE NOT EXISTS (SELECT 1 FROM existing)
+  , decode('${amexContentHash}', 'hex') WHERE NOT EXISTS (SELECT 1 FROM existing)
   RETURNING id
 )
 SELECT id FROM updated UNION ALL SELECT id FROM inserted;

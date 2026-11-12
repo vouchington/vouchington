@@ -13,13 +13,13 @@ export async function searchTopicsByRssFeedItemEmbedding(
   const queryStatement = sql`/* searchTopicsByRssFeedItemEmbedding */
     SELECT id, name FROM (
       SELECT t.id, t.name,
-        (t.bedrock_nova_multimodal_v1_embedding <=> r.bedrock_nova_multimodal_v1_embedding) AS dist
+        (t.gemini_embedding_2_embedding <=> r.gemini_embedding_2_embedding) AS dist
       FROM topics t
       JOIN rss_feed_items r ON r.id = ${rssFeedItemId}
       WHERE t.deleted_at IS NULL
         AND t.merged_into_topic_id IS NULL
-        AND t.bedrock_nova_multimodal_v1_embedding IS NOT NULL
-        AND r.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+        AND t.gemini_embedding_2_embedding IS NOT NULL
+        AND r.gemini_embedding_2_embedding IS NOT NULL
     ) sub
     WHERE dist < 0.75
     ORDER BY dist, id

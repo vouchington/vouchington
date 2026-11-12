@@ -57,7 +57,7 @@ export function assertSemanticPostCandidatePlan(result: ExplainResult): void {
     node =>
       node['Node Type'] === 'Index Scan' &&
       typeof node['Order By'] === 'string' &&
-      node['Order By'].includes('bedrock_nova_multimodal_v1_embedding') &&
+      node['Order By'].includes('gemini_embedding_2_embedding') &&
       node['Order By'].includes('<=>'),
   )
   if (!orderedVectorScan) {

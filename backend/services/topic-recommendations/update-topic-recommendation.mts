@@ -173,6 +173,7 @@ export async function writeTopicRecommendationUpdate(
         SET title = ${materialized.title},
           markdown = ${materialized.markdown},
           updated_by_id = ${currentUserId},
+          gemini_embedding_2_content_sha256 = ${materialized.embedding_content_sha},
           bedrock_nova_multimodal_v1_content_sha256 = ${materialized.embedding_content_sha}
         WHERE id = ${recommendationId}
         RETURNING id

@@ -1,11 +1,11 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write, writePool } from '@data-stores/psql'
-import { EMBEDDINGS_TABLE, embeddingBloomFilter } from './_bedrock-embeddings-support.mts'
+import { EMBEDDINGS_TABLE, embeddingBloomFilter } from './_gemini-embeddings-support.mts'
 
 export { makeRandomEmbedding, makeNearbyEmbedding } from './embedding-vectors.mts'
 
 function generateMockEmbedding(): number[] {
-  const embedding = new Array(1024).fill(0)
+  const embedding = new Array(1536).fill(0)
   for (let i = 0; i < 1024; i++) {
     embedding[i] = Math.sin(i / 100) * 0.5
   }
@@ -69,7 +69,7 @@ export async function setTopicEmbeddingContentSha256(
   contentSha256: Buffer,
 ): Promise<void> {
   await write(
-    `/* setTopicEmbeddingContentSha256 */ UPDATE topics SET bedrock_nova_multimodal_v1_content_sha256 = $1 WHERE id = $2`,
+    `/* setTopicEmbeddingContentSha256 */ UPDATE topics SET gemini_embedding_2_content_sha256 = $1 WHERE id = $2`,
     [contentSha256, topicId],
   )
 }
@@ -80,8 +80,8 @@ export async function setTopicEmbeddingContentAndInputSha256(
 ): Promise<void> {
   await write(
     `/* setTopicEmbeddingContentAndInputSha256 */ UPDATE topics
-     SET bedrock_nova_multimodal_v1_content_sha256 = $1,
-         bedrock_nova_multimodal_v1_input_sha256 = $1
+     SET gemini_embedding_2_content_sha256 = $1,
+         gemini_embedding_2_input_sha256 = $1
      WHERE id = $2`,
     [contentSha256, topicId],
   )
@@ -96,7 +96,7 @@ export async function setTopicNameAndEmbeddingContentSha256(
     `/* setTopicNameAndEmbeddingContentSha256 */
     UPDATE topics
     SET name = $1,
-        bedrock_nova_multimodal_v1_content_sha256 = $2
+        gemini_embedding_2_content_sha256 = $2
     WHERE id = $3
   `,
     [name, contentSha256, topicId],
@@ -106,7 +106,7 @@ export async function setTopicNameAndEmbeddingContentSha256(
 export async function getTopicEmbeddingReference(topicId: string) {
   const { rows } = await read(
     `/* getTopicEmbeddingReference */
-    SELECT bedrock_nova_multimodal_v1_content_sha256, bedrock_nova_multimodal_v1_embedding_created_at
+    SELECT gemini_embedding_2_content_sha256, gemini_embedding_2_embedding_created_at
     FROM topics
     WHERE id = $1
   `,
@@ -121,9 +121,9 @@ export async function setPostEmbeddingContentSha256(
 ): Promise<void> {
   await write(
     `/* setPostEmbeddingContentSha256 */ UPDATE posts
-     SET bedrock_nova_multimodal_v1_content_sha256 = $1,
-         bedrock_nova_multimodal_v1_input_sha256 = $1,
-         bedrock_nova_multimodal_v1_embedding_created_at = NOW()
+     SET gemini_embedding_2_content_sha256 = $1,
+         gemini_embedding_2_input_sha256 = $1,
+         gemini_embedding_2_embedding_created_at = NOW()
      WHERE id = $2`,
     [contentSha256, postId],
   )
@@ -135,10 +135,10 @@ export async function setPostEmbeddingContentOnlySha256(
 ): Promise<void> {
   await write(
     `/* setPostEmbeddingContentOnlySha256 */ UPDATE posts
-     SET bedrock_nova_multimodal_v1_content_sha256 = $1,
-         bedrock_nova_multimodal_v1_input_sha256 = NULL,
-         bedrock_nova_multimodal_v1_embedding = NULL,
-         bedrock_nova_multimodal_v1_embedding_created_at = NULL
+     SET gemini_embedding_2_content_sha256 = $1,
+         gemini_embedding_2_input_sha256 = NULL,
+         gemini_embedding_2_embedding = NULL,
+         gemini_embedding_2_embedding_created_at = NULL
      WHERE id = $2`,
     [contentSha256, postId],
   )
@@ -150,9 +150,9 @@ export async function getEmbeddingsJoinForPost(postId: string) {
     SELECT posts.id, emb.embedding
     FROM posts
     INNER JOIN ${EMBEDDINGS_TABLE} emb
-      ON posts.bedrock_nova_multimodal_v1_content_sha256 = emb.content_sha256
+      ON posts.gemini_embedding_2_content_sha256 = emb.content_sha256
     WHERE posts.id = $1
-      AND posts.bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
+      AND posts.gemini_embedding_2_embedding_created_at IS NOT NULL
   `,
     [postId],
   )
@@ -161,7 +161,7 @@ export async function getEmbeddingsJoinForPost(postId: string) {
 
 export async function getBatchMetadata(batchId: string) {
   const { rows } = await read(
-    '/* getBatchMetadata */ SELECT records::int, job_type, model_id FROM bedrock_embedding_batches WHERE id = $1',
+    '/* getBatchMetadata */ SELECT records::int, job_type, model_id FROM gemini_embedding_batches WHERE id = $1',
     [batchId],
   )
   return rows[0] ?? null

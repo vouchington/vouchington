@@ -133,8 +133,8 @@ describe('dynamic-config-admin registry validators', () => {
     )
   })
 
-  it('rejects non-positive integers for Bedrock batch config fields', () => {
-    const entry = dynamicConfigRegistry.get('bedrock-embeddings-batch-config')
+  it('rejects non-positive integers for Vertex batch config fields', () => {
+    const entry = dynamicConfigRegistry.get('gemini-embeddings-batch-config')
 
     expect(() => validateRegistryChange(entry, { max_inflight_jobs: 0 })).toThrow(
       'Field max_inflight_jobs must be greater than or equal to 1',

@@ -41,7 +41,7 @@ export async function runSpamSignalScenarios(): Promise<void> {
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['posts__default_bedrock_nova_multimodal_v1_embedding_idx'],
+        indexes: ['posts__default_gemini_embedding_2_embedding_idx'],
         queryContains: '/* checkEmbeddingsSimilarity */',
       },
       // The HNSW scan may visit at most max_scan_tuples index tuples under the replayed settings.
@@ -53,8 +53,8 @@ export async function runSpamSignalScenarios(): Promise<void> {
   const { rows: probes } = await read<{ id: string }>(
     `/* explainAnalyzeRun */ SELECT id FROM posts
      WHERE id = $1
-       AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
-       AND (bedrock_nova_multimodal_v1_embedding <=> bedrock_nova_multimodal_v1_embedding) = 0`,
+       AND gemini_embedding_2_embedding IS NOT NULL
+       AND (gemini_embedding_2_embedding <=> gemini_embedding_2_embedding) = 0`,
     [seedPostId],
   )
   const probeId = probes[0]?.id

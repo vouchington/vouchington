@@ -16,32 +16,32 @@ export async function createEmbeddingCacheApplicationFixture(
   const { rows: topics } = await query<{ id: string }>(
     `/* createEmbeddingCacheApplicationTopic */
     INSERT INTO topics (name, slug, created_by_id, created_via,
-      bedrock_nova_multimodal_v1_content_sha256, bedrock_nova_multimodal_v1_input_sha256,
-      bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_input_token_count)
-    VALUES ($1, $1, $2, 'system', $3, $4, $5, 7) RETURNING id`,
+      gemini_embedding_2_content_sha256, gemini_embedding_2_input_sha256,
+      gemini_embedding_2_embedding, gemini_embedding_2_input_token_count, bedrock_nova_multimodal_v1_content_sha256)
+    VALUES ($1, $1, $2, 'system', $3, $4, $5, 7, $3) RETURNING id`,
     [
       randomUUID(),
       users[0]!.id,
       currentContentSha256,
       oldInputSha256,
-      pgvector.toSql(new Array(1024).fill(0.125)),
+      pgvector.toSql(new Array(1536).fill(0.125)),
     ],
   )
   await query(
     `/* createEmbeddingCacheApplicationCache */
-    INSERT INTO bedrock_nova_multimodal_v1_embeddings
+    INSERT INTO gemini_embedding_2_embeddings
       (content_sha256, embedding, input_token_count, updated_at)
     VALUES ($1, $2, $3, $4)`,
     [
       contentSha256,
-      pgvector.toSql(new Array(1024).fill(0.25)),
+      pgvector.toSql(new Array(1536).fill(0.25)),
       options.cachedTokens,
       new Date('2026-06-01T12:00:00Z'),
     ],
   )
   const { rows: cached } = await query<{ embedding: number[]; input_token_count: number | null }>(
     `/* captureEmbeddingCacheApplicationValue */
-    SELECT embedding, input_token_count FROM bedrock_nova_multimodal_v1_embeddings
+    SELECT embedding, input_token_count FROM gemini_embedding_2_embeddings
     WHERE content_sha256 = $1`,
     [contentSha256],
   )
@@ -53,7 +53,7 @@ export async function createEmbeddingCacheApplicationFixture(
     evict: async () => {
       const { rowCount } = await query(
         `/* evictEmbeddingCacheApplicationValue */
-        DELETE FROM bedrock_nova_multimodal_v1_embeddings WHERE content_sha256 = $1`,
+        DELETE FROM gemini_embedding_2_embeddings WHERE content_sha256 = $1`,
         [contentSha256],
       )
       return rowCount
@@ -66,10 +66,10 @@ export async function createEmbeddingCacheApplicationFixture(
         tokens: number | null
       }>(
         `/* readEmbeddingCacheApplicationState */
-        SELECT EXISTS (SELECT 1 FROM bedrock_nova_multimodal_v1_embeddings WHERE content_sha256 = $1) AS "cacheExists",
-          bedrock_nova_multimodal_v1_input_sha256 AS "inputSha256",
-          bedrock_nova_multimodal_v1_embedding AS embedding,
-          bedrock_nova_multimodal_v1_input_token_count AS tokens
+        SELECT EXISTS (SELECT 1 FROM gemini_embedding_2_embeddings WHERE content_sha256 = $1) AS "cacheExists",
+          gemini_embedding_2_input_sha256 AS "inputSha256",
+          gemini_embedding_2_embedding AS embedding,
+          gemini_embedding_2_input_token_count AS tokens
         FROM topics WHERE id = $2`,
         [contentSha256, topics[0]!.id],
       )

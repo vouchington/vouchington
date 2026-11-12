@@ -8,9 +8,9 @@ import { insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { upsertRssFeedItems } from './upsert.mts'
 import { rssFeedItemsWorkConfig } from './work-limits.mts'
 import {
-  BEDROCK_BATCH_MAX_VALUES,
-  bedrockEmbeddingsBatchConfig,
-} from '@services/bedrock-embeddings/batch/config'
+  GEMINI_BATCH_MAX_VALUES,
+  geminiEmbeddingsBatchConfig,
+} from '@services/embeddings/batch/config'
 import {
   closeScopedDynamicConfigContext,
   overrideDynamicConfigFieldsForTest,
@@ -77,13 +77,13 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
   let restoreBacklogThreshold: (() => void) | undefined
 
   beforeAll(async () => {
-    await bedrockEmbeddingsBatchConfig.waitForInitialization()
-    bedrockEmbeddingsBatchConfig.unsubscribe()
+    await geminiEmbeddingsBatchConfig.waitForInitialization()
+    geminiEmbeddingsBatchConfig.unsubscribe()
   })
 
   beforeEach(async () => {
-    restoreBacklogThreshold = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-      backlog_threshold: BEDROCK_BATCH_MAX_VALUES.backlog_threshold,
+    restoreBacklogThreshold = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, {
+      backlog_threshold: GEMINI_BATCH_MAX_VALUES.backlog_threshold,
     })
   })
 
@@ -93,7 +93,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
   })
 
   afterAll(async () => {
-    await closeScopedDynamicConfigContext([bedrockEmbeddingsBatchConfig, rssFeedItemsWorkConfig])
+    await closeScopedDynamicConfigContext([geminiEmbeddingsBatchConfig, rssFeedItemsWorkConfig])
   })
 
   it('enqueues embedding, autotagger, notification, and language detection jobs', async () => {
@@ -107,7 +107,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
       const [embeddingJobs, aiAgentJobs, notificationJobs, languageDetectionJobs] =
         await Promise.all([
           backgroundCpu.searchJobs({
-            name: 'bedrock-embeddings.rss_feed_item',
+            name: 'gemini-embeddings.rss_feed_item',
             data: { rss_feed_item_id: result.id },
           }),
           ai_agents.searchJobs({
