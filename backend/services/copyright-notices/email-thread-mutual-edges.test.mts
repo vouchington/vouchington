@@ -104,6 +104,7 @@ describe('mutual copyright email references', () => {
     expect([
       { outcomes: ['fulfilled', 'fulfilled'], edges: { first: [second.id], second: [first.id] } },
       { outcomes: ['fulfilled', 'rejected'], edges: { first: [second.id], second: [first.id] } },
+      { outcomes: ['rejected', 'fulfilled'], edges: { first: [second.id], second: [first.id] } },
       { outcomes: ['rejected', 'rejected'], edges: { first: [], second: [] } },
     ]).toContainEqual({ outcomes: values.map(value => value.status), edges })
   })

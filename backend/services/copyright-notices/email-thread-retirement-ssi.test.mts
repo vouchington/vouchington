@@ -39,7 +39,10 @@ async function assertAbortedRetirementRun(
   expect(await readCopyrightThreadRetirementBound(noticeId)).toBeNull()
   if (writerRejected) assertMappedSerializationConflict(outcome)
   const current = await readCopyrightThreadReferenceState(intakeId)
-  expect([previousReferenceCount, previousReferenceCount + 1]).toContain(current.referenceCount)
+  const allowedReferenceCounts = writerRejected
+    ? [previousReferenceCount, previousReferenceCount + 1]
+    : [previousReferenceCount + 1]
+  expect(allowedReferenceCounts).toContain(current.referenceCount)
   expect(await readCopyrightEmailIntakeNoticeLinks(intakeId)).toEqual([
     { copyright_notice_id: noticeId, link_kind: 'initial' },
   ])
