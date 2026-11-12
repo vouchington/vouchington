@@ -98,6 +98,12 @@ tracks it and does not block this change. The clients-owned MCP facts inventory 
 consolidated catalog under
 [clients #398](https://github.com/vouchington/vouchington-clients/issues/398).
 
+The personalized referral-link feed keeps its existing `page_info` contract across REST and MCP.
+When its bounded walk returns a short or empty page with `has_next_page: true`, clients continue
+with `end_cursor` regardless of the number of visible results. The web feed follows that contract;
+the referral-links feature row above covers management UI and makes no native feed-pagination
+claim.
+
 ## Membership verification outcomes
 
 The billing feature's verification-outcomes row in `client-feature-parity.json` tracks native adoption.

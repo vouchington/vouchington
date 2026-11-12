@@ -30,10 +30,11 @@ export function ReferralLinkFeedList({
 
   const allResults = mergePageResultsById(pages)
   const allUsers = mergeRecords(pages, page => page.users)
-
-  if (allResults.length === 0) {
-    if (emptyState !== undefined) return emptyState
-    return (
+  const canLoadMore = hasNextPage && Boolean(nextPageEndpoint)
+  const emptyContent =
+    emptyState !== undefined ? (
+      emptyState
+    ) : (
       <EmptyState
         icon='inbox'
         title={t('extracted.feed.referralLinkFeedList.noReferralLinksYet_17b1386e')}
@@ -42,9 +43,24 @@ export function ReferralLinkFeedList({
         )}
       />
     )
-  }
+  const content =
+    allResults.length === 0 ? (
+      canLoadMore ? null : (
+        emptyContent
+      )
+    ) : (
+      <div className='space-y-4'>
+        {allResults.map(item => (
+          <ReferralLinkFeedCard
+            key={item.id}
+            item={item}
+            user={allUsers[item.user_id]}
+          />
+        ))}
+      </div>
+    )
 
-  const canLoadMore = hasNextPage && Boolean(nextPageEndpoint)
+  if (allResults.length === 0 && !canLoadMore && fetchError === null) return content
 
   return (
     <InfiniteScroll
@@ -56,15 +72,7 @@ export function ReferralLinkFeedList({
       clearError={clearError}
       resetKey={resetKey}
     >
-      <div className='space-y-4'>
-        {allResults.map(item => (
-          <ReferralLinkFeedCard
-            key={item.id}
-            item={item}
-            user={allUsers[item.user_id]}
-          />
-        ))}
-      </div>
+      {content}
     </InfiniteScroll>
   )
 }

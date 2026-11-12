@@ -8,11 +8,13 @@ import { runModerationClusterTypedHeadScenarios } from './moderation-cluster-typ
 import { runModerationClusterCappedScenarios } from './moderation-cluster-capped.mts'
 import { runRssFeedExistenceScenarios } from './rss-feed-existence.mts'
 import { runModerationClusterEmptyProbeScenarios } from './moderation-cluster-empty-probes.mts'
+import { runReferralFeedPageScenarios } from './referral-feed-pages.mts'
 
 /** Keep the new mutation-backed witnesses after the ordinary corpus scenarios. */
 export async function runExistenceFilterScenarios(): Promise<void> {
   await runRssFeedExistenceScenarios()
   await runHostnameExclusionPageScenarios()
+  await runReferralFeedPageScenarios()
   await seedModerationClusterPages()
   await runModerationClusterPageScenarios()
   await seedModerationClusterJudgements()

@@ -5528,7 +5528,7 @@
           "tool": {
             "name": "read_feed",
             "title": "Read Feed",
-            "description": "posts: Page your feed posts with REST follow, community and content rules. Use read_posts(details) for content. Up to 100 results per page. Reuse end_cursor while has_next_page is true.\nrss_items: Page RSS items delivered to your own feed. Results identify each item for read_rss_feed_item (option details); the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.\nreferral_links: Page referral links from users you follow, applying the REST feed privacy and mute policy. Returns at most 100 per page with page_info.end_cursor.",
+            "description": "posts: Page your feed posts with REST follow, community and content rules. Use read_posts(details) for content. Up to 100 results per page. Reuse end_cursor while has_next_page is true.\nrss_items: Page RSS items delivered to your own feed. Results identify each item for read_rss_feed_item (option details); the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.\nreferral_links: Read referral links from followed users. Follow page_info.end_cursor while has_next_page is true, including short or empty pages.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
