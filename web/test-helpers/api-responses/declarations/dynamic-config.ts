@@ -7,12 +7,14 @@ import nativeDynamicConfigNamespaceTyped from '../../../../api-fixtures/v1/respo
 import nativeDynamicConfigUpdateChanged from '../../../../api-fixtures/v1/responses/native.dynamic-config.update.changed.json'
 import nativeDynamicConfigUpdateNoOp from '../../../../api-fixtures/v1/responses/native.dynamic-config.update.no-op.json'
 import nativeFeatureFlagsDefault from '../../../../api-fixtures/v1/responses/native.feature-flags.default.json'
+import nativeHackerNewsConfigDefault from '../../../../api-fixtures/v1/responses/native.hacker-news-config.default.json'
 import type { CaptchaConfigResponse } from '@/lib/api/client/captcha-config'
 import type {
   DynamicConfigHistoryEntry,
   DynamicConfigNamespace,
   DynamicConfigNamespaceSummary,
 } from '@/lib/api/client/dynamic-config'
+import type { HackerNewsConfig } from '@/lib/hacker-news-config'
 import type { getFeatureFlags } from '@/lib/api/server/feature-flags'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
@@ -21,6 +23,11 @@ export const DYNAMIC_CONFIG_DECLARATIONS = [
     'native.captcha-config.default',
     nativeCaptchaConfigDefault,
     context => context.client.captchaConfig.fetchCaptchaConfig(),
+  ),
+  defineWebApiFixture<HackerNewsConfig>()(
+    'native.hacker-news-config.default',
+    nativeHackerNewsConfigDefault,
+    context => context.client.hackerNewsConfig.getHackerNewsConfigClient(),
   ),
   defineWebApiFixture<{ history: DynamicConfigHistoryEntry[] }>()(
     'native.dynamic-config.history.default',

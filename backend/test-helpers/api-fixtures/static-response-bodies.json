@@ -3248,6 +3248,10 @@
   "native.captcha-config.default": {
     "always_approve": false
   },
+  "native.hacker-news-config.default": {
+    "references_visible": true,
+    "post_time_range_cap": "1y"
+  },
   "native.dynamic-config.namespaces.developer": {
     "namespaces": [
       {
