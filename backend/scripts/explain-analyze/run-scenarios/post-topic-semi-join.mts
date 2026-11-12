@@ -56,7 +56,7 @@ function registerTopicSemiJoinScenario(
   })
 }
 
-function registerMultiTopicFeedScenario(id: string): void {
+function registerMultiTopicFeedScenario(id: string, aliasRelationLeaves: readonly string[]): void {
   registerScenarioContract(id, {
     seededRows: POST_TOPIC_FIXTURES_SEEDED_ROWS,
     expectations: [
@@ -73,6 +73,7 @@ function registerMultiTopicFeedScenario(id: string): void {
       },
       { kind: 'maxProcessedRows', relation: 'topic_aliases', max: MAX_FEED_MEMBERSHIP_ROWS },
       { kind: 'maxBitmapIndexRows', max: MAX_FEED_MEMBERSHIP_ROWS },
+      { kind: 'usesIndexes', indexes: [...aliasRelationLeaves], anyOf: true },
     ],
     forbidSequentialScans: [
       'relation__post__category__topic',
@@ -176,9 +177,9 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
     throw new Error('Two-topic post feed omitted its specific owned direct delivery')
   if (feedPage.results.length > PAGE_SIZE)
     throw new Error('Two-topic post feed page exceeded its limit')
-  if (feedPage.page_info.has_next_page && !feedPage.page_info.end_cursor)
+  if (!feedPage.page_info.has_next_page || !feedPage.page_info.end_cursor)
     throw new Error('Two-topic post feed continuation needs its inspected-row cursor')
-  registerMultiTopicFeedScenario('post-topic-semi-join-multi-topic-feed')
+  registerMultiTopicFeedScenario('post-topic-semi-join-multi-topic-feed', aliasRelationLeaves)
   await runAndCapture(
     'post-topic-semi-join-multi-topic-feed',
     () => getPostFeedIds(seedUser, multiTopicFeedOptions),
