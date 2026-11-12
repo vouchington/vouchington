@@ -4,9 +4,9 @@ export function sha256(content: string): Buffer {
   return createHash('sha256').update(content).digest()
 }
 export function buildEmbeddingVector(primary: number, jitter: number = 0): string {
-  const vec = new Float32Array(1024)
+  const vec = new Float32Array(1536)
   vec[primary] = 0.95
-  vec[(primary + 1) % 1024] = 0.05 + jitter * 0.01
+  vec[(primary + 1) % 1536] = 0.05 + jitter * 0.01
   let norm = 0
   for (const value of vec) norm += value * value
   norm = Math.sqrt(norm)

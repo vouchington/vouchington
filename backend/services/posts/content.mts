@@ -1,3 +1,4 @@
+import { createEmbeddingDocumentHash } from '@voucha/types/embedding-content'
 import type { Post, CreatePostUpdates } from '@services/posts/types'
 import { sha256 } from '@modules/utils'
 
@@ -75,18 +76,15 @@ export const createPostTextEmbeddingContent = (
   const structuredDataText =
     'structured_data' in post ? getStructuredDataUserText(post.structured_data) : ''
   const topicRecommendationContent = createTopicRecommendationEmbeddingContent(post)
-  const content = [
-    title,
-    markdown,
-    aiSummaryMarkdown,
-    structuredDataText,
-    topicRecommendationContent,
-  ]
+  const body = [markdown, aiSummaryMarkdown, structuredDataText, topicRecommendationContent]
     .filter(Boolean)
     .join('\n')
+  const content = [title, body].filter(Boolean).join('\n')
   return {
     content,
-    content_sha256: sha256(content),
+    title,
+    body,
+    content_sha256: createEmbeddingDocumentHash(body, title),
   }
 }
 
@@ -131,12 +129,17 @@ function createTopicRecommendationEmbeddingContent(
         ? post.topic_hostname
         : undefined
 
-  const topicHostnames =
-    'topic_recommendation' in post && post.topic_recommendation
-      ? post.topic_recommendation.hostnames.map(hostname => hostname.hostname)
-      : 'topic_hostnames' in post
-        ? post.topic_hostnames
-        : undefined
+  // Hostnames form a set; writers preserve primary-first input while the view sorts rows.
+  // Keep the primary hostname separate and hash one deterministic set representation.
+  const topicHostnames = [
+    ...new Set(
+      ('topic_recommendation' in post && post.topic_recommendation
+        ? post.topic_recommendation.hostnames.map(hostname => hostname.hostname)
+        : 'topic_hostnames' in post
+          ? post.topic_hostnames
+          : undefined) ?? [],
+    ),
+  ].toSorted()
 
   const topicAliases =
     'topic_recommendation' in post && post.topic_recommendation

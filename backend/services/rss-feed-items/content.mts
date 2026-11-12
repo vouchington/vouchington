@@ -1,5 +1,6 @@
 import type { RssFeedItemToUpsert } from './types.mts'
-import { sha256, visibleRssText } from '@modules/utils'
+import { visibleRssText } from '@modules/utils'
+import { createEmbeddingDocumentHash } from '@voucha/types/embedding-content'
 
 export const createRssFeedItemEmbeddingContent = (data: RssFeedItemToUpsert) => {
   const rawTitle = data.title || ''
@@ -21,9 +22,12 @@ export const createRssFeedItemEmbeddingContent = (data: RssFeedItemToUpsert) => 
     })
     .join('\n')
   const categories = visibleRssText(rawCategories)
+  const body = [content, categories].filter(Boolean).join('\n')
   const fullContent = `${title}\n${content}\n${categories}`
   return {
     content: fullContent,
-    content_sha256: sha256(fullContent),
+    title,
+    body,
+    content_sha256: createEmbeddingDocumentHash(body, title),
   }
 }

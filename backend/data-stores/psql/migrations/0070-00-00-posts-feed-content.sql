@@ -136,6 +136,15 @@ CREATE TABLE IF NOT EXISTS posts (
   bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ,
   bedrock_nova_multimodal_v1_input_token_count INT,
   CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
+
+  gemini_embedding_2_content_sha256 BYTEA NOT NULL,
+  CHECK (OCTET_LENGTH(gemini_embedding_2_content_sha256) = 32),
+  gemini_embedding_2_input_sha256 BYTEA,
+  CHECK (gemini_embedding_2_input_sha256 IS NULL OR OCTET_LENGTH(gemini_embedding_2_input_sha256) = 32),
+  gemini_embedding_2_embedding halfvec(1536),
+  gemini_embedding_2_embedding_created_at TIMESTAMPTZ,
+  gemini_embedding_2_input_token_count INT,
+  CHECK (gemini_embedding_2_input_token_count IS NULL OR gemini_embedding_2_input_token_count >= 0),
   ban_evasion_post_embedding_input_sha256 BYTEA,
   CONSTRAINT posts_ban_evasion_post_embedding_input_sha256_length
     CHECK (ban_evasion_post_embedding_input_sha256 IS NULL OR OCTET_LENGTH(ban_evasion_post_embedding_input_sha256) = 32),
@@ -282,10 +291,10 @@ BEFORE UPDATE OF
   data_point_vertical,
   structured_data,
   declared_language,
-  bedrock_nova_multimodal_v1_input_sha256,
-  bedrock_nova_multimodal_v1_embedding,
-  bedrock_nova_multimodal_v1_embedding_created_at,
-  bedrock_nova_multimodal_v1_input_token_count
+  gemini_embedding_2_input_sha256,
+  gemini_embedding_2_embedding,
+  gemini_embedding_2_embedding_created_at,
+  gemini_embedding_2_input_token_count
 ON posts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
@@ -380,28 +389,28 @@ WHERE root_post_id IS NOT NULL;
 
 -- find existing embeddings by input hash
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_input_sha256
-ON posts (bedrock_nova_multimodal_v1_input_sha256)
-WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_posts__gemini_embedding_2_input_sha256
+ON posts (gemini_embedding_2_input_sha256)
+WHERE gemini_embedding_2_input_sha256 IS NOT NULL;
 
 -- content-hash duplicate probe: another user's recent post with the same moderated content
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__llm_moderation_content_sha256__id
 ON posts (llm_moderation_content_sha256, id);
 
--- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
+-- index embeddings for similarity search (halfvec_cosine_ops matches <=> queries)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_embedding
-ON posts USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
-WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_posts__gemini_embedding_2_embedding
+ON posts USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops)
+WHERE gemini_embedding_2_embedding IS NOT NULL;
 
 -- find out of date embeddings
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_to_update
+CREATE INDEX IF NOT EXISTS idx_posts__gemini_embedding_2_to_update
 ON posts (id)
 WHERE (
-  bedrock_nova_multimodal_v1_input_sha256 IS NULL
-  OR bedrock_nova_multimodal_v1_input_sha256 != bedrock_nova_multimodal_v1_content_sha256
+  gemini_embedding_2_input_sha256 IS NULL
+  OR gemini_embedding_2_input_sha256 != gemini_embedding_2_content_sha256
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -411,12 +420,12 @@ WHERE community_id IS NOT NULL
   AND created_by_id IS NOT NULL
   AND created_by_id != '00000000-0000-7000-8000-000000000000'::uuid
   AND deleted_at IS NULL
-  AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
-  AND bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
-  AND bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
+  AND gemini_embedding_2_embedding IS NOT NULL
+  AND gemini_embedding_2_embedding_created_at IS NOT NULL
+  AND gemini_embedding_2_input_sha256 = gemini_embedding_2_content_sha256
   AND (
     ban_evasion_post_embedding_input_sha256 IS NULL
-    OR ban_evasion_post_embedding_input_sha256 != bedrock_nova_multimodal_v1_input_sha256
+    OR ban_evasion_post_embedding_input_sha256 != gemini_embedding_2_input_sha256
   );
 
 -- find private posts by creator for privacy filtering
@@ -1207,3 +1216,32 @@ CREATE INDEX IF NOT EXISTS idx_posts__created_via_oauth_client_id
 
 CREATE INDEX IF NOT EXISTS idx_image_deletion_post_updates__post_id
 ON image_deletion_post_updates (post_id);
+
+CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_input_sha256
+ON posts (bedrock_nova_multimodal_v1_input_sha256)
+WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_embedding
+ON posts USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
+WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_to_update
+ON posts (id)
+WHERE (
+  bedrock_nova_multimodal_v1_input_sha256 IS NULL
+  OR bedrock_nova_multimodal_v1_input_sha256 != bedrock_nova_multimodal_v1_content_sha256
+);
+
+CREATE INDEX IF NOT EXISTS idx_posts__ban_evasion_post_embedding_pending
+ON posts (id)
+WHERE community_id IS NOT NULL
+  AND created_by_id IS NOT NULL
+  AND created_by_id != '00000000-0000-7000-8000-000000000000'::uuid
+  AND deleted_at IS NULL
+  AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
+  AND bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
+  AND bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
+  AND (
+    ban_evasion_post_embedding_input_sha256 IS NULL
+    OR ban_evasion_post_embedding_input_sha256 != bedrock_nova_multimodal_v1_input_sha256
+  );

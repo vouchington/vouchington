@@ -172,10 +172,11 @@ describe('backend Vitest project config', () => {
         './backend/test-helpers/vitest.setup.aws-emulator.mts',
       ],
     })
-    // The AWS Emulator is the only service a no-data project starts.
-    expect(noDataMocks?.globalSetup).toBe(
+    // No-data projects start only the external service emulators.
+    expect(noDataMocks?.globalSetup).toEqual([
       './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
-    )
+      './backend/test-helpers/vitest.setup.gcs-emulator-server.mts',
+    ])
     expect(noDataMocks?.setupFiles).not.toEqual(
       expect.arrayContaining([
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
@@ -201,9 +202,10 @@ describe('backend Vitest project config', () => {
     ]) {
       const owners = backendProjects().filter(project => projectOwnsPath(project, path))
       expect(owners.map(project => project.test?.name)).toEqual(['backend-no-data-mocks'])
-      expect(owners[0]?.test?.globalSetup).toBe(
+      expect(owners[0]?.test?.globalSetup).toEqual([
         './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
-      )
+        './backend/test-helpers/vitest.setup.gcs-emulator-server.mts',
+      ])
     }
     expect(dataMocks?.include).toContain(
       'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,mcp,worker-runtime,workers}/**/*.mock.test.mts',

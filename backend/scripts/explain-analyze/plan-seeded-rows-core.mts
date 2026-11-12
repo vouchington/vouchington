@@ -68,6 +68,6 @@ export const CORE_SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   facebook_accounts: ingestion.INGESTION_ACCOUNT_ROW_COUNT + 2,
   x_accounts: ingestion.INGESTION_ACCOUNT_ROW_COUNT,
   github_accounts: ingestion.INGESTION_ACCOUNT_ROW_COUNT,
-  bedrock_embedding_batches: ingestion.INGESTION_BEDROCK_ROW_COUNT,
+  gemini_embedding_batches: ingestion.INGESTION_GEMINI_ROW_COUNT,
   facebook_friends: 1,
 }

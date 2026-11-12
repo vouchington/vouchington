@@ -98,14 +98,14 @@ export function registerWorkerQueueClassTests(options: {
 
   it('leaves QUEUES-only selection unchanged: include lists select by name', async () => {
     const outcome = await runEntrypoint(initializeEntrypoint, {
-      QUEUES: [...options.explicitInclusionQueues, 'emails', 'bedrock-batch-sqs'].join(','),
+      QUEUES: [...options.explicitInclusionQueues, 'emails', 'stripe-events-sqs'].join(','),
     })
 
     expect(outcome.failure).toBeUndefined()
     expect(outcome.workers.toSorted()).toEqual(
       [...options.explicitInclusionQueues, 'emails'].toSorted(),
     )
-    expect(outcome.sqsConsumers).toEqual(['bedrock-batch-sqs'])
+    expect(outcome.sqsConsumers).toEqual(['stripe-events-sqs'])
     expect(outcome.schedules.toSorted()).toEqual(
       fullSchedules
         .filter(
@@ -120,7 +120,7 @@ export function registerWorkerQueueClassTests(options: {
 
   it('leaves QUEUES-only selection unchanged: exclude lists drop only the named queues', async () => {
     const outcome = await runEntrypoint(initializeEntrypoint, {
-      QUEUES: '-emails,-bedrock-batch-sqs',
+      QUEUES: '-emails,-stripe-events-sqs',
     })
 
     expect(outcome.failure).toBeUndefined()
@@ -130,7 +130,7 @@ export function registerWorkerQueueClassTests(options: {
           name =>
             !options.explicitInclusionQueues.includes(name) &&
             name !== 'emails' &&
-            name !== 'bedrock-batch-sqs',
+            name !== 'stripe-events-sqs',
         )
         .toSorted(),
     )

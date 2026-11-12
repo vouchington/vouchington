@@ -24,7 +24,7 @@ export async function checkEmbeddingSimilarityToBannedPosts(
       /* checkEmbeddingSimilarityToBannedPosts */
       SELECT
         banned_posts.created_by_id AS source_user_id,
-        MAX(1 - (candidate_posts.bedrock_nova_multimodal_v1_embedding <=> banned_posts.bedrock_nova_multimodal_v1_embedding)) AS similarity
+        MAX(1 - (candidate_posts.gemini_embedding_2_embedding <=> banned_posts.gemini_embedding_2_embedding)) AS similarity
       -- no-mistakes-disable-next-line postgres-required-predicates: candidate posts can be attached to a community after creation, so community ID does not bound their history
       FROM posts candidate_posts
       JOIN community_bans cb
@@ -36,10 +36,10 @@ export async function checkEmbeddingSimilarityToBannedPosts(
       JOIN posts banned_posts
         ON banned_posts.created_by_id = cb.user_id
         AND banned_posts.community_id = ${communityId}
-        AND banned_posts.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+        AND banned_posts.gemini_embedding_2_embedding IS NOT NULL
         AND banned_posts.deleted_at IS NULL
       WHERE candidate_posts.created_by_id = ${candidateUserId}
-        AND candidate_posts.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+        AND candidate_posts.gemini_embedding_2_embedding IS NOT NULL
         AND candidate_posts.deleted_at IS NULL
         AND candidate_posts.community_id = ${communityId}`
     if (triggeringPostId) {

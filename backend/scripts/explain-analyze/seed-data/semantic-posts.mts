@@ -1,14 +1,14 @@
 import { beginTransaction } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
-const HNSW_INDEX = 'idx_posts__bedrock_nova_multimodal_v1_embedding'
+const HNSW_INDEX = 'idx_posts__gemini_embedding_2_embedding'
 const SEMANTIC_POST_COUNT = 40_000
 
 /**
  * Representative vector corpus: about five percent of 40k rows match the query threshold.
  *
  * Bounded UPDATE pages fill embeddings while the HNSW index is dropped, then one bulk
- * build recreates the identical index with enough maintenance memory to hold the graph.
+ * build after seed heap maintenance recreates the identical index with enough memory for the graph.
  * Per-tuple graph inserts cost about 1.2s per 1000 rows (about 50s for the corpus); the
  * serial bulk build over the same rows takes about 27s. Parallel workers are disabled because
  * their shared-memory segment exceeds the CI Postgres container's /dev/shm.
@@ -16,13 +16,13 @@ const SEMANTIC_POST_COUNT = 40_000
 export async function seedSemanticPosts(): Promise<void> {
   const ids = Array.from({ length: SEMANTIC_POST_COUNT }, (_, index) => seedUuid(index, '05'))
   await using transaction = await beginTransaction()
-  await transaction(`/* seedSemanticPosts */ DROP INDEX ${HNSW_INDEX}`)
+  await transaction(`/* seedSemanticPosts */ DROP INDEX IF EXISTS ${HNSW_INDEX}`)
   for (let offset = 0; offset < ids.length; offset += 1_000) {
     // no-mistakes-disable-next-line query-reached-per-item: 40 fixed 1k-row pages keep vector writes below one statement deadline.
     await transaction(
       `/* seedSemanticPosts */
     UPDATE posts
-    SET bedrock_nova_multimodal_v1_embedding = (
+    SET gemini_embedding_2_embedding = (
       ARRAY[CASE WHEN seed.ordinal % 20 = 0 THEN 1::real ELSE 0.15::real END,
         1::real + seed.ordinal::real / 100000]
       || ARRAY(
@@ -30,8 +30,8 @@ export async function seedSemanticPosts(): Promise<void> {
           * CASE WHEN seed.ordinal % 20 = 0 THEN 0.02 ELSE 1 END)::real
         FROM generate_series(1, 30) AS coordinate
       )
-      || array_fill(0::real, ARRAY[992])
-    )::vector(1024)
+      || array_fill(0::real, ARRAY[1504])
+    )::halfvec(1536)
     FROM (SELECT id, ordinal + $2::integer AS ordinal
       FROM unnest($1::uuid[]) WITH ORDINALITY AS page(id, ordinal)) AS seed
     WHERE posts.id = seed.id
@@ -44,17 +44,23 @@ export async function seedSemanticPosts(): Promise<void> {
   // Posts 0 and 2 are recent and belong to users 0 and 2, rather than the excluded user 1.
   await transaction(
     `/* seedSemanticPosts */ UPDATE posts
-     SET bedrock_nova_multimodal_v1_embedding =
-       (ARRAY[1::real, 1::real] || array_fill(0::real, ARRAY[1022]))::vector(1024)
+     SET gemini_embedding_2_embedding =
+       (ARRAY[1::real, 1::real] || array_fill(0::real, ARRAY[1534]))::halfvec(1536)
      WHERE id = ANY($1::uuid[])`,
     [[seedUuid(0, '05'), seedUuid(2, '05')]],
   )
-  await transaction(`/* seedSemanticPosts */ SET LOCAL maintenance_work_mem = '512MB'`)
-  await transaction(`/* seedSemanticPosts */ SET LOCAL max_parallel_maintenance_workers = 0`)
+  await transaction.commit()
+}
+
+/** Build after initial heap VACUUM so dead seed-update versions never require graph cleanup. */
+export async function buildSemanticPostIndex(): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(`/* buildSemanticPostIndex */ SET LOCAL maintenance_work_mem = '512MB'`)
+  await transaction(`/* buildSemanticPostIndex */ SET LOCAL max_parallel_maintenance_workers = 0`)
   await transaction(
-    `/* seedSemanticPosts */ CREATE INDEX ${HNSW_INDEX}
-     ON posts USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
-     WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL`,
+    `/* buildSemanticPostIndex */ CREATE INDEX ${HNSW_INDEX}
+     ON posts USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops)
+     WHERE gemini_embedding_2_embedding IS NOT NULL`,
   )
   await transaction.commit()
 }

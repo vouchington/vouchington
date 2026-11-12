@@ -4,7 +4,7 @@ import { combineBackgroundCpuManifests } from '@queues/background-cpu/enqueues/s
 import { scheduledJobManifest as accountLifecycle } from '@queues/account-lifecycle/enqueues/schedules'
 import { scheduledJobManifest as activitypub } from '@queues/activitypub/enqueues/schedules'
 import { scheduledJobManifest as aiAgents } from '@queues/ai-agents/enqueues/schedules'
-import { scheduledJobManifest as bedrockEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
+import { scheduledJobManifest as geminiEmbeddingsBatch } from '@queues/gemini-embeddings-batch/enqueues/schedules'
 import { scheduledJobManifest as bloomFilters } from '@queues/bloom-filters/enqueues/schedules'
 import { scheduledJobManifest as crawlDispatch } from '@queues/crawl-dispatch/enqueues/schedules'
 import { scheduledJobManifest as crawlReferralLinks } from '@queues/crawl-referral-links/enqueues/schedules'
@@ -61,7 +61,7 @@ const backgroundCpu = combineBackgroundCpuManifests([
   crawlReferralLinks,
   unfurlReferralLinks,
   contentAnalysis,
-  bedrockEmbeddingsBatch,
+  geminiEmbeddingsBatch,
 ])
 
 export const SCHEDULED_JOB_MANIFESTS = [

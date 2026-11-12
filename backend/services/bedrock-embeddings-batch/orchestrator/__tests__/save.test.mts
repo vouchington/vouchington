@@ -9,7 +9,7 @@ import {
   makeRandomEmbedding,
   setCrawlChunkEmbeddingContentSha256,
   setTopicEmbeddingContentSha256,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import { applyCrawlChunkBatchUpdates } from '../../entities/crawl-chunks.mts'
 import { createCrawlChunkEntityId } from '../../entities/crawl-chunk-entity-id.mts'
 import { applyBatchUpdates } from '../save.mts'

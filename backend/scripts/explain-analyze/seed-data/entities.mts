@@ -125,10 +125,10 @@ export async function seedTopics(count = 100): Promise<void> {
       const hash = contentHash(`topic-${i}`)
       values.push(id, name, slug, hash)
       const base = values.length - 3
-      rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}, 'system')`)
+      rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 3}, 'system')`)
     }
     await query(
-      `/* seedExplainData */ INSERT INTO topics (id, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
+      `/* seedExplainData */ INSERT INTO topics (id, name, slug, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256, created_via)
        VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
       values,
     )

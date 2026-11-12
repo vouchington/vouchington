@@ -20,9 +20,9 @@ export function appendSearchAndSimilarityFilters(
 }
 
 function appendEmbeddingDistance(filters: SQLStatement[], embeddingCteAlias: string): void {
-  filters.push(sql`posts.bedrock_nova_multimodal_v1_embedding IS NOT NULL`)
+  filters.push(sql`posts.gemini_embedding_2_embedding IS NOT NULL`)
   filters.push(
-    sql`(posts.bedrock_nova_multimodal_v1_embedding <=> `
+    sql`(posts.gemini_embedding_2_embedding <=> `
       .append(`${embeddingCteAlias}.embedding`)
       .append(sql`) < ${EMBEDDING_DISTANCE_THRESHOLD}`),
   )

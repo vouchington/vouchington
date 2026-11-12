@@ -23,8 +23,8 @@ ON api_keys (updated_at, (id::text)) INCLUDE (key_hash) WHERE revoked_at IS NULL
 CREATE INDEX IF NOT EXISTS idx_blocklisted_domains__updated_at_domain_source_id
 ON blocklisted_domains (updated_at, domain, (source_id::text));
 
-CREATE INDEX IF NOT EXISTS idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash
-ON bedrock_nova_multimodal_v1_embeddings (updated_at, encode(content_sha256, 'hex'));
+CREATE INDEX IF NOT EXISTS idx_gemini_embedding_2_embeddings__updated_at_hash
+ON gemini_embedding_2_embeddings (updated_at, encode(content_sha256, 'hex'));
 
 CREATE INDEX IF NOT EXISTS idx_post_slugs__updated_at_post_id_slug
 ON post_slugs (updated_at, (post_id::text), slug);
@@ -37,3 +37,6 @@ ON url_hostnames (updated_at, (id::text)) WHERE is_blocked;
 
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__updated_at_id_not_crawlable
 ON url_hostnames (updated_at, (id::text)) WHERE NOT is_crawlable AND NOT is_blocked;
+
+CREATE INDEX IF NOT EXISTS idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash
+ON bedrock_nova_multimodal_v1_embeddings (updated_at, encode(content_sha256, 'hex'));

@@ -54,12 +54,12 @@ async function selectEmbeddingSimilarityComponents(
   query.append(sql`)
       AND a.deleted_at IS NULL
       AND b.deleted_at IS NULL
-      AND a.bedrock_nova_multimodal_v1_embedding IS NOT NULL
-      AND b.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+      AND a.gemini_embedding_2_embedding IS NOT NULL
+      AND b.gemini_embedding_2_embedding IS NOT NULL
       -- self-distance = 0 filters zero-norm vectors; cosine distance is NaN for zero vectors.
-      AND (a.bedrock_nova_multimodal_v1_embedding <=> a.bedrock_nova_multimodal_v1_embedding) = 0
-      AND (b.bedrock_nova_multimodal_v1_embedding <=> b.bedrock_nova_multimodal_v1_embedding) = 0
-      AND 1 - (a.bedrock_nova_multimodal_v1_embedding <=> b.bedrock_nova_multimodal_v1_embedding)
+      AND (a.gemini_embedding_2_embedding <=> a.gemini_embedding_2_embedding) = 0
+      AND (b.gemini_embedding_2_embedding <=> b.gemini_embedding_2_embedding) = 0
+      AND 1 - (a.gemini_embedding_2_embedding <=> b.gemini_embedding_2_embedding)
         >= ${EMBEDDINGS_SIMILARITY_THRESHOLD}
   `)
   const { rows } = await read<{ left_id: string; right_id: string }>(query)

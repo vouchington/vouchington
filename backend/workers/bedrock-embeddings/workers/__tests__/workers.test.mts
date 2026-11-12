@@ -16,9 +16,9 @@ import {
   setPostEmbeddingContentSha256,
   setTopicEmbeddingContentAndInputSha256,
   updatePostEmbeddingData,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { updateTopicEmbeddingData } from '@voucha/test-helpers/entities/topics/embeddings'
+import { updateTopicEmbeddingData } from '@voucha/test-helpers/bedrock-legacy-entities-topics-embeddings'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { createPostTextEmbeddingContent } from '@services/posts/content'
 import { createRssFeedItemEmbeddingContent } from '@services/rss-feed-items/content'
@@ -44,7 +44,7 @@ describe('bedrock embeddings single worker', () => {
     ).resolves.toEqual({ success: true })
   })
 
-  it('enqueues ban-evasion detection after processing an embedded first community post', async () => {
+  it('does not admit old vectors to current-model ban-evasion detection', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id, visibility: 'public' })
@@ -77,7 +77,7 @@ describe('bedrock embeddings single worker', () => {
     ).resolves.toEqual({ success: true })
 
     await expect(getPostEmbeddingData(postId)).resolves.toMatchObject({
-      ban_evasion_post_embedding_input_sha: content_sha256,
+      ban_evasion_post_embedding_input_sha: null,
     })
   })
 

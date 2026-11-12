@@ -2,6 +2,7 @@
 export const TOPIC_MERGE_REFERENCE_GROUPS = {
   'admin_import_rows.topic_id': 'history',
   'autotagger_agent_run_topics.topic_id': 'derived',
+  'gemini_embedding_batch_entities.topic_id': 'derived',
   'bedrock_embedding_batch_entities.topic_id': 'derived',
   'card_topics.bank_topic_id': 'references',
   'card_topics.brand_topic_id': 'references',

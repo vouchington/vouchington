@@ -43,7 +43,7 @@ describe('dev-tools Vitest config', () => {
       ['backend-test-helpers', 'backend/test-helpers/sql-template-strings.test.mts'],
       [
         'backend-no-data-mocks',
-        'backend/services/bedrock-embeddings-batch/orchestrator/results.no-data.mock.test.mts',
+        'backend/services/embeddings-batch/orchestrator/results.no-data.mock.test.mts',
       ],
       [
         'backend-no-data-mocks',

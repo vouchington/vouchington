@@ -58,10 +58,10 @@ async function attachSemanticVectorsAndStories(query: TransactionQuery): Promise
        WHERE id >= $2::uuid AND id < $3::uuid
      )
      UPDATE rss_feed_items items
-     SET bedrock_nova_multimodal_v1_embedding = (
+     SET gemini_embedding_2_embedding = (
        ARRAY[1::real, semantic_items.row_index::real / 10000]
-       || array_fill(0::real, ARRAY[1022])
-     )::vector,
+       || array_fill(0::real, ARRAY[1534])
+     )::halfvec(1536),
      story_id = semantic_stories.id
      FROM semantic_items
      LEFT JOIN semantic_stories

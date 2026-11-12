@@ -53,7 +53,7 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'A checked true primary key permits one delivery-transition sweep position.',
   ],
   [
-    'bedrock_nova_multimodal_v1_embeddings',
+    'gemini_embedding_2_embeddings',
     'Recomputable text vectors are removed by capped age-based deletion batches.',
   ],
   [

@@ -1,6 +1,6 @@
 import { getImageByAny } from '@services/images/get'
 import { presignImageReadUrl } from '@services/images/s3'
-import { enqueueCreateImageEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues'
+import { enqueueCreateImageEmbeddingsBatch } from '@queues/gemini-embeddings-batch/enqueues'
 import { read, beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'

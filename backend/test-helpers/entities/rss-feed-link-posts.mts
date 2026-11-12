@@ -32,8 +32,8 @@ export async function insertTestLinkPostWithAudio(data: {
       data,
       media_type,
       enclosure_url,
-      bedrock_nova_multimodal_v1_content_sha256
-    )
+      gemini_embedding_2_content_sha256
+    , bedrock_nova_multimodal_v1_content_sha256)
     SELECT
       identity.id,
       ${urlId},
@@ -41,14 +41,14 @@ export async function insertTestLinkPostWithAudio(data: {
       'audio'::rss_feed_item_media_types,
       ${enclosureUrl},
       ${sha256}
-    FROM identity
+    , ${sha256} FROM identity
     ON CONFLICT (id) DO UPDATE SET
       url_id = EXCLUDED.url_id,
       data = EXCLUDED.data,
       media_type = EXCLUDED.media_type,
       enclosure_url = EXCLUDED.enclosure_url,
-      bedrock_nova_multimodal_v1_content_sha256 =
-        EXCLUDED.bedrock_nova_multimodal_v1_content_sha256
+      gemini_embedding_2_content_sha256 =
+        EXCLUDED.gemini_embedding_2_content_sha256
   `)
 
   const slug = `test-audio-link-post-${suffix}`
@@ -96,19 +96,19 @@ export async function insertTestLinkPostWithPodcastEpisode(data: {
     )
     INSERT INTO rss_feed_items (
       id, url_id, data, media_type, enclosure_url,
-      bedrock_nova_multimodal_v1_content_sha256
-    )
+      gemini_embedding_2_content_sha256
+    , bedrock_nova_multimodal_v1_content_sha256)
     SELECT
       identity.id, ${url.id}, '{}'::jsonb,
       'audio'::rss_feed_item_media_types, ${enclosureUrl}, ${sha256}
-    FROM identity
+    , ${sha256} FROM identity
     ON CONFLICT (id) DO UPDATE SET
       url_id = EXCLUDED.url_id,
       data = EXCLUDED.data,
       media_type = EXCLUDED.media_type,
       enclosure_url = EXCLUDED.enclosure_url,
-      bedrock_nova_multimodal_v1_content_sha256 =
-        EXCLUDED.bedrock_nova_multimodal_v1_content_sha256
+      gemini_embedding_2_content_sha256 =
+        EXCLUDED.gemini_embedding_2_content_sha256
     RETURNING id
   `)
   const itemId = rows[0].id as string

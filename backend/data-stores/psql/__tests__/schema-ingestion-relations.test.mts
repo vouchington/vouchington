@@ -12,22 +12,22 @@ async function rejectionCode(sql: string, values?: unknown[]): Promise<string | 
   return undefined
 }
 
-describe('bedrock embedding batch foreign keys', () => {
+describe('gemini embedding batch foreign keys', () => {
   it('rejects a batch whose url or crawl does not exist', async () => {
     const missing = randomUUID()
     await expect(
       rejectionCode(
         `/* schemaIngestionRelations */
-         INSERT INTO bedrock_embedding_batches (id, model_id, job_type, data, url_id)
-         VALUES ($1, 'amazon.nova-2-multimodal-embeddings-v1:0', 'topics', '{}'::jsonb, $2)`,
+         INSERT INTO gemini_embedding_batches (id, model_id, job_type, data, url_id)
+         VALUES ($1, 'gemini-embedding-2', 'topics', '{}'::jsonb, $2)`,
         [mintUUIDv7(), missing],
       ),
     ).resolves.toBe('23503')
     await expect(
       rejectionCode(
         `/* schemaIngestionRelations */
-         INSERT INTO bedrock_embedding_batches (id, model_id, job_type, data, crawl_id)
-         VALUES ($1, 'amazon.nova-2-multimodal-embeddings-v1:0', 'topics', '{}'::jsonb, $2)`,
+         INSERT INTO gemini_embedding_batches (id, model_id, job_type, data, crawl_id)
+         VALUES ($1, 'gemini-embedding-2', 'topics', '{}'::jsonb, $2)`,
         [mintUUIDv7(), missing],
       ),
     ).resolves.toBe('23503')

@@ -52,7 +52,7 @@ export async function createNearbyTopic(base: number[], scale?: number): Promise
 export async function embedAutotaggerPost(postId: string, embedding: number[]): Promise<void> {
   await addDummyEmbeddingToPost(postId, { embedding })
   await write(sql`/* markAutotaggerPostEmbeddingCurrent */
-    UPDATE posts SET bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
+    UPDATE posts SET gemini_embedding_2_input_sha256 = gemini_embedding_2_content_sha256
     WHERE id = ${postId}
   `)
 }
@@ -61,7 +61,7 @@ export async function embedAutotaggerPost(postId: string, embedding: number[]): 
 export async function embedAutotaggerFeedItem(itemId: string, embedding: number[]): Promise<void> {
   await addDummyEmbeddingToRssFeedItem(itemId, { embedding })
   await write(sql`/* markAutotaggerFeedItemEmbeddingCurrent */
-    UPDATE rss_feed_items SET bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
+    UPDATE rss_feed_items SET gemini_embedding_2_input_sha256 = gemini_embedding_2_content_sha256
     WHERE id = ${itemId}
   `)
 }
@@ -189,7 +189,7 @@ export async function reviseAutotaggerFeedItem(itemId: string): Promise<Buffer> 
   await write(sql`/* reviseAutotaggerFeedItem */
     UPDATE rss_feed_items
     SET data = data || ${JSON.stringify({ title: itemData.title })}::jsonb,
-        bedrock_nova_multimodal_v1_content_sha256 = ${inputSha256}
+        gemini_embedding_2_content_sha256 = ${inputSha256}
     WHERE id = ${itemId}
   `)
   return inputSha256

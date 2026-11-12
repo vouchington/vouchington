@@ -24,7 +24,7 @@ describe('shared queue DynamicConfig admin fields', () => {
     ).toBe(1)
     expect(getBackgroundCpuOrderingLimits('ai-spend-cap').maxValue).toBe(1)
     for (const type of ['topics', 'posts', 'rss_feed_items', 'crawl_chunks', 'images']) {
-      expect(getBackgroundCpuOrderingLimits(`bedrock-embeddings:creation:${type}`)).toMatchObject({
+      expect(getBackgroundCpuOrderingLimits(`gemini-embeddings:creation:${type}`)).toMatchObject({
         defaultValue: 1,
         maxValue: 1,
       })

@@ -5,7 +5,7 @@ import { Readable } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
-import { insertTestEmbeddingsBatch } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+import { insertTestEmbeddingsBatch } from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
 import { downloadBatchResults } from './results.mts'
 
 vi.mock<typeof import('@modules/aws/s3-bedrock-batch')>(

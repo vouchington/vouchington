@@ -1,0 +1,184 @@
+/**
+ * Vertex embeddings batches entity helpers
+ */
+
+import { read, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
+import sql from 'sql-template-strings'
+import {
+  deriveVertexBatchStatus,
+  lifecycleColumnForVertexState,
+  type VertexBatchStatus,
+} from './_vertex-batch-status-support.mts'
+
+/**
+ * Insert a test embeddings batch with flexible parameters
+ */
+export async function insertTestEmbeddingsBatch(
+  data: {
+    id: string
+    model?: string
+    jobType?: string
+    jobName?: string | null
+    vertexState?: string
+    batchData?: unknown
+    urlId?: string | null
+    crawlId?: string | null
+    records?: number
+    completedAt?: Date | null
+    submittedAt?: Date | null
+    inProgressAt?: Date | null
+  },
+  options: QueryOptions = {},
+): Promise<void> {
+  const model = data.model || 'gemini-embedding-2'
+  const jobType = data.jobType || 'topics'
+  const vertexState = data.vertexState || 'JOB_STATE_PENDING'
+  const batchData: Record<string, unknown> = {
+    state: vertexState,
+    ...((data.batchData ?? {}) as Record<string, unknown>),
+  }
+  const urlId = data.urlId === undefined ? null : data.urlId
+  const crawlId = data.crawlId === undefined ? null : data.crawlId
+  const records = data.records || 0
+
+  const column = lifecycleColumnForVertexState(vertexState)
+  const now = new Date()
+
+  // Reflect real lifecycle progression: later states imply earlier states were set first.
+  const hasPastSubmitted =
+    column === 'submitted_at' ||
+    column === 'in_progress_at' ||
+    column === 'completed_at' ||
+    column === 'failed_at' ||
+    column === 'cancelled_at'
+  const hasPastInProgress = column === 'in_progress_at' || column === 'completed_at'
+
+  const submitted_at =
+    data.submittedAt !== undefined ? data.submittedAt : hasPastSubmitted ? now : null
+  const in_progress_at =
+    data.inProgressAt !== undefined ? data.inProgressAt : hasPastInProgress ? now : null
+  const completed_at =
+    data.completedAt !== undefined ? data.completedAt : column === 'completed_at' ? now : null
+  const failed_at = column === 'failed_at' ? now : null
+  const cancelled_at = column === 'cancelled_at' ? now : null
+
+  const job_name = data.jobName !== undefined ? data.jobName : null
+
+  await write(
+    sql`/* insertTestEmbeddingsBatch */
+    INSERT INTO gemini_embedding_batches
+      (id, model_id, job_type, job_name, data, url_id, crawl_id, records, submitted_at, in_progress_at, completed_at, failed_at, cancelled_at)
+    VALUES (
+      ${data.id},
+      ${model},
+      ${jobType},
+      ${job_name},
+      ${JSON.stringify(batchData)},
+      ${urlId},
+      ${crawlId},
+      ${records},
+      ${submitted_at},
+      ${in_progress_at},
+      ${completed_at},
+      ${failed_at},
+      ${cancelled_at}
+    )
+  `,
+    options,
+  )
+}
+
+export async function cleanupTestEmbeddingsBatches(ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  await write(
+    `/* cleanupTestEmbeddingsBatches */
+    DELETE FROM gemini_embedding_batches
+    WHERE id = ANY($1)`,
+    [ids],
+  )
+}
+
+export async function getTestBatchEntities(
+  batchId: string,
+): Promise<Array<{ entity_id: string; entity_type: string }>> {
+  const { rows } = await read(
+    sql`/* getTestBatchEntities */
+    SELECT
+      entity_type::text AS entity_type,
+      CASE entity_type
+        WHEN 'topics' THEN topic_id::text
+        WHEN 'posts' THEN post_id::text
+        WHEN 'rss_feed_items' THEN rss_feed_item_id::text
+        WHEN 'crawl_chunks' THEN crawl_id::text || '-' || crawl_order_index::text
+        WHEN 'images' THEN image_id::text
+      END AS entity_id
+    FROM gemini_embedding_batch_entities
+    WHERE batch_id = ${batchId}
+    ORDER BY entity_id
+  `,
+  )
+  return rows.map(row => ({
+    entity_id: String(row.entity_id),
+    entity_type: String(row.entity_type),
+  }))
+}
+
+export async function getTestBatchSourceColumns(batchId: string): Promise<{
+  url_id: string | null
+  crawl_id: string | null
+  metadata: unknown
+} | null> {
+  const { rows } = await read<{
+    url_id: string | null
+    crawl_id: string | null
+    metadata: unknown
+  }>(
+    sql`/* getTestBatchSourceColumns */
+    SELECT url_id, crawl_id, data -> 'metadata' AS metadata
+    FROM gemini_embedding_batches
+    WHERE id = ${batchId}
+  `,
+  )
+  return rows[0] ?? null
+}
+
+export async function getTestBatchSummary(
+  batchId: string,
+): Promise<{ job_type: string; status: VertexBatchStatus } | null> {
+  const { rows } = await read(
+    sql`/* getTestBatchSummary */
+    SELECT
+      job_type::text AS job_type,
+      submitted_at,
+      in_progress_at,
+      completed_at,
+      failed_at,
+      cancelled_at
+    FROM gemini_embedding_batches
+    WHERE id = ${batchId}
+  `,
+  )
+  const row = rows[0]
+  if (!row) return null
+  const status = deriveVertexBatchStatus({
+    submitted_at: row.submitted_at as Date | null,
+    in_progress_at: row.in_progress_at as Date | null,
+    completed_at: row.completed_at as Date | null,
+    failed_at: row.failed_at as Date | null,
+    cancelled_at: row.cancelled_at as Date | null,
+  })
+  return { job_type: String(row.job_type), status }
+}
+
+export { getTestBatchTerminalTimestamps } from './gemini-embeddings-batch-timestamps.mts'
+
+export const getTestBatchIdByJobName = async (jobName: string): Promise<string | null> => {
+  const { rows } = await read<{ id: string }>(
+    `/* getTestBatchIdByJobName */
+    SELECT id FROM gemini_embedding_batches WHERE job_name = $1 LIMIT 1
+  `,
+    [jobName],
+  )
+  return rows.length > 0 ? rows[0].id : null
+}

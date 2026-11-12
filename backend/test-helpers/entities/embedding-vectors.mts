@@ -1,9 +1,9 @@
 /**
- * Generates a random unit vector (default 1024-dim).
+ * Generates a random unit vector (default 1536-dim).
  * Two independently generated random unit vectors have essentially 0 cosine similarity,
  * making them safe to use across test runs (the DB is never cleaned between runs).
  */
-export function makeRandomEmbedding(length = 1024): number[] {
+export function makeRandomEmbedding(length = 1536): number[] {
   return normalize(Array.from({ length }, () => Math.random() - 0.5))
 }
 

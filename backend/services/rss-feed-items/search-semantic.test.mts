@@ -14,8 +14,8 @@ import { upsertRssFeedItems } from './upsert.mts'
 
 // Query and fixture vectors stay distinct so HNSW traversal remains realistic.
 const MOCK_EMBEDDING = makeRandomEmbedding()
-const TIE_QUERY_EMBEDDING = [1, ...Array<number>(1023).fill(0)]
-const ZERO_EMBEDDING = Array<number>(1024).fill(0)
+const TIE_QUERY_EMBEDDING = [1, ...Array<number>(1535).fill(0)]
+const ZERO_EMBEDDING = Array<number>(1536).fill(0)
 const getCachedSearchEmbeddingMock = vi.fn<VitestLooseMock>()
 const dependencies = { getCachedSearchEmbedding: getCachedSearchEmbeddingMock }
 
@@ -256,7 +256,7 @@ describe('searchRssFeedItemsBySemantic', () => {
 })
 
 function makeEquidistantEmbedding(axis: number): number[] {
-  const vector = Array<number>(1024).fill(0)
+  const vector = Array<number>(1536).fill(0)
   vector[0] = Math.sqrt(0.99)
   vector[axis] = Math.sqrt(0.01)
   return vector
@@ -264,7 +264,7 @@ function makeEquidistantEmbedding(axis: number): number[] {
 
 function makeRankedEmbedding(rank: number): number[] {
   const delta = 0.01 * (rank + 1)
-  const vector = Array<number>(1024).fill(0)
+  const vector = Array<number>(1536).fill(0)
   vector[0] = Math.sqrt(1 - delta ** 2)
   vector[1] = delta
   return vector

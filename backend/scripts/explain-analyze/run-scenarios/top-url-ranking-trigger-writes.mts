@@ -25,9 +25,9 @@ export async function captureTopUrlTriggerWrites(): Promise<void> {
       await using query = await beginTransaction()
       const inserted = await query<{ id: string }>(
         `/* topUrlRanking.insertLater */ INSERT INTO rss_feed_items
-       (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
+       (id, url_id, data, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
        VALUES ($1, $2, jsonb_build_object('title', 'Later top URL item',
-         'isoDate', '2026-02-01T00:00:00Z'), decode(repeat('c3', 32), 'hex'))
+         'isoDate', '2026-02-01T00:00:00Z'), decode(repeat('c3', 32), 'hex'), decode(repeat('c3', 32), 'hex'))
        RETURNING id`,
         [TOP_URL_INSERT_ITEM, TOP_URL_HOT],
       )

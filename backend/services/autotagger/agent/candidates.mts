@@ -81,7 +81,7 @@ export async function captureAutotaggerAgentCandidateTopicIds(
   statement.append(sql` existing
       WHERE existing.subject_id = subject.id AND existing.object_id = topic.id
     )
-    ORDER BY (topic.bedrock_nova_multimodal_v1_embedding <=> subject.bedrock_nova_multimodal_v1_embedding)
+    ORDER BY (topic.gemini_embedding_2_embedding <=> subject.gemini_embedding_2_embedding)
       NULLS LAST, topic.id
     LIMIT ${AUTOTAGGER_AGENT_MAX_CANDIDATES}
   `)

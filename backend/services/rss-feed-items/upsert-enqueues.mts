@@ -1,5 +1,5 @@
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
-import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/bedrock-embeddings/enqueues'
+import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/gemini-embeddings/enqueues'
 import { enqueueBulkAutotaggerRssFeedItems } from '@queues/ai-agents/enqueues/autotagger'
 import { enqueueBulkLanguageDetection } from '@queues/content-analysis/enqueues'
 import { normalizeKey } from '@ts-shared/utils/strings'

@@ -18,13 +18,13 @@ export async function addDummyEmbeddingToPost(
   },
 ): Promise<void> {
   const vector = options?.embedding ?? makeRandomEmbedding()
-  // Create 1024-dimension dummy embedding
+  // Create 1536-dimension dummy embedding
   const dummyEmbedding = `[${vector.join(',')}]`
 
   const query = sql`/* addDummyEmbeddingToPost */
     UPDATE posts
-    SET bedrock_nova_multimodal_v1_embedding = ${dummyEmbedding}::vector,
-        bedrock_nova_multimodal_v1_embedding_created_at = ${options?.rankFirst ? '9999-01-01T00:00:00Z' : new Date().toISOString()}
+    SET gemini_embedding_2_embedding = ${dummyEmbedding}::halfvec(1536),
+        gemini_embedding_2_embedding_created_at = ${options?.rankFirst ? '9999-01-01T00:00:00Z' : new Date().toISOString()}
   `
 
   if (options?.flagged) {
@@ -50,7 +50,7 @@ export async function setPostEmbeddingContentSha256KeepingInput(
   await write(
     allowUnannotatedQuery(sql`
     UPDATE posts
-    SET bedrock_nova_multimodal_v1_content_sha256 = ${contentSha256}
+    SET gemini_embedding_2_content_sha256 = ${contentSha256}
     WHERE id = ${postId}
   `),
   )

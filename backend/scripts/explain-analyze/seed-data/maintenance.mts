@@ -72,7 +72,7 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   },
   { table: 'x_accounts', column: 'x_user_id', pattern: 'explain-ingestion-x-%' },
   { table: 'github_accounts', column: 'github_user_id', pattern: 'explain-ingestion-github-%' },
-  { table: 'bedrock_embedding_batches', column: 'id' },
+  { table: 'gemini_embedding_batches', column: 'id' },
   { table: 'facebook_friends', column: 'facebook_friend_id', pattern: 'seed-fb-user-%' },
 ]
 
@@ -91,7 +91,7 @@ export const ANALYZE_TARGETS = [
     'user_roles',
     'user_role_types',
     'blocklisted_domains',
-    'bedrock_nova_multimodal_v1_embeddings',
+    'gemini_embedding_2_embeddings',
     'domain_blocklist_sources',
     'user_agent_strings',
     'post_topic_alias_sources',
@@ -141,9 +141,10 @@ export async function printRowCounts(): Promise<void> {
 }
 export async function runAnalyze(): Promise<void> {
   console.log('\nRunning VACUUM (ANALYZE) on seeded tables...')
-  // Settle first-capture statistics and visibility before autovacuum can choose the plan.
-  // PostgreSQL includes default children when vacuuming partitioned parents.
-  for (const table of ANALYZE_TARGETS)
+  // Each fixed target retains the ordinary statement budget and visibility maintenance.
+  // The semantic-post seed builds its HNSW graph after this initial heap cleanup.
+  for (const table of ANALYZE_TARGETS) {
     await write(`/* seedExplainData */ VACUUM (ANALYZE) "${table}"`)
+  }
   await printPlanDiagnostics(ANALYZE_TARGETS)
 }

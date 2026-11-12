@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '@services/topics/get'
-import * as bedrockRequest from '../../../bedrock-embeddings/single/request.mts'
+import * as geminiRequest from '../../../embeddings/single/request.mts'
 
 let queryEmbedding: number[]
 
@@ -39,7 +39,7 @@ async function seedTopicEmbeddings(topicIds: string[], inputSeed: string): Promi
 describe('toolsSearchTopicsSemantic', () => {
   beforeEach(() => {
     queryEmbedding = makeRandomEmbedding()
-    vi.spyOn(bedrockRequest, 'createBedrockEmbedding').mockResolvedValue({
+    vi.spyOn(geminiRequest, 'createEmbedding').mockResolvedValue({
       embedding: queryEmbedding,
       tokens: 5,
     })

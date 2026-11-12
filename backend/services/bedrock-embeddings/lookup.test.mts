@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import { cacheValkeyClient } from '@data-stores/valkey'
-import { insertTestEmbeddings } from '@voucha/test-helpers'
+import { insertTestEmbeddings } from '@voucha/test-helpers/bedrock-legacy'
 import { lookupExistingEmbeddings } from './lookup.mts'
 import { EMBEDDING_BLOOM_READY_KEY, embeddingBloomFilter } from './bloom-filter/bloom-filter.mts'
 import { warmUpEmbeddingBloomFilter } from './bloom-filter/warmup.mts'

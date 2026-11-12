@@ -185,10 +185,10 @@ describe('background-cpu production routing through real GlideMQ', () => {
     expect(stored?.attemptsMade).toBeLessThan(3)
   })
 
-  it('rejects a malformed Bedrock reconciliation before reading entities', async ({ signal }) => {
-    const { queue, events } = await startWorker(signal, ['bedrock-embeddings'])
+  it('rejects a malformed Gemini reconciliation before reading entities', async ({ signal }) => {
+    const { queue, events } = await startWorker(signal, ['gemini-embeddings'])
     const failed = waitForQueueDomainTestResult(once(events, 'failed', { signal }), signal)
-    const definition = requireBackgroundCpuJob('bedrock-embeddings.reconcile_existing')
+    const definition = requireBackgroundCpuJob('gemini-embeddings.reconcile_existing')
     const job = await trackMutation(signal, () =>
       queue.add(definition.name, { entityType: 'unknown' }, definition.options),
     )
@@ -205,11 +205,11 @@ describe('background-cpu production routing through real GlideMQ', () => {
   }) => {
     const { queue, events } = await startWorker(signal)
     const delayed = waitForQueueDomainTestResult(once(events, 'delay-changed', { signal }), signal)
-    const definition = requireBackgroundCpuJob('bedrock-embeddings.post')
+    const definition = requireBackgroundCpuJob('gemini-embeddings.post')
     const job = await trackMutation(signal, () =>
       queue.add(definition.name, { id: randomUUID() }, definition.options),
     )
-    if (!job) throw new Error('Expected Bedrock CPU job')
+    if (!job) throw new Error('Expected Gemini CPU job')
 
     const [event] = await delayed
     expect(event).toMatchObject({ jobId: job.id })

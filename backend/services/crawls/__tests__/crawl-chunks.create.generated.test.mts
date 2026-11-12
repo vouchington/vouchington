@@ -95,12 +95,12 @@ describe('create.generated', () => {
     // Verify chunks were created in database
     const chunks = (await getAllCrawlChunksForUrl(url!.id)) as Array<{
       markdown: string
-      bedrock_nova_multimodal_v1_content_sha256: Buffer
+      gemini_embedding_2_content_sha256: Buffer
     }>
 
     expect(chunks.length).toBe(result.chunks_created)
     expect(chunks[0].markdown).toBeTruthy()
-    expect(chunks[0].bedrock_nova_multimodal_v1_content_sha256).toBeTruthy()
+    expect(chunks[0].gemini_embedding_2_content_sha256).toBeTruthy()
   })
 
   it('createCrawlChunks sets has_pending_embeddings when embeddings are not cached', async () => {
@@ -130,13 +130,13 @@ describe('create.generated', () => {
 
     // Verify chunks have null embeddings
     const chunks = (await getCrawlChunksWithEmbeddingStatus(url!.id, crawl.id)) as Array<{
-      bedrock_nova_multimodal_v1_embedding: unknown
-      bedrock_nova_multimodal_v1_embedding_created_at: Date | null
+      gemini_embedding_2_embedding: unknown
+      gemini_embedding_2_embedding_created_at: Date | null
     }>
 
     expect(chunks.length).toBeGreaterThan(0)
-    expect(chunks[0].bedrock_nova_multimodal_v1_embedding).toBeNull()
-    expect(chunks[0].bedrock_nova_multimodal_v1_embedding_created_at).toBeNull()
+    expect(chunks[0].gemini_embedding_2_embedding).toBeNull()
+    expect(chunks[0].gemini_embedding_2_embedding_created_at).toBeNull()
   })
 
   it('createCrawlChunks handles markdown with title in meta_tags', async () => {

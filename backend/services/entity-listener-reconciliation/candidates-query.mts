@@ -137,7 +137,7 @@ export function streamEntityReconciliationRows(
         (SELECT * FROM (
         SELECT 'embedding', encode(content_sha256, 'hex'), floor(extract(epoch FROM updated_at) * 1000000)::text,
           NULL::text, NULL::jsonb, updated_at
-        FROM bedrock_nova_multimodal_v1_embeddings
+        FROM gemini_embedding_2_embeddings
         WHERE updated_at >= ${window.start} AND updated_at <= ${window.end}
         ) repair_source(entity_type, entity_id, changed_at_epoch_us, change_id, details, changed_at)
         WHERE (changed_at, entity_id, entity_type, change_id IS NULL, COALESCE(change_id, '')) > (COALESCE(to_timestamp(floor(${after?.changedAtEpochUs ?? null}::numeric / 1000000)::double precision) + (${after?.changedAtEpochUs ?? null}::numeric % 1000000)::double precision * INTERVAL '1 microsecond', '-infinity'::timestamptz), ${after?.entityId ?? ''}::text, ${after?.entityType ?? ''}::text, ${after?.changeId === undefined}, ${after?.changeId ?? ''}::text)

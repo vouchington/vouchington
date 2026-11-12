@@ -36,7 +36,7 @@ flowchart LR
 - Moderation and trust: `moderation-*`, `review-disputes`, `user-warnings`, `copyright-notices`,
   `spam-detection`, `vote-weight`, `vote-integrity`, `elections-votes`, `report-integrity`.
 - AI and classification: `classifier-runs`, `classifiers`, `post-classifier`, `autotagger`,
-  `ai-usage`, `openai-*`, `bedrock-embeddings*`.
+  `ai-usage`, `openai-*`, `gemini-embeddings*`.
 - Crawling and referral links: `crawl*`, `crawler-*`, `urls*`, `rss-feed*`, `referral-*`,
   `*-referral-program-links`.
 - Federation: `activitypub-delivery`, `ap-*`, `remote-actors`, `bluesky-*`, `fediverse-*`. See
@@ -64,7 +64,7 @@ moderator's old conversation participation does not retain access to modmail not
 
 Ingestion services page from immutable source IDs before applying changing eligibility. This keeps
 scheduled reads bounded when most feeds are not due, social accounts were recently synced, or
-Bedrock batches are still fresh. Workers retain the raw position through queue continuations so
+embedding batches are still fresh. Workers retain the raw position through queue continuations so
 ineligible rows cannot hide later work.
 
 Crawler refresh selection uses current facts in `url_crawl_states` rather than aggregating retained

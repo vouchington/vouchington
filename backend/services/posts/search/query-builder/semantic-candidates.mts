@@ -44,7 +44,7 @@ export function buildSemanticPostCandidates(
     AND posts.id = semantic_vector_post.id
       LIMIT 1
     ) semantic_eligible_post
-    WHERE semantic_vector_post.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+    WHERE semantic_vector_post.gemini_embedding_2_embedding IS NOT NULL
   `)
   if (options.user_id) {
     query
@@ -59,7 +59,7 @@ export function buildSemanticPostCandidates(
   // A generic plan needs the actual bounded window size to price the ANN index.
   query
     .append(sql`
-    ORDER BY semantic_vector_post.bedrock_nova_multimodal_v1_embedding <=>
+    ORDER BY semantic_vector_post.gemini_embedding_2_embedding <=>
       semantic_search_embedding.embedding
     LIMIT `)
     .append(String(candidateLimit)).append(sql`

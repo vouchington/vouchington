@@ -57,15 +57,24 @@
         // Required package edges; classifier runs are consumed by the AI worker, not routes.
         "@services/classifier-runs",
         "@services/post-classifier",
+        // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+        "@queues/bedrock-embeddings-batch",
+        "@services/bedrock-embeddings-batch",
       ],
     },
     "backend/entrypoints/worker-cpu": {
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@queues/bedrock-embeddings-batch"],
       "entry": ["**/*.mts"],
     },
     "backend/entrypoints/worker-io": {
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@workers/bedrock-batch-sqs"],
       "entry": ["**/*.mts"],
     },
     "backend/worker-runtime": {
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@services/bedrock-embeddings"],
       "entry": ["**/*.mts"],
     },
     "backend/entrypoints/api": {
@@ -96,6 +105,8 @@
       "entry": ["**/*.mts"],
     },
     "backend/scripts": {
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@services/bedrock-embeddings-batch"],
       "entry": [
         "generate-mcp-catalog.mts",
         "explain-analyze/seed.mts",
@@ -196,6 +207,80 @@
       // Benchmark is a development CLI; keep manifest entries for production callers.
       "entry": ["benchmark.mts"],
     },
+    // #5635: Bedrock artifacts stay in the lower layer only; the top PR deletes these
+    // exact file exemptions together with their workspaces. Current callers use Vertex.
+    "backend/queues/bedrock-embeddings-batch": {
+      "entry": ["**/*.mts"],
+      "ignoreIssues": {
+        "enqueues.mts": ["exports"],
+        "enqueues/reconciliation.mts": ["exports"],
+        "enqueues/schedules.mts": ["exports"],
+      },
+    },
+    "backend/queues/bedrock-embeddings": {
+      "entry": ["**/*.mts"],
+      "ignoreIssues": {
+        "enqueues.mts": ["exports"],
+        "types.mts": ["types"],
+      },
+    },
+    "backend/services/bedrock-embeddings-batch": {
+      "entry": ["**/*.mts"],
+      "ignoreIssues": { "image-similarity.mts": ["exports"] },
+    },
+    "backend/services/bedrock-embeddings": {
+      "entry": ["**/*.mts"],
+      "ignoreIssues": {
+        "bloom-filter/population.mts": ["exports"],
+        "bloom-filter/warmup.mts": ["exports"],
+        "provider-cooldown.mts": ["exports"],
+        "search/get-cached.mts": ["exports"],
+      },
+    },
+    "backend/workers/bedrock-batch-sqs": {
+      "entry": ["**/*.mts"],
+      "ignoreIssues": { "workers.mts": ["exports"] },
+    },
+    "backend/services/crawl-chunks": {
+      "entry": ["**/*.mts"],
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@services/bedrock-embeddings"],
+    },
+    "backend/services/entity-listener-reconciliation": {
+      "entry": ["**/*.mts"],
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@services/bedrock-embeddings"],
+    },
+    "backend/services/openai-moderation": {
+      "entry": ["**/*.mts"],
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@queues/bedrock-embeddings-batch"],
+    },
+    "backend/services/rss-feed-items": {
+      "entry": ["**/*.mts"],
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@queues/bedrock-embeddings", "@services/bedrock-embeddings"],
+    },
+    "backend/services/topics": {
+      "entry": ["**/*.mts"],
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@services/bedrock-embeddings"],
+    },
+    "backend/workers/background-cpu": {
+      "entry": ["**/*.mts"],
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@aws-sdk/client-bedrock", "@queues/bedrock-embeddings-batch"],
+    },
+    "backend/workers/bloom-filters": {
+      "entry": ["**/*.mts"],
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@services/bedrock-embeddings"],
+    },
+    "backend/workers/entity-listeners": {
+      "entry": ["**/*.mts"],
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@queues/bedrock-embeddings"],
+    },
     "backend/services/*": {
       "entry": ["**/*.mts"],
     },
@@ -232,6 +317,8 @@
       "ignoreExportsUsedInFile": false,
     },
     "backend/services/posts": {
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@queues/bedrock-embeddings", "@services/bedrock-embeddings"],
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": false,
     },
@@ -280,6 +367,8 @@
       "ignoreExportsUsedInFile": false,
     },
     "backend/services/queue-monitoring": {
+      // #5635 retains these inactive provider edges in the lower layer; the removal layer deletes them.
+      "ignoreDependencies": ["@queues/bedrock-embeddings-batch"],
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": false,
     },

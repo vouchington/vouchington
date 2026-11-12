@@ -164,10 +164,10 @@ export async function setImageCompleteWithData(
 
 export async function getImageEmbeddingState(
   imageId: string,
-): Promise<{ bedrock_nova_multimodal_v1_embedding_created_at: Date | null } | null> {
-  const { rows } = await read<{ bedrock_nova_multimodal_v1_embedding_created_at: Date | null }>(
+): Promise<{ gemini_embedding_2_embedding_created_at: Date | null } | null> {
+  const { rows } = await read<{ gemini_embedding_2_embedding_created_at: Date | null }>(
     allowUnannotatedQuery(
-      `SELECT bedrock_nova_multimodal_v1_embedding_created_at FROM images WHERE id = $1`,
+      `SELECT gemini_embedding_2_embedding_created_at FROM images WHERE id = $1`,
     ),
     [imageId],
   )

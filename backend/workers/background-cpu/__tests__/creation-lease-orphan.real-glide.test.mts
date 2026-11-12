@@ -1,16 +1,16 @@
 import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { embeddingCreationLeaseValkeyClient } from '@data-stores/valkey/clients'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
-import { creationJobOptions } from '@queues/bedrock-embeddings-batch/enqueues'
+import { creationJobOptions } from '@queues/gemini-embeddings-batch/enqueues'
 import {
-  BEDROCK_BATCH_MAX_VALUES,
-  bedrockEmbeddingsBatchConfig,
-} from '@services/bedrock-embeddings/batch/config'
+  GEMINI_BATCH_MAX_VALUES,
+  geminiEmbeddingsBatchConfig,
+} from '@services/embeddings/batch/config'
 import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
@@ -18,13 +18,16 @@ import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-
 import { createBackgroundCpuWorker } from '../workers/create-worker.mts'
 import { BACKGROUND_CPU_HANDLERS } from '../processors/handlers.mts'
 
-const LEASE_KEY = 'bedrock-embeddings:creation:lease'
+const LEASE_KEY = 'gemini-embeddings:creation:lease'
 const emptyImageCursor = { sweepStartedAt: '1970-01-01T00:00:00.000Z' }
-const imageDefinition = requireBackgroundCpuJob('bedrock-embeddings.create_images')
+const imageDefinition = requireBackgroundCpuJob('gemini-embeddings.create_images')
 
 describe('crashed embedding creation lease holder', () => {
+  let fixture: Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
+  beforeEach(async () => {
+    fixture = await acquireEmbeddingQuotaFixture()
+  })
   it('retries the same creation job after a crashed lease holder expires', async () => {
-    const fixture = await acquireEmbeddingQuotaFixture()
     const connection = {
       connection: workerQueueConnection,
       prefix: `${workerQueuePrefix}-creation-orphan-${randomUUID()}`,
@@ -35,11 +38,11 @@ describe('crashed embedding creation lease holder', () => {
       connection,
       BACKGROUND_CPU_QUEUE_NAME,
     )
-    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+    const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, {
       min_records_per_job: 1,
-      max_requests_per_hour: BEDROCK_BATCH_MAX_VALUES.max_requests_per_hour,
-      max_inflight_jobs: BEDROCK_BATCH_MAX_VALUES.max_inflight_jobs,
-      max_job_size_gb: BEDROCK_BATCH_MAX_VALUES.max_job_size_gb,
+      max_requests_per_hour: GEMINI_BATCH_MAX_VALUES.max_requests_per_hour,
+      max_inflight_jobs: GEMINI_BATCH_MAX_VALUES.max_inflight_jobs,
+      max_job_size_gb: GEMINI_BATCH_MAX_VALUES.max_job_size_gb,
     })
     fixture.beforeRelease(async () => restore())
     let orphanHeld = false
@@ -74,10 +77,10 @@ describe('crashed embedding creation lease holder', () => {
       const worker = await owned.createWorker(() =>
         createBackgroundCpuWorker({
           handlers: BACKGROUND_CPU_HANDLERS,
-          domains: ['bedrock-embeddings'],
+          domains: ['gemini-embeddings'],
           prefix: connection.prefix,
           concurrency: 1,
-          blockTimeout: 1_000,
+          blockTimeout: 100,
           promotionInterval: 50,
         }),
       )

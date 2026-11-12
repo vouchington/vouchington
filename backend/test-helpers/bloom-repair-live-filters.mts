@@ -1,6 +1,6 @@
 import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { entityCacheBloomFilters } from '../services/entity-cache/bloom-filter-instances.mts'
-import { embeddingBloomFilter } from '../services/bedrock-embeddings/bloom-filter/bloom-filter.mts'
+import { embeddingBloomFilter } from '../services/embeddings/bloom-filter/bloom-filter.mts'
 
 /** Reserve absent live filters without rebuilding them or changing completeness markers. */
 export async function ensureTestReconciliationBloomFilters() {

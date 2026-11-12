@@ -77,7 +77,7 @@ export const backgroundWorkEntries4 = [
       pause_recheck_ms: 'Milliseconds a paused CPU job waits before re-checking its domain.',
       pause_cache_ms: 'Milliseconds a CPU worker trusts a domain pause state.',
       domain_stats_scan_cap: 'Jobs scanned per state for one CPU domain-stats request.',
-      single_backlog_scan_cap: 'Jobs scanned per state for Bedrock single admission checks.',
+      single_backlog_scan_cap: 'Jobs scanned per state for Vertex single admission checks.',
     },
   }),
   defineBoundedWorkNamespace({

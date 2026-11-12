@@ -24,6 +24,7 @@ export const PRIORITY_DISPATCH = 100
 export const BACKGROUND_CPU_DOMAINS = [
   'crawl',
   'bedrock-embeddings',
+  'gemini-embeddings',
   'ai-spend-cap',
   'content-analysis',
 ] as const
@@ -99,7 +100,7 @@ export function getDomainStatsScanCap(): number {
   })
 }
 
-/** Maximum shared-queue jobs inspected per state for a Bedrock single admission decision. */
+/** Maximum shared-queue jobs inspected per state for a Gemini single admission decision. */
 export function getSingleBacklogScanCap(): number {
   return getBoundedPositiveIntegerField(backgroundCpuQueueConfig, 'single_backlog_scan_cap', {
     defaultValue: 1_000,

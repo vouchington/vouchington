@@ -16,7 +16,7 @@ System design, pipelines, and application-layer patterns for Voucha.
 | [HTML & Markdown Rendering Passes](./html-markdown-rendering-passes.md)                 | Multi-pass rendering pipeline for safe HTML and Markdown output                                   |
 | [AI Platform](./ai-platform.md)                                                         | Shared classifier identity, execution, failure rules, provider boundaries and measurement         |
 | [AI Agents](./ai-agents.md)                                                             | Content moderation, semantic embeddings and focused agent pipeline references                     |
-| [Bedrock Embeddings](./bedrock-embeddings.md)                                           | Dual-pipeline embeddings architecture: real-time single queue and Bedrock batch API               |
+| [Gemini Embeddings](./gemini-embeddings.md)                                             | Vertex AI online embeddings and asynchronous batch processing                                     |
 | [Event Ingress Routing](./event-ingress.md)                                             | Canonical routing rule for inbound AWS events and webhooks: in-VPC Lambda vs. public endpoint     |
 | [Crawling](./crawling.md)                                                               | HTML/RSS crawl pipeline, rate limiting, scheduling, blacklist, robots.txt                         |
 | [Search](./search.md)                                                                   | Hybrid full-text + vector search, filters, sort modes, pagination                                 |
@@ -115,3 +115,5 @@ When architecture decisions change, update the relevant doc here and cross-link 
 - [TypeScript Standards reference](reference-typescript-standards-function-naming-prefixes.md)
 - [TypeScript Standards reference](reference-typescript-standards-third-party-type-declarations.md)
 - [TypeScript Standards reference](reference-typescript-standards-type-ownership-model.md)
+
+- [Bedrock embeddings](bedrock-embeddings.md)

@@ -30,7 +30,7 @@ export function makeStoryClusteringVectors(): {
   far: number[]
   at: (similarity: number) => number[]
 } {
-  const random = () => Array.from({ length: 1024 }, () => Math.random() - 0.5)
+  const random = () => Array.from({ length: 1536 }, () => Math.random() - 0.5)
   const normalize = (vector: number[]) => {
     const norm = Math.sqrt(vector.reduce((sum, x) => sum + x * x, 0))
     return vector.map(x => x / norm)

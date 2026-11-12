@@ -80,9 +80,9 @@ export async function seedTopUrlRanking(): Promise<void> {
 async function seedTopUrlFeed(): Promise<void> {
   await write(
     `/* seedTopUrlRanking.topic */ INSERT INTO topics
-    (id, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
+    (id, name, slug, created_via, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
     VALUES ($1, 'Top URL EXPLAIN feed', 'top-url-explain-feed', 'system',
-      decode(repeat('d4', 32), 'hex')) ON CONFLICT (id) DO NOTHING`,
+      decode(repeat('d4', 32), 'hex'), decode(repeat('d4', 32), 'hex')) ON CONFLICT (id) DO NOTHING`,
     [TOP_URL_TOPIC],
   )
   await write(
@@ -121,12 +121,12 @@ async function seedTopUrlItems(): Promise<void> {
   )
   await write(
     `/* seedTopUrlRanking.currentItems */ INSERT INTO rss_feed_items
-    (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
+    (id, url_id, data, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
     SELECT ($1 || lpad(to_hex(i), 12, '0'))::uuid,
       ($2 || lpad(to_hex(i), 12, '0'))::uuid,
       jsonb_build_object('title', 'Top URL ' || i,
         'isoDate', '2026-01-01T00:00:00Z'), decode(repeat('a1', 32), 'hex')
-    FROM generate_series(0, $3 - 1) AS i ON CONFLICT (id) DO NOTHING`,
+    , decode(repeat('a1', 32), 'hex') FROM generate_series(0, $3 - 1) AS i ON CONFLICT (id) DO NOTHING`,
     [seedUuid(0, 'f3').slice(0, -12), seedUuid(0, 'f2').slice(0, -12), TOP_URL_COUNT],
   )
   for (const year of OLD_YEARS) {
@@ -146,10 +146,10 @@ async function seedTopUrlItems(): Promise<void> {
     // no-mistakes-disable-next-line query-reached-per-item: two fixed historical partitions each receive one bounded, set-based fixture cohort.
     await write(
       `/* seedTopUrlRanking.oldItems */ INSERT INTO rss_feed_items
-        (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
+        (id, url_id, data, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
         SELECT id, $2, jsonb_build_object('title', 'Old top URL item',
           'isoDate', $3::text), decode(repeat('b2', 32), 'hex')
-        FROM unnest($1::uuid[]) AS rows(id) ON CONFLICT (id) DO NOTHING`,
+        , decode(repeat('b2', 32), 'hex') FROM unnest($1::uuid[]) AS rows(id) ON CONFLICT (id) DO NOTHING`,
       [ids, TOP_URL_HOT, `${year}-01-01T00:00:00Z`],
     )
   }

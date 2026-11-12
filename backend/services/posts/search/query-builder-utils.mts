@@ -11,14 +11,14 @@ export function buildPostRankingScoreExpression(options: {
   }
 
   if (options.hasSemanticSearch && !options.hasTextSearch) {
-    return sql`(1.0 / (1.0 + (posts.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding)))`
+    return sql`(1.0 / (1.0 + (posts.gemini_embedding_2_embedding <=> semantic_search_embedding.embedding)))`
   }
 
   if (options.hasTextSearch && options.hasSemanticSearch) {
     // Hybrid search: multiply text rank by semantic score.
     return sql`(
       ts_rank(posts.search_vector, text_search_tsquery.tsquery, 0) *
-      (1.0 / (1.0 + (posts.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding)))
+      (1.0 / (1.0 + (posts.gemini_embedding_2_embedding <=> semantic_search_embedding.embedding)))
     )`
   }
 

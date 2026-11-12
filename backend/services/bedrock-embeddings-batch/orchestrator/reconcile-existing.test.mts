@@ -11,7 +11,7 @@ import {
   makeRandomEmbedding,
   setTopicDeletedForEmbeddingTest,
   setTopicEmbeddingContentSha256,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import {
   decodeScopedUuidCursor,
   decodeUuidCursor,

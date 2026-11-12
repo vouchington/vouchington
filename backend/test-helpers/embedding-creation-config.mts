@@ -1,4 +1,4 @@
-import { bedrockEmbeddingsBatchConfig } from '../services/bedrock-embeddings/batch/config.mts'
+import { geminiEmbeddingsBatchConfig } from '../services/embeddings/batch/config.mts'
 import {
   resetDynamicConfigToTestBaseline,
   snapshotDynamicConfigFieldsForTest,
@@ -7,7 +7,7 @@ import {
 
 type ClosableTestDynamicConfig = TestDynamicConfig & { close: () => Promise<void> }
 
-const quotaConfigs = [bedrockEmbeddingsBatchConfig]
+const quotaConfigs = [geminiEmbeddingsBatchConfig]
 
 let initialization: Promise<void> | undefined
 

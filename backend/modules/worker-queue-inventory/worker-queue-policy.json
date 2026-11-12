@@ -11,15 +11,9 @@
     "psql",
     "bloom-filters",
     "memberships",
-    "bedrock-batch-sqs",
     "ses-bounce-sqs",
     "ses-inbound-sqs",
     "stripe-events-sqs"
   ],
-  "sqsConsumerQueues": [
-    "bedrock-batch-sqs",
-    "ses-bounce-sqs",
-    "ses-inbound-sqs",
-    "stripe-events-sqs"
-  ]
+  "sqsConsumerQueues": ["ses-bounce-sqs", "ses-inbound-sqs", "stripe-events-sqs"]
 }

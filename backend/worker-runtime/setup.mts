@@ -1,4 +1,4 @@
-import { warmUpEmbeddingBloomFilter } from '@services/bedrock-embeddings'
+import { warmUpEmbeddingBloomFilter } from '@services/embeddings'
 import {
   warmUpUrlBlocklistBloomFilter,
   warmUpEmailBlocklistBloomFilter,

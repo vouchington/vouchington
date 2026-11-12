@@ -7,7 +7,7 @@ describe('semantic candidate window', () => {
     const query = buildPostSearchQuery(undefined, {
       semantic_search_query: 'query',
       text_search_query: 'hybrid',
-      semanticSearchEmbedding: [1, ...Array<number>(1023).fill(0)],
+      semanticSearchEmbedding: [1, ...Array<number>(1535).fill(0)],
       user_id: '019e0000-0000-7000-8000-000000000001',
       time_range: '1w',
       sort: 'relevance',
@@ -20,12 +20,10 @@ describe('semantic candidate window', () => {
     const candidateSql = query.sql.slice(windowStart, outerStart)
     expect(candidateSql).toContain('posts.search_vector @@ text_search_tsquery.tsquery')
     expect(candidateSql).toContain('deleted_at IS NULL')
-    expect(candidateSql).toContain(
-      'ORDER BY semantic_vector_post.bedrock_nova_multimodal_v1_embedding <=>',
-    )
+    expect(candidateSql).toContain('ORDER BY semantic_vector_post.gemini_embedding_2_embedding <=>')
     expect(candidateSql).toContain('FROM posts semantic_vector_post')
     expect(candidateSql).toContain(
-      'WHERE semantic_vector_post.bedrock_nova_multimodal_v1_embedding IS NOT NULL',
+      'WHERE semantic_vector_post.gemini_embedding_2_embedding IS NOT NULL',
     )
     expect(candidateSql).toContain('AND posts.id = semantic_vector_post.id')
     expect(candidateSql).toContain('AND semantic_vector_post.created_by_id =')
@@ -52,7 +50,7 @@ describe('semantic candidate window', () => {
   it('keeps the candidate cap even when outer limits and order are omitted for facets', () => {
     const query = buildPostSearchQuery(undefined, {
       semantic_search_query: 'query',
-      semanticSearchEmbedding: [1, ...Array<number>(1023).fill(0)],
+      semanticSearchEmbedding: [1, ...Array<number>(1535).fill(0)],
       omitLimit: true,
       omitOrderBy: true,
     })

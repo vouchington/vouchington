@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import { insertTestCentralizedEmbeddingsBulk } from '../_bedrock-embeddings-support.mts'
+import { insertTestCentralizedEmbeddingsBulk } from '../_gemini-embeddings-support.mts'
 import sql from 'sql-template-strings'
 import pgvector from 'pgvector/pg'
 
@@ -7,11 +7,11 @@ export async function getTopicEmbeddingData(topicId: string): Promise<unknown> {
   const { rows } = await read(
     sql`/* getTopicEmbeddingData */
     SELECT
-      bedrock_nova_multimodal_v1_content_sha256,
-      bedrock_nova_multimodal_v1_input_sha256,
-      bedrock_nova_multimodal_v1_embedding,
-      bedrock_nova_multimodal_v1_input_token_count,
-      bedrock_nova_multimodal_v1_embedding_created_at
+      gemini_embedding_2_content_sha256,
+      gemini_embedding_2_input_sha256,
+      gemini_embedding_2_embedding,
+      gemini_embedding_2_input_token_count,
+      gemini_embedding_2_embedding_created_at
     FROM topics
     WHERE id = ${topicId}
   `,
@@ -33,10 +33,10 @@ export async function updateTopicEmbeddingData(data: {
   await write(
     sql`/* updateTopicEmbeddingData */
     UPDATE topics
-    SET bedrock_nova_multimodal_v1_input_sha256 = ${data.inputSha256},
-      bedrock_nova_multimodal_v1_embedding = ${pgvector.toSql(data.embedding)},
-      bedrock_nova_multimodal_v1_input_token_count = ${data.tokens},
-      bedrock_nova_multimodal_v1_embedding_created_at = ${createdAt}
+    SET gemini_embedding_2_input_sha256 = ${data.inputSha256},
+      gemini_embedding_2_embedding = ${pgvector.toSql(data.embedding)},
+      gemini_embedding_2_input_token_count = ${data.tokens},
+      gemini_embedding_2_embedding_created_at = ${createdAt}
     WHERE id = ${data.topicId}
   `,
   )

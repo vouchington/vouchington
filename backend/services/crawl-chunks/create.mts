@@ -1,5 +1,5 @@
-import { lookupExistingEmbeddings } from '@services/bedrock-embeddings/lookup'
-import { insertCentralizedEmbeddingsBulk } from '@services/bedrock-embeddings/centralized-table'
+import { lookupExistingEmbeddings } from '@services/embeddings/lookup'
+import { insertCentralizedEmbeddingsBulk } from '@services/embeddings/centralized-table'
 import { createCrawlChunkEmbeddingContent } from './content.mts'
 import type { CrawlBasic } from '@voucha/types/entities/crawl'
 import { write } from '@data-stores/psql'
@@ -11,7 +11,6 @@ const MINIMUM_CONTENT_LENGTH = 3
 
 type ChunkDataWithEmbedding = {
   index: number
-  chunkData: Awaited<ReturnType<typeof chunk>>[0]
   content: string
   contentSha256: Buffer
 }
@@ -45,7 +44,9 @@ async function updateCrawlEmbeddingStatus(
   )
 }
 
-export const createCrawlChunks = async (crawl: CrawlBasic) => {
+export const createCrawlChunks = async (
+  crawl: Pick<CrawlBasic, 'id' | 'url_id' | 'markdown' | 'meta_tags'>,
+) => {
   if (
     !crawl.markdown ||
     crawl.markdown.trim().replaceAll(/\s+/g, ' ').length < MINIMUM_CONTENT_LENGTH
@@ -71,7 +72,6 @@ export const createCrawlChunks = async (crawl: CrawlBasic) => {
     const { content, content_sha256 } = createCrawlChunkEmbeddingContent(chunkData)
     return {
       index,
-      chunkData,
       content,
       contentSha256: content_sha256,
     }
@@ -95,7 +95,7 @@ export const createCrawlChunks = async (crawl: CrawlBasic) => {
   await insertCentralizedEmbeddingsBulk(centralizedEmbeddings)
 
   // Then insert crawl chunks with embeddings where available
-  for (const { index: i, chunkData, contentSha256 } of chunkDataList) {
+  for (const { index: i, content, contentSha256 } of chunkDataList) {
     const hashHex = contentSha256.toString('hex')
     const existingEmbedding = existingEmbeddings.get(hashHex)
 
@@ -103,7 +103,8 @@ export const createCrawlChunks = async (crawl: CrawlBasic) => {
     embeddingInserts.push(`(
       $${embeddingValues.push(crawl.id)},
       $${embeddingValues.push(i)},
-      $${embeddingValues.push(chunkData.text)},
+      $${embeddingValues.push(content)},
+      $${embeddingValues.push(contentSha256)},
       $${embeddingValues.push(contentSha256)},
       ${existingEmbedding ? `$${embeddingValues.push(contentSha256)}` : 'NULL'},
       ${existingEmbedding ? `$${embeddingValues.push(pgvector.toSql(existingEmbedding.embedding))}` : 'NULL'},
@@ -119,10 +120,11 @@ export const createCrawlChunks = async (crawl: CrawlBasic) => {
       crawl_id,
       order_index,
       markdown,
+      gemini_embedding_2_content_sha256,
       bedrock_nova_multimodal_v1_content_sha256,
-      bedrock_nova_multimodal_v1_input_sha256,
-      bedrock_nova_multimodal_v1_embedding,
-      bedrock_nova_multimodal_v1_embedding_created_at
+      gemini_embedding_2_input_sha256,
+      gemini_embedding_2_embedding,
+      gemini_embedding_2_embedding_created_at
     )
     VALUES ${embeddingInserts.join(', ')}
   `,

@@ -1,23 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
-import { CreateModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { BedrockControlClient } from '@modules/aws/bedrock-control'
-import { S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
-import { creationJobOptions } from '@queues/bedrock-embeddings-batch/enqueues'
+import { creationJobOptions } from '@queues/gemini-embeddings-batch/enqueues'
 import {
-  BEDROCK_BATCH_MAX_VALUES,
-  bedrockEmbeddingsBatchConfig,
-} from '@services/bedrock-embeddings/batch/config'
-import { getBatchIdByJobArn } from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
+  GEMINI_BATCH_MAX_VALUES,
+  geminiEmbeddingsBatchConfig,
+} from '@services/embeddings/batch/config'
 import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { cleanupTestEmbeddingsBatches } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+import {
+  getTestBatchIdByJobName,
+  cleanupTestEmbeddingsBatches,
+} from '@voucha/test-helpers/entities/gemini-embeddings-batches'
 import {
   createTestUserDirect,
   hardDeleteTestPost,
@@ -28,83 +27,66 @@ import {
 } from '@voucha/test-helpers'
 import { createBackgroundCpuWorker } from '../workers/create-worker.mts'
 import { BACKGROUND_CPU_HANDLERS } from '../processors/handlers.mts'
-
-vi.mock<typeof import('@modules/aws/s3-bedrock-batch')>(
-  import('@modules/aws/s3-bedrock-batch'),
-  async importOriginal => ({
-    ...(await importOriginal<typeof import('@modules/aws/s3-bedrock-batch')>()),
-    S3BedrockBatchClient: {
-      send: vi.fn<VitestLooseMock>(),
-    } as unknown as typeof S3BedrockBatchClient,
-  }),
-)
-vi.mock<typeof import('@modules/aws/bedrock-control')>(
-  import('@modules/aws/bedrock-control'),
-  async importOriginal => ({
-    ...(await importOriginal<typeof import('@modules/aws/bedrock-control')>()),
-    BedrockControlClient: {
-      send: vi.fn<VitestLooseMock>(),
-    } as unknown as typeof BedrockControlClient,
-  }),
-)
+import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
 
 const connection = {
   connection: workerQueueConnection,
   prefix: `${workerQueuePrefix}-creation-lease-${randomUUID()}`,
 }
 const definition = (type: 'topics' | 'posts' | 'images') =>
-  requireBackgroundCpuJob(`bedrock-embeddings.create_${type}`)
+  requireBackgroundCpuJob(`gemini-embeddings.create_${type}`)
 const ownedTextCursor = {
   sweepStartedAt: '1970-01-01T00:00:02.000Z',
   afterId: uuidv7({ msecs: 1_500 }),
 }
 
 describe('production embedding creation on real GlideMQ', () => {
-  beforeEach(() => {
+  let fixture: Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
+  beforeEach(async () => {
     vi.clearAllMocks()
-    vi.stubEnv('BEDROCK_BATCH_ROLE_ARN', 'arn:aws:iam::123456789012:role/test-bedrock-role')
     vi.stubEnv('ENVIRONMENT', 'staging')
-    vi.mocked(S3BedrockBatchClient.send).mockResolvedValue(undefined as never)
+    fixture = await acquireEmbeddingQuotaFixture()
   })
   afterEach(() => vi.unstubAllEnvs())
 
   it('runs ready text before a quota-delayed image retry with the same image identity', async () => {
-    const fixture = await acquireEmbeddingQuotaFixture()
+    const vertex = createVertexHttpFixture()
+    const jobName = `projects/synthetic-project/locations/us/batchPredictionJobs/${randomUUID().replaceAll('-', '')}`
+    const requests = vertex.batchCreationResponses({ onSubmit: () => jobName })
+    const restoreHttp = vertex.activate()
     const owned = createOwnedEmbeddingQueue(
       fixture,
       'quota_fairness',
       connection,
       BACKGROUND_CPU_QUEUE_NAME,
     )
-    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+    const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, {
       min_records_per_job: 1,
-      max_requests_per_hour: BEDROCK_BATCH_MAX_VALUES.max_requests_per_hour,
-      max_inflight_jobs: BEDROCK_BATCH_MAX_VALUES.max_inflight_jobs,
+      max_requests_per_hour: GEMINI_BATCH_MAX_VALUES.max_requests_per_hour,
+      max_inflight_jobs: GEMINI_BATCH_MAX_VALUES.max_inflight_jobs,
       max_job_size_gb: 100,
       max_scan_rows_per_run: 2,
       creation_retry_delay_ms: 30_000,
     })
     const user = await createTestUserDirect()
     let topicId: string | undefined
-    const jobArn = `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`
     fixture.beforeRelease(async () => {
-      const batchId = await getBatchIdByJobArn(jobArn)
+      const batchId = await getTestBatchIdByJobName(jobName)
       if (batchId) await cleanupTestEmbeddingsBatches([batchId])
       if (topicId) await hardDeleteTestTopic(topicId)
       await hardDeleteTestUser(user.id)
       restore()
     })
-    vi.mocked(BedrockControlClient.send).mockResolvedValue({ jobArn } as never)
     try {
       const imageDefinition = definition('images')
       const topicDefinition = definition('topics')
       const worker = await owned.createWorker(() =>
         createBackgroundCpuWorker({
           handlers: BACKGROUND_CPU_HANDLERS,
-          domains: ['bedrock-embeddings'],
+          domains: ['gemini-embeddings'],
           prefix: connection.prefix,
           concurrency: 2,
-          blockTimeout: 1_000,
+          blockTimeout: 100,
           promotionInterval: 50,
         }),
       )
@@ -137,10 +119,9 @@ describe('production embedding creation on real GlideMQ', () => {
       )
       if (!topic) throw new Error('Expected topic job')
       await waitForRealGlideEvent(owned.waitFor(topic.id, 'completed'), 'fairness topic completion')
-      expect(vi.mocked(BedrockControlClient.send)).toHaveBeenCalledExactlyOnceWith(
-        expect.any(CreateModelInvocationJobCommand),
-      )
-      expect(await getBatchIdByJobArn(jobArn)).toBeTruthy()
+      expect(requests.submissions).toHaveBeenCalledTimes(1)
+      expect(requests.uploads).toHaveBeenCalledTimes(2)
+      expect(await getTestBatchIdByJobName(jobName)).toBeTruthy()
       expect(await delayed?.getState()).toBe('delayed')
       const completedImage = waitForRealGlideEvent(
         owned.waitFor(image.id, 'completed'),
@@ -150,37 +131,43 @@ describe('production embedding creation on real GlideMQ', () => {
       await completedImage
       expect((await owned.queue.getJob(image.id))?.data).toEqual({ cursor })
     } finally {
+      restoreHttp()
       await fixture.close()
     }
   })
 
   it('keeps two workers to one active creation and retries the contending job unchanged', async () => {
-    const fixture = await acquireEmbeddingQuotaFixture()
     const owned = createOwnedEmbeddingQueue(
       fixture,
       'two_workers',
       { ...connection, prefix: `${connection.prefix}-${randomUUID()}` },
       BACKGROUND_CPU_QUEUE_NAME,
     )
-    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+    const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, {
       min_records_per_job: 1,
-      max_requests_per_hour: BEDROCK_BATCH_MAX_VALUES.max_requests_per_hour,
-      max_inflight_jobs: BEDROCK_BATCH_MAX_VALUES.max_inflight_jobs,
-      max_job_size_gb: BEDROCK_BATCH_MAX_VALUES.max_job_size_gb,
+      max_requests_per_hour: GEMINI_BATCH_MAX_VALUES.max_requests_per_hour,
+      max_inflight_jobs: GEMINI_BATCH_MAX_VALUES.max_inflight_jobs,
+      max_job_size_gb: GEMINI_BATCH_MAX_VALUES.max_job_size_gb,
       max_scan_rows_per_run: 10_000,
       creation_lease_retry_delay_ms: 1_000,
     })
-    const firstArn = `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`
-    const secondArn = `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`
+    const firstJobName = `projects/synthetic-project/locations/us/batchPredictionJobs/${randomUUID().replaceAll('-', '')}`
+    const secondJobName = `projects/synthetic-project/locations/us/batchPredictionJobs/${randomUUID().replaceAll('-', '')}`
     const firstSendEntered = Promise.withResolvers<void>()
-    const releaseFirstSend = Promise.withResolvers<{ jobArn: string }>()
-    owned.releaseOnCleanup(() => releaseFirstSend.resolve({ jobArn: firstArn }))
-    vi.mocked(BedrockControlClient.send)
-      .mockImplementationOnce(() => {
-        firstSendEntered.resolve()
-        return releaseFirstSend.promise as never
-      })
-      .mockResolvedValue({ jobArn: secondArn } as never)
+    const releaseFirstSend = Promise.withResolvers<string>()
+    owned.releaseOnCleanup(() => releaseFirstSend.resolve(firstJobName))
+    const vertex = createVertexHttpFixture()
+    let submitCount = 0
+    const requests = vertex.batchCreationResponses({
+      onSubmit: async () => {
+        if (submitCount++ === 0) {
+          firstSendEntered.resolve()
+          return releaseFirstSend.promise
+        }
+        return secondJobName
+      },
+    })
+    const restoreHttp = vertex.activate()
     const user = await createTestUserDirect()
     const topicId = await insertTestTopic({
       id: uuidv7({ msecs: 1_000 }),
@@ -197,8 +184,8 @@ describe('production embedding creation on real GlideMQ', () => {
     })
     fixture.beforeRelease(async () => {
       const batches = await Promise.all([
-        getBatchIdByJobArn(firstArn),
-        getBatchIdByJobArn(secondArn),
+        getTestBatchIdByJobName(firstJobName),
+        getTestBatchIdByJobName(secondJobName),
       ])
       await cleanupTestEmbeddingsBatches(batches.filter((id): id is string => Boolean(id)))
       await hardDeleteTestPost(postId)
@@ -211,20 +198,20 @@ describe('production embedding creation on real GlideMQ', () => {
         owned.createWorker(() =>
           createBackgroundCpuWorker({
             handlers: BACKGROUND_CPU_HANDLERS,
-            domains: ['bedrock-embeddings'],
+            domains: ['gemini-embeddings'],
             prefix: owned.options.prefix,
             concurrency: 1,
-            blockTimeout: 1_000,
+            blockTimeout: 100,
             promotionInterval: 50,
           }),
         ),
         owned.createWorker(() =>
           createBackgroundCpuWorker({
             handlers: BACKGROUND_CPU_HANDLERS,
-            domains: ['bedrock-embeddings'],
+            domains: ['gemini-embeddings'],
             prefix: owned.options.prefix,
             concurrency: 1,
-            blockTimeout: 1_000,
+            blockTimeout: 100,
             promotionInterval: 50,
           }),
         ),
@@ -251,28 +238,29 @@ describe('production embedding creation on real GlideMQ', () => {
       )
       if (!second) throw new Error('Expected second creation job')
       await owned.waitFor(second.id, 'delay-changed')
-      expect(vi.mocked(BedrockControlClient.send)).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(S3BedrockBatchClient.send)).toHaveBeenCalledTimes(1)
+      expect(requests.submissions).toHaveBeenCalledTimes(1)
+      expect(requests.uploads).toHaveBeenCalledTimes(2)
       const storedSecond = await owned.queue.getJob(second.id)
       expect(await storedSecond?.getState()).toBe('delayed')
       expect(storedSecond?.data).toEqual({ cursor })
       expect(storedSecond?.opts.deduplication).toEqual(second.opts.deduplication)
-      releaseFirstSend.resolve({ jobArn: firstArn })
+      releaseFirstSend.resolve(firstJobName)
       await waitForRealGlideEvent(
         owned.waitFor(first.id, 'completed'),
         'first worker batch completion',
       )
-      expect(await getBatchIdByJobArn(firstArn)).toBeTruthy()
+      expect(await getTestBatchIdByJobName(firstJobName)).toBeTruthy()
       const secondCompleted = waitForRealGlideEvent(
         owned.waitFor(second.id, 'completed'),
         'second worker batch completion',
       )
       await owned.promote(second)
       await secondCompleted
-      expect(vi.mocked(BedrockControlClient.send)).toHaveBeenCalledTimes(2)
-      expect(await getBatchIdByJobArn(secondArn)).toBeTruthy()
+      expect(requests.submissions).toHaveBeenCalledTimes(2)
+      expect(await getTestBatchIdByJobName(secondJobName)).toBeTruthy()
     } finally {
-      releaseFirstSend.resolve({ jobArn: firstArn })
+      releaseFirstSend.resolve(firstJobName)
+      restoreHttp()
       await fixture.close()
     }
   })

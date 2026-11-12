@@ -7,7 +7,7 @@ import {
   insertTestEmbeddings,
   makeRandomEmbedding,
   readAllQueueJobs,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/bedrock-legacy'
 import {
   createStoryClusteringItem,
   STORY_CLUSTERING_CLASSIFIER_SLUG,

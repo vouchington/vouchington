@@ -36,11 +36,11 @@ export async function seedCopyrightMedia(
   await transaction(sql`/* seedCopyrightMedia:post */
     INSERT INTO posts (
       id, post_type, title, markdown, created_by_id, created_via,
-      bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256
-    ) VALUES (
+      gemini_embedding_2_content_sha256, llm_moderation_content_sha256
+    , bedrock_nova_multimodal_v1_content_sha256) VALUES (
       ${postId}, 'discussion', 'Sunrise over the harbour', 'A hosted photograph for copyright review.',
       ${posterId}, 'system', ${PROCESSED_SHA256}, ${PROCESSED_SHA256}
-    ) ON CONFLICT DO NOTHING
+    , ${PROCESSED_SHA256}) ON CONFLICT DO NOTHING
   `)
   await transaction(sql`/* seedCopyrightMedia:slug */
     INSERT INTO post_slugs (post_id, slug) VALUES (${postId}, ${postSlug}) ON CONFLICT DO NOTHING

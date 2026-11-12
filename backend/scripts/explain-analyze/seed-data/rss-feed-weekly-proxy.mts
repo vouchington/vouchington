@@ -147,9 +147,9 @@ async function ensureProxyTopicCorpus(query: TransactionQuery): Promise<void> {
   await query(
     `/* seedRssFeedWeeklyProxy.missingTopics */
       INSERT INTO topics
-        (id, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
+        (id, name, slug, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
       SELECT id, name, slug, decode(hash, 'hex'), 'system'
-      FROM unnest($1::uuid[], $2::text[], $3::text[], $4::text[])
+      , decode(hash, 'hex') FROM unnest($1::uuid[], $2::text[], $3::text[], $4::text[])
         AS seed(id, name, slug, hash)
       ON CONFLICT (id) DO NOTHING`,
     [

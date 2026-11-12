@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql'
 import { v7 } from 'uuid'
 
-const ZERO_VECTOR = `[${Array(1_024).fill(0).join(',')}]`
+const ZERO_VECTOR = `[${Array(1_536).fill(0).join(',')}]`
 
 export async function insertTextEmbeddingForRetentionTest(
   query: TransactionQuery,
@@ -11,9 +11,9 @@ export async function insertTextEmbeddingForRetentionTest(
   const hash = createHash('sha256').update(randomUUID()).digest('hex')
   await query(
     `/* insertTextEmbeddingForRetentionTest */
-    INSERT INTO bedrock_nova_multimodal_v1_embeddings
+    INSERT INTO gemini_embedding_2_embeddings
       (content_sha256, embedding, updated_at)
-    VALUES (decode($1, 'hex'), $2::vector, $3)`,
+    VALUES (decode($1, 'hex'), $2::halfvec(1536), $3)`,
     [hash, ZERO_VECTOR, updatedAt],
   )
   return hash
@@ -25,7 +25,7 @@ export async function textEmbeddingExistsForRetentionTest(
 ): Promise<boolean> {
   const { rows } = await query(
     `/* textEmbeddingExistsForRetentionTest */
-    SELECT 1 FROM bedrock_nova_multimodal_v1_embeddings
+    SELECT 1 FROM gemini_embedding_2_embeddings
     WHERE content_sha256 = decode($1, 'hex')`,
     [hash],
   )
@@ -40,9 +40,9 @@ export async function insertEmbeddingBatchForRetentionTest(
   const id = v7()
   await query(
     `/* insertEmbeddingBatchForRetentionTest */
-    INSERT INTO bedrock_embedding_batches
+    INSERT INTO gemini_embedding_batches
       (id, model_id, job_type, submitted_at, completed_at)
-    VALUES ($1, 'test-retention', $3::bedrock_embedding_batch_job_types, CURRENT_TIMESTAMP, $2)`,
+    VALUES ($1, 'test-retention', $3::gemini_embedding_batch_job_types, CURRENT_TIMESTAMP, $2)`,
     [id, terminalAt, jobType],
   )
   return id
@@ -54,7 +54,7 @@ export async function embeddingBatchExistsForRetentionTest(
 ): Promise<boolean> {
   const { rows } = await query(
     `/* embeddingBatchExistsForRetentionTest */
-    SELECT 1 FROM bedrock_embedding_batches WHERE id = $1`,
+    SELECT 1 FROM gemini_embedding_batches WHERE id = $1`,
     [id],
   )
   return rows.length > 0

@@ -8,6 +8,7 @@ const backendDataStoreTestDefaults = {
   globalSetup: [
     './test-helpers/vitest.setup.data-stores.mts',
     './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+    './backend/test-helpers/vitest.setup.gcs-emulator-server.mts',
   ],
   setupFiles: [
     // Sentry must precede glide workers' on-error preload; setup resets every isolate:false file (a test import only registers in the first cached worker file).

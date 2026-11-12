@@ -49,7 +49,7 @@ const fixtureDocumentationPaths = [
   'docs/checklists/github-actions.md',
   'docs/development/dependency-updates.md',
   'docs/development/reference-dependency-updates-supply-chain-policy.md',
-  'docs/development/local-development/reference-bedrock-embeddings-local.md',
+  'docs/development/local-development/reference-gemini-embeddings-local.md',
   'docs/development/local-development/README.md',
   'docs/overview/architecture/backend/README.md',
   'backend/agents/AGENTS.md',

@@ -111,11 +111,11 @@ export async function insertHackerNewsScalePartitions(
       `/* insertHackerNewsScalePosts */ INSERT INTO posts (
         id, created_via, post_type, markdown, created_by_id, approved_at,
         votes_score_up, votes_count_up,
-        bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256
-      ) SELECT ($1 || lpad(to_hex($2::bigint + ordinal), 12, '0'))::uuid,
+        gemini_embedding_2_content_sha256, llm_moderation_content_sha256
+      , bedrock_nova_multimodal_v1_content_sha256) SELECT ($1 || lpad(to_hex($2::bigint + ordinal), 12, '0'))::uuid,
         'system', 'discussion', 'HN scale fixture', $3, now(),
         1 + (ordinal * 17) % 101, 1 + (ordinal * 17) % 101, $4, $4
-        FROM generate_series($5::int, $5::int + $6::int - 1) AS fixture(ordinal)`,
+        , $4 FROM generate_series($5::int, $5::int + $6::int - 1) AS fixture(ordinal)`,
       [partition.idPrefix, POST_SERIAL, fixture.actorId, hash, partition.start, partition.count],
     )
   }

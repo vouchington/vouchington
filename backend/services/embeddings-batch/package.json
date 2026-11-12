@@ -1,0 +1,52 @@
+{
+  "name": "@services/embeddings-batch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/api-egress-proxy": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/gemini-embeddings-batch": "workspace:^",
+    "@services/communities": "workspace:^",
+    "@services/crawl-chunks": "workspace:^",
+    "@services/embeddings": "workspace:^",
+    "@services/images": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/stories": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@vouchington/image-resize": "^0.2.0",
+    "pg-copy-streams": "^7.0.0"
+  },
+  "devDependencies": {
+    "@queues/ai-agents": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
+    "@services/topic-recommendations": "workspace:^",
+    "@types/pg-copy-streams": "^1.2.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

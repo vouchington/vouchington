@@ -21,9 +21,9 @@ export async function insertContradictoryDataRequestLifecycle(): Promise<void> {
     VALUES (CURRENT_TIMESTAMP)`)
 }
 
-export async function insertContradictoryBedrockBatchLifecycle(): Promise<void> {
-  await write(sql`/* rejectContradictoryBedrockBatchLifecycle */
-    INSERT INTO bedrock_embedding_batches (
+export async function insertContradictoryGeminiBatchLifecycle(): Promise<void> {
+  await write(sql`/* rejectContradictoryGeminiBatchLifecycle */
+    INSERT INTO gemini_embedding_batches (
       id, model_id, job_type, completed_at, failed_at
     ) VALUES (
       ${mintUUIDv7()}, 'test-model', 'topics',
@@ -98,19 +98,19 @@ export async function rewriteTerminalDataRequest(): Promise<void> {
     WHERE id = ${rows[0]!.id}`)
 }
 
-export async function rewriteTerminalBedrockBatch(): Promise<void> {
+export async function rewriteTerminalGeminiBatch(): Promise<void> {
   const id = mintUUIDv7()
   await write(
-    sql`/* rewriteTerminalBedrockBatch:setup */
-    INSERT INTO bedrock_embedding_batches (
+    sql`/* rewriteTerminalGeminiBatch:setup */
+    INSERT INTO gemini_embedding_batches (
       id, model_id, job_type, submitted_at, completed_at
     ) VALUES (
       ${id}, 'test-model', 'topics', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     )
   `,
   )
-  await write(sql`/* rejectTerminalBedrockBatchRewrite */
-    UPDATE bedrock_embedding_batches
+  await write(sql`/* rejectTerminalGeminiBatchRewrite */
+    UPDATE gemini_embedding_batches
     SET completed_at = NULL, failed_at = CURRENT_TIMESTAMP
     WHERE id = ${id}`)
 }

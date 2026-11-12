@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { enqueueCreatePostEmbedding } from '@queues/bedrock-embeddings/enqueues'
+import { enqueueCreatePostEmbedding } from '@queues/gemini-embeddings/enqueues'
 import { admitAutomatedPostModeration, resetPostClearance } from '@services/post-clearance'
 import sql from 'sql-template-strings'
 import { createPostTextEmbeddingContent, createPostModerationContent } from './content.mts'
@@ -72,6 +72,7 @@ export async function updateStoryPostAgentResult(
     const { rows } = await query<{ id: string }>(sql`/* updateStoryPostAgentResult */
     UPDATE posts
     SET ai_summary_markdown = ${aiSummaryMarkdown},
+        gemini_embedding_2_content_sha256 = ${embeddingContentSha},
         bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha},
         llm_moderation_content_sha256 = ${moderationContentSha}
     WHERE id = ${postId} AND post_type = 'story'

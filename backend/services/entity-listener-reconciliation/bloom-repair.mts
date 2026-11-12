@@ -10,7 +10,7 @@ import {
 import { addKeyHashToBloomFilter } from '@services/api-keys/bloom-filter'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
 import { addDomainsToEmailBloomFilter } from '@services/urls-domains-blacklist/email-bloom-filter'
-import { addEmbeddingHashesToBloomFilter } from '@services/bedrock-embeddings/bloom-filter/bloom-filter'
+import { addEmbeddingHashesToBloomFilter } from '@services/embeddings/bloom-filter/bloom-filter'
 import type { EntityReconciliationCandidate } from './types.mts'
 
 export async function repairReconciledBloomKeys(
@@ -62,7 +62,7 @@ async function repairBlocklistedDomain(domain: string, sourceId: string): Promis
 
 async function repairEmbedding(hash: string): Promise<void> {
   const { rows } = await read(sql`/* repairReconciledEmbeddingBloom */
-    SELECT 1 FROM bedrock_nova_multimodal_v1_embeddings WHERE content_sha256 = decode(${hash}, 'hex')`)
+    SELECT 1 FROM gemini_embedding_2_embeddings WHERE content_sha256 = decode(${hash}, 'hex')`)
   if (rows.length > 0) await addEmbeddingHashesToBloomFilter([hash])
 }
 

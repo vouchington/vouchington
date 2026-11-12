@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { decodeUuidCursor, hasExactKeys, isPreciseTimestampString } from '@modules/pagination'
-import { normalizeSearchEmbeddingQuery } from '@services/bedrock-embeddings/search/get-cached'
+import { normalizeSearchEmbeddingQuery } from '@services/embeddings/search/get-cached'
 import createHttpError from 'http-errors'
 import type { SearchRssFeedItemsOptions } from './search-types.mts'
 

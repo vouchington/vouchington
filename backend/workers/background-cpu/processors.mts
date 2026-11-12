@@ -8,7 +8,7 @@ import type { BackgroundCpuHandler } from '@queues/background-cpu/types'
 import {
   extendCpuProviderCooldownMs,
   getCpuProviderCooldownRemainingMs,
-} from '@services/bedrock-embeddings/provider-cooldown'
+} from '@services/embeddings/provider-cooldown'
 import { isQueueDomainPaused } from '@services/queue-domain-controls'
 import { Worker, type Job } from 'glide-mq'
 
@@ -32,12 +32,12 @@ export function createBackgroundCpuProcessor(handlers: ReadonlyMap<string, Backg
 }
 
 async function runWithProviderCooldown(job: Job, handler: BackgroundCpuHandler): Promise<unknown> {
-  // Only Bedrock handlers use an external provider lane. Other CPU domains must remain
+  // Only Gemini handlers use an external provider lane. Other CPU domains must remain
   // independent of the rate-limiter Valkey connection.
   const groupKey =
-    handler.job.domain === 'bedrock-embeddings'
-      ? job.groupKey?.startsWith('bedrock-embeddings:creation:')
-        ? 'bedrock-embeddings:creation'
+    handler.job.domain === 'gemini-embeddings'
+      ? job.groupKey?.startsWith('gemini-embeddings:creation:')
+        ? 'gemini-embeddings:creation'
         : job.groupKey
       : undefined
   const remainingMs = groupKey ? await getCpuProviderCooldownRemainingMs(groupKey) : null
@@ -78,7 +78,7 @@ async function deferProviderRateLimitedJob(
     const remainingMs = await extendCpuProviderCooldownMs(groupKey, delayMs)
     return job.moveToDelayed(Date.now() + remainingMs)
   }
-  if (domain !== 'bedrock-embeddings') return deferJob(job, domain, delayMs)
+  if (domain !== 'gemini-embeddings') return deferJob(job, domain, delayMs)
   return job.moveToDelayed(Date.now() + delayMs)
 }
 

@@ -82,7 +82,7 @@ retryable response without accepting the notification.
 
 Every ingress path must be push or long-poll — never the sole reliance on interval polling. Cron
 reconcilers such as `poll_dispatcher`
-(`backend/queues/bedrock-embeddings-batch/enqueues/schedules.mts:17-34`, which runs every minute)
+(`backend/queues/gemini-embeddings-batch/enqueues/schedules.mts:17-34`, which runs every minute)
 exist as **safety nets that a push path converges on**, not as the primary trigger. If a new event
 source has no push mechanism and a cron job is the only way data flows in, that is a signal the
 integration is missing an enqueue path — not a reason to shorten the polling interval.
@@ -143,7 +143,7 @@ integration is missing an enqueue path — not a reason to shorten the polling i
 
 - [API Egress Proxy](api-egress-proxy.md) — explicit synchronous provider transport for IPv4-only
   endpoints reached from the API tier.
-- [Bedrock Embeddings](bedrock-embeddings.md) — the batch pipeline `poll_dispatcher` reconciles
+- [Gemini Embeddings](gemini-embeddings.md) — the batch pipeline `poll_dispatcher` reconciles
   for.
 - [`lambdas/AGENTS.md`](../../../lambdas/AGENTS.md), OpenTofu (the private `vouchington-infra` repository),
   [`backend/api/AGENTS.md`](../../../backend/api/AGENTS.md) — workspace rules linking here.

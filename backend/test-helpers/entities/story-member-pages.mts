@@ -22,10 +22,10 @@ export async function createTestStoryMembers(
       SELECT id, ${hostnameId}, guid FROM generated RETURNING id
     ), items AS (
       INSERT INTO rss_feed_items (
-        id, url_id, story_id, data, bedrock_nova_multimodal_v1_content_sha256
-      )
+        id, url_id, story_id, data, gemini_embedding_2_content_sha256
+      , bedrock_nova_multimodal_v1_content_sha256)
       SELECT id, ${urlId}, ${story.id}, '{"title":"Story member","description":"<p>Related article.</p>"}'::jsonb,
-        decode(repeat('00', 32), 'hex') FROM identities
+        decode(repeat('00', 32), 'hex') , decode(repeat('00', 32), 'hex') FROM identities
       RETURNING id, published_at
     )
     INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at)

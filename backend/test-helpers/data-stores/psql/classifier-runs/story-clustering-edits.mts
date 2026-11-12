@@ -14,7 +14,7 @@ export async function reviseStoryClusteringItem(itemId: string): Promise<Buffer>
   await write(sql`/* reviseStoryClusteringItemForTest */
     UPDATE rss_feed_items
     SET data = data || ${JSON.stringify({ title })}::jsonb,
-        bedrock_nova_multimodal_v1_content_sha256 = ${inputSha256}
+        gemini_embedding_2_content_sha256 = ${inputSha256}
     WHERE id = ${itemId}`)
   return inputSha256
 }
@@ -27,7 +27,7 @@ export async function reviseAndEmbedStoryClusteringItem(itemId: string): Promise
   const inputSha256 = await reviseStoryClusteringItem(itemId)
   await write(sql`/* embedRevisedStoryClusteringItemForTest */
     UPDATE rss_feed_items
-    SET bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
+    SET gemini_embedding_2_input_sha256 = gemini_embedding_2_content_sha256
     WHERE id = ${itemId}`)
   return inputSha256
 }

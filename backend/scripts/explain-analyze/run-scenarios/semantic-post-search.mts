@@ -10,7 +10,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { withPositiveSemanticNeighbours } from './semantic-hot-votes.mts'
 import { inspectSemanticPostSeed, recordSemanticPostFailure } from './semantic-post-diagnostics.mts'
 
-const embedding = [1, ...Array<number>(1023).fill(0)]
+const embedding = [1, ...Array<number>(1535).fill(0)]
 
 export async function runSemanticPostSearchScenarios(): Promise<void> {
   const variants = [
@@ -43,8 +43,8 @@ export async function runSemanticPostSearchScenarios(): Promise<void> {
       if (!eligibleId) throw new Error(`${scenario}: no eligible seed id to anchor ANN search`)
       const { rows } = await read<{ embedding: string }>(
         `/* semanticPostSearchSeedEmbedding */
-           SELECT bedrock_nova_multimodal_v1_embedding::text AS embedding
-           FROM posts WHERE id = $1 AND bedrock_nova_multimodal_v1_embedding IS NOT NULL`,
+           SELECT gemini_embedding_2_embedding::text AS embedding
+           FROM posts WHERE id = $1 AND gemini_embedding_2_embedding IS NOT NULL`,
         [eligibleId],
       )
       const anchor = rows[0]?.embedding
@@ -83,7 +83,7 @@ export async function runSimilarPostSearchScenarios(): Promise<void> {
     `/* explainSimilarRssSource */ SELECT items.id FROM rss_feed_items items
      JOIN rss_feed_item_guids ids ON ids.id = items.id
      WHERE ids.guid LIKE 'seed-item-guid-%'
-       AND items.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+       AND items.gemini_embedding_2_embedding IS NOT NULL
      ORDER BY items.id LIMIT 1`,
   )
   const rssItemId = rows[0]?.id

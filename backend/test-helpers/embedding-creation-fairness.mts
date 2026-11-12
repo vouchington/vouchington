@@ -2,16 +2,16 @@ import { mintUUIDv7 } from '@modules/utils/ids'
 import { expect } from 'vitest'
 import { beginTransaction, read, type OwnedTransaction } from '@data-stores/psql'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { getRateLimitConfig } from '../services/bedrock-embeddings/batch/config.mts'
+import { getRateLimitConfig } from '../services/embeddings/batch/config.mts'
 import {
   getBatchRecordsCreatedInLastHour,
   getActiveBatchStats,
-} from '../services/bedrock-embeddings/batch/orchestrator/poll-queries.mts'
-import { getBatchCreationLimits } from '../services/bedrock-embeddings-batch/rate-limits.mts'
-import { createBatch } from '../services/bedrock-embeddings-batch/orchestrator/create.mts'
-import type { BatchCreationDependencies } from '../services/bedrock-embeddings-batch/types.mts'
+} from '../services/embeddings/batch/orchestrator/poll-queries.mts'
+import { getBatchCreationLimits } from '../services/embeddings-batch/rate-limits.mts'
+import { createBatch } from '../services/embeddings-batch/orchestrator/create.mts'
+import type { BatchCreationDependencies } from '../services/embeddings-batch/types.mts'
 import type { acquireEmbeddingQuotaFixture } from './embedding-creation-quota.mts'
-import { insertTestEmbeddingsBatch } from './entities/bedrock-embeddings-batches.mts'
+import { insertTestEmbeddingsBatch } from './entities/gemini-embeddings-batches.mts'
 
 /** Real unfiltered accounting at one stable snapshot, with a rollback-owned reservation. */
 export async function createEmbeddingFairnessSnapshot(
@@ -62,7 +62,7 @@ export async function createEmbeddingFairnessSnapshot(
       await insertTestEmbeddingsBatch(
         {
           id,
-          bedrockStatus: 'Submitted',
+          vertexState: 'JOB_STATE_PENDING',
           batchData: { metadata: { inputSizeMB: reservationMB } },
         },
         { query: transaction },
@@ -87,11 +87,11 @@ export async function createEmbeddingFairnessSnapshot(
       removeOwnedReservations: () =>
         start(async () => {
           await transaction!(
-            allowUnannotatedQuery('DELETE FROM bedrock_embedding_batches WHERE id = $1'),
+            allowUnannotatedQuery('DELETE FROM gemini_embedding_batches WHERE id = $1'),
             [id],
           )
           const { rows } = await transaction!(
-            allowUnannotatedQuery('SELECT id FROM bedrock_embedding_batches WHERE id = $1'),
+            allowUnannotatedQuery('SELECT id FROM gemini_embedding_batches WHERE id = $1'),
             [id],
           )
           expect(rows).toEqual([])
@@ -111,14 +111,14 @@ export async function createEmbeddingFairnessSnapshot(
   async function assertPresent(inputSizeMB: number) {
     const { rows } = await transaction!<{ id: string; input_size_mb: number }>(
       allowUnannotatedQuery(`SELECT id, (data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION AS input_size_mb
-       FROM bedrock_embedding_batches
+       FROM gemini_embedding_batches
        WHERE id = $1 AND submitted_at IS NOT NULL AND completed_at IS NULL
          AND failed_at IS NULL AND cancelled_at IS NULL`),
       [id],
     )
     if (inputSizeMB === 0) {
       const absent = await transaction!(
-        allowUnannotatedQuery('SELECT id FROM bedrock_embedding_batches WHERE id = $1'),
+        allowUnannotatedQuery('SELECT id FROM gemini_embedding_batches WHERE id = $1'),
         [id],
       )
       expect(absent.rows).toEqual([])
@@ -134,7 +134,7 @@ export async function createEmbeddingFairnessSnapshot(
     await Promise.allSettled(operations)
     await transaction?.[Symbol.asyncDispose]()
     const { rows } = await read(
-      '/* createEmbeddingFairnessSnapshot:verifyDisposed */ SELECT id FROM bedrock_embedding_batches WHERE id = $1',
+      '/* createEmbeddingFairnessSnapshot:verifyDisposed */ SELECT id FROM gemini_embedding_batches WHERE id = $1',
       [id],
     )
     expect(rows).toEqual([])

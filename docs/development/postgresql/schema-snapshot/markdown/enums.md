@@ -814,6 +814,14 @@
 - `all_followers`
 - `selected_followers`
 
+## `gemini_embedding_batch_job_types`
+
+- `topics`
+- `posts`
+- `rss_feed_items`
+- `crawl_chunks`
+- `images`
+
 ## `history_retention_cleanup_names`
 
 - `dynamic_configuration_revisions`

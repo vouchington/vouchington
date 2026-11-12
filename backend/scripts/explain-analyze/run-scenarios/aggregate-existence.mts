@@ -44,8 +44,8 @@ async function seedExistenceFixtures(): Promise<void> {
     [communityId, seedUser.id],
   )
   await write(
-    `/* seedExistencePost */ INSERT INTO posts (id, created_by_id, post_type, title, markdown, created_via, bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
-    VALUES ($1::uuid, $2::uuid, 'review', 'EXPLAIN existence', 'Review text', 'system', decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex'))
+    `/* seedExistencePost */ INSERT INTO posts (id, created_by_id, post_type, title, markdown, created_via, gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+    VALUES ($1::uuid, $2::uuid, 'review', 'EXPLAIN existence', 'Review text', 'system', decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex'))
     ON CONFLICT (id) DO NOTHING`,
     [postId, seedUser.id],
   )

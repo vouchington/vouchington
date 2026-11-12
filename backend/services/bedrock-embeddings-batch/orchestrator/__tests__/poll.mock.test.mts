@@ -6,7 +6,7 @@ import {
   getTestBatchTerminalTimestamps,
   getTestBatchSummary,
   insertTestEmbeddingsBatch,
-} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+} from '@voucha/test-helpers/bedrock-legacy-entities-bedrock-embeddings-batches'
 import { processBatch } from '../poll.mts'
 
 vi.mock<typeof import('@modules/aws/bedrock-control')>(

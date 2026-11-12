@@ -9,7 +9,7 @@ export async function getSessionHnswEfSearch(): Promise<number> {
   return Number.parseInt(rows[0].ef_search, 10)
 }
 
-export function makeRandomEmbedding(length = 1024): number[] {
+export function makeRandomEmbedding(length = 1536): number[] {
   return normalize(Array.from({ length }, () => Math.random() - 0.5))
 }
 

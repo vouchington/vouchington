@@ -127,14 +127,14 @@ describe('background-cpu production routing through real GlideMQ', () => {
       message: 'Unfurl referral link job .parentLinkId is required',
     },
     {
-      name: 'bedrock-embeddings.post',
-      domain: 'bedrock-embeddings',
+      name: 'gemini-embeddings.post',
+      domain: 'gemini-embeddings',
       data: {},
       message: 'Post job requires id in job.data',
     },
     {
-      name: 'bedrock-embeddings.create_images',
-      domain: 'bedrock-embeddings',
+      name: 'gemini-embeddings.create_images',
+      domain: 'gemini-embeddings',
       data: { cursor: 'invalid' },
       message: 'Invalid embedding scan cursor',
     },

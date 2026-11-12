@@ -91,7 +91,7 @@ async function insertItems(query: TransactionQuery): Promise<void> {
   await query(
     `/* seedRssFeedWeeklyWorkload.items */
       INSERT INTO rss_feed_items
-        (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
+        (id, url_id, data, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
       SELECT ids.id,
         ($2 || lpad(to_hex($3 + series % $4), 12, '0'))::uuid,
         jsonb_build_object(
@@ -109,7 +109,7 @@ async function insertItems(query: TransactionQuery): Promise<void> {
           )
         ),
         $9
-      FROM generate_series(0, $1 - 1) AS series
+      , $9 FROM generate_series(0, $1 - 1) AS series
       JOIN rss_feed_item_guids ids
         ON ids.url_hostname_id = ($10 || lpad(to_hex(series % $11), 12, '0'))::uuid
        AND ids.guid = 'seed-week-dense-item-' || series::text

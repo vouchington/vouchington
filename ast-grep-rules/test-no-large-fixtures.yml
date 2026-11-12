@@ -4,7 +4,7 @@ severity: error
 message: >-
   Unit tests use the smallest fixture. A length or it.each size above 1,000
   belongs in explain-analyze. Ordinary boundaries at 1,000 and below stay
-  allowed. 1,024 is the embedding width, not a row fixture.
+  allowed. 1,024 and 1,536 are embedding widths, not row fixtures.
 files:
   - '**/*.test.ts'
   - '**/*.test.tsx'
@@ -29,14 +29,23 @@ rule:
     - pattern: test.each([$N, $M, $P])
 constraints:
   N:
-    kind: number
-    regex: '^(?:100[1-9]|101[0-9]|102[0-35-9]|10[3-9][0-9]|1[1-9][0-9]{2}|[2-9][0-9]{3}|[1-9][0-9]{4,}|1_00[1-9]|1_01[0-9]|1_02[0-35-9]|1_0[3-9][0-9]|1_[1-9][0-9]{2}|[2-9]_[0-9]{3}|[1-9][0-9]{1,}_[0-9]{3}(?:_[0-9]{3})*)$'
+    all:
+      - kind: number
+      - regex: '^(?:100[1-9]|101[0-9]|102[0-35-9]|10[3-9][0-9]|1[1-9][0-9]{2}|[2-9][0-9]{3}|[1-9][0-9]{4,}|1_00[1-9]|1_01[0-9]|1_02[0-35-9]|1_0[3-9][0-9]|1_[1-9][0-9]{2}|[2-9]_[0-9]{3}|[1-9][0-9]{1,}_[0-9]{3}(?:_[0-9]{3})*)$'
+      - not:
+          regex: '^(?:1536|1_536)$'
   M:
-    kind: number
-    regex: '^(?:100[1-9]|101[0-9]|102[0-35-9]|10[3-9][0-9]|1[1-9][0-9]{2}|[2-9][0-9]{3}|[1-9][0-9]{4,}|1_00[1-9]|1_01[0-9]|1_02[0-35-9]|1_0[3-9][0-9]|1_[1-9][0-9]{2}|[2-9]_[0-9]{3}|[1-9][0-9]{1,}_[0-9]{3}(?:_[0-9]{3})*)$'
+    all:
+      - kind: number
+      - regex: '^(?:100[1-9]|101[0-9]|102[0-35-9]|10[3-9][0-9]|1[1-9][0-9]{2}|[2-9][0-9]{3}|[1-9][0-9]{4,}|1_00[1-9]|1_01[0-9]|1_02[0-35-9]|1_0[3-9][0-9]|1_[1-9][0-9]{2}|[2-9]_[0-9]{3}|[1-9][0-9]{1,}_[0-9]{3}(?:_[0-9]{3})*)$'
+      - not:
+          regex: '^(?:1536|1_536)$'
   P:
-    kind: number
-    regex: '^(?:100[1-9]|101[0-9]|102[0-35-9]|10[3-9][0-9]|1[1-9][0-9]{2}|[2-9][0-9]{3}|[1-9][0-9]{4,}|1_00[1-9]|1_01[0-9]|1_02[0-35-9]|1_0[3-9][0-9]|1_[1-9][0-9]{2}|[2-9]_[0-9]{3}|[1-9][0-9]{1,}_[0-9]{3}(?:_[0-9]{3})*)$'
+    all:
+      - kind: number
+      - regex: '^(?:100[1-9]|101[0-9]|102[0-35-9]|10[3-9][0-9]|1[1-9][0-9]{2}|[2-9][0-9]{3}|[1-9][0-9]{4,}|1_00[1-9]|1_01[0-9]|1_02[0-35-9]|1_0[3-9][0-9]|1_[1-9][0-9]{2}|[2-9]_[0-9]{3}|[1-9][0-9]{1,}_[0-9]{3}(?:_[0-9]{3})*)$'
+      - not:
+          regex: '^(?:1536|1_536)$'
 examples:
   - code: |
       const ids = Array.from({ length: 1_001 }, () => crypto.randomUUID())
@@ -69,4 +78,20 @@ examples:
   - code: |
       it.each([600, 5000])('bytes %i', () => {})
     isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      const embedding = new Array(1536).fill(0)
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      const embedding = Array.from({ length: 1_536 }, () => 0)
+    isValid: true
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      const rows = new Array(1535).fill(id)
+    isValid: false
+    file: 'backend/services/example-suite-rules.test.mts'
+  - code: |
+      const rows = Array.from({ length: 1_537 }, () => id)
+    isValid: false
     file: 'backend/services/example-suite-rules.test.mts'

@@ -1,4 +1,4 @@
-import type { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
+import type { getCachedSearchEmbedding } from '@services/embeddings/search/get-cached'
 
 type SearchRssFeedItemsDependencies = {
   getCachedSearchEmbedding: typeof getCachedSearchEmbedding

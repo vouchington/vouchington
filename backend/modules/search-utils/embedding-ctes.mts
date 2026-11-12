@@ -1,3 +1,4 @@
+// Similarity thresholds await Gemini recalibration in #5635.
 import sql, { type SQLStatement } from 'sql-template-strings'
 
 /**
@@ -20,17 +21,17 @@ export function buildEmbeddingCtes(options: {
   if (options.semanticSearchEmbeddingVector) {
     // Repeated references must still expose this immutable parameter to vector index planning.
     ctes.push(
-      sql`semantic_search_embedding AS NOT MATERIALIZED (SELECT ${options.semanticSearchEmbeddingVector}::vector AS embedding)`,
+      sql`semantic_search_embedding AS NOT MATERIALIZED (SELECT ${options.semanticSearchEmbeddingVector}::halfvec(1536) AS embedding)`,
     )
   }
 
   if (options.similar_post_id) {
     ctes.push(sql`
       similar_post_embedding AS (
-        SELECT bedrock_nova_multimodal_v1_embedding AS embedding
+        SELECT gemini_embedding_2_embedding AS embedding
         FROM posts
         WHERE id = ${options.similar_post_id}
-          AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
+          AND gemini_embedding_2_embedding IS NOT NULL
       )
     `)
   }
@@ -38,10 +39,10 @@ export function buildEmbeddingCtes(options: {
   if (options.similar_topic_id) {
     ctes.push(sql`
       similar_topic_embedding AS (
-        SELECT bedrock_nova_multimodal_v1_embedding AS embedding
+        SELECT gemini_embedding_2_embedding AS embedding
         FROM topics
         WHERE id = ${options.similar_topic_id}
-          AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
+          AND gemini_embedding_2_embedding IS NOT NULL
       )
     `)
   }
@@ -49,10 +50,10 @@ export function buildEmbeddingCtes(options: {
   if (options.similar_rss_feed_item_id) {
     ctes.push(sql`
       similar_rss_feed_item_embedding AS (
-        SELECT r.bedrock_nova_multimodal_v1_embedding AS embedding
+        SELECT r.gemini_embedding_2_embedding AS embedding
         FROM rss_feed_items r
         WHERE r.id = ${options.similar_rss_feed_item_id}
-          AND r.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+          AND r.gemini_embedding_2_embedding IS NOT NULL
       )
     `)
   }

@@ -33,9 +33,9 @@ export async function insertTestTopic(
        RETURNING id
      ),
      ins AS (
-       INSERT INTO topics (created_via, name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256)
+       INSERT INTO topics (created_via, name, slug, topic_type, created_by_id, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
        SELECT 'system', $1, $2, $3, $4, $5
-       WHERE NOT EXISTS (SELECT 1 FROM slug_match) AND NOT EXISTS (SELECT 1 FROM name_match)
+       , $5 WHERE NOT EXISTS (SELECT 1 FROM slug_match) AND NOT EXISTS (SELECT 1 FROM name_match)
        ON CONFLICT DO NOTHING
        RETURNING id
      )

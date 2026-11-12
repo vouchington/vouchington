@@ -34,10 +34,10 @@ export async function runPendingReviewDensityScenario(): Promise<void> {
   await write(
     `/* seedExplainPendingDensityPosts */ INSERT INTO posts
        (id, created_via, post_type, title, markdown, created_by_id, community_id,
-        bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
+        gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
      SELECT input.id, 'system', 'discussion', 'Pending density ' || input.ordinal,
        'Approved reviews must not sit in the pending keyset', $2, $3, $4, $4
-     FROM unnest($1::uuid[]) WITH ORDINALITY AS input(id, ordinal)
+     , $4 FROM unnest($1::uuid[]) WITH ORDINALITY AS input(id, ordinal)
      ON CONFLICT DO NOTHING`,
     [postIds, authorId, communityId, hash],
   )
