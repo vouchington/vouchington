@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
+import { readCopyrightThreadRetirementBound } from '@voucha/test-helpers/copyright-thread-retention'
 import {
   linkTestCopyrightEmailIntake,
   readCopyrightThreadReferenceState,
@@ -59,19 +60,28 @@ describe('copyright email committed reference final state', () => {
 
   it('does not derive a case link after the linked intake crosses retirement high-water', async () => {
     const notice = await createRetentionMinimalCase()
-    const intake = await createRetentionThreadSeedEmail('phase-retirement', {
+    const parentMessageId = `<parent-${randomUUID()}@example.test>`
+    const parent = await createRetentionThreadSeedEmail('phase-retirement-parent', {
       sesMessageId: notice.initialEmailSesMessageId,
-      messageId: `<seed-${randomUUID()}@example.test>`,
+      messageId: parentMessageId,
     })
-    await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
+    await linkTestCopyrightEmailIntake(parent.id, notice.noticeId)
+    const intake = await createRetentionThreadSeedEmail('phase-retirement', {
+      messageId: `<seed-${randomUUID()}@example.test>`,
+      replyReferences: [parentMessageId],
+    })
+    await linkTestCopyrightEmailIntake(intake.id, notice.noticeId, 'thread', notice.moderator.id)
     const input = {
       intakeId: intake.id,
       messageId: `<${randomUUID()}@example.test>`,
-      inReplyTo: [] as string[],
+      inReplyTo: [parentMessageId],
       references: [] as string[],
     }
     const rows = buildCopyrightEmailThreadReferenceRows(input)
     expect(await admitCopyrightEmailReferenceFacts(intake.id, rows)).toBe(true)
+    await expect(deriveCopyrightEmailThread(input, rows)).resolves.toMatchObject({
+      noticeId: notice.noticeId,
+    })
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
     await sweepCopyrightCaseThreads({
       now: new Date(Date.now() + 181 * DAY_MS),
@@ -79,6 +89,7 @@ describe('copyright email committed reference final state', () => {
       batchSize: 10,
       maxBatches: 100,
     })
+    expect(await readCopyrightThreadRetirementBound(notice.noticeId)).not.toBeNull()
     const after = await readCopyrightThreadReferenceState(intake.id)
     await expect(deriveCopyrightEmailThread(input, rows)).resolves.toBeNull()
     await expect(recordCopyrightEmailThreadReferences(input)).resolves.toBeNull()

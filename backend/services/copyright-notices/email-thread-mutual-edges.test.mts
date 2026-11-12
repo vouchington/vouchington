@@ -95,6 +95,7 @@ describe('mutual copyright email references', () => {
       expect([
         { status: 'fulfilled', value: null },
         { status: 'rejected', code: COPYRIGHT_EMAIL_THREAD_CHANGED, causeCode: '40001' },
+        { status: 'rejected', code: COPYRIGHT_EMAIL_THREAD_CHANGED, causeCode: '40P01' },
       ]).toContainEqual(value)
     const edges = {
       first: await readCopyrightEmailAncestorIds(first.id),

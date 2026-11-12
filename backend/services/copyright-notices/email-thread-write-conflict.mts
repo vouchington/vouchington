@@ -5,6 +5,7 @@ export function throwIfCopyrightEmailThreadWriteConflict(err: unknown): void {
   const failure = err as { code?: string; constraint?: string; message?: string } | null
   if (
     failure?.code === '40001' ||
+    failure?.code === '40P01' ||
     (failure?.code === '23503' &&
       (failure.constraint === 'fk_copyright_notice_email_thread_references__token' ||
         failure.constraint === 'fk_copyright_notice_email_intake_notice_links__matched_token')) ||

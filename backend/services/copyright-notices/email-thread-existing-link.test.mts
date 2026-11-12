@@ -103,7 +103,23 @@ describe('copyright email thread ownership', () => {
       {
         status: 'rejected',
         value: null,
+        error: { status: 409, code: COPYRIGHT_EMAIL_THREAD_CHANGED, causeCode: '40P01' },
+        links: unchangedLinks,
+        ancestorCount: beforeAncestry,
+        referenceCount: beforeReferences.referenceCount,
+      },
+      {
+        status: 'rejected',
+        value: null,
         error: { status: 409, code: COPYRIGHT_EMAIL_THREAD_CHANGED, causeCode: '40001' },
+        links: unchangedLinks,
+        ancestorCount: beforeAncestry,
+        referenceCount: completeReferenceCount,
+      },
+      {
+        status: 'rejected',
+        value: null,
+        error: { status: 409, code: COPYRIGHT_EMAIL_THREAD_CHANGED, causeCode: '40P01' },
         links: unchangedLinks,
         ancestorCount: beforeAncestry,
         referenceCount: completeReferenceCount,

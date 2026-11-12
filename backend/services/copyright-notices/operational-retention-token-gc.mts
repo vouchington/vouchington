@@ -8,6 +8,7 @@ export function isCopyrightEmailTokenGcConflict(err: unknown): boolean {
   const failure = err as { code?: string; constraint?: string } | null
   return (
     failure?.code === '40001' ||
+    failure?.code === '40P01' ||
     (failure?.code === '23001' &&
       (failure.constraint === 'fk_copyright_notice_email_thread_references__token' ||
         failure.constraint === 'fk_copyright_notice_email_intake_notice_links__matched_token'))

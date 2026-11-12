@@ -205,7 +205,11 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE copyright_notices SET last_legal_activity_at =
     GREATEST(last_legal_activity_at, clock_timestamp())
-    WHERE id = NEW.copyright_notice_id;
+    WHERE id = NEW.copyright_notice_id AND evidence_erased_at IS NULL;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'
+      USING ERRCODE = 'check_violation';
+  END IF;
   RETURN NEW;
 END;
 $$;

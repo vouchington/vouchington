@@ -45,7 +45,30 @@ describe('copyright email promotion and threading', () => {
       intake.id,
       input.targets[0]!.placementId,
     )
-    expect(threadLink).toEqual({ status: 'fulfilled', value: !wasPromoted })
+    const threadLinkOutcome =
+      threadLink.status === 'fulfilled'
+        ? { status: 'fulfilled', value: threadLink.value }
+        : {
+            status: 'rejected',
+            code: (threadLink.reason as { code?: string }).code,
+            statusCode: (threadLink.reason as { status?: number }).status,
+            causeCode: (threadLink.reason as { cause?: { code?: string } }).cause?.code,
+            causeMessage: (threadLink.reason as { cause?: { message?: string } }).cause?.message,
+          }
+    expect([
+      { wasPromoted: true, threadLink: { status: 'fulfilled', value: false } },
+      {
+        wasPromoted: true,
+        threadLink: {
+          status: 'rejected',
+          code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+          statusCode: 409,
+          causeCode: '23514',
+          causeMessage: 'reviewed copyright email intake cannot be linked as thread correspondence',
+        },
+      },
+      { wasPromoted: false, threadLink: { status: 'fulfilled', value: true } },
+    ]).toContainEqual({ wasPromoted, threadLink: threadLinkOutcome })
     const rejectionStatus =
       promotion.status === 'rejected'
         ? (promotion.reason as { status?: number } | null)?.status

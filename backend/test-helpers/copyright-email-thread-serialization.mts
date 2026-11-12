@@ -1,4 +1,5 @@
 import { expect } from 'vitest'
+import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { readCopyrightEmailIntakeNoticeLinks } from './data-stores/psql/copyright-email-intakes.mts'
 import { readCopyrightIntakeRetentionState } from './copyright-email-retention-state.mts'
 import { readCopyrightThreadReferenceState } from './copyright-operational-email-retention.mts'
@@ -30,7 +31,8 @@ async function assertSerializedParseState(
   input: CopyrightEmailParseInput & { status: 'succeeded' },
   err: unknown,
 ): Promise<void> {
-  expect(err).toMatchObject({ status: 409, cause: { code: '40001' } })
+  expect(err).toMatchObject({ status: 409, code: COPYRIGHT_EMAIL_THREAD_CHANGED })
+  expect(['40001', '40P01']).toContain((err as { cause?: { code?: string } }).cause?.code)
   const retained = await readCopyrightIntakeRetentionState(intake.id)
   expect(retained).toMatchObject({
     intakeExists: true,

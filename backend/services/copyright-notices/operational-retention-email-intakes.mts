@@ -91,7 +91,7 @@ export async function sweepUnlinkedCopyrightEmailIntakes(options: {
       // oxlint-disable-next-line no-await-in-loop -- each committed cursor selects the next intake.
       page = await sweepPage(cutoffId, cutoff, options.childLimit, options.queryAfterStorage) // no-mistakes-disable-line query-reached-per-item: each bounded intake transaction commits its durable keyset cursor before the next page.
     } catch (err) {
-      if ((err as { code?: string } | null)?.code !== '40001') throw err
+      if (!['40001', '40P01'].includes((err as { code?: string } | null)?.code ?? '')) throw err
       // The aborted page left its cursor unchanged; the next scheduled run resumes it.
       return { scanned, erased, hasMore: false }
     }

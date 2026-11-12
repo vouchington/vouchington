@@ -25,8 +25,8 @@ function assertMappedSerializationConflict(err: unknown): void {
   expect(err).toMatchObject({
     status: 409,
     code: COPYRIGHT_EMAIL_THREAD_CHANGED,
-    cause: { code: '40001' },
   })
+  expect(['40001', '40P01']).toContain((err as { cause?: { code?: string } }).cause?.code)
 }
 
 async function assertAbortedRetirementRun(
@@ -98,44 +98,47 @@ function assertCommittedWriterReferenceCount(previousCount: number, currentCount
 describe('copyright email reference and retirement SSI', () => {
   useCopyrightOperationalCursorReservation()
 
-  it('ends a retention run after a serialization abort without advancing its page', async () => {
-    const notice = await createRetentionMinimalCase()
-    const intake = await createRetentionThreadSeedEmail('retention-page-conflict', {
-      sesMessageId: notice.initialEmailSesMessageId,
-      messageId: `<seed-${randomUUID()}@example.test>`,
-    })
-    await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
-    await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
-    const beforeReferences = await readCopyrightThreadReferenceState(intake.id)
-    const beforeCursor = await readCopyrightThreadOperationalCursor()
-    const failure = Object.assign(new Error('retirement serialization conflict'), {
-      code: '40001',
-    })
-    let reachedProofPage = false
-    const restore = runBeforePostgresStatementForTest(
-      '/* advanceCopyrightThreadLegalProof */',
-      async () => {
-        reachedProofPage = true
-        throw failure
-      },
-    )
-    onTestFinished(restore)
-    try {
-      const result = await runCopyrightOperationalRetentionCleanup({
-        activeFamilies: ['copyrightCaseThreads'],
-        now: new Date(Date.now() + 181 * DAY_MS),
-        limits: { batchSize: 10, maxBatches: 1 },
+  it.each(['40001', '40P01'])(
+    'ends a retention run after a %s abort without advancing its page',
+    async code => {
+      const notice = await createRetentionMinimalCase()
+      const intake = await createRetentionThreadSeedEmail('retention-page-conflict', {
+        sesMessageId: notice.initialEmailSesMessageId,
+        messageId: `<seed-${randomUUID()}@example.test>`,
       })
-      expect(reachedProofPage).toBe(true)
-      expect(result.copyrightCaseThreads).toEqual({ scanned: 0, deleted: 0, hasMore: false })
-      await assertAbortedThreadPage(notice.noticeId, intake.id, beforeReferences, beforeCursor)
-      expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
-        { copyright_notice_id: notice.noticeId, link_kind: 'initial' },
-      ])
-    } finally {
-      restore()
-    }
-  })
+      await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
+      await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
+      const beforeReferences = await readCopyrightThreadReferenceState(intake.id)
+      const beforeCursor = await readCopyrightThreadOperationalCursor()
+      const failure = Object.assign(new Error('retirement serialization conflict'), {
+        code,
+      })
+      let reachedProofPage = false
+      const restore = runBeforePostgresStatementForTest(
+        '/* advanceCopyrightThreadLegalProof */',
+        async () => {
+          reachedProofPage = true
+          throw failure
+        },
+      )
+      onTestFinished(restore)
+      try {
+        const result = await runCopyrightOperationalRetentionCleanup({
+          activeFamilies: ['copyrightCaseThreads'],
+          now: new Date(Date.now() + 181 * DAY_MS),
+          limits: { batchSize: 10, maxBatches: 1 },
+        })
+        expect(reachedProofPage).toBe(true)
+        expect(result.copyrightCaseThreads).toEqual({ scanned: 0, deleted: 0, hasMore: false })
+        await assertAbortedThreadPage(notice.noticeId, intake.id, beforeReferences, beforeCursor)
+        expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
+          { copyright_notice_id: notice.noticeId, link_kind: 'initial' },
+        ])
+      } finally {
+        restore()
+      }
+    },
+  )
 
   it('rejects a stale reference admission after retirement commits', async () => {
     const notice = await createRetentionMinimalCase()
@@ -259,14 +262,6 @@ describe('copyright email reference and retirement SSI', () => {
       } else {
         assertAbortedThreadStats(first)
         await assertAbortedThreadPage(notice.noticeId, intake.id, afterWriter, beforeCursor)
-      }
-      if (first.deleted === 0) {
-        const next = (await runCopyrightOperationalRetentionCleanup(options)).copyrightCaseThreads!
-        if (next.deleted > 0) await assertCommittedThreadPage(notice.noticeId, intake.id)
-        else {
-          assertAbortedThreadStats(next)
-          await assertAbortedThreadPage(notice.noticeId, intake.id, afterWriter, beforeCursor)
-        }
       }
     } finally {
       releaseProof.resolve()

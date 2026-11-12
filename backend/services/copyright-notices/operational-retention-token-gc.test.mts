@@ -34,51 +34,54 @@ describe('copyright orphan thread token retention', () => {
     expect(await readCopyrightOperationalRow('email_thread_tokens', youngId)).toBe(true)
   })
 
-  it('ends the run with its committed cursor when token deletion loses a named FK race', async () => {
-    const now = new Date()
-    const firstId = await seedCopyrightThreadTokenAtForTest({
-      createdAt: new Date(now.getTime() - 3 * 60 * 60 * 1000),
-    })
-    const secondId = await seedCopyrightThreadTokenAtForTest({
-      createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
-    })
-    await positionCopyrightOperationalCursor('orphan_email_thread_tokens', firstId, secondId)
-    const options = {
-      now,
-      retentionDays: 0,
-      batchSize: 1,
-      maxBatches: 1,
-      recordIds: [firstId, secondId],
-    }
-    expect(await sweepCopyrightOperationalRetention('orphan_email_thread_tokens', options)).toEqual(
-      { scanned: 1, deleted: 1, hasMore: true },
-    )
-    const cursor = await readCopyrightOrphanTokenCursor()
-    const failure = Object.assign(new Error('concurrent token reference'), {
-      code: '23001',
-      constraint: 'fk_copyright_notice_email_thread_references__token',
-    })
-    let reachedDelete = false
-    const restore = runBeforePostgresStatementForTest(
-      '/* deleteOrphanCopyrightEmailThreadTokens */',
-      async () => {
-        reachedDelete = true
-        throw failure
-      },
-    )
-    onTestFinished(restore)
-    try {
+  it.each(['23001', '40P01'])(
+    'ends the run with its committed cursor when token deletion loses a %s race',
+    async code => {
+      const now = new Date()
+      const firstId = await seedCopyrightThreadTokenAtForTest({
+        createdAt: new Date(now.getTime() - 3 * 60 * 60 * 1000),
+      })
+      const secondId = await seedCopyrightThreadTokenAtForTest({
+        createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+      })
+      await positionCopyrightOperationalCursor('orphan_email_thread_tokens', firstId, secondId)
+      const options = {
+        now,
+        retentionDays: 0,
+        batchSize: 1,
+        maxBatches: 1,
+        recordIds: [firstId, secondId],
+      }
       expect(
         await sweepCopyrightOperationalRetention('orphan_email_thread_tokens', options),
-      ).toEqual({ scanned: 0, deleted: 0, hasMore: false })
-    } finally {
-      restore()
-    }
-    expect(reachedDelete).toBe(true)
-    expect(await readCopyrightOrphanTokenCursor()).toEqual(cursor)
-    expect(await readCopyrightOperationalRow('email_thread_tokens', firstId)).toBe(false)
-    expect(await readCopyrightOperationalRow('email_thread_tokens', secondId)).toBe(true)
-  })
+      ).toEqual({ scanned: 1, deleted: 1, hasMore: true })
+      const cursor = await readCopyrightOrphanTokenCursor()
+      const failure = Object.assign(new Error('concurrent token reference'), {
+        code,
+        constraint: 'fk_copyright_notice_email_thread_references__token',
+      })
+      let reachedDelete = false
+      const restore = runBeforePostgresStatementForTest(
+        '/* deleteOrphanCopyrightEmailThreadTokens */',
+        async () => {
+          reachedDelete = true
+          throw failure
+        },
+      )
+      onTestFinished(restore)
+      try {
+        expect(
+          await sweepCopyrightOperationalRetention('orphan_email_thread_tokens', options),
+        ).toEqual({ scanned: 0, deleted: 0, hasMore: false })
+      } finally {
+        restore()
+      }
+      expect(reachedDelete).toBe(true)
+      expect(await readCopyrightOrphanTokenCursor()).toEqual(cursor)
+      expect(await readCopyrightOperationalRow('email_thread_tokens', firstId)).toBe(false)
+      expect(await readCopyrightOperationalRow('email_thread_tokens', secondId)).toBe(true)
+    },
+  )
 
   it('surfaces an unrelated FK error without advancing the token cursor', async () => {
     const now = new Date()

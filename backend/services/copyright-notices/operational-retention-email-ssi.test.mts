@@ -212,42 +212,45 @@ describe('copyright unlinked email retention serializable boundaries', () => {
     expect(await readCopyrightUnlinkedEmailOperationalCursor()).toEqual(beforeCursor)
     expect(await bucket.countVersions(intake.raw_storage_key)).toBe(1)
   })
-  it('ends an unlinked erasure run after a serialization abort without advancing its page', async () => {
-    const intake = await createRetentionParsedEmail('unlinked-page-conflict')
-    await bucket.put(intake.raw_storage_key)
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
-    const options = { now: future(91), retentionDays: 90, childLimit: 20, maxBatches: 1 }
-    await expect(sweepUnlinkedCopyrightEmailIntakes(options)).resolves.toMatchObject({
-      scanned: 1,
-      erased: 1,
-    })
-    const beforeCursor = await readCopyrightUnlinkedEmailOperationalCursor()
-    const before = await readCopyrightIntakeRetentionState(intake.id)
-    const erasedAt = await readCopyrightEmailReceiptErasedAt(intake.id)
-    expect(erasedAt).not.toBeNull()
-    const failure = Object.assign(new Error('unlinked erasure serialization conflict'), {
-      code: '40001',
-    })
-    let reachedChildDelete = false
-    const result = await sweepUnlinkedCopyrightEmailIntakes({
-      ...options,
-      queryAfterStorage: transaction =>
-        rejectQuery(
-          transaction,
-          statement => {
-            if (!statement.includes('/* deleteUnlinkedCopyrightEmailRecommendations */'))
-              return false
-            reachedChildDelete = true
-            return true
-          },
-          failure,
-        ),
-    })
-    expect(reachedChildDelete).toBe(true)
-    expect(result).toEqual({ scanned: 0, erased: 0, hasMore: false })
-    expect(await readCopyrightUnlinkedEmailOperationalCursor()).toEqual(beforeCursor)
-    expect(await readCopyrightIntakeRetentionState(intake.id)).toEqual(before)
-    expect(await readCopyrightEmailReceiptErasedAt(intake.id)).toEqual(erasedAt)
-    expect(await bucket.countVersions(intake.raw_storage_key)).toBe(0)
-  })
+  it.each(['40001', '40P01'])(
+    'ends an unlinked erasure run after a %s abort without advancing its page',
+    async code => {
+      const intake = await createRetentionParsedEmail('unlinked-page-conflict')
+      await bucket.put(intake.raw_storage_key)
+      await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
+      const options = { now: future(91), retentionDays: 90, childLimit: 20, maxBatches: 1 }
+      await expect(sweepUnlinkedCopyrightEmailIntakes(options)).resolves.toMatchObject({
+        scanned: 1,
+        erased: 1,
+      })
+      const beforeCursor = await readCopyrightUnlinkedEmailOperationalCursor()
+      const before = await readCopyrightIntakeRetentionState(intake.id)
+      const erasedAt = await readCopyrightEmailReceiptErasedAt(intake.id)
+      expect(erasedAt).not.toBeNull()
+      const failure = Object.assign(new Error('unlinked erasure serialization conflict'), {
+        code,
+      })
+      let reachedChildDelete = false
+      const result = await sweepUnlinkedCopyrightEmailIntakes({
+        ...options,
+        queryAfterStorage: transaction =>
+          rejectQuery(
+            transaction,
+            statement => {
+              if (!statement.includes('/* deleteUnlinkedCopyrightEmailRecommendations */'))
+                return false
+              reachedChildDelete = true
+              return true
+            },
+            failure,
+          ),
+      })
+      expect(reachedChildDelete).toBe(true)
+      expect(result).toEqual({ scanned: 0, erased: 0, hasMore: false })
+      expect(await readCopyrightUnlinkedEmailOperationalCursor()).toEqual(beforeCursor)
+      expect(await readCopyrightIntakeRetentionState(intake.id)).toEqual(before)
+      expect(await readCopyrightEmailReceiptErasedAt(intake.id)).toEqual(erasedAt)
+      expect(await bucket.countVersions(intake.raw_storage_key)).toBe(0)
+    },
+  )
 })
