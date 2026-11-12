@@ -4,7 +4,10 @@ import { navigateTo } from 'vouchington-tooling/playwright'
 import { loginAsMfaUser } from '../../helpers/auth.mts'
 import { revealOwnedQueueItem } from '../../helpers/copyright-queue.mts'
 import { createTestUser } from '../../../backend/test-helpers/entities/users.mts'
-import { createParsedCopyrightEmailIntake } from '../../../backend/test-helpers/copyright-email-intake-fixtures.mts'
+import {
+  createParsedCopyrightEmailIntake,
+  seedUnmatchedCopyrightEmailReply,
+} from '../../../backend/test-helpers/copyright-email-intake-fixtures.mts'
 import { declineTestCopyrightEmailIntake } from '../../../backend/test-helpers/services/copyright-notices/declined-email-intake.mts'
 import {
   copyrightEmailMessageId,
@@ -83,12 +86,8 @@ test('a reply to an admitted email offers admit and reject correspondence', asyn
 })
 
 test('a reply that matches no case can be associated with a notice by staff', async ({ page }) => {
-  const reply = await recordThreadedCopyrightEmail({
-    messageId: copyrightEmailMessageId(),
-    inReplyTo: [copyrightEmailMessageId()],
-    replyReferences: [copyrightEmailMessageId()],
-  })
-  const item = await openQueueItem(page, reply.intakeId)
+  const reply = await seedUnmatchedCopyrightEmailReply()
+  const item = await openQueueItem(page, reply.id)
   await item.click()
   await expect(
     page.getByTestId('copyright-email-notice-association-associate-notice'),

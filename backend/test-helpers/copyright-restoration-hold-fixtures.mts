@@ -9,7 +9,7 @@ import {
   processCopyrightActionIntent,
   reviewCopyrightCounterNotice,
 } from '../services/copyright-notices/index.mts'
-import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
+import { seedCopyrightSubmissionAssessment } from './copyright-notice-submissions.mts'
 import { createCopyrightDeliveryIntent } from '../services/copyright-notices/delivery-intents.mts'
 import { createEligibleCopyrightRestoreIntent } from '../services/copyright-notices/restoration.mts'
 import { createOutboundCopyrightCorrespondence } from '../services/copyright-notices/correspondence.mts'
@@ -63,7 +63,7 @@ async function createAssessmentAndReceipt(
   moderator: Awaited<ReturnType<typeof createTestUserDirect>>,
   noticeId: string,
 ) {
-  const assessment = await appendCopyrightSubmissionAssessment({
+  const assessment = await seedCopyrightSubmissionAssessment({
     submissionId: aggregate.submissions[0].id,
     assessedAt: new Date('2026-07-01T11:00:00.000Z'),
     currentUser: moderator,

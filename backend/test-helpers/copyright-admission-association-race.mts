@@ -1,3 +1,4 @@
+import { commitCopyrightWritersInOrder } from './copyright-form-review-assessment-race.mts'
 import type pg from 'pg'
 import { beginTransaction, writePool } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -61,23 +62,19 @@ export async function admitAndAssociateCopyrightEmail(
   const admit = () => admitCopyrightEmailCorrespondence(input)
   const associate = () =>
     associateCopyrightEmailIntakeWithNotice(input.currentUser, associateIntakeId, noticeId)
-  const ids = [noticeId, input.intakeId, associateIntakeId]
-  if (first === 'admission') {
-    const [admission, association] = await overlapCopyrightWriters(
-      admissionMarker,
-      admit,
-      associate,
-      ids,
-    )
-    return { admission, association }
-  }
-  const [association, admission] = await overlapCopyrightWriters(
-    'associateCopyrightEmailIntakeWithNotice:link',
-    associate,
-    admit,
-    ids,
+  const [winner, loser] = await commitCopyrightWritersInOrder(
+    first === 'admission' ? admit : associate,
+    first === 'admission' ? associate : admit,
+    first === 'admission' ? admissionMarker : 'associateCopyrightEmailIntakeWithNotice:link',
+    first === 'admission'
+      ? 'associateCopyrightEmailIntakeWithNotice:link'
+      : 'admitCopyrightEmailCorrespondence:event',
+    first === 'admission' ? associateIntakeId : input.intakeId,
+    [noticeId, input.intakeId, associateIntakeId],
   )
-  return { admission, association }
+  return first === 'admission'
+    ? { admission: winner, association: loser }
+    : { admission: loser, association: winner }
 }
 
 export async function failRestorationAndAdmitCopyrightEmail(
@@ -85,10 +82,12 @@ export async function failRestorationAndAdmitCopyrightEmail(
   noticeId: string,
   failure: Parameters<typeof failCopyrightActionIntent>[0],
 ) {
-  const [outcome, admission] = await overlapCopyrightWriters(
-    'failCopyrightActionIntent',
+  const [outcome, admission] = await commitCopyrightWritersInOrder(
     () => failCopyrightActionIntent(failure),
     () => admitCopyrightEmailCorrespondence(input),
+    'failCopyrightActionIntent',
+    'preemptCopyrightRestorations',
+    input.intakeId,
     [noticeId, input.intakeId, failure.intentId],
   )
   return { outcome, admission }

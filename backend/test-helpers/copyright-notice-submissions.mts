@@ -1,6 +1,8 @@
+import { appendCopyrightSubmissionAssessmentInTransaction } from '../services/copyright-notices/compliance.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
+  AssessmentInput,
   CopyrightNoticeSubmissionRecord,
   CopyrightSubmissionKind,
   CopyrightSubmissionSourceKind,
@@ -31,4 +33,12 @@ export async function appendTestCopyrightNoticeSubmission(input: {
   if (!submission) throw new Error('Failed to append copyright notice submission')
   await transaction.commit()
   return submission
+}
+
+/** Seed an assessment dependency with canonical writes/triggers, without a competing request owner. */
+export async function seedCopyrightSubmissionAssessment(input: AssessmentInput) {
+  await using transaction = await beginTransaction()
+  const assessment = await appendCopyrightSubmissionAssessmentInTransaction(input, transaction)
+  await transaction.commit()
+  return assessment
 }

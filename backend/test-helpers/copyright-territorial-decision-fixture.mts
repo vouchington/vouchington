@@ -156,6 +156,8 @@ export async function insertTerritorialConstraintDecision(
   noticeId: string,
   jurisdiction: Jurisdiction,
   actorId: string,
+  rationaleCiphertext = 'rationale',
+  publicExplanationCiphertext = 'explanation',
 ): Promise<string> {
   const decisionId = uuidv7()
   const { rows: notices } = await transaction<{ jurisdiction: Jurisdiction }>(sql`
@@ -169,7 +171,7 @@ export async function insertTerritorialConstraintDecision(
     INSERT INTO copyright_territorial_decisions (
       id, copyright_notice_id, jurisdiction, decided_by_id, outcome, automation_disclosure,
       rationale_ciphertext, public_explanation_ciphertext
-    ) VALUES (${decisionId}, ${noticeId}, ${jurisdiction}, ${actorId}, 'no_action', 'human', 'rationale', 'explanation')
+    ) VALUES (${decisionId}, ${noticeId}, ${jurisdiction}, ${actorId}, 'no_action', 'human', ${rationaleCiphertext}, ${publicExplanationCiphertext})
     RETURNING id
   `)
   const decision = rows[0]
@@ -178,8 +180,9 @@ export async function insertTerritorialConstraintDecision(
     UPDATE copyright_notices SET current_territorial_decision_identity_id = ${decisionId},
       territorial_decision_outcome = 'no_action', territorial_decided_at = CURRENT_TIMESTAMP,
       territorial_decided_by_id = ${actorId},
-      territorial_rationale_ciphertext = 'rationale',
-      territorial_public_explanation_ciphertext = 'explanation'
+      territorial_rationale_ciphertext = ${rationaleCiphertext},
+      territorial_public_explanation_ciphertext = ${publicExplanationCiphertext},
+      last_legal_activity_at = GREATEST(last_legal_activity_at, clock_timestamp())
     WHERE id = ${noticeId}`)
   return decision.id
 }

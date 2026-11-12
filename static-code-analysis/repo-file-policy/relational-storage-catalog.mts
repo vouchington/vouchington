@@ -51,7 +51,6 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'copyright_notice_operational_retention_cursors.sweep_upper_bound_record_id',
   'copyright_notice_operational_retention_cursors.cursor_child_id',
   'copyright_notice_operational_retention_cursors.cursor_edge_id',
-  'copyright_notice_operational_retention_cursors.cursor_legal_child_id',
   'copyright_notice_operational_retention_cursors.cursor_blocker_child_id',
   // Deletion-stable post hash-change keyset position, not a source-row reference.
   'agent_moderation_retention_post_work_items.cursor_moderation_record_id',

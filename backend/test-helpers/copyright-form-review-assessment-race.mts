@@ -12,6 +12,31 @@ export async function reviewFormAndAssessCopyrightSubmission(
   noticeId: string,
   firstKind: 'review' | 'assessment',
 ) {
+  const reviewOperation = () => reviewCopyrightFormIntake(review)
+  const assessmentOperation = () => appendCopyrightSubmissionAssessment(assessment)
+  const [first, second] = await commitCopyrightWritersInOrder(
+    firstKind === 'review' ? reviewOperation : assessmentOperation,
+    firstKind === 'review' ? assessmentOperation : reviewOperation,
+    firstKind === 'review'
+      ? 'reviewCopyrightFormIntake:review'
+      : 'appendCopyrightSubmissionAssessment:event',
+    'appendCopyrightSubmissionAssessment:event',
+    firstKind === 'review' ? assessment.submissionId : review.intakeId,
+    [noticeId, review.intakeId, assessment.submissionId],
+  )
+  return firstKind === 'review'
+    ? { reviewed: first, assessed: second }
+    : { reviewed: second, assessed: first }
+}
+
+export async function commitCopyrightWritersInOrder(
+  firstOperation: () => Promise<unknown>,
+  secondOperation: () => Promise<unknown>,
+  firstMarker: string,
+  secondMarker: string,
+  secondId: string,
+  ownedIds: string[],
+) {
   return runPoolObservationExclusively(async () => {
     const secondReady = Promise.withResolvers<void>()
     const firstCommitted = Promise.withResolvers<void>()
@@ -20,15 +45,6 @@ export async function reviewFormAndAssessCopyrightSubmission(
       operation()
         .then(value => ({ status: 'fulfilled' as const, value }))
         .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
-    const reviewOperation = () => reviewCopyrightFormIntake(review)
-    const assessmentOperation = () => appendCopyrightSubmissionAssessment(assessment)
-    const firstOperation = firstKind === 'review' ? reviewOperation : assessmentOperation
-    const secondOperation = firstKind === 'review' ? assessmentOperation : reviewOperation
-    const firstMarker =
-      firstKind === 'review'
-        ? 'reviewCopyrightFormIntake:review'
-        : 'appendCopyrightSubmissionAssessment:event'
-    const secondId = firstKind === 'review' ? assessment.submissionId : review.intakeId
     let firstClient: pg.PoolClient | undefined
     let secondClient: pg.PoolClient | undefined
     let first: ReturnType<typeof settled> | undefined
@@ -55,10 +71,7 @@ export async function reviewFormAndAssessCopyrightSubmission(
           return Reflect.apply(original, client, args)
         if (started && client !== firstClient && statement.values.includes(secondId))
           secondClient = client
-        if (
-          client === secondClient &&
-          statement.text.includes('/* appendCopyrightSubmissionAssessment:event */')
-        ) {
+        if (client === secondClient && statement.text.includes(`/* ${secondMarker} */`)) {
           secondReady.resolve()
           return firstCommitted.promise.then(() => Reflect.apply(original, client, args))
         }
@@ -66,9 +79,7 @@ export async function reviewFormAndAssessCopyrightSubmission(
         if (
           !started &&
           statement.text.includes(`/* ${firstMarker} */`) &&
-          statement.values.some(value =>
-            [noticeId, review.intakeId, assessment.submissionId].includes(value as string),
-          )
+          statement.values.some(value => ownedIds.includes(value as string))
         ) {
           started = true
           firstClient = client
@@ -93,9 +104,7 @@ export async function reviewFormAndAssessCopyrightSubmission(
         throw new Error('Owned decision did not reach its commit-order overlap')
       }
       const secondResult = await second
-      return firstKind === 'review'
-        ? { reviewed: firstResult, assessed: secondResult }
-        : { reviewed: secondResult, assessed: firstResult }
+      return [firstResult, secondResult] as const
     } finally {
       firstCommitted.resolve()
       await Promise.allSettled([first, second])

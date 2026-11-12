@@ -8,36 +8,32 @@ import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
 import { searchCopyrightNoticeAssociationTargets } from '../services/copyright-notices/association-search.mts'
 import { associateCopyrightEmailIntakeWithNotice } from '../services/copyright-notices/email-manual-association.mts'
-import { overlapCopyrightWriters } from './copyright-admission-association-race.mts'
+import { commitCopyrightWritersInOrder } from './copyright-form-review-assessment-race.mts'
 
-/** Keep the first real insertion uncommitted until its contender reaches the native wait. */
+/** Establish the sibling snapshot, then commit the selected insertion before sibling graph DML. */
 export async function associateAndThreadCopyrightEmail(
   currentUser: PrivateUser,
   intakeId: string,
   noticeId: string,
   first: 'manual' | 'thread',
 ) {
-  const manual = () =>
-    associateCopyrightEmailIntakeWithNotice(currentUser, intakeId, noticeId)
-      .then(value => ({ status: 'fulfilled' as const, value }))
-      .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
+  const manual = () => associateCopyrightEmailIntakeWithNotice(currentUser, intakeId, noticeId)
   const thread = () => linkCopyrightEmailIntakeToNotice({ intakeId, noticeId, linkKind: 'thread' })
-  if (first === 'thread') {
-    const [threaded, association] = await overlapCopyrightWriters(
-      'linkCopyrightEmailIntakeToNotice',
-      thread,
-      manual,
-      [intakeId, noticeId],
-    )
-    return { threaded, manual: association }
-  }
-  const [association, threaded] = await overlapCopyrightWriters(
-    'associateCopyrightEmailIntakeWithNotice:link',
-    manual,
-    thread,
+  const [winner, loser] = await commitCopyrightWritersInOrder(
+    first === 'manual' ? manual : thread,
+    first === 'manual' ? thread : manual,
+    first === 'manual'
+      ? 'associateCopyrightEmailIntakeWithNotice:link'
+      : 'linkCopyrightEmailIntakeToNotice',
+    first === 'manual'
+      ? 'linkCopyrightEmailIntakeToNotice'
+      : 'associateCopyrightEmailIntakeWithNotice:link',
+    intakeId,
     [intakeId, noticeId],
   )
-  return { threaded, manual: association }
+  const threaded = first === 'thread' ? winner : loser
+  if (threaded.status === 'rejected') throw threaded.reason
+  return { threaded: threaded.value, manual: first === 'manual' ? winner : loser }
 }
 
 /** The smallest accepted case row for a staff association boundary. */

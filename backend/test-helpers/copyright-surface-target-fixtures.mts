@@ -17,7 +17,7 @@ import {
 } from '../services/copyright-notices/placement-resolution.mts'
 import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
-import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
+import { seedCopyrightSubmissionAssessment } from './copyright-notice-submissions.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 export const TEST_COPYRIGHT_IMAGE_KINDS = [
   'post-image',
@@ -174,7 +174,7 @@ export async function createTestCopyrightRestrictionForImage(fixture: Fixture, a
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
   if (!aggregate) throw new Error('Copyright case missing')
-  const assessment = await appendCopyrightSubmissionAssessment({
+  const assessment = await seedCopyrightSubmissionAssessment({
     submissionId: aggregate.submissions[0]!.id,
     assessedAt: at,
     currentUser: moderator,

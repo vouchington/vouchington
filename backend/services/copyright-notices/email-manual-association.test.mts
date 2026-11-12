@@ -1,3 +1,4 @@
+import { seedUnmatchedCopyrightEmailReply as createManualReply } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
   createCopyrightNoticeForManualAssociation,
@@ -23,14 +24,6 @@ import { associateCopyrightEmailIntakeWithNotice } from './email-manual-associat
 import { searchCopyrightNoticeAssociationTargets } from './association-search.mts'
 import { copyrightConfig } from './config.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
-
-async function createManualReply(): Promise<{ id: string }> {
-  const reply = await recordThreadedCopyrightEmail({
-    messageId: copyrightEmailMessageId(),
-    replyReferences: [copyrightEmailMessageId()],
-  })
-  return { id: reply.intakeId }
-}
 
 describe('manual copyright email association', () => {
   it('does not strand a reply on a UK notice that cannot admit correspondence', async () => {

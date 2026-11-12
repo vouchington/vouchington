@@ -1,4 +1,4 @@
-import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
+import { seedCopyrightSubmissionAssessment } from './copyright-notice-submissions.mts'
 import { createOutboundCopyrightCorrespondence } from '../services/copyright-notices/correspondence.mts'
 import { createCopyrightDeliveryIntent } from '../services/copyright-notices/delivery-intents.mts'
 import { insertTestImage } from './entities/images-insert.mts'
@@ -68,7 +68,7 @@ export async function createAssessedUsDmcaCopyrightNoticeFixture(
   if (!input.assessBeforeReceipt) {
     await recordClaimantReceipt(notice.id, submission.id, input.receiptIdempotencyKeyPrefix)
   }
-  const noticeAssessment = await appendCopyrightSubmissionAssessment({
+  const noticeAssessment = await seedCopyrightSubmissionAssessment({
     submissionId: submission.id,
     assessedAt: new Date('2026-07-01T11:00:00.000Z'),
     currentUser: moderator,

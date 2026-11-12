@@ -1,4 +1,3 @@
-import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { beginTransaction } from '@data-stores/psql'
@@ -15,10 +14,6 @@ export async function appendCopyrightSubmissionAssessment(
       await using transaction = await beginTransaction({ serializable: true })
       await lockAssessmentForm(input.submissionId, transaction)
       const assessment = await appendCopyrightSubmissionAssessmentInTransaction(input, transaction)
-      const { rows } = await transaction<{ copyright_notice_id: string }>(sql`
-      /* readCopyrightAssessmentCaseCoverage */ SELECT copyright_notice_id
-      FROM copyright_notice_submissions WHERE id = ${input.submissionId}`)
-      if (rows[0]) await readCopyrightThreadRetirement(transaction, [rows[0].copyright_notice_id])
       await transaction.commit()
       return assessment
     },

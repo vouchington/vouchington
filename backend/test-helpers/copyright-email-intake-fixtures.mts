@@ -1,6 +1,13 @@
 // Test-only email intake setup uses the real copyright service paths.
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
+import { encryptSecret } from '@modules/token-secrets'
+import { copyrightEmailIntakePurpose } from '../services/copyright-notices/email-intakes.mts'
+import {
+  buildCopyrightEmailThreadReferenceRows,
+  encryptCopyrightEmailReplyHeaders,
+} from '../services/copyright-notices/email-thread-references.mts'
+import { insertCopyrightEmailThreadReferences } from '../services/copyright-notices/email-thread-ancestors.mts'
 import sql from 'sql-template-strings'
 import {
   createCopyrightEmailIntake,
@@ -68,4 +75,27 @@ export async function readCopyrightEmailPromotionEffects(intakeId: string, place
        WHERE placement_id = ${placementId}) AS notice_targets
   `)
   return rows[0]!
+}
+
+/** Owned unmatched reply state for UI tests; ingestion is not their subject. */
+export async function seedUnmatchedCopyrightEmailReply() {
+  const intake = await createUnparsedCopyrightEmailIntake()
+  const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
+  const messageId = `<${crypto.randomUUID()}@example.test>`
+  const headers = { inReplyTo: [`<${crypto.randomUUID()}@example.test>`], references: [] }
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* seedUnmatchedCopyrightEmailReply:parse */
+    INSERT INTO copyright_notice_email_intake_parses (
+      copyright_notice_email_intake_id, status, sender_email_ciphertext,
+      subject_ciphertext, body_ciphertext, message_id_ciphertext, reply_references_ciphertext
+    ) VALUES (${intake.id}, 'succeeded', ${encryptSecret('claimant@example.test', purpose)},
+      ${encryptSecret('Copyright reply', purpose)}, ${encryptSecret('Owned reply.', purpose)},
+      ${encryptSecret(messageId, purpose)}, ${encryptCopyrightEmailReplyHeaders(headers, purpose)})`)
+  await insertCopyrightEmailThreadReferences(
+    transaction,
+    intake.id,
+    buildCopyrightEmailThreadReferenceRows({ messageId, ...headers }),
+  )
+  await transaction.commit()
+  return intake
 }

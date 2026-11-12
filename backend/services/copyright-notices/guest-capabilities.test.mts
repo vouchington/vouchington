@@ -1,3 +1,4 @@
+import { seedCopyrightGuestCapabilities } from '@voucha/test-helpers/copyright-staff-case-states'
 import {
   countCopyrightUrgentFilings,
   listCopyrightGuestCapabilityEvents,
@@ -203,16 +204,13 @@ describe('copyright guest capabilities', () => {
     const held = await openNotice()
     const other = await openNotice()
     const staff = await createTestCopyrightStaff()
-    const issueInput = {
-      currentUser: staff,
+    const [capability, secondCapability] = await seedCopyrightGuestCapabilities({
       noticeId: held.notice.id,
+      issuedById: staff.id,
       expiresAt,
-      issuedAt: new Date(),
-    }
-    const [capability, secondCapability] = await Promise.all([
-      issueCopyrightGuestCapability(issueInput),
-      issueCopyrightGuestCapability(issueInput),
-    ])
+      count: 2,
+    })
+    if (!capability || !secondCapability) throw new Error('Owned filing capabilities missing')
     const courtFiling = (token: string, now: string) =>
       appendCopyrightGuestFiling({
         noticeId: held.notice.id,

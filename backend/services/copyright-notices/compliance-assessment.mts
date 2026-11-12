@@ -28,9 +28,12 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     current_assessment_identity_id: string | null
     automated_statutory_fields_complete: boolean
     evidence_erased: boolean
+    is_thread_retired: boolean
   }>(sql`/* appendCopyrightSubmissionAssessment:lockSubmission */
     SELECT s.copyright_notice_id, s.kind, s.source_kind, s.current_assessment_identity_id,
       n.evidence_erased_at IS NOT NULL AS evidence_erased,
+      EXISTS (SELECT 1 FROM copyright_notice_email_thread_retirements retirement
+        WHERE retirement.copyright_notice_id = s.copyright_notice_id) AS is_thread_retired,
       intake.requester_user_id IS NOT NULL
         AND n.jurisdiction = 'us_dmca'
         AND char_length(n.claimant_contact_ciphertext) > 0

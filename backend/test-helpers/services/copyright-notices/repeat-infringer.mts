@@ -7,7 +7,7 @@ import {
 import type { PrivateUser } from '../../../services/users/types.mts'
 import { completeCopyrightMandatoryHumanReview } from '../../../services/copyright-notices/index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../../../services/copyright-notices/restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from '../../../services/copyright-notices/compliance.mts'
+import { seedCopyrightSubmissionAssessment } from '../../copyright-notice-submissions.mts'
 import { createTestRepeatInfringerNotice } from '../../copyright-repeat-infringer.mts'
 import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
 import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
@@ -52,7 +52,7 @@ export async function confirmTestRepeatInfringerNotice(
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
   if (!aggregate) throw new Error('fixture notice disappeared')
-  const assessment = await appendCopyrightSubmissionAssessment({
+  const assessment = await seedCopyrightSubmissionAssessment({
     submissionId: aggregate.submissions[0].id,
     assessedAt: new Date('2026-07-01T11:00:00.000Z'),
     currentUser: moderator,

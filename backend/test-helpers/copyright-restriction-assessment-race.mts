@@ -1,3 +1,6 @@
+import { commitCopyrightWritersInOrder } from './copyright-form-review-assessment-race.mts'
+import { completeCopyrightMandatoryHumanReview } from '../services/copyright-notices/human-review.mts'
+import { createEligibleCopyrightRestoreIntent } from '../services/copyright-notices/restoration.mts'
 import { overlapCopyrightWriters } from './copyright-admission-association-race.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
@@ -36,4 +39,19 @@ export async function acceptAndSupersedeCopyrightNotice(
     ownedIds,
   )
   return { restricted, assessed }
+}
+
+export async function reviewAndRestoreCopyrightRestriction(
+  review: Parameters<typeof completeCopyrightMandatoryHumanReview>[0],
+  restoration: Parameters<typeof createEligibleCopyrightRestoreIntent>[0],
+) {
+  const [reviewed, restored] = await commitCopyrightWritersInOrder(
+    () => completeCopyrightMandatoryHumanReview(review),
+    () => createEligibleCopyrightRestoreIntent(restoration),
+    'completeCopyrightMandatoryHumanReview',
+    'lockCopyrightNoticeForLegalWrite',
+    review.noticeId,
+    [review.noticeId, review.restrictionId, restoration.targetId, restoration.deadlineId],
+  )
+  return { review: reviewed, restoration: restored }
 }

@@ -1,4 +1,4 @@
-import { overlapCopyrightWriters } from './copyright-admission-association-race.mts'
+import { commitCopyrightWritersInOrder } from './copyright-form-review-assessment-race.mts'
 import { rejectCopyrightEmailCorrespondence } from '../services/copyright-notices/email-correspondence-rejection.mts'
 import { associateCopyrightEmailIntakeWithNotice } from '../services/copyright-notices/email-manual-association.mts'
 
@@ -11,21 +11,19 @@ export async function rejectAndAssociateCopyrightEmail(
   const reject = () => rejectCopyrightEmailCorrespondence(input)
   const associate = () =>
     associateCopyrightEmailIntakeWithNotice(input.currentUser, associateIntakeId, noticeId)
-  const ownedIds = [noticeId, input.intakeId, associateIntakeId]
-  if (first === 'rejection') {
-    const [rejection, association] = await overlapCopyrightWriters(
-      'rejectCopyrightEmailCorrespondence',
-      reject,
-      associate,
-      ownedIds,
-    )
-    return { rejection, association }
-  }
-  const [association, rejection] = await overlapCopyrightWriters(
-    'associateCopyrightEmailIntakeWithNotice:link',
-    associate,
-    reject,
-    ownedIds,
+  const [winner, loser] = await commitCopyrightWritersInOrder(
+    first === 'rejection' ? reject : associate,
+    first === 'rejection' ? associate : reject,
+    first === 'rejection'
+      ? 'rejectCopyrightEmailCorrespondence'
+      : 'associateCopyrightEmailIntakeWithNotice:link',
+    first === 'rejection'
+      ? 'associateCopyrightEmailIntakeWithNotice:link'
+      : 'rejectCopyrightEmailCorrespondence:event',
+    first === 'rejection' ? associateIntakeId : input.intakeId,
+    [noticeId, input.intakeId, associateIntakeId],
   )
-  return { rejection, association }
+  return first === 'rejection'
+    ? { rejection: winner, association: loser }
+    : { rejection: loser, association: winner }
 }

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { readCopyrightTerritorialContractShape } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { seedTerritorialRedress } from '@voucha/test-helpers/copyright-territorial-redress-seed'
+import {
+  seedTerritorialRedress,
+  seedDeterminedTerritorialNoticeForValidation,
+} from '@voucha/test-helpers/copyright-territorial-redress-seed'
 import {
   TERRITORIAL_SURFACES,
   approveJurisdictionPolicy,
   createTerritorialActors,
-  seedDeterminedTerritorialNotice,
   seedPendingTerritorialNotice,
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
 
@@ -271,7 +273,10 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
   it('keeps the staff 403 ahead of the schema diagnostic for the notice claimant', async () => {
     const actors = await createTerritorialActors()
     await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
-    const noticeId = await seedDeterminedTerritorialNotice(surface.jurisdiction, actors)
+    const noticeId = await seedDeterminedTerritorialNoticeForValidation(
+      surface.jurisdiction,
+      actors,
+    )
 
     await actors.claimantRequest
       .post(`${surface.base}/${noticeId}/redress-requests/${crypto.randomUUID()}/decisions`)

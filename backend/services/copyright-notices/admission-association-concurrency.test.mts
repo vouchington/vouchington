@@ -5,6 +5,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import {
   createCopyrightNoticeForManualAssociation,
   readCopyrightEmailManualAssociationEvent,
+  readCopyrightEmailManualAssociationReview,
 } from '@voucha/test-helpers/copyright-email-manual-association'
 import {
   copyrightEmailMessageId,
@@ -31,7 +32,7 @@ describe('copyright correspondence and another intake association', () => {
     vi.unstubAllEnvs()
   })
   it.each(['admission', 'association'] as const)(
-    'commits both effects when %s reaches its write first',
+    'commits only %s when its overlapping transaction writes first',
     async first => {
       const currentUser = await createTestUser({ extraRoles: ['moderator'] })
       const noticeId = await createCopyrightNoticeForManualAssociation()
@@ -63,22 +64,67 @@ describe('copyright correspondence and another intake association', () => {
         associated.intakeId,
         first,
       )
-      expect(result.admission).toMatchObject({ noticeId, isDuplicate: false })
-      expect(await readCopyrightEmailIntakeNoticeLinks(associated.intakeId)).toEqual([
-        { copyright_notice_id: noticeId, link_kind: 'thread' },
-      ])
-      expect(await readCopyrightEmailManualAssociationEvent(associated.intakeId)).toHaveLength(1)
+      const winner = first === 'admission' ? result.admission : result.association
+      const loser = first === 'admission' ? result.association : result.admission
+      expect(winner).toMatchObject({ status: 'fulfilled' })
+      expect(loser).toMatchObject({
+        status: 'rejected',
+        reason: {
+          status: 409,
+          code: first === 'association' ? 'CONFLICT' : 'copyright_email_thread_changed',
+          cause: { code: '40001' },
+        },
+      })
+      const admittedWon = first === 'admission'
+      expect(result.admission).toMatchObject(
+        admittedWon
+          ? { status: 'fulfilled', value: { noticeId, isDuplicate: false } }
+          : { status: 'rejected' },
+      )
+      expect(result.association).toMatchObject(
+        admittedWon
+          ? { status: 'rejected' }
+          : {
+              status: 'fulfilled',
+              value: {
+                copyright_notice: { id: noticeId },
+                copyright_email_intake: { id: associated.intakeId },
+              },
+            },
+      )
+      expect(await readCopyrightEmailIntakeNoticeLinks(associated.intakeId)).toEqual(
+        admittedWon ? [] : [{ copyright_notice_id: noticeId, link_kind: 'thread' }],
+      )
+      expect(await readCopyrightEmailManualAssociationReview(associated.intakeId)).toEqual(
+        admittedWon ? [] : [{ copyright_notice_id: noticeId, action: 'pending' }],
+      )
+      expect(await readCopyrightEmailManualAssociationEvent(associated.intakeId)).toEqual(
+        admittedWon
+          ? []
+          : [
+              {
+                copyright_notice_id: noticeId,
+                changed_by_id: currentUser.id,
+                copyright_notice_email_intake_id: associated.intakeId,
+              },
+            ],
+      )
       const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-      expect(aggregate?.emailCorrespondenceReviews).toHaveLength(1)
-      expect(aggregate?.submissions.filter(row => row.kind === 'supplement')).toHaveLength(1)
+      expect(aggregate?.emailCorrespondenceReviews).toHaveLength(Number(admittedWon))
+      expect(aggregate?.submissions.filter(row => row.kind === 'supplement')).toHaveLength(
+        Number(admittedWon),
+      )
       expect(
         aggregate?.lifecycleEvents.filter(
           row => row.change_type === 'email_correspondence_admitted',
         ),
-      ).toHaveLength(1)
+      ).toHaveLength(Number(admittedWon))
+      expect(await readCopyrightEmailManualAssociationReview(admitted.intakeId)).toEqual([
+        { copyright_notice_id: noticeId, action: admittedWon ? 'admitted' : 'pending' },
+      ])
     },
   )
-  it('preempts an active restoration and commits association when court admission writes first', async () => {
+  it('preempts an active restoration and rejects overlapping association when court admission commits first', async () => {
     const { notice, moderator, restore } = await openHeldCounterNoticeRestore()
     const admitted = await recordThreadedCopyrightEmail({
       messageId: copyrightEmailMessageId(),
@@ -108,10 +154,17 @@ describe('copyright correspondence and another intake association', () => {
       associated.intakeId,
       'admission',
     )
-    expect(result.admission).toMatchObject({ noticeId: notice.id, isDuplicate: false })
-    expect(await readCopyrightEmailIntakeNoticeLinks(associated.intakeId)).toEqual([
-      { copyright_notice_id: notice.id, link_kind: 'thread' },
-    ])
+    expect(result.admission).toMatchObject({
+      status: 'fulfilled',
+      value: { noticeId: notice.id, isDuplicate: false },
+    })
+    expect(result.association).toMatchObject({
+      status: 'rejected',
+      reason: { status: 409, code: 'copyright_email_thread_changed', cause: { code: '40001' } },
+    })
+    expect(await readCopyrightEmailIntakeNoticeLinks(associated.intakeId)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationReview(associated.intakeId)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationEvent(associated.intakeId)).toEqual([])
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
     expect(aggregate?.actionIntents.find(row => row.id === restore.id)?.state).toBe('blocked')
     expect(
@@ -119,7 +172,7 @@ describe('copyright correspondence and another intake association', () => {
     ).toHaveLength(1)
   })
 
-  it('retains a filing and denies restoration after an owned worker failure commits first', async () => {
+  it('retains worker failure and rolls back an overlapping filing when failure commits first', async () => {
     const { notice, moderator, restore, restorationAt } = await openHeldCounterNoticeRestore()
     const claimed = await claimCopyrightActionIntent(restore.id, restorationAt)
     expect(claimed).not.toBeNull()
@@ -151,11 +204,25 @@ describe('copyright correspondence and another intake association', () => {
         failureMessage: 'Owned provider failure.',
       },
     )
-    expect(result.outcome).toBe('retrying')
-    expect(result.admission).toMatchObject({ noticeId: notice.id, isDuplicate: false })
+    expect(result.outcome).toEqual({ status: 'fulfilled', value: 'retrying' })
+    expect(result.admission).toMatchObject({
+      status: 'rejected',
+      reason: { status: 409, code: 'CONFLICT', cause: { code: '40001' } },
+    })
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-    expect(aggregate?.actionIntents.find(row => row.id === restore.id)?.state).toBe('blocked')
-    expect(aggregate?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(1)
+    expect(aggregate?.actionIntents.find(row => row.id === restore.id)).toMatchObject({
+      state: 'pending',
+      failure_message: 'Owned provider failure.',
+      lease_token: null,
+    })
+    expect(aggregate?.submissions.filter(row => row.kind === 'court_or_ccb_hold')).toHaveLength(0)
+    expect(aggregate?.emailCorrespondenceReviews).toHaveLength(0)
+    expect(
+      aggregate?.lifecycleEvents.filter(row => row.change_type === 'email_correspondence_admitted'),
+    ).toHaveLength(0)
+    expect(await readCopyrightEmailManualAssociationReview(reply.intakeId)).toEqual([
+      { copyright_notice_id: notice.id, action: 'pending' },
+    ])
   })
 
   it('rolls back preemption, the earlier event and its clock when later target validation fails', async () => {

@@ -1,6 +1,5 @@
 import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import { CONFLICT } from '@modules/on-error/error-codes'
-import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
@@ -34,6 +33,7 @@ export async function reviewCopyrightFormIntake(input: {
         current_screening_authority: boolean
         received_at: Date
         automatic_withholding_refused: boolean
+        is_thread_retired: boolean
       }>(sql`/* reviewCopyrightFormIntake:intake */
       SELECT intake.copyright_notice_id AS notice_id,
         intake.copyright_notice_submission_id AS submission_id, submission.source_kind,
@@ -43,7 +43,9 @@ export async function reviewCopyrightFormIntake(input: {
             AND fn_current_copyright_form_screening(submission.id,
               execution.copyright_notice_form_screening_id)) AS current_screening_authority,
         EXISTS (SELECT 1 FROM copyright_automatic_withholding_refusals refusal
-          WHERE refusal.copyright_notice_submission_id = submission.id) AS automatic_withholding_refused
+          WHERE refusal.copyright_notice_submission_id = submission.id) AS automatic_withholding_refused,
+        EXISTS (SELECT 1 FROM copyright_notice_email_thread_retirements retirement
+          WHERE retirement.copyright_notice_id = intake.copyright_notice_id) AS is_thread_retired
       FROM copyright_notice_form_intakes intake
       JOIN copyright_notice_submissions submission
         ON submission.id = intake.copyright_notice_submission_id
@@ -91,7 +93,6 @@ export async function reviewCopyrightFormIntake(input: {
         )
       `)
       }
-      await readCopyrightThreadRetirement(transaction, [intake.notice_id])
       await transaction.commit()
       if (input.is_accepted) {
         await enforceCopyrightAssessment(assessmentId)
