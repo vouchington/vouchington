@@ -7,7 +7,7 @@ Consolidated lifecycle and edit checklists for the Voucha monorepo. Each checkli
 - [Commit Checklist](commit.md) — Format, lint, commit-message, and file-size rules before committing
 - [package.json Checklist](package-json.md) — Version policy, pnpm, lockfile, and new-service registration
 - [Parser and Library Swap Checklist](parser-library-swap.md) — Characterization tests and migration order for parser/tokenizer/library replacements
-- [GitHub Actions Checklist](github-actions.md) — Runner choice, pinning, concurrency, and docs-sync rules
+- [GitHub Actions Checklist](github-actions.md) — Enforced-check owners, runner demand, deploy decoupling, and verification
 - [Backend Queue Authoring Checklist](backend-queues.md) — Queue/worker ownership, replayability, scheduling, backfills, and validation
 - [Native Parity Interactions](native-parity-interactions.md) — Native list/detail interaction checks, pagination cursors, and visibility gates
 - [Stripe Events](stripe-events.md) — Canonical list of Stripe events to subscribe to per environment

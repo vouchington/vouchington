@@ -1,5 +1,5 @@
 name = "github-actions-checklist"
-description = "GitHub Actions checklist: runner preference, pinning, concurrency, and docs-sync rules."
+description = "GitHub Actions checklist: enforced-check owners, runner demand, deploy decoupling, and verification."
 model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
 developer_instructions = """
