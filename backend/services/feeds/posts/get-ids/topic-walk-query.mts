@@ -47,9 +47,13 @@ export function buildTopicPostFeedPageQuery(
     FROM inspected_deliveries walk
     CROSS JOIN LATERAL (`)
   appendEligiblePostsSelect(query, options.eligibilityOptions, sql`walk.entity_id`)
-  query
-    .append(sql` LIMIT 1) eligible_posts
+  query.append(sql` LIMIT 1) eligible_posts
     WHERE `)
+  if (options.feedType === 'follow_users')
+    query.append(sql`(walk.delivery_type = 'share' OR EXISTS (
+      SELECT 1 FROM followed_users WHERE followed_users.user_id = walk.direct_author_id
+    )) AND `)
+  query
     .append(buildBroadcastVisibilityFilter('eligible_posts', options.currentUserId))
     .append(sql` AND (
       (walk.delivery_type = 'direct' AND `)
@@ -78,7 +82,8 @@ function appendDeliveryKeys(
   cap: number,
 ): void {
   query.append(sql`SELECT delivery.result_id, delivery.entity_id, delivery.sort_at, delivery.hot_score,
-    delivery.best_score, delivery.delivery_type, delivery.shared_by_id, delivery.shared_at FROM (`)
+    delivery.best_score, delivery.delivery_type, delivery.shared_by_id, delivery.shared_at,
+    delivery.direct_author_id FROM (`)
   appendNewArm(query, options, cap, false)
   if (options.includeSharedPosts) {
     query.append(sql` UNION ALL `)
@@ -105,6 +110,10 @@ function appendNewArm(
     `)
     .append(shares ? sql`post_feed_shares.post_id` : sql`posts.id`)
     .append(sql` AS entity_id, `)
+    // The author is already covered by the direct sort index. This lets follow_users reject
+    // unrelated capped rows before entering the dependent viewer/topic eligibility probe.
+    .append(shares ? sql`NULL::uuid` : sql`posts.created_by_id`)
+    .append(sql` AS direct_author_id, `)
     .append(sortAt)
     .append(sql` AS sort_at, `)
     .append(sql`NULL::float8`)
