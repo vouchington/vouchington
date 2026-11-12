@@ -7,6 +7,9 @@ api="${GITHUB_API_URL:-https://api.github.com}/repos/${ARTIFACT_REPOSITORY}"
 name="${ARTIFACT_NAME:-}"
 pattern="${ARTIFACT_PATTERN:-}"
 merge="${ARTIFACT_MERGE_MULTIPLE:-false}"
+expected_names="${ARTIFACT_EXPECTED_NAMES:-}"
+wait_timeout="${ARTIFACT_WAIT_TIMEOUT_SECONDS:-120}"
+poll_interval="${ARTIFACT_POLL_INTERVAL_SECONDS:-5}"
 
 if [[ -n "$name" && -n "$pattern" ]]; then
   echo "::error::Set only one of name and pattern." >&2
@@ -26,14 +29,41 @@ call() {
 scratch="$(mktemp -d)"
 trap 'rm -rf "$scratch"' EXIT
 
-artifacts='[]'
-page=1
-while :; do
-  call 30 -o "$scratch/page.json" "${api}/actions/runs/${ARTIFACT_RUN_ID}/artifacts?per_page=100&page=${page}"
-  artifacts="$(jq -c --slurpfile next "$scratch/page.json" '. + ($next[0].artifacts | map(select(.expired | not)))' <<<"$artifacts")"
-  if [[ "$(jq '.artifacts | length' "$scratch/page.json")" -lt 100 ]]; then break; fi
-  page=$((page + 1))
-done
+# The run's artifact listing is eventually consistent: it can omit an artifact a finished job just
+# uploaded (#5673), so a pattern download alone cannot tell a partial listing from a complete one.
+list_artifacts() {
+  artifacts='[]'
+  local page=1
+  while :; do
+    call 30 -o "$scratch/page.json" "${api}/actions/runs/${ARTIFACT_RUN_ID}/artifacts?per_page=100&page=${page}"
+    artifacts="$(jq -c --slurpfile next "$scratch/page.json" '. + ($next[0].artifacts | map(select(.expired | not)))' <<<"$artifacts")"
+    if [[ "$(jq '.artifacts | length' "$scratch/page.json")" -lt 100 ]]; then break; fi
+    page=$((page + 1))
+  done
+}
+
+# Prints each expected name absent from the current listing.
+missing_names() {
+  local expected
+  for expected in ${expected_names//,/ }; do
+    jq -e --arg n "$expected" 'any(.[]; .name == $n)' <<<"$artifacts" >/dev/null || echo "$expected"
+  done
+}
+
+list_artifacts
+if [[ -n "$expected_names" ]]; then
+  deadline=$((SECONDS + wait_timeout))
+  while [[ -n "$(missing_names)" && "$SECONDS" -lt "$deadline" ]]; do
+    echo "Waiting for artifacts not yet listed: $(missing_names | paste -sd, -)"
+    sleep "$poll_interval"
+    list_artifacts
+  done
+  missing="$(missing_names | paste -sd, -)"
+  if [[ -n "$missing" ]]; then
+    echo "::error::Artifacts missing from run ${ARTIFACT_RUN_ID} after ${wait_timeout}s: ${missing}." >&2
+    exit 1
+  fi
+fi
 
 matched=0
 while IFS= read -r artifact; do
