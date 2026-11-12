@@ -401,9 +401,6 @@
     "copyright_notice_legal_hold_resolution_kinds": {
       "values": ["dismissed", "proceeding_ended", "superseded"]
     },
-    "copyright_notice_legal_retention_phases": {
-      "values": ["claimant", "submissions", "incidents", "targets", "done"]
-    },
     "copyright_notice_lifecycle_change_recovery_sources": {
       "values": ["durable_review", "durable_decision"]
     },
@@ -1457,7 +1454,7 @@
       "returnsSet": false
     },
     "fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;\n  INSERT INTO copyright_notice_thread_retention_activities (copyright_notice_id, last_activity_at)\n  VALUES (case_id, COALESCE(activity_at, CURRENT_TIMESTAMP))\n  ON CONFLICT (copyright_notice_id) DO UPDATE\n    SET last_activity_at = GREATEST(copyright_notice_thread_retention_activities.last_activity_at,\n                                    EXCLUDED.last_activity_at);\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamp with time zone)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO copyright_notice_thread_retention_activities (copyright_notice_id, last_activity_at)\n  VALUES (case_id, COALESCE(activity_at, CURRENT_TIMESTAMP))\n  ON CONFLICT (copyright_notice_id) DO UPDATE\n    SET last_activity_at = GREATEST(copyright_notice_thread_retention_activities.last_activity_at,\n                                    EXCLUDED.last_activity_at);\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_create_community_search_counts()": {
@@ -1909,7 +1906,7 @@
       "returnsSet": false
     },
     "fn_reject_copyright_email_link_storage_owner()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_link_storage_owner()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  object_id uuid;\n  intake_id uuid;\n  terminal_review boolean;\nBEGIN\n  IF TG_OP = 'INSERT' THEN intake_id := NEW.copyright_notice_email_intake_id;\n  ELSE intake_id := OLD.copyright_notice_email_intake_id; END IF;\n  SELECT raw_storage_object_id INTO object_id FROM copyright_notice_email_intakes\n    WHERE id = intake_id;\n  IF TG_OP = 'INSERT' AND NEW.link_kind = 'thread' THEN\n    SELECT review_decision IS NOT NULL INTO terminal_review\n      FROM copyright_notice_email_intake_receipts WHERE id = intake_id;\n    IF COALESCE(terminal_review, false) THEN\n      RAISE EXCEPTION 'reviewed copyright email intake cannot be linked as thread correspondence'\n        USING ERRCODE = 'check_violation';\n    END IF;\n  END IF;\n  IF TG_OP = 'INSERT' THEN\n    PERFORM 1 FROM copyright_notices notice\n      WHERE notice.id = NEW.copyright_notice_id AND notice.evidence_erased_at IS NULL;\n    IF NOT FOUND THEN\n      RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'\n        USING ERRCODE = 'check_violation';\n    END IF;\n  END IF;\n  IF object_id IS NULL THEN\n    IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n    RETURN OLD;\n  END IF;\n  IF TG_OP = 'INSERT' THEN\n    PERFORM 1 FROM copyright_notice_storage_objects\n      WHERE id = object_id AND NOT is_deletion_claimed FOR UPDATE;\n    IF NOT FOUND THEN\n      RAISE EXCEPTION 'copyright evidence object deletion has started'\n        USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN NEW;\n  END IF;\n  -- A claimed object must keep its case link until physical deletion has cleared the intake FK.\n  PERFORM 1 FROM copyright_notice_storage_objects\n    WHERE id = object_id AND NOT is_deletion_claimed FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'claimed copyright evidence cannot lose its case link'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN OLD;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_link_storage_owner()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  object_id uuid;\n  intake_id uuid;\n  terminal_review boolean;\nBEGIN\n  IF TG_OP = 'INSERT' THEN intake_id := NEW.copyright_notice_email_intake_id;\n  ELSE intake_id := OLD.copyright_notice_email_intake_id; END IF;\n  SELECT raw_storage_object_id INTO object_id FROM copyright_notice_email_intakes\n    WHERE id = intake_id;\n  IF TG_OP = 'INSERT' AND NEW.link_kind = 'thread' THEN\n    SELECT review_decision IS NOT NULL INTO terminal_review\n      FROM copyright_notice_email_intake_receipts WHERE id = intake_id;\n    IF COALESCE(terminal_review, false) THEN RETURN NULL; END IF;\n  END IF;\n  IF TG_OP = 'INSERT' THEN\n    PERFORM 1 FROM copyright_notices notice\n      WHERE notice.id = NEW.copyright_notice_id AND notice.evidence_erased_at IS NULL;\n    IF NOT FOUND THEN\n      RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'\n        USING ERRCODE = 'check_violation';\n    END IF;\n  END IF;\n  IF object_id IS NULL THEN\n    IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n    RETURN OLD;\n  END IF;\n  IF TG_OP = 'INSERT' THEN\n    PERFORM 1 FROM copyright_notice_storage_objects\n      WHERE id = object_id AND NOT is_deletion_claimed;\n    IF NOT FOUND THEN\n      RAISE EXCEPTION 'copyright evidence object deletion has started'\n        USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN NEW;\n  END IF;\n  -- A claimed object must keep its case link until physical deletion has cleared the intake FK.\n  PERFORM 1 FROM copyright_notice_storage_objects\n    WHERE id = object_id AND NOT is_deletion_claimed;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'claimed copyright evidence cannot lose its case link'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN OLD;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_reject_copyright_email_receipt_current_review()": {
@@ -2253,19 +2250,15 @@
       "returnsSet": false
     },
     "fn_update_copyright_email_link_case_clock()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_email_link_case_clock()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE copyright_notices SET last_legal_activity_at =\n    GREATEST(last_legal_activity_at, clock_timestamp())\n    WHERE id = NEW.copyright_notice_id AND evidence_erased_at IS NULL;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_email_link_case_clock()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE copyright_notices SET last_legal_activity_at =\n    GREATEST(last_legal_activity_at, clock_timestamp())\n    WHERE id = NEW.copyright_notice_id AND evidence_erased_at IS NULL;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'\n      USING ERRCODE = 'check_violation', CONSTRAINT = 'copyright_email_link_active_case';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_update_copyright_email_link_storage_generation()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_email_link_storage_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE intake_id uuid;\nBEGIN\n  IF TG_OP = 'INSERT' THEN intake_id := NEW.copyright_notice_email_intake_id;\n  ELSE intake_id := OLD.copyright_notice_email_intake_id; END IF;\n  UPDATE copyright_notice_storage_objects object SET reference_generation = reference_generation + 1\n  FROM copyright_notice_email_intakes intake\n  WHERE intake.id = intake_id AND object.id = intake.raw_storage_object_id;\n  IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n  RETURN OLD;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_email_link_storage_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE intake_id uuid;\nBEGIN\n  IF TG_OP = 'INSERT' THEN intake_id := NEW.copyright_notice_email_intake_id;\n  ELSE intake_id := OLD.copyright_notice_email_intake_id; END IF;\n  UPDATE copyright_notice_storage_objects object SET reference_generation = reference_generation + 1\n  FROM copyright_notice_email_intakes intake\n  WHERE intake.id = intake_id AND object.id = intake.raw_storage_object_id\n    AND NOT object.is_deletion_claimed;\n  IF NOT FOUND AND EXISTS (\n    SELECT 1 FROM copyright_notice_email_intakes\n    WHERE id = intake_id AND raw_storage_object_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'copyright evidence object deletion has started'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n  RETURN OLD;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_update_copyright_guest_capability_activity()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_guest_capability_activity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    -- Expired unused capability material may retire; its completed lifetime stays on the case.\n    UPDATE copyright_notices notice\n    SET last_guest_capability_activity_at = GREATEST(\n      notice.last_guest_capability_activity_at, OLD.updated_at,\n      CASE WHEN OLD.revoked_at IS NULL THEN OLD.expires_at ELSE NULL END)\n    WHERE notice.id = OLD.copyright_notice_id;\n    RETURN OLD;\n  END IF;\n  -- Planned future expiry belongs to the live capability, not the monotonic activity clock.\n  UPDATE copyright_notices notice\n  SET last_guest_capability_activity_at = GREATEST(\n    notice.last_guest_capability_activity_at, NEW.updated_at)\n  WHERE notice.id = NEW.copyright_notice_id;\n  RETURN NEW;\nEND;\n$function$\n",
-      "returnsSet": false
-    },
-    "fn_update_copyright_preservation_generation()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_preservation_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM pg_advisory_xact_lock(hashtextextended('copyright-preservation-retention', 0));\n  UPDATE copyright_notice_retention_generations\n    SET preservation_generation = preservation_generation + 1 WHERE is_global;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_update_copyright_storage_reference_generation()": {
@@ -42242,7 +42235,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 9
         },
         "cursor_blocker_child_id": {
           "comment": "Last raw blocker-source row inspected; an opaque traversal value, not a relationship.",
@@ -42252,7 +42245,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 8
         },
         "cursor_blocker_generation": {
           "comment": "Observed case blocker generation for the current paged proof.",
@@ -42262,7 +42255,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 10
         },
         "cursor_blocker_phase": {
           "comment": "Current bounded staff and business blocker proof phase.",
@@ -42272,17 +42265,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "cursor_case_party_generation": {
-          "comment": "Observed case-party generation for this paged proof.",
-          "dataType": "bigint",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 7
         },
         "cursor_child_id": {
           "comment": "Last case-link position examined within the current thread-retention case; a traversal value, not an authorization reference.",
@@ -42303,46 +42286,6 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 5
-        },
-        "cursor_legal_child_id": {
-          "comment": "Last raw party-source row inspected in the current legal phase; a traversal value, not a relation.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
-        },
-        "cursor_legal_hold_generation": {
-          "comment": "Observed global preservation-hold generation for this paged proof.",
-          "dataType": "bigint",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        },
-        "cursor_legal_latest_release_at": {
-          "comment": "Latest release timestamp found across completed bounded party pages.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
-        },
-        "cursor_legal_phase": {
-          "comment": "Current bounded case-party source for legal preservation proof.",
-          "dataType": "copyright_notice_legal_retention_phases",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
         },
         "cursor_phase": {
           "comment": "Thread-retention or unlinked-intake child phase resumed for the current record.",
@@ -42392,7 +42335,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16
+          "ordinalPosition": 11
         }
       },
       "comment": "One bounded keyset position per copyright operational history sweep.",
@@ -42588,74 +42531,6 @@
       "physicalPartition": null,
       "primaryKey": {
         "columns": ["copyright_notice_id", "account_user_id"]
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "copyright_notice_retention_generations": {
-      "checkConstraints": {
-        "copyright_notice_retention_genera_preservation_generation_check": {
-          "definition": "CHECK ((preservation_generation >= 0))",
-          "validated": true
-        },
-        "copyright_notice_retention_generations_is_global_check": {
-          "definition": "CHECK (is_global)",
-          "validated": true
-        }
-      },
-      "columns": {
-        "is_global": {
-          "comment": "True for the single global legal-preservation generation row.",
-          "dataType": "boolean",
-          "defaultExpression": "true",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "preservation_generation": {
-          "comment": "Monotonic generation invalidating paged case-party proof after a hold change.",
-          "dataType": "bigint",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        }
-      },
-      "comment": "Global legal-preservation change generation for bounded case-party proof; the gate serializes concurrent hold writes with retention.",
-      "foreignKeys": {},
-      "indexes": {
-        "copyright_notice_retention_generations_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_retention_generations_pkey ON public.copyright_notice_retention_generations USING btree (is_global)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "is_global",
-              "descending": false,
-              "expression": "is_global",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bool_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["is_global"]
       },
       "relationKind": "table",
       "triggers": {},
@@ -159347,9 +159222,6 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copyright_preservation_generation": {
-          "definition": "CREATE TRIGGER trigger_copyright_preservation_generation BEFORE INSERT OR UPDATE OF released_at ON public.user_legal_preservation_holds FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_preservation_generation()"
-        },
         "trigger_user_legal_preservation_holds_reject_mutation": {
           "definition": "CREATE TRIGGER trigger_user_legal_preservation_holds_reject_mutation BEFORE DELETE OR UPDATE ON public.user_legal_preservation_holds FOR EACH ROW EXECUTE FUNCTION fn_reject_user_legal_preservation_hold_mutation()"
         }
