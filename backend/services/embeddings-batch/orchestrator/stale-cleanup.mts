@@ -1,3 +1,4 @@
+import { failBatchIngestions } from './ingestion.mts'
 import type { BatchListingCursor } from '@services/embeddings/batch/orchestrator/listing-page'
 import { processBatch, retrieveVertexBatch } from './poll.mts'
 import { stopVertexBatch } from './cleanup.mts'
@@ -23,6 +24,7 @@ export async function runStaleCleanup(
   const staleBatches = page.batches
   const forcedCancellations: Array<{ id: string; jobName: string }> = []
   let reconciled = 0
+  const abandonedSuccessfulIds: string[] = []
 
   for (const batch of staleBatches) {
     try {
@@ -32,9 +34,9 @@ export async function runStaleCleanup(
       const column = lifecycleColumnForVertexState(status)
 
       if (column === 'completed_at') {
-        // Vertex completed — do not set completed_at here; poll_dispatcher runs the full
-        // result-download pipeline via processBatchPolling on the next cycle. Setting
-        // completed_at now would drop the batch from getPendingBatches before results ingest.
+        // The existing total-lifetime cap also recovers ingestion abandoned by a crashed or
+        // stalled worker whose processor never reached its final-attempt catch. No paid cancel.
+        abandonedSuccessfulIds.push(batch.id)
         reconciled++
       } else if (column === 'failed_at' || column === 'cancelled_at') {
         // Already terminal in Vertex — reconcile lifecycle timestamp and release locks.
@@ -66,6 +68,8 @@ export async function runStaleCleanup(
       onError(err instanceof Error ? err : new Error(String(err)))
     }
   }
+
+  await failBatchIngestions(abandonedSuccessfulIds, ttlHours)
 
   return {
     hasMore: page.hasMore,

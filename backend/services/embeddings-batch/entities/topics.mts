@@ -1,4 +1,3 @@
-import type { BatchIngestionFence } from '../orchestrator/ingestion-transaction.mts'
 import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createTopicEmbeddingContent } from '@services/topics/content'
@@ -9,7 +8,7 @@ import {
   type EmbeddingReconciliationOptions,
   type EmbeddingReconciliationPage,
 } from '../orchestrator/reconcile-existing.mts'
-import { lockExistsClause } from '@services/embeddings/batch/lock-targets'
+import { activeBatchMembershipExistsClause } from '@services/embeddings/batch/membership-targets'
 import {
   reusableEmbeddingMissingClause,
   streamPendingEntities,
@@ -38,7 +37,7 @@ export async function* streamPendingTopics(
         OR t.gemini_embedding_2_input_sha256 != t.gemini_embedding_2_content_sha256
       )
       AND ${reusableEmbeddingMissingClause('t')}
-      AND NOT ${lockExistsClause('topics', 't.id')}
+      AND NOT ${activeBatchMembershipExistsClause('topics', 't.id')}
     ORDER BY t.id DESC
   `
 
@@ -62,9 +61,6 @@ export async function* streamPendingTopics(
   )
 }
 
-export async function applyTopicBatchUpdates(
-  items: BatchUpdateItem[],
-  fence?: BatchIngestionFence,
-): Promise<void> {
-  await applyBatchUpdates('topics', items, fence)
+export async function applyTopicBatchUpdates(items: BatchUpdateItem[]): Promise<void> {
+  await applyBatchUpdates('topics', items)
 }

@@ -1,3 +1,5 @@
+import { createTestTopic } from '@voucha/test-helpers'
+import { insertBatchTopicMembership } from '@voucha/test-helpers/gemini-batch-ingestion'
 import { mintUUIDv7, getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { geminiEmbeddingsBatchConfig } from '@services/embeddings/batch/config'
@@ -6,6 +8,7 @@ import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
 import {
   cleanupTestEmbeddingsBatches,
   getTestBatchSummary,
+  getTestBatchEntities,
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/gemini-embeddings-batches'
 import { runStaleCleanup as actualRunStaleCleanup } from './stale-cleanup.mts'
@@ -187,7 +190,7 @@ describe('runStaleCleanup', () => {
     expect(summary?.status).toBe('cancelled')
   })
 
-  it('defers completed batches to poll_dispatcher without setting completed_at', async () => {
+  it('retires successful output abandoned beyond the configured lifetime without cancellation', async () => {
     const id = batchId()
     await insertTestEmbeddingsBatch({
       id,
@@ -195,9 +198,8 @@ describe('runStaleCleanup', () => {
       vertexState: 'JOB_STATE_PENDING',
       submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
     })
-    // Vertex already completed — stale cleanup must NOT call processBatch here;
-    // doing so would mark completed_at and drop the batch from getPendingBatches
-    // before poll_dispatcher can download and apply results via processBatchPolling.
+    const topic = await createTestTopic({ name: `Abandoned ${id}` })
+    await insertBatchTopicMembership(id, topic.id)
     providerState = 'JOB_STATE_SUCCEEDED'
 
     const result = await runStaleCleanup(1, ownedCursor(id))
@@ -205,9 +207,9 @@ describe('runStaleCleanup', () => {
     expect(result.inspected).toBe(1)
     expect(result.reconciled).toBe(1)
     expect(result.forcedCancellations).toHaveLength(0)
-    // completed_at must remain NULL so poll_dispatcher picks it up for result ingestion
     const summary = await getTestBatchSummary(id)
-    expect(summary?.status).toBe('submitted')
+    expect(summary?.status).toBe('failed')
+    expect(await getTestBatchEntities(id)).toEqual([])
     // Only Vertex GET — no processBatch (second Vertex call)
     expect(requests).toBe(1)
   })

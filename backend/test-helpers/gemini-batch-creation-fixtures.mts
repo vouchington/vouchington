@@ -16,7 +16,7 @@ import {
   insertTestTopic,
 } from './entities/index.mts'
 
-export async function createLockedEntityId(
+export async function createBatchEntityId(
   jobType: BatchJobType,
   userId: string,
   orderIndex = 0,
@@ -37,7 +37,7 @@ export async function createLockedEntityId(
         createdById: userId,
       })
     case 'rss_feed_items': {
-      const topicId = await createLockedEntityId('topics', userId)
+      const topicId = await createBatchEntityId('topics', userId)
       const feedId = await insertTestRssFeed({ topicId, title: `Batch Lock Feed ${suffix}` })
       const urlId = await createTestUrlWithHostname()
       return insertTestRssFeedItem({

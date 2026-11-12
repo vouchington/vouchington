@@ -5,7 +5,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { from as copyFrom } from 'pg-copy-streams'
 import type { BatchJobType } from '@services/embeddings/batch/types'
 
-export async function insertLockRowsWithQuery(
+export async function insertBatchMembershipWithQuery(
   query: TransactionQuery,
   batchId: string,
   entityType: BatchJobType,
@@ -27,7 +27,6 @@ export async function insertLockRowsWithQuery(
   if (entityType === 'topics') {
     // The provider input file already contains these ids. Reject the whole batch if even one
     // topic is inactive, rather than submitting paid work for a row omitted from the lock table.
-    // Keep the row locks until this transaction commits so a concurrent merge cannot win the check.
     const { rows } = await query<{ candidate_count: number; active_count: number }>(
       `/* insertLockRows:activeTopics */
        WITH candidates AS MATERIALIZED (
@@ -36,7 +35,7 @@ export async function insertLockRowsWithQuery(
          SELECT topic.id FROM topics topic
          JOIN candidates candidate ON candidate.id = topic.id
          WHERE topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
-         ORDER BY topic.id FOR SHARE OF topic
+         ORDER BY topic.id
        )
        SELECT (SELECT count(*)::int FROM candidates) AS candidate_count,
          (SELECT count(*)::int FROM active_topics) AS active_count`,

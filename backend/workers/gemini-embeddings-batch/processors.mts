@@ -40,6 +40,7 @@ export {
 
 export const processBatchPolling = async (
   batchId: string,
+  finalAttempt = false,
 ): Promise<{ success: boolean; processed?: boolean; status?: string }> => {
   await processBatch(batchId)
 
@@ -58,60 +59,65 @@ export const processBatchPolling = async (
     return { success: true, status: batchData.state }
   }
 
-  if (batchInfo.completed_at) return { success: true, processed: true }
+  if (batchInfo.completed_at || batchInfo.failed_at || batchInfo.cancelled_at)
+    return { success: true, processed: true }
 
-  const processed = await ingestBatchResults(batchId, async fence => {
-    const [manifest, source] = await Promise.all([
-      loadBatchManifest(batchId),
-      getBatchResultSource(batchId),
-    ])
-    await validateBatchOutput(streamBatchResults(source), manifest)
+  await ingestBatchResults(
+    batchId,
+    async () => {
+      const [manifest, source] = await Promise.all([
+        loadBatchManifest(batchId),
+        getBatchResultSource(batchId),
+      ])
+      await validateBatchOutput(streamBatchResults(source), manifest)
 
-    // Process results in batches based on job type
-    if (jobType === 'topics') {
-      await processBatchResultsInBatches(
-        streamBatchResults(source),
-        updates => applyTopicBatchUpdates(updates, fence),
-        1000,
-        'topics',
-        manifest,
-      )
-    } else if (jobType === 'posts') {
-      await processBatchResultsInBatches(
-        streamBatchResults(source),
-        updates => applyPostBatchUpdates(updates, fence),
-        1000,
-        'posts',
-        manifest,
-      )
-    } else if (jobType === 'rss_feed_items') {
-      await processBatchResultsInBatches(
-        streamBatchResults(source),
-        updates => applyRssFeedItemBatchUpdates(updates, fence),
-        1000,
-        'rss_feed_items',
-        manifest,
-      )
-    } else if (jobType === 'crawl_chunks') {
-      await processBatchResultsInBatches(
-        streamBatchResults(source),
-        updates => processCrawlChunkBatchResults(updates, fence),
-        1000,
-        'crawl_chunks',
-        manifest,
-      )
-    } else if (jobType === 'images') {
-      await processImageBatchResultsInBatches(
-        streamBatchResults(source),
-        updates => applyImageBatchUpdates(updates, fence),
-        1000,
-        manifest,
-      )
-    } else throw new Error(`Unsupported embedding batch entity type: ${String(jobType)}`)
-    await completeBatchIngestion(batchId, fence)
-  })
+      // Process results in batches based on job type
+      if (jobType === 'topics') {
+        await processBatchResultsInBatches(
+          streamBatchResults(source),
+          updates => applyTopicBatchUpdates(updates),
+          1000,
+          'topics',
+          manifest,
+        )
+      } else if (jobType === 'posts') {
+        await processBatchResultsInBatches(
+          streamBatchResults(source),
+          updates => applyPostBatchUpdates(updates),
+          1000,
+          'posts',
+          manifest,
+        )
+      } else if (jobType === 'rss_feed_items') {
+        await processBatchResultsInBatches(
+          streamBatchResults(source),
+          updates => applyRssFeedItemBatchUpdates(updates),
+          1000,
+          'rss_feed_items',
+          manifest,
+        )
+      } else if (jobType === 'crawl_chunks') {
+        await processBatchResultsInBatches(
+          streamBatchResults(source),
+          updates => processCrawlChunkBatchResults(updates),
+          1000,
+          'crawl_chunks',
+          manifest,
+        )
+      } else if (jobType === 'images') {
+        await processImageBatchResultsInBatches(
+          streamBatchResults(source),
+          updates => applyImageBatchUpdates(updates),
+          1000,
+          manifest,
+        )
+      } else throw new Error(`Unsupported embedding batch entity type: ${String(jobType)}`)
+      await completeBatchIngestion(batchId)
+    },
+    finalAttempt,
+  )
 
-  return { success: true, processed }
+  return { success: true, processed: true }
 }
 
 export const processBatchPollingDispatcher = async (cursor?: BatchListingCursor) => {

@@ -2,7 +2,7 @@ import { getEmbeddingReconciliationPageSize } from '@services/embeddings/batch/c
 import { beginTransaction, write } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import { EMBEDDING_COLUMNS, EMBEDDINGS_TABLE } from '@services/embeddings/config'
-import { lockExistsClause } from '@services/embeddings/batch/lock-targets'
+import { activeBatchMembershipExistsClause } from '@services/embeddings/batch/membership-targets'
 
 type ReconciliationTable = 'posts' | 'topics' | 'rss_feed_items'
 
@@ -125,5 +125,5 @@ export async function copyExistingEmbeddings(
 }
 
 function copyExistingLockClause(tableName: ReconciliationTable): string {
-  return `AND NOT ${lockExistsClause(tableName, `${tableName}.id`)}`
+  return `AND NOT ${activeBatchMembershipExistsClause(tableName, `${tableName}.id`)}`
 }

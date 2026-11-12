@@ -37,7 +37,7 @@ describe('crawl breadcrumb embedding identity', () => {
       markdown: fullBody,
       gemini_embedding_2_content_sha256: hash,
     })
-    let applied = false
+    let appliedId: string | undefined
     for await (const row of streamPendingCrawlChunks({
       cursor: {
         sweepStartedAt: new Date(Date.now() + 60_000).toISOString(),
@@ -63,10 +63,24 @@ describe('crawl breadcrumb embedding identity', () => {
           input_token_count: 17,
         },
       ])
-      applied = true
+      appliedId = row.id
     }
-    expect(applied).toBe(true)
-    expect((await lookupExistingEmbeddings([hash])).has(hash.toString('hex'))).toBe(true)
+    expect(appliedId).toBeDefined()
+    if (!appliedId) throw new Error('Expected streamed crawl chunk')
+    const canonical = (await lookupExistingEmbeddings([hash])).get(hash.toString('hex'))!
+    await applyCrawlChunkBatchUpdates([
+      {
+        entity_id: appliedId,
+        content_sha256: hash,
+        embedding: makeRandomEmbedding(),
+        input_token_count: 91,
+      },
+    ])
+    expect((await getAllCrawlChunksForUrl(urlId))[0]).toMatchObject({
+      gemini_embedding_2_embedding: canonical.embedding,
+      gemini_embedding_2_input_token_count: 17,
+    })
+
     const secondUrlId = await createTestUrlWithHostname()
     const second = await insertTestCrawl({
       urlId: secondUrlId,

@@ -1,4 +1,4 @@
-import { advanceBatchIngestionRevision } from './ingestion-transaction.mts'
+import { lookupExistingEmbeddings } from '@services/embeddings/lookup'
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
 import { mintUUIDv7 } from '@modules/utils/ids'
@@ -10,11 +10,7 @@ import {
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/gemini-embeddings-batches'
 import { getTopicEmbeddingData } from '@voucha/test-helpers/entities/topics/embeddings'
-import {
-  getBatchIngestionFailures,
-  insertBatchTopicLock,
-  withRollbackIngestionQuery,
-} from '@voucha/test-helpers/gemini-batch-ingestion'
+import { insertBatchTopicMembership } from '@voucha/test-helpers/gemini-batch-ingestion'
 import { applyTopicBatchUpdates } from '../entities/topics.mts'
 import { completeBatchIngestion } from './poll.mts'
 import { ingestBatchResults } from './ingestion.mts'
@@ -29,14 +25,14 @@ async function batch() {
     vertexState: 'JOB_STATE_SUCCEEDED',
     completedAt: null,
   })
-  await insertBatchTopicLock(id, topic.id)
+  await insertBatchTopicMembership(id, topic.id)
   return { id, topicId: topic.id }
 }
 
 describe('durable batch ingestion', () => {
   afterEach(() => cleanupTestEmbeddingsBatches(batches.splice(0)))
 
-  it('retries committed chunks idempotently before completing and releasing locks', async () => {
+  it('retries committed chunks idempotently before completing and removing membership', async () => {
     const { id, topicId } = await batch()
     const content = (await getTopicEmbeddingData(topicId)) as {
       gemini_embedding_2_content_sha256: Buffer
@@ -48,103 +44,73 @@ describe('durable batch ingestion', () => {
       input_token_count: 17,
     }
     await expect(
-      ingestBatchResults(id, async client => {
-        await applyTopicBatchUpdates([update], client)
-        throw new Error('synthetic interrupted later chunk')
-      }),
-    ).rejects.toThrow('interrupted later chunk')
-    expect(await getBatchIngestionFailures(id)).toBe(1)
+      ingestBatchResults(
+        id,
+        async () => {
+          await applyTopicBatchUpdates([update])
+          throw new Error('synthetic interrupted later chunk')
+        },
+        false,
+      ),
+    ).rejects.toThrow('result ingestion failed')
     expect(await getTestBatchEntities(id)).toHaveLength(1)
-    await expect(
-      ingestBatchResults(id, async client => {
-        await applyTopicBatchUpdates([update], client)
-        await completeBatchIngestion(id, client)
-      }),
-    ).resolves.toBe(true)
+    await ingestBatchResults(
+      id,
+      async () => {
+        await applyTopicBatchUpdates([
+          { ...update, embedding: update.embedding.map(value => -value), input_token_count: 91 },
+        ])
+        await completeBatchIngestion(id)
+      },
+      true,
+    )
+    const cached = (await lookupExistingEmbeddings([update.content_sha256])).get(
+      update.content_sha256.toString('hex'),
+    )!
     expect(await getTopicEmbeddingData(topicId)).toMatchObject({
       gemini_embedding_2_input_sha256: update.content_sha256,
       gemini_embedding_2_input_token_count: 17,
+      gemini_embedding_2_embedding: cached.embedding,
     })
     expect(await getTestBatchSummary(id)).toMatchObject({ status: 'completed' })
     expect(await getTestBatchEntities(id)).toEqual([])
   })
 
-  it('rolls back a failed chunk revision and counts its failure against the unchanged owner', async () => {
+  it('keeps membership until the final queue attempt and atomically fails then', async () => {
     const { id } = await batch()
-    await expect(
-      ingestBatchResults(id, async fence => {
-        await withRollbackIngestionQuery(async query => {
-          const original = fence.generation
-          const next = await advanceBatchIngestionRevision(query, fence)
-          expect(next).toBeGreaterThan(original)
-          expect(fence.generation).toBe(original)
-          throw new Error('synthetic write failure after revision update')
-        })
-      }),
-    ).rejects.toThrow('synthetic write failure after revision update')
-    expect(await getBatchIngestionFailures(id)).toBe(1)
+    const fail = async () => {
+      throw new Error('synthetic malformed result')
+    }
+    await expect(ingestBatchResults(id, fail, false)).rejects.toThrow('result ingestion failed')
+    expect(await getTestBatchSummary(id)).toMatchObject({ status: 'in_progress' })
     expect(await getTestBatchEntities(id)).toHaveLength(1)
+    await expect(ingestBatchResults(id, fail, true)).rejects.toThrow('result ingestion failed')
+    expect(await getTestBatchSummary(id)).toMatchObject({ status: 'failed' })
+    expect(await getTestBatchEntities(id)).toEqual([])
   })
 
-  it('fences an abandoned download after a recovered delivery completes', async () => {
-    const { id, topicId } = await batch()
-    const started = Promise.withResolvers<void>()
-    const resume = Promise.withResolvers<void>()
-    const content = (await getTopicEmbeddingData(topicId)) as {
-      gemini_embedding_2_content_sha256: Buffer
-    }
-    const first = ingestBatchResults(id, async fence => {
-      started.resolve()
-      await resume.promise
-      await applyTopicBatchUpdates(
-        [
-          {
-            entity_id: topicId,
-            content_sha256: content.gemini_embedding_2_content_sha256,
-            embedding: makeRandomEmbedding(),
-            input_token_count: 19,
-          },
-        ],
-        fence,
-      )
-      await completeBatchIngestion(id, fence)
-    })
-    await started.promise
-    try {
-      await expect(
-        ingestBatchResults(id, fence => completeBatchIngestion(id, fence)),
-      ).resolves.toBe(true)
-    } finally {
-      resume.resolve()
-    }
-    await expect(first).resolves.toBe(false)
-    expect(await getTopicEmbeddingData(topicId)).toMatchObject({
-      gemini_embedding_2_input_sha256: null,
-    })
-    expect(await getBatchIngestionFailures(id)).toBe(0)
-    expect(await getTestBatchSummary(id)).toMatchObject({ status: 'completed' })
-  })
-
-  it('does not let an abandoned failing attempt count against its successor', async () => {
+  it('does not overwrite completion when another final attempt fails', async () => {
     const { id } = await batch()
     const started = Promise.withResolvers<void>()
     const resume = Promise.withResolvers<void>()
-    const first = ingestBatchResults(id, async () => {
-      started.resolve()
-      await resume.promise
-      throw new Error('synthetic abandoned download failure')
-    })
-    const rejected = first.catch((err: unknown) => err)
+    const failing = ingestBatchResults(
+      id,
+      async () => {
+        started.resolve()
+        await resume.promise
+        throw new Error('synthetic delayed failure')
+      },
+      true,
+    )
+    const rejected = failing.catch((err: unknown) => err)
     await started.promise
     try {
-      await expect(
-        ingestBatchResults(id, fence => completeBatchIngestion(id, fence)),
-      ).resolves.toBe(true)
+      await completeBatchIngestion(id)
     } finally {
       resume.resolve()
     }
-    expect(await rejected).toMatchObject({ message: 'synthetic abandoned download failure' })
-    expect(await getBatchIngestionFailures(id)).toBe(0)
+    expect(await rejected).toMatchObject({ message: 'Vertex batch result ingestion failed' })
     expect(await getTestBatchSummary(id)).toMatchObject({ status: 'completed' })
+    expect(await getTestBatchEntities(id)).toEqual([])
   })
 })

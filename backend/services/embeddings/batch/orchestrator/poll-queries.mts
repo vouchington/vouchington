@@ -80,14 +80,18 @@ export const getBatchInfo = async (
   job_type: string
   data: Record<string, unknown>
   completed_at: Date | null
+  failed_at: Date | null
+  cancelled_at: Date | null
 } | null> => {
   const { rows } = await read<{
     job_type: string
     data: Record<string, unknown>
     completed_at: Date | null
+    failed_at: Date | null
+    cancelled_at: Date | null
   }>(
     `/* getBatchInfo */
-    SELECT job_type, data, completed_at
+    SELECT job_type, data, completed_at, failed_at, cancelled_at
     FROM gemini_embedding_batches
     WHERE id = $1
   `,
@@ -102,5 +106,7 @@ export const getBatchInfo = async (
     job_type: rows[0].job_type,
     data: rows[0].data,
     completed_at: rows[0].completed_at,
+    failed_at: rows[0].failed_at,
+    cancelled_at: rows[0].cancelled_at,
   }
 }

@@ -1,12 +1,7 @@
-import {
-  advanceBatchIngestionRevision,
-  commitBatchIngestionTransaction,
-  type BatchIngestionFence,
-} from './ingestion-transaction.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import { findVertexBatch, retrieveVertexBatch } from '../provider.mts'
 import { lifecycleColumnForVertexState } from '../derive-status.mts'
-import { cleanupBatchLocks } from './cleanup.mts'
+import { cleanupBatchMembership } from './cleanup.mts'
 
 export const processBatch = async (batchId: string): Promise<void> => {
   const { rows: batchRows } = await read<{
@@ -33,7 +28,7 @@ export const processBatch = async (batchId: string): Promise<void> => {
     return
   }
   if (persistedBatch.failed_at !== null || persistedBatch.cancelled_at !== null) {
-    await cleanupBatchLocks(batchId)
+    await cleanupBatchMembership(batchId)
     return
   }
 
@@ -77,7 +72,17 @@ export const processBatch = async (batchId: string): Promise<void> => {
       AND failed_at IS NULL
       AND cancelled_at IS NULL
   `,
-    [batchId, JSON.stringify(batch), batch.name],
+    [
+      batchId,
+      JSON.stringify(
+        Object.fromEntries(
+          Object.entries(batch).filter(
+            ([key]) => !['name', 'model', 'jobName', 'modelId'].includes(key),
+          ),
+        ),
+      ),
+      batch.name,
+    ],
   )
 
   if ((transition.rowCount ?? 0) > 0 && (column === 'failed_at' || column === 'cancelled_at')) {
@@ -91,13 +96,8 @@ export const processBatch = async (batchId: string): Promise<void> => {
 
 export { retrieveVertexBatch } from '../provider.mts'
 
-export async function completeBatchIngestion(
-  batchId: string,
-  fence?: BatchIngestionFence,
-): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- open the transaction before advancing its batch revision; entity writes must follow the fence on this same connection.
+export async function completeBatchIngestion(batchId: string): Promise<void> {
   await using query = await beginTransaction()
-  const nextGeneration = await advanceBatchIngestionRevision(query, fence)
   const completed = await query(
     `/* completeBatchIngestion */ UPDATE gemini_embedding_batches
     SET completed_at = CURRENT_TIMESTAMP
@@ -110,5 +110,5 @@ export async function completeBatchIngestion(
       [batchId],
     )
   }
-  await commitBatchIngestionTransaction(query, fence, nextGeneration)
+  await query.commit()
 }

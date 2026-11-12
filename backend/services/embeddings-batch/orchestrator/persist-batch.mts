@@ -3,22 +3,19 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { GEMINI_EMBEDDING_2_MODEL_ID } from '@services/embeddings/config'
 import type { BatchJobType } from '@services/embeddings/batch/types'
 import type { BatchMetadata } from './shared.mts'
-import { insertLockRowsWithQuery } from './lock-rows.mts'
+import { insertBatchMembershipWithQuery } from './membership-rows.mts'
 
 export function batchDocument(
   status: 'JOB_STATE_PENDING',
   inputGcsUri: string,
   outputGcsUri: string,
   metadata: BatchMetadata,
-  jobName?: string,
 ): Record<string, unknown> {
   return {
     state: status,
-    jobName,
     inputGcsUri,
     manifestGcsUri: inputGcsUri.replace(/input\.jsonl$/, 'manifest.csv'),
     outputGcsUri,
-    modelId: GEMINI_EMBEDDING_2_MODEL_ID,
     metadata,
   }
 }
@@ -42,7 +39,7 @@ export async function markBatchSubmittedForPolling(
   )
 }
 
-export async function insertBatchAndLockRows(params: {
+export async function insertBatchWithMembership(params: {
   batchId: string
   jobType: BatchJobType
   entityCount: number
@@ -69,7 +66,12 @@ export async function insertBatchAndLockRows(params: {
       params.entityCount,
     ],
   )
-  await insertLockRowsWithQuery(query, params.batchId, params.jobType, params.entityIdsFilePath)
+  await insertBatchMembershipWithQuery(
+    query,
+    params.batchId,
+    params.jobType,
+    params.entityIdsFilePath,
+  )
 
   await query.commit()
 }

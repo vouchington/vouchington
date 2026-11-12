@@ -1,4 +1,3 @@
-import type { BatchIngestionFence } from '../orchestrator/ingestion-transaction.mts'
 import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createPostTextEmbeddingContent } from '@services/posts/content'
@@ -10,7 +9,7 @@ import {
   type EmbeddingReconciliationOptions,
   type EmbeddingReconciliationPage,
 } from '../orchestrator/reconcile-existing.mts'
-import { lockExistsClause } from '@services/embeddings/batch/lock-targets'
+import { activeBatchMembershipExistsClause } from '@services/embeddings/batch/membership-targets'
 import {
   reusableEmbeddingMissingClause,
   streamPendingEntities,
@@ -50,7 +49,7 @@ export async function* streamPendingPosts(
         OR p.gemini_embedding_2_input_sha256 != p.gemini_embedding_2_content_sha256
       )
       AND ${reusableEmbeddingMissingClause('p')}
-      AND NOT ${lockExistsClause('posts', 'p.id')}
+      AND NOT ${activeBatchMembershipExistsClause('posts', 'p.id')}
     ORDER BY p.id DESC
   `
 
@@ -88,10 +87,7 @@ export async function* streamPendingPosts(
   )
 }
 
-export async function applyPostBatchUpdates(
-  items: BatchUpdateItem[],
-  fence?: BatchIngestionFence,
-): Promise<void> {
-  const updatedIds = await applyBatchUpdates('posts', items, fence)
+export async function applyPostBatchUpdates(items: BatchUpdateItem[]): Promise<void> {
+  const updatedIds = await applyBatchUpdates('posts', items)
   await banEvasion.enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts(updatedIds)
 }

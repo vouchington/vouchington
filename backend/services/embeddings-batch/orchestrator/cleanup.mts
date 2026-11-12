@@ -1,8 +1,8 @@
 import { write } from '@data-stores/psql'
 
-export const cleanupBatchLocks = async (batchId: string): Promise<void> => {
+export const cleanupBatchMembership = async (batchId: string): Promise<void> => {
   await write(
-    `/* cleanupBatchLocks */
+    `/* cleanupBatchMembership */
     DELETE FROM gemini_embedding_batch_entities
     WHERE batch_id = $1
   `,

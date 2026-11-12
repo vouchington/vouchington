@@ -27,8 +27,6 @@ CREATE TABLE IF NOT EXISTS gemini_embedding_batches (
   records INT NOT NULL DEFAULT 0 CHECK (records BETWEEN 0 AND 1000000),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  ingestion_generation INTEGER NOT NULL DEFAULT 0 CHECK (ingestion_generation >= 0),
-  ingestion_failures SMALLINT NOT NULL DEFAULT 0 CHECK (ingestion_failures BETWEEN 0 AND 3),
   submitted_at TIMESTAMPTZ,
   in_progress_at TIMESTAMPTZ,
   completed_at TIMESTAMPTZ,
@@ -90,16 +88,14 @@ COMMENT ON COLUMN gemini_embedding_batches.id IS 'UUIDv7 identifier of this Vert
 COMMENT ON COLUMN gemini_embedding_batches.job_name IS 'The Vertex batch prediction resource name.';
 COMMENT ON COLUMN gemini_embedding_batches.model_id IS 'The Vertex AI model id used for embeddings.';
 COMMENT ON COLUMN gemini_embedding_batches.job_type IS 'Which entity type this batch processes.';
-COMMENT ON COLUMN gemini_embedding_batches.data IS 'JSONB batch document: state, model id, job name, GCS URIs, input size, and submission metadata.';
+COMMENT ON COLUMN gemini_embedding_batches.data IS 'JSONB batch document: provider state, GCS URIs, input size, and submission metadata; model_id and job_name columns are canonical.';
 COMMENT ON COLUMN gemini_embedding_batches.url_id IS 'Optional URL this batch was created for.';
 COMMENT ON COLUMN gemini_embedding_batches.crawl_id IS 'Optional crawl this batch was created for. Cleared before that crawl partition is dropped.';
 COMMENT ON COLUMN gemini_embedding_batches.records IS 'Number of records in this batch.';
-COMMENT ON COLUMN gemini_embedding_batches.ingestion_generation IS 'Revision advanced by ingestion claims and committed chunks; every writer and terminal transition verifies the current revision.';
-COMMENT ON COLUMN gemini_embedding_batches.ingestion_failures IS 'Failed terminal-result ingestion attempts, bounded at three before failing and unlocking this batch.';
 COMMENT ON COLUMN gemini_embedding_batches.submitted_at IS 'When submission intent was persisted before contacting Vertex; a missing receipt is reconciled by display name.';
 COMMENT ON COLUMN gemini_embedding_batches.in_progress_at IS 'When the Vertex job first reported running, cancelling or paused, or successful output awaiting ingestion.';
 COMMENT ON COLUMN gemini_embedding_batches.completed_at IS 'When all successful terminal output was validated and applied.';
-COMMENT ON COLUMN gemini_embedding_batches.failed_at IS 'When the provider failed, a submission receipt expired, or three terminal-result ingestion attempts failed.';
+COMMENT ON COLUMN gemini_embedding_batches.failed_at IS 'When the provider failed, a submission receipt expired, the final bounded queue attempt failed to ingest results, or the configured batch lifetime expired before ingestion.';
 COMMENT ON COLUMN gemini_embedding_batches.cancelled_at IS 'When the Vertex job was JOB_STATE_CANCELLED before completion.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -113,7 +109,6 @@ CREATE TABLE IF NOT EXISTS gemini_embedding_batch_entities (
   crawl_order_index INT,
   image_id UUID REFERENCES images(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_gemini_embedding_batch_entities__crawl_chunk
     FOREIGN KEY (crawl_id, crawl_order_index) REFERENCES crawl_chunks(crawl_id, order_index) ON DELETE CASCADE,
   CONSTRAINT chk_gemini_embedding_batch_entities__entity_columns
@@ -167,32 +162,26 @@ CREATE TABLE IF NOT EXISTS gemini_embedding_batch_entities (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_gemini_embedding_batch_entities_updated_at
-BEFORE UPDATE ON gemini_embedding_batch_entities
-FOR EACH ROW
-EXECUTE FUNCTION fn_update_updated_at();
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__batch_id
 ON gemini_embedding_batch_entities (batch_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__topic
+CREATE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__topic
 ON gemini_embedding_batch_entities (topic_id)
 WHERE topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__post
+CREATE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__post
 ON gemini_embedding_batch_entities (post_id)
 WHERE post_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__rss_feed_item
+CREATE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__rss_feed_item
 ON gemini_embedding_batch_entities (rss_feed_item_id)
 WHERE rss_feed_item_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__crawl_chunk
+CREATE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__crawl_chunk
 ON gemini_embedding_batch_entities (crawl_id, crawl_order_index)
 WHERE crawl_id IS NOT NULL AND crawl_order_index IS NOT NULL;
 
@@ -202,11 +191,11 @@ ON gemini_embedding_batch_entities (crawl_id)
 WHERE crawl_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__image
+CREATE INDEX IF NOT EXISTS idx_gemini_embedding_batch_entities__image
 ON gemini_embedding_batch_entities (image_id)
 WHERE image_id IS NOT NULL;
 
-COMMENT ON TABLE gemini_embedding_batch_entities IS 'Lock table tracking which entities are currently being processed in a Vertex embeddings batch.';
+COMMENT ON TABLE gemini_embedding_batch_entities IS 'Batch membership for best-effort duplicate-work suppression; membership does not grant exclusive entity ownership.';
 COMMENT ON COLUMN gemini_embedding_batch_entities.batch_id IS 'The batch job processing this entity.';
 COMMENT ON COLUMN gemini_embedding_batch_entities.entity_type IS 'The entity type being processed.';
 COMMENT ON COLUMN gemini_embedding_batch_entities.topic_id IS 'Topic currently being processed in a Vertex embeddings batch.';
@@ -237,7 +226,7 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 
-COMMENT ON TABLE gemini_embedding_2_embeddings IS 'Centralized lookup table for Gemini Embedding 2 document vectors, keyed by canonical content hash.';
+COMMENT ON TABLE gemini_embedding_2_embeddings IS 'Recomputable Gemini Embedding 2 document-vector cache keyed by canonical content hash; bounded age-based pages are removed by the daily data-retention sweep.';
 COMMENT ON COLUMN gemini_embedding_2_embeddings.content_sha256 IS 'SHA-256 of the input content. Primary key for deduplication.';
 COMMENT ON COLUMN gemini_embedding_2_embeddings.embedding IS '1536-dimensional vector from Gemini Embedding 2.';
 COMMENT ON COLUMN gemini_embedding_2_embeddings.input_token_count IS 'Number of tokens Vertex consumed for this content. NULL until first embedded; populated on insert and backfilled on cache hits.';

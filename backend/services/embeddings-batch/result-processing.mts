@@ -1,4 +1,3 @@
-import type { BatchIngestionFence } from './orchestrator/ingestion-transaction.mts'
 import type {
   BatchJobType,
   BatchUpdateItem,
@@ -87,11 +86,8 @@ export const processImageBatchResultsInBatches = async (
   if (updates.length > 0) await applyUpdates(updates)
 }
 
-export const processCrawlChunkBatchResults = async (
-  updates: BatchUpdateItem[],
-  fence?: BatchIngestionFence,
-): Promise<void> => {
-  await applyCrawlChunkBatchUpdates(updates, fence)
+export const processCrawlChunkBatchResults = async (updates: BatchUpdateItem[]): Promise<void> => {
+  await applyCrawlChunkBatchUpdates(updates)
 
   const crawlIds = new Set<string>()
   for (const update of updates) {

@@ -1,8 +1,3 @@
-import {
-  advanceBatchIngestionRevision,
-  commitBatchIngestionTransaction,
-  type BatchIngestionFence,
-} from './ingestion-transaction.mts'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
@@ -12,17 +7,12 @@ import { from as copyFrom } from 'pg-copy-streams'
 import type { ImageBatchUpdateItem } from '@services/embeddings/batch/types'
 import { csvEscape } from './csv.mts'
 
-export async function applyImageBatchUpdates(
-  items: ImageBatchUpdateItem[],
-  fence?: BatchIngestionFence,
-): Promise<string[]> {
+export async function applyImageBatchUpdates(items: ImageBatchUpdateItem[]): Promise<string[]> {
   if (items.length === 0) return []
 
   const tempTable = `temp_image_embedding_updates_${randomUUID().replaceAll('-', '')}`
   let updatedIds: string[] = []
-  // ast-grep-ignore: no-three-sequential-awaits -- open the transaction before advancing its batch revision; entity writes must follow the fence on this same connection.
   await using query = await beginTransaction()
-  const nextGeneration = await advanceBatchIngestionRevision(query, fence)
 
   await query(
     `/* applyImageBatchUpdates */ CREATE TEMP TABLE ${tempTable} (
@@ -62,7 +52,7 @@ export async function applyImageBatchUpdates(
   )
   updatedIds = rows.map((r: { id: string }) => r.id)
 
-  await commitBatchIngestionTransaction(query, fence, nextGeneration)
+  await query.commit()
 
   return updatedIds
 }

@@ -5,7 +5,7 @@ import { transformImage } from '@vouchington/image-resize'
 import { freezeImageUpload, MAX_IMAGE_UPLOAD_BYTES } from '@services/images/freeze-upload'
 import { getImageFromS3 } from '@services/images/s3'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
-import { lockExistsClause } from '@services/embeddings/batch/lock-targets'
+import { activeBatchMembershipExistsClause } from '@services/embeddings/batch/membership-targets'
 import { BatchFileBuilder } from '../orchestrator/file-builder.mts'
 
 const MAX_IMAGE_EMBEDDING_PIXELS = 24_000_000
@@ -43,7 +43,7 @@ export async function* streamPendingImages(
     const eligibility = `deleted_at IS NULL AND quarantine_pending_at IS NULL
     AND openai_omni_moderation_created_at IS NOT NULL AND is_flagged_by_openai_omni_moderation = FALSE
     AND gemini_embedding_2_embedding_created_at IS NULL
-    AND NOT ${lockExistsClause('images', 'images.id')}`
+    AND NOT ${activeBatchMembershipExistsClause('images', 'images.id')}`
     if (pendingIds.length) {
       for await (const image of createAsyncGeneratorFromCursor<PendingImage>(
         `/* replayPendingEmbeddingImages */ SELECT id, s3_key, sha_256 FROM images

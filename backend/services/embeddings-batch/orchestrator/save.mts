@@ -1,8 +1,3 @@
-import {
-  advanceBatchIngestionRevision,
-  commitBatchIngestionTransaction,
-  type BatchIngestionFence,
-} from './ingestion-transaction.mts'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
@@ -22,7 +17,6 @@ type EmbeddingTable = (typeof EMBEDDING_TABLES)[number]
 export async function applyBatchUpdates(
   tableName: EmbeddingTable,
   items: BatchUpdateItem[],
-  fence?: BatchIngestionFence,
 ): Promise<string[]> {
   if (items.length === 0) return []
   if (!EMBEDDING_TABLES.includes(tableName)) {
@@ -31,9 +25,7 @@ export async function applyBatchUpdates(
 
   const tempTable = `temp_embedding_updates_${randomUUID().replaceAll('-', '')}`
   let updatedIds: string[] = []
-  // ast-grep-ignore: no-three-sequential-awaits -- open the transaction before advancing its batch revision; entity writes must follow the fence on this same connection.
   await using query = await beginTransaction()
-  const nextGeneration = await advanceBatchIngestionRevision(query, fence)
 
   await query(
     `/* applyBatchUpdates */ CREATE TEMP TABLE ${tempTable} (
@@ -80,16 +72,11 @@ export async function applyBatchUpdates(
   const { rows } = await write<{ id: string }>(
     `/* applyBatchUpdates */ UPDATE ${tableName}
       SET ${EMBEDDING_COLUMNS.input_sha256} = u.content_sha256,
-        ${EMBEDDING_COLUMNS.embedding} = u.embedding,
+        ${EMBEDDING_COLUMNS.embedding} = cache.embedding,
         ${EMBEDDING_COLUMNS.created_at} = NOW(),
-        ${EMBEDDING_COLUMNS.input_token_count} = COALESCE(
-          u.input_token_count,
-          CASE WHEN ${tableName}.${EMBEDDING_COLUMNS.input_sha256} = u.content_sha256
-            THEN ${tableName}.${EMBEDDING_COLUMNS.input_token_count}
-            ELSE NULL
-          END
-        )
+        ${EMBEDDING_COLUMNS.input_token_count} = cache.input_token_count
       FROM ${tempTable} u
+      JOIN ${EMBEDDINGS_TABLE} cache ON cache.content_sha256 = u.content_sha256
       WHERE ${tableName}.id = u.entity_id::uuid
         AND ${tableName}.${EMBEDDING_COLUMNS.content_sha256} = u.content_sha256
         ${tableName === 'topics' ? 'AND topics.deleted_at IS NULL AND topics.merged_into_topic_id IS NULL' : ''}
@@ -98,7 +85,7 @@ export async function applyBatchUpdates(
   )
   updatedIds = rows.map((r: { id: string }) => r.id)
 
-  await commitBatchIngestionTransaction(query, fence, nextGeneration)
+  await query.commit()
 
   const hexHashes = items.map(item => item.content_sha256.toString('hex'))
   await addEmbeddingHashesToBloomFilter(hexHashes)

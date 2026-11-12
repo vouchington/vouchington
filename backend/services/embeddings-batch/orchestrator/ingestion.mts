@@ -1,51 +1,43 @@
-import { beginTransaction, write } from '@data-stores/psql'
-import {
-  BatchIngestionSupersededError,
-  type BatchIngestionFence,
-} from './ingestion-transaction.mts'
+import { beginTransaction } from '@data-stores/psql'
 
-/** Normal queue deliveries serialize; a recovered delivery fences an abandoned attempt. */
+/** GlideMQ owns retry accounting; every result write is idempotent by canonical content hash. */
 export async function ingestBatchResults(
   batchId: string,
-  ingest: (fence: BatchIngestionFence) => Promise<void>,
-): Promise<boolean> {
-  const claimed = await write<{ ingestion_generation: number }>(
-    `/* ingestBatchResults */ UPDATE gemini_embedding_batches
-    SET ingestion_generation = ingestion_generation + 1
-    WHERE id = $1 AND completed_at IS NULL AND failed_at IS NULL AND cancelled_at IS NULL
-      AND data->>'state' IN ('JOB_STATE_SUCCEEDED', 'JOB_STATE_PARTIALLY_SUCCEEDED')
-    RETURNING ingestion_generation`,
-    [batchId],
-  )
-  const generation = claimed.rows[0]?.ingestion_generation
-  if (generation === undefined) return false
-  const fence = { batchId, generation }
+  ingest: () => Promise<void>,
+  finalAttempt: boolean,
+): Promise<void> {
   try {
-    await ingest(fence)
-    return true
+    await ingest()
   } catch (err) {
-    if (err instanceof BatchIngestionSupersededError) return false
-    await recordIngestionFailure(fence)
-    throw err
+    if (finalAttempt) await failBatchIngestion(batchId)
+    // Ingestion HTTP failures consume ordinary queue attempts, including permanent 4xx.
+    // Keep their status below the top level so the outer provider-poll policy cannot defer them.
+    throw new Error('Vertex batch result ingestion failed', { cause: err })
   }
 }
 
-async function recordIngestionFailure(fence: BatchIngestionFence): Promise<void> {
+export async function failBatchIngestion(batchId: string): Promise<void> {
+  await failBatchIngestions([batchId])
+}
+
+export async function failBatchIngestions(
+  batchIds: readonly string[],
+  staleTtlHours?: number,
+): Promise<void> {
+  if (!batchIds.length) return
   await using query = await beginTransaction()
-  const failed = await query<{ failed_at: Date | null }>(
-    `/* recordIngestionFailure */ UPDATE gemini_embedding_batches
-    SET ingestion_failures = LEAST(ingestion_failures + 1, 3),
-        failed_at = CASE WHEN ingestion_failures >= 2 THEN CURRENT_TIMESTAMP ELSE NULL END
-    WHERE id = $1 AND ingestion_generation = $2
-      AND completed_at IS NULL AND failed_at IS NULL AND cancelled_at IS NULL
-      AND data->>'state' IN ('JOB_STATE_SUCCEEDED', 'JOB_STATE_PARTIALLY_SUCCEEDED')
-    RETURNING failed_at`,
-    [fence.batchId, fence.generation],
+  const failed = await query<{ id: string }>(
+    `/* failBatchIngestion */ UPDATE gemini_embedding_batches
+    SET failed_at = CURRENT_TIMESTAMP
+    WHERE id = ANY($1::uuid[]) AND completed_at IS NULL AND failed_at IS NULL AND cancelled_at IS NULL
+      AND ($2::int IS NULL OR submitted_at < CURRENT_TIMESTAMP - $2::int * INTERVAL '1 hour')
+    RETURNING id`,
+    [batchIds, staleTtlHours ?? null],
   )
-  if (failed.rows[0]?.failed_at) {
+  if (failed.rowCount) {
     await query(
-      '/* recordIngestionFailure unlock */ DELETE FROM gemini_embedding_batch_entities WHERE batch_id = $1',
-      [fence.batchId],
+      '/* failBatchIngestion membership */ DELETE FROM gemini_embedding_batch_entities WHERE batch_id = ANY($1::uuid[])',
+      [failed.rows.map(row => row.id)],
     )
   }
   await query.commit()

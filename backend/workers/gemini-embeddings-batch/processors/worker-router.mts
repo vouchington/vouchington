@@ -39,7 +39,7 @@ export const processEmbeddingsBatchJob = async (
       if (job.name === 'gemini-embeddings.poll_batch') {
         const batchId = job.data?.batch_id
         if (!batchId) throw new Error('Batch ID is required')
-        return processBatchPolling(batchId)
+        return processBatchPolling(batchId, job.attemptsMade + 1 >= (job.opts.attempts ?? 1))
       }
       throw new Error(`Unknown polling job type: ${jobName}`)
     }

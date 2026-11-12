@@ -51,8 +51,13 @@ dynamic configuration can lower the admitted cardinality but cannot raise those 
 
 Creation, provider reconciliation, and result ingestion run through bounded background jobs.
 Continuations preserve progress when a scan reaches its work limit. Provider-success ingestion has a
-bounded retry budget; exhausting it fails the batch and releases entity locks so pending scans can
-retry the work. If submission returns without a receipt, reconciliation checks the deterministic
+bounded queue-attempt budget; the final failed attempt conditionally fails the batch and removes
+its membership so pending scans can retry the work. Idempotent hash-keyed writes make repeated
+deliveries harmless; membership suppresses duplicate work on a best-effort basis and does not claim
+exclusive entity ownership. The configured total batch lifetime also retires successful output
+abandoned by a crashed or stalled worker; it does not cancel an already completed provider job.
+The existing daily data-retention sweep expires recomputable shared
+cache rows in bounded pages while entity vectors remain stored inline. If submission returns without a receipt, reconciliation checks the deterministic
 provider display name before another paid submission is considered.
 
 ## Runtime identity

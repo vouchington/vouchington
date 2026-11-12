@@ -1,4 +1,3 @@
-import type { BatchIngestionFence } from '../orchestrator/ingestion-transaction.mts'
 import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createRssFeedItemEmbeddingContent } from '@services/rss-feed-items/content'
@@ -10,7 +9,7 @@ import {
   type EmbeddingReconciliationOptions,
   type EmbeddingReconciliationPage,
 } from '../orchestrator/reconcile-existing.mts'
-import { lockExistsClause } from '@services/embeddings/batch/lock-targets'
+import { activeBatchMembershipExistsClause } from '@services/embeddings/batch/membership-targets'
 import {
   reusableEmbeddingMissingClause,
   streamPendingEntities,
@@ -41,7 +40,7 @@ export async function* streamPendingRssFeedItems(
         OR r.gemini_embedding_2_input_sha256 != r.gemini_embedding_2_content_sha256
       )
       AND ${reusableEmbeddingMissingClause('r')}
-      AND NOT ${lockExistsClause('rss_feed_items', 'r.id')}
+      AND NOT ${activeBatchMembershipExistsClause('rss_feed_items', 'r.id')}
     ORDER BY r.id DESC
   `
 
@@ -55,10 +54,7 @@ export async function* streamPendingRssFeedItems(
   )
 }
 
-export async function applyRssFeedItemBatchUpdates(
-  items: BatchUpdateItem[],
-  fence?: BatchIngestionFence,
-): Promise<void> {
-  const updatedIds = await applyBatchUpdates('rss_feed_items', items, fence)
+export async function applyRssFeedItemBatchUpdates(items: BatchUpdateItem[]): Promise<void> {
+  const updatedIds = await applyBatchUpdates('rss_feed_items', items)
   await dispatchStoryClusteringForEmbeddedItems(updatedIds)
 }

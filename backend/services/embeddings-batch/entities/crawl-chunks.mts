@@ -1,9 +1,4 @@
 import { addEmbeddingHashesToBloomFilter } from '@services/embeddings/bloom-filter/bloom-filter'
-import {
-  advanceBatchIngestionRevision,
-  commitBatchIngestionTransaction,
-  type BatchIngestionFence,
-} from '../orchestrator/ingestion-transaction.mts'
 import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
@@ -12,7 +7,7 @@ import { beginTransaction, createAsyncGeneratorFromCursor } from '@data-stores/p
 import { from as copyFrom } from 'pg-copy-streams'
 import { EMBEDDING_DIMENSION, EMBEDDINGS_TABLE } from '@services/embeddings/config'
 import type { BatchUpdateItem } from '@services/embeddings/batch/types'
-import { lockExistsClause } from '@services/embeddings/batch/lock-targets'
+import { activeBatchMembershipExistsClause } from '@services/embeddings/batch/membership-targets'
 import { createCrawlChunkEntityId, parseCrawlChunkEntityId } from './crawl-chunk-entity-id.mts'
 
 type PendingCrawlChunk = {
@@ -44,7 +39,7 @@ export async function* streamPendingCrawlChunks(
         cc.gemini_embedding_2_input_sha256 IS NULL
         OR cc.gemini_embedding_2_input_sha256 != cc.gemini_embedding_2_content_sha256
       )
-      AND NOT ${lockExistsClause('crawl_chunks', '(cc.crawl_id, cc.order_index)')}
+      AND NOT ${activeBatchMembershipExistsClause('crawl_chunks', '(cc.crawl_id, cc.order_index)')}
     ORDER BY cc.crawl_id DESC, cc.order_index ASC
   `
 
@@ -72,10 +67,7 @@ export async function* streamPendingCrawlChunks(
   }
 }
 
-export async function applyCrawlChunkBatchUpdates(
-  items: BatchUpdateItem[],
-  fence?: BatchIngestionFence,
-): Promise<void> {
+export async function applyCrawlChunkBatchUpdates(items: BatchUpdateItem[]): Promise<void> {
   if (items.length === 0) return
 
   const parsed = items.flatMap(item => {
@@ -94,9 +86,7 @@ export async function applyCrawlChunkBatchUpdates(
   if (parsed.length === 0) return
 
   const tempTable = `temp_crawl_chunk_updates_${randomUUID().replaceAll('-', '')}`
-  // ast-grep-ignore: no-three-sequential-awaits -- open the transaction before advancing its batch revision; entity writes must follow the fence on this same connection.
   await using query = await beginTransaction()
-  const nextGeneration = await advanceBatchIngestionRevision(query, fence)
 
   await query(
     `/* applyCrawlChunkBatchUpdates */ CREATE TEMP TABLE ${tempTable} (
@@ -130,22 +120,17 @@ export async function applyCrawlChunkBatchUpdates(
   await query(
     `/* applyCrawlChunkBatchUpdates */ UPDATE crawl_chunks
       SET gemini_embedding_2_input_sha256 = u.content_sha256,
-        gemini_embedding_2_embedding = u.embedding,
+        gemini_embedding_2_embedding = cache.embedding,
         gemini_embedding_2_embedding_created_at = NOW(),
-        gemini_embedding_2_input_token_count = COALESCE(
-          u.input_token_count,
-          CASE WHEN crawl_chunks.gemini_embedding_2_input_sha256 = u.content_sha256
-            THEN crawl_chunks.gemini_embedding_2_input_token_count
-            ELSE NULL
-          END
-        )
+        gemini_embedding_2_input_token_count = cache.input_token_count
       FROM ${tempTable} u
+      JOIN ${EMBEDDINGS_TABLE} cache ON cache.content_sha256 = u.content_sha256
       WHERE crawl_chunks.crawl_id = u.crawl_id
         AND crawl_chunks.order_index = u.order_index
         AND crawl_chunks.gemini_embedding_2_content_sha256 = u.content_sha256`,
   )
 
-  await commitBatchIngestionTransaction(query, fence, nextGeneration)
+  await query.commit()
   await addEmbeddingHashesToBloomFilter(parsed.map(item => item.content_sha256.toString('hex')))
 }
 

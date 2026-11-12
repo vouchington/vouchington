@@ -9,14 +9,14 @@ import {
 } from '@services/embeddings/batch/input-size-limits'
 import type { BatchJobType } from '@services/embeddings/batch/types'
 import type { BatchMetadata, BatchSource } from './shared.mts'
-import { cleanupBatchLocks } from './cleanup.mts'
+import { cleanupBatchMembership } from './cleanup.mts'
 import { createVertexBatch } from '../provider.mts'
 import { GoogleBatchApiError } from '../google-http.mts'
 import { gcsUri, uploadGcsFile } from '../gcs.mts'
 import { requireVertexEnvironment } from '@services/embeddings/vertex'
 import {
   batchDocument,
-  insertBatchAndLockRows,
+  insertBatchWithMembership,
   markBatchSubmittedForPolling,
 } from './persist-batch.mts'
 
@@ -57,7 +57,7 @@ export const createBatch = async (
       throw new Error('Vertex batch record limit exceeded')
     if ((await stat(filePath)).size > MAX_BATCH_INPUT_BYTES)
       throw new Error('Vertex batch input byte limit exceeded')
-    await insertBatchAndLockRows({
+    await insertBatchWithMembership({
       batchId,
       jobType,
       entityCount,
@@ -87,7 +87,7 @@ export const createBatch = async (
     await markBatchSubmittedForPolling(
       batchId,
       job.name,
-      batchDocument('JOB_STATE_PENDING', inputUri, outputUri, batchMetadata, job.name),
+      batchDocument('JOB_STATE_PENDING', inputUri, outputUri, batchMetadata),
       persistence,
     )
   } catch (err) {
@@ -101,7 +101,7 @@ export const createBatch = async (
     // display-name intent; polling discovers the provider job without another submission.
     if (submittedJobName) canReleaseLocks = false
     if (canReleaseLocks && batchPersisted) {
-      await cleanupBatchLocks(batchId).catch(onError)
+      await cleanupBatchMembership(batchId).catch(onError)
       await write('/* createBatch:cleanup */ DELETE FROM gemini_embedding_batches WHERE id = $1', [
         batchId,
       ]).catch(onError)

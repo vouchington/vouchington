@@ -1,9 +1,6 @@
 import { createTestTopic } from '@voucha/test-helpers'
 import { getTopicEmbeddingData } from '@voucha/test-helpers/entities/topics'
-import {
-  getBatchIngestionFailures,
-  insertBatchTopicLock,
-} from '@voucha/test-helpers/gemini-batch-ingestion'
+import { insertBatchTopicMembership } from '@voucha/test-helpers/gemini-batch-ingestion'
 import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
@@ -16,7 +13,8 @@ import {
 import { processBatchPolling as actualProcessBatchPolling } from '../processors.mts'
 
 let fixture: ReturnType<typeof createVertexHttpFixture>
-const processBatchPolling = (id: string) => fixture.run(() => actualProcessBatchPolling(id))
+const processBatchPolling = (id: string, finalAttempt = false) =>
+  fixture.run(() => actualProcessBatchPolling(id, finalAttempt))
 const createdBatchIds: string[] = []
 
 describe('processBatchPolling', () => {
@@ -58,7 +56,7 @@ describe('processBatchPolling', () => {
 
     await expect(processBatchPolling(id)).rejects.toThrow(`Batch not found: ${id}`)
   })
-  it('fails after three terminal-result download errors and atomically releases entity locks', async () => {
+  it('uses the final queue attempt to fail result downloads and remove membership', async () => {
     const id = batchId()
     const topic = await createTestTopic({ name: `Ingestion ${id}` })
     const jobName = `projects/123456/locations/us/batchPredictionJobs/${id}`
@@ -71,7 +69,7 @@ describe('processBatchPolling', () => {
         outputGcsUri: `gs://synthetic-embeddings/${id}/output/`,
       },
     })
-    await insertBatchTopicLock(id, topic.id)
+    await insertBatchTopicMembership(id, topic.id)
     fixture.agent
       .get('https://us-aiplatform.googleapis.com')
       .intercept({ method: 'GET', path: `/v1/${jobName}` })
@@ -89,14 +87,11 @@ describe('processBatchPolling', () => {
         items: [{ name: `${id}/output/predictions.jsonl`, generation: '1', size: '1' }],
       })
       .times(3)
-    await expect(processBatchPolling(id)).rejects.toThrow('(503)')
-    expect(await getBatchIngestionFailures(id)).toBe(1)
+    await expect(processBatchPolling(id)).rejects.toThrow('result ingestion failed')
     expect(await getTestBatchEntities(id)).toHaveLength(1)
-    await expect(processBatchPolling(id)).rejects.toThrow('(503)')
-    expect(await getBatchIngestionFailures(id)).toBe(2)
+    await expect(processBatchPolling(id)).rejects.toThrow('result ingestion failed')
     expect(await getTestBatchEntities(id)).toHaveLength(1)
-    await expect(processBatchPolling(id)).rejects.toThrow('(503)')
-    expect(await getBatchIngestionFailures(id)).toBe(3)
+    await expect(processBatchPolling(id, true)).rejects.toThrow('result ingestion failed')
     expect(await getTestBatchSummary(id)).toMatchObject({ status: 'failed' })
     expect(await getTestBatchEntities(id)).toEqual([])
   })
@@ -114,8 +109,8 @@ describe('processBatchPolling', () => {
         outputGcsUri: `gs://synthetic-embeddings/${id}/output/`,
       },
     })
-    await insertBatchTopicLock(id, first.id)
-    await insertBatchTopicLock(id, second.id)
+    await insertBatchTopicMembership(id, first.id)
+    await insertBatchTopicMembership(id, second.id)
     const firstData = (await getTopicEmbeddingData(first.id)) as {
       gemini_embedding_2_content_sha256: Buffer
     }
@@ -152,11 +147,10 @@ describe('processBatchPolling', () => {
           JSON.stringify({ key: `topic:${second.id}`, response: { embedding: { values: [] } } }),
         ].join('\n'),
       )
-    await expect(processBatchPolling(id)).rejects.toThrow('Malformed successful')
+    await expect(processBatchPolling(id)).rejects.toThrow('result ingestion failed')
     expect(await getTopicEmbeddingData(first.id)).toMatchObject({
       gemini_embedding_2_embedding: null,
     })
-    expect(await getBatchIngestionFailures(id)).toBe(1)
     expect(await getTestBatchEntities(id)).toHaveLength(2)
   })
 })
