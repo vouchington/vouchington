@@ -21,7 +21,7 @@ describe('current EXPLAIN read inventory', () => {
         'backend/services/urls-hostnames/get-batch.mts',
         'backend/services/users/get-public-batch.mts',
         'backend/services/crawls/get-html-by-url-ids.mts',
-        'backend/services/embeddings-batch/orchestrator/results.mts',
+        'backend/services/embeddings-batch/orchestrator/result-source.mts',
         'backend/services/users/get.mts',
         'backend/services/stories/get-post-stories.mts',
         'backend/services/urls/get.mts',
@@ -39,7 +39,7 @@ describe('current EXPLAIN read inventory', () => {
       const names = report.uncoveredReads.map(read => read.name)
       for (const name of [
         'getLatestHtmlByUrlIds',
-        'downloadBatchResults',
+        'getBatchResultSource',
         'getPostStoryIdsByStoryIds',
         'getPostStoryByPostId',
         'getUrlById',

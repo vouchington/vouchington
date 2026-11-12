@@ -162,6 +162,8 @@ describe('getBatchInfo', () => {
     await expect(getBatchInfo(id)).resolves.toEqual({
       job_type: 'posts',
       completed_at: null,
+      failed_at: null,
+      cancelled_at: null,
       data: expect.objectContaining({
         state: 'JOB_STATE_PENDING',
         outputGcsUri: 'gs://synthetic-embeddings/output/',

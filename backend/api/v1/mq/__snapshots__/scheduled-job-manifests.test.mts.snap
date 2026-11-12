@@ -2063,7 +2063,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Stop and cancel Gemini batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
+        "description": "Reconcile Gemini batches beyond their configured lifetime",
         "id": "gemini-embeddings:stale-cleanup-dispatcher",
         "kind": "scheduled-jobs",
         "schedule": "0 * * * *",
@@ -3976,7 +3976,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "[anonymous]",
   },
   {
-    "description": "Stop and cancel Gemini batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
+    "description": "Reconcile Gemini batches beyond their configured lifetime",
     "id": "gemini-embeddings:stale-cleanup-dispatcher",
     "job_name": "gemini-embeddings.stale_cleanup_dispatcher",
     "queue_name": "background-cpu",

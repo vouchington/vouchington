@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createBatch as submitBatch } from '../create.mts'
 
-describe('batch admission after fixture creation', () => {
+describe('batch membership admission', () => {
   async function writeTempFile(name: string, data: string): Promise<string> {
     const directory = await mkdtemp(join(tmpdir(), 'gemini-admission-'))
     onTestFinished(() => rm(directory, { recursive: true, force: true }))
@@ -86,24 +86,27 @@ describe('batch admission after fixture creation', () => {
     expect(submitted).toBe(1)
   })
 
-  it('admits production work after duplicate fixture IDs fail without partial locks', async () => {
+  it('admits separate paid jobs for the same entity without exclusive claims', async () => {
     const user = await createTestUserDirect()
     const entityId = await insertTestTopic({
       name: `admission ${randomUUID()}`,
       slug: `admission-${randomUUID()}`,
       createdById: user.id,
     })
-    await expect(createTestBatch({ entityIds: [entityId, entityId] })).rejects.toMatchObject({
-      code: '23505',
-    })
     const inputFile = await writeTempFile('input.jsonl', 'irrelevant for this test')
     const entityIdsFile = await writeTempFile('entity-ids.csv', `${entityId},${'ab'.repeat(32)}\n`)
     const batchId = await createBatch(inputFile, 1, entityIdsFile)
-    ownedBatchIds.push(batchId)
+    const duplicateInput = await writeTempFile('input.jsonl', 'independent duplicate job')
+    const duplicateIds = await writeTempFile('entity-ids.csv', `${entityId},${'ab'.repeat(32)}\n`)
+    const duplicateBatchId = await createBatch(duplicateInput, 1, duplicateIds)
+    ownedBatchIds.push(batchId, duplicateBatchId)
     expect(await getTestBatchEntities(batchId)).toEqual([
       { entity_type: 'topics', entity_id: entityId },
     ])
-    expect(uploads).toBe(2)
-    expect(submitted).toBe(1)
+    expect(await getTestBatchEntities(duplicateBatchId)).toEqual([
+      { entity_type: 'topics', entity_id: entityId },
+    ])
+    expect(uploads).toBe(4)
+    expect(submitted).toBe(2)
   })
 })

@@ -65,10 +65,15 @@ export const processBatchPolling = async (
   await ingestBatchResults(
     batchId,
     async () => {
-      const [manifest, source] = await Promise.all([
+      const [manifestResult, sourceResult] = await Promise.allSettled([
         loadBatchManifest(batchId),
         getBatchResultSource(batchId),
       ])
+      // Settle both owned reads before retrying or releasing this delivery's HTTP scope.
+      if (manifestResult.status === 'rejected') throw manifestResult.reason
+      if (sourceResult.status === 'rejected') throw sourceResult.reason
+      const manifest = manifestResult.value
+      const source = sourceResult.value
       await validateBatchOutput(streamBatchResults(source), manifest)
 
       // Process results in batches based on job type

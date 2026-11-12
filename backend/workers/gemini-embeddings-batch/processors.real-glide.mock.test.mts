@@ -1,3 +1,5 @@
+import { createPostTextEmbeddingContent } from '@services/posts/content'
+import { setPostEmbeddingContentOnlySha256 } from '@voucha/test-helpers/entities/embeddings'
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Queue, type Job } from 'glide-mq'
@@ -94,14 +96,20 @@ describe('bounded shared Gemini single backlog through real GlideMQ', () => {
 
     const user = await createTestUserDirect()
     const createdAt = new Date(Date.now() + 3_600_000)
+    const title = `Persisted missing embedding ${randomUUID()}`
+    const markdown = 'This post remains available to the scheduled batch creation scan.'
     const postId = await insertTestPost({
       createdAt,
-      title: 'Persisted missing embedding',
+      title,
       slug: `cpu-recovery-${randomUUID()}`,
-      markdown: 'This post remains available to the scheduled batch creation scan.',
+      markdown,
       createdById: user.id,
     })
     onTestFinished(() => deleteTestPost(postId))
+    await setPostEmbeddingContentOnlySha256(
+      postId,
+      createPostTextEmbeddingContent({ title, markdown }).content_sha256,
+    )
     const sweepStartedAt = new Date(createdAt.getTime() + 3_600_000).toISOString()
     const pending = streamPendingPosts({
       cursor: { sweepStartedAt, afterId: uuidAfter(postId) },
@@ -189,7 +197,7 @@ describe('bounded Gemini batch dispatcher continuations', () => {
     expect(await backgroundCpu.getJob(terminalContinuationId)).toBeNull()
   })
 
-  it('continues stale cleanup past provider-completed batches awaiting ingestion', async () => {
+  it('continues stale cleanup while retiring abandoned successful ingestion', async () => {
     const fixture = createVertexHttpFixture()
     const requests: string[] = []
     const runCleanup = (...args: Parameters<typeof processStaleCleanupDispatcher>) =>
@@ -263,7 +271,7 @@ describe('bounded Gemini batch dispatcher continuations', () => {
       inspected: 0,
       hasMore: false,
     })
-    await expect(getTestBatchSummary(ids[0]!)).resolves.toMatchObject({ status: 'submitted' })
-    await expect(getTestBatchSummary(ids[1]!)).resolves.toMatchObject({ status: 'submitted' })
+    await expect(getTestBatchSummary(ids[0]!)).resolves.toMatchObject({ status: 'failed' })
+    await expect(getTestBatchSummary(ids[1]!)).resolves.toMatchObject({ status: 'failed' })
   })
 })

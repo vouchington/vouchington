@@ -221,7 +221,7 @@ describe('Gemini embeddings batch worker processor', () => {
         forcedCancellations: [],
       })
     })
-    expect(await getTestBatchSummary(id)).toMatchObject({ status: 'submitted' })
+    expect(await getTestBatchSummary(id)).toMatchObject({ status: 'failed' })
     expect(await getTestBatchSummary(foreignId)).toEqual(before)
   })
 
