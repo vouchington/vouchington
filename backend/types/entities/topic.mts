@@ -191,7 +191,7 @@ export type TopicElection = {
 export function createTopicEmbeddingContent(
   topic: Topic | { name: string; markdown?: string; aliases?: string[] },
 ): { title: string; body: string; content: string; content_sha256: Buffer } {
-  const aliases = [...new Set(topic.aliases ?? [])].toSorted()
+  const aliases = [...new Set((topic.aliases ?? []).map(alias => alias.toWellFormed()))].toSorted()
   const title = topic.name
   const body = `${aliases.join(' ')}\n${topic.markdown || ''}`
   const content = `${title}\n${body}`

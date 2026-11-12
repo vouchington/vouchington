@@ -71,6 +71,16 @@ describe('post batch canonical content parity', () => {
     await expectAppliedCurrentContent(post.id)
   })
 
+  it('keeps raw lone-surrogate input identical to the persisted UTF-8 document identity', async () => {
+    const post = await createTestPost({
+      title: `Unicode ${randomUUID()}\ud800`,
+      markdown: 'Body with lone surrogate \udfff and remaining text.',
+    })
+    if (!post) throw new Error('Expected persisted Unicode fixture post')
+    expect(post.title).toContain('\ufffd')
+    await expectAppliedCurrentContent(post.id)
+  })
+
   it.each(['create', 'update'] as const)(
     'applies recommendation %s hashes with an unordered hostname set',
     async phase => {

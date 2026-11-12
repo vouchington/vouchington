@@ -1,4 +1,5 @@
-import { write, read } from '@data-stores/psql'
+import { beginTransaction, write, read } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import { rejectQuery } from './injected-failures.mts'
 
 export const rejectVertexReceipt = () =>
@@ -22,4 +23,12 @@ export async function getBatchIngestionFailures(batchId: string): Promise<number
     [batchId],
   )
   return rows[0]!.ingestion_failures
+}
+
+/** A caller can fail a real transaction after its revision write and observe its rollback. */
+export async function withRollbackIngestionQuery(
+  run: (query: TransactionQuery) => Promise<void>,
+): Promise<void> {
+  await using query = await beginTransaction()
+  await run(query)
 }

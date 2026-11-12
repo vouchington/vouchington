@@ -94,7 +94,7 @@ COMMENT ON COLUMN gemini_embedding_batches.data IS 'JSONB batch document: state,
 COMMENT ON COLUMN gemini_embedding_batches.url_id IS 'Optional URL this batch was created for.';
 COMMENT ON COLUMN gemini_embedding_batches.crawl_id IS 'Optional crawl this batch was created for. Cleared before that crawl partition is dropped.';
 COMMENT ON COLUMN gemini_embedding_batches.records IS 'Number of records in this batch.';
-COMMENT ON COLUMN gemini_embedding_batches.ingestion_generation IS 'Recovery attempt generation fencing stale result writers; every chunk and terminal transition verifies this value.';
+COMMENT ON COLUMN gemini_embedding_batches.ingestion_generation IS 'Revision advanced by ingestion claims and committed chunks; every writer and terminal transition verifies the current revision.';
 COMMENT ON COLUMN gemini_embedding_batches.ingestion_failures IS 'Failed terminal-result ingestion attempts, bounded at three before failing and unlocking this batch.';
 COMMENT ON COLUMN gemini_embedding_batches.submitted_at IS 'When submission intent was persisted before contacting Vertex; a missing receipt is reconciled by display name.';
 COMMENT ON COLUMN gemini_embedding_batches.in_progress_at IS 'When the Vertex job first reported running, cancelling or paused, or successful output awaiting ingestion.';

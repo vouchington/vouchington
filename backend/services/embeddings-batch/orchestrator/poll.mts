@@ -1,5 +1,6 @@
 import {
-  beginBatchIngestionTransaction,
+  advanceBatchIngestionRevision,
+  commitBatchIngestionTransaction,
   type BatchIngestionFence,
 } from './ingestion-transaction.mts'
 import { beginTransaction, read } from '@data-stores/psql'
@@ -94,7 +95,8 @@ export async function completeBatchIngestion(
   batchId: string,
   fence?: BatchIngestionFence,
 ): Promise<void> {
-  await using query = await beginBatchIngestionTransaction(fence)
+  await using query = await beginTransaction()
+  const nextGeneration = await advanceBatchIngestionRevision(query, fence)
   const completed = await query(
     `/* completeBatchIngestion */ UPDATE gemini_embedding_batches
     SET completed_at = CURRENT_TIMESTAMP
@@ -107,5 +109,5 @@ export async function completeBatchIngestion(
       [batchId],
     )
   }
-  await query.commit()
+  await commitBatchIngestionTransaction(query, fence, nextGeneration)
 }

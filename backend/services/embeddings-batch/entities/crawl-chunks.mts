@@ -1,12 +1,14 @@
+import { addEmbeddingHashesToBloomFilter } from '@services/embeddings/bloom-filter/bloom-filter'
 import {
-  beginBatchIngestionTransaction,
+  advanceBatchIngestionRevision,
+  commitBatchIngestionTransaction,
   type BatchIngestionFence,
 } from '../orchestrator/ingestion-transaction.mts'
 import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
+import { beginTransaction, createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { from as copyFrom } from 'pg-copy-streams'
 import { EMBEDDING_DIMENSION, EMBEDDINGS_TABLE } from '@services/embeddings/config'
 import type { BatchUpdateItem } from '@services/embeddings/batch/types'
@@ -92,7 +94,8 @@ export async function applyCrawlChunkBatchUpdates(
   if (parsed.length === 0) return
 
   const tempTable = `temp_crawl_chunk_updates_${randomUUID().replaceAll('-', '')}`
-  await using query = await beginBatchIngestionTransaction(fence)
+  await using query = await beginTransaction()
+  const nextGeneration = await advanceBatchIngestionRevision(query, fence)
 
   await query(
     `/* applyCrawlChunkBatchUpdates */ CREATE TEMP TABLE ${tempTable} (
@@ -141,7 +144,8 @@ export async function applyCrawlChunkBatchUpdates(
         AND crawl_chunks.gemini_embedding_2_content_sha256 = u.content_sha256`,
   )
 
-  await query.commit()
+  await commitBatchIngestionTransaction(query, fence, nextGeneration)
+  await addEmbeddingHashesToBloomFilter(parsed.map(item => item.content_sha256.toString('hex')))
 }
 
 async function* generateCrawlChunkCsvRows(

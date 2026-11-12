@@ -62,6 +62,12 @@ describe('Vertex embedding HTTP boundary', () => {
     expect(estimateTokens(query)).toBeLessThanOrEqual(7_680)
   })
 
+  it('normalizes lone surrogate inputs to the same UTF-8 text PostgreSQL stores', () => {
+    expect(buildEmbeddingContent('body\udfff', 'document', 'title\ud800').parts[0]!.text).toBe(
+      'title: title\ufffd | text: body\ufffd',
+    )
+  })
+
   it('preserves a document title when an unusually long title consumes the budget', () => {
     const content = buildEmbeddingContent('body', 'document', '🙂'.repeat(15_500)).parts[0]!.text
 

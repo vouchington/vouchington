@@ -1,3 +1,4 @@
+import { advanceBatchIngestionRevision } from './ingestion-transaction.mts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
 import { mintUUIDv7 } from '@modules/utils/ids'
@@ -12,6 +13,7 @@ import { getTopicEmbeddingData } from '@voucha/test-helpers/entities/topics/embe
 import {
   getBatchIngestionFailures,
   insertBatchTopicLock,
+  withRollbackIngestionQuery,
 } from '@voucha/test-helpers/gemini-batch-ingestion'
 import { applyTopicBatchUpdates } from '../entities/topics.mts'
 import { completeBatchIngestion } from './poll.mts'
@@ -65,6 +67,23 @@ describe('durable batch ingestion', () => {
     })
     expect(await getTestBatchSummary(id)).toMatchObject({ status: 'completed' })
     expect(await getTestBatchEntities(id)).toEqual([])
+  })
+
+  it('rolls back a failed chunk revision and counts its failure against the unchanged owner', async () => {
+    const { id } = await batch()
+    await expect(
+      ingestBatchResults(id, async fence => {
+        await withRollbackIngestionQuery(async query => {
+          const original = fence.generation
+          const next = await advanceBatchIngestionRevision(query, fence)
+          expect(next).toBeGreaterThan(original)
+          expect(fence.generation).toBe(original)
+          throw new Error('synthetic write failure after revision update')
+        })
+      }),
+    ).rejects.toThrow('synthetic write failure after revision update')
+    expect(await getBatchIngestionFailures(id)).toBe(1)
+    expect(await getTestBatchEntities(id)).toHaveLength(1)
   })
 
   it('fences an abandoned download after a recovered delivery completes', async () => {

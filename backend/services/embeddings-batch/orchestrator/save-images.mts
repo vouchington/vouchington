@@ -1,11 +1,12 @@
 import {
-  beginBatchIngestionTransaction,
+  advanceBatchIngestionRevision,
+  commitBatchIngestionTransaction,
   type BatchIngestionFence,
 } from './ingestion-transaction.mts'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import { EMBEDDING_DIMENSION } from '@services/embeddings/config'
 import { from as copyFrom } from 'pg-copy-streams'
 import type { ImageBatchUpdateItem } from '@services/embeddings/batch/types'
@@ -19,7 +20,8 @@ export async function applyImageBatchUpdates(
 
   const tempTable = `temp_image_embedding_updates_${randomUUID().replaceAll('-', '')}`
   let updatedIds: string[] = []
-  await using query = await beginBatchIngestionTransaction(fence)
+  await using query = await beginTransaction()
+  const nextGeneration = await advanceBatchIngestionRevision(query, fence)
 
   await query(
     `/* applyImageBatchUpdates */ CREATE TEMP TABLE ${tempTable} (
@@ -59,7 +61,7 @@ export async function applyImageBatchUpdates(
   )
   updatedIds = rows.map((r: { id: string }) => r.id)
 
-  await query.commit()
+  await commitBatchIngestionTransaction(query, fence, nextGeneration)
 
   return updatedIds
 }

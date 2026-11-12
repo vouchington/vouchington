@@ -6,12 +6,11 @@ import type { BatchMetadata } from './shared.mts'
 import { insertLockRowsWithQuery } from './lock-rows.mts'
 
 export function batchDocument(
-  status: 'JOB_STATE_PENDING' | 'JOB_STATE_CANCELLING',
+  status: 'JOB_STATE_PENDING',
   inputGcsUri: string,
   outputGcsUri: string,
   metadata: BatchMetadata,
   jobName?: string,
-  stopFailedAt?: string,
 ): Record<string, unknown> {
   return {
     state: status,
@@ -21,7 +20,6 @@ export function batchDocument(
     outputGcsUri,
     modelId: GEMINI_EMBEDDING_2_MODEL_ID,
     metadata,
-    ...(stopFailedAt === undefined ? {} : { cleanup: { stopFailedAt } }),
   }
 }
 

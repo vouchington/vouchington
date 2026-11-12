@@ -1,12 +1,12 @@
 import {
-  beginBatchIngestionTransaction,
+  advanceBatchIngestionRevision,
+  commitBatchIngestionTransaction,
   type BatchIngestionFence,
 } from './ingestion-transaction.mts'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { write } from '@data-stores/psql'
-import onError from '@modules/on-error'
+import { beginTransaction, write } from '@data-stores/psql'
 import {
   EMBEDDING_COLUMNS,
   EMBEDDING_DIMENSION,
@@ -31,7 +31,8 @@ export async function applyBatchUpdates(
 
   const tempTable = `temp_embedding_updates_${randomUUID().replaceAll('-', '')}`
   let updatedIds: string[] = []
-  await using query = await beginBatchIngestionTransaction(fence)
+  await using query = await beginTransaction()
+  const nextGeneration = await advanceBatchIngestionRevision(query, fence)
 
   await query(
     `/* applyBatchUpdates */ CREATE TEMP TABLE ${tempTable} (
@@ -96,10 +97,10 @@ export async function applyBatchUpdates(
   )
   updatedIds = rows.map((r: { id: string }) => r.id)
 
-  await query.commit()
+  await commitBatchIngestionTransaction(query, fence, nextGeneration)
 
   const hexHashes = items.map(item => item.content_sha256.toString('hex'))
-  addEmbeddingHashesToBloomFilter(hexHashes).catch(onError)
+  await addEmbeddingHashesToBloomFilter(hexHashes)
   return updatedIds
 }
 

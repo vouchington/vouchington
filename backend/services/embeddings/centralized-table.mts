@@ -3,7 +3,6 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { beginTransaction } from '@data-stores/psql'
 import { from as copyFrom } from 'pg-copy-streams'
-import onError from '@modules/on-error'
 import { EMBEDDINGS_TABLE, EMBEDDING_DIMENSION } from './config.mts'
 import { addEmbeddingHashesToBloomFilter } from './bloom-filter/bloom-filter.mts'
 
@@ -48,7 +47,7 @@ export async function insertCentralizedEmbeddingsBulk(
   await query.commit()
 
   const hexHashes = embeddings.map(e => e.content_sha256.toString('hex'))
-  addEmbeddingHashesToBloomFilter(hexHashes).catch(onError)
+  await addEmbeddingHashesToBloomFilter(hexHashes)
 }
 
 async function* generateCsvRows(

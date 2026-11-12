@@ -57,12 +57,16 @@ export function buildEmbeddingContent(
   intent: 'query' | 'document' = 'document',
   title?: string,
 ) {
+  const documentTitle = title?.toWellFormed()
+  const bodyText = text.toWellFormed()
   const prefix =
-    intent === 'query' ? 'task: search result | query: ' : `title: ${title || 'none'} | text: `
+    intent === 'query'
+      ? 'task: search result | query: '
+      : `title: ${documentTitle || 'none'} | text: `
   const boundedPrefix =
     intent === 'document' && estimateTokens(prefix) > MAX_ESTIMATED_EMBEDDING_TOKENS
       ? `title: ${truncateWithAffixes(
-          title || 'none',
+          documentTitle || 'none',
           'title: ',
           ' | text: ',
           MAX_ESTIMATED_EMBEDDING_TOKENS,
@@ -70,7 +74,12 @@ export function buildEmbeddingContent(
       : prefix
   // Count the complete inline protocol prefix and title with the body. Keep a margin because the
   // repository-owned four-character estimator is approximate, and the provider silently truncates.
-  const boundedText = truncateWithAffixes(text, boundedPrefix, '', MAX_ESTIMATED_EMBEDDING_TOKENS)
+  const boundedText = truncateWithAffixes(
+    bodyText,
+    boundedPrefix,
+    '',
+    MAX_ESTIMATED_EMBEDDING_TOKENS,
+  )
   const content = `${boundedPrefix}${boundedText}`
   return { parts: [{ text: content }] }
 }
