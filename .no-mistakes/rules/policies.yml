@@ -2396,6 +2396,32 @@
     sqlInclude:
       - backend/data-stores/psql/config-driven/**/*.sql
 
+# Raising timeouts hides slow work; split, reorder, or shrink it instead. Migrations keep
+# their own lock_timeout and statement_timeout from the migration runner.
+- name: runtime and seed SQL do not change timeout settings
+  rule: postgres-sql-statement-policy
+  scope: repository
+  include:
+    - backend/**/*.{ts,mts,sql}
+  exclude:
+    - '**/*.test.*'
+    - '**/__tests__/**'
+    - '**/test-helpers/**'
+    - backend/data-stores/psql/migrations/**
+    - backend/data-stores/psql/migration-runner/**
+  options:
+    unanalyzableSql: ignore
+    importSpecifier: '@data-stores/psql'
+    executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+    executorTypeNames: [TransactionQuery, QueryExecutor, PoolClient, QueryOptions]
+    extraExecutorNames: [readPool, writePool]
+    # Persistent setting changes; an empty list would fall back to the default DDL kinds.
+    bannedStatements: [ALTER SYSTEM, ALTER DATABASE]
+    bannedSettings: [statement_timeout, idle_in_transaction_session_timeout, idle_session_timeout]
+    sqlInclude:
+      - backend/data-stores/psql/config-driven/**/*.sql
+      - backend/data-stores/psql/views/**/*.sql
+
 - name: executed INSERTs stay replay-safe
   rule: postgres-idempotent-insert
   scope: repository
