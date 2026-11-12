@@ -33,7 +33,7 @@ describe('queryOrderedIdentifierBatch', () => {
           { cteName: 'id_input', sqlType: 'uuid', type: 'id' },
           { cteName: 'slug_input', sqlType: 'text', type: 'slug' },
         ],
-        statementBody: inputCtes => `WITH ${inputCtes}, body`,
+        statementBody: inputCtes => `${inputCtes}, body`,
         readRows: (sql, values, options) => {
           expect(options).toEqual({ label: 'options' })
           seenSql = sql
@@ -43,7 +43,7 @@ describe('queryOrderedIdentifierBatch', () => {
       },
     )
 
-    expect(seenSql).toContain('id_input AS')
+    expect(seenSql).toMatch(/^id_input AS/)
     expect(seenSql).toContain('unnest($1::uuid[])')
     expect(seenSql).toContain('slug_input AS')
     expect(seenSql).toContain('unnest($3::text[])')
