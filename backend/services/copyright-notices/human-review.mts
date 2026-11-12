@@ -1,3 +1,6 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -31,78 +34,88 @@ export async function completeCopyrightMandatoryHumanReview(
 ): Promise<CopyrightRestrictionRecord> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
-  await using transaction = await beginTransaction(transactionOptions)
-  const { rows: placementRows } = await transaction<{ placement_id: string }>(
-    sql`/* completeCopyrightMandatoryHumanReview:findPlacement */
-    SELECT target.placement_id
-    FROM copyright_notice_targets target
-    JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
-    WHERE restriction.id = ${input.restrictionId}
-      AND target.copyright_notice_id = ${input.noticeId}
-  `,
-  )
-  const placement = placementRows[0]
-  assert(placement, 409, 'Copyright restriction is not awaiting mandatory human review')
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, input.noticeId)
-  assert(lockedNotice, 409, 'Copyright restriction is not awaiting mandatory human review')
-  const { rows: locks } = await transaction<{ id: string }>(
-    sql`/* completeCopyrightMandatoryHumanReview:lock */
-    SELECT restriction.id
-    FROM copyright_notice_targets target
-    JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
-    WHERE target.copyright_notice_id = ${input.noticeId}
-      AND restriction.id = ${input.restrictionId}
-    FOR UPDATE OF target, restriction
-  `,
-  )
-  assert(locks[0], 409, 'Copyright restriction is not awaiting mandatory human review')
-  const { rows } =
-    await transaction<CopyrightRestrictionRecord>(sql`/* completeCopyrightMandatoryHumanReview */
-    UPDATE copyright_restrictions
-    SET human_reviewed_at = ${input.reviewedAt}, human_review_action = ${input.action},
-      human_reviewed_by_id = ${input.currentUser.id}
-    WHERE id = ${input.restrictionId}
-      AND lifted_at IS NULL
-      AND human_reviewed_at IS NULL
-      AND EXISTS (
-        SELECT 1 FROM copyright_notices
-        WHERE id = ${input.noticeId}
-          AND accepted_at IS NOT NULL
-          AND provisional_withholding_at IS NOT NULL
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({
+        ...transactionOptions,
+        serializable: true,
+      })
+      const { rows: placementRows } = await transaction<{ placement_id: string }>(
+        sql`/* completeCopyrightMandatoryHumanReview:findPlacement */
+      SELECT target.placement_id
+      FROM copyright_notice_targets target
+      JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
+      WHERE restriction.id = ${input.restrictionId}
+        AND target.copyright_notice_id = ${input.noticeId}
+    `,
       )
-    RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
-      human_reviewed_at, human_review_action, human_reviewed_by_id
-  `)
-  const restriction = rows[0]
-  assert(restriction, 409, 'Copyright restriction is not awaiting mandatory human review')
-  await createCopyrightReviewOutcomeNoticesInTransaction(input, transaction)
-  let restoreIntentId: string | null = null
-  if (input.action === 'reverse') {
-    const intent = await createCopyrightRestoreIntentForReversalInTransaction(
-      restriction.id,
-      transaction,
-    )
-    restoreIntentId = intent.id
-  }
-  // ast-grep-ignore: no-three-sequential-awaits -- finish confirmation consequences before recording the human-review event, then sample legal activity after both writes complete
-  const staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
-    input.noticeId,
-    transaction,
+      const placement = placementRows[0]
+      assert(placement, 409, 'Copyright restriction is not awaiting mandatory human review')
+      const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, input.noticeId)
+      assert(lockedNotice, 409, 'Copyright restriction is not awaiting mandatory human review')
+      const { rows: locks } = await transaction<{ id: string }>(
+        sql`/* completeCopyrightMandatoryHumanReview:lock */
+      SELECT restriction.id
+      FROM copyright_notice_targets target
+      JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
+      WHERE target.copyright_notice_id = ${input.noticeId}
+        AND restriction.id = ${input.restrictionId}
+      FOR UPDATE OF target, restriction
+    `,
+      )
+      assert(locks[0], 409, 'Copyright restriction is not awaiting mandatory human review')
+      const { rows } =
+        await transaction<CopyrightRestrictionRecord>(sql`/* completeCopyrightMandatoryHumanReview */
+      UPDATE copyright_restrictions
+      SET human_reviewed_at = ${input.reviewedAt}, human_review_action = ${input.action},
+        human_reviewed_by_id = ${input.currentUser.id}
+      WHERE id = ${input.restrictionId}
+        AND lifted_at IS NULL
+        AND human_reviewed_at IS NULL
+        AND EXISTS (
+          SELECT 1 FROM copyright_notices
+          WHERE id = ${input.noticeId}
+            AND accepted_at IS NOT NULL
+            AND provisional_withholding_at IS NOT NULL
+        )
+      RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
+        human_reviewed_at, human_review_action, human_reviewed_by_id
+    `)
+      const restriction = rows[0]
+      assert(restriction, 409, 'Copyright restriction is not awaiting mandatory human review')
+      await createCopyrightReviewOutcomeNoticesInTransaction(input, transaction)
+      let restoreIntentId: string | null = null
+      if (input.action === 'reverse') {
+        const intent = await createCopyrightRestoreIntentForReversalInTransaction(
+          restriction.id,
+          transaction,
+        )
+        restoreIntentId = intent.id
+      }
+      // ast-grep-ignore: no-three-sequential-awaits -- finish confirmation consequences before recording the human-review event, then sample legal activity after both writes complete
+      const staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
+        input.noticeId,
+        transaction,
+      )
+      await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
+      INSERT INTO copyright_notice_lifecycle_changes (
+        id, copyright_notice_id, change_type, changed_by_id,
+        copyright_restriction_id, review_action, review_rationale_ciphertext
+      ) VALUES (
+        ${uuidv7()}, ${input.noticeId}, 'mandatory_human_review_completed', ${input.currentUser.id},
+        ${input.restrictionId}, ${input.action}, ${encryptSecret(
+          input.rationale,
+          `copyright-restriction-review:${input.restrictionId}`,
+        )})
+    `)
+      await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
+      await readCopyrightThreadRetirement(transaction, [input.noticeId])
+      await transaction.commit()
+      if (restoreIntentId) void enqueueApplyCopyrightAction(restoreIntentId)
+      enqueueCopyrightStaydownHashes(staydownImageIds)
+      return restriction
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
   )
-  await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
-    INSERT INTO copyright_notice_lifecycle_changes (
-      id, copyright_notice_id, change_type, changed_by_id,
-      copyright_restriction_id, review_action, review_rationale_ciphertext
-    ) VALUES (
-      ${uuidv7()}, ${input.noticeId}, 'mandatory_human_review_completed', ${input.currentUser.id},
-      ${input.restrictionId}, ${input.action}, ${encryptSecret(
-        input.rationale,
-        `copyright-restriction-review:${input.restrictionId}`,
-      )})
-  `)
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
-  await transaction.commit()
-  if (restoreIntentId) void enqueueApplyCopyrightAction(restoreIntentId)
-  enqueueCopyrightStaydownHashes(staydownImageIds)
-  return restriction
 }

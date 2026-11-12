@@ -1,3 +1,6 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import {
   advanceCopyrightLastLegalActivityAt,
@@ -33,45 +36,52 @@ export async function recordTerritorialCopyrightAcknowledgment(
   outcome: 'acknowledged' | 'failed',
   jurisdiction: TerritorialCopyrightJurisdiction,
 ): Promise<TerritorialCopyrightAcknowledgment> {
-  await using transaction = await beginTransaction()
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
-  assert(lockedNotice, 404, territorialLabels(jurisdiction).noticeNotFound)
-  const { rows } = await transaction<TerritorialAcknowledgmentRow>(
-    lockTerritorialAcknowledgmentQuery(jurisdiction, noticeId),
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
+      assert(lockedNotice, 404, territorialLabels(jurisdiction).noticeNotFound)
+      const { rows } = await transaction<TerritorialAcknowledgmentRow>(
+        lockTerritorialAcknowledgmentQuery(jurisdiction, noticeId),
+      )
+      const current = rows[0]
+      assert(current, 404, territorialLabels(jurisdiction).noticeNotFound)
+      if (current.acknowledged_at && outcome === 'acknowledged') {
+        await transaction.commit()
+        return current
+      }
+      assert(
+        !current.acknowledged_at && !current.exhausted_at,
+        409,
+        'Acknowledgment is already terminal',
+      )
+      if (outcome === 'failed') {
+        assert(actor && currentUserCanReviewCopyrightNotices(actor), 403, 'Forbidden')
+      } else {
+        assert(
+          (actor?.id ?? null) === current.requester_user_id ||
+            (actor && currentUserCanReviewCopyrightNotices(actor)),
+          403,
+          'Forbidden',
+        )
+      }
+      const { rows: updatedRows } = await transaction<TerritorialCopyrightAcknowledgment>(
+        updateTerritorialAcknowledgmentQuery(current.id, outcome),
+      )
+      const updated = updatedRows[0]
+      assert(updated, 409, 'Acknowledgment is already terminal')
+      if (updated.exhausted_at) {
+        await transaction(
+          insertTerritorialAcknowledgmentEscalationQuery(jurisdiction, noticeId, updated.id),
+        )
+        updated.escalated = true
+      }
+      await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
+      await readCopyrightThreadRetirement(transaction, [noticeId])
+      await transaction.commit()
+      return updated
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
   )
-  const current = rows[0]
-  assert(current, 404, territorialLabels(jurisdiction).noticeNotFound)
-  if (current.acknowledged_at && outcome === 'acknowledged') {
-    await transaction.commit()
-    return current
-  }
-  assert(
-    !current.acknowledged_at && !current.exhausted_at,
-    409,
-    'Acknowledgment is already terminal',
-  )
-  if (outcome === 'failed') {
-    assert(actor && currentUserCanReviewCopyrightNotices(actor), 403, 'Forbidden')
-  } else {
-    assert(
-      (actor?.id ?? null) === current.requester_user_id ||
-        (actor && currentUserCanReviewCopyrightNotices(actor)),
-      403,
-      'Forbidden',
-    )
-  }
-  const { rows: updatedRows } = await transaction<TerritorialCopyrightAcknowledgment>(
-    updateTerritorialAcknowledgmentQuery(current.id, outcome),
-  )
-  const updated = updatedRows[0]
-  assert(updated, 409, 'Acknowledgment is already terminal')
-  if (updated.exhausted_at) {
-    await transaction(
-      insertTerritorialAcknowledgmentEscalationQuery(jurisdiction, noticeId, updated.id),
-    )
-    updated.escalated = true
-  }
-  await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
-  await transaction.commit()
-  return updated
 }

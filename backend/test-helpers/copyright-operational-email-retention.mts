@@ -132,6 +132,7 @@ export async function linkTestCopyrightEmailIntake(
   noticeId: string,
   linkKind: 'initial' | 'thread' = 'initial',
   reviewedById?: string,
+  matchedTokenId?: string,
 ): Promise<void> {
   if (linkKind === 'thread' && !reviewedById)
     throw new Error('A closed thread fixture needs its reviewer')
@@ -139,13 +140,13 @@ export async function linkTestCopyrightEmailIntake(
     INSERT INTO copyright_notice_email_intake_notice_links
       (copyright_notice_email_intake_id, copyright_notice_id, link_kind,
        correspondence_action, correspondence_kind, correspondence_reviewed_at,
-       correspondence_reviewed_by_id, correspondence_rationale_ciphertext)
+       correspondence_reviewed_by_id, correspondence_rationale_ciphertext, matched_token_id)
     VALUES (${intakeId}, ${noticeId}, ${linkKind},
       ${linkKind === 'thread' ? 'rejected' : null},
       ${linkKind === 'thread' ? 'supplement' : null},
       ${linkKind === 'thread' ? new Date() : null},
       ${reviewedById ?? null},
-      ${linkKind === 'thread' ? 'fixture-closed-correspondence' : null})`)
+      ${linkKind === 'thread' ? 'fixture-closed-correspondence' : null}, ${matchedTokenId ?? null})`)
 }
 
 export async function seedTestCopyrightAncestorEdge(

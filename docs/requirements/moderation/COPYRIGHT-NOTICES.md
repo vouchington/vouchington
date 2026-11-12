@@ -215,6 +215,21 @@ The approved case clock retains each jurisdiction for six calendar years after i
 activity, including the final decision's complaint window. A new legal fact or hold release advances
 that clock. Detailed history has its own guarded partition retirement until the case is purged.
 
+Operational thread retirement admits only records without a current account or case preservation
+hold. Hold placement inventories the records it protects in the same serializable transaction;
+retirement reads those holds before deleting the records. A serialization conflict rolls back the
+losing operation: staff receive a conflict response, and a sweep stops until its next scheduled
+run. Neither operation retries within that run. Releasing a hold permits operational thread
+cleanup; the separate case and standalone legal-record clocks still advance on release.
+
+Writers that can introduce retention blockers read the case's existing thread-retirement state
+in the same serializable transaction. Adding or relinking thread references, ancestry or reply
+links to a retired graph returns a conflict without retaining partial graph changes. This does not
+bar legal decisions or account erasure: final account deletion still clears a form requester while
+retaining the case and its identities. PostgreSQL may also reject transactions on different cases
+because its physical predicate locks can cover more than one case; the same conflict boundary
+applies, without an internal retry.
+
 Proof invalidation protects against obligations introduced behind a bounded cursor. It does not
 serve as a transaction mutex: renewing a worker lease or removing a blocker need not invalidate a
 negative proof. Case activity and its referenced legal source commit atomically; checking that

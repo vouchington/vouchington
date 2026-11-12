@@ -1,4 +1,4 @@
-import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { addRetentionArtifact } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { describe, expect, it } from 'vitest'
@@ -21,7 +21,7 @@ import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
 const purgeNow = new Date('2100-01-01T12:00:00.000Z')
 
 describe('copyright retention marker preservation', () => {
-  const bucket = useFakeCopyrightEvidenceBucket()
+  const bucket = useCopyrightEvidenceBucket()
   it('does not mark evidence erased when an account hold commits after the proof read', async () => {
     const admin = await createTestUser({ administrator: true })
     const party = await createTestUser()
@@ -126,7 +126,7 @@ describe('copyright retention marker preservation', () => {
       bodyCiphertext: 'owned-claimed-retention-evidence',
     })
     const key = await addRetentionArtifact(submission.id)
-    bucket.put(key, { versions: 2 })
+    await bucket.put(key, { versions: 2 })
     const proof = await readCopyrightStorageClaimProof(key)
     const first = await runCopyrightCasePurgePage(
       {
@@ -165,8 +165,7 @@ describe('copyright retention marker preservation', () => {
         () => runCopyrightCasePurgePage(claimed.data, purgeNow),
       )
       expect(page).toMatchObject({ hasMore: true, deferred: true, data: { phase: 'parties' } })
-      expect(bucket.countVersions(key)).toBe(2)
-      expect(bucket.deleteRequests()).toBe(0)
+      expect(await bucket.countVersions(key)).toBe(2)
       expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(false)
     } finally {
       if (holdPlaced) await releaseUserPreservationHold(admin, party.id)

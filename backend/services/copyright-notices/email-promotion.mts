@@ -1,3 +1,5 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import assert from 'http-assert'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { getOrCreateEmailAssessment } from './email-assessment.mts'
@@ -17,6 +19,7 @@ export async function promoteCopyrightEmailIntake(
 ): Promise<{ noticeId: string; submissionId: string }> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assertStatutoryEmailFields(input)
+  return conflictOnSerializationFailure(async () => {
   const admitted = await admitCopyrightEmailIntake(input).catch((err: unknown) => {
     const failure = err as { code?: string; message?: string } | null
     if (
@@ -36,6 +39,7 @@ export async function promoteCopyrightEmailIntake(
     }
   }
   return { noticeId: admitted.noticeId, submissionId: admitted.submissionId }
+  }, 'Copyright email changed during promotion', COPYRIGHT_EMAIL_THREAD_CHANGED)
 }
 
 async function assessAndEnforceCopyrightEmailIntake(

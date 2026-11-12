@@ -18,7 +18,7 @@ import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import {
   recordCopyrightRepeatInfringerDisposition,
   type CopyrightRepeatInfringerDisposition,
-} from './repeat-infringer-incidents.mts'
+} from './repeat-infringer-dispositions.mts'
 
 type ReviewDecision = 'warning' | 'no_action' | 'restrict' | 'terminate'
 

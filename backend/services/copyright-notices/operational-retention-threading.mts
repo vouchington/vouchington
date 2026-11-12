@@ -37,8 +37,6 @@ async function sweepPage(
   >(sql`/* lockCopyrightThreadRetentionCursor */
     SELECT cursor_record_id, sweep_upper_bound_record_id,
       cursor_child_id, cursor_edge_id, cursor_phase,
-      cursor_legal_phase, cursor_legal_child_id, cursor_legal_hold_generation,
-      cursor_case_party_generation, cursor_legal_latest_release_at,
       cursor_blocker_phase, cursor_blocker_child_id, cursor_blocker_assessment_identity_id,
       cursor_blocker_generation
     FROM copyright_notice_operational_retention_cursors
@@ -99,7 +97,6 @@ async function sweepPage(
     transaction,
     noticeId,
     now,
-    cutoff,
     batchSize,
     upperBound,
     cursor,
@@ -113,8 +110,6 @@ async function sweepPage(
     is_eligible: boolean
   }>(
     copyrightOperationalThreadAdmissionSql(cutoff, noticeId, {
-      holdGeneration: proof.legal.holdGeneration,
-      partyGeneration: proof.legal.partyGeneration,
       blockerGeneration: proof.blocker.generation,
     }),
   )
@@ -129,8 +124,8 @@ async function sweepPage(
     await transaction.commit()
     return { scanned: 1, deleted: 0, hasMore: true }
   }
-  // The marker and first irreversible delete commit together. Old-source replay cannot
-  // recreate a removed reference between pages; a fresh source remains admissible.
+  // Retirement and its destructive page commit together. Evidence admission checks this
+  // existing retirement fact before adding references, edges or thread links.
   // ast-grep-ignore: no-three-sequential-awaits -- persist the retirement cutoff before deleting thread evidence so replay is fenced; save the cursor from the completed delete page progress
   await transaction(sql`/* retireCopyrightCaseThread */
     INSERT INTO copyright_notice_email_thread_retirements
@@ -181,8 +176,7 @@ export async function sweepCopyrightCaseThreads(options: {
       page = await sweepPage(now, cutoff, cutoffId, options.batchSize) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
     } catch (err) {
       if (!isCopyrightEmailTokenGcConflict(err)) throw err
-      // The aborted page did not advance its cursor. Let the next scheduled run resume it.
-      return { scanned, deleted, hasMore: false }
+      return { scanned, deleted, hasMore: true }
     }
     scanned += page.scanned
     deleted += page.deleted

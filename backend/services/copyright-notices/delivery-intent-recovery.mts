@@ -1,4 +1,7 @@
 import { beginTransaction, read } from '@data-stores/psql'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
 import {
@@ -66,29 +69,37 @@ async function resetFailedCopyrightDeliveryIntent(
   scope: SQLStatement,
   actorUserId: string,
 ): Promise<string | null> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ id: string; copyright_notice_id: string | null }>(
-    sql`/* replayFailedCopyrightDeliveryIntent:failed */
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const { rows } = await transaction<{ id: string; copyright_notice_id: string | null }>(
+        sql`/* replayFailedCopyrightDeliveryIntent:failed */
     SELECT id, copyright_notice_id FROM copyright_notice_delivery_work_items
     WHERE `.append(scope).append(sql` AND state = 'failed'
     `),
-  )
-  const intent = rows[0]
-  if (!intent) return null
-  await transaction(sql`/* replayFailedCopyrightDeliveryIntent:event */
+      )
+      const intent = rows[0]
+      if (!intent) return null
+      if (intent.copyright_notice_id)
+        await readCopyrightThreadRetirement(transaction, [intent.copyright_notice_id])
+      await transaction(sql`/* replayFailedCopyrightDeliveryIntent:event */
     INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, changed_by_id, copyright_notice_delivery_work_item_id
     ) VALUES (
       ${intent.copyright_notice_id}, 'delivery_intent_replayed', ${actorUserId}, ${intent.id}
     )
   `)
-  const { rowCount } = await transaction(sql`/* replayFailedCopyrightDeliveryIntent */
+      const { rowCount } = await transaction(sql`/* replayFailedCopyrightDeliveryIntent */
     UPDATE copyright_notice_delivery_work_items
     SET leased_at = NULL, failed_at = NULL, available_at = clock_timestamp(),
       attempt_count = 0, failure_ciphertext = NULL
     WHERE id = ${intent.id} AND state = 'failed'
   `)
-  if (rowCount !== 1) return null
-  await transaction.commit()
-  return intent.id
+      if (rowCount !== 1) return null
+      await transaction.commit()
+      return intent.id
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
+  )
 }

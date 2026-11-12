@@ -64,9 +64,6 @@ export async function positionCopyrightOperationalCursor(
       cursor_record_id = EXCLUDED.cursor_record_id,
       sweep_upper_bound_record_id = EXCLUDED.sweep_upper_bound_record_id,
       cursor_child_id = NULL, cursor_edge_id = NULL, cursor_phase = NULL,
-      cursor_legal_phase = NULL, cursor_legal_child_id = NULL,
-      cursor_legal_hold_generation = NULL, cursor_case_party_generation = NULL,
-      cursor_legal_latest_release_at = NULL,
       cursor_blocker_phase = NULL, cursor_blocker_child_id = NULL,
       cursor_blocker_assessment_identity_id = NULL,
       cursor_blocker_generation = NULL`)

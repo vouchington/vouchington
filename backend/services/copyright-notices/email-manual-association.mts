@@ -1,3 +1,4 @@
+import { assertCopyrightThreadAcceptsEvidence } from './thread-retirement-admission.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import type { TransactionQuery } from '@data-stores/psql/types'
@@ -24,7 +25,7 @@ export async function associateCopyrightEmailIntakeWithNotice(
 ): Promise<{ copyright_notice: { id: string }; copyright_email_intake: { id: string } }> {
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
   try {
-    await using transaction = await beginTransaction()
+    await using transaction = await beginTransaction({ serializable: true })
     const before = await readIntakeDecision(transaction, intakeId)
     assert(before, 404, 'Copyright email intake not found')
     if (before.linked || before.reviewed) throw copyrightEmailThreadChangedError()
@@ -63,6 +64,7 @@ export async function associateCopyrightEmailIntakeWithNotice(
     if (!after || after.linked || after.reviewed) throw copyrightEmailThreadChangedError()
     const reviewPath = await readManualAssociationReviewPath(transaction, intakeId)
     assert(reviewPath !== 'initial', 409, 'Initial copyright email needs case approval')
+    await assertCopyrightThreadAcceptsEvidence(transaction, noticeId)
     const { rows: links } = await transaction<{ id: string }>(sql`
     /* associateCopyrightEmailIntakeWithNotice:link */
     INSERT INTO copyright_notice_email_intake_notice_links (
@@ -81,6 +83,8 @@ export async function associateCopyrightEmailIntakeWithNotice(
     await transaction.commit()
     return { copyright_notice: { id: noticeId }, copyright_email_intake: { id: intakeId } }
   } catch (err) {
+    if ((err as { code?: string } | null)?.code === '40001')
+      throw Object.assign(copyrightEmailThreadChangedError(), { cause: err })
     if ((err as { constraint?: string } | null)?.constraint === 'copyright_email_link_active_case')
       throw Object.assign(copyrightEmailThreadChangedError(), { cause: err })
     throw err

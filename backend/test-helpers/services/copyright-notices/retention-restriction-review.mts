@@ -1,7 +1,7 @@
 import { readTestRepeatInfringerIncidents } from '../../copyright-repeat-infringer.mts'
 import { randomUUID } from 'node:crypto'
 import { completeCopyrightMandatoryHumanReview } from '../../../services/copyright-notices/index.mts'
-import { recordCopyrightRepeatInfringerDisposition } from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
+import { recordCopyrightRepeatInfringerDisposition } from '../../../services/copyright-notices/repeat-infringer-dispositions.mts'
 import type { PrivateUser } from '../../../services/users/types.mts'
 import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
 

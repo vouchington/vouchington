@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
@@ -19,12 +20,13 @@ export async function finalizeCopyrightActionAfterDelivery(
   action: 'withhold' | 'restore',
   now: Date,
 ): Promise<boolean> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   const legal = await lockCopyrightActionDelivery(intentId, leaseToken, transaction)
   if (!legal) {
     await transaction.commit()
     return false
   }
+  await readCopyrightThreadRetirement(transaction, [legal.copyright_notice_id])
   const current = await getImagePlacementForCopyright(legal.placement_id, {
     query: transaction,
   })

@@ -1,3 +1,4 @@
+import { readUserCopyrightThreadProtectedRecords } from '@data-stores/psql/copyright-preservation-coverage'
 import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
 import type { RetentionWorkBudget } from './work-budget.mts'
 import { getDataRetentionLimits } from './config.mts'
@@ -20,7 +21,7 @@ export async function cleanupSoftDeletedUser(
   cursor?: UserPurgeCursor,
 ): Promise<UserPurgeResult> {
   if (budget.remainingRows === 0) return { deleted: 0, hasMore: true }
-  await using query = await beginTransaction()
+  await using query = await beginTransaction({ serializable: true })
   await lockFinalUserPurge(query, targetId)
   if (
     !(await lockEligibleSoftDeletedUserForFinalPurge(query, targetId, cutoffDate, lowerBoundDate))
@@ -64,6 +65,7 @@ export async function cleanupSoftDeletedUser(
 }
 
 async function deletePurgedUser(query: TransactionQuery, targetId: string): Promise<number> {
+  await readUserCopyrightThreadProtectedRecords(query, targetId)
   await assertAuthorDeletionDrainedPosts(query, targetId)
   const { rows } = await query<{ deleted: number }>(sql`/* cleanupSoftDeletedUserBatch:delete */
     WITH removed AS (

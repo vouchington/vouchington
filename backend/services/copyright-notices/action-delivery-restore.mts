@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
@@ -56,6 +57,7 @@ export async function retainRestoreWhenOtherRestrictionsActive(input: {
   now: Date
 }): Promise<boolean> {
   await using query = await beginTransaction({ serializable: true })
+  await readCopyrightThreadRetirement(query, [input.legal.copyright_notice_id])
   const retained = await completeRestoreRetainingPlacement({ ...input, query })
   await query.commit()
   return retained

@@ -9,7 +9,7 @@ import { readTestCopyrightRestrictionAdministratorLift } from '@voucha/test-help
 import { createTestLiftClaimantReceipt } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-incidents.mts'
+import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-dispositions.mts'
 import { processCopyrightActionIntent } from './index.mts'
 import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 

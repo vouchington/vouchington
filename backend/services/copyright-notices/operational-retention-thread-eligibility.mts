@@ -1,3 +1,4 @@
+import { copyrightThreadCurrentPreservationAllowedSql } from './operational-retention-current-holds.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 
@@ -30,21 +31,16 @@ export function copyrightOperationalThreadAdmissionSql(
   cutoff: Date,
   noticeId: string,
   proof: {
-    holdGeneration: string | null
-    partyGeneration: string | null
     blockerGeneration: string | null
   },
 ) {
   const query = sql`/* readCopyrightThreadRetirementAdmission */
-    SELECT EXISTS (
-      SELECT 1 FROM copyright_notice_retention_generations global
-      WHERE global.is_global AND global.preservation_generation = ${proof.holdGeneration}::bigint
-    ) AND COALESCE((SELECT generation FROM copyright_notice_thread_party_generations
-      WHERE copyright_notice_id = ${noticeId}::uuid), 0) = ${proof.partyGeneration}::bigint
-      AND COALESCE((SELECT generation FROM copyright_notice_thread_blocker_generations
+    SELECT COALESCE((SELECT generation FROM copyright_notice_thread_blocker_generations
         WHERE copyright_notice_id = ${noticeId}::uuid), 0) = ${proof.blockerGeneration}::bigint
       AS proof_is_current, EXISTS (`
   query.append(copyrightOperationalThreadEligibleSql(cutoff, noticeId))
+  query.append(sql` AND `)
+  query.append(copyrightThreadCurrentPreservationAllowedSql(noticeId))
   query.append(sql`) AS is_eligible`)
   return query
 }

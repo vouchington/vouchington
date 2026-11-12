@@ -157,8 +157,6 @@ CREATE INDEX idx_copyright_territorial_decisions__supersedes_page
   WHERE supersedes_decision_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TYPE copyright_notice_legal_retention_phases AS ENUM
-  ('claimant', 'submissions', 'incidents', 'targets', 'done');
 CREATE TABLE copyright_notice_operational_retention_cursors (
   kind copyright_notice_operational_retention_kinds PRIMARY KEY,
   cursor_record_id uuid,
@@ -166,11 +164,6 @@ CREATE TABLE copyright_notice_operational_retention_cursors (
   cursor_child_id uuid,
   cursor_edge_id uuid,
   cursor_phase copyright_notice_thread_retention_phases,
-  cursor_legal_phase copyright_notice_legal_retention_phases,
-  cursor_legal_child_id uuid,
-  cursor_legal_hold_generation bigint,
-  cursor_case_party_generation bigint,
-  cursor_legal_latest_release_at timestamptz,
   cursor_blocker_phase text,
   cursor_blocker_child_id uuid,
   cursor_blocker_assessment_identity_id uuid REFERENCES copyright_notice_submission_assessment_identities(id) ON DELETE SET NULL,
@@ -187,11 +180,6 @@ COMMENT ON COLUMN copyright_notice_operational_retention_cursors.sweep_upper_bou
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_child_id IS 'Last case-link position examined within the current thread-retention case; a traversal value, not an authorization reference.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_edge_id IS 'Last raw neighboring intake position examined within the current thread or unlinked-intake edge phase; a traversal value, not an authorization reference.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_phase IS 'Thread-retention or unlinked-intake child phase resumed for the current record.';
-COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_legal_phase IS 'Current bounded case-party source for legal preservation proof.';
-COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_legal_child_id IS 'Last raw party-source row inspected in the current legal phase; a traversal value, not a relation.';
-COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_legal_hold_generation IS 'Observed global preservation-hold generation for this paged proof.';
-COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_case_party_generation IS 'Observed case-party generation for this paged proof.';
-COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_legal_latest_release_at IS 'Latest release timestamp found across completed bounded party pages.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_phase IS 'Current bounded staff and business blocker proof phase.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_child_id IS 'Last raw blocker-source row inspected; an opaque traversal value, not a relationship.';
 COMMENT ON COLUMN copyright_notice_operational_retention_cursors.cursor_blocker_assessment_identity_id IS 'Concrete submission assessment whose nested blocker children are being paged.';

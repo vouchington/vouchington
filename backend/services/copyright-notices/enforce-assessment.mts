@@ -28,6 +28,7 @@ async function imposeOwedTargets(assessmentId: string, automaticSince: Date | nu
       imposedById: target.imposed_by_id,
     })
   } catch (err) {
+    if ((err as { code?: string } | null)?.code === '40001') throw err
     // A concurrent caller restricting the target, or a decision that superseded this assessment,
     // settles it without a failure. Anything else leaves the target owed, so it is retried.
     const stillOwed = await readFirstOwedTarget(assessmentId, automaticSince)

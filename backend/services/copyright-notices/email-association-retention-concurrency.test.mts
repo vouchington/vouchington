@@ -36,7 +36,7 @@ describe('copyright association and erasure final states', () => {
     ).rejects.toMatchObject({
       status: 409,
       code: 'copyright_email_thread_changed',
-      cause: { constraint: 'copyright_email_link_active_case' },
+      cause: { code: '40001' },
     })
     expect(await readCopyrightEmailIntakeNoticeLinks(intakeId)).toEqual([])
     expect(await readCopyrightEmailManualAssociationEvent(intakeId)).toEqual([])

@@ -1,3 +1,4 @@
+import { assertCopyrightThreadAcceptsEvidence } from './thread-retirement-admission.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
@@ -77,6 +78,8 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
         WHERE existing_link.copyright_notice_email_intake_id = descendant.intake_id)
     ORDER BY descendant.intake_id
     ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+    RETURNING copyright_notice_email_intake_id
   `)
-  await transaction(linkQuery)
+  const { rows: inserted } = await transaction(linkQuery)
+  if (inserted.length > 0) await assertCopyrightThreadAcceptsEvidence(transaction, input.noticeId)
 }

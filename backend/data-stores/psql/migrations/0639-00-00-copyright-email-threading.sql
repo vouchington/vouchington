@@ -402,7 +402,6 @@ COMMENT ON COLUMN copyright_notice_thread_retention_activities.last_activity_at 
 CREATE FUNCTION fn_copyright_touch_thread_retention_activity(case_id uuid, activity_at timestamptz)
 RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
-  PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
   INSERT INTO copyright_notice_thread_retention_activities (copyright_notice_id, last_activity_at)
   VALUES (case_id, COALESCE(activity_at, CURRENT_TIMESTAMP))
   ON CONFLICT (copyright_notice_id) DO UPDATE

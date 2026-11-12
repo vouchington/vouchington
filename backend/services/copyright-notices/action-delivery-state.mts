@@ -1,3 +1,6 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -34,7 +37,12 @@ export async function claimCopyrightActionIntent(
   intentId: string,
   now: Date,
 ): Promise<CopyrightClaimedActionIntent | null> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
+  const { rows: coverage } = await transaction<{ copyright_notice_id: string }>(sql`
+    /* readCopyrightActionClaimCoverage */ SELECT copyright_notice_id
+    FROM copyright_notice_action_work_items WHERE id = ${intentId}`)
+  if (coverage[0])
+    await readCopyrightThreadRetirement(transaction, [coverage[0].copyright_notice_id])
   const { rows } = await transaction<CopyrightClaimedActionIntent>(sql`
     /* claimCopyrightActionIntent */
     WITH exhausted AS (
@@ -134,30 +142,37 @@ export async function replayFailedCopyrightActionIntent(input: {
   noticeId: string
   actorUserId: string
 }): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ copyright_notice_id: string }>(sql`
-    /* replayFailedCopyrightActionIntent */
-    UPDATE copyright_notice_action_work_items
-    SET attempt_count = 0, leased_at = NULL, completed_at = NULL,
-      completed_at_reason = NULL, available_at = clock_timestamp(),
-      failure_message = 'Explicit operator replay after external delivery failure.'
-    FROM copyright_restrictions restriction
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE copyright_notice_action_work_items.id = ${input.intentId}
-      AND copyright_notice_action_work_items.copyright_restriction_id = restriction.id
-      AND target.copyright_notice_id = ${input.noticeId}
-      AND copyright_notice_action_work_items.state = 'failed'
-    RETURNING target.copyright_notice_id
-  `)
-  const replayed = rows[0]
-  if (replayed) {
-    await transaction(sql`/* replayFailedCopyrightActionIntent:event */
-      INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-        copyright_notice_action_intent_id, replay_reason)
-      VALUES (${replayed.copyright_notice_id}, 'copyright_action_replayed', ${input.actorUserId},
-        ${input.intentId}, 'operator_replay')
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const { rows } = await transaction<{ copyright_notice_id: string }>(sql`
+      /* replayFailedCopyrightActionIntent */
+      UPDATE copyright_notice_action_work_items
+      SET attempt_count = 0, leased_at = NULL, completed_at = NULL,
+        completed_at_reason = NULL, available_at = clock_timestamp(),
+        failure_message = 'Explicit operator replay after external delivery failure.'
+      FROM copyright_restrictions restriction
+      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+      WHERE copyright_notice_action_work_items.id = ${input.intentId}
+        AND copyright_notice_action_work_items.copyright_restriction_id = restriction.id
+        AND target.copyright_notice_id = ${input.noticeId}
+        AND copyright_notice_action_work_items.state = 'failed'
+      RETURNING target.copyright_notice_id
     `)
-  }
-  await transaction.commit()
-  return replayed !== undefined
+      const replayed = rows[0]
+      if (replayed) {
+        await transaction(sql`/* replayFailedCopyrightActionIntent:event */
+        INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
+          copyright_notice_action_intent_id, replay_reason)
+        VALUES (${replayed.copyright_notice_id}, 'copyright_action_replayed', ${input.actorUserId},
+          ${input.intentId}, 'operator_replay')
+      `)
+      }
+      await readCopyrightThreadRetirement(transaction, [input.noticeId])
+      await transaction.commit()
+      return replayed !== undefined
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
+  )
 }

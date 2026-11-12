@@ -12,7 +12,7 @@ import type {
 import { createGuestTerritorialComplaintFromEmail } from './territorial-complaint-email.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 
-type AdmittedEmailCorrespondencePending = {
+export type AdmittedEmailCorrespondencePending = {
   id: string
   amazon_ses_message_id: string
   received_at: Date

@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
@@ -19,37 +20,40 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   imposedAt: Date
   imposedById: string | null
 }): Promise<CopyrightRestrictionRecord> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   const { rows: targetRows } = await transaction<{ placement_id: string }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:findTarget */
-    SELECT placement_id
-    FROM copyright_notice_targets
-    WHERE id = ${input.targetId} AND copyright_notice_id = ${input.noticeId}
-  `,
+  SELECT placement_id
+  FROM copyright_notice_targets
+  WHERE id = ${input.targetId} AND copyright_notice_id = ${input.noticeId}
+`,
   )
   const target = targetRows[0]
   assert(target, 404, 'Copyright notice target not found')
   const { rows: formAuthorities } = await transaction<{
     copyright_notice_submission_id: string
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:formAuthority */
-    SELECT copyright_notice_submission_id FROM copyright_notice_submission_assessment_identities WHERE id = ${input.assessmentId}
-  `)
+  SELECT copyright_notice_submission_id FROM copyright_notice_submission_assessment_identities WHERE id = ${input.assessmentId}
+`)
   if (formAuthorities[0])
     await lockAssessmentForm(formAuthorities[0].copyright_notice_submission_id, transaction)
   const { rows: noticeRows } = await transaction<{ id: string }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:lockNotice */
-    SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE
-  `,
+  SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE
+`,
   )
   assert(noticeRows[0], 404, 'Copyright notice not found')
-  const { rows: currentTargets } = await transaction<{ id: string; placement_revision: number }>(
+  const { rows: currentTargets } = await transaction<{
+    id: string
+    placement_revision: number
+  }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:target */
-    SELECT id, placement_revision
-    FROM copyright_notice_targets
-    WHERE id = ${input.targetId}
-      AND copyright_notice_id = ${input.noticeId}
-      AND placement_id = ${target.placement_id}
-  `,
+  SELECT id, placement_revision
+  FROM copyright_notice_targets
+  WHERE id = ${input.targetId}
+    AND copyright_notice_id = ${input.noticeId}
+    AND placement_id = ${target.placement_id}
+`,
   )
   assert(currentTargets[0], 409, 'Copyright notice target changed while being restricted')
   const { rows: assessmentRows } = await transaction<{
@@ -62,31 +66,31 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     territorial_revoked: boolean
   }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:assessment */
-    SELECT submission.source_kind, assessment.assessed_by_id, assessment.is_substantially_compliant, assessment.copyright_notice_form_screening_id,
-      assessment.copyright_notice_form_screening_id IS NULL OR fn_current_copyright_form_screening(
-        submission.id, assessment.copyright_notice_form_screening_id
-      ) AS current_screening_authority,
-      EXISTS (
-        SELECT 1
-        FROM copyright_notice_form_intakes intake
-        JOIN copyright_notice_form_intake_reviews review
-          ON review.copyright_notice_form_intake_id = intake.id
-        WHERE intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id
-          AND NOT review.is_accepted
-      ) AS has_rejected_form_review, `.append(territorialAssessmentRevokedSql())
+  SELECT submission.source_kind, assessment.assessed_by_id, assessment.is_substantially_compliant, assessment.copyright_notice_form_screening_id,
+    assessment.copyright_notice_form_screening_id IS NULL OR fn_current_copyright_form_screening(
+      submission.id, assessment.copyright_notice_form_screening_id
+    ) AS current_screening_authority,
+    EXISTS (
+      SELECT 1
+      FROM copyright_notice_form_intakes intake
+      JOIN copyright_notice_form_intake_reviews review
+        ON review.copyright_notice_form_intake_id = intake.id
+      WHERE intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id
+        AND NOT review.is_accepted
+    ) AS has_rejected_form_review, `.append(territorialAssessmentRevokedSql())
       .append(sql` AS territorial_revoked
-    FROM copyright_notice_submissions submission
-    CROSS JOIN LATERAL (
-      SELECT submission.current_assessment_identity_id AS id,
-        submission.id AS copyright_notice_submission_id,
-        submission.current_assessed_by_id AS assessed_by_id,
-        submission.current_assessment_is_substantially_compliant AS is_substantially_compliant,
-        submission.current_assessment_form_screening_id AS copyright_notice_form_screening_id
-    ) assessment
-    WHERE assessment.id = ${input.assessmentId}
-      AND submission.copyright_notice_id = ${input.noticeId}
-      AND submission.kind = 'notice'
-  `),
+  FROM copyright_notice_submissions submission
+  CROSS JOIN LATERAL (
+    SELECT submission.current_assessment_identity_id AS id,
+      submission.id AS copyright_notice_submission_id,
+      submission.current_assessed_by_id AS assessed_by_id,
+      submission.current_assessment_is_substantially_compliant AS is_substantially_compliant,
+      submission.current_assessment_form_screening_id AS copyright_notice_form_screening_id
+  ) assessment
+  WHERE assessment.id = ${input.assessmentId}
+    AND submission.copyright_notice_id = ${input.noticeId}
+    AND submission.kind = 'notice'
+`),
   )
   const assessment = assessmentRows[0]
   assert(assessment, 422, 'A current notice assessment is required before restriction')
@@ -101,31 +105,31 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const { rows: acceptedRows } = await transaction<{
     id: string
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:accept */
-    UPDATE copyright_notices
-    SET accepted_at = COALESCE(accepted_at, ${input.imposedAt}),
-      provisional_withholding_at = COALESCE(provisional_withholding_at, ${input.imposedAt})
-    WHERE id = ${input.noticeId}
-      AND EXISTS (SELECT 1 FROM copyright_notice_targets WHERE id = ${input.targetId})
-    RETURNING id
-  `)
+  UPDATE copyright_notices
+  SET accepted_at = COALESCE(accepted_at, ${input.imposedAt}),
+    provisional_withholding_at = COALESCE(provisional_withholding_at, ${input.imposedAt})
+  WHERE id = ${input.noticeId}
+    AND EXISTS (SELECT 1 FROM copyright_notice_targets WHERE id = ${input.targetId})
+  RETURNING id
+`)
   assert(acceptedRows[0], 404, 'Copyright notice not found')
   const { rows } =
     await transaction<CopyrightRestrictionRecord>(sql`/* acceptCopyrightNoticeAndImposeRestriction */
-    INSERT INTO copyright_restrictions (
-      copyright_notice_target_id, authorizing_assessment_id,
-      is_authorizing_assessment_automated, imposed_at, imposed_by_id,
-      human_reviewed_at, human_review_action, human_reviewed_by_id
-    ) VALUES (
-      ${input.targetId}, ${input.assessmentId},
-      ${assessment.copyright_notice_form_screening_id !== null},
-      ${input.imposedAt}, ${input.imposedById},
-      ${input.imposedById ? input.imposedAt : null}, ${input.imposedById ? 'confirm' : null},
-      ${input.imposedById}
-    )
-    ON CONFLICT (copyright_notice_target_id) WHERE lifted_at IS NULL DO NOTHING
-    RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
-      human_reviewed_at, human_review_action, human_reviewed_by_id
-  `)
+  INSERT INTO copyright_restrictions (
+    copyright_notice_target_id, authorizing_assessment_id,
+    is_authorizing_assessment_automated, imposed_at, imposed_by_id,
+    human_reviewed_at, human_review_action, human_reviewed_by_id
+  ) VALUES (
+    ${input.targetId}, ${input.assessmentId},
+    ${assessment.copyright_notice_form_screening_id !== null},
+    ${input.imposedAt}, ${input.imposedById},
+    ${input.imposedById ? input.imposedAt : null}, ${input.imposedById ? 'confirm' : null},
+    ${input.imposedById}
+  )
+  ON CONFLICT (copyright_notice_target_id) WHERE lifted_at IS NULL DO NOTHING
+  RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
+    human_reviewed_at, human_review_action, human_reviewed_by_id
+`)
   const restriction = rows[0]
   assert(restriction, 409, 'An active copyright restriction already exists for this target')
   const actionIntent = await insertCopyrightActionIntent(
@@ -151,9 +155,10 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     )
   }
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:event */
-    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id, copyright_restriction_id)
-    VALUES (${input.noticeId}, 'provisional_restriction_imposed', ${input.imposedById}, ${restriction.id})
-  `)
+  INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id, copyright_restriction_id)
+  VALUES (${input.noticeId}, 'provisional_restriction_imposed', ${input.imposedById}, ${restriction.id})
+`)
+  await readCopyrightThreadRetirement(transaction, [input.noticeId])
   await transaction.commit()
   void enqueueApplyCopyrightAction(actionIntent.id)
   enqueueCopyrightStaydownHashes(staydownImageIds)

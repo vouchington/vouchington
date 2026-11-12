@@ -12,7 +12,7 @@ import {
   completeCopyrightMandatoryHumanReview,
   recordCopyrightRepeatInfringerReviewOutcome,
 } from './index.mts'
-import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-incidents.mts'
+import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-dispositions.mts'
 async function createActors() {
   const [poster, otherPoster, moderator] = await Promise.all([
     createTestUserDirect(),

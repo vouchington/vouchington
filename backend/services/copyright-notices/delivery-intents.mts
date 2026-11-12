@@ -1,7 +1,11 @@
+import { readCopyrightDeliveryPreservationCoverage } from './delivery-preservation.mts'
 import { getCopyrightNoticesWorkLimit } from './work-limits.mts'
 import { beginTransaction, write } from '@data-stores/psql'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { encryptSecret } from '@modules/token-secrets'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import assert from 'http-assert'
 import {
   createCopyrightDeliveryIntents,
@@ -29,10 +33,17 @@ export async function createCopyrightDeliveryIntent(
   transaction?: TransactionQuery,
 ): Promise<CopyrightDeliveryIntentRecord> {
   if (transaction) return (await createCopyrightDeliveryIntents([input], transaction))[0]!
-  await using owned = await beginTransaction()
-  const intent = (await createCopyrightDeliveryIntents([input], owned))[0]!
-  await owned.commit()
-  return intent
+  return conflictOnSerializationFailure(
+    async () => {
+      await using owned = await beginTransaction({ serializable: true })
+      await readCopyrightThreadRetirement(owned, [input.noticeId])
+      const intent = (await createCopyrightDeliveryIntents([input], owned))[0]!
+      await owned.commit()
+      return intent
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
+  )
 }
 
 export async function claimCopyrightDeliveryIntent(
@@ -40,8 +51,10 @@ export async function claimCopyrightDeliveryIntent(
 ): Promise<ClaimedCopyrightDeliveryIntent | null> {
   const COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES =
     getCopyrightNoticesWorkLimit('delivery_lease_minutes')
+  await using transaction = await beginTransaction({ serializable: true })
+  await readCopyrightDeliveryPreservationCoverage(transaction, [intentId])
   const { rows } =
-    await write<ClaimedCopyrightDeliveryIntent>(sql`/* claimCopyrightDeliveryIntent */
+    await transaction<ClaimedCopyrightDeliveryIntent>(sql`/* claimCopyrightDeliveryIntent */
     WITH exhausted AS (
       UPDATE copyright_notice_delivery_work_items
       SET leased_at = NULL, failed_at = CURRENT_TIMESTAMP, available_at = clock_timestamp()
@@ -64,6 +77,7 @@ export async function claimCopyrightDeliveryIntent(
       recipient_role, delivery_kind, target_path, channel, state, amazon_ses_message_id, attempt_count,
       body_ciphertext
   `)
+  await transaction.commit()
   return rows[0] ?? null
 }
 
@@ -72,13 +86,16 @@ export async function markCopyrightDeliveryIntentSent(input: {
   intentId: string
   sesMessageId?: string
 }): Promise<boolean> {
-  const { rows } = await write(sql`/* markCopyrightDeliveryIntentSent */
+  await using transaction = await beginTransaction({ serializable: true })
+  await readCopyrightDeliveryPreservationCoverage(transaction, [input.intentId])
+  const { rows } = await transaction(sql`/* markCopyrightDeliveryIntentSent */
     UPDATE copyright_notice_delivery_work_items
     SET sent_at = CURRENT_TIMESTAMP,
       amazon_ses_message_id = ${input.sesMessageId ?? null}
     WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
     RETURNING id
   `)
+  await transaction.commit()
   return rows.length === 1
 }
 
@@ -88,7 +105,8 @@ export async function markCopyrightDeliveryIntentEmailSent(input: {
   correspondenceId: string
   sesMessageId: string
 }): Promise<boolean> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
+  await readCopyrightDeliveryPreservationCoverage(transaction, [input.intentId])
   const { rows } = await transaction(sql`/* markCopyrightDeliveryIntentEmailSent:intent */
     UPDATE copyright_notice_delivery_work_items
     SET sent_at = CURRENT_TIMESTAMP,
@@ -115,7 +133,9 @@ export async function markCopyrightDeliveryIntentFailed(input: {
   error: string
 }): Promise<boolean> {
   const boundedError = input.error.slice(0, 10_000)
-  const { rows } = await write(sql`/* markCopyrightDeliveryIntentFailed */
+  await using transaction = await beginTransaction({ serializable: true })
+  await readCopyrightDeliveryPreservationCoverage(transaction, [input.intentId])
+  const { rows } = await transaction(sql`/* markCopyrightDeliveryIntentFailed */
     UPDATE copyright_notice_delivery_work_items
     SET
       leased_at = NULL,
@@ -126,36 +146,8 @@ export async function markCopyrightDeliveryIntentFailed(input: {
     WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
     RETURNING id
   `)
+  await transaction.commit()
   return rows.length === 1
-}
-
-export async function markCopyrightDeliveryIntentBouncedBySesMessageId(input: {
-  sesMessageId: string
-  recipientEmails: string[]
-}): Promise<number> {
-  const { rows } = await write<CopyrightDeliveryRecipientRecord & { intent_id: string }>(
-    sql`/* markCopyrightDeliveryIntentBouncedBySesMessageId:recipients */
-      SELECT intent.id AS intent_id, recipient.copyright_notice_delivery_work_item_id, recipient.email_ciphertext
-      FROM copyright_notice_delivery_work_items intent
-      JOIN copyright_notice_delivery_recipients recipient
-        ON recipient.copyright_notice_delivery_work_item_id = intent.id
-      WHERE intent.amazon_ses_message_id = ${input.sesMessageId} AND intent.state = 'sent'`,
-  )
-  const bouncedRecipients = new Set(input.recipientEmails.map(normalizeEmailAddress))
-  const intentIds = rows.flatMap(row => {
-    const recipient = decryptSecret(
-      row.email_ciphertext,
-      `copyright-delivery-recipient:${row.copyright_notice_delivery_work_item_id}`,
-    )
-    return bouncedRecipients.has(normalizeEmailAddress(recipient)) ? [row.intent_id] : []
-  })
-  if (intentIds.length === 0) return 0
-  const { rowCount } = await write(sql`/* markCopyrightDeliveryIntentBouncedBySesMessageId:update */
-    UPDATE copyright_notice_delivery_work_items
-    SET bounced_at = CURRENT_TIMESTAMP
-    WHERE id = ANY(${intentIds}::uuid[]) AND state = 'sent'
-  `)
-  return rowCount ?? 0
 }
 
 export async function insertCopyrightDeliveryRecipient(
@@ -183,11 +175,8 @@ export async function recordCopyrightDeliveryRecipient(input: {
   intentId: string
   recipientEmail: string
 }): Promise<void> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
+  await readCopyrightDeliveryPreservationCoverage(transaction, [input.intentId])
   await insertCopyrightDeliveryRecipient(input.recipientEmail, input.intentId, transaction)
   await transaction.commit()
-}
-
-function normalizeEmailAddress(email: string): string {
-  return email.trim().toLowerCase()
 }

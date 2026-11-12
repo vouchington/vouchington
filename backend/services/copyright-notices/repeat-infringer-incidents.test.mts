@@ -7,7 +7,7 @@ import { createTestUserDirect } from '@voucha/test-helpers'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
-import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-incidents.mts'
+import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-dispositions.mts'
 
 describe('copyright repeat-infringer incidents', () => {
   it('opens one review at the second confirmed notice and does not suspend the account', async () => {

@@ -43,6 +43,10 @@ export async function admitCopyrightEmailDuringThreadProof<Result>(
             .catch((err: unknown) => submissionWritten.reject(err))
           return submissionWritten.promise.then(() => Reflect.apply(original, client, args))
         }
+        // Issue the blocker read above before awaiting the review's commit: the old
+        // activity/blocker inversion must remain a native database deadlock regression.
+        if (admission && statement.text.includes('/* readCopyrightThreadRetirementAdmission */'))
+          return admission.then(() => Reflect.apply(original, client, args))
         const pending = Reflect.apply(original, client, args)
         if (statement.text.includes('/* admitCopyrightEmailCorrespondence:submission */'))
           return Promise.resolve(pending).then(result => {
@@ -71,6 +75,7 @@ export async function holdCopyrightCaseBeforeThreadEligibility<Result>(
   noticeId: string,
   placeHold: () => Promise<unknown>,
   sweep: () => Promise<Result>,
+  onSerializationFailure?: (err: unknown) => void,
 ): Promise<Result> {
   return runPoolObservationExclusively(async () => {
     let placed = false
@@ -83,7 +88,16 @@ export async function holdCopyrightCaseBeforeThreadEligibility<Result>(
         if (descriptor) Object.defineProperty(client, 'query', descriptor)
         else Reflect.deleteProperty(client, 'query')
       })
+      let ownsCase = false
       const query = ((...args: unknown[]) => {
+        const forward = () => {
+          const pending = Reflect.apply(original, client, args)
+          if (!ownsCase || !onSerializationFailure) return pending
+          return Promise.resolve(pending).catch((err: unknown) => {
+            if ((err as { code?: string } | null)?.code === '40001') onSerializationFailure(err)
+            throw err
+          })
+        }
         const statement = args[0]
         if (
           placed ||
@@ -96,9 +110,10 @@ export async function holdCopyrightCaseBeforeThreadEligibility<Result>(
           !Array.isArray(statement.values) ||
           !statement.values.includes(noticeId)
         )
-          return Reflect.apply(original, client, args)
+          return forward()
         placed = true
-        return placeHold().then(() => Reflect.apply(original, client, args))
+        ownsCase = true
+        return placeHold().then(forward)
       }) as pg.PoolClient['query']
       Object.defineProperty(client, 'query', { configurable: true, writable: true, value: query })
     }

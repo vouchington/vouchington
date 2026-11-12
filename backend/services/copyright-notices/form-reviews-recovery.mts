@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
@@ -60,7 +61,7 @@ export function searchRecoverableCopyrightFormReviewIntakeIds(
 
 /** Replays the durable effects of one moderator rejection after a post-commit interruption. */
 export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string): Promise<void> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   await transaction(sql`/* recoverRejectedCopyrightFormReviewEffect:lock */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${intakeId}`}, 0))
   `)
@@ -115,6 +116,7 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
     { noticeId: state.notice_id, event: 'not_accepted' },
     transaction,
   )
+  await readCopyrightThreadRetirement(transaction, [state.notice_id])
   await transaction.commit()
   await reverseAutomatedCopyrightRestrictions(
     state.notice_id,

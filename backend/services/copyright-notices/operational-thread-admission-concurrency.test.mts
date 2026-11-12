@@ -66,7 +66,7 @@ describe('copyright thread proof and correspondence admission', () => {
     ])
     expect(aggregate?.submissions.filter(row => row.kind === 'supplement')).toHaveLength(1)
   })
-  it('retains thread evidence when an account hold commits after the completed generation proofs', async () => {
+  it('retains thread evidence when an account hold commits after the completed blocker proof', async () => {
     const admin = await createTestUser({ administrator: true })
     const notice = await createRetentionMinimalCase()
     const initial = await createRetentionParsedEmail('proof-hold-initial', {
@@ -77,6 +77,7 @@ describe('copyright thread proof and correspondence admission', () => {
     await linkTestCopyrightEmailIntake(reply.id, notice.noticeId, 'thread', notice.moderator.id)
     const before = await readCopyrightThreadReferenceState(reply.id)
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
+    const serializationFailures: unknown[] = []
     let holdPlaced = false
     try {
       const result = await holdCopyrightCaseBeforeThreadEligibility(
@@ -92,11 +93,24 @@ describe('copyright thread proof and correspondence admission', () => {
             batchSize: 10,
             maxBatches: 100,
           }),
+        err => serializationFailures.push(err),
       )
+      expect(serializationFailures).toEqual([expect.objectContaining({ code: '40001' })])
       expect(result.deleted).toBe(0)
       expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(before)
     } finally {
       if (holdPlaced) await releaseUserPreservationHold(admin, notice.posterId)
     }
+    const nextTick = await sweepCopyrightCaseThreads({
+      now: new Date(Date.now() + 181 * day),
+      replyDays: 180,
+      batchSize: 10,
+      maxBatches: 100,
+    })
+    expect(nextTick.deleted).toBeGreaterThan(0)
+    expect(await readCopyrightThreadReferenceState(reply.id)).toEqual({
+      tokenId: null,
+      referenceCount: 0,
+    })
   })
 })

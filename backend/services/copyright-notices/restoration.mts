@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import {
   advanceCopyrightLastLegalActivityAt,
@@ -20,13 +21,13 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   expectedPlacementRevision: number
   now: Date
 }): Promise<CopyrightActionIntentRecord> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   const { rows: targetKeys } = await transaction<{ placement_id: string }>(
     sql`/* createEligibleCopyrightRestoreIntent:findPlacement */
-    SELECT placement_id
-    FROM copyright_notice_targets
-    WHERE id = ${input.targetId} AND copyright_notice_id = ${input.noticeId}
-  `,
+  SELECT placement_id
+  FROM copyright_notice_targets
+  WHERE id = ${input.targetId} AND copyright_notice_id = ${input.noticeId}
+`,
   )
   const target = targetKeys[0]
   assert(target, 404, 'Copyright notice restoration record not found')
@@ -41,29 +42,29 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     resolved_at: Date | null
     cancelled_at: Date | null
   }>(sql`/* createEligibleCopyrightRestoreIntent:lock */
-    SELECT r.human_reviewed_at, t.placement_id, t.placement_revision, r.lifted_at,
-      d.earliest_restoration_at, d.resolved_at, d.cancelled_at
-    FROM copyright_notices n
-    JOIN copyright_notice_targets t ON t.copyright_notice_id = n.id
-    JOIN copyright_restrictions r ON r.copyright_notice_target_id = t.id
-    JOIN copyright_notice_deadlines d ON d.copyright_notice_id = n.id
-    JOIN copyright_notice_submission_assessment_identities assessment
-      ON assessment.id = d.qualifying_counter_notice_assessment_identity_id
-    JOIN copyright_notice_counter_notice_assessment_targets assessment_target
-      ON assessment_target.copyright_notice_submission_assessment_identity_id = assessment.id
-      AND assessment_target.copyright_notice_target_id = t.id
-    JOIN copyright_notice_submissions counter_notice
-      ON counter_notice.id = assessment.copyright_notice_submission_id
-    WHERE n.id = ${input.noticeId}
-      AND t.id = ${input.targetId}
-      AND t.placement_id = ${target.placement_id}
-      AND r.id = ${input.restrictionId}
-      AND d.id = ${input.deadlineId}
-      AND counter_notice.kind = 'counter_notice'
-      AND counter_notice.current_assessment_identity_id = assessment.id
-      AND counter_notice.current_assessment_is_substantially_compliant
-    FOR UPDATE OF n
-  `)
+  SELECT r.human_reviewed_at, t.placement_id, t.placement_revision, r.lifted_at,
+    d.earliest_restoration_at, d.resolved_at, d.cancelled_at
+  FROM copyright_notices n
+  JOIN copyright_notice_targets t ON t.copyright_notice_id = n.id
+  JOIN copyright_restrictions r ON r.copyright_notice_target_id = t.id
+  JOIN copyright_notice_deadlines d ON d.copyright_notice_id = n.id
+  JOIN copyright_notice_submission_assessment_identities assessment
+    ON assessment.id = d.qualifying_counter_notice_assessment_identity_id
+  JOIN copyright_notice_counter_notice_assessment_targets assessment_target
+    ON assessment_target.copyright_notice_submission_assessment_identity_id = assessment.id
+    AND assessment_target.copyright_notice_target_id = t.id
+  JOIN copyright_notice_submissions counter_notice
+    ON counter_notice.id = assessment.copyright_notice_submission_id
+  WHERE n.id = ${input.noticeId}
+    AND t.id = ${input.targetId}
+    AND t.placement_id = ${target.placement_id}
+    AND r.id = ${input.restrictionId}
+    AND d.id = ${input.deadlineId}
+    AND counter_notice.kind = 'counter_notice'
+    AND counter_notice.current_assessment_identity_id = assessment.id
+    AND counter_notice.current_assessment_is_substantially_compliant
+  FOR UPDATE OF n
+`)
   const locked = rows[0]
   assert(locked, 404, 'Copyright notice restoration record not found')
   assert(
@@ -86,23 +87,23 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   const qualifyingHolds = await transaction<{
     id: string
   }>(sql`/* createEligibleCopyrightRestoreIntent:qualifyingHolds */
-      SELECT h.id
-      FROM copyright_notice_legal_hold_assessments h
-      JOIN copyright_notice_submissions s ON s.id = h.copyright_notice_submission_id
-      JOIN copyright_notice_legal_hold_assessment_targets hold_target
-        ON hold_target.copyright_notice_legal_hold_assessment_id = h.id
-      LEFT JOIN copyright_notice_legal_hold_resolutions resolved
-        ON resolved.copyright_notice_legal_hold_assessment_id = h.id
-      WHERE s.copyright_notice_id = ${input.noticeId}
-        AND hold_target.copyright_notice_target_id = ${input.targetId}
-        AND resolved.id IS NULL
-        AND h.is_from_original_claimant
-        AND h.is_same_material
-        AND h.proceeding_kind IS NOT NULL
-        AND h.commenced_at IS NOT NULL
-        AND h.received_by_designated_agent_at IS NOT NULL
-        AND h.received_by_designated_agent_at <= ${input.now}
-    `)
+    SELECT h.id
+    FROM copyright_notice_legal_hold_assessments h
+    JOIN copyright_notice_submissions s ON s.id = h.copyright_notice_submission_id
+    JOIN copyright_notice_legal_hold_assessment_targets hold_target
+      ON hold_target.copyright_notice_legal_hold_assessment_id = h.id
+    LEFT JOIN copyright_notice_legal_hold_resolutions resolved
+      ON resolved.copyright_notice_legal_hold_assessment_id = h.id
+    WHERE s.copyright_notice_id = ${input.noticeId}
+      AND hold_target.copyright_notice_target_id = ${input.targetId}
+      AND resolved.id IS NULL
+      AND h.is_from_original_claimant
+      AND h.is_same_material
+      AND h.proceeding_kind IS NOT NULL
+      AND h.commenced_at IS NOT NULL
+      AND h.received_by_designated_agent_at IS NOT NULL
+      AND h.received_by_designated_agent_at <= ${input.now}
+  `)
   // Each case becomes independently eligible. The delivery worker lifts this case's restriction
   // while keeping the placement withheld until every other active restriction is resolved.
   assert(
@@ -121,29 +122,30 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   const { rows: intentRows } =
     await transaction<CopyrightActionIntentRecord>(sql`/* createEligibleCopyrightRestoreIntent */
-    INSERT INTO copyright_notice_action_work_items (
-      copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
-    ) SELECT ${input.restrictionId}, ${input.deadlineId}, ${currentPlacement.revision}, 'restore'
-    WHERE NOT EXISTS (
-      SELECT 1 FROM copyright_notice_action_work_items existing
-      WHERE existing.copyright_restriction_id = ${input.restrictionId}
-        AND existing.expected_placement_revision = ${currentPlacement.revision}
-        AND existing.action = 'restore'
-    )
-    ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING
-    RETURNING id, copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision,
-      action, completed_at
-  `)
+  INSERT INTO copyright_notice_action_work_items (
+    copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
+  ) SELECT ${input.restrictionId}, ${input.deadlineId}, ${currentPlacement.revision}, 'restore'
+  WHERE NOT EXISTS (
+    SELECT 1 FROM copyright_notice_action_work_items existing
+    WHERE existing.copyright_restriction_id = ${input.restrictionId}
+      AND existing.expected_placement_revision = ${currentPlacement.revision}
+      AND existing.action = 'restore'
+  )
+  ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING
+  RETURNING id, copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision,
+    action, completed_at
+`)
   const intent = intentRows[0]
   assert(intent, 409, 'A restore intent already exists for this placement revision')
+  await readCopyrightThreadRetirement(transaction, [input.noticeId])
   await runSequentially([
     () => recordCounterNoticeRestoration(transaction, input),
     () =>
       transaction(sql`/* createEligibleCopyrightRestoreIntent:event */
-    INSERT INTO copyright_notice_lifecycle_changes
-      (copyright_notice_id, change_type, copyright_notice_action_intent_id)
-    VALUES (${input.noticeId}, 'restoration_intent_created', ${intent.id})
-  `),
+  INSERT INTO copyright_notice_lifecycle_changes
+    (copyright_notice_id, change_type, copyright_notice_action_intent_id)
+  VALUES (${input.noticeId}, 'restoration_intent_created', ${intent.id})
+`),
     () => transaction.commit(),
   ])
   void enqueueApplyCopyrightAction(intent.id)

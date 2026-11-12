@@ -1,3 +1,5 @@
+import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
+import { readCopyrightCaseLifecycleClock } from '@voucha/test-helpers/copyright-lifecycle-clock'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
@@ -90,12 +92,14 @@ describe('copyright operational thread retention', () => {
     }
     expect(deleted).toBeGreaterThan(0)
     const betweenPages = await readCopyrightThreadReferenceState(reply.id)
-    await recordCopyrightEmailThreadReferences({
-      intakeId: reply.id,
-      messageId: '<expired-replay-between-pages@example.test>',
-      inReplyTo: [],
-      references: [],
-    })
+    await expect(
+      recordCopyrightEmailThreadReferences({
+        intakeId: reply.id,
+        messageId: '<expired-replay-between-pages@example.test>',
+        inReplyTo: [],
+        references: [],
+      }),
+    ).rejects.toMatchObject({ status: 409, code: 'copyright_email_thread_changed' })
     expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(betweenPages)
     const beforeFinal = await readCopyrightThreadReferenceState(reply.id)
     const beforeFinalAncestors = (await readCopyrightIntakeRetentionState(reply.id)).ancestorCount
@@ -119,36 +123,45 @@ describe('copyright operational thread retention', () => {
     expect((await readCopyrightIntakeRetentionState(reply.id)).ancestorCount).toBe(0)
     expect(await readCopyrightOperationalRow('email_thread_tokens', before.tokenId!)).toBe(false)
     expect(await readCopyrightOperationalRow('email_thread_tokens', youngTokenId)).toBe(true)
-    await recordCopyrightEmailThreadReferences({
-      intakeId: reply.id,
-      messageId: '<expired-replay@example.test>',
-      inReplyTo: [],
-      references: [],
-    })
-    expect((await readCopyrightThreadReferenceState(reply.id)).referenceCount).toBe(0)
+    await expect(
+      recordCopyrightEmailThreadReferences({
+        intakeId: reply.id,
+        messageId: null,
+        inReplyTo: [],
+        references: [],
+      }),
+    ).resolves.toBeNull()
+    await expect(
+      recordCopyrightEmailThreadReferences({
+        intakeId: reply.id,
+        messageId: '<expired-replay@example.test>',
+        inReplyTo: [],
+        references: [],
+      }),
+    ).rejects.toMatchObject({ status: 409, code: 'copyright_email_thread_changed' })    expect((await readCopyrightThreadReferenceState(reply.id)).referenceCount).toBe(0)
   })
 
-  it('allows a fresh source to thread after an older intake high-water retired', async () => {
+  it('rejects fresh thread evidence after retirement without adding graph rows or legal activity', async () => {
     const notice = await createRetentionMinimalCase()
     const fresh = await createRetentionParsedEmail('fresh-after-retirement')
     await seedCopyrightThreadRetirement(
       notice.noticeId,
       getMinUUIDv7ForDate(new Date(Date.now() - 180 * DAY_MS)),
     )
+    const referencesBefore = await readCopyrightThreadReferenceState(fresh.id)
+    const intakeBefore = await readCopyrightIntakeRetentionState(fresh.id)
+    const clockBefore = await readCopyrightCaseLifecycleClock(notice.noticeId)
     await expect(
       linkCopyrightEmailIntakeToNotice({
         intakeId: fresh.id,
         noticeId: notice.noticeId,
         linkKind: 'thread',
       }),
-    ).resolves.toBe(true)
-    await recordCopyrightEmailThreadReferences({
-      intakeId: fresh.id,
-      messageId: '<fresh-after-retirement@example.test>',
-      inReplyTo: [],
-      references: [],
-    })
-    expect((await readCopyrightThreadReferenceState(fresh.id)).referenceCount).toBeGreaterThan(0)
+    ).rejects.toMatchObject({ status: 409, code: 'copyright_email_thread_changed' })
+    expect(await readCopyrightEmailIntakeNoticeLinks(fresh.id)).toEqual([])
+    expect(await readCopyrightThreadReferenceState(fresh.id)).toEqual(referencesBefore)
+    expect(await readCopyrightIntakeRetentionState(fresh.id)).toEqual(intakeBefore)
+    expect(await readCopyrightCaseLifecycleClock(notice.noticeId)).toEqual(clockBefore)
   })
 
   it('stops later cleanup pages when a linked intake receives a fresh staff review', async () => {
@@ -180,7 +193,7 @@ describe('copyright operational thread retention', () => {
     expect(await readCopyrightThreadReferenceState(second.id)).toEqual(beforeReview)
   })
 
-  it('restarts legal proof when a hold is placed and released between pages', async () => {
+  it('allows thread cleanup after a hold placed between pages has been released', async () => {
     const notice = await createRetentionMinimalCase({ claimant: true })
     const intake = await createRetentionParsedEmail('thread-hold-release', {
       sesMessageId: notice.initialEmailSesMessageId,
@@ -202,10 +215,14 @@ describe('copyright operational thread retention', () => {
     await positionCopyrightOperationalCursor('email_thread_references', sibling.noticeId)
     await sweepCopyrightCaseThreads({ ...options, maxBatches: 100 })
     expect((await readCopyrightThreadReferenceState(siblingIntake.id)).referenceCount).toBe(0)
-    expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(before)
+    expect(before.referenceCount).toBeGreaterThan(0)
+    expect(await readCopyrightThreadReferenceState(intake.id)).toEqual({
+      tokenId: null,
+      referenceCount: 0,
+    })
   })
 
-  it('restarts legal proof for a newly introduced held party after its submission page', async () => {
+  it('checks a newly introduced held party before retirement', async () => {
     const notice = await createRetentionMinimalCase()
     const intake = await createRetentionParsedEmail('thread-new-held-party', {
       sesMessageId: notice.initialEmailSesMessageId,

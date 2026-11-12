@@ -1,3 +1,6 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
@@ -30,47 +33,56 @@ export async function requestCopyrightGuestInformation(input: {
     403,
     'Only copyright staff can request information',
   )
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ id: string }>(
-    sql`/* requestCopyrightGuestInformation:capability */
-    SELECT id FROM copyright_notice_guest_capabilities
-    WHERE id = ${input.capabilityId} AND copyright_notice_id = ${input.noticeId}
-    FOR UPDATE
-  `,
-  )
-  assert(rows[0], 404, 'Copyright guest capability was not found')
-  const claimantEmail = await getCopyrightClaimantEmail(input.noticeId, transaction)
-  assert(claimantEmail, 422, 'Copyright notice has no claimant email address to contact')
-  const correspondenceId = uuidv7()
-  const correspondence = await createOutboundCopyrightCorrespondence(
-    {
-      id: correspondenceId,
-      noticeId: input.noticeId,
-      submissionId: null,
-      correspondenceKind: 'request_information',
-      compositionKind: 'staff',
-      bodyCiphertext: encryptSecret(
-        input.statement,
-        copyrightCorrespondencePurpose(correspondenceId),
-      ),
-      draftedById: input.currentUser.id,
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const { rows } = await transaction<{ id: string }>(
+        sql`/* requestCopyrightGuestInformation:capability */
+      SELECT id FROM copyright_notice_guest_capabilities
+      WHERE id = ${input.capabilityId} AND copyright_notice_id = ${input.noticeId}
+      FOR UPDATE
+    `,
+      )
+      assert(rows[0], 404, 'Copyright guest capability was not found')
+      const [claimantEmail] = await Promise.all([
+        getCopyrightClaimantEmail(input.noticeId, transaction),
+        readCopyrightThreadRetirement(transaction, [input.noticeId]),
+      ])
+      assert(claimantEmail, 422, 'Copyright notice has no claimant email address to contact')
+      const correspondenceId = uuidv7()
+      const correspondence = await createOutboundCopyrightCorrespondence(
+        {
+          id: correspondenceId,
+          noticeId: input.noticeId,
+          submissionId: null,
+          correspondenceKind: 'request_information',
+          compositionKind: 'staff',
+          bodyCiphertext: encryptSecret(
+            input.statement,
+            copyrightCorrespondencePurpose(correspondenceId),
+          ),
+          draftedById: input.currentUser.id,
+        },
+        transaction,
+      )
+      await createCopyrightDeliveryIntent(
+        {
+          noticeId: input.noticeId,
+          submissionId: null,
+          correspondenceId: correspondence.id,
+          recipientUserId: null,
+          recipientRole: 'claimant',
+          deliveryKind: 'staff_information_request',
+          channel: 'email',
+          idempotencyKey: `copyright-correspondence:${correspondence.id}:claimant-information-request`,
+          recipientEmail: claimantEmail,
+        },
+        transaction,
+      )
+      await transaction.commit()
+      return { id: correspondence.id }
     },
-    transaction,
+    'Conflicting copyright case change',
+    CONFLICT,
   )
-  await createCopyrightDeliveryIntent(
-    {
-      noticeId: input.noticeId,
-      submissionId: null,
-      correspondenceId: correspondence.id,
-      recipientUserId: null,
-      recipientRole: 'claimant',
-      deliveryKind: 'staff_information_request',
-      channel: 'email',
-      idempotencyKey: `copyright-correspondence:${correspondence.id}:claimant-information-request`,
-      recipientEmail: claimantEmail,
-    },
-    transaction,
-  )
-  await transaction.commit()
-  return { id: correspondence.id }
 }

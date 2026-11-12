@@ -1,3 +1,6 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -27,7 +30,8 @@ export async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailInta
   isDuplicate: boolean
 }> {
   const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
-  await using transaction = await beginTransaction()
+  return conflictOnSerializationFailure(async () => {
+  await using transaction = await beginTransaction({ serializable: true })
   const { rows: existing } = await transaction<{ id: string }>(sql`
     /* promoteCopyrightEmailIntake:exists */
     SELECT intake.id FROM copyright_notice_email_intakes intake
@@ -115,6 +119,7 @@ export async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailInta
         },
         transaction,
       )
+    await readCopyrightThreadRetirement(transaction, [prior.promoted_copyright_notice_id])
     await transaction.commit()
     if (graph.overflow) logCopyrightEmailGraphOverflow(prior.promoted_copyright_notice_id, graph)
     if (tokens.overflow)
@@ -148,4 +153,5 @@ export async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailInta
   if (graph.overflow) logCopyrightEmailGraphOverflow(notice.id, graph)
   if (tokens.overflow) logCopyrightEmailTokenOverflow(notice.id, maxGraphRows)
   return { noticeId: notice.id, submissionId, evidenceErased: false, isDuplicate: false }
+  }, 'Copyright email changed during admission', COPYRIGHT_EMAIL_THREAD_CHANGED)
 }

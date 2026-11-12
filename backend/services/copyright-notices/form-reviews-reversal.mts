@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import sql from 'sql-template-strings'
@@ -11,13 +12,14 @@ export async function reverseAutomatedCopyrightRestrictions(
   moderatorId: string | null,
   reviewedAt = new Date(),
 ): Promise<void> {
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   const { intentIds } = await reverseAutomatedCopyrightRestrictionsInTransaction(transaction, {
     noticeId,
     submissionId,
     moderatorId,
     reviewedAt,
   })
+  await readCopyrightThreadRetirement(transaction, [noticeId])
   await transaction.commit()
   void enqueueBulkApplyCopyrightActions(intentIds)
 }

@@ -1,3 +1,4 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import { v7 as uuidv7 } from 'uuid'
 import createHttpError from 'http-errors'
@@ -22,7 +23,7 @@ export async function recoverMissingDecisionAssessments(
     { ...options, limit: options.limit ?? getCopyrightSweepLimits().batchSize },
     'Invalid decision assessment cursor',
   )
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ serializable: true })
   const candidateQuery = sql`/* recoverMissingCopyrightDecisionAssessments */
     WITH candidate_page AS (
       SELECT DISTINCT ON (submission_id)
@@ -147,6 +148,9 @@ export async function recoverMissingDecisionAssessments(
       current_assessment_form_screening_id = inserted.copyright_notice_form_screening_id
     FROM inserted WHERE submission.id = inserted.copyright_notice_submission_id
     `),
+  ])
+  await readCopyrightThreadRetirement(transaction, [
+    ...new Set(admitted.map(row => row.copyright_notice_id)),
   ])
   await transaction.commit()
   return {

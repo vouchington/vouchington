@@ -88,7 +88,7 @@ describe('current copyright form screening execution', () => {
     await expect(completeCopyrightFormScreening(retry!, input)).resolves.toBe(result)
   })
 
-  it('serializes a failed-screen retry before admitting a human-authorized restriction', async () => {
+  it('commits a failed-screen retry and rolls back overlapping restriction admission', async () => {
     const { intake } = await createSignedInCopyrightForm()
     const initial = (await claimCopyrightFormScreening(intake.id))!
     await failCopyrightFormScreening(initial)
@@ -106,25 +106,35 @@ describe('current copyright form screening execution', () => {
     })
     expect(assessment.copyright_notice_form_screening_id).toBeNull()
     const [targetId] = await readCopyrightNoticeTargetIds(intake.copyright_notice_id)
-    const restriction = await startTestCopyrightScreeningBeforeAdmission(intake.id, () =>
-      acceptCopyrightNoticeAndImposeRestriction({
-        noticeId: intake.copyright_notice_id,
-        targetId: targetId!,
-        assessmentId: assessment.id,
-        imposedAt: new Date(),
-        imposedById: user.id,
-      }),
+    const before = await getCopyrightNoticePrivateAggregate(intake.copyright_notice_id)
+    const { screening, admission } = await startTestCopyrightScreeningBeforeAdmission(
+      intake.id,
+      () =>
+        acceptCopyrightNoticeAndImposeRestriction({
+          noticeId: intake.copyright_notice_id,
+          targetId: targetId!,
+          assessmentId: assessment.id,
+          imposedAt: new Date(),
+          imposedById: user.id,
+        }),
     )
-    expect(restriction).toMatchObject({
-      authorizing_assessment_id: assessment.id,
-      imposed_by_id: user.id,
+    expect(screening).toMatchObject({
+      intakeId: intake.id,
+      attemptNumber: initial.attemptNumber + 1,
+      leaseToken: expect.any(String),
     })
+    expect(admission).toMatchObject({ value: null, error: { code: '40001' } })
+    const after = await getCopyrightNoticePrivateAggregate(intake.copyright_notice_id)
+    expect(after?.assessments).toEqual(before?.assessments)
+    expect(after?.lifecycleEvents).toEqual(before?.lifecycleEvents)
+    expect(after?.actionIntents).toEqual(before?.actionIntents)
+    expect(after?.deliveryIntents).toEqual(before?.deliveryIntents)
     await expect(
       readTestCopyrightStaffScreening(intake.copyright_notice_id),
     ).resolves.toMatchObject({ state: 'pending' })
     await expect(
       countCopyrightActiveRestrictionsForNotice(intake.copyright_notice_id),
-    ).resolves.toBe(1)
+    ).resolves.toBe(0)
   })
 
   it('staff approval creates human authority during failed screening', async () => {

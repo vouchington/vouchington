@@ -86,6 +86,10 @@ export async function createDueStatutoryCopyrightRestoreIntentsForDeadline(
   const failures = outcomes.filter(
     (outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected',
   )
+  const serialization = failures.find(
+    failure => (failure.reason as { code?: string } | null)?.code === '40001',
+  )
+  if (serialization) throw serialization.reason
   if (failures.length > 0) {
     throw new AggregateError(
       failures.map(failure => {

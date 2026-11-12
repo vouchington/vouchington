@@ -53,6 +53,7 @@ export async function runCopyrightFormScreeningAgent(
     })
     return result ? recommendation : null
   } catch (err) {
+    if ((err as { code?: string } | null)?.code === '40001') throw err
     await failCopyrightFormScreening(attempt)
     throw err
   }

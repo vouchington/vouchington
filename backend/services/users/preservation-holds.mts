@@ -1,3 +1,5 @@
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { readUserCopyrightPreservationCoverage } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -89,35 +91,42 @@ export async function placeUserPreservationHold(
   const holdId = uuidv7()
   const ciphertext = encryptSecret(plaintext, referencePurpose(holdId))
 
-  await using query = await beginTransaction()
-  const account = await lockPreservationHoldUser(query, userId)
-  if (!account) {
-    throw createHttpError(404, 'User not found')
-  }
-  const { rows } = await query<HoldRow>(sql`/* placeUserPreservationHold */
-    WITH placed AS (
-      INSERT INTO user_legal_preservation_holds (id, account_user_id, placed_by_id, reference_ciphertext)
-      VALUES (${holdId}, ${userId}, ${currentUser.id}, ${ciphertext})
-      ON CONFLICT (account_user_id) WHERE released_at IS NULL DO NOTHING
-      RETURNING id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
-    ), marked AS (
-      UPDATE retained_user_identities identity
-      SET is_copyright_case_clock_sync_pending = identity.is_copyright_case_clock_sync_pending OR EXISTS (SELECT 1 FROM copyright_notice_party_identities party
-          WHERE party.account_user_id = identity.id LIMIT 1)
-      FROM placed WHERE identity.id = placed.account_user_id
-      RETURNING identity.id
-    )
-    SELECT placed.* FROM placed JOIN marked ON marked.id = placed.account_user_id
-  `)
-  const row = rows[0]
-  if (!row) throw createCodedError(409, 'User already has an open preservation hold', CONFLICT)
-  await recordModeratorAction(
-    currentUser.id,
-    { actionType: 'preservation_hold_place', targetUserId: userId },
-    { query },
+  return conflictOnSerializationFailure(
+    async () => {
+      await using query = await beginTransaction({ serializable: true })
+      const account = await lockPreservationHoldUser(query, userId)
+      if (!account) {
+        throw createHttpError(404, 'User not found')
+      }
+      const { rows } = await query<HoldRow>(sql`/* placeUserPreservationHold */
+      WITH placed AS (
+        INSERT INTO user_legal_preservation_holds (id, account_user_id, placed_by_id, reference_ciphertext)
+        VALUES (${holdId}, ${userId}, ${currentUser.id}, ${ciphertext})
+        ON CONFLICT (account_user_id) WHERE released_at IS NULL DO NOTHING
+        RETURNING id, account_user_id, placed_by_id, reference_ciphertext, released_at, released_by_id, created_at
+      ), marked AS (
+        UPDATE retained_user_identities identity
+        SET is_copyright_case_clock_sync_pending = identity.is_copyright_case_clock_sync_pending OR EXISTS (SELECT 1 FROM copyright_notice_party_identities party
+            WHERE party.account_user_id = identity.id LIMIT 1)
+        FROM placed WHERE identity.id = placed.account_user_id
+        RETURNING identity.id
+      )
+      SELECT placed.* FROM placed JOIN marked ON marked.id = placed.account_user_id
+    `)
+      const row = rows[0]
+      if (!row) throw createCodedError(409, 'User already has an open preservation hold', CONFLICT)
+      await readUserCopyrightPreservationCoverage(query, userId)
+      await recordModeratorAction(
+        currentUser.id,
+        { actionType: 'preservation_hold_place', targetUserId: userId },
+        { query },
+      )
+      await query.commit()
+      return { ...toHold(row), accountDeletedAt: account.deleted_at }
+    },
+    'Conflicting account preservation hold',
+    CONFLICT,
   )
-  await query.commit()
-  return { ...toHold(row), accountDeletedAt: account.deleted_at }
 }
 
 /** Releases the open hold by stamping the release columns; the row and its history are kept. */

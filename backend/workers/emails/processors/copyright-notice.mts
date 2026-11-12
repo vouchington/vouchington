@@ -39,6 +39,7 @@ export async function processSendCopyrightNoticeEmail(data: {
         })
       : await markCopyrightDeliveryIntentSent({ intentId: data.intentId, leaseToken, sesMessageId })
   } catch (err) {
+    if ((err as { code?: string } | null)?.code === '40001') throw err
     if (err instanceof CopyrightDeliveryNotClaimedError) return false
     if (prepared)
       await markCopyrightDeliveryIntentFailed({

@@ -1,3 +1,6 @@
+import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
+import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
+import { CONFLICT } from '@modules/on-error/error-codes'
 import { beginTransaction } from '@data-stores/psql'
 import {
   advanceCopyrightLastLegalActivityAt,
@@ -27,11 +30,17 @@ type ResolveCopyrightLegalHoldInput = {
 export async function resolveCopyrightLegalHold(
   input: ResolveCopyrightLegalHoldInput,
 ): Promise<CopyrightLegalHoldResolutionRecord> {
-  await using transaction = await beginTransaction()
-  const result = await resolveCopyrightLegalHoldInTransaction(input, transaction)
-  await transaction.commit()
-  void enqueueBulkApplyCopyrightActions(result.intentIds)
-  return result.resolution
+  return conflictOnSerializationFailure(
+    async () => {
+      await using transaction = await beginTransaction({ serializable: true })
+      const result = await resolveCopyrightLegalHoldInTransaction(input, transaction)
+      await transaction.commit()
+      void enqueueBulkApplyCopyrightActions(result.intentIds)
+      return result.resolution
+    },
+    'Conflicting copyright case change',
+    CONFLICT,
+  )
 }
 
 /** The owner's legal record, exact replay and audit commit together; no external effects here. */
@@ -47,6 +56,7 @@ async function resolveCopyrightLegalHoldInTransaction(
     WHERE assessment.id = ${input.assessmentId}
   `)
   assert(identities[0], 404, 'Copyright legal hold assessment not found')
+  await readCopyrightThreadRetirement(transaction, [identities[0].copyright_notice_id])
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(
     transaction,
     identities[0].copyright_notice_id,
