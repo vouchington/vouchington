@@ -51,10 +51,13 @@ async function startAndProvision(): Promise<RunningAwsEmulator> {
     })
     // The application reads fixed bucket names from the environment, so they exist before any
     // test runs. Tests isolate their objects with unique keys, never by sharing cleanup.
-    await Promise.all(
-      testS3BucketNames().map(Bucket => client.send(new CreateBucketCommand({ Bucket }))),
-    )
-    client.destroy()
+    try {
+      await Promise.all(
+        testS3BucketNames().map(Bucket => client.send(new CreateBucketCommand({ Bucket }))),
+      )
+    } finally {
+      client.destroy()
+    }
     return emulator
   } catch (err) {
     await emulator.stop()

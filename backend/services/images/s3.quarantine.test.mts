@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { S3Client, DeleteObjectsCommand } from '@aws-sdk/client-s3'
-import { describe, it, expect, vi, onTestFinished } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { S3Buckets } from '@modules/aws'
 import {
   listS3Keys,
@@ -9,6 +8,7 @@ import {
   s3ObjectExists,
   uniqueS3Prefix,
 } from '@voucha/test-helpers/aws-emulator-s3'
+import { denyS3ObjectActions, useOwnedS3Bucket } from '@voucha/test-helpers/s3-owned-bucket'
 import { copyImageToQuarantine, deleteImageRenders, deleteImagesFromS3 } from './s3.mts'
 
 // The emulator rejects a DeleteObjects request whose XML carries a control character.
@@ -62,25 +62,11 @@ describe('deleteImagesFromS3', () => {
   )
 
   it('reports per-object provider errors as an aggregate', async () => {
+    // A bucket policy replaces the whole bucket's policy, so the denial gets its own bucket.
+    await useOwnedS3Bucket('images')
     const { prefix, keys } = await seedImages(2)
     const [, deniedKey] = keys
-    // The emulator cannot deny one object of a delete batch (no object ACLs or locks), so only
-    // the owned response gains the per-object error real S3 reports; the request itself is real.
-    const send = S3Client.prototype.send
-    const spy = vi.spyOn(S3Client.prototype, 'send').mockImplementation(async function (
-      this: S3Client,
-      command: unknown,
-      ...rest: unknown[]
-    ) {
-      const result = await Reflect.apply(send, this, [command, ...rest])
-      if (
-        command instanceof DeleteObjectsCommand &&
-        command.input.Delete?.Objects?.some(object => object.Key === deniedKey)
-      )
-        return { ...result, Errors: [{ Key: deniedKey, Code: 'AccessDenied', Message: 'denied' }] }
-      return result
-    } as typeof send)
-    onTestFinished(() => spy.mockRestore())
+    await denyS3ObjectActions(S3Buckets.images, [{ action: 's3:DeleteObject', keys: [deniedKey] }])
 
     const error = await deleteImagesFromS3(keys.map(s3_key => ({ s3_key }))).catch(
       (err: unknown) => err,
@@ -88,9 +74,11 @@ describe('deleteImagesFromS3', () => {
 
     expect(error).toBeInstanceOf(AggregateError)
     expect((error as AggregateError).errors).toEqual([
-      new Error(`Failed to delete image ${deniedKey}: denied`),
+      expect.objectContaining({
+        message: expect.stringContaining(`Failed to delete image ${deniedKey}: `),
+      }),
     ])
-    await expect(listS3Keys(S3Buckets.images, prefix)).resolves.toEqual([])
+    await expect(listS3Keys(S3Buckets.images, prefix)).resolves.toEqual([deniedKey])
   })
 
   it('deletes images across a bounded provider request boundary', async () => {

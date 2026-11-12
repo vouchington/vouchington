@@ -103,19 +103,25 @@ export async function listS3Versions(
   Bucket: string,
   Prefix: string,
 ): Promise<Array<{ key: string; versionId: string; deleteMarker: boolean }>> {
-  const page = await emulatorS3().send(new ListObjectVersionsCommand({ Bucket, Prefix }))
-  return [
-    ...(page.Versions ?? []).map(v => ({
-      key: v.Key!,
-      versionId: v.VersionId!,
-      deleteMarker: false,
-    })),
-    ...(page.DeleteMarkers ?? []).map(v => ({
-      key: v.Key!,
-      versionId: v.VersionId!,
-      deleteMarker: true,
-    })),
-  ]
+  const versions: Array<{ key: string; versionId: string; deleteMarker: boolean }> = []
+  let KeyMarker: string | undefined
+  let VersionIdMarker: string | undefined
+  let truncated: boolean | undefined
+  do {
+    const page = await emulatorS3().send(
+      new ListObjectVersionsCommand({ Bucket, Prefix, KeyMarker, VersionIdMarker }),
+    )
+    for (const v of page.Versions ?? []) {
+      versions.push({ key: v.Key!, versionId: v.VersionId!, deleteMarker: false })
+    }
+    for (const v of page.DeleteMarkers ?? []) {
+      versions.push({ key: v.Key!, versionId: v.VersionId!, deleteMarker: true })
+    }
+    KeyMarker = page.NextKeyMarker
+    VersionIdMarker = page.NextVersionIdMarker
+    truncated = page.IsTruncated
+  } while (truncated)
+  return versions
 }
 
 export async function deleteS3Object(Bucket: string, Key: string): Promise<void> {

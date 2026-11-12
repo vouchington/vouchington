@@ -11,6 +11,7 @@ const LINUX_RUNTIME_IMAGE =
 const EMULATOR_PORT_IN_CONTAINER = 9297
 const DOCKER_START_DEADLINE_MS = 180_000
 const READY_DEADLINE_MS = 60_000
+const DOCKER_COMMAND_DEADLINE_MS = 30_000
 // A crashed test runner must not leave an emulator holding memory forever.
 export const AWS_EMULATOR_IDLE_TIMEOUT_SECONDS = 3_600
 
@@ -62,7 +63,9 @@ export async function startAwsEmulatorInDocker(home: string): Promise<StartedAws
     { timeout: DOCKER_START_DEADLINE_MS },
   )
   const stop = async () => {
-    await execFileAsync('docker', ['rm', '--force', name]).catch(() => undefined)
+    await execFileAsync('docker', ['rm', '--force', name], {
+      timeout: DOCKER_COMMAND_DEADLINE_MS,
+    }).catch(() => undefined)
   }
   const port = (async () => {
     // Follow the container log until the server announces it listens; the state files exist then.
@@ -72,11 +75,11 @@ export async function startAwsEmulatorInDocker(home: string): Promise<StartedAws
     } finally {
       logs.kill()
     }
-    const { stdout } = await execFileAsync('docker', [
-      'port',
-      name,
-      `${EMULATOR_PORT_IN_CONTAINER}/tcp`,
-    ])
+    const { stdout } = await execFileAsync(
+      'docker',
+      ['port', name, `${EMULATOR_PORT_IN_CONTAINER}/tcp`],
+      { timeout: DOCKER_COMMAND_DEADLINE_MS },
+    )
     const match = /:(\d+)\s*$/m.exec(stdout)
     if (!match) throw new Error(`Could not read the published AWS Emulator port: ${stdout}`)
     return Number(match[1])
@@ -113,6 +116,11 @@ export function readAnnouncedPort(child: ChildProcess): Promise<number> {
     child.once('exit', code => {
       settle.abort()
       reject(new Error(`AWS Emulator exited with ${code} before it was ready:\n${output}`))
+    })
+    // A binary that cannot start emits 'error', and may never emit 'exit'.
+    child.once('error', error => {
+      settle.abort()
+      reject(new Error(`AWS Emulator failed to start:\n${output}`, { cause: error }))
     })
   })
 }

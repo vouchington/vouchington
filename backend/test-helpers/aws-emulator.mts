@@ -77,7 +77,8 @@ async function startNative(home: string): Promise<StartedAwsEmulatorProcess> {
 }
 
 async function stopChild(child: ChildProcess): Promise<void> {
-  if (child.exitCode !== null || child.signalCode !== null) return
+  // A failed spawn has no pid and never emits 'exit'.
+  if (child.pid === undefined || child.exitCode !== null || child.signalCode !== null) return
   const exited = once(child, 'exit')
   child.kill('SIGTERM')
   // The runtime owns the timer behind AbortSignal.timeout; a stuck emulator is killed outright.

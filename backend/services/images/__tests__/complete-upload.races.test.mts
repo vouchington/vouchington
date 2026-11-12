@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { S3Buckets } from '@modules/aws'
 import {
   createTestUser,
@@ -137,6 +137,11 @@ describe('completeImageUpload - duplicate recovery and races', () => {
       },
     )
     await acquired
+    // A failed assertion below must not leave the advisory lock held for later tests.
+    onTestFinished(async () => {
+      releaseLock()
+      await lockHolder
+    })
 
     const replacementEnteredLock = Promise.withResolvers<void>()
     const lock = storageLifecycleLock.withImageStorageLifecycleLock
