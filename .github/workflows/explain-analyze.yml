@@ -347,9 +347,16 @@ jobs:
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 5
       - uses: ./.github/actions/download-artifact
-        timeout-minutes: 2
+        # Covers the listing wait below: the artifact listing can lag the shards' uploads (#5673).
+        timeout-minutes: 4
         with:
           pattern: explain-analyze-results-*
+          # Keep in step with the explain-analyze matrix; explain-analyze-gates.test.mts enforces it.
+          expected-names: >-
+            explain-analyze-results-main explain-analyze-results-main-2
+            explain-analyze-results-main-3 explain-analyze-results-main-4
+            explain-analyze-results-partition explain-analyze-results-hn-scale
+          wait-timeout-seconds: '150'
           path: ${{ runner.temp }}/explain-shards
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}

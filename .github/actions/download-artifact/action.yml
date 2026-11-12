@@ -16,6 +16,21 @@ inputs:
     description: Glob of artifact names, where `*` matches any characters. Mutually exclusive with `name`.
     required: false
     default: ''
+  expected-names:
+    description: >
+      Space or comma separated exact artifact names that must all be listed. The listing can lag
+      just-uploaded artifacts, so it is re-read every `poll-interval-seconds` until each name appears
+      or `wait-timeout-seconds` passes; the step then fails naming the missing ones.
+    required: false
+    default: ''
+  wait-timeout-seconds:
+    description: Deadline for `expected-names` to appear in the listing.
+    required: false
+    default: '120'
+  poll-interval-seconds:
+    description: Delay between listing re-reads while waiting for `expected-names`.
+    required: false
+    default: '5'
   path:
     description: Destination directory.
     required: true
@@ -40,6 +55,9 @@ runs:
       env:
         ARTIFACT_NAME: ${{ inputs.name }}
         ARTIFACT_PATTERN: ${{ inputs.pattern }}
+        ARTIFACT_EXPECTED_NAMES: ${{ inputs.expected-names }}
+        ARTIFACT_WAIT_TIMEOUT_SECONDS: ${{ inputs.wait-timeout-seconds }}
+        ARTIFACT_POLL_INTERVAL_SECONDS: ${{ inputs.poll-interval-seconds }}
         ARTIFACT_PATH: ${{ inputs.path }}
         ARTIFACT_MERGE_MULTIPLE: ${{ inputs.merge-multiple }}
         GH_TOKEN: ${{ inputs.github-token }}

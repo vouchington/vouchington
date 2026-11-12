@@ -12,7 +12,7 @@ const roots: string[] = []
 type Fixture = { id: number; name: string; content: string; digest?: string | null }
 
 /** Builds a fake `curl` that serves the artifact list and zip archives from disk. */
-function setup(artifacts: Fixture[]) {
+function setup(artifacts: Fixture[], hiddenListCalls = 0) {
   const root = mkdtempSync(join(tmpdir(), 'download-artifact-action-'))
   roots.push(root)
   const bin = join(root, 'bin')
@@ -33,6 +33,8 @@ function setup(artifacts: Fixture[]) {
     }
   })
   writeFileSync(join(root, 'list.json'), JSON.stringify({ artifacts: served }))
+  // The first `hiddenListCalls` listings omit the last artifact, like a listing that lags an upload.
+  writeFileSync(join(root, 'lagging.json'), JSON.stringify({ artifacts: served.slice(0, -1) }))
   const curl = `#!/usr/bin/env bash
 echo "$@" >> "${root}/curl.log"
 out=''; url=''
@@ -40,7 +42,9 @@ while [ $# -gt 0 ]; do
   case "$1" in -o) out="$2"; shift 2;; http*) url="$1"; shift;; *) shift;; esac
 done
 case "$url" in
-  *"/artifacts?"*) cp "${root}/list.json" "$out";;
+  *"/artifacts?"*)
+    n=$(( $(cat "${root}/list.count" 2>/dev/null || echo 0) + 1 )); echo $n > "${root}/list.count"
+    if [ $n -le ${hiddenListCalls} ]; then cp "${root}/lagging.json" "$out"; else cp "${root}/list.json" "$out"; fi;;
   *"/zip") id="\${url%/zip}"; cp "${root}/\${id##*/}.zip" "$out";;
 esac
 `
@@ -125,5 +129,39 @@ describe('download-artifact composite action', () => {
 
     const both = run(root, bin, { ARTIFACT_NAME: 'db', ARTIFACT_PATTERN: 'db' })
     expect(both.status).toBe(1)
+  })
+
+  it('re-reads a lagging listing until every expected artifact appears', () => {
+    const { root, bin } = setup(
+      [
+        { id: 61, name: 'hits-1', content: 'a' },
+        { id: 62, name: 'hits-2', content: 'b' },
+      ],
+      2,
+    )
+    const result = run(root, bin, {
+      ARTIFACT_PATTERN: 'hits-*',
+      ARTIFACT_EXPECTED_NAMES: 'hits-1 hits-2',
+      ARTIFACT_POLL_INTERVAL_SECONDS: '0',
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('Waiting for artifacts not yet listed: hits-2')
+    expect(readFileSync(join(root, 'out/hits-2/file.txt'), 'utf8')).toBe('b')
+    expect(readFileSync(join(root, 'list.count'), 'utf8').trim()).toBe('3')
+  })
+
+  it('fails naming the missing artifacts once the deadline passes', () => {
+    const { root, bin } = setup([{ id: 71, name: 'hits-1', content: 'a' }])
+    const result = run(root, bin, {
+      ARTIFACT_PATTERN: 'hits-*',
+      ARTIFACT_EXPECTED_NAMES: 'hits-1,hits-2',
+      ARTIFACT_WAIT_TIMEOUT_SECONDS: '1',
+      ARTIFACT_POLL_INTERVAL_SECONDS: '1',
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('missing from run 1 after 1s: hits-2.')
+    expect(existsSync(join(root, 'out'))).toBe(false)
   })
 })

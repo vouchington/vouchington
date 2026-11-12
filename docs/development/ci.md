@@ -156,7 +156,9 @@ conditions during dump/restore.
 (#4328, #5453), so no workflow uses it. `./.github/actions/download-artifact` lists the run's
 artifacts over the REST API, downloads each with a finite curl deadline, verifies the SHA-256 digest
 GitHub recorded at upload (a missing or mismatched digest fails), extracts it, and exits. It has no
-retry and no forced exit; the workflow safety policy rejects the upstream action everywhere except the non-gating Codecov upload job, which holds OIDC and runs no repository action code. If a backend-unit
+forced exit; the run's listing can lag just-uploaded artifacts (#5673), so a caller that knows the
+set passes `expected-names` and the step re-reads the listing until each appears or fails naming the
+missing ones; the workflow safety policy rejects the upstream action everywhere except the non-gating Codecov upload job, which holds OIDC and runs no repository action code. If a backend-unit
 shard's prepared database download fails, inspect that step's error before investigating missing
 coverage: database restore, backend setup, and tests have not started, so missing coverage is a
 downstream consequence.
