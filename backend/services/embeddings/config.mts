@@ -13,10 +13,3 @@ export const GEMINI_EMBEDDING_2_MODEL_ID = 'gemini-embedding-2'
 export const GEMINI_EMBEDDING_2_MODEL_NAME = 'gemini-embedding-2'
 
 export const EMBEDDING_TABLES = ['topics', 'posts', 'rss_feed_items', 'crawl_chunks'] as const
-
-export const TABLE_MAP = {
-  post: 'posts',
-  topic: 'topics',
-  rss_feed_item: 'rss_feed_items',
-  crawl_chunk: 'crawl_chunks',
-} as const

@@ -196,6 +196,40 @@
       // Benchmark is a development CLI; keep manifest entries for production callers.
       "entry": ["benchmark.mts"],
     },
+    // #5635: Bedrock artifacts stay in the lower layer only; the top PR deletes these
+    // exact file exemptions together with their workspaces. Current callers use Vertex.
+    "backend/queues/bedrock-embeddings-batch": {
+      "entry": ["**/*.mts"],
+      "ignoreIssues": {
+        "enqueues.mts": ["exports"],
+        "enqueues/reconciliation.mts": ["exports"],
+        "enqueues/schedules.mts": ["exports"],
+      },
+    },
+    "backend/queues/bedrock-embeddings": {
+      "entry": ["**/*.mts"],
+      "ignoreIssues": {
+        "enqueues.mts": ["exports"],
+        "types.mts": ["types"],
+      },
+    },
+    "backend/services/bedrock-embeddings-batch": {
+      "entry": ["**/*.mts"],
+      "ignoreIssues": { "image-similarity.mts": ["exports"] },
+    },
+    "backend/services/bedrock-embeddings": {
+      "entry": ["**/*.mts"],
+      "ignoreIssues": {
+        "bloom-filter/population.mts": ["exports"],
+        "bloom-filter/warmup.mts": ["exports"],
+        "provider-cooldown.mts": ["exports"],
+        "search/get-cached.mts": ["exports"],
+      },
+    },
+    "backend/workers/bedrock-batch-sqs": {
+      "entry": ["**/*.mts"],
+      "ignoreIssues": { "workers.mts": ["exports"] },
+    },
     "backend/services/*": {
       "entry": ["**/*.mts"],
     },

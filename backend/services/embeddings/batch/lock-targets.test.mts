@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { lockExistsClause, singleLockJobType } from './lock-targets.mts'
+import { lockExistsClause } from './lock-targets.mts'
 
 describe('gemini batch lock targets', () => {
-  it('maps single embedding entity types to batch job types', () => {
-    expect(singleLockJobType('post')).toBe('posts')
-    expect(singleLockJobType('topic')).toBe('topics')
-    expect(singleLockJobType('rss_feed_item')).toBe('rss_feed_items')
-  })
-
   it('builds typed lock predicates for each batch target', () => {
     expect(lockExistsClause('topics', 'topics.id')).toContain('e.topic_id = topics.id')
     expect(lockExistsClause('posts', 'posts.id')).toContain('e.post_id = posts.id')

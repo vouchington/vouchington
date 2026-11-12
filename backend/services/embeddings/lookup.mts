@@ -74,19 +74,3 @@ export const lookupExistingEmbeddings = async (
 
   return resultMap
 }
-
-/**
- * Looks up an existing embedding by content SHA256 from the centralized table.
- * Allows reusing embeddings when same content appears in different entities.
- * Uses bloom filter for fast negative lookups (delegated to lookupExistingEmbeddings).
- *
- * @param contentSha256 - SHA256 hash of content to look up
- * @returns Existing embedding if found, null otherwise
- */
-export const lookupExistingEmbedding = async (
-  contentSha256: Buffer,
-): Promise<ExistingEmbedding | null> => {
-  const hashHex = contentSha256.toString('hex')
-  const resultMap = await lookupExistingEmbeddings([contentSha256])
-  return resultMap.get(hashHex) || null
-}
