@@ -104,7 +104,6 @@ export async function recordCopyrightEmailAncestorEdges(
       JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = candidate.id
       WHERE candidate.raw_storage_object_id IS NOT NULL AND receipt.erased_at IS NULL
       ORDER BY reply_resolved.ancestor_id
-      FOR KEY SHARE OF candidate FOR SHARE OF receipt
     ), waiting_resolved AS MATERIALIZED (
       SELECT DISTINCT ON (reference.copyright_notice_email_intake_id)
         reference.copyright_notice_email_intake_id AS reply_id, reference.reference_kind
@@ -140,7 +139,6 @@ export async function recordCopyrightEmailAncestorEdges(
       JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = candidate.id
       WHERE candidate.raw_storage_object_id IS NOT NULL AND receipt.erased_at IS NULL
       ORDER BY waiting_resolved.reply_id
-      FOR KEY SHARE OF candidate FOR SHARE OF receipt
     ), edges AS (
       SELECT ${intakeId}::uuid AS reply_id, reply_live.ancestor_id,
         reply_live.reference_kind FROM reply_live

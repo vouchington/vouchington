@@ -158,8 +158,7 @@ BEGIN
   END IF;
   IF TG_OP = 'INSERT' THEN
     PERFORM 1 FROM copyright_notices notice
-      WHERE notice.id = NEW.copyright_notice_id AND notice.evidence_erased_at IS NULL
-      FOR UPDATE;
+      WHERE notice.id = NEW.copyright_notice_id AND notice.evidence_erased_at IS NULL;
     IF NOT FOUND THEN
       RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'
         USING ERRCODE = 'check_violation';
