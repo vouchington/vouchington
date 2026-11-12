@@ -1,4 +1,5 @@
 import { prepareAiUsageMonth } from '@data-stores/psql/ai-usage-monthly-partition'
+import { close } from '@data-stores/psql/setup'
 import { shutdownDataStoresForOneOffCommand } from '@data-stores/graceful-shutdown'
 import { getTestAiUsageReservationMonths } from './ai-usage-date-grid.mts'
 
@@ -9,5 +10,5 @@ try {
     await prepareAiUsageMonth(month)
   }
 } finally {
-  await shutdownDataStoresForOneOffCommand()
+  await shutdownDataStoresForOneOffCommand({ onGracefulShutdownPSQL: close })
 }
