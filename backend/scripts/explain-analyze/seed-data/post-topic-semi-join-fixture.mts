@@ -44,8 +44,25 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
     ...fixture.denseAliasIds.map((_, index) => `post-semi-join-dense-${index}`),
   ]
 
-  await seedPostTopicOwnedPosts()
   await using transaction = await beginTransaction()
+  const feedCap = getPostsWorkLimit('feed_inspected_row_cap')
+  const lowerCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const { rows: sharedDeliveries } = await transaction<{ count: number }>(
+    `/* seedPostTopicSemiJoinFixture:shared-delivery-count */
+     SELECT count(*)::int AS count FROM (
+       SELECT 1 FROM post_feed_shares
+       WHERE recipient_user_id = $1::uuid AND shared_by_id IS NOT NULL AND sort_at >= $2
+       LIMIT $3
+     ) shares`,
+    [SEED_VIEWER_ID, lowerCutoff, feedCap],
+  )
+  const sharedDeliveryCount = sharedDeliveries[0]?.count ?? 0
+  const rawDirectPrefix = feedCap - sharedDeliveryCount
+  if (rawDirectPrefix < POST_TOPIC_OWNED_IDS.length)
+    throw new Error(
+      `Post topic fixture needs a capped feed prefix of at least ${POST_TOPIC_OWNED_IDS.length} raw direct rows so the designated post is inside it, got ${rawDirectPrefix}`,
+    )
+  await seedPostTopicOwnedPosts()
   await transaction(
     `/* seedPostTopicSemiJoinFixture:topics */
      INSERT INTO topics (id, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
@@ -112,21 +129,6 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
   )
   if (denseMembershipCounts[0]?.count !== DENSE_POST_COUNT)
     throw new Error('Post topic fixture needs exactly 10000 active positive dense memberships')
-  const feedCap = getPostsWorkLimit('feed_inspected_row_cap')
-  const lowerCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  const { rows: sharedDeliveries } = await transaction<{ count: number }>(
-    `/* seedPostTopicSemiJoinFixture:shared-delivery-count */
-     SELECT count(*)::int AS count FROM (
-       SELECT 1 FROM post_feed_shares
-       WHERE recipient_user_id = $1::uuid AND shared_by_id IS NOT NULL AND sort_at >= $2
-       LIMIT $3
-     ) shares`,
-    [SEED_VIEWER_ID, lowerCutoff, feedCap],
-  )
-  const sharedDeliveryCount = sharedDeliveries[0]?.count ?? 0
-  if (sharedDeliveryCount >= feedCap)
-    throw new Error('Post topic fixture needs room for a direct row in the capped feed prefix')
-  const rawDirectPrefix = feedCap - sharedDeliveryCount
   const firstRawDirectCandidates = sql`/* seedPostTopicSemiJoinFixture:feed-prefix-witness */
     WITH raw_direct_prefix AS MATERIALIZED (
       SELECT posts.id FROM posts
