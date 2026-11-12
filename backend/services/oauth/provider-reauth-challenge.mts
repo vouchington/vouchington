@@ -108,9 +108,7 @@ function assertChallenge(
     context.provider !== identity.provider ||
     context.flowId !== identity.flowId
   ) {
-    throw createHttpError(401, 'Provider reauthentication belongs to another session', {
-      code: MFA_REAUTH_REQUIRED,
-    })
+    throw createHttpError(401, 'Provider reauthentication belongs to another session')
   }
   return context
 }
