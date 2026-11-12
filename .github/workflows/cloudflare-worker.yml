@@ -42,7 +42,7 @@ jobs:
     with:
       publish_coverage: true
     permissions:
-      actions: write
+      actions: read
       contents: read
 
   coverage:
@@ -89,3 +89,29 @@ jobs:
         with:
           results: >-
             {"changes":{"result":"${{ needs.changes.result }}"},"static-cloudflare-worker":{"result":"${{ needs.static-cloudflare-worker.result }}"},"test-cloudflare-worker":{"result":"${{ needs.test-cloudflare-worker.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
+
+  # Merge-group fail fast: when a gate-feeding suite fails, cancel this run so the required gate
+  # fails on that job now instead of after the slowest suite. These jobs check out nothing and run no
+  # repository code, so the `actions: write` token never meets pull-request-controlled content. See
+  # docs/development/ci/workflows/reference-merge-queue-fail-fast.md.
+
+  cancel-test-cloudflare-worker:
+    needs: [test-cloudflare-worker]
+    if: ${{ failure() && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          if ! output=$(gh run cancel "$RUN_ID" 2>&1); then
+            # HTTP 409: the run already completed or was cancelled, which is the goal.
+            [[ "$output" == *"HTTP 409"* ]] || { echo "$output" >&2; exit 1; }
+            echo "::warning::Run $RUN_ID was already finished: $output"
+          fi

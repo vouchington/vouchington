@@ -44,7 +44,6 @@ jobs:
     env:
       LINGUA_RS_SKIP_DOWNLOAD: '1'
     permissions:
-      actions: write
       contents: read
     outputs:
       shard-matrix: ${{ steps.shards.outputs.matrix }}
@@ -53,7 +52,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
         with:
-          persist-credentials: false
           fetch-depth: 1
       - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
         timeout-minutes: 5
@@ -70,14 +68,6 @@ jobs:
         id: shards
         with:
           total: ${{ steps.shard-total.outputs.shard-total }}
-      - name: Cancel the merge-group run so the queue ejects this entry now
-        if: ${{ failure() && github.event_name == 'merge_group' }}
-        timeout-minutes: 1
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"
 
   prepare-postgres:
     if: ${{ !inputs.prepared_database }}
@@ -92,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 29
     permissions:
-      actions: write
+      actions: read
       contents: read
     strategy:
       fail-fast: false
@@ -122,7 +112,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
         with:
-          persist-credentials: false
           fetch-depth: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
@@ -256,14 +245,6 @@ jobs:
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
-      - name: Cancel the merge-group run so the queue ejects this entry now
-        if: ${{ failure() && github.event_name == 'merge_group' }}
-        timeout-minutes: 1
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"
 
   check-query-profile-baseline:
     needs: [prep, backend-tests]
@@ -271,13 +252,11 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
-      actions: write
       contents: read
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 2
-        with:
-          persist-credentials: false
       # No setup-node: this dependency-free script runs on the ubuntu-slim image's built-in Node
       # (24.x, above package.json engines). Downloading Node 26 from GitHub Releases here twice
       # exceeded the step deadline in merge groups, and slim has no caching benefit.
@@ -297,11 +276,3 @@ jobs:
           EXPECTED_SHARDS: ${{ needs.prep.outputs.shard-total }}
         shell: bash
         run: source ci/check-backend-query-profile-manifests.sh
-      - name: Cancel the merge-group run so the queue ejects this entry now
-        if: ${{ failure() && github.event_name == 'merge_group' }}
-        timeout-minutes: 1
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"

@@ -3,32 +3,22 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-type Step = {
-  name?: string
-  if?: string
-  env?: Record<string, string>
-  run?: string
-  'timeout-minutes'?: number
-  'continue-on-error'?: unknown
-  uses?: string
-  with?: Record<string, unknown>
-}
+type Step = { name?: string; uses?: string; env?: Record<string, string>; run?: string }
 type Job = {
   if?: string
   needs?: string | string[]
   permissions?: Record<string, string>
+  'runs-on'?: string
   steps?: Step[]
   uses?: string
+  'continue-on-error'?: unknown
 }
 type Workflow = { jobs?: Record<string, Job> }
 
 const read = (path: string): Workflow => load(readFileSync(path, 'utf8')) as Workflow
-const local = (uses: string) =>
-  `.github/workflows/${uses.replace(/^\.\/\.github\/workflows\//, '')}`
 const needsOf = (job: Job) => [job.needs ?? []].flat()
 const gateIf = "${{ !cancelled() || github.event_name == 'merge_group' }}"
-const cancelName = 'Cancel the merge-group run so the queue ejects this entry now'
-const areaGates = [
+const requiredGates = [
   'static',
   'backend',
   'web',
@@ -37,7 +27,8 @@ const areaGates = [
   'tooling',
   'gitleaks',
 ]
-// Area jobs that are not gate-feeding suites: fan-ins, selection, and report-only suites.
+const areaGates = requiredGates.filter(gate => gate !== 'gitleaks')
+// Jobs the gate waits on that never cancel the run: selection, fan-ins, and report-only suites.
 const informational = new Set([
   'changes',
   'coverage',
@@ -45,136 +36,94 @@ const informational = new Set([
   'test-backend-credentialed',
   'test-playwright-credentialed',
 ])
-// Jobs that never cancel although a gate waits on them. `prepare-postgres.yml` is shared with the
-// informational credentialed and live-provider callers, which must not cancel the run, so a failure
-// there still waits for its sibling suites. `resolve-main-images` runs on pushes to main only.
-const upstream = new Set(['prepare-postgres', 'resolve-main-images'])
+// A failed static check skips every suite behind it, so the run already ends at once; the image
+// validators run on pull requests only.
+const exempt = (id: string, gate: string) =>
+  informational.has(id) ||
+  (gate !== 'static' && id.startsWith('static-')) ||
+  id.startsWith('validate-')
 
-const cancelStep = (job: Job) => job.steps?.filter(step => step.name === cancelName) ?? []
+const areas = areaGates.map(gate => {
+  const jobs = read(`.github/workflows/${gate}.yml`).jobs ?? {}
+  const feeding = needsOf(jobs[gate]!).filter(id => !exempt(id, gate))
+  const cancels = Object.entries(jobs).filter(([id]) => id.startsWith('cancel-'))
+  return { gate, jobs, feeding, cancels }
+})
 
-// Every leaf job (one with steps) reachable from an area job through local reusable workflows.
-const leaves = (id: string, job: Job): Array<[string, Job]> =>
+// Every job reachable from an area workflow through local reusable workflows.
+const reachable = (job: Job): Job[] =>
   job.uses?.startsWith('./')
-    ? Object.entries(read(local(job.uses)).jobs ?? {}).flatMap(([child, inner]) =>
-        leaves(child, inner),
-      )
-    : [[id, job]]
-
-const areas = areaGates
-  .filter(gate => gate !== 'gitleaks')
-  .map(gate => ({ gate, jobs: read(`.github/workflows/${gate}.yml`).jobs ?? {} }))
-const classify = (wanted: boolean) =>
-  areas.flatMap(({ gate, jobs }) =>
-    Object.entries(jobs).flatMap(([id, job]) => {
-      if (id === gate || job.uses?.includes('ci-detect-changes')) return []
-      // A failed static check skips every suite behind it, so the run already ends at once.
-      const skipsSuites = (gate !== 'static' && id.startsWith('static-')) || upstream.has(id)
-      const feeds = !informational.has(id) && !skipsSuites
-      if (feeds !== wanted) return []
-      return leaves(id, job)
-        .filter(([leaf]) => !upstream.has(leaf))
-        .map(([leaf, leafJob]) => ({ where: `${gate}.yml#${id} > ${leaf}`, id, leaf, leafJob }))
-    }),
-  )
+    ? Object.values(read(job.uses.slice(2)).jobs ?? {}).flatMap(reachable)
+    : [job]
 
 describe('merge-group self-cancel', () => {
   it('lets every required gate evaluate after a cancelled merge-group run, and only there', () => {
     expect(
-      areaGates.filter(gate => read(`.github/workflows/${gate}.yml`).jobs?.[gate]?.if !== gateIf),
+      requiredGates.filter(
+        gate => read(`.github/workflows/${gate}.yml`).jobs?.[gate]?.if !== gateIf,
+      ),
     ).toEqual([])
   })
 
-  const feeding = classify(true)
-
-  it('finds the gate-feeding suites', () => {
-    expect(feeding.length).toBeGreaterThan(20)
+  it('gives every gate-feeding job a cancel job, and no other job one', () => {
+    expect(areas.flatMap(({ feeding }) => feeding).length).toBeGreaterThan(15)
+    for (const { gate, feeding, cancels } of areas)
+      expect([gate, cancels.map(([id]) => id).toSorted()]).toEqual([
+        gate,
+        feeding.map(id => `cancel-${id}`).toSorted(),
+      ])
   })
 
-  it('gives every gate-feeding job one final self-cancel step that runs on merge-group failure', () => {
-    const wrong = feeding.flatMap(({ where, leafJob }) => {
-      const steps = leafJob.steps ?? []
-      const [step] = cancelStep(leafJob)
-      const ok =
-        cancelStep(leafJob).length === 1 &&
-        steps.at(-1) === step &&
-        step?.if === "${{ failure() && github.event_name == 'merge_group' }}" &&
-        step['continue-on-error'] === undefined &&
-        step['timeout-minutes'] === 1 &&
-        step.env?.GH_TOKEN === '${{ github.token }}' &&
-        step.env?.GH_REPO === '${{ github.repository }}' &&
-        step.env?.RUN_ID === '${{ github.run_id }}' &&
-        step.run?.startsWith('gh run cancel "$RUN_ID"') === true
-      return ok ? [] : [where]
-    })
+  it('cancels only on merge-group failure, with one checkout-free step', () => {
+    const wrong = areas.flatMap(({ gate, cancels }) =>
+      cancels.flatMap(([id, job]) => {
+        const [step, ...rest] = job.steps ?? []
+        const ok =
+          needsOf(job).join() === id.slice('cancel-'.length) &&
+          job.if === "${{ failure() && github.event_name == 'merge_group' }}" &&
+          job['runs-on'] === 'ubuntu-slim' &&
+          job['continue-on-error'] === undefined &&
+          rest.length === 0 &&
+          step?.uses === undefined &&
+          step?.env?.GH_TOKEN === '${{ github.token }}' &&
+          step.env.GH_REPO === '${{ github.repository }}' &&
+          step.env.RUN_ID === '${{ github.run_id }}' &&
+          step.run?.includes('gh run cancel "$RUN_ID"') === true &&
+          // Only an already-finished run (HTTP 409) is a warning; a 403 or a missing gh fails.
+          step.run.includes('HTTP 409') &&
+          step.run.includes('exit 1')
+        return ok ? [] : [`${gate}#${id}`]
+      }),
+    )
     expect(wrong).toEqual([])
   })
 
-  it('grants actions: write at job level, or inherits it from the merge-group caller', () => {
-    const explicit = feeding.filter(({ leafJob }) => leafJob.permissions)
-    expect(explicit.filter(({ leafJob }) => leafJob.permissions?.actions !== 'write')).toEqual([])
-    // The image publishers' build jobs inherit the caller envelope, so only the caller grants it.
-    for (const [area, id] of [
-      ['backend', 'publish-backend-images'],
-      ['web', 'publish-web-images'],
-    ] as const)
-      expect(read(`.github/workflows/${area}.yml`).jobs?.[id]?.permissions?.actions).toBe('write')
-  })
-
-  it('keeps the write-capable token out of .git in every self-cancelling job', () => {
-    const leaky = feeding.filter(({ leafJob }) =>
-      (leafJob.steps ?? []).some(
-        step =>
-          step.uses?.startsWith('actions/checkout@') &&
-          step.with?.['persist-credentials'] !== false,
-      ),
-    )
-    expect(leaky.map(({ where }) => where)).toEqual([])
-  })
-
-  it('never cancels from an informational, setup, or shared job', () => {
-    const quiet = classify(false)
-    expect(quiet.length).toBeGreaterThan(0)
-    expect(quiet.filter(({ leafJob }) => cancelStep(leafJob).length > 0)).toEqual([])
-    const shared = [
-      'prepare-postgres',
-      'checks-static',
-      'tests-backend-credentialed',
-      'tests-playwright-credentialed',
-      'ci-upload-codecov',
-      'ci-area-coverage',
-    ].flatMap(path => Object.values(read(`.github/workflows/${path}.yml`).jobs ?? {}))
-    expect(shared.filter(job => cancelStep(job).length > 0)).toEqual([])
-  })
-
-  it('never cancels a pull-request run: the step is conditional on merge_group', () => {
-    expect(
-      feeding.filter(({ leafJob }) => !cancelStep(leafJob)[0]?.if?.includes("== 'merge_group'")),
-    ).toEqual([])
-  })
-
-  it('keeps the gate-feeding callers able to grant the callee permissions', () => {
-    const callers = areas.flatMap(({ gate, jobs }) =>
+  it('grants actions: write only to the checkout-free cancel jobs', () => {
+    const cancelling = areas.flatMap(({ cancels }) => cancels.map(([, job]) => job.permissions))
+    expect(cancelling.every(perms => JSON.stringify(perms) === '{"actions":"write"}')).toBe(true)
+    // No other area job, and no job in a reusable workflow it calls, can write with the run token.
+    const writers = areas.flatMap(({ gate, jobs }) =>
       Object.entries(jobs)
-        .filter(
-          ([id, job]) =>
-            job.uses && !['validate-backend-images', 'validate-web-images'].includes(id),
+        .filter(([id]) => !id.startsWith('cancel-'))
+        .flatMap(([id, job]) =>
+          [job, ...reachable(job)].map(candidate => [`${gate}#${id}`, candidate] as const),
         )
-        .filter(([id, job]) => leaves(id, job).some(([, leaf]) => cancelStep(leaf).length > 0))
-        .map(([id, job]) => [gate, id, job.permissions?.actions]),
+        .filter(([, job]) => job.permissions?.actions === 'write')
+        .map(([where]) => where),
     )
-    expect(callers.length).toBeGreaterThan(10)
-    expect(callers.filter(caller => caller[2] !== 'write')).toEqual([])
-    const nightly = read('.github/workflows/nightly.yml').jobs ?? {}
-    expect(areas.filter(({ gate }) => nightly[gate]?.permissions?.actions !== 'write')).toEqual([])
+    expect(writers).toEqual([])
   })
 
-  it('keeps each feeding job needed by its gate', () => {
-    const unneeded = areas.flatMap(({ gate, jobs }) =>
-      Object.entries(jobs)
-        .filter(([id, job]) => id !== gate && !informational.has(id) && job.uses)
-        .filter(([id]) => !needsOf(jobs[gate]!).includes(id))
-        .map(([id]) => `${gate}#${id}`),
-    )
-    expect(unneeded).toEqual([])
+  it('lets nightly callers pass the cancel token ceiling to the area workflows', () => {
+    const nightly = read('.github/workflows/nightly.yml').jobs ?? {}
+    // A caller job caps the called workflow's jobs statically, even for jobs that do not run.
+    for (const gate of areaGates)
+      expect([gate, nightly[gate]?.permissions?.actions]).toEqual([gate, 'write'])
+  })
+
+  it('keeps the gates independent of the cancel jobs', () => {
+    expect(
+      areas.filter(({ gate, jobs }) => needsOf(jobs[gate]!).some(id => id.startsWith('cancel-'))),
+    ).toEqual([])
   })
 })

@@ -18,14 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 19
     permissions:
-      actions: write
+      actions: read
       contents: read
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
         with:
-          persist-credentials: false
           fetch-depth: 1
       - uses: ./.github/actions/setup-backend
         id: setup-backend
@@ -81,11 +80,3 @@ jobs:
           FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}
           RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Cancel the merge-group run so the queue ejects this entry now
-        if: ${{ failure() && github.event_name == 'merge_group' }}
-        timeout-minutes: 1
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"
