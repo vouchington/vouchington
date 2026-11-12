@@ -55701,7 +55701,7 @@
           "ordinalPosition": 5
         }
       },
-      "comment": "Centralized lookup table for Gemini Embedding 2 document vectors, keyed by canonical content hash.",
+      "comment": "Recomputable Gemini Embedding 2 document-vector cache keyed by canonical content hash; bounded age-based pages are removed by the daily data-retention sweep.",
       "foreignKeys": {},
       "indexes": {
         "gemini_embedding_2_embeddings_pkey": {
@@ -55869,19 +55869,9 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 3
-        },
-        "updated_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 10
         }
       },
-      "comment": "Lock table tracking which entities are currently being processed in a Vertex embeddings batch.",
+      "comment": "Batch membership for best-effort duplicate-work suppression; membership does not grant exclusive entity ownership.",
       "foreignKeys": {
         "fk_gemini_embedding_batch_entities__crawl_chunk": {
           "columns": ["crawl_id", "crawl_order_index"],
@@ -55959,7 +55949,7 @@
         "idx_gemini_embedding_batch_entities__crawl_chunk": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batch_entities__crawl_chunk ON public.gemini_embedding_batch_entities USING btree (crawl_id, crawl_order_index) WHERE ((crawl_id IS NOT NULL) AND (crawl_order_index IS NOT NULL))",
+          "definition": "CREATE INDEX idx_gemini_embedding_batch_entities__crawl_chunk ON public.gemini_embedding_batch_entities USING btree (crawl_id, crawl_order_index) WHERE ((crawl_id IS NOT NULL) AND (crawl_order_index IS NOT NULL))",
           "immediate": true,
           "keys": [
             {
@@ -55985,7 +55975,7 @@
           "predicate": "((crawl_id IS NOT NULL) AND (crawl_order_index IS NOT NULL))",
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         },
         "idx_gemini_embedding_batch_entities__crawl_id": {
@@ -56014,7 +56004,7 @@
         "idx_gemini_embedding_batch_entities__image": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batch_entities__image ON public.gemini_embedding_batch_entities USING btree (image_id) WHERE (image_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_gemini_embedding_batch_entities__image ON public.gemini_embedding_batch_entities USING btree (image_id) WHERE (image_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -56031,13 +56021,13 @@
           "predicate": "(image_id IS NOT NULL)",
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         },
         "idx_gemini_embedding_batch_entities__post": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batch_entities__post ON public.gemini_embedding_batch_entities USING btree (post_id) WHERE (post_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_gemini_embedding_batch_entities__post ON public.gemini_embedding_batch_entities USING btree (post_id) WHERE (post_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -56054,13 +56044,13 @@
           "predicate": "(post_id IS NOT NULL)",
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         },
         "idx_gemini_embedding_batch_entities__rss_feed_item": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batch_entities__rss_feed_item ON public.gemini_embedding_batch_entities USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_gemini_embedding_batch_entities__rss_feed_item ON public.gemini_embedding_batch_entities USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -56077,13 +56067,13 @@
           "predicate": "(rss_feed_item_id IS NOT NULL)",
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         },
         "idx_gemini_embedding_batch_entities__topic": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batch_entities__topic ON public.gemini_embedding_batch_entities USING btree (topic_id) WHERE (topic_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_gemini_embedding_batch_entities__topic ON public.gemini_embedding_batch_entities USING btree (topic_id) WHERE (topic_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -56100,32 +56090,20 @@
           "predicate": "(topic_id IS NOT NULL)",
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         }
       },
       "physicalPartition": null,
       "primaryKey": null,
       "relationKind": "table",
-      "triggers": {
-        "trigger_gemini_embedding_batch_entities_updated_at": {
-          "definition": "CREATE TRIGGER trigger_gemini_embedding_batch_entities_updated_at BEFORE UPDATE ON public.gemini_embedding_batch_entities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "gemini_embedding_batches": {
       "checkConstraints": {
         "chk_gemini_embedding_batches__lifecycle": {
           "definition": "CHECK ((((submitted_at IS NOT NULL) OR (num_nonnulls(in_progress_at, completed_at, failed_at, cancelled_at) = 0)) AND (num_nonnulls(completed_at, failed_at, cancelled_at) <= 1)))",
-          "validated": true
-        },
-        "gemini_embedding_batches_ingestion_failures_check": {
-          "definition": "CHECK (((ingestion_failures >= 0) AND (ingestion_failures <= 3)))",
-          "validated": true
-        },
-        "gemini_embedding_batches_ingestion_generation_check": {
-          "definition": "CHECK ((ingestion_generation >= 0))",
           "validated": true
         },
         "gemini_embedding_batches_records_check": {
@@ -56142,7 +56120,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 15
         },
         "completed_at": {
           "comment": "When all successful terminal output was validated and applied.",
@@ -56152,7 +56130,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 13
         },
         "crawl_id": {
           "comment": "Optional crawl this batch was created for. Cleared before that crawl partition is dropped.",
@@ -56175,7 +56153,7 @@
           "ordinalPosition": 9
         },
         "data": {
-          "comment": "JSONB batch document: state, model id, job name, GCS URIs, input size, and submission metadata.",
+          "comment": "JSONB batch document: provider state, GCS URIs, input size, and submission metadata; model_id and job_name columns are canonical.",
           "dataType": "jsonb",
           "defaultExpression": "'{}'::jsonb",
           "generated": null,
@@ -56185,14 +56163,14 @@
           "ordinalPosition": 5
         },
         "failed_at": {
-          "comment": "When the provider failed, a submission receipt expired, or three terminal-result ingestion attempts failed.",
+          "comment": "When the provider failed, a submission receipt expired, the final bounded queue attempt failed to ingest results, or the configured batch lifetime expired before ingestion.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 14
         },
         "id": {
           "comment": "UUIDv7 identifier of this Vertex embedding batch.",
@@ -56212,27 +56190,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
-        },
-        "ingestion_failures": {
-          "comment": "Failed terminal-result ingestion attempts, bounded at three before failing and unlocking this batch.",
-          "dataType": "smallint",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
           "ordinalPosition": 12
-        },
-        "ingestion_generation": {
-          "comment": "Revision advanced by ingestion claims and committed chunks; every writer and terminal transition verifies the current revision.",
-          "dataType": "integer",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 11
         },
         "job_name": {
           "comment": "The Vertex batch prediction resource name.",
@@ -56282,7 +56240,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 11
         },
         "updated_at": {
           "comment": null,
