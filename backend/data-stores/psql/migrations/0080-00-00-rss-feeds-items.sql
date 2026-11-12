@@ -481,53 +481,51 @@ COMMENT ON FUNCTION fn_url_latest_rss_feed_item_published_at(UUID) IS 'Returns t
 CREATE OR REPLACE FUNCTION fn_update_url_latest_published_at()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
-  affected_url_id UUID;
-  next_published_at TIMESTAMPTZ;
+  affected_url_ids UUID[];
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    -- A new item can only raise the maximum. The write is unconditional so
-    -- every insert row-locks its URL even when it is older than the current
-    -- maximum; that lock is what serializes inserts with downward recomputes
-    -- (a skipped write would let a concurrent delete recompute without seeing
-    -- the uncommitted item). GREATEST ignores NULLs. No hostname or item
-    -- read-set locks are taken.
+    -- Consolidate the statement's inserted publications into one write per URL.
     UPDATE urls
-    SET latest_published_at = GREATEST(latest_published_at, NEW.published_at)
-    WHERE id = NEW.url_id;
+    SET latest_published_at = GREATEST(urls.latest_published_at, inserted.published_at)
+    FROM (
+      SELECT url_id, MAX(published_at) AS published_at
+      FROM inserted_items GROUP BY url_id
+    ) inserted
+    WHERE urls.id = inserted.url_id;
     RETURN NULL;
   END IF;
 
-  IF TG_OP = 'UPDATE' AND OLD.url_id = NEW.url_id
-      AND OLD.published_at IS NOT DISTINCT FROM NEW.published_at THEN
-    RETURN NULL;
+  IF TG_OP = 'DELETE' THEN
+    SELECT array_agg(DISTINCT url_id) INTO affected_url_ids FROM prior_items;
+  ELSE
+    SELECT array_agg(DISTINCT affected.url_id) INTO affected_url_ids
+    FROM prior_items prior FULL JOIN updated_items updated ON updated.id = prior.id
+    CROSS JOIN LATERAL (VALUES (prior.url_id), (updated.url_id)) affected(url_id)
+    WHERE affected.url_id IS NOT NULL
+      AND (prior.url_id IS DISTINCT FROM updated.url_id
+        OR prior.published_at IS DISTINCT FROM updated.published_at);
   END IF;
+  IF affected_url_ids IS NULL THEN RETURN NULL; END IF;
 
-  FOR affected_url_id IN
-    SELECT DISTINCT candidate_url_id
-    FROM unnest(ARRAY[
-      OLD.url_id,
-      CASE WHEN TG_OP = 'UPDATE' THEN NEW.url_id ELSE NULL END
-    ]) AS candidate_url_id
-    WHERE candidate_url_id IS NOT NULL
-    ORDER BY candidate_url_id
-  LOOP
-    -- Lock and write only affected URL rows. Sort the two URLs in a move
-    -- to keep their lock order stable.
-    PERFORM 1 FROM urls WHERE id = affected_url_id FOR NO KEY UPDATE;
-    IF NOT FOUND THEN CONTINUE; END IF; -- URL deletion cascade.
-
-    SELECT published_at INTO next_published_at
-    FROM fn_url_latest_rss_feed_item_published_at(affected_url_id);
-    UPDATE urls SET latest_published_at = next_published_at
-    WHERE id = affected_url_id;
-  END LOOP;
+  -- This aggregate is best effort: concurrent recomputations use their statement snapshot.
+  UPDATE urls
+  SET latest_published_at = (
+    SELECT published_at FROM fn_url_latest_rss_feed_item_published_at(urls.id)
+  )
+  WHERE id = ANY(affected_url_ids);
   RETURN NULL;
 END;
 $$;
-COMMENT ON FUNCTION fn_update_url_latest_published_at() IS 'Maintains the exact RSS item publication maximum on affected URLs after insert, delete, URL move, or publication-date change.';
-CREATE TRIGGER trigger_sync_url_latest_published_at
-AFTER INSERT OR UPDATE OF id, url_id, data OR DELETE ON rss_feed_items
-FOR EACH ROW EXECUTE FUNCTION fn_update_url_latest_published_at();
+COMMENT ON FUNCTION fn_update_url_latest_published_at() IS 'Updates the RSS publication maximum once per affected URL and trigger event, including soft-deleted items; concurrent recomputations are best effort.';
+CREATE TRIGGER trigger_sync_url_latest_published_at_insert
+AFTER INSERT ON rss_feed_items REFERENCING NEW TABLE AS inserted_items
+FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_latest_published_at();
+CREATE TRIGGER trigger_sync_url_latest_published_at_update
+AFTER UPDATE ON rss_feed_items REFERENCING OLD TABLE AS prior_items NEW TABLE AS updated_items
+FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_latest_published_at();
+CREATE TRIGGER trigger_sync_url_latest_published_at_delete
+AFTER DELETE ON rss_feed_items REFERENCING OLD TABLE AS prior_items
+FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_latest_published_at();
 
 -- find rss feed items pending language detection
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

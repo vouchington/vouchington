@@ -1,4 +1,4 @@
-import { beginTransaction, read, write, type OwnedTransaction } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function getTestUrlRanking(urlId: string): Promise<{
@@ -57,37 +57,8 @@ export async function softDeleteTestRssFeed(feedId: string): Promise<void> {
     UPDATE rss_feeds SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${feedId}`)
 }
 
-/** Insert an uncommitted RSS feed item and keep its transaction open for the caller. */
-export async function holdTestRssFeedItemInsert(
-  urlId: string,
-  urlHostnameId: string,
-  isoDate: string,
-): Promise<OwnedTransaction> {
-  const transaction = await beginTransaction()
-  try {
-    const { rows } = await transaction<{ id: string }>(sql`/* holdTestRssFeedItemInsert:guid */
-      INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
-      VALUES (uuidv7(), ${urlHostnameId}, ${`held-${isoDate}-${urlId}`})
-      RETURNING id`)
-    await transaction(sql`/* holdTestRssFeedItemInsert:item */
-      INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256)
-      VALUES (${rows[0]?.id}, ${urlId}, jsonb_build_object('title', 'Held', 'isoDate', ${isoDate}::text), sha256(${isoDate}::text::bytea))`)
-    return transaction
-  } catch (err) {
-    await transaction.rollback()
-    throw err
-  }
-}
-
-/** Whether a separate connection can lock the URL row as a downward recompute would. */
-export async function canLockTestUrlRow(urlId: string): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  try {
-    await transaction(sql`/* canLockTestUrlRow */
-      SELECT 1 FROM urls WHERE id = ${urlId} FOR NO KEY UPDATE NOWAIT`)
-    return true
-  } catch (err) {
-    if ((err as { code?: string }).code === '55P03') return false
-    throw err
-  }
+export async function getTestExistingRssFeedItemIds(ids: string[]): Promise<string[]> {
+  const { rows } = await read<{ id: string }>(sql`/* getTestExistingRssFeedItemIds */
+    SELECT id FROM rss_feed_items WHERE id = ANY(${ids}::uuid[]) ORDER BY id`)
+  return rows.map(row => row.id)
 }

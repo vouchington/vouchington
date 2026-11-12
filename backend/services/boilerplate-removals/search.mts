@@ -38,21 +38,22 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
       WHERE h.id = ANY(${hostnameIds}::uuid[])
         AND NOT h.is_blocked
         AND h.is_crawlable
-    ),
-    recent_html_urls AS (
-      SELECT
-        u.id,
-        u.hostname_id,
-        CASE
-          WHEN position('/' IN substring(u.pathname FROM 2)) > 0
-          THEN left(u.pathname, position('/' IN substring(u.pathname FROM 2)))
-          ELSE '/'
-        END AS parent_path
-      FROM urls u
-      JOIN eligible_hostnames h ON h.id = u.hostname_id
+    )
+    SELECT h.id AS hostname_id, paths.parent_path
+    FROM eligible_hostnames h
+    CROSS JOIN LATERAL (
+      SELECT u.parent_path
+      FROM (
+        SELECT url.id,
+          CASE
+            WHEN position('/' IN substring(url.pathname FROM 2)) > 0
+            THEN left(url.pathname, position('/' IN substring(url.pathname FROM 2)))
+            ELSE '/'
+          END AS parent_path
+        FROM urls url WHERE url.hostname_id = h.id
+      ) u
       JOIN LATERAL (
-        SELECT 1
-        FROM crawls c
+        SELECT 1 FROM crawls c
         WHERE c.url_id = u.id
           AND c.id >= ${crawlIdFloor}::uuid
           AND c.response_status_code = 200
@@ -61,20 +62,16 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
           AND COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >= ${recentCutoffDate}
         LIMIT 1
       ) recent_crawl ON TRUE
-      WHERE u.hostname_id = ANY(${hostnameIds}::uuid[])
-    )
-    SELECT hostname_id, parent_path
-    FROM recent_html_urls
-    WHERE NOT EXISTS (
-      SELECT 1
-      FROM hostname_path_boilerplate_removals br
-      WHERE br.hostname_id = recent_html_urls.hostname_id
-        AND br.parent_path = recent_html_urls.parent_path
-        AND br.id > ${recentCutoffId}
-    )
-    GROUP BY hostname_id, parent_path
-    HAVING COUNT(*) >= 2
-    ORDER BY hostname_id, parent_path
+      WHERE NOT EXISTS (
+        SELECT 1 FROM hostname_path_boilerplate_removals br
+        WHERE br.hostname_id = h.id
+          AND br.parent_path = u.parent_path
+          AND br.id > ${recentCutoffId}
+      )
+      GROUP BY u.parent_path
+      HAVING COUNT(*) >= 2
+    ) paths
+    ORDER BY h.id, paths.parent_path
     LIMIT ${limit}
   `
 

@@ -17,6 +17,7 @@ import {
 } from '../seed-data/top-url-ranking.mts'
 import { seedUuidAtTimestamp } from '../seed-data/common.mts'
 import { captureTopUrlTriggerWrites } from './top-url-ranking-trigger-writes.mts'
+import { captureTopUrlInsertBatch } from './top-url-ranking-insert-batch.mts'
 
 export async function runTopUrlRankingScenarios(): Promise<void> {
   await seedTopUrlRanking()
@@ -24,6 +25,7 @@ export async function runTopUrlRankingScenarios(): Promise<void> {
     await captureTopUrlReads()
     await captureTopUrlWrites()
     await captureTopUrlTriggerWrites()
+    await captureTopUrlInsertBatch()
   } finally {
     await cleanupTopUrlRanking()
   }
@@ -126,7 +128,7 @@ async function captureTopUrlWrites(): Promise<void> {
       {
         kind: 'maxFunctionCalls',
         function: 'fn_update_url_latest_published_at',
-        max: TOP_URL_BATCH,
+        max: 1,
       },
     ],
   })
@@ -153,7 +155,7 @@ async function captureTopUrlWrites(): Promise<void> {
       {
         kind: 'maxFunctionCalls',
         function: 'fn_update_url_latest_published_at',
-        max: TOP_URL_BATCH,
+        max: 1,
       },
     ],
   })

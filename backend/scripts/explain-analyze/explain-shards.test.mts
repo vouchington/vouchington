@@ -88,9 +88,7 @@ describe('assertShardDeclarations', () => {
     )
     for (const shard of EXPLAIN_SHARDS)
       expect(getShardScenarioIds(shard, EXPLAIN_SCENARIO_MANIFEST).length).toBeGreaterThan(0)
-    expect(Object.keys(SHARD_DECLARATIONS).toSorted()).toEqual(
-      EXPLAIN_SHARDS.filter(shard => shard !== 'main').toSorted(),
-    )
+    expect(Object.keys(SHARD_DECLARATIONS).toSorted()).toEqual(EXPLAIN_SHARDS.toSorted())
   })
 
   it('accepts a complete split and fails when a declared id is unknown or repeated', () => {
@@ -101,6 +99,29 @@ describe('assertShardDeclarations', () => {
     expect(() =>
       assertShardDeclarations(manifest, { ...declarations, partition: ['p1', 'p1'] }),
     ).toThrow('duplicate')
+  })
+
+  it('keeps explicit main entries and unassigned scenarios in manifest order', () => {
+    const explicit = { ...declarations, main: ['a'] }
+    expect(() => assertShardDeclarations([...manifest, 'unassigned'], explicit)).not.toThrow()
+    expect(getShardScenarioIds('main', ['unassigned', ...manifest], explicit)).toEqual([
+      'unassigned',
+      'a',
+    ])
+    expect(SHARD_DECLARATIONS.main).toContain('top-url-insert-batch')
+    expect(getShardScenarioIds('main', EXPLAIN_SCENARIO_MANIFEST)).toContain('top-url-insert-batch')
+  })
+
+  it('rejects explicit main duplicates, unknown ids, and ownership assigned elsewhere', () => {
+    expect(() => assertShardDeclarations(manifest, { ...declarations, main: ['a', 'a'] })).toThrow(
+      'duplicate',
+    )
+    expect(() => assertShardDeclarations(manifest, { ...declarations, main: ['ghost'] })).toThrow(
+      'unknown',
+    )
+    expect(() => assertShardDeclarations(manifest, { ...declarations, main: ['b'] })).toThrow(
+      'assigned to another shard',
+    )
   })
 
   it('fails when two shards declare the same scenario', () => {
