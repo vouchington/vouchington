@@ -21,8 +21,9 @@ describe('Knip extracted workflow evidence', () => {
       for (const [workspace, allowed] of allowedWorkspaceIgnoreDependencies) {
         workspaces[workspace] = { ignoreDependencies: allowed.map(item => item.dependency) }
         for (const { dependency, evidenceFiles } of allowed) {
-          const evidence =
-            dependency === 'cloudflare'
+          const evidence = dependency.includes('bedrock')
+            ? `${JSON.stringify(dependency)}: "workspace:*"`
+            : dependency === 'cloudflare'
               ? "import {} from 'cloudflare:workers'"
               : dependency === '@fontsource/inter'
                 ? 'nodeRequire.resolve(`@fontsource/inter/fixture.woff`)'
