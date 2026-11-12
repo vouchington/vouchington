@@ -1,59 +1,44 @@
 import { randomInt } from 'node:crypto'
 import { advisoryLockPool, type PoolClient } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
-
-const DAY_MS = 24 * 60 * 60 * 1000
-const SLOT_DAYS = 3
-const SLOT_MS = SLOT_DAYS * DAY_MS
-const CONTROL_SLOT_STRIDE = 7
+import {
+  AI_USAGE_DAY_MS as DAY_MS,
+  AI_USAGE_SLOT_DAYS as SLOT_DAYS,
+  AI_USAGE_SLOT_MS as SLOT_MS,
+  getTestAiUsageSlotGridForDate,
+} from '../ai-usage-date-grid.mts'
 const { controlSlot, ordinarySlots } = getTestAiUsageSlotGridForDate(new Date())
 let ordinarySlotCursor = randomInt(ordinarySlots.length)
-
-/** Absolute UTC slots give separate processes the same lock key across a month boundary. */
-export function getTestAiUsageSlotGridForDate(date: Date): {
-  controlSlot: number
-  ordinarySlots: number[]
-} {
-  // All three months are in the bootstrap range; active wall-clock days are excluded below.
-  const windowStart = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1)
-  const windowEnd = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 2, 1)
-  const firstSlot = Math.ceil(windowStart / SLOT_MS)
-  const endSlot = Math.floor(windowEnd / SLOT_MS)
-  const slots = Array.from({ length: endSlot - firstSlot }, (_, offset) => firstSlot + offset)
-  const reservedSlot = slots.find(slot => slot % CONTROL_SLOT_STRIDE === 0)
-  if (reservedSlot === undefined) throw new Error('AI usage date window has no control slot')
-  return {
-    controlSlot: reservedSlot,
-    ordinarySlots: slots.filter(slot => slot % CONTROL_SLOT_STRIDE !== 0),
-  }
-}
 
 export type TestAiUsageDateReservation = {
   day: string
   release(): Promise<void>
 }
 
-/** Reserve a clean three-day window in the prepared next-month child for exact daily totals. */
+/** Reserve a clean three-day window in the prepared test range for exact daily totals. */
 export async function acquireTestAiUsageDateReservation(
   options: { notBefore?: Date } = {},
 ): Promise<TestAiUsageDateReservation> {
+  const slots = options.notBefore
+    ? getTestAiUsageSlotGridForDate(new Date(), options).ordinarySlots
+    : ordinarySlots
   const client = await advisoryLockPool.connect()
   try {
-    for (let attempt = 0; attempt < ordinarySlots.length; attempt++) {
-      const index = (ordinarySlotCursor + attempt) % ordinarySlots.length
-      const slot = ordinarySlots[index]!
+    for (let attempt = 0; attempt < slots.length; attempt++) {
+      const index = (ordinarySlotCursor + attempt) % slots.length
+      const slot = slots[index]!
       if (options.notBefore) {
         if (Date.parse(`${getSlotDay(slot)}T12:00:00.000Z`) < options.notBefore.getTime()) continue
         // Fake clocks inside a future day would advance the shared UUIDv7 monotonic state past the real clock.
       } else if ((slot + 1) * SLOT_MS > startOfUtcDay(Date.now())) continue
       if (!(await tryAcquireSlot(client, slot))) continue
       if (await slotIsClean(client, slot)) {
-        ordinarySlotCursor = (index + 1) % ordinarySlots.length
+        ordinarySlotCursor = (index + 1) % slots.length
         return createReservation(client, slot)
       }
       await releaseSlotLock(client, slot)
     }
-    throw new Error(`No clean AI usage date reservation in ${ordinarySlots.length} slots`)
+    throw new Error(`No clean AI usage date reservation in ${slots.length} slots`)
   } catch (err) {
     client.release(toError(err))
     throw err

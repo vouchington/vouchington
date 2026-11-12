@@ -77,6 +77,9 @@ jobs:
         working-directory: backend
         run: node data-stores/psql/schema-snapshot/generate.mts --check
         timeout-minutes: 2
+      - name: Prepare AI usage reservation fixture months
+        timeout-minutes: 2
+        run: node backend/test-helpers/prepare-ai-usage-date-partitions.mts
       - name: Dump prepared PostgreSQL database
         timeout-minutes: 2
         run: |
