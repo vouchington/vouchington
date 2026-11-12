@@ -81,15 +81,15 @@ app.route('/md/posts').get(async (ctx: Context) => {
   const result = await getPostIdsCached(searchOptions)
   const postIds = result.results.map((r: { id: string }) => r.id)
 
-  const [posts, metrics, elections] = await Promise.all([
+  const [posts, metrics, elections, publicPostIds] = await Promise.all([
     getPostByAnyCachedBatch(postIds),
     getPostMetricsByAnyCachedBatch(postIds),
     getPostElectionByIdCachedBatch(postIds),
+    getPublicPostIds(postIds),
   ])
 
   const metricsMap = new Map(metrics.flatMap(m => (m ? [[m.id, m] as const] : [])))
   const electionMap = new Map(elections.flatMap(e => (e ? [[e.id, e] as const] : [])))
-  const publicPostIds = await getPublicPostIds(posts.flatMap(post => (post ? [post.id] : [])))
   const indexablePosts = posts.flatMap(post =>
     post && publicPostIds.has(post.id) && canIndexMarkdownPost(post, electionMap.get(post.id))
       ? [post]

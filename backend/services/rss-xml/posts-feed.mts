@@ -142,8 +142,10 @@ async function buildPostsRssFeedImpl(options: PostsFeedOptions): Promise<string>
 
   // Fetch full post data
   const postIds = results.map(r => r.id)
-  const posts = await getPostByAnyCachedBatch(postIds)
-  const publicPostIds = await getPublicPostIds(postIds)
+  const [posts, publicPostIds] = await Promise.all([
+    getPostByAnyCachedBatch(postIds),
+    getPublicPostIds(postIds),
+  ])
 
   // Search IDs and cached rows can straddle a state change, so verify the
   // canonical publication predicate again immediately before serialization.
