@@ -1,3 +1,4 @@
+import { overlapCopyrightWriters } from '@voucha/test-helpers/copyright-restriction-assessment-race'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { commitCopyrightWritersInOrder } from '@voucha/test-helpers/copyright-form-review-assessment-race'
 import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
@@ -213,7 +214,7 @@ describe('copyright form moderator fallback', () => {
     await expectQueuedRestore(notice.intake.copyright_notice_id)
   })
 
-  it('replays concurrent guest-form rejections onto one human assessment', async () => {
+  it('commits the first guest-form rejection and rolls back the overlapping request', async () => {
     const [poster, moderatorRecord] = await Promise.all([createTestUser(), createTestUser()])
     const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
     const postId = await insertTestPost({
@@ -247,21 +248,37 @@ describe('copyright form moderator fallback', () => {
         ],
       },
     })
-    const reviews = await Promise.all([
+    const reject = (rationale: string) =>
       reviewCopyrightFormIntake({
         intakeId: notice.intake.id,
         currentUser: moderator,
         is_accepted: false,
-        rationale: 'The guest complaint was not substantiated.',
-      }),
-      reviewCopyrightFormIntake({
-        intakeId: notice.intake.id,
-        currentUser: moderator,
-        is_accepted: false,
-        rationale: 'The completed moderator decision may be safely replayed.',
-      }),
-    ])
-    expect(reviews[0]).toEqual(reviews[1])
+        rationale,
+      })
+        .then(value => ({ status: 'fulfilled' as const, value }))
+        .catch((err: unknown) => ({ status: 'rejected' as const, reason: err }))
+    const key = `copyright-form-review:${notice.intake.id}`
+    const [first, second] = await overlapCopyrightWriters(
+      'reviewCopyrightFormIntake:review',
+      () => reject('The guest complaint was not substantiated.'),
+      () => reject('The overlapping request must not duplicate the decision.'),
+      [notice.intake.id, notice.intake.copyright_notice_id, key],
+      key,
+    )
+    expect(first).toMatchObject({ status: 'fulfilled', value: { is_accepted: false } })
+    expect(second).toMatchObject({
+      status: 'rejected',
+      reason: {
+        status: 409,
+        code: 'CONFLICT',
+        cause: { code: '40001' },
+      },
+    })
+    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    expect(aggregate?.assessments).toHaveLength(1)
+    expect(
+      aggregate?.lifecycleEvents.filter(row => row.change_type === 'submission_assessed'),
+    ).toHaveLength(1)
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
     ).resolves.toBe(0)

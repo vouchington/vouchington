@@ -1,6 +1,10 @@
 import type pg from 'pg'
 import { writePool } from '@data-stores/psql'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
+import {
+  getTestOwnedPostgresLock,
+  type TestHeldPostgresLock,
+} from './postgres-client-lock-identity.mts'
 import { createTestPostgresClientLoan } from './postgres-client-loan.mts'
 import { commitCopyrightWritersInOrder } from './copyright-form-review-assessment-race.mts'
 import { completeCopyrightMandatoryHumanReview } from '../services/copyright-notices/human-review.mts'
@@ -59,11 +63,12 @@ export async function reviewAndRestoreCopyrightRestriction(
   return { review: reviewed, restoration: restored }
 }
 
-async function overlapCopyrightWriters<First, Second>(
+export async function overlapCopyrightWriters<First, Second>(
   firstMarker: string,
   firstOperation: () => Promise<First>,
   secondOperation: () => Promise<Second>,
   ownedIds: string[],
+  advisoryKey?: string,
 ): Promise<[First, Second]> {
   return runPoolObservationExclusively(async () => {
     const loanReady = Promise.withResolvers<ReturnType<typeof createTestPostgresClientLoan>>()
@@ -71,7 +76,7 @@ async function overlapCopyrightWriters<First, Second>(
     const restorations = new Map<pg.PoolClient, () => void>()
     const loans = new Map<pg.PoolClient, ReturnType<typeof createTestPostgresClientLoan>>()
     let firstClient: pg.PoolClient | undefined
-    let transactionId: string | undefined
+    let heldLock: TestHeldPostgresLock | undefined
     let first: Promise<First> | undefined
     let second: Promise<Second> | undefined
     let startedSecond = false
@@ -95,8 +100,8 @@ async function overlapCopyrightWriters<First, Second>(
           !statement.values.some(value => typeof value === 'string' && ownedIds.includes(value))
         )
           return Reflect.apply(original, client, args)
-        if (transactionId && client !== firstClient && !loans.has(client)) {
-          const loan = createTestPostgresClientLoan(client, { kind: 'transaction', transactionId })
+        if (heldLock && client !== firstClient && !loans.has(client)) {
+          const loan = createTestPostgresClientLoan(client, heldLock)
           loans.set(client, loan)
           loanReady.resolve(loan)
           return loan.ready.then(() => Reflect.apply(original, client, args))
@@ -106,8 +111,15 @@ async function overlapCopyrightWriters<First, Second>(
           firstClient = client
           startedSecond = true
           return Promise.resolve(pending).then(async result => {
-            const id = await client.query<{ id: string }>('SELECT pg_current_xact_id()::text AS id')
-            transactionId = id.rows[0]!.id
+            const id = await client.query<{ id: string; pid: number }>(
+              'SELECT pg_current_xact_id()::text AS id, pg_backend_pid() AS pid',
+            )
+            heldLock = advisoryKey
+              ? await getTestOwnedPostgresLock(client, {
+                  holderProcessId: id.rows[0]!.pid,
+                  lock: { kind: 'advisory', key: advisoryKey },
+                })
+              : { kind: 'transaction', transactionId: id.rows[0]!.id }
             second = secondOperation()
             const outcome = Promise.allSettled([second])
             void outcome.then(([settled]) => {
