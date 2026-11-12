@@ -1,4 +1,8 @@
-import type { IgnoredDependencyEvidence } from './knip-dependency-policy.mts'
+export interface IgnoredDependencyEvidence {
+  dependency: string
+  evidenceFiles: readonly string[]
+  evidencePattern: RegExp
+}
 
 // #5635: owner-required lower-only declarations; atomic stack #5654 must not deploy
 // its lower layer independently. Upper PR #5653 removes these declarations and policy.

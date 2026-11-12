@@ -1,4 +1,8 @@
-import { withRetainedBedrockDependencies } from './knip-retained-bedrock-dependencies.mts'
+import {
+  withRetainedBedrockDependencies,
+  type IgnoredDependencyEvidence,
+} from './knip-retained-bedrock-dependencies.mts'
+export type { IgnoredDependencyEvidence } from './knip-retained-bedrock-dependencies.mts'
 
 interface KnipWorkspaceConfig {
   ignoreDependencies?: string[]
@@ -7,12 +11,6 @@ interface KnipWorkspaceConfig {
 export interface KnipConfig {
   ignoreDependencies?: string[]
   workspaces?: Record<string, KnipWorkspaceConfig>
-}
-
-export interface IgnoredDependencyEvidence {
-  dependency: string
-  evidenceFiles: readonly string[]
-  evidencePattern: RegExp
 }
 
 export const PHANTOM_REFERENCE_FILE_NAME = 'knip-dependency-references.d.ts'
