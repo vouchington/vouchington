@@ -4,7 +4,7 @@ import { getImagePlacementDeliveryKey, type PlacementSourcePolicy } from '@ts-sh
 import {
   createOwnedDynamoDbTable,
   putDynamoDbItem,
-} from '../../../../backend/test-helpers/aws-emulator-owned-dynamodb-table.mts'
+} from '../../../test-helpers/owned-dynamodb-table.mts'
 import { authorizeOgDependencies } from '../authorize.mts'
 
 let table: string

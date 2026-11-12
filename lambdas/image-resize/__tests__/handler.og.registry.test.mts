@@ -6,7 +6,7 @@ import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   createOwnedDynamoDbTable,
   putDynamoDbItem,
-} from '../../../backend/test-helpers/aws-emulator-owned-dynamodb-table.mts'
+} from '../../test-helpers/owned-dynamodb-table.mts'
 import { createLambdaHandler } from '../handler.mts'
 import type { EnvironmentConfig, SideloadConfig } from '../config.mts'
 import { toBase64Url } from '../../test-helpers/image-resize/index.mts'
