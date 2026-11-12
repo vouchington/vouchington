@@ -3,10 +3,8 @@ import {
   cleanupPostDiscoverySearchFixture,
   seedPostDiscoverySearchFixture,
 } from '../seed-data/post-discovery-search.mts'
-import {
-  cleanupPostTopicSemiJoinFixture,
-  seedPostTopicSemiJoinFixture,
-} from '../seed-data/post-topic-semi-join-fixture.mts'
+import { seedPostTopicSemiJoinFixture } from '../seed-data/post-topic-semi-join-fixture.mts'
+import { cleanupPostTopicSemiJoinFixture } from '../seed-data/post-topic-semi-join-cleanup.mts'
 import { runPostDiscoverySearchScenarios } from './post-discovery-search.mts'
 import { runPostTopicSemiJoinScenarios } from './post-topic-semi-join.mts'
 import { runLateCommunityHotScenarios } from './community-hot-pages.mts'

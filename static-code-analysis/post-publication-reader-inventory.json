@@ -184,6 +184,27 @@
       "owner_classification": "direct-boundary"
     },
     {
+      "path": "backend/services/feeds/posts/get-ids/ranked-walk-query.mts",
+      "classification": "raw-hydrator",
+      "reason": "The bounded ranked post walk reads sort keys for inspection and opaque continuation only. Every returned direct or shared delivery joins its post through appendEligiblePostsSelect, which composes canonical viewer and root-post discovery eligibility before the result page is selected.",
+      "owner_path": "backend/services/feeds/posts/get-ids/eligible-posts-cte.mts",
+      "owner_classification": "viewer-discovery-sql"
+    },
+    {
+      "path": "backend/services/feeds/posts/get-ids/topic-walk-query.mts",
+      "classification": "raw-hydrator",
+      "reason": "The bounded delivery-index walk reads direct and share sort keys for inspection and opaque continuation only. Every returned delivery probes its target through appendEligiblePostsSelect, which composes canonical viewer and root-post discovery eligibility before the result page is selected.",
+      "owner_path": "backend/services/feeds/posts/get-ids/eligible-posts-cte.mts",
+      "owner_classification": "viewer-discovery-sql"
+    },
+    {
+      "path": "backend/services/topics/metrics-viewer-discussions.mts",
+      "classification": "raw-hydrator",
+      "reason": "The discussion count fragment receives canonical viewer discovery eligibility from getTopicViewerCounts and composes it inside each keyed candidate-post and root-post probe before an identity reaches the distinct capped aggregate. It returns a count and no post content.",
+      "owner_path": "backend/services/topics/metrics.mts",
+      "owner_classification": "viewer-discovery-sql"
+    },
+    {
       "path": "backend/services/posts/search/query-builder/order-and-limit.mts",
       "classification": "raw-hydrator",
       "reason": "Search fragment; base-filters owns public eligibility composition for the assembled query.",

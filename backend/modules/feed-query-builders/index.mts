@@ -11,11 +11,6 @@ export { buildNotificationPostRecipientEligibilityFilter } from './post-notifica
 export { buildExcludedCTE } from './excluded-cte.mts'
 export { buildHostnameExclusionExists } from './hostname-exclusion-filter.mts'
 export { buildTimeRangeFilter } from './time-range.mts'
-export {
-  buildUniversalTopicMembershipExists,
-  buildTopicMembershipExists,
-  buildTopicAliasMembershipExists,
-} from './topic-post-candidates.mts'
 export { buildRssFeedItemTopicMembershipExists } from './rss-feed-item-topic-candidates.mts'
 export {
   buildPostHasHackerNewsReferences,

@@ -28,11 +28,7 @@ const RSS_FEED_ITEM_TOPIC_ALIAS_CATEGORY_RELATION_TABLE = getEntityRelationTable
  * Single-topic candidate `rss_feed_item_id` derivation: every RSS feed item positively attached to
  * `topicId`, directly or through one of its hashtag aliases. Meant for a `FROM (…) candidate`
  * subselect — candidate-binding from this indexed topic side (instead of a per-row correlated
- * `EXISTS`) lets the planner drive the query from the topic's relation rows. Mirrors
- * `buildTopicPostCandidateSelect`'s shape from `topic-post-candidates.mts`; the RSS side reuses the
- * candidate-bind *pattern*, not that file's post-specific invariants (no shared table-name
- * constants module, no injection-guarded caller-supplied column, no 4-way "universal topic" union
- * — RSS has only 2 relation legs and 2 call sites, so those invariants don't apply here).
+ * `EXISTS`) lets the planner drive the query from the topic's relation rows.
  */
 function buildRssFeedItemTopicCandidateSelect(topicId: string): SQLStatement {
   return sql`
@@ -64,7 +60,7 @@ function buildRssFeedItemTopicCandidateSelect(topicId: string): SQLStatement {
  * `buildRssFeedItemTopicCandidateSelect`, rather than a correlated `EXISTS (… UNION ALL …)`:
  * Postgres cannot pull a `UNION ALL` body into a semijoin, so the old shape materialized the full
  * candidate set once per outer row instead of once per query. See the doc comment on
- * `buildTopicMembershipExists` in `topic-post-candidates.mts` for the anti-pattern this avoids
+ * `keyedTopicMembershipExists` in the post-search topic membership probes for the anti-pattern this avoids
  * (`no-mistakes`' `postgres-sql-shape-policy`, #11082).
  */
 export function buildRssFeedItemTopicMembershipExists(

@@ -34,15 +34,23 @@ export function pushPostTab(
   const publicCount = metrics?.count?.[options.countKey] ?? 0
   const viewerCount = metrics?.viewer_count?.[options.countKey] ?? 0
 
-  if (publicCount === 0 && viewerCount === 0 && !options.isActive) {
+  const lowerBound =
+    metrics?.count_capped?.[options.countKey] === true ||
+    metrics?.viewer_count_capped?.[options.countKey] === true
+  if (publicCount === 0 && viewerCount === 0 && !lowerBound && !options.isActive) {
     return
   }
 
   tabs.push({
     name: options.name,
     label:
-      publicCount > 0 || viewerCount > 0
-        ? formatTabLabel(options.label, publicCount, viewerCount > publicCount, options.uiLocale)
+      publicCount > 0 || viewerCount > 0 || lowerBound
+        ? formatTabLabel(
+            options.label,
+            publicCount,
+            viewerCount > publicCount || lowerBound,
+            options.uiLocale,
+          )
         : options.label,
     path: options.path,
   })
@@ -55,4 +63,10 @@ export function formatTabLabel(
   uiLocale?: NumberFormatLocale,
 ) {
   return `${label} (${formatNumber(count, uiLocale)}${hasMore ? '+' : ''})`
+}
+
+export function hasCappedPostCounts(metrics: Partial<TopicMetrics> | undefined): boolean {
+  return (['discussions', 'reviews', 'data-points'] as const).some(
+    key => metrics?.count_capped?.[key] || metrics?.viewer_count_capped?.[key],
+  )
 }

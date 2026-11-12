@@ -65,17 +65,8 @@ export async function seedVoteAggregation(): Promise<void> {
   await invalidate.post_elections(seedPostId)
 }
 
-// getTopicViewerCounts (the topic-viewer-counts EXPLAIN scenario) binds a single topic's candidate
-// posts through relation__post__category__topic.object_id, and its plan gate
-// (the topicViewerCandidateBind custom check) requires the planner resolve that through
-// idx_relation__post__category__topic__reverse_index (object_id, subject_id). But
-// seedVoteAggregation above only ever votes on ONE of the 50,000 relations seedEntityRelations
-// inserted (post 0 / topic 0), leaving idx_relation__post__category__topic__positive_score__id
-// (votes_score_sort DESC, id) WHERE votes_score_net > 0 with exactly one row -- trivially cheap for
-// the planner to scan regardless of how poorly it matches object_id, so it wins over reverse_index
-// on cost. Voting on a wide spread of OTHER topics' relations (never topic 0, whose relation is the
-// one getTopicViewerCounts's discussions:1 assertion counts) restores that partial index to a
-// realistic size so the planner's normal cost model prefers the targeted reverse_index lookup.
+// Preserve a realistic positive-score relation-index population for explain scenarios that inspect
+// post-category relations; these votes stay outside the anchor topic's counted relation.
 const RELATION_VOTE_DENSITY_COUNT = 2000
 
 export async function seedPostCategoryRelationVoteDensity(): Promise<void> {

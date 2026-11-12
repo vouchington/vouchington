@@ -79,6 +79,25 @@ user-metrics tool, so the change adds no MCP surface.
 trailing plus when a shown count is capped. Swift and .NET render it the same way as profile counts;
 that native work does not gate this producer change.
 
+Authenticated topic metrics also expose `viewer_count_capped`, parallel to `viewer_count`.
+A true viewer flag means the displayed count is a conservative lower bound. Discussions, reviews,
+and data points each have an independently reported flag; each category is flagged when its output
+count cap or its inputs reach the shared `viewer_count_input_cap`. Reaching that input cap is
+conservative even when the observed count equals the actual total or is zero, so a viewer count
+with a true flag can display as `0+`. A false flag means the viewer count is exact. Public
+`count_capped` keeps its output-overflow meaning.
+Posts, Reviews, and Data Points tab labels retain a plus when either the public count or viewer
+count is capped, including when the two numbers are equal or zero ("0+").
+Swift and .NET must preserve these flags and the same lower-bound presentation; native adoption
+does not gate this producer change. Feed clients must continue through short or empty pages when
+`has_next_page` is true, using the supplied opaque cursor. Hot feeds use the same immutable
+rank as post search, including future-dated posts. Equal ranks order by post identity, then by
+that post's delivery identity, so direct and shared deliveries of one post stay together. Clients
+preserve the returned order and treat the continuation as opaque; the cursor's decision instant
+anchors the time window. Ranked feeds may return a short page within a narrow time range because
+old posts can still qualify through recent shares; clients continue until the continuation flag
+is false.
+
 The owner and administrators also get `user_metrics.private_count` (saved, hidden, blocked, muted,
 viewed and similar), read to the same cap. `user_metrics.private_count_capped` carries one boolean
 per `private_count` key with the same meaning as `count_capped`. The earlier `user_metrics.bookmarks`,

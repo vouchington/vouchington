@@ -142,13 +142,13 @@ export async function runFeedAndMetricScenarios() {
   )
   registerScenarioContract('topic-viewer-counts', {
     expectations: [
-      { kind: 'custom', name: 'topicViewerCandidateBind' },
       { kind: 'maxBitmapIndexRows', max: 1_000 },
       { kind: 'maxProcessedRows', relation: 'relation__post__category__topic', max: 100 },
       { kind: 'maxProcessedRows', relation: 'relation__post__category__topic_alias', max: 500 },
       { kind: 'maxProcessedRows', relation: 'posts', max: 100 },
       { kind: 'maxProcessedRows', relation: 'post_review_topic_ratings', max: 20 },
       { kind: 'maxProcessedRows', relation: 'post_data_point_topics', max: 20 },
+      { kind: 'custom', name: 'topicViewerBoundedInputs' },
     ],
     crossPartition: {
       relation__post__category__topic:
@@ -157,7 +157,14 @@ export async function runFeedAndMetricScenarios() {
   })
   await runAndCapture('topic-viewer-counts', async () => {
     const counts = await getTopicViewerCounts(seedUser, seedTopicId)
-    if (counts.discussions !== 1 || counts.reviews !== 1 || counts['data-points'] !== 1)
+    if (
+      counts.discussions !== 1 ||
+      counts.reviews !== 1 ||
+      counts['data-points'] !== 1 ||
+      counts.count_capped.discussions ||
+      counts.count_capped.reviews ||
+      counts.count_capped['data-points']
+    )
       throw new Error('The anchor topic must count each eligible post once')
   })
   await runAndCapture('topic-search-text', () =>

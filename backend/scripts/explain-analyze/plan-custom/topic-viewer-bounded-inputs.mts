@@ -1,0 +1,77 @@
+import type { ExplainResult } from '@data-stores/psql'
+import { getTopicsWorkLimit } from '@services/topics/work-limits'
+import { baseRelationName, collectPlanNodes, type PlanNode } from '../plan-nodes.mts'
+import {
+  validRecursiveWalk,
+  topicViewerPlanChildren,
+  VIEWER_INPUT_STREAMING_NODES,
+} from './topic-viewer-recursive-walk.mts'
+
+import { assertTopicViewerRawPrefixesBounded } from './topic-viewer-raw-prefixes.mts'
+
+const INPUTS = [
+  {
+    cte: 'viewer_alias_inputs',
+    walk: 'viewer_alias_key_walk',
+    relation: 'topic_aliases',
+    key: /\btopic_id\s*=\s*(?:\$\d+|'[0-9a-f-]+'::uuid)/u,
+    next: /\balias\s*>/u,
+    limits: 1,
+  },
+  {
+    cte: 'viewer_direct_inputs',
+    walk: 'viewer_direct_key_walk',
+    relation: 'relation__post__category__topic',
+    key: /\bobject_id(?:\s+ELSE\s+NULL::uuid\s+END)?\s*=\s*(?:\$\d+|'[0-9a-f-]+'::uuid|alias(?:_\d+)?\.id)/u,
+    next: /\bsubject_id\s*>/u,
+    limits: 1,
+  },
+  {
+    cte: 'viewer_alias_relation_inputs',
+    walk: 'viewer_alias_relation_key_walk',
+    relation: 'relation__post__category__topic_alias',
+    key: /\bobject_id(?:\s+ELSE\s+NULL::uuid\s+END)?\s*=\s*(?:\$\d+|'[0-9a-f-]+'::uuid|alias(?:_\d+)?\.id)/u,
+    next: /\bsubject_id\s*>/u,
+    limits: 2,
+  },
+] as const
+
+/** Structural seeks and raw-prefix work complement the scenario's physical-row budgets. */
+export function assertTopicViewerInputsAreBounded(result: ExplainResult): void {
+  const nodes = collectPlanNodes(result.plan)
+  const inputCap = getTopicsWorkLimit('viewer_count_input_cap')
+  const missing = INPUTS.filter(input => {
+    const raw = nodes.find(node => node['Subplan Name'] === `CTE ${input.cte}`)
+    if (!raw || raw['Node Type'] !== 'Limit') return true
+    // Actual Rows is per invocation, matching the raw input limit's scope.
+    if (typeof raw['Actual Rows'] !== 'number' || raw['Actual Rows'] > inputCap) return true
+    if (collectPlanNodes(raw).some(node => baseRelationName(node) === 'posts')) return true
+    let walks = 0
+    function visit(node: PlanNode, limits = 0, inLoop = false, localLimit = false): boolean {
+      const type = node['Node Type']
+      if (typeof type !== 'string') return false
+      const depth = limits + Number(type === 'Limit')
+      const local = type === 'Nested Loop' ? false : localLimit || (inLoop && type === 'Limit')
+      if (type === 'Recursive Union') {
+        walks += 1
+        return (
+          node['Subplan Name'] === `CTE ${input.walk}` &&
+          depth >= input.limits &&
+          (input.limits === 1 || local) &&
+          validRecursiveWalk(node, input, result.query_text)
+        )
+      }
+      if (!VIEWER_INPUT_STREAMING_NODES.has(type) || baseRelationName(node) === input.relation)
+        return false
+      return topicViewerPlanChildren(node).every(child =>
+        visit(child, depth, inLoop || type === 'Nested Loop', local),
+      )
+    }
+    return !visit(raw) || walks !== 1
+  })
+  if (missing.length > 0)
+    throw new Error(
+      `${result.name} must bound keyed reads of topic viewer inputs: ${missing.map(input => input.relation).join(', ')}`,
+    )
+  assertTopicViewerRawPrefixesBounded(result.name, nodes, inputCap, result.query_text)
+}

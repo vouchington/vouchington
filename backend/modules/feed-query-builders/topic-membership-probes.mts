@@ -47,10 +47,9 @@ function keyedTopicAttachmentExists(postIdColumn: string, topicId: string): SQLS
         POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE,
         'alias_relation',
         postIdColumn,
-        sql`alias_relation.object_id = ANY (ARRAY(
-          SELECT alias.id FROM topic_aliases alias WHERE alias.topic_id = ${topicId}
-        ))
-        AND alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0`,
+        sql`(SELECT alias.topic_id FROM topic_aliases alias
+          WHERE alias.id = alias_relation.object_id) = ${topicId}
+          AND alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0`,
       ),
     )
 }

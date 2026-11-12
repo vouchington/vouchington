@@ -143,6 +143,10 @@ export type TopicMetrics = {
     reviews: number
     'data-points': number
   }
+  // Viewer flags also mark bounded input exhaustion: counts are lower bounds, including zero.
+  viewer_count_capped?: {
+    [Key in keyof NonNullable<TopicMetrics['viewer_count']>]: boolean
+  }
   ratings: {
     count: {
       '1': number

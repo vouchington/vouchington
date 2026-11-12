@@ -10,6 +10,7 @@ import { assertClaimantMisuseCursorSeek } from './plan-custom/claimant-misuse-cu
 import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-custom/embedding-reconciliation.mts'
 import { assertPaginationPlanShape } from './plan-custom/pagination-gates.mts'
 import { assertPostTopicMembershipIsReused } from './plan-custom/post-topic-membership.mts'
+import { assertTopicViewerInputsAreBounded } from './plan-custom/topic-viewer-bounded-inputs.mts'
 import { assertPostCreationBypassPointRead } from './plan-custom/post-creation-bypass.mts'
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-custom/remote-followers.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-custom/review-succession.mts'
@@ -22,7 +23,6 @@ import {
 import { assertSemanticPostCandidatePlan } from './plan-custom/semantic-post.mts'
 import { assertStoryMemberPagePlan } from './plan-custom/story-member-pages.mts'
 import { assertStoryProjectionClaimCandidates } from './plan-custom/story-projection-claim.mts'
-import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-custom/topic-viewer-counts.mts'
 import { assertCorePlanCheck } from './plan-custom/core-special.mts'
 import { assertUsernamePrefixCandidates } from './plan-custom/username-prefix.mts'
 import { assertReferralFeedInspectedWalk } from './plan-custom/referral-feed.mts'
@@ -42,6 +42,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   referralFeedInspectedWalk: assertReferralFeedInspectedWalk,
   postCreationBypassPointRead: assertPostCreationBypassPointRead,
   postTopicMembership: assertPostTopicMembershipIsReused,
+  topicViewerBoundedInputs: assertTopicViewerInputsAreBounded,
   remoteFollowers: assertRemoteFollowerPagePlanShapeIfApplicable,
   reviewSuccession: assertReviewSuccessionCandidatePlanIfApplicable,
   rssFeedPageWorkload: assertRssFeedPageWorkloadIsBounded,
@@ -52,7 +53,6 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   semanticPost: assertSemanticPostCandidatePlan,
   storyMemberPages: assertStoryMemberPagePlan,
   storyProjectionClaimCandidates: assertStoryProjectionClaimCandidates,
-  topicViewerCandidateBind: assertTopicViewerCountsDiscussionsUsesCandidateBind,
   universalTopicCandidates: result => assertCorePlanCheck('universalTopicCandidates', result),
   rssStateProjection: result => assertCorePlanCheck('rssStateProjection', result),
   rssTextCandidates: result => assertCorePlanCheck('rssTextCandidates', result),

@@ -100,7 +100,7 @@ export async function runVoteScorePostHotScenarios(): Promise<void> {
   const [rank, primaryKey, shares] = await Promise.all([
     partitionIndexLeaves('idx_posts__stable_hot_rank__id'),
     partitionIndexLeaves('posts_pkey'),
-    partitionIndexLeaves('idx_post_feed_shares__recipient__sort'),
+    partitionIndexLeaves('idx_post_feed_shares__recipient__post__id'),
   ])
   const scenarios = getVoteScorePostHotScenarios(cursors, { rank, primaryKey, shares })
 

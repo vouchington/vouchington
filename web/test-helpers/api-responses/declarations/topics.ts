@@ -1,4 +1,6 @@
 import topicsLinkCountDefault from '../../../../api-fixtures/v1/responses/web.topics.link-count.default.json'
+import topicsViewerLowerBound from '../../../../api-fixtures/v1/responses/web.topics.show.viewer-lower-bound.json'
+import topicsViewerReviewDataLowerBound from '../../../../api-fixtures/v1/responses/web.topics.show.viewer-review-data-lower-bound.json'
 import topicsShowDefault from '../../../../api-fixtures/v1/responses/web.topics.show.default.json'
 import type { TopicsSearchResponseBody } from '@/lib/api/client/topics'
 import type { TopicResponseBody } from '@/types/api-responses'
@@ -21,6 +23,16 @@ function assertTopicImagePlacements(topic: Topic): asserts topic is TopicWithIma
 }
 
 export const TOPIC_DECLARATIONS = [
+  defineWebApiFixture<TopicResponseBody>()(
+    'web.topics.show.viewer-lower-bound',
+    topicsViewerLowerBound,
+    context => context.server.topics.getTopic('test-topic'),
+  ),
+  defineWebApiFixture<TopicResponseBody>()(
+    'web.topics.show.viewer-review-data-lower-bound',
+    topicsViewerReviewDataLowerBound,
+    context => context.server.topics.getTopic('test-topic'),
+  ),
   defineWebApiFixture<TopicsSearchResponseBody>()(
     'web.topics.link-count.default',
     topicsLinkCountDefault,

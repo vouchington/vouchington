@@ -76,9 +76,11 @@ app
         if (!topicMetrics) return undefined
         if (!viewerCount) return topicMetrics
 
+        const { count_capped, ...viewer_count } = viewerCount
         return {
           ...topicMetrics,
-          viewer_count: viewerCount,
+          viewer_count,
+          viewer_count_capped: count_capped,
         }
       }),
       topic_categories: getEntityRelations('topic', topic.id, 'category', 'topic', {

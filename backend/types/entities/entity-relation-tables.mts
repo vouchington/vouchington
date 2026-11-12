@@ -3,8 +3,8 @@ import { getEntityRelationTableNameOrThrow } from './entity-relations-metadata.m
 /**
  * Shared table-name constants for the post/topic category relation and its hashtag-alias
  * counterpart. Every call site that needs either table name should import from here instead of
- * re-deriving it — see `backend/modules/feed-query-builders/topic-post-candidates.mts` for the
- * shared SQL shapes built on top of these tables.
+ * re-deriving it — see `backend/modules/feed-query-builders/topic-membership-probes.mts` for the
+ * keyed membership probes built on these tables.
  */
 export const POST_TOPIC_CATEGORY_RELATION_TABLE = getEntityRelationTableNameOrThrow({
   subjectType: 'post',

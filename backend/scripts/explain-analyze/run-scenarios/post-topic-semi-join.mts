@@ -1,16 +1,21 @@
-import { getPostIds } from '../run-services.mts'
+import { getPostFeedIds, getPostIds } from '../run-services.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { partitionIndexLeavesOf } from '../partition-index-leaves.mts'
 import { POST_TOPIC_SEMI_JOIN_FIXTURE } from '../seed-data/post-topic-semi-join-fixture.mts'
+import { POST_TOPIC_FEED_POST_ID } from '../seed-data/post-topic-owned-posts.mts'
 import { POST_TOPIC_FIXTURES_SEEDED_ROWS } from '../post-discovery-seeded-rows.mts'
 import type { PostSearchOptions } from '@voucha/types/entities/post-search'
 
 const PAGE_SIZE = 25
 const POST_SEARCH_QUERY = 'buildPostSearchQuery'
+const POST_FEED_QUERY = 'getPostFeedIds'
 const MAX_POST_ROWS = 1200
 const MAX_ALIAS_RELATION_ROWS = 1200
-const TOPIC_ALIAS_INDEX = 'idx_topic_aliases__topic_id'
+const MAX_FEED_POST_ROWS = 15_000
+const MAX_FEED_MEMBERSHIP_ROWS = 30_000
+// The post-keyed alias relation resolves one alias id; topic_id only checks that row's owner.
+const TOPIC_ALIAS_INDEX = 'topic_aliases_pkey'
 
 type TopicFixture = 'sparse' | 'dense'
 
@@ -47,6 +52,36 @@ function registerTopicSemiJoinScenario(
     allowEmptyResult,
     crossPartition: {
       posts: 'A topic search walks matching posts in sort order.',
+    },
+  })
+}
+
+function registerMultiTopicFeedScenario(id: string, aliasRelationLeaves: readonly string[]): void {
+  registerScenarioContract(id, {
+    seededRows: POST_TOPIC_FIXTURES_SEEDED_ROWS,
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'posts', max: MAX_FEED_POST_ROWS },
+      {
+        kind: 'maxProcessedRows',
+        relation: 'relation__post__category__topic',
+        max: MAX_FEED_MEMBERSHIP_ROWS,
+      },
+      {
+        kind: 'maxProcessedRows',
+        relation: 'relation__post__category__topic_alias',
+        max: MAX_FEED_MEMBERSHIP_ROWS,
+      },
+      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: MAX_FEED_MEMBERSHIP_ROWS },
+      { kind: 'maxBitmapIndexRows', max: MAX_FEED_MEMBERSHIP_ROWS },
+      { kind: 'usesIndexes', indexes: [...aliasRelationLeaves], anyOf: true },
+    ],
+    forbidSequentialScans: [
+      'relation__post__category__topic',
+      'relation__post__category__topic_alias',
+      'topic_aliases',
+    ],
+    crossPartition: {
+      posts: 'A followed-post feed walks deliveries that match both topics.',
     },
   })
 }
@@ -100,6 +135,7 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
     'relation__post__category__topic_alias_pkey',
     'relation__post__category__topic_alias_subject_id_id_key',
     'idx_relation__post__category__topic_alias__subject__newest',
+    'idx_relation__post__category__topic_alias__subject__best',
   ])
   await captureTopicPair('sparse', aliasRelationLeaves)
   await captureTopicPair('dense', aliasRelationLeaves)
@@ -123,4 +159,31 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
     aliasRelationLeaves,
   )
   await capture('post-topic-semi-join-multi-topic-search', multiTopicOptions)
+
+  const multiTopicFeedOptions = {
+    universal_topic_ids: topicIds,
+    feed_type: 'any' as const,
+    time_range: '1w' as const,
+    limit: PAGE_SIZE,
+  }
+  const feedPage = await getPostFeedIds(seedUser, multiTopicFeedOptions)
+  if (feedPage.results.length === 0)
+    throw new Error('Two-topic post feed omitted its owned, followed-topic raw-prefix post')
+  if (
+    !feedPage.results.some(
+      row => row.entity_id === POST_TOPIC_FEED_POST_ID && row.delivery_type === 'direct',
+    )
+  )
+    throw new Error('Two-topic post feed omitted its specific owned direct delivery')
+  if (feedPage.results.length > PAGE_SIZE)
+    throw new Error('Two-topic post feed page exceeded its limit')
+  if (!feedPage.page_info.has_next_page || !feedPage.page_info.end_cursor)
+    throw new Error('Two-topic post feed continuation needs its inspected-row cursor')
+  registerMultiTopicFeedScenario('post-topic-semi-join-multi-topic-feed', aliasRelationLeaves)
+  await runAndCapture(
+    'post-topic-semi-join-multi-topic-feed',
+    () => getPostFeedIds(seedUser, multiTopicFeedOptions),
+    undefined,
+    POST_FEED_QUERY,
+  )
 }

@@ -105904,6 +105904,54 @@
       "status": 200
     },
     {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/topics/:idOrSlug",
+      "bodyFile": "responses/web.topics.show.viewer-lower-bound.json",
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "id": "web.topics.show.viewer-lower-bound",
+      "method": "GET",
+      "migratedFrom": ["backend/services/topics/metrics.mts"],
+      "path": "/api/v1/topics/test-topic",
+      "responseSchema": {
+        "hash": "8aba6e5dab177f39b1e5fb0939f9bcbb61e2cbe272f6acd730f7a569b25a78ed",
+        "key": "web.topics.show.viewer-lower-bound"
+      },
+      "route": {
+        "pathParams": {
+          "idOrSlug": "test-topic"
+        },
+        "routeTemplate": "/api/v1/topics/:idOrSlug"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/topics/:idOrSlug",
+      "bodyFile": "responses/web.topics.show.viewer-review-data-lower-bound.json",
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "id": "web.topics.show.viewer-review-data-lower-bound",
+      "method": "GET",
+      "migratedFrom": ["backend/services/topics/metrics.mts"],
+      "path": "/api/v1/topics/test-topic",
+      "responseSchema": {
+        "hash": "8aba6e5dab177f39b1e5fb0939f9bcbb61e2cbe272f6acd730f7a569b25a78ed",
+        "key": "web.topics.show.viewer-review-data-lower-bound"
+      },
+      "route": {
+        "pathParams": {
+          "idOrSlug": "test-topic"
+        },
+        "routeTemplate": "/api/v1/topics/:idOrSlug"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
       "auth": "fixture-admin",
       "backendResponseContractKey": "GET:/api/v1/memberships/refundable-charges",
       "bodyFile": "responses/web.memberships.refundable-charges.default.json",
@@ -107727,7 +107775,7 @@
       "migratedFrom": ["backend/api/v1/topics/topic-routes/topic-detail-route.mts"],
       "path": "/api/v1/topics/test-topic",
       "responseSchema": {
-        "hash": "a5996ec59ba64ecae2ad641dd11e5d08dee9f6c187497791ded8fcff6ec90074",
+        "hash": "998c0a50e211530753ab9f0715f2f902b610c2c4b62740b5338af7207821b6c7",
         "key": "web.topics.show.default"
       },
       "route": {

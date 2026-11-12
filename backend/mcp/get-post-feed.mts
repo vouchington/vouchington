@@ -22,7 +22,7 @@ import {
 const getPostFeedTool: MergedToolSource<PostArgs, FeedResult> = {
   schema: {
     description:
-      'Page your feed posts with REST follow, community and content rules. Use read_posts(details) for content. Up to 100 results per page. Reuse end_cursor while has_next_page is true.',
+      'Page posts under REST follow, community and content rules. Short or empty pages may continue; reuse end_cursor while has_next_page is true. Up to 100; use read_posts(details).',
     parameters: {
       type: 'object',
       properties: {
