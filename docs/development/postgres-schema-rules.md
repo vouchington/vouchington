@@ -153,6 +153,8 @@ state from the latest history row.
   a reason. Partition by the dominant access key; `RANGE(id)` only when every hot reader carries an
   id or time bound.
 - UUIDv7 tables filter and order by `id`, not `created_at`, which cannot use the `id` index.
+- Time windows compare the raw UUIDv7 `id` against `getMinUUIDv7ForDate` bounds; never extract
+  timestamps from the indexed `id` in a predicate, which prevents an ordinary id-index range scan.
 - **A `view_*` view is read only by its key.** Pick ids from indexed base tables, then read the view
   by those ids. Filtering, sorting, paging, or counting on view columns computes every row before
   the page is cut, so cost grows with the table. Whole-table totals read precomputed results.
@@ -281,7 +283,13 @@ and then write, with no lock, counter row, slot table, or admission-only constra
 a true race is accepted. Removing a lock deletes it rather than swapping in another serializer. A
 rare race that must not break an invariant (write skew, such as an administrator keeping MFA) runs
 the conflicting transactions at SERIALIZABLE; a serialization failure returns 409 with no retry,
-and never a lock, advisory lock, or conflict-forcing column. Why and owner words: [lock scope](postgresql/reference-transactions.md#lock-scope). Unenforced.
+and never a lock, advisory lock, or conflict-forcing column. The guard reads and decision write
+run inside the same SERIALIZABLE transaction so SSI can track their read/write dependencies; a
+guard read outside that transaction cannot protect the invariant. Why and owner words: [lock scope](postgresql/reference-transactions.md#lock-scope). Unenforced.
+
+Tests for a writer that starts after a committed decision seed that committed state before invoking
+the writer. Tests of overlapping transactions accept every valid race outcome rather than imposing
+a lock order or assuming one writer must win.
 
 ## No per-row queries while holding locks
 
