@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { NIL, MAX } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
 import type { TopicMetrics } from './types.mts'
 import { getTopicMetricsByAnyBatch } from './metrics-batch.mts'
@@ -44,10 +45,14 @@ export async function getTopicViewerCounts(
     buildTopicViewerDiscussionInputs(topicId, inputCap),
   ).append(sql`, viewer_review_inputs AS MATERIALIZED (
       SELECT post_id FROM post_review_topic_ratings
-      WHERE topic_id = ${topicId} LIMIT ${inputCap}
+      WHERE (topic_id, post_id) >= (${topicId}::uuid, ${NIL}::uuid)
+        AND (topic_id, post_id) <= (${topicId}::uuid, ${MAX}::uuid)
+      ORDER BY topic_id, post_id LIMIT ${inputCap}
     ), viewer_data_point_inputs AS MATERIALIZED (
       SELECT post_id FROM post_data_point_topics
-      WHERE topic_id = ${topicId} LIMIT ${inputCap}
+      WHERE (topic_id, post_id) >= (${topicId}::uuid, ${NIL}::uuid)
+        AND (topic_id, post_id) <= (${topicId}::uuid, ${MAX}::uuid)
+      ORDER BY topic_id, post_id LIMIT ${inputCap}
     )
       SELECT
         (SELECT COUNT(*) >= ${inputCap} FROM viewer_alias_inputs)

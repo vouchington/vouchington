@@ -1,5 +1,7 @@
 import { baseRelationName, collectPlanNodes, processedRows, type PlanNode } from '../plan-nodes.mts'
 
+import { validTopicViewerPrefixCondition } from './topic-viewer-prefix-condition.mts'
+
 const RAW_PREFIX_INPUTS = [
   { cte: 'viewer_review_inputs', relation: 'post_review_topic_ratings' },
   { cte: 'viewer_data_point_inputs', relation: 'post_data_point_topics' },
@@ -9,6 +11,7 @@ export function assertTopicViewerRawPrefixesBounded(
   name: string,
   nodes: readonly PlanNode[],
   inputCap: number,
+  queryText = '',
 ): void {
   const unboundedPrefixes = RAW_PREFIX_INPUTS.filter(
     input =>
@@ -16,6 +19,8 @@ export function assertTopicViewerRawPrefixesBounded(
         nodes.find(node => node['Subplan Name'] === `CTE ${input.cte}`),
         input.relation,
         inputCap,
+        input.cte,
+        queryText,
       ),
   )
   if (unboundedPrefixes.length > 0)
@@ -24,7 +29,13 @@ export function assertTopicViewerRawPrefixesBounded(
     )
 }
 
-function boundedRawPrefix(raw: PlanNode | undefined, relation: string, cap: number): boolean {
+function boundedRawPrefix(
+  raw: PlanNode | undefined,
+  relation: string,
+  cap: number,
+  cte: string,
+  queryText: string,
+): boolean {
   if (!raw || raw['Node Type'] !== 'Limit' || Number(raw['Actual Loops']) !== 1) return false
   if (typeof raw['Actual Rows'] !== 'number' || raw['Actual Rows'] > cap) return false
   const descendants = collectPlanNodes(raw).slice(1)
@@ -52,7 +63,7 @@ function boundedRawPrefix(raw: PlanNode | undefined, relation: string, cap: numb
         !['Index Scan', 'Index Only Scan'].includes(String(scan['Node Type'])) ||
         !topicLeading ||
         typeof scan['Index Cond'] !== 'string' ||
-        !/\btopic_id\s*=/u.test(scan['Index Cond'])
+        !validTopicViewerPrefixCondition(scan['Index Cond'], { cte, relation }, queryText)
       )
         return false
     }

@@ -73,5 +73,5 @@ export function assertTopicViewerInputsAreBounded(result: ExplainResult): void {
     throw new Error(
       `${result.name} must bound keyed reads of topic viewer inputs: ${missing.map(input => input.relation).join(', ')}`,
     )
-  assertTopicViewerRawPrefixesBounded(result.name, nodes, inputCap)
+  assertTopicViewerRawPrefixesBounded(result.name, nodes, inputCap, result.query_text)
 }
