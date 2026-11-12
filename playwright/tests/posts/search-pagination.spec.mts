@@ -36,12 +36,21 @@ test.describe('Post search and pagination', () => {
   })
 
   test.describe('infinite scroll', () => {
-    test('shows load-more control when more results are available', async ({ page }) => {
+    test('shows a mobile-sized load-more control when more results are available', async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 375, height: 667 })
       await navigateTo(page, '/posts?sort=new')
 
       await expect(page.getByTestId('post-card-root').first()).toBeVisible()
       await expect(page.getByTestId('infinite-scroll-sentinel')).toBeVisible()
       await expect(page.getByTestId('paginated-list-continuation')).toBeVisible()
+      const button = page.getByTestId('paginated-list-footer-load-more')
+      await expect(button).toBeVisible()
+      const box = await button.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.width).toBeGreaterThanOrEqual(44)
+      expect(box!.height).toBeGreaterThanOrEqual(44)
     })
 
     test('does not crash on scroll and loads next page when available', async ({ page }) => {

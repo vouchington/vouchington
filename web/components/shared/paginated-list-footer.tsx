@@ -46,7 +46,7 @@ export function PaginatedListFooter({
       <Button
         data-pw='paginated-list-footer-load-more'
         variant='outline'
-        size='sm'
+        size='touchSm'
         disabled={loadingMore}
         onClick={() => {
           if (fetchError) clearError()
