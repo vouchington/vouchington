@@ -57,3 +57,11 @@ export async function getPostEmbeddingData(postId: string): Promise<{
   )
   return rows[0] || null
 }
+
+export async function getPostEmbeddingContentSha256(postId: string): Promise<Buffer | null> {
+  const { rows } = await read<{ content_sha256: Buffer }>(
+    sql`/* getPostEmbeddingContentSha256 */
+      SELECT gemini_embedding_2_content_sha256 AS content_sha256 FROM posts WHERE id = ${postId}`,
+  )
+  return rows[0]?.content_sha256 ?? null
+}

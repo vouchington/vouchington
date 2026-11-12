@@ -6964,6 +6964,9 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../copyright-notices
+      '@services/topic-recommendations':
+        specifier: workspace:^
+        version: link:../topic-recommendations
       '@services/urls':
         specifier: workspace:^
         version: link:../urls

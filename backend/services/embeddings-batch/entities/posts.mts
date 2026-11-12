@@ -38,6 +38,7 @@ export async function* streamPendingPosts(
       vp.markdown,
       vp.post_type,
       vp.ai_summary_markdown,
+      vp.structured_data,
       vp.topic_recommendation
     FROM posts p
     JOIN view_posts vp ON vp.id = p.id
@@ -58,6 +59,7 @@ export async function* streamPendingPosts(
     markdown: string
     post_type: string
     ai_summary_markdown?: string
+    structured_data?: unknown
     topic_recommendation?: Post['topic_recommendation']
   }>(
     createAsyncGeneratorFromCursor<{
@@ -66,6 +68,7 @@ export async function* streamPendingPosts(
       markdown: string
       post_type: string
       ai_summary_markdown?: string
+      structured_data?: unknown
       topic_recommendation?: Post['topic_recommendation']
     }>(query, [scan.upperId, scan.afterId], {
       batchSize: scan.limits.batchSize,
@@ -78,6 +81,7 @@ export async function* streamPendingPosts(
         markdown: row.markdown || '',
         post_type: row.post_type as Post['post_type'],
         ai_summary_markdown: row.ai_summary_markdown ?? undefined,
+        structured_data: row.structured_data,
         topic_recommendation: row.topic_recommendation ?? undefined,
       }),
   )

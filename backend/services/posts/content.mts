@@ -131,12 +131,17 @@ function createTopicRecommendationEmbeddingContent(
         ? post.topic_hostname
         : undefined
 
-  const topicHostnames =
-    'topic_recommendation' in post && post.topic_recommendation
-      ? post.topic_recommendation.hostnames.map(hostname => hostname.hostname)
-      : 'topic_hostnames' in post
-        ? post.topic_hostnames
-        : undefined
+  // Hostnames form a set; writers preserve primary-first input while the view sorts rows.
+  // Keep the primary hostname separate and hash one deterministic set representation.
+  const topicHostnames = [
+    ...new Set(
+      ('topic_recommendation' in post && post.topic_recommendation
+        ? post.topic_recommendation.hostnames.map(hostname => hostname.hostname)
+        : 'topic_hostnames' in post
+          ? post.topic_hostnames
+          : undefined) ?? [],
+    ),
+  ].toSorted()
 
   const topicAliases =
     'topic_recommendation' in post && post.topic_recommendation
