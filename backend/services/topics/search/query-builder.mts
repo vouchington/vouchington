@@ -7,7 +7,7 @@ import { appendTopicSearchJoins, appendTopicSearchSelect } from './query-builder
 import { getTopicSearchState } from './query-builder-state.mts'
 import { appendTopicSearchWhere, buildTopicSearchWhereClauses } from './query-builder-where.mts'
 
-export function buildTopicSearchQuery(
+export function buildTopicSearchQueryBody(
   options: TopicSearchOptions,
   sort: TopicSearchSort,
 ): SQLStatement {
@@ -23,7 +23,7 @@ export function buildTopicSearchQuery(
     similar_rss_feed_item_id: options.similar_rss_feed_item_id,
   })
 
-  const query = sql`/* buildTopicSearchQuery */`
+  const query = sql``
   if (ctes.length > 0) {
     query.append(sql`WITH `)
     ctes.forEach((cte, index) => {

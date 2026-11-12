@@ -1,6 +1,7 @@
 import { clampLimit } from '@services/pagination'
 import type { TopicSearchOptions, TopicSearchResult } from './types.mts'
-import { buildTopicSearchQuery } from './query-builder.mts'
+import { buildTopicSearchQueryBody } from './query-builder.mts'
+import sql from 'sql-template-strings'
 import { detectTopicSort } from '@modules/search-utils'
 import { read } from '@data-stores/psql'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
@@ -70,7 +71,7 @@ export async function getTopicIds(options: TopicSearchOptions = {}): Promise<Top
   const { id_lt, tier_after, ranking_lt, score_lt } = decodeTopicSearchCursor(options, sort, state)
 
   // Build query with decoded cursor and limit + 1
-  const query = buildTopicSearchQuery(
+  const body = buildTopicSearchQueryBody(
     {
       ...options,
       semanticSearchEmbedding,
@@ -82,6 +83,8 @@ export async function getTopicIds(options: TopicSearchOptions = {}): Promise<Top
     },
     sort,
   )
+  const query = sql`/* buildTopicSearchQuery */`
+  query.append(body)
 
   const { rows } = await read(query)
   const typedRows = rows as TopicSearchRow[]

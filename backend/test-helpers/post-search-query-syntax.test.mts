@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parsePostgresSql } from 'no-mistakes'
-import { buildPostFeedPageQuery } from '../services/feeds/posts/get-ids/page-query.mts'
+import { buildPostFeedPageQueryBody } from '../services/feeds/posts/get-ids/page-query.mts'
 import { buildPostSearchQuery } from '../services/posts/search/query-builder.mts'
 import type { PostSearchSort } from '../services/posts/search/types.mts'
 
@@ -112,7 +112,7 @@ describe('post search SQL composition', () => {
   })
 
   it('parses a newest multi-topic feed from the first topic walk', async () => {
-    const query = buildPostFeedPageQuery({
+    const query = buildPostFeedPageQueryBody({
       currentUserId: '123e4567-e89b-12d3-a456-426614174000',
       cursor: null,
       cutoff: new Date('2026-11-01T00:00:00.000Z'),

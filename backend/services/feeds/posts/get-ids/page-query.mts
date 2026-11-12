@@ -10,9 +10,8 @@ import { buildBroadcastVisibilityFilter } from './visibility-filter.mts'
 const CURSOR_TIME_FORMAT = `'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'`
 
 /** One statement per sort: filtered walks over the viewer's deliveries, `LIMIT page + 1`. */
-export function buildPostFeedPageQuery(options: PostFeedPageQueryOptions): SQLStatement {
-  const query = sql`/* getPostFeedIds */
-    WITH `
+export function buildPostFeedPageQueryBody(options: PostFeedPageQueryOptions): SQLStatement {
+  const query = sql`WITH `
   appendPostFeedRelationCTEs(query, {
     communityId: options.communityId,
     currentUserId: options.currentUserId,

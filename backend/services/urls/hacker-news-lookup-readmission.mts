@@ -34,8 +34,12 @@ export async function readmitHackerNewsLookupPage(
   const sweep = await prepareHackerNewsLookupReadmissionWindow(window, now)
   if (!sweep) return { after, window, hasMore: false, admittedIds: [] }
   const size = getHackerNewsWorkLimit('lookup_batch_size')
+  const body = buildHackerNewsReadmissionPageQueryBody(sweep, after, urlIds)
+  const query = sql`/* readmitHackerNewsLookupPage */
+    `
+  query.append(body)
   const { rows } = await read<{ url_id: string; cursor_looked_up_at: string }>(
-    buildHackerNewsReadmissionPageQuery(sweep, after, urlIds),
+    query,
     undefined,
     options,
   )
@@ -89,8 +93,16 @@ export function buildHackerNewsReadmissionPageQuery(
   after?: LookupReadmissionKey,
   urlIds?: readonly string[],
 ): SQLStatement {
-  const query = sql`/* readmitHackerNewsLookupPage */
-    SELECT url_id, looked_up_at::text AS cursor_looked_up_at
+  return sql`/* readmitHackerNewsLookupPage */
+    `.append(buildHackerNewsReadmissionPageQueryBody(window, after, urlIds))
+}
+
+function buildHackerNewsReadmissionPageQueryBody(
+  window: LookupReadmissionWindow,
+  after?: LookupReadmissionKey,
+  urlIds?: readonly string[],
+): SQLStatement {
+  const query = sql`SELECT url_id, looked_up_at::text AS cursor_looked_up_at
     FROM url_hacker_news_totals
     WHERE looked_up_at <= ${window.cutoff}::timestamptz`
   if (after)

@@ -2,14 +2,15 @@ import { clampLimit } from '@services/pagination'
 import type { PrivateUser } from '@services/users/types'
 import type { PostFeedOptions, PostFeedResponse } from '../types.mts'
 import { read } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { getTimeRangeLowerBoundDate } from '../time-range-utils.mts'
 import type { PostFeedWalkSort } from './get-ids/eligible-posts-cte.mts'
 import { mapPostFeedResponse, parsePostFeedCursor } from './get-ids/feed-cursor.mts'
-import { buildRankedPostFeedPageQuery } from './get-ids/ranked-walk-query.mts'
-import { buildTopicPostFeedPageQuery } from './get-ids/topic-walk-query.mts'
+import { buildRankedPostFeedPageQueryBody } from './get-ids/ranked-walk-query.mts'
+import { buildTopicPostFeedPageQueryBody } from './get-ids/topic-walk-query.mts'
 import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { hasTopicMembershipFilters } from '@services/posts/search/query-builder/topic-filters'
-import { buildPostFeedPageQuery } from './get-ids/page-query.mts'
+import { buildPostFeedPageQueryBody } from './get-ids/page-query.mts'
 
 const DEFAULT_MIN_SCORE_FOLLOW_USERS = -5
 const DEFAULT_MIN_SCORE_FOLLOW_TOPICS = 0
@@ -65,12 +66,15 @@ export async function getPostFeedIds(
     safeLimit,
   }
   const topicFiltered = hasTopicMembershipFilters(options)
-  const query =
+  const body =
     sort === 'hot' || (sort === 'best' && topicFiltered)
-      ? buildRankedPostFeedPageQuery(pageOptions, inspectedRowCap)
+      ? buildRankedPostFeedPageQueryBody(pageOptions, inspectedRowCap)
       : topicFiltered
-        ? buildTopicPostFeedPageQuery(pageOptions, inspectedRowCap)
-        : buildPostFeedPageQuery(pageOptions)
+        ? buildTopicPostFeedPageQueryBody(pageOptions, inspectedRowCap)
+        : buildPostFeedPageQueryBody(pageOptions)
+  const query = sql`/* getPostFeedIds */
+    `
+  query.append(body)
   const { rows } = await read(query)
   return mapPostFeedResponse(rows, safeLimit, sort, decisionInstant)
 }
