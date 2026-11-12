@@ -4,14 +4,17 @@ import type {
   BatchUpdateItem,
   ImageBatchUpdateItem,
 } from '@services/embeddings/batch/types'
-import { parseBatchResult, isVertexBatchFailure } from './result-parser.mts'
-import { streamBatchResults } from '@services/embeddings-batch/orchestrator/results'
+import {
+  parseBatchResult,
+  isVertexBatchFailure,
+  type VertexBatchResultLine,
+} from './result-parser.mts'
 import { applyCrawlChunkBatchUpdates } from '@services/embeddings-batch/entities/crawl-chunks'
 import { parseCrawlChunkEntityId } from '@services/embeddings-batch/entities/crawl-chunk-entity-id'
 import { finalizeChunksIfCompleteForMany } from '@services/crawl-chunks/cleanup'
 
 export const processBatchResultsInBatches = async (
-  filePath: string,
+  results: AsyncIterable<VertexBatchResultLine>,
   applyUpdates: (updates: BatchUpdateItem[]) => Promise<void>,
   batchSize: number,
   jobType: Exclude<BatchJobType, 'images'>,
@@ -19,7 +22,7 @@ export const processBatchResultsInBatches = async (
 ): Promise<void> => {
   let updates: BatchUpdateItem[] = []
 
-  for await (const result of streamBatchResults(filePath)) {
+  for await (const result of results) {
     const parsed = parseBatchResult(result)
     if (!parsed) {
       if (isVertexBatchFailure(result)) continue
@@ -53,14 +56,14 @@ export const processBatchResultsInBatches = async (
 }
 
 export const processImageBatchResultsInBatches = async (
-  filePath: string,
+  results: AsyncIterable<VertexBatchResultLine>,
   applyUpdates: (updates: ImageBatchUpdateItem[]) => Promise<unknown>,
   batchSize: number,
   manifest: ReadonlyMap<string, Buffer>,
 ): Promise<void> => {
   let updates: ImageBatchUpdateItem[] = []
 
-  for await (const result of streamBatchResults(filePath)) {
+  for await (const result of results) {
     const parsed = parseBatchResult(result)
     if (!parsed) {
       if (isVertexBatchFailure(result)) continue

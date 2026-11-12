@@ -20,6 +20,7 @@ export async function applyImageBatchUpdates(
 
   const tempTable = `temp_image_embedding_updates_${randomUUID().replaceAll('-', '')}`
   let updatedIds: string[] = []
+  // ast-grep-ignore: no-three-sequential-awaits -- open the transaction before advancing its batch revision; entity writes must follow the fence on this same connection.
   await using query = await beginTransaction()
   const nextGeneration = await advanceBatchIngestionRevision(query, fence)
 

@@ -4,8 +4,11 @@ import type { BatchJobType } from '@services/embeddings/batch/types'
 import { MAX_BATCH_RECORDS } from '@services/embeddings/batch/input-size-limits'
 import { downloadGcsObject, parseGcsPrefix } from './gcs.mts'
 import { boundedLines } from './bounded-lines.mts'
-import { streamBatchResults } from './orchestrator/results.mts'
-import { parseBatchResult, isVertexBatchFailure } from './result-parser.mts'
+import {
+  parseBatchResult,
+  isVertexBatchFailure,
+  type VertexBatchResultLine,
+} from './result-parser.mts'
 
 const KEY_TYPES: Record<BatchJobType, string> = {
   topics: 'topic',
@@ -33,7 +36,7 @@ export async function loadBatchManifest(batchId: string): Promise<Map<string, Bu
   const source = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0])
   const manifest = new Map<string, Buffer>()
   try {
-    for await (const line of boundedLines(source, 256, MAX_BATCH_RECORDS * 256)) {
+    for await (const line of boundedLines(source, 256, batch.records * 256)) {
       if (!line) continue
       const fields = /^([^,"\r\n]+),([a-f0-9]{64})$/.exec(line)
       if (!fields) throw new Error('Malformed Vertex batch manifest row')
@@ -52,11 +55,11 @@ export async function loadBatchManifest(batchId: string): Promise<Map<string, Bu
 
 /** Validate the complete output before any writes; per-row provider errors remain retryable work. */
 export async function validateBatchOutput(
-  filePath: string,
+  results: AsyncIterable<VertexBatchResultLine>,
   manifest: ReadonlyMap<string, Buffer>,
 ): Promise<void> {
   const seen = new Set<string>()
-  for await (const result of streamBatchResults(filePath)) {
+  for await (const result of results) {
     const key = result?.key ?? (isVertexBatchFailure(result) ? result.instance?.key : undefined)
     if (typeof key !== 'string' || !manifest.has(key) || seen.has(key))
       throw new Error('Unexpected or duplicate Vertex result key')

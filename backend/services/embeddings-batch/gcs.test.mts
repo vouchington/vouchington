@@ -31,11 +31,23 @@ describe('GCS batch storage', () => {
             'image/jpeg',
             endpoint,
           )
-          expect(await listGcsOutputs('job/output/', undefined, endpoint)).toEqual({
-            names: ['job/output/predictions.jsonl'],
+          const listing = await listGcsOutputs('job/output/', undefined, endpoint)
+          expect(listing).toMatchObject({
+            objects: [
+              {
+                name: 'job/output/predictions.jsonl',
+                generation: expect.any(String),
+                size: String(Buffer.byteLength(input)),
+              },
+            ],
             nextPageToken: undefined,
           })
-          const output = await downloadGcsObject('job/output/predictions.jsonl', endpoint)
+          const object = listing.objects[0] as { generation: string }
+          const output = await downloadGcsObject(
+            'job/output/predictions.jsonl',
+            endpoint,
+            object.generation,
+          )
           expect(await output.text()).toBe(input)
           const image = await downloadGcsObject('job/images/image.jpeg', endpoint)
           expect(await image.text()).toBe('synthetic image bytes')

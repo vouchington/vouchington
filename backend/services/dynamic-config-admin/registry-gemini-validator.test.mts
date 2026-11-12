@@ -57,10 +57,40 @@ describe('Vertex minimum request ceilings', () => {
       validateGeminiBatchConfig({
         ...geminiEmbeddingsBatchConfig.defaultFields,
         min_records_per_job: 200,
+        max_image_scan_rows_per_run: 200,
         max_file_size_gb: 1,
         max_job_size_gb: 1,
       }),
     ).not.toThrow()
+  })
+
+  it('rejects an image scan budget below the minimum even for text scans', () => {
+    const fields = {
+      ...geminiEmbeddingsBatchConfig.defaultFields,
+      min_records_per_job: 3,
+      max_image_scan_rows_per_run: 2,
+    }
+    expect(() => validateGeminiBatchConfig(fields)).toThrow('max_image_scan_rows_per_run')
+    const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, fields)
+    try {
+      expect(() => getPendingEmbeddingScanLimits(true)).toThrow('scan')
+      expect(() => getPendingEmbeddingScanLimits()).toThrow('scan')
+    } finally {
+      restore()
+    }
+  })
+
+  it('uses the smaller image budget and keeps text scans independent', () => {
+    const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, {
+      max_scan_rows_per_run: 3,
+      max_image_scan_rows_per_run: 2,
+    })
+    try {
+      expect(getPendingEmbeddingScanLimits(true).maxRows).toBe(2)
+      expect(getPendingEmbeddingScanLimits().maxRows).toBe(3)
+    } finally {
+      restore()
+    }
   })
 
   it('rejects a scan budget below the configured minimum batch size', () => {

@@ -47,8 +47,8 @@ export async function* streamPendingImages(
     if (pendingIds.length) {
       for await (const image of createAsyncGeneratorFromCursor<PendingImage>(
         `/* replayPendingEmbeddingImages */ SELECT id, s3_key, sha_256 FROM images
-       WHERE id < $1::uuid AND id = ANY($2::uuid[]) AND ${eligibility} ORDER BY id DESC`,
-        [scan.upperId, pendingIds],
+       WHERE id < $1::uuid AND id = ANY($2::uuid[]) AND ($3::uuid[] IS NULL OR id = ANY($3::uuid[])) AND ${eligibility} ORDER BY id DESC`,
+        [scan.upperId, pendingIds, options.imageIds ?? null],
         {
           batchSize: scan.limits.batchSize,
           maxRows: Math.min(pendingIds.length, scan.limits.maxRows),
@@ -71,8 +71,8 @@ export async function* streamPendingImages(
     for await (const image of createAsyncGeneratorFromCursor<PendingImage>(
       `/* streamPendingImages */ SELECT id, s3_key, sha_256 FROM images
       WHERE id < $1::uuid AND ($2::uuid IS NULL OR id < $2::uuid)
-        AND NOT (id = ANY($3::uuid[])) AND ${eligibility} ORDER BY id DESC`,
-      [scan.upperId, scan.afterId, pendingIds],
+        AND NOT (id = ANY($3::uuid[])) AND ($4::uuid[] IS NULL OR id = ANY($4::uuid[])) AND ${eligibility} ORDER BY id DESC`,
+      [scan.upperId, scan.afterId, pendingIds, options.imageIds ?? null],
       {
         batchSize: scan.limits.batchSize,
         maxRows: remaining,

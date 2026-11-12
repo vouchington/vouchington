@@ -11,7 +11,8 @@ export function validateGeminiBatchConfig(next: DynamicConfigFields): void {
     if (Number(next[field]) * 1024 < minimumImageBatchSizeMB(Number(next.min_records_per_job)))
       throw new DynamicConfigValidationError(`${field} must cover the minimum image records`)
   }
-  if (Number(next.max_scan_rows_per_run) < Number(next.min_records_per_job)) {
-    throw new DynamicConfigValidationError('max_scan_rows_per_run must be >= min_records_per_job')
+  for (const field of ['max_scan_rows_per_run', 'max_image_scan_rows_per_run']) {
+    if (Number(next[field]) < Number(next.min_records_per_job))
+      throw new DynamicConfigValidationError(`${field} must be >= min_records_per_job`)
   }
 }

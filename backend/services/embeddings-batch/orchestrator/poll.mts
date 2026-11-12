@@ -95,6 +95,7 @@ export async function completeBatchIngestion(
   batchId: string,
   fence?: BatchIngestionFence,
 ): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- open the transaction before advancing its batch revision; entity writes must follow the fence on this same connection.
   await using query = await beginTransaction()
   const nextGeneration = await advanceBatchIngestionRevision(query, fence)
   const completed = await query(

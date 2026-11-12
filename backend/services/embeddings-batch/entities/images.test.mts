@@ -1,11 +1,18 @@
 import { randomUUID } from 'node:crypto'
+import { createTestUser, insertTestImage, markImageModerationFlagged } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import {
+  geminiEmbeddingsBatchConfig,
+  getPendingEmbeddingScanLimits,
+} from '@services/embeddings/batch/config'
+import type { EmbeddingScanCursor } from '@queues/gemini-embeddings-batch/types'
+import { streamPendingImages, addImageToBatch } from './images.mts'
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { S3Buckets } from '@modules/aws'
 import { deleteS3Object, putS3Object, uniqueS3Prefix } from '@voucha/test-helpers/aws-emulator-s3'
 import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
 import { BatchFileBuilder } from '../orchestrator/file-builder.mts'
-import { addImageToBatch } from './images.mts'
 
 const gif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64')
 const png = Buffer.from(
@@ -65,5 +72,45 @@ describe('private image batch input', () => {
     const builder = new BatchFileBuilder('images')
     onTestFinished(() => builder.cleanup())
     await expect(fixture.run(() => addImageToBatch(builder, image, 10))).rejects.toThrow('(503)')
+  })
+})
+
+describe('bounded image scan', () => {
+  it('resumes replay IDs and leaves outside-scope images untouched', async () => {
+    const user = await createTestUser()
+    const owned = await Promise.all(Array.from({ length: 4 }, () => insertTestImage(user.id)))
+    const scope = owned.slice(0, 3)
+    const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, {
+      max_scan_rows_per_run: 20,
+      max_image_scan_rows_per_run: 2,
+      min_records_per_job: 1,
+    })
+    try {
+      const limits = getPendingEmbeddingScanLimits(true)
+      let next: EmbeddingScanCursor | undefined
+      const first: string[] = []
+      for await (const row of streamPendingImages({
+        imageIds: scope,
+        limits,
+        cursor: {
+          sweepStartedAt: new Date(Date.now() + 60_000).toISOString(),
+          pendingImageIds: scope,
+        },
+        onComplete: result => {
+          next = result.cursor
+        },
+      }))
+        first.push(row.id)
+      expect(first).toHaveLength(2)
+      expect(next?.pendingImageIds).toHaveLength(1)
+      await Promise.all(first.map(id => markImageModerationFlagged(id)))
+      const second: string[] = []
+      for await (const row of streamPendingImages({ imageIds: scope, limits, cursor: next }))
+        second.push(row.id)
+      expect(new Set([...first, ...second])).toEqual(new Set(scope))
+      expect([...first, ...second]).not.toContain(owned[3])
+    } finally {
+      restore()
+    }
   })
 })

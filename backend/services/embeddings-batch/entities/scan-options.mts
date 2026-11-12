@@ -3,6 +3,8 @@ import { getPendingEmbeddingScanLimits } from '@services/embeddings/batch/config
 import type { EmbeddingScanCursor } from '@queues/gemini-embeddings-batch/types'
 
 export type PendingScanOptions = {
+  /** Optional ownership scope for image scan callers. */
+  imageIds?: readonly string[]
   cursor?: EmbeddingScanCursor
   limits?: ReturnType<typeof getPendingEmbeddingScanLimits>
   onComplete?: (result: { hasMore: boolean; cursor?: EmbeddingScanCursor }) => void

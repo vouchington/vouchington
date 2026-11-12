@@ -29,6 +29,7 @@ const DEFAULTS = {
   cursor_batch_size: 1000,
   image_cursor_batch_size: 100,
   max_scan_rows_per_run: 100000,
+  max_image_scan_rows_per_run: 100,
   backlog_threshold: 1000,
   // Vertex can queue work for 72 hours; finish or cancel before seven-day GCS expiry.
   stale_ttl_hours: 144,
@@ -50,6 +51,7 @@ export const GEMINI_BATCH_MAX_VALUES: Record<keyof typeof DEFAULTS, number> = {
   cursor_batch_size: 5000,
   image_cursor_batch_size: 5000,
   max_scan_rows_per_run: 1_000_000,
+  max_image_scan_rows_per_run: 1000,
   backlog_threshold: 10_000_000,
   stale_ttl_hours: 144,
   creation_retry_delay_ms: 3600000,
@@ -72,6 +74,7 @@ export const geminiEmbeddingsBatchConfig = new DynamicConfig({
     cursor_batch_size: 'number',
     image_cursor_batch_size: 'number',
     max_scan_rows_per_run: 'number',
+    max_image_scan_rows_per_run: 'number',
     backlog_threshold: 'number',
     stale_ttl_hours: 'number',
     creation_retry_delay_ms: 'number',
@@ -113,7 +116,9 @@ export function getStaleTtlHours(): number {
 }
 
 export function getPendingEmbeddingScanLimits(images = false) {
-  const maxRows = positiveInteger('max_scan_rows_per_run')
+  const textMaxRows = positiveInteger('max_scan_rows_per_run')
+  const imageMaxRows = Math.min(textMaxRows, positiveInteger('max_image_scan_rows_per_run'))
+  const maxRows = images ? imageMaxRows : textMaxRows
   const minimum = positiveInteger('min_records_per_job')
   if (
     minimum > positiveInteger('max_requests_per_file') ||
@@ -122,7 +127,7 @@ export function getPendingEmbeddingScanLimits(images = false) {
     throw new RangeError(
       'Embedding minimum records must fit the per-file and hourly request ceilings',
     )
-  if (maxRows < positiveInteger('min_records_per_job'))
+  if (textMaxRows < minimum || imageMaxRows < minimum)
     throw new RangeError('Embedding scan budget must cover the minimum records per job')
   for (const field of ['max_file_size_gb', 'max_job_size_gb'] as const) {
     if (positiveInteger(field) * 1024 < minimumImageBatchSizeMB(minimum))

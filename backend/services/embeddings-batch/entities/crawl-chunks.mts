@@ -94,6 +94,7 @@ export async function applyCrawlChunkBatchUpdates(
   if (parsed.length === 0) return
 
   const tempTable = `temp_crawl_chunk_updates_${randomUUID().replaceAll('-', '')}`
+  // ast-grep-ignore: no-three-sequential-awaits -- open the transaction before advancing its batch revision; entity writes must follow the fence on this same connection.
   await using query = await beginTransaction()
   const nextGeneration = await advanceBatchIngestionRevision(query, fence)
 

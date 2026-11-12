@@ -5,10 +5,8 @@ import {
   getBatchInfo,
   getPendingBatches,
 } from '@services/embeddings/batch/orchestrator/poll-queries'
-import {
-  downloadBatchResults,
-  cleanupResultsFile,
-} from '@services/embeddings-batch/orchestrator/results'
+import { streamBatchResults } from '@services/embeddings-batch/orchestrator/results'
+import { getBatchResultSource } from '@services/embeddings-batch/orchestrator/result-source'
 import { runStaleCleanup } from '@services/embeddings-batch/orchestrator/stale-cleanup'
 import { applyImageBatchUpdates } from '@services/embeddings-batch/orchestrator/save-images'
 import { applyTopicBatchUpdates } from '@services/embeddings-batch/entities/topics'
@@ -63,57 +61,54 @@ export const processBatchPolling = async (
   if (batchInfo.completed_at) return { success: true, processed: true }
 
   const processed = await ingestBatchResults(batchId, async fence => {
-    const manifest = await loadBatchManifest(batchId)
-    let resultsFilePath: string | null = null
-    try {
-      resultsFilePath = await downloadBatchResults(batchId)
-      await validateBatchOutput(resultsFilePath, manifest)
+    const [manifest, source] = await Promise.all([
+      loadBatchManifest(batchId),
+      getBatchResultSource(batchId),
+    ])
+    await validateBatchOutput(streamBatchResults(source), manifest)
 
-      // Process results in batches based on job type
-      if (jobType === 'topics') {
-        await processBatchResultsInBatches(
-          resultsFilePath,
-          updates => applyTopicBatchUpdates(updates, fence),
-          1000,
-          'topics',
-          manifest,
-        )
-      } else if (jobType === 'posts') {
-        await processBatchResultsInBatches(
-          resultsFilePath,
-          updates => applyPostBatchUpdates(updates, fence),
-          1000,
-          'posts',
-          manifest,
-        )
-      } else if (jobType === 'rss_feed_items') {
-        await processBatchResultsInBatches(
-          resultsFilePath,
-          updates => applyRssFeedItemBatchUpdates(updates, fence),
-          1000,
-          'rss_feed_items',
-          manifest,
-        )
-      } else if (jobType === 'crawl_chunks') {
-        await processBatchResultsInBatches(
-          resultsFilePath,
-          updates => processCrawlChunkBatchResults(updates, fence),
-          1000,
-          'crawl_chunks',
-          manifest,
-        )
-      } else if (jobType === 'images') {
-        await processImageBatchResultsInBatches(
-          resultsFilePath,
-          updates => applyImageBatchUpdates(updates, fence),
-          1000,
-          manifest,
-        )
-      } else throw new Error(`Unsupported embedding batch entity type: ${String(jobType)}`)
-      await completeBatchIngestion(batchId, fence)
-    } finally {
-      if (resultsFilePath) await cleanupResultsFile(resultsFilePath)
-    }
+    // Process results in batches based on job type
+    if (jobType === 'topics') {
+      await processBatchResultsInBatches(
+        streamBatchResults(source),
+        updates => applyTopicBatchUpdates(updates, fence),
+        1000,
+        'topics',
+        manifest,
+      )
+    } else if (jobType === 'posts') {
+      await processBatchResultsInBatches(
+        streamBatchResults(source),
+        updates => applyPostBatchUpdates(updates, fence),
+        1000,
+        'posts',
+        manifest,
+      )
+    } else if (jobType === 'rss_feed_items') {
+      await processBatchResultsInBatches(
+        streamBatchResults(source),
+        updates => applyRssFeedItemBatchUpdates(updates, fence),
+        1000,
+        'rss_feed_items',
+        manifest,
+      )
+    } else if (jobType === 'crawl_chunks') {
+      await processBatchResultsInBatches(
+        streamBatchResults(source),
+        updates => processCrawlChunkBatchResults(updates, fence),
+        1000,
+        'crawl_chunks',
+        manifest,
+      )
+    } else if (jobType === 'images') {
+      await processImageBatchResultsInBatches(
+        streamBatchResults(source),
+        updates => applyImageBatchUpdates(updates, fence),
+        1000,
+        manifest,
+      )
+    } else throw new Error(`Unsupported embedding batch entity type: ${String(jobType)}`)
+    await completeBatchIngestion(batchId, fence)
   })
 
   return { success: true, processed }

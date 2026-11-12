@@ -1,7 +1,5 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import type { VertexBatchResultLine } from './result-parser.mts'
+import { describe, expect, it } from 'vitest'
 import { sha256 } from '@modules/utils'
 import {
   processBatchResultsInBatches,
@@ -9,17 +7,13 @@ import {
 } from './result-processing.mts'
 import type { BatchUpdateItem, ImageBatchUpdateItem } from '@services/embeddings/batch/types'
 
-const directories: string[] = []
-const vector = new Array(1536).fill(0.125)
-async function results(lines: unknown[]): Promise<string> {
-  const directory = await mkdtemp(join(tmpdir(), 'vertex-results-'))
-  directories.push(directory)
-  const file = join(directory, 'results.jsonl')
-  await writeFile(
-    file,
-    lines.map(line => (typeof line === 'string' ? line : JSON.stringify(line))).join('\n'),
-  )
-  return file
+const vector = Array.from({ length: 1536 }, () => 0.125)
+function results(lines: VertexBatchResultLine[]): AsyncIterable<VertexBatchResultLine> {
+  return {
+    async *[Symbol.asyncIterator]() {
+      yield* lines
+    },
+  }
 }
 const row = (key = 'topic:id') => ({
   key,
@@ -28,16 +22,13 @@ const row = (key = 'topic:id') => ({
 })
 
 describe('Vertex batch result ingestion', () => {
-  afterEach(async () => {
-    await Promise.all(directories.splice(0).map(directory => rm(directory, { recursive: true })))
-  })
   it('recovers the submitted body hash and provider token count while skipping rejected provider rows', async () => {
     const hash = sha256('submitted full body')
     const manifest = new Map([
       ['topic:id', hash],
       ['topic:bad', sha256('failed body')],
     ])
-    const file = await results([row(), { key: 'topic:bad', status: { code: 400 } }])
+    const file = results([row(), { key: 'topic:bad', status: { code: 400 } }])
     const saved: BatchUpdateItem[][] = []
     await processBatchResultsInBatches(
       file,
@@ -60,7 +51,7 @@ describe('Vertex batch result ingestion', () => {
     ])
   })
   it('rejects a malformed successful vector instead of acknowledging incomplete ingestion', async () => {
-    const file = await results([{ ...row(), response: { embedding: { values: ['bad'] } } }])
+    const file = results([{ ...row(), response: { embedding: { values: ['bad'] } } }])
     await expect(
       processBatchResultsInBatches(
         file,
@@ -73,7 +64,7 @@ describe('Vertex batch result ingestion', () => {
   })
   it('uses the submitted image hash without inspecting an echoed request', async () => {
     const hash = 'ab'.repeat(32)
-    const file = await results([
+    const file = results([
       {
         key: 'image:id',
         response: { embedding: { values: vector } },
@@ -93,7 +84,7 @@ describe('Vertex batch result ingestion', () => {
     ])
   })
   it('propagates an apply failure so the scheduled batch remains retryable', async () => {
-    const file = await results([row()])
+    const file = results([row()])
     await expect(
       processBatchResultsInBatches(
         file,
@@ -106,8 +97,11 @@ describe('Vertex batch result ingestion', () => {
       ),
     ).rejects.toThrow('synthetic write failure')
   })
-  it('rejects malformed JSON after an earlier chunk saved rather than acknowledging incomplete ingestion', async () => {
-    const file = await results([row(), '{broken'])
+  it('propagates a late source error after an earlier chunk saved', async () => {
+    const file = (async function* () {
+      yield row()
+      throw new Error('synthetic result source read failure')
+    })()
     let applied = 0
     await expect(
       processBatchResultsInBatches(
@@ -119,11 +113,11 @@ describe('Vertex batch result ingestion', () => {
         'topics',
         new Map([['topic:id', sha256('body')]]),
       ),
-    ).rejects.toThrow(SyntaxError)
+    ).rejects.toThrow('synthetic result source read failure')
     expect(applied).toBe(1)
   })
   it('rejects a key for a different table', async () => {
-    const file = await results([row('post:id')])
+    const file = results([row('post:id')])
     await expect(
       processBatchResultsInBatches(
         file,

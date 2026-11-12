@@ -90,7 +90,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_CPU_QU
         id: 'gemini-embeddings:stale-cleanup-dispatcher',
         schedule: '0 * * * *',
         description:
-          'Stop and cancel Gemini batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)',
+          'Stop and cancel Gemini batches stuck in Submitted/InProgress past their configured stale TTL',
         trigger: enqueueEmbeddingsBatchStaleCleanupDispatcher,
       },
     ],

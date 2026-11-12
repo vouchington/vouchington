@@ -1,4 +1,5 @@
 import { createTestTopic } from '@voucha/test-helpers'
+import { getTopicEmbeddingData } from '@voucha/test-helpers/entities/topics'
 import {
   getBatchIngestionFailures,
   insertBatchTopicLock,
@@ -65,7 +66,10 @@ describe('processBatchPolling', () => {
       id,
       jobName,
       records: 1,
-      batchData: { manifestGcsUri: `gs://synthetic-embeddings/${id}/manifest.csv` },
+      batchData: {
+        manifestGcsUri: `gs://synthetic-embeddings/${id}/manifest.csv`,
+        outputGcsUri: `gs://synthetic-embeddings/${id}/output/`,
+      },
     })
     await insertBatchTopicLock(id, topic.id)
     fixture.agent
@@ -78,6 +82,13 @@ describe('processBatchPolling', () => {
       .intercept({ method: 'GET', path: /manifest.csv.*alt=media/ })
       .reply(503, {})
       .times(3)
+    fixture.agent
+      .get('https://storage.googleapis.com')
+      .intercept({ method: 'GET', path: /\/o\?/ })
+      .reply(200, {
+        items: [{ name: `${id}/output/predictions.jsonl`, generation: '1', size: '1' }],
+      })
+      .times(3)
     await expect(processBatchPolling(id)).rejects.toThrow('(503)')
     expect(await getBatchIngestionFailures(id)).toBe(1)
     expect(await getTestBatchEntities(id)).toHaveLength(1)
@@ -88,5 +99,64 @@ describe('processBatchPolling', () => {
     expect(await getBatchIngestionFailures(id)).toBe(3)
     expect(await getTestBatchSummary(id)).toMatchObject({ status: 'failed' })
     expect(await getTestBatchEntities(id)).toEqual([])
+  })
+  it('validates every pinned output before applying any entity vector', async () => {
+    const id = batchId()
+    const first = await createTestTopic({ name: `First ${id}` })
+    const second = await createTestTopic({ name: `Second ${id}` })
+    const jobName = `projects/123456/locations/us/batchPredictionJobs/${id}`
+    await insertTestEmbeddingsBatch({
+      id,
+      jobName,
+      records: 2,
+      batchData: {
+        manifestGcsUri: `gs://synthetic-embeddings/${id}/manifest.csv`,
+        outputGcsUri: `gs://synthetic-embeddings/${id}/output/`,
+      },
+    })
+    await insertBatchTopicLock(id, first.id)
+    await insertBatchTopicLock(id, second.id)
+    const firstData = (await getTopicEmbeddingData(first.id)) as {
+      gemini_embedding_2_content_sha256: Buffer
+    }
+    const secondData = (await getTopicEmbeddingData(second.id)) as {
+      gemini_embedding_2_content_sha256: Buffer
+    }
+    fixture.agent
+      .get('https://us-aiplatform.googleapis.com')
+      .intercept({ method: 'GET', path: `/v1/${jobName}` })
+      .reply(200, { name: jobName, state: 'JOB_STATE_SUCCEEDED' })
+    const storage = fixture.agent.get('https://storage.googleapis.com')
+    storage
+      .intercept({ method: 'GET', path: /manifest.csv.*alt=media/ })
+      .reply(
+        200,
+        `${first.id},${firstData.gemini_embedding_2_content_sha256.toString('hex')}\n${second.id},${secondData.gemini_embedding_2_content_sha256.toString('hex')}\n`,
+      )
+    const object = `${id}/output/predictions.jsonl`
+    storage
+      .intercept({ method: 'GET', path: /\/o\?/ })
+      .reply(200, { items: [{ name: object, generation: '9007199254740993', size: '20000' }] })
+    storage
+      .intercept({
+        method: 'GET',
+        path: `/storage/v1/b/synthetic-embeddings/o/${encodeURIComponent(object)}?alt=media&generation=9007199254740993`,
+      })
+      .reply(
+        200,
+        [
+          JSON.stringify({
+            key: `topic:${first.id}`,
+            response: { embedding: { values: Array.from({ length: 1536 }, () => 0.125) } },
+          }),
+          JSON.stringify({ key: `topic:${second.id}`, response: { embedding: { values: [] } } }),
+        ].join('\n'),
+      )
+    await expect(processBatchPolling(id)).rejects.toThrow('Malformed successful')
+    expect(await getTopicEmbeddingData(first.id)).toMatchObject({
+      gemini_embedding_2_embedding: null,
+    })
+    expect(await getBatchIngestionFailures(id)).toBe(1)
+    expect(await getTestBatchEntities(id)).toHaveLength(2)
   })
 })
