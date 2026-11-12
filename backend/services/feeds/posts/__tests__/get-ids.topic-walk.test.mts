@@ -239,4 +239,61 @@ describe('topic feed inspected-row continuation', () => {
       }
     },
   )
+  it('keeps a recent ranked share when its target predates the direct cutoff', async () => {
+    await postsWorkConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+      feed_inspected_row_cap: 1,
+    })
+    try {
+      const viewer = await createTestUser()
+      const author = await createTestUser()
+      const topic = await createTestTopic({ user: viewer })
+      await withDominantPostFixtures(
+        ['9999-12-01T00:00:00Z', '9999-12-02T00:00:00Z'].map(createdAt => ({
+          createdAt: new Date(createdAt),
+          createdById: author.id,
+          votesScoreUp: 1_000_000_000,
+        })),
+        async ([target]) => {
+          await insertScoredPostTopicCategoryRelation(
+            target!,
+            topic.id,
+            author.id,
+            new Date('9999-12-03T00:00:00Z'),
+          )
+          const shareId = await insertPostFeedShareForTest({
+            recipientUserId: viewer.id,
+            sharedByUserId: author.id,
+            postId: target!,
+            sortAt: new Date('9999-12-30T00:00:00Z'),
+          })
+          const seen: string[] = []
+          let after: string | undefined
+          for (let index = 0; index < 4; index += 1) {
+            const page = await getPostFeedIds(
+              viewer,
+              {
+                feed_type: 'follow_users',
+                sort: 'hot',
+                time_range: '1w',
+                hashtag_topic_ids: [topic.id],
+                limit: 1,
+                after,
+              },
+              new Date('9999-12-31T00:00:00Z'),
+            )
+            seen.push(...page.results.map(row => row.id))
+            if (seen.includes(shareId)) break
+            expect(page.page_info.has_next_page).toBe(true)
+            expect(page.page_info.end_cursor).toBeTruthy()
+            expect(page.page_info.end_cursor).not.toBe(after)
+            after = page.page_info.end_cursor!
+          }
+          expect(seen).toEqual([shareId])
+        },
+      )
+    } finally {
+      restore()
+    }
+  })
 })

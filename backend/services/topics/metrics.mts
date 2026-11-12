@@ -44,10 +44,10 @@ export async function getTopicViewerCounts(
     buildTopicViewerDiscussionInputs(topicId, inputCap),
   ).append(sql`, viewer_review_inputs AS MATERIALIZED (
       SELECT post_id FROM post_review_topic_ratings
-      WHERE topic_id = ${topicId} ORDER BY post_id LIMIT ${inputCap}
+      WHERE topic_id = ${topicId} LIMIT ${inputCap}
     ), viewer_data_point_inputs AS MATERIALIZED (
       SELECT post_id FROM post_data_point_topics
-      WHERE topic_id = ${topicId} ORDER BY post_id LIMIT ${inputCap}
+      WHERE topic_id = ${topicId} LIMIT ${inputCap}
     )
       SELECT
         (SELECT COUNT(*) >= ${inputCap} FROM viewer_alias_inputs)

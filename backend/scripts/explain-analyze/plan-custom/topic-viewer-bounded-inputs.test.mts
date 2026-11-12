@@ -70,7 +70,7 @@ function fixture(): ExplainResult {
     ['viewer_data_point_inputs', 'post_data_point_topics'],
   ] as const)
     inputs.push({
-      ...limit(scan(relation, 'topic_id = $1')),
+      ...limit({ ...scan(relation, 'topic_id = $1'), 'Index Name': `idx_${relation}__topic_id` }),
       'Subplan Name': `CTE ${cte}`,
       'Actual Rows': 1,
       'Actual Loops': 1,
@@ -193,20 +193,97 @@ describe('bounded viewer input plans', () => {
       'relation__post__category__topic_alias',
     )
   })
-  it.each(['viewer_review_inputs', 'viewer_data_point_inputs'])(
-    'rejects unbounded or unkeyed %s before eligibility',
-    cte => {
+  describe.each(['viewer_review_inputs', 'viewer_data_point_inputs'])('%s physical prefix', cte => {
+    function prefix(result: ExplainResult): Node {
+      return nodes(result).find(node => node['Subplan Name'] === `CTE ${cte}`)!
+    }
+    const cap = getTopicsWorkLimit('viewer_count_input_cap')
+    const budget = 2 * cap + 1
+    it.each(['Index Scan', 'Index Only Scan', 'Seq Scan'])(
+      'accepts a bounded %s at the fixed physical-work ceiling',
+      type => {
+        const result = fixture()
+        const raw = prefix(result)
+        raw['Actual Rows'] = cap
+        Object.assign((raw.Plans as Node[])[0]!, {
+          'Node Type': type,
+          'Actual Rows': cap,
+          'Rows Removed by Filter': cap + 1,
+          Filter: 'topic_id = $1',
+        })
+        expect(() => assertTopicViewerInputsAreBounded(result)).not.toThrow()
+      },
+    )
+    it.each(['Sort', 'Incremental Sort', 'Bitmap Heap Scan', 'Bitmap Index Scan'])(
+      'rejects an upstream %s even when the output LIMIT is small',
+      type => {
+        const result = fixture()
+        const raw = prefix(result)
+        raw.Plans = [{ 'Node Type': type, 'Actual Rows': 1, Plans: raw.Plans }]
+        expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
+      },
+    )
+    it.each(['Actual Rows', 'Rows Removed by Filter', 'Rows Removed by Index Recheck'])(
+      'counts raw %s beneath the output LIMIT',
+      field => {
+        const result = fixture()
+        ;(prefix(result).Plans as Node[])[0]![field] = budget + 1
+        expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
+      },
+    )
+    it('multiplies underlying scan rows by loops', () => {
       const result = fixture()
-      const raw = nodes(result).find(node => node['Subplan Name'] === `CTE ${cte}`)!
+      Object.assign((prefix(result).Plans as Node[])[0]!, {
+        'Actual Rows': cap,
+        'Actual Loops': 3,
+      })
+      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
+    })
+    it('sums physical work across partition scans', () => {
+      const result = fixture()
+      const raw = prefix(result)
       const scanNode = (raw.Plans as Node[])[0]!
-      scanNode['Node Type'] = 'Seq Scan'
-      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound keyed reads')
-      scanNode['Node Type'] = 'Index Scan'
-      scanNode['Index Cond'] = 'post_id = $1'
-      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound keyed reads')
-      scanNode['Index Cond'] = 'topic_id = $1'
-      raw['Actual Rows'] = getTopicsWorkLimit('viewer_count_input_cap') + 1
-      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound keyed reads')
-    },
-  )
+      raw.Plans = [
+        {
+          'Node Type': 'Append',
+          Plans: [
+            { ...scanNode, 'Actual Rows': cap },
+            { ...scanNode, 'Actual Rows': cap, 'Rows Removed by Filter': 2 },
+          ],
+        },
+      ]
+      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
+    })
+    it.each(['Actual Rows', 'Actual Loops'])(
+      'requires measured %s on the underlying scan',
+      field => {
+        const result = fixture()
+        delete (prefix(result).Plans as Node[])[0]![field]
+        expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
+      },
+    )
+    it.each(['post_id = $1', 'unfiltered'])('rejects a sequential scan with %s', filter => {
+      const result = fixture()
+      Object.assign((prefix(result).Plans as Node[])[0]!, {
+        'Node Type': 'Seq Scan',
+        Filter: filter,
+      })
+      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
+    })
+    it('rejects an index scan without a topic-key condition', () => {
+      const result = fixture()
+      ;(prefix(result).Plans as Node[])[0]!['Index Cond'] = 'post_id = $1'
+      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
+    })
+    it('rejects a nonleading topic index condition with hidden index-entry work', () => {
+      const result = fixture()
+      ;(prefix(result).Plans as Node[])[0]!['Index Name'] = 'post_id_topic_id_pkey'
+      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
+    })
+    it('keeps the outer input LIMIT at the configured cap', () => {
+      const result = fixture()
+      prefix(result)['Actual Rows'] = cap + 1
+      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
+    })
+  })
 })

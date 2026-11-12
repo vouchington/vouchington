@@ -7,8 +7,6 @@ import { buildDirectMatchCondition } from './direct-match.mts'
 import { buildBroadcastVisibilityFilter } from './visibility-filter.mts'
 import type { PostFeedPageQueryOptions } from './page-options.mts'
 
-// An inspected post's deliveries have all been visited when its cursor reaches this key.
-export const EXHAUSTED_POST_DELIVERY_ID = '00000000-0000-7000-8000-000000000000'
 const BEFORE_FIRST_DELIVERY_ID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 
 /** Walk raw delivery keys in rank order; eligibility never expands the bounded input. */
@@ -20,7 +18,7 @@ export function buildRankedPostFeedPageQuery(
   const score = hot ? buildStablePostHotRankExpression('posts') : sql`posts.votes_score_sort`
   const cursor = options.cursor
   const seedDeliveryId =
-    cursor && cursor.sort !== 'new' && cursor.id !== EXHAUSTED_POST_DELIVERY_ID
+    cursor && cursor.sort !== 'new'
       ? sql`CASE WHEN first_post.id = ${cursor.postId}::uuid
           AND first_post.rank_score = ${cursor.score}::float8
           THEN ${cursor.id}::uuid ELSE ${BEFORE_FIRST_DELIVERY_ID}::uuid END`
@@ -45,9 +43,7 @@ export function buildRankedPostFeedPageQuery(
     query
       .append(sql` AND (`)
       .append(score)
-      .append(sql`, posts.id) `)
-      .append(cursor.id === EXHAUSTED_POST_DELIVERY_ID ? '<' : '<=')
-      .append(sql` (${cursor.score}::float8, ${cursor.postId}::uuid)`)
+      .append(sql`, posts.id) <= (${cursor.score}::float8, ${cursor.postId}::uuid)`)
   }
   query
     .append(sql` ORDER BY `)
@@ -114,8 +110,7 @@ export function buildRankedPostFeedPageQuery(
     WHERE walk.inspected < ${inspectedRowCap}
       AND COALESCE(same_key.result_id, next_key.result_id) IS NOT NULL
   ), inspected_tail AS (
-    SELECT CASE WHEN walk.inspected = 0 THEN ${EXHAUSTED_POST_DELIVERY_ID}::uuid
-        ELSE walk.result_id END AS result_id,
+    SELECT walk.result_id,
       walk.post_id, walk.rank_score,
       walk.inspected >= ${inspectedRowCap} AS inspected_has_more
     FROM ranked_delivery_walk walk ORDER BY walk.inspected DESC LIMIT 1

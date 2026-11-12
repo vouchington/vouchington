@@ -1,5 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
+import { getTopicsWorkLimit } from '@services/topics/work-limits'
 
 export const DENSE_TOPIC_VIEWER_TOPIC_ID = seedUuid(2400, '04')
 
@@ -7,17 +8,18 @@ const DIRECT_DISCUSSIONS = 100
 const ALIAS_DISCUSSIONS = 100
 const UNRELATED_ALIAS_RELATIONS = 10_000
 const NONPOSITIVE_TOPIC_RELATIONS = 20_000
-const REVIEWS = 600
-const DATA_POINTS = 600
+const REVIEWS = 10_000
+const DATA_POINTS = 10_000
+const inputCap = getTopicsWorkLimit('viewer_count_input_cap')
 
 export const DENSE_TOPIC_VIEWER_COUNTS = {
   discussions: DIRECT_DISCUSSIONS + ALIAS_DISCUSSIONS,
-  reviews: REVIEWS,
-  'data-points': DATA_POINTS,
+  reviews: Math.min(REVIEWS, inputCap),
+  'data-points': Math.min(DATA_POINTS, inputCap),
   count_capped: {
     discussions: false,
-    reviews: false,
-    'data-points': false,
+    reviews: true,
+    'data-points': true,
   },
 } as const
 
@@ -32,7 +34,7 @@ export async function seedDenseTopicViewerCounts(): Promise<void> {
   const aliasPostIds = Array.from({ length: ALIAS_DISCUSSIONS }, (_, i) =>
     seedUuid(60_000 + i * 3, '05'),
   )
-  const reviewPostIds = Array.from({ length: REVIEWS }, (_, i) => seedUuid(70_000 + i * 3, '05'))
+  const reviewPostIds = Array.from({ length: REVIEWS }, (_, i) => seedUuid(60_001 + i * 3, '05'))
   const unrelatedAliasPostIds = Array.from({ length: UNRELATED_ALIAS_RELATIONS }, (_, i) =>
     seedUuid(85_000 + i, '05'),
   )
@@ -44,7 +46,7 @@ export async function seedDenseTopicViewerCounts(): Promise<void> {
     seedUuid(72_000 + i, '05'),
   )
   const dataPointPostIds = Array.from({ length: DATA_POINTS }, (_, i) =>
-    seedUuid(80_000 + i * 3, '05'),
+    seedUuid(60_002 + i * 3, '05'),
   )
 
   await using transaction = await beginTransaction()

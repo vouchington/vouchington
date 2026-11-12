@@ -15,15 +15,15 @@ export async function runDenseTopicViewerCountsScenario(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'relation__post__category__topic', max: 1_500 },
       { kind: 'maxProcessedRows', relation: 'relation__post__category__topic_alias', max: 1_000 },
       { kind: 'maxProcessedRows', relation: 'posts', max: 7_000 },
-      { kind: 'maxProcessedRows', relation: 'post_review_topic_ratings', max: 1_000 },
-      { kind: 'maxProcessedRows', relation: 'post_data_point_topics', max: 1_000 },
+      { kind: 'maxProcessedRows', relation: 'post_review_topic_ratings', max: 2_001 },
+      { kind: 'maxProcessedRows', relation: 'post_data_point_topics', max: 2_001 },
       { kind: 'custom', name: 'topicViewerBoundedInputs' },
     ],
     seededRows: {
       relation__post__category__topic: 70_100,
       relation__post__category__topic_alias: 31_000,
-      post_review_topic_ratings: 1_601,
-      post_data_point_topics: 1_600,
+      post_review_topic_ratings: 11_001,
+      post_data_point_topics: 11_000,
     },
     crossPartition: {
       relation__post__category__topic:
