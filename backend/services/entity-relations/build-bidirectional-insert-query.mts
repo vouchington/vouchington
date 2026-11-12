@@ -3,7 +3,7 @@ import type { EntityRelationMetadata } from './metadata.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
 import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
-import { buildInsertQuery } from './build-insert-query.mts'
+import { buildInsertBody } from './build-insert-query.mts'
 
 type RelationPair = {
   subject: UpsertEntityTypes | EntityIdentifier
@@ -16,7 +16,7 @@ type RelationPair = {
  * in one statement fail with "ON CONFLICT DO UPDATE command cannot affect row a second time".
  * `related` is the only bidirectional predicate; it is not a follow or an ordered relation.
  */
-export function buildBidirectionalInsertQuery(
+export function buildBidirectionalInsertBody(
   relation: EntityRelationMetadata,
   creator: BasicUser | null,
   forwardPairs: RelationPair[],
@@ -27,11 +27,11 @@ export function buildBidirectionalInsertQuery(
     pair => pair.subject.id.toLowerCase() !== pair.object.id.toLowerCase(),
   )
   if (distinctReversePairs.length === 0)
-    return buildInsertQuery(relation, creator, forwardPairs, options)
+    return buildInsertBody(relation, creator, forwardPairs, options)
   if (relation.order_index || options?.skipIfDeleted || isUserFollowRelation(relation)) {
     throw new Error(`Bidirectional insert does not support ${relation.table_name}`)
   }
-  const query = sql`/* buildInsertQuery */
+  const query = sql`
     WITH `
   appendDirection(query, 'forward', relation, creator, forwardPairs)
   query.append(sql`, `)

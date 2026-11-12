@@ -7,7 +7,7 @@ export async function repairEntityBloomKeys(
   entityType: EntityBloomFilterType,
   id: string,
 ): Promise<void> {
-  const query = entityKeysQuery(entityType, id)
+  const query = sql`/* repairEntityBloomKeys */`.append(entityKeysQuery(entityType, id))
   const { rows } = await read<{ id: string; lookup_key: string | null }>(query)
   const keys = rows.flatMap(row => [
     normalizeKey(row.id),
@@ -19,9 +19,9 @@ export async function repairEntityBloomKeys(
 function entityKeysQuery(entityType: EntityBloomFilterType, id: string) {
   switch (entityType) {
     case 'users':
-      return sql`/* repairEntityBloomKeys */ SELECT id, username AS lookup_key FROM users WHERE id = ${id} AND deleted_at IS NULL`
+      return sql` SELECT id, username AS lookup_key FROM users WHERE id = ${id} AND deleted_at IS NULL`
     case 'topics':
-      return sql`/* repairEntityBloomKeys */
+      return sql`
         SELECT id, slug AS lookup_key FROM topics
         WHERE id = ${id} AND deleted_at IS NULL AND merged_into_topic_id IS NULL
         UNION ALL
@@ -30,14 +30,14 @@ function entityKeysQuery(entityType: EntityBloomFilterType, id: string) {
         WHERE source.id = ${id} AND source.deleted_at IS NULL AND source.merged_into_topic_id IS NOT NULL
           AND destination.deleted_at IS NULL AND destination.merged_into_topic_id IS NULL`
     case 'posts':
-      return sql`/* repairEntityBloomKeys */
+      return sql`
         SELECT post.id, slug.slug AS lookup_key FROM posts post
         LEFT JOIN post_slugs slug ON slug.post_id = post.id
         WHERE post.id = ${id} AND post.deleted_at IS NULL`
     case 'communities':
-      return sql`/* repairEntityBloomKeys */ SELECT id, slug AS lookup_key FROM communities WHERE id = ${id} AND deleted_at IS NULL`
+      return sql` SELECT id, slug AS lookup_key FROM communities WHERE id = ${id} AND deleted_at IS NULL`
     case 'rss_feed_items':
-      return sql`/* repairEntityBloomKeys */ SELECT id, NULL::text AS lookup_key FROM rss_feed_items WHERE id = ${id} AND deleted_at IS NULL`
+      return sql` SELECT id, NULL::text AS lookup_key FROM rss_feed_items WHERE id = ${id} AND deleted_at IS NULL`
   }
 }
 

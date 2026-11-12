@@ -6,7 +6,7 @@ import {
   type UpsertEntityRelationOptions,
 } from './upsert-options.mts'
 import { buildUpsertRelationQuery } from './remote-follow-cycle-query.mts'
-import { buildBidirectionalInsertQuery } from './build-bidirectional-insert-query.mts'
+import { buildBidirectionalInsertBody } from './build-bidirectional-insert-query.mts'
 import {
   handleElectionVotes,
   type EntityIdentifier,
@@ -32,6 +32,7 @@ import { runRelationPublicationMutation } from './publication-mutation.mts'
 import { insertBidirectionalRelationRows } from './insert-bidirectional-rows.mts'
 import { runRelationTransaction } from './run-relation-transaction.mts'
 import { lockBidirectionalRelationPairs } from './bidirectional-pair-lock.mts'
+import sql from 'sql-template-strings'
 export type { UpsertEntityTypes, EntityIdentifier, EntityRelation }
 export type { UpsertEntityRelationOptions } from './upsert-options.mts'
 export { assertEntityRelationUpsertAllowed } from './assert-upsert-allowed.mts'
@@ -133,12 +134,14 @@ export const upsertEntityRelation = async (
     predicate: relation.predicate,
   })
   const reversePairs = objects.map(object => ({ subject: object, object: subject }))
-  const insertQuery = buildBidirectionalInsertQuery(
-    relation,
-    creator,
-    objects.map(object => ({ subject, object })),
-    reversePairs,
-    relationOptions,
+  const insertQuery = sql`/* buildInsertQuery */`.append(
+    buildBidirectionalInsertBody(
+      relation,
+      creator,
+      objects.map(object => ({ subject, object })),
+      reversePairs,
+      relationOptions,
+    ),
   )
   const run = async (transactionQuery: TransactionQuery) => {
     await lockBidirectionalRelationPairs(
@@ -148,9 +151,8 @@ export const upsertEntityRelation = async (
       objects.map(object => object.id),
     )
     await relationOptions?.postMutationGuard?.assertAllowed(transactionQuery)
-    return insertBidirectionalRelationRows<InternalEntityRelationMutationResult>(
-      transactionQuery,
-      insertQuery,
+    return insertBidirectionalRelationRows<InternalEntityRelationMutationResult>(() =>
+      transactionQuery(insertQuery),
     )
   }
   const { relations: internalRelations, reverseRelations: internalReverseRelations } =

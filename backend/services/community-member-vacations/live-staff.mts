@@ -8,7 +8,7 @@ export async function userHasLiveCommunityStaffRole(
   options?: { observedTime?: Date | null; query?: TransactionQuery },
 ): Promise<boolean> {
   const observedTime = options?.observedTime ?? null
-  const statement = sql`/* userHasLiveCommunityStaffRole */
+  const { rows } = await (options?.query ?? read)(sql`/* userHasLiveCommunityStaffRole */
     SELECT 1
     FROM community_members cm
     WHERE cm.community_id = ${communityId}
@@ -23,11 +23,6 @@ export async function userHasLiveCommunityStaffRole(
           AND (v.ends_at IS NULL OR v.ends_at > COALESCE(${observedTime}::timestamptz, now()))
       )
     LIMIT 1
-  `
-  if (options?.query) {
-    const { rows } = await options.query(statement)
-    return rows.length > 0
-  }
-  const { rows } = await read(statement)
+  `)
   return rows.length > 0
 }

@@ -1,11 +1,13 @@
 import sql from 'sql-template-strings'
+import { write } from '@data-stores/psql'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import type { Community, CommunityMember } from './types.mts'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { currentUserCanModerateCommunity } from './authorization.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { writeCommunityUpdate } from './community-update-returning.mts'
+import { communityUpdateReturning } from './community-update-returning.mts'
+import { mapCommunityWithOwner, type CommunityRowWithOwner } from './get-mapping.mts'
 
 export type CommunityRootPostType = 'discussion' | 'review' | 'data_point'
 
@@ -73,10 +75,11 @@ export async function updateCommunityPostTypeSettings(
     WHERE id = ${communityId}
       AND deleted_at IS NULL AND archived_at IS NULL`)
 
-  const updated = await writeCommunityUpdate(
-    sql`/* updateCommunityPostTypeSettings */`,
-    updateQuery,
+  const statement = sql`/* updateCommunityPostTypeSettings */`.append(
+    communityUpdateReturning(sql``, updateQuery),
   )
+  const { rows } = await write<CommunityRowWithOwner>(statement)
+  const updated = rows[0] ? mapCommunityWithOwner(rows[0]) : null
   if (!updated) {
     assert(await getCommunity(communityId, { readOnly: false }), 404, 'Community not found')
     assert(false, 403, 'Cannot update archived community')
