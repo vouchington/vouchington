@@ -3,6 +3,9 @@ const pgvectorDigestPinnedPattern =
   /^ghcr\.io\/vouchington\/dependency-pgvector:[\w.-]+@sha256:[0-9a-f]{64}$/u
 const requiredPostgresInitdbArgs = '-c max_connections=300 -c log_min_messages=log'
 const explainAnalyzePostgresInitdbArgs = `${requiredPostgresInitdbArgs} -c work_mem=32MB`
+const backendUnitPostgresInitdbArgs =
+  `${requiredPostgresInitdbArgs} -c autovacuum_naptime=1s` +
+  ' -c autovacuum_analyze_threshold=0 -c autovacuum_analyze_scale_factor=0'
 const requiredDockerInitdbArgs = `POSTGRES_INITDB_ARGS="${requiredPostgresInitdbArgs}"`
 
 export type OpsWorkflowStep = {
@@ -73,7 +76,9 @@ export function postgresWorkflowPolicyViolations(
     const expected =
       fileName === 'explain-analyze.yml'
         ? explainAnalyzePostgresInitdbArgs
-        : requiredPostgresInitdbArgs
+        : fileName === 'tests-backend-unit.yml' && service.jobName === 'backend-tests'
+          ? backendUnitPostgresInitdbArgs
+          : requiredPostgresInitdbArgs
     if (service.initdbArgs !== expected)
       violations.push(
         `${service.path}#${service.jobName} POSTGRES_INITDB_ARGS must equal ${expected}`,

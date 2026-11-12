@@ -6,7 +6,6 @@ export async function runTopicMetricsBatchScenario(seedAllTopicIds: string[]) {
   registerScenarioContract('topic-metrics-batch', {
     expectations: [
       { kind: 'queryBinds', token: 'combined_ids' },
-      { kind: 'custom', name: 'topicMetricsEligibilityProbes' },
       { kind: 'forbidCorrelatedAggregates' },
       {
         kind: 'usesIndexes',

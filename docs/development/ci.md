@@ -144,7 +144,11 @@ The producer checks SQL safety, staging RSS and retained-relation bootstrap, and
 snapshot, then uploads a
 short-lived custom-format dump. Each consumer restores that artifact into its isolated PostgreSQL
 service before running its checks. Standalone suite dispatches prepare the same baseline themselves.
-Dedicated native migration-control scenarios still execute migrations as the behavior under test.
+Unit shards analyze the restored baseline and use an eager autoanalyze cadence because tests rapidly
+grow tables that started empty. Autoanalyze refreshes ordinary tables and partition leaves, not
+partition-parent inheritance statistics; the initial whole-database analysis remains necessary.
+Refresh is asynchronous and does not promise freshness before every query. Other consumers retain
+their own database settings. Dedicated native migration-control scenarios still execute migrations as the behavior under test.
 Snapshot validation runs on fresh migration output because PostgreSQL can re-parenthesize equivalent
 conditions during dump/restore.
 

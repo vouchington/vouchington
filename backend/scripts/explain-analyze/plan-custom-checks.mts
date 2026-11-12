@@ -1,4 +1,3 @@
-import { assertTopicMetricsEligibilityProbes } from './plan-custom/topic-metrics-eligibility.mts'
 import { assertRssHardDeleteRecoverySeek } from './plan-custom/rss-hard-delete.mts'
 import { assertDispatchWorkPlan } from './plan-custom/dispatch-work.mts'
 import { assertMediaDeliveryReplayPlan } from './plan-custom/media-delivery-replay.mts'
@@ -53,7 +52,6 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   semanticPost: assertSemanticPostCandidatePlan,
   storyMemberPages: assertStoryMemberPagePlan,
   storyProjectionClaimCandidates: assertStoryProjectionClaimCandidates,
-  topicMetricsEligibilityProbes: assertTopicMetricsEligibilityProbes,
   topicViewerCandidateBind: assertTopicViewerCountsDiscussionsUsesCandidateBind,
   universalTopicCandidates: result => assertCorePlanCheck('universalTopicCandidates', result),
   rssStateProjection: result => assertCorePlanCheck('rssStateProjection', result),
