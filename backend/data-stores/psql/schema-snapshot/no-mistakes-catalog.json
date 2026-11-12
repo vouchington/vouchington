@@ -55701,7 +55701,7 @@
           "ordinalPosition": 5
         }
       },
-      "comment": "Centralized lookup table for Amazon Nova multimodal text vectors, keyed by content hash.",
+      "comment": "Centralized lookup table for Gemini Embedding 2 document vectors, keyed by canonical content hash.",
       "foreignKeys": {},
       "indexes": {
         "gemini_embedding_2_embeddings_pkey": {

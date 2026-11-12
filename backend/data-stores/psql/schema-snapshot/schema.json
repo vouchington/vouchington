@@ -52598,7 +52598,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Centralized lookup table for Amazon Nova multimodal text vectors, keyed by content hash.",
+      "comment": "Centralized lookup table for Gemini Embedding 2 document vectors, keyed by canonical content hash.",
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
