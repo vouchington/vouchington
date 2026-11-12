@@ -12,9 +12,7 @@ const HOSTNAME_ID = '019e0000-0200-7000-8000-000000097070'
 function deletingQuery(totalRows: number): { query: OwnedUrlDelete; limits: number[] } {
   let remaining = totalRows
   const limits: number[] = []
-  const query: OwnedUrlDelete = async (_text, values) => {
-    const limit = values[1]
-    if (typeof limit !== 'number') throw new Error('cleanup limit must be a number')
+  const query: OwnedUrlDelete = async (_hostnameId, limit) => {
     limits.push(limit)
     const deleted = Math.min(remaining, limit)
     remaining -= deleted
