@@ -64,8 +64,8 @@ export async function seedManyAliasTopicViewerCounts(): Promise<void> {
 
   await transaction(
     `/* seedManyAliasTopicViewerCounts:topic */
-     INSERT INTO topics (id, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
-     VALUES ($1, 'Many alias viewer count', 'many-alias-viewer-count', 'system', decode(repeat('00', 32), 'hex'))
+     INSERT INTO topics (id, name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256, gemini_embedding_2_content_sha256)
+     VALUES ($1, 'Many alias viewer count', 'many-alias-viewer-count', 'system', decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex'))
      ON CONFLICT DO NOTHING`,
     [MANY_ALIAS_VIEWER_TOPIC_ID],
   )
