@@ -1,5 +1,5 @@
 import { createMediaReplayOrderFixtures } from '@voucha/test-helpers/media-delivery-replay-order-fixtures'
-import { afterAll, vi, describe, expect, it, onTestFinished } from 'vitest'
+import { afterAll, describe, expect, it, onTestFinished } from 'vitest'
 import { closeTestDataStores } from '@voucha/test-helpers/close-data-stores'
 import {
   createFailedMediaDeliveryReplayFixture,
@@ -21,24 +21,6 @@ import {
 import { notifications } from '../../queues/notifications/queues.mts'
 import { processReplayMediaDeliveryRegistry } from '../../workers/notifications/processors/media-delivery-registry.mts'
 import { replayFailedMediaDeliveryRegistryRecords } from './delivery-registry-reconciliation.mts'
-vi.mock<typeof import('@aws-sdk/client-cloudfront')>(
-  import('@aws-sdk/client-cloudfront'),
-  async importOriginal => {
-    const actual = await importOriginal()
-    vi.spyOn(actual.CloudFrontClient.prototype, 'send').mockResolvedValue({
-      $metadata: {},
-    } as never)
-    return { ...actual }
-  },
-)
-vi.mock<typeof import('@aws-sdk/client-dynamodb')>(
-  import('@aws-sdk/client-dynamodb'),
-  async importOriginal => {
-    const actual = await importOriginal()
-    vi.spyOn(actual.DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    return { ...actual }
-  },
-)
 describe('media delivery replay jobs', () => {
   useTestMediaDeliveryReplayProviders()
   afterAll(closeTestDataStores)

@@ -1,5 +1,3 @@
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
@@ -10,8 +8,6 @@ describe('copyright form filer disclosure', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('rejects a guest disclosure when the request is signed in', async () => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
     const fixture = await createCopyrightFormFixture()
     const request = createRequest()
     await request.authenticateAs(fixture.claimant)

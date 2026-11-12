@@ -1,7 +1,5 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
@@ -22,11 +20,6 @@ import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/cop
 
 describe('copyright staff and participant routes', () => {
   useCopyrightIntakeEnvironment()
-
-  beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-  })
 
   afterEach(() => {
     vi.restoreAllMocks()

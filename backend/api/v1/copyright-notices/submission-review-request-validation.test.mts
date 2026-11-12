@@ -1,6 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { counterNoticeBody } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -66,10 +64,6 @@ describe('copyright submission review request contracts', () => {
   useCopyrightIntakeEnvironment()
   useAutomaticProvisionalWithholding()
 
-  beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-  })
   afterEach(() => {
     vi.restoreAllMocks()
   })

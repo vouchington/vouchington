@@ -1,5 +1,3 @@
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { afterEach, beforeEach, vi } from 'vitest'
 import {
   createTestUser,
@@ -8,6 +6,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import { mediaDeliveryEdgeEnvironment } from './media-delivery-emulator.mts'
 import { markTestMediaDeliveryRecordFailed } from '@voucha/test-helpers/entities/image-surface-placements'
 import { stageImagePlacementDeliveryRecord } from '../services/media-delivery-safety/index.mts'
 import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
@@ -113,19 +112,14 @@ async function applyCopyrightActionAndLoadPlacement(
   return placement
 }
 
-/** Mock only the external AWS transports; retain real internal publication and database writes. */
+/** Publish to the AWS Emulator's media-delivery table and distribution; internal publication and database writes stay real. */
 export function useTestMediaDeliveryReplayProviders(): void {
-  beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
+  beforeEach(async () => {
+    for (const [name, value] of Object.entries(await mediaDeliveryEdgeEnvironment())) {
+      vi.stubEnv(name, value)
+    }
   })
   afterEach(() => {
-    vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 }

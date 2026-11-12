@@ -1,23 +1,9 @@
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { verifyMediaDeliveryReplayRoute } from '@voucha/test-helpers/copyright-route-replay-fixtures'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useTestMediaDeliveryReplayProviders } from '@voucha/test-helpers/copyright-route-replay-setup'
+import { describe, expect, it } from 'vitest'
 
 describe('isolated global media replay route', () => {
-  beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
-  })
+  useTestMediaDeliveryReplayProviders()
 
   it('replays failed media registry records only for review staff and writes one audit event', async () => {
     expect(await verifyMediaDeliveryReplayRoute()).toBe(true)
