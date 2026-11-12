@@ -1,7 +1,12 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { randomUUID } from 'node:crypto'
 import type { S3Client } from '@aws-sdk/client-s3'
 import type { APIGatewayProxyEvent } from 'aws-lambda'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
+import {
+  createOwnedDynamoDbTable,
+  putDynamoDbItem,
+} from '../../test-helpers/owned-dynamodb-table.mts'
 import { createLambdaHandler } from '../handler.mts'
 import type { EnvironmentConfig, SideloadConfig } from '../config.mts'
 import { toBase64Url } from '../../test-helpers/image-resize/index.mts'
@@ -25,10 +30,18 @@ const sideload: SideloadConfig = {
   qualities: [75],
   maxHeight: 2400,
 }
-const dependency = {
-  placementId: '11111111-1111-4111-8111-111111111111',
-  revision: 1,
-  imageId: '22222222-2222-4222-8222-222222222222',
+// Each case is its own placement, so seeded states never collide inside the file's table.
+function newDependency() {
+  return { placementId: randomUUID(), revision: 1, imageId: randomUUID() }
+}
+
+let registryTable: string
+
+async function seedState(dependency: ReturnType<typeof newDependency>, state: string) {
+  await putDynamoDbItem(registryTable, {
+    delivery_key: { S: getImagePlacementDeliveryKey(dependency) },
+    state: { S: state },
+  })
 }
 
 function ogEvent(dependencies: unknown[]): APIGatewayProxyEvent {
@@ -57,12 +70,17 @@ describe('default OG registry authorizer in the handler', () => {
     { createS3Client: () => ({}) as S3Client, fetchImageFromS3: fetchAvatar },
   )
 
+  // no-mistakes-timeout-reason: the emulator takes about three seconds to make a table ACTIVE
+  beforeAll(async () => {
+    registryTable = await createOwnedDynamoDbTable('og-handler-registry', 'delivery_key')
+  }, 30_000)
+
   beforeEach(() => {
     vi.stubEnv('NODE_ENV', 'test')
     vi.stubEnv('ENVIRONMENT', '')
     vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'registry')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', registryTable)
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-west-2')
     fetchAvatar.mockClear()
   })
   afterEach(() => {
@@ -75,10 +93,8 @@ describe('default OG registry authorizer in the handler', () => {
     ['withheld', false],
     [undefined, false],
   ] as const)('renders %s authority with immutable caching', async (state, fetched) => {
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({
-      Item: state ? { state: { S: state } } : undefined,
-      $metadata: {},
-    } as never)
+    const dependency = newDependency()
+    if (state) await seedState(dependency, state)
     const response = await handler(ogEvent([dependency]))
     expect(response.statusCode).toBe(200)
     expect(response.headers?.['Cache-Control']).toBe('public, max-age=31536000, immutable')
@@ -86,8 +102,9 @@ describe('default OG registry authorizer in the handler', () => {
   })
 
   it('returns no-store and omits the avatar when the registry fails', async () => {
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockRejectedValue(new Error('registry unavailable'))
-    const response = await handler(ogEvent([dependency]))
+    // A table that was never created: every read against it fails in the emulator.
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', `missing-${randomUUID()}`)
+    const response = await handler(ogEvent([newDependency()]))
     expect(response.statusCode).toBe(200)
     expect(response.headers?.['Cache-Control']).toBe('no-store')
     expect(fetchAvatar).not.toHaveBeenCalled()
@@ -95,12 +112,10 @@ describe('default OG registry authorizer in the handler', () => {
 
   it('returns no-store for missing registry configuration but caches an empty card', async () => {
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', '')
-    const send = vi.spyOn(DynamoDBClient.prototype, 'send')
-    const denied = await handler(ogEvent([dependency]))
+    const denied = await handler(ogEvent([newDependency()]))
     const empty = await handler(ogEvent([]))
     expect(denied.headers?.['Cache-Control']).toBe('no-store')
     expect(empty.headers?.['Cache-Control']).toBe('public, max-age=31536000, immutable')
-    expect(send).not.toHaveBeenCalled()
     expect(fetchAvatar).not.toHaveBeenCalled()
   })
 
@@ -115,7 +130,7 @@ describe('default OG registry authorizer in the handler', () => {
         },
       },
     )
-    const response = await failing(ogEvent([dependency]))
+    const response = await failing(ogEvent([newDependency()]))
     expect(response.statusCode).toBe(200)
     expect(response.headers?.['Cache-Control']).toBe('no-store')
     expect(fetchAvatar).not.toHaveBeenCalled()

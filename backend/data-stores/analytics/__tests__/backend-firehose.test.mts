@@ -1,8 +1,4 @@
-import fs from 'node:fs'
-
-import os from 'node:os'
-
-import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 
@@ -14,7 +10,7 @@ import { emit } from '../emit.mts'
 import { onGracefulShutdown } from '../graceful-shutdown.mts'
 
 import { writeRecord as writeLocalRecord } from '../backend-local.mts'
-import { suppressedError } from '../../../test-helpers/data-stores/analytics/suppressed-error.mts'
+import { ANALYTICS_TEST_FIREHOSE_PREFIX } from '../../../test-helpers/aws-emulator-firehose.mts'
 import { flush, writeRecord } from '../backend-firehose.mts'
 
 type PutBatch = (input: PutRecordBatchCommandInput) => Promise<PutRecordBatchCommandOutput>
@@ -26,24 +22,16 @@ describe('backend-firehose', () => {
 
   const originalPrefix = process.env.ANALYTICS_FIREHOSE_PREFIX
 
-  let calls: PutRecordBatchCommandInput[]
-
-  let responses: Array<PutRecordBatchCommandOutput | Error>
-
+  // Observes each batch the writer sends. Every call still reaches the AWS Emulator's real
+  // delivery streams (provisioned by global setup), so request shape and acceptance are real.
   let firehoseSender: MockInstance<PutBatch>
 
+  const sent = () => firehoseSender.mock.calls.map(([input]) => input)
+
   beforeEach(async () => {
-    process.env.ANALYTICS_FIREHOSE_PREFIX = 'voucha-analytics-test-'
-    calls = []
-    responses = []
-    firehoseSender = vi.spyOn(firehoseProvider, 'putFirehoseRecordBatch')
-    firehoseSender.mockImplementation((input: PutRecordBatchCommandInput) => {
-      calls.push(input)
-      const response = responses.shift()
-      if (response instanceof Error) return Promise.reject(response)
-      return Promise.resolve(response ?? makeFirehoseOutput())
-    })
+    process.env.ANALYTICS_FIREHOSE_PREFIX = ANALYTICS_TEST_FIREHOSE_PREFIX
     await flush()
+    firehoseSender = vi.spyOn(firehoseProvider, 'putFirehoseRecordBatch')
   })
 
   afterEach(async () => {
@@ -76,10 +64,6 @@ describe('backend-firehose', () => {
     return new TextDecoder().decode(data as Uint8Array)
   }
 
-  function makeFirehoseOutput(): PutRecordBatchCommandOutput {
-    return { $metadata: {}, FailedPutCount: 0, RequestResponses: [] }
-  }
-
   function makeQueueWorkerRecord(overrides: { event_id: string }) {
     return {
       event_time: new Date('2026-01-02T03:04:05.000Z'),
@@ -104,30 +88,40 @@ describe('backend-firehose', () => {
     return 'x'.repeat(encodedSize - encodedBytes(eventId, ''))
   }
 
+  // A response the emulator cannot produce: a per-record failure inside a successful batch.
+  const partialFailure = {
+    $metadata: {},
+    FailedPutCount: 1,
+    RequestResponses: [{ RecordId: 'ok' }, { ErrorCode: 'ServiceUnavailable' }],
+  } satisfies PutRecordBatchCommandOutput
+
   it('flushes records on the timer', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'timer' }))
 
     await vi.advanceTimersByTimeAsync(1_100)
 
-    expect(calls).toHaveLength(1)
-    expect(JSON.parse(decodeRecord(calls[0]!))).toMatchObject({ event_id: 'timer' })
+    expect(sent()).toHaveLength(1)
+    expect(JSON.parse(decodeRecord(sent()[0]!))).toMatchObject({ event_id: 'timer' })
   })
 
-  it('sends newline-delimited JSON records to the table-specific stream', async () => {
+  it('delivers newline-delimited JSON records to the table-specific stream', async () => {
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'event-1' }))
 
     await flush()
 
-    expect(calls).toHaveLength(1)
-    const input = calls[0]!
-    expect(input.DeliveryStreamName).toBe('voucha-analytics-test-queue_workers')
+    expect(sent()).toHaveLength(1)
+    const input = sent()[0]!
+    expect(input.DeliveryStreamName).toBe(`${ANALYTICS_TEST_FIREHOSE_PREFIX}queue_workers`)
     const payload = decodeRecord(input)
     expect(payload.endsWith('\n')).toBe(true)
     expect(JSON.parse(payload)).toMatchObject({
       event_id: 'event-1',
       queue: 'psql',
       event: 'active',
+    })
+    await expect(firehoseSender.mock.results[0]?.value).resolves.toMatchObject({
+      FailedPutCount: 0,
     })
   })
 
@@ -138,9 +132,9 @@ describe('backend-firehose', () => {
 
     await flush()
 
-    expect(calls).toHaveLength(2)
-    expect(calls[0]!.Records).toHaveLength(500)
-    expect(calls[1]!.Records).toHaveLength(1)
+    expect(sent()).toHaveLength(2)
+    expect(sent()[0]!.Records).toHaveLength(500)
+    expect(sent()[1]!.Records).toHaveLength(1)
   })
 
   it('splits batches at the Firehose byte limit', async () => {
@@ -154,7 +148,7 @@ describe('backend-firehose', () => {
 
     await flush()
 
-    expect(calls).toHaveLength(2)
+    expect(sent()).toHaveLength(2)
   })
 
   it('drops records that exceed the Firehose record limit', async () => {
@@ -166,76 +160,54 @@ describe('backend-firehose', () => {
     writeRecord('queue_workers', record)
     await flush()
 
-    expect(calls).toHaveLength(0)
+    expect(sent()).toHaveLength(0)
   })
 
   it('retries only failed records once', async () => {
-    vi.useFakeTimers()
-    responses.push(
-      {
-        $metadata: {},
-        FailedPutCount: 1,
-        RequestResponses: [{ RecordId: 'ok' }, { ErrorCode: 'ServiceUnavailable' }],
-      },
-      {
-        $metadata: {},
-        FailedPutCount: 0,
-        RequestResponses: [{ RecordId: 'retry-ok' }],
-      },
-    )
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    // Only the first response is injected; the retry reaches the real stream.
+    firehoseSender.mockResolvedValueOnce(partialFailure)
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'ok' }))
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'retry' }))
 
     const flushPromise = flush()
     await vi.advanceTimersByTimeAsync(99)
-    expect(calls).toHaveLength(1)
+    expect(sent()).toHaveLength(1)
     await vi.advanceTimersByTimeAsync(1)
     await flushPromise
 
-    expect(calls).toHaveLength(2)
-    expect(calls[1]!.Records).toHaveLength(1)
+    expect(sent()).toHaveLength(2)
+    expect(sent()[1]!.Records).toHaveLength(1)
+    expect(JSON.parse(decodeRecord(sent()[1]!))).toMatchObject({ event_id: 'retry' })
+    await expect(firehoseSender.mock.results[1]?.value).resolves.toMatchObject({
+      FailedPutCount: 0,
+    })
   })
 
   it('retries request errors once before dropping the batch', async () => {
-    responses.push(suppressedError('firehose unavailable'), suppressedError('firehose unavailable'))
+    // A stream that does not exist makes the emulator reject every request.
+    process.env.ANALYTICS_FIREHOSE_PREFIX = `missing-${randomUUID()}-`
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'event-1' }))
 
     await flush()
 
-    expect(calls).toHaveLength(2)
+    expect(sent()).toHaveLength(2)
+    await expect(firehoseSender.mock.results[0]?.value).rejects.toMatchObject({
+      name: 'ResourceNotFoundException',
+    })
   })
 
   it('drains records added while a flush is in progress', async () => {
-    let releaseFirstSend: ((output: PutRecordBatchCommandOutput) => void) | undefined
-    const firstSendStarted = new Promise<void>(resolve => {
-      firehoseSender.mockImplementation(input => {
-        calls.push(input)
-        if (calls.length === 1) {
-          resolve()
-          return new Promise<PutRecordBatchCommandOutput>(release => {
-            releaseFirstSend = release
-          })
-        }
-
-        return Promise.resolve(makeFirehoseOutput())
-      })
-    })
-
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'first' }))
     const flushPromise = flush()
-    await firstSendStarted
-
+    // The first request is on the wire, so this record lands in the buffer of an active flush.
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'second' }))
-    releaseFirstSend?.(makeFirehoseOutput())
     await flushPromise
 
-    expect(calls).toHaveLength(2)
-    expect(JSON.parse(decodeRecord(calls[1]!))).toMatchObject({ event_id: 'second' })
+    expect(sent()).toHaveLength(2)
+    expect(JSON.parse(decodeRecord(sent()[1]!))).toMatchObject({ event_id: 'second' })
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof fs)
-  void (0 as unknown as typeof os)
-  void (0 as unknown as typeof path)
   void (0 as unknown as typeof emit)
   void (0 as unknown as typeof onGracefulShutdown)
   void (0 as unknown as typeof writeLocalRecord)

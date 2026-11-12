@@ -120,6 +120,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       name: 'backend/data-stores/analytics',
       include: ['backend/data-stores/analytics/**/*.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**', '**/*.mock.test.mts'],
+      globalSetup: './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+      setupFiles: ['./backend/test-helpers/vitest.setup.aws-emulator.mts'],
       testTimeout: 5_000,
       hookTimeout: 5_000,
     },

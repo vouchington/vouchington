@@ -4,7 +4,6 @@ import { createCodedError } from '@vouchington/sentry'
 import sql from 'sql-template-strings'
 import { getCommunityAgentPromptLimit } from './config.mts'
 
-/** The transaction holds the creator/community admission fence until its insert commits. */
 export async function assertCommunityAgentPromptCapacity(
   currentUserId: string,
   communityId: string,

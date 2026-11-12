@@ -2,7 +2,7 @@ import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-s
 // Sideload pipeline test. The image lambda serves the reserved Playwright cover locally, so CI
 // does not fetch an external host. Runs only in the credentialed Playwright workflow, which
 // provides AWS credentials and the image buckets. A missing credential fails the test.
-import { PLAYWRIGHT_SIDELOAD_IMAGE_URL } from '../../lambdas/test-helpers/playwright-image-urls.mts'
+import { PLAYWRIGHT_PODCAST_COVER_URL } from '../../lambdas/test-helpers/playwright-image-urls.mts'
 import { test, expect, type Request } from '../helpers/test.mts'
 import { installImageResponseGuard, navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { insertTestTopic } from '../helpers/insert-test-topic.mts'
@@ -64,7 +64,7 @@ test.describe('sideloaded images in RSS item modal', () => {
         contentSnippet: 'Test article with a sideloaded image.',
         description:
           '<p>Test body.</p>' +
-          `<img src="${PLAYWRIGHT_SIDELOAD_IMAGE_URL}" alt="test sideloaded image" />`,
+          `<img src="${PLAYWRIGHT_PODCAST_COVER_URL}" alt="test sideloaded image" />`,
       },
       contentSha256: Buffer.from('01'.padStart(64, '0'), 'hex'),
     })

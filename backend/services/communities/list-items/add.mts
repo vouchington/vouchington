@@ -1,4 +1,4 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import assert from 'http-assert'
 import createHttpError from 'http-errors'
 import { getCommunityListFeedLimit } from '@services/lists/import-config'
@@ -73,16 +73,6 @@ async function addCommunityListFeedWithLimit(
   entityId: string,
 ) {
   const limit = getCommunityListFeedLimit()
-  await using transaction = await beginTransaction()
-  const options = { query: transaction }
-  // Serialize feed adds on the parent. The count runs in the next statement, with a fresh
-  // READ COMMITTED snapshot after any competing add releases this lock.
-  await read(
-    `/* addCommunityListFeed:lock */
-    SELECT id FROM communities WHERE id = $1`,
-    [communityId],
-    options,
-  )
   const result = await write(
     `/* addCommunityListFeed:bounded */
     INSERT INTO community_list_rss_feeds (community_id, rss_feed_id, added_by_id)
@@ -94,7 +84,6 @@ async function addCommunityListFeedWithLimit(
            ) active_feeds) < $4
     RETURNING id, community_id, rss_feed_id AS entity_id, order_index, added_by_id, created_at`,
     [communityId, entityId, currentUserId, limit],
-    options,
   )
   if (result.rows.length === 0) {
     throw createHttpError(422, 'Community list feed limit reached', {
@@ -102,6 +91,5 @@ async function addCommunityListFeedWithLimit(
       limit,
     })
   }
-  await transaction.commit()
   return result
 }

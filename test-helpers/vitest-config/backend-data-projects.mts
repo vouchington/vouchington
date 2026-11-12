@@ -12,12 +12,13 @@ const backendDataStoreTestDefaults = {
   setupFiles: [
     // Sentry must precede glide workers' on-error preload; setup resets every isolate:false file (a test import only registers in the first cached worker file).
     './backend/test-helpers/vitest.setup.sentry-mock.mts',
+    // Its dual-stack overrides only reach modules imported after it, and later setup files load the AWS clients.
+    './backend/test-helpers/vitest.setup.aws-emulator.mts',
     './test-helpers/vitest.setup.request-query-timing.mts',
     './test-helpers/vitest.setup.shared-db-scope-guard.mts',
     './test-helpers/vitest.setup.psql-pool-metrics.mts',
     './test-helpers/vitest.setup.dynamic-config-isolation.mts',
     './test-helpers/vitest.setup.glide-mq-workers.mts',
-    './backend/test-helpers/vitest.setup.aws-emulator.mts',
     './backend/test-helpers/vitest.setup.captcha-skip.mts',
     './backend/test-helpers/vitest.setup.server-error-responses.mts',
     './backend/test-helpers/vitest.setup.request-query-profile.mts',

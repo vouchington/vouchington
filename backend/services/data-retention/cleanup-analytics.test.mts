@@ -6,6 +6,7 @@ import { acquireModerationOperationRetentionTestLock } from '@voucha/test-helper
 import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
 import { reserveTestAiUsageRetentionSweep } from '@voucha/test-helpers/entities/ai-usage-rollups'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
+import { ANALYTICS_TEST_FIREHOSE_PREFIX } from '@voucha/test-helpers/aws-emulator-firehose'
 import { flush as flushFirehose } from '../../data-stores/analytics/backend-firehose.mts'
 import * as firehoseProvider from '../../modules/aws/firehose.mts'
 import { cleanupAnalyticsLocalFiles } from './cleanup-analytics-local.mts'
@@ -14,6 +15,7 @@ import { runDataRetentionCleanup } from './cleanup.mts'
 describe('cleanupAnalyticsLocalFiles', () => {
   const originalAnalyticsBackend = process.env.ANALYTICS_BACKEND
   const originalAnalyticsLocalDir = process.env.ANALYTICS_LOCAL_DIR
+  const originalFirehosePrefix = process.env.ANALYTICS_FIREHOSE_PREFIX
   let cleanupFirehose: (() => Promise<void>) | undefined
 
   beforeEach(() => {
@@ -69,11 +71,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
     onTestFinished(() => lock.release())
     const releaseAiUsageSweep = await reserveTestAiUsageRetentionSweep()
     onTestFinished(releaseAiUsageSweep)
-    const firehoseSender = vi.spyOn(firehoseProvider, 'putFirehoseRecordBatch').mockResolvedValue({
-      $metadata: {},
-      FailedPutCount: 0,
-      RequestResponses: [],
-    })
+    // Observes the batches the retention run emits; each one is delivered to the AWS Emulator.
+    const firehoseSender = vi.spyOn(firehoseProvider, 'putFirehoseRecordBatch')
     cleanupFirehose = async () => {
       try {
         await flushFirehose()
@@ -82,6 +81,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
       }
     }
     process.env.ANALYTICS_BACKEND = 'firehose'
+    process.env.ANALYTICS_FIREHOSE_PREFIX = ANALYTICS_TEST_FIREHOSE_PREFIX
     const now = new Date()
     const limits = { batchSize: 10, maxBatches: 10 }
     const emptyWindow = {
@@ -214,10 +214,18 @@ describe('cleanupAnalyticsLocalFiles', () => {
     })
     await flushFirehose()
     expect(firehoseSender).toHaveBeenCalled()
+    for (const result of firehoseSender.mock.results) {
+      await expect(result.value).resolves.toMatchObject({ FailedPutCount: 0 })
+    }
     expect(sentryCaptureExceptionMock).not.toHaveBeenCalled()
   })
 
   function restoreAnalyticsEnv() {
+    if (originalFirehosePrefix === undefined) {
+      delete process.env.ANALYTICS_FIREHOSE_PREFIX
+    } else {
+      process.env.ANALYTICS_FIREHOSE_PREFIX = originalFirehosePrefix
+    }
     if (originalAnalyticsBackend === undefined) {
       delete process.env.ANALYTICS_BACKEND
     } else {
