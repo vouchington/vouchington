@@ -1,0 +1,28 @@
+import type { NativeConsumerManifestEntry } from './types.mts'
+
+export const NATIVE_CONSUMER_MANIFEST_CLAIMS_41_HOUSEHOLD_INVITATIONS = [
+  { key: 'settings.householdInvitations.accept', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.decline', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.invitationAccepted', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.invitationDeclined', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.invitationRevoked', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.invitationSendFailed', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.invitationSent', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.invitationUpdateFailed', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.loadFailed', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.loadMore', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.memberFallback', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.noPendingInvitations', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.receivedFromOther', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.receivedFromOwner', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.receivedTitle', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.relationshipOptional', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.retry', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.retryLoading', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.revokeInvitation', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.searchByUsername', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.sendInvitation', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.sentFor', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.sentTitle', consumers: ['dotnet', 'swift'] },
+  { key: 'settings.householdInvitations.username', consumers: ['dotnet', 'swift'] },
+] as const satisfies readonly NativeConsumerManifestEntry[]
