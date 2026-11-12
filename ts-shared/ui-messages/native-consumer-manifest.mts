@@ -41,6 +41,7 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_35_QUEUE_DOMAINS } from './native-consu
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_36_JUDGEMENT_RUNS } from './native-consumer-manifest/claims-36-judgement-runs.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_37_TOPIC_MERGE } from './native-consumer-manifest/claims-37-topic-merge.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_38_HACKER_NEWS } from './native-consumer-manifest/claims-38-hacker-news.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_40_REFERRAL_LABELS } from './native-consumer-manifest/claims-40-referral-labels.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_42_PRIVATE_COUNT_LABELS } from './native-consumer-manifest/claims-42-private-count-labels.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_44_RSS_FEED_DELETION } from './native-consumer-manifest/claims-44-rss-feed-deletion.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
@@ -95,6 +96,7 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_36_JUDGEMENT_RUNS,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_37_TOPIC_MERGE,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_38_HACKER_NEWS,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_40_REFERRAL_LABELS,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_42_PRIVATE_COUNT_LABELS,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_44_RSS_FEED_DELETION,
 ]
