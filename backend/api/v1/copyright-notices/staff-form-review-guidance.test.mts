@@ -1,6 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
@@ -44,11 +42,6 @@ async function findQueuedCase(request: StaffRequest, noticeId: string): Promise<
 
 describe('copyright staff case form review after the decision', () => {
   useCopyrightIntakeEnvironment()
-
-  beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-  })
 
   afterEach(() => {
     vi.restoreAllMocks()

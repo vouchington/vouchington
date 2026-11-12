@@ -1,10 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { createCopyrightReplayFixture } from '@voucha/test-helpers/copyright-route-replay-setup'
+import {
+  createCopyrightReplayFixture,
+  useTestMediaDeliveryReplayProviders,
+} from '@voucha/test-helpers/copyright-route-replay-setup'
 import { exhaustCopyrightActionIntent } from '@voucha/test-helpers/copyright-route-replay-fixtures'
 
 type TimelineEvent = { event_type: string }
@@ -22,20 +23,7 @@ function eventTypes(body: { copyright_notice: { timeline: TimelineEvent[] } }): 
 }
 
 describe('copyright case timeline audiences', () => {
-  beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
-  })
+  useTestMediaDeliveryReplayProviders()
 
   it('gives members and case participants only case-facing events while staff keep the full timeline', async () => {
     const fixture = await createCopyrightReplayFixture()

@@ -1,6 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createTestUser } from '@voucha/test-helpers'
@@ -10,10 +8,6 @@ import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/cop
 
 describe('copyright email approval surface target contract', () => {
   useCopyrightIntakeEnvironment()
-  beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-  })
   afterEach(() => vi.restoreAllMocks())
 
   it.each<[string, (target: Record<string, unknown>) => Record<string, unknown>, string]>([

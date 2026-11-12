@@ -1341,12 +1341,6 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
-      '@aws-sdk/client-cloudfront':
-        specifier: ^3.1164.0
-        version: 3.1164.0
-      '@aws-sdk/client-dynamodb':
-        specifier: ^3.1164.0
-        version: 3.1164.0
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
         version: 1.32.2(supports-color@10.2.2)(zod@4.6.5)
@@ -8094,12 +8088,6 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
-      '@aws-sdk/client-cloudfront':
-        specifier: ^3.1164.0
-        version: 3.1164.0
-      '@aws-sdk/client-dynamodb':
-        specifier: ^3.1164.0
-        version: 3.1164.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

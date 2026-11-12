@@ -1,6 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudFrontClient, type CreateInvalidationCommandOutput } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient, type PutItemCommandOutput } from '@aws-sdk/client-dynamodb'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   connectTestOAuthAccount,
@@ -19,17 +17,6 @@ import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/cop
 
 describe('copyright notice member claimant attribution', () => {
   useCopyrightIntakeEnvironment()
-
-  beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockImplementation(
-      vi
-        .fn<VitestLooseMock>()
-        .mockResolvedValue({ $metadata: {} } satisfies CreateInvalidationCommandOutput),
-    )
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockImplementation(
-      vi.fn<VitestLooseMock>().mockResolvedValue({ $metadata: {} } satisfies PutItemCommandOutput),
-    )
-  })
 
   afterEach(() => {
     vi.restoreAllMocks()

@@ -1,6 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudFrontClient, type CreateInvalidationCommandOutput } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient, type PutItemCommandOutput } from '@aws-sdk/client-dynamodb'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { COPYRIGHT_CASE_TIMELINE_EVENT_TYPES } from '@services/account-data-requests/stream-copyright-cases'
 import { getCopyrightPublicNoticeDetail } from '@services/copyright-notices/read-models'
 import {
@@ -27,17 +25,6 @@ const COPYRIGHT_FILES = [
 
 describe('copyright records in the account data export', () => {
   useCopyrightIntakeEnvironment()
-
-  beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockImplementation(
-      vi
-        .fn<VitestLooseMock>()
-        .mockResolvedValue({ $metadata: {} } satisfies CreateInvalidationCommandOutput),
-    )
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockImplementation(
-      vi.fn<VitestLooseMock>().mockResolvedValue({ $metadata: {} } satisfies PutItemCommandOutput),
-    )
-  })
 
   afterEach(() => {
     vi.restoreAllMocks()

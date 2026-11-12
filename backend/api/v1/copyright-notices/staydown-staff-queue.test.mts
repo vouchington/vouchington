@@ -1,6 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
 import {
   fillCopyrightStaydownEntryHash,
@@ -92,8 +90,6 @@ describe('copyright staydown staff review', () => {
   useStaydownMatching()
 
   beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
     vi.spyOn(imageEnqueues, 'enqueueStaydownHash').mockResolvedValue(undefined as never)
   })
 

@@ -65,12 +65,12 @@ const backendMocksProject = {
     ],
     setupFiles: [
       './backend/test-helpers/vitest.setup.sentry-mock.mts', // Must precede glide workers, which preload on-error and bind the SDK.
+      './backend/test-helpers/vitest.setup.aws-emulator.mts',
       './test-helpers/vitest.setup.request-query-timing.mts',
       './test-helpers/vitest.setup.shared-db-scope-guard.mts',
       './test-helpers/vitest.setup.psql-pool-metrics.mts',
       './test-helpers/vitest.setup.dynamic-config-isolation.mts',
       './test-helpers/vitest.setup.glide-mq-workers.mts',
-      './backend/test-helpers/vitest.setup.aws-emulator.mts',
       './backend/test-helpers/vitest.setup.server-error-responses.mts',
       './backend/test-helpers/vitest.setup.request-query-profile.mts',
       './backend/test-helpers/vitest.setup.request-contract-enforcement.mts',

@@ -1,6 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -72,11 +70,6 @@ function reviewFormIntake(request: StaffRequest, intakeId: string) {
 
 describe('moderator-first copyright withholding', () => {
   useCopyrightIntakeEnvironment()
-
-  beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-  })
 
   afterEach(() => {
     vi.restoreAllMocks()
