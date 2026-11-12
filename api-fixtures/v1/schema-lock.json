@@ -866,7 +866,7 @@
     },
     "GET:/api/v1/referral-links#public": {
       "fixtureIds": ["native.referral-links.user.public"],
-      "hash": "a410f31fabf82b50fa36451cc50e5fa8e0bf9690738051d841cf98fa975ccb5c"
+      "hash": "6e9b3ab1be00ace6fc8a2716e78189d2e75b9377900c277e8e82144309c0bfd5"
     },
     "GET:/api/v1/report-integrity/flags": {
       "fixtureIds": [

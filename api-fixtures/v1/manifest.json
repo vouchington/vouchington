@@ -46343,7 +46343,7 @@
     },
     "GET:/api/v1/referral-links#public": {
       "bodyKind": "content",
-      "hash": "a410f31fabf82b50fa36451cc50e5fa8e0bf9690738051d841cf98fa975ccb5c",
+      "hash": "6e9b3ab1be00ace6fc8a2716e78189d2e75b9377900c277e8e82144309c0bfd5",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -46393,44 +46393,10 @@
           "UserReferralLink": {
             "additionalProperties": false,
             "properties": {
-              "activated_at": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "consecutive_crawl_failures": {
-                "required": false,
-                "schema": {
-                  "type": "number"
-                }
-              },
               "created_at": {
                 "required": true,
                 "schema": {
                   "type": "string"
-                }
-              },
-              "deactivated_at": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
                 }
               },
               "deleted_at": {
@@ -46453,62 +46419,6 @@
                   "type": "string"
                 }
               },
-              "label": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "last_crawl_failure_at": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "last_crawl_id": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "last_crawl_success_at": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
               "parent_link_id": {
                 "required": true,
                 "schema": {
@@ -46527,62 +46437,6 @@
                 "required": true,
                 "schema": {
                   "type": "string"
-                }
-              },
-              "unfurl_completed_at": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "unfurl_failed_at": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "unfurl_last_error": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "unfurl_requested_at": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
                 }
               },
               "updated_at": {
