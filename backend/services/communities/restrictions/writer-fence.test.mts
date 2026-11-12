@@ -41,7 +41,7 @@ async function fixture() {
   }
 }
 
-describe('community restriction writers and concurrent settings writes', () => {
+describe('community restriction writers after committed settings writes', () => {
   it('uses database expiry time when the application clock trails PostgreSQL', async () => {
     const { currentUser, loaded, community } = await fixture()
     const expiresAt = new Date(Date.now() - 1000)
@@ -69,7 +69,7 @@ describe('community restriction writers and concurrent settings writes', () => {
       ),
     ).rejects.toMatchObject({ code: '25P02' })
   })
-  it('does not manually lift a restriction that expires while waiting for the fence', async () => {
+  it('does not manually lift a restriction after its expiry commits', async () => {
     const { currentUser, loaded, community } = await fixture()
     const [restriction] = await activateCommunityRestrictions(currentUser, loaded, {
       restrictionTypes: ['no_links'],
@@ -89,7 +89,7 @@ describe('community restriction writers and concurrent settings writes', () => {
     expect((await getTestCommunityRestriction(restriction!.id)).lifted_at).toBeNull()
     expect(await readStaffActionHistory(currentUser.id)).toEqual(history)
   })
-  it('refuses activation when community archiving wins the fence', async () => {
+  it('refuses activation after community archiving commits', async () => {
     const { currentUser, loaded, community } = await fixture()
     await expect(
       withConcurrentCommunityArchiveForTest(
@@ -105,7 +105,7 @@ describe('community restriction writers and concurrent settings writes', () => {
     expect(await countTestCommunityRestrictions(community.id)).toBe(0)
     expect(await readStaffActionHistory(currentUser.id)).toEqual([])
   })
-  it('refuses activation when moderator deletion wins its lifecycle fence', async () => {
+  it('refuses activation after moderator deletion commits', async () => {
     const { currentUser, loaded, community } = await fixture()
     await expect(
       withConcurrentActorDeletionForTest(currentUser.id, () =>
@@ -118,7 +118,7 @@ describe('community restriction writers and concurrent settings writes', () => {
     expect(await countTestCommunityRestrictions(community.id)).toBe(0)
     expect(await readStaffActionHistory(currentUser.id)).toEqual([])
   })
-  it('activation waits until the community settings write releases', async () => {
+  it('activates restrictions after a community settings write commits', async () => {
     const { currentUser, loaded, community } = await fixture()
     const restrictions = await withHeldCommunityUpdateForTest(community.id, () =>
       activateCommunityRestrictions(currentUser, loaded, {
@@ -131,7 +131,7 @@ describe('community restriction writers and concurrent settings writes', () => {
       { id: restrictions[0]!.id, restriction_type: 'require_post_approval' },
     ])
   })
-  it('refuses activation when moderator membership removal wins its row fence', async () => {
+  it('refuses activation after moderator membership removal commits', async () => {
     const { currentUser, loaded, community } = await fixture()
     await expect(
       withConcurrentCommunityMembershipRemovalForTest(
@@ -148,7 +148,7 @@ describe('community restriction writers and concurrent settings writes', () => {
     expect(await countTestCommunityRestrictions(community.id)).toBe(0)
     expect(await readStaffActionHistory(currentUser.id)).toEqual([])
   })
-  it('lifting waits until the community settings write releases', async () => {
+  it('lifts restrictions after a community settings write commits', async () => {
     const { currentUser, loaded, community } = await fixture()
     const [restriction] = await activateCommunityRestrictions(currentUser, loaded, {
       restrictionTypes: ['no_links'],

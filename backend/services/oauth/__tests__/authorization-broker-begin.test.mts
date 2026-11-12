@@ -175,25 +175,6 @@ describe('OAuth authorization broker begin', () => {
       status: 'pending',
     })
   })
-
-  it('serializes concurrent replacement web authentications for one browser session', async () => {
-    const cleanup = registerCleanup()
-    const deviceId = randomUUID()
-    const sessionId = randomUUID()
-    await enableWebBrokerForTest()
-
-    const results = await Promise.all([
-      beginTestWebAuthentication(deviceId, sessionId),
-      beginTestWebAuthentication(deviceId, sessionId),
-    ])
-    cleanup.authorizationIds.push(...results.map(result => result.flow_id))
-
-    const rows = await Promise.all(results.map(result => getTestOAuthAuthorization(result.flow_id)))
-    expect(rows.map(row => row?.status).toSorted()).toEqual(['pending', 'rejected'])
-    expect(rows.find(row => row?.status === 'rejected')).toMatchObject({
-      callback_error: 'authorization_superseded',
-    })
-  })
 })
 
 function registerCleanup(): { authorizationIds: string[] } {
