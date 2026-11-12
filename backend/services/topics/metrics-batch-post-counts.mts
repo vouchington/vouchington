@@ -1,10 +1,13 @@
-function eligibleExists(postIdSql: string, postType: string): string {
-  return `EXISTS (
-        SELECT 1
+// Correlate each bounded scalar eligibility result to this relation row. With empty restore
+// statistics, a flattenable EXISTS can multiply global root-post scans across unrelated posts.
+function eligibleProbe(postIdSql: string, postType: string): string {
+  return `(
+        SELECT TRUE
         FROM view_public_post_eligibility eligibility
         WHERE eligibility.post_id = ${postIdSql}
           AND eligibility.post_type = '${postType}'
-      )`
+        LIMIT 1
+      ) IS TRUE`
 }
 
 /** Each count is one index walk for that topic and stops after the probe. UNION keeps one row per post. */
@@ -19,7 +22,7 @@ export function topicCountLaterals(probeParam: string): string {
           WHERE (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END) = combined_ids.id
             AND relation.deleted_at IS NULL
             AND relation.votes_score_net > 0
-            AND ${eligibleExists('relation.subject_id', 'discussion')}
+            AND ${eligibleProbe('relation.subject_id', 'discussion')}
           ORDER BY relation.subject_id
           LIMIT ${probeParam}
         )
@@ -33,7 +36,7 @@ export function topicCountLaterals(probeParam: string): string {
             WHERE (CASE WHEN alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0 THEN alias_relation.object_id END) = alias.id
               AND alias_relation.deleted_at IS NULL
               AND alias_relation.votes_score_net > 0
-              AND ${eligibleExists('alias_relation.subject_id', 'discussion')}
+              AND ${eligibleProbe('alias_relation.subject_id', 'discussion')}
             ORDER BY alias_relation.subject_id
             LIMIT ${probeParam}
           ) page ON TRUE
@@ -48,7 +51,7 @@ export function topicCountLaterals(probeParam: string): string {
         SELECT rating.post_id
         FROM post_review_topic_ratings rating
         WHERE rating.topic_id = combined_ids.id
-          AND ${eligibleExists('rating.post_id', 'review')}
+          AND ${eligibleProbe('rating.post_id', 'review')}
         ORDER BY rating.post_id
         LIMIT ${probeParam}
       ) review_posts
@@ -59,7 +62,7 @@ export function topicCountLaterals(probeParam: string): string {
         SELECT mapping.post_id
         FROM post_data_point_topics mapping
         WHERE mapping.topic_id = combined_ids.id
-          AND ${eligibleExists('mapping.post_id', 'data_point')}
+          AND ${eligibleProbe('mapping.post_id', 'data_point')}
         ORDER BY mapping.post_id
         LIMIT ${probeParam}
       ) data_point_posts
