@@ -12,6 +12,8 @@ Two separate checks share the released jscpd package and [`.jscpd.json`](../../.
 
 Findings are compared against a reviewed baseline by category, path, parent, name, and symbol kind, with repeats counted, so a new or increased finding fails even when another disappears. Line numbers and message wording do not matter. A removed finding makes the baseline stale; after verifying a cleanup run `pnpm run jscpd:dead-code:update`, which refuses new or increased findings. Review baseline changes as code changes; do not change the confidence floor or widen the test-only exclusion to make a run pass.
 
+The owner-required lower layer in #5635 retains four exact provider file/symbol identities in the reviewed baseline. Upper PR #5653 removes these sources and the corresponding baseline entries together.
+
 React invokes the error boundary lifecycle method by convention, so the framework definition identifies that callback in its owning file. Keep framework callback declarations scoped to the files where the framework invokes them.
 
 `deadCode.entry` roots are runtime, CLI, generator, or loader targets that no import reaches. Keep them narrow so ordinary helpers still need consumers; every entry must match a tracked file or the guard fails.

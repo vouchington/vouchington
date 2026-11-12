@@ -3,6 +3,19 @@ export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
     'boilerplate_removal_hostname_cursors',
     'A checked singleton bounds the scheduled boilerplate removal hostname sweep to one row.',
   ],
+  // #5635 lower-only retained tables; the removal layer deletes these classifications.
+  [
+    'bedrock_nova_multimodal_v1_embeddings',
+    'Recomputable text vectors are removed by capped age-based deletion batches.',
+  ],
+  [
+    'bedrock_embedding_batches',
+    'Terminal batches are deleted after 30 days by capped deletion batches; in-flight batches remain until terminal.',
+  ],
+  [
+    'bedrock_embedding_batch_entities',
+    'Batch member rows cascade when a terminal parent batch expires.',
+  ],
   [
     'gemini_embedding_batches',
     'Terminal batches are deleted after 30 days by capped deletion batches; in-flight batches remain until terminal.',
