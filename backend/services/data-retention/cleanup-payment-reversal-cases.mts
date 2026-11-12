@@ -17,7 +17,10 @@ export function cleanupMembershipReversalCasePage(
     kind: 'membership_reversal_case_ledger',
     pageSize,
     recordIds,
-    permitDelete: sql`/* permitExpiredMembershipReversalCaseDelete */ SET LOCAL app.billing_retention_delete = 'on'`,
+    permitDelete: query =>
+      query(
+        sql`/* permitExpiredMembershipReversalCaseDelete */ SET LOCAL app.billing_retention_delete = 'on'`,
+      ),
     selectPage: async (query, cursorId) => {
       const statement = sql`/* selectExpiredMembershipReversalCasePage */
         SELECT reversal_case.id, fn_membership_reversal_case_expired(reversal_case.id) AS due

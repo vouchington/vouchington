@@ -34,8 +34,14 @@ export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
   if (columns.length === 0) {
     // No columns to update, but we still want to ensure the row exists
     // Use a no-op update on conflict so RETURNING always yields a row.
-    const query = topicAttributeUpsertQuery(tableName, '', '', 'topic_id = EXCLUDED.topic_id')
-    return writeTopicAttributeRow<T>(options ?? {}, query, [topicId])
+    return writeTopicAttributeRow<T>(
+      options ?? {},
+      tableName,
+      '',
+      '',
+      'topic_id = EXCLUDED.topic_id',
+      [topicId],
+    )
   }
 
   // Build placeholders for INSERT values ($2, $3, ...)
@@ -45,23 +51,31 @@ export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
   const updateSets = columns.map((col, i) => `${col} = $${i + 2}`).join(', ')
 
   // Build the upsert query
-  const query = topicAttributeUpsertQuery(
+  return writeTopicAttributeRow<T>(
+    options ?? {},
     tableName,
     `, ${columns.join(', ')}`,
     `, ${insertPlaceholders}`,
     updateSets,
+    [topicId, ...values],
   )
-
-  return writeTopicAttributeRow<T>(options ?? {}, query, [topicId, ...values])
 }
 
 async function writeTopicAttributeRow<T extends pg.QueryResultRow>(
   options: QueryOptions,
-  statement: string,
+  tableName: TopicAttributeTableName,
+  columns: string,
+  values: string,
+  updateSets: string,
   parameters: unknown[],
 ): Promise<T | null> {
+  const suffix = `(topic_id${columns})
+    VALUES ($1${values})
+    ON CONFLICT (topic_id) DO UPDATE
+    SET ${updateSets}
+    RETURNING *`
   const run = async (query: TransactionQuery) => {
-    const { rows } = await write<T>(statement, parameters, { query })
+    const { rows } = await topicAttributeUpsertQuery<T>(query, tableName, suffix, parameters)
     return rows[0] ?? null
   }
   if (options.query || options.client) return withTransactionOptions(options, run)
@@ -71,29 +85,48 @@ async function writeTopicAttributeRow<T extends pg.QueryResultRow>(
   return row
 }
 
-function topicAttributeUpsertQuery(
+function topicAttributeUpsertQuery<T extends pg.QueryResultRow>(
+  query: TransactionQuery,
   tableName: TopicAttributeTableName,
-  columns: string,
-  values: string,
-  updateSets: string,
-): string {
-  const suffix = `(topic_id${columns})
-    VALUES ($1${values})
-    ON CONFLICT (topic_id) DO UPDATE
-    SET ${updateSets}
-    RETURNING *`
+  suffix: string,
+  parameters: unknown[],
+): Promise<pg.QueryResult<T>> {
   switch (tableName) {
     case 'card_topics':
-      return `/* upsertTopicAttributes:cards */ INSERT INTO card_topics ${suffix}`
+      return write<T>(
+        `/* upsertTopicAttributes:cards */ INSERT INTO card_topics ${suffix}`,
+        parameters,
+        { query },
+      )
     case 'referral_program_topics':
-      return `/* upsertTopicAttributes:referralPrograms */ INSERT INTO referral_program_topics ${suffix}`
+      return write<T>(
+        `/* upsertTopicAttributes:referralPrograms */ INSERT INTO referral_program_topics ${suffix}`,
+        parameters,
+        { query },
+      )
     case 'retailer_topics':
-      return `/* upsertTopicAttributes:retailers */ INSERT INTO retailer_topics ${suffix}`
+      return write<T>(
+        `/* upsertTopicAttributes:retailers */ INSERT INTO retailer_topics ${suffix}`,
+        parameters,
+        { query },
+      )
     case 'rewards_program_status_topics':
-      return `/* upsertTopicAttributes:rewardsProgramStatuses */ INSERT INTO rewards_program_status_topics ${suffix}`
+      return write<T>(
+        `/* upsertTopicAttributes:rewardsProgramStatuses */ INSERT INTO rewards_program_status_topics ${suffix}`,
+        parameters,
+        { query },
+      )
     case 'rewards_program_topics':
-      return `/* upsertTopicAttributes:rewardsPrograms */ INSERT INTO rewards_program_topics ${suffix}`
+      return write<T>(
+        `/* upsertTopicAttributes:rewardsPrograms */ INSERT INTO rewards_program_topics ${suffix}`,
+        parameters,
+        { query },
+      )
     case 'spending_category_topics':
-      return `/* upsertTopicAttributes:spendingCategories */ INSERT INTO spending_category_topics ${suffix}`
+      return write<T>(
+        `/* upsertTopicAttributes:spendingCategories */ INSERT INTO spending_category_topics ${suffix}`,
+        parameters,
+        { query },
+      )
   }
 }

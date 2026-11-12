@@ -11,31 +11,24 @@ import { getHouseholdLimits } from './household-limits-config.mts'
 import type { HouseholdRow } from './types.mts'
 
 /**
+ * Insert an owned household, or refuse when the capped count already sees the cap.
  * Owned-household and member caps are best effort. Count with `LIMIT cap + 1`, then write.
  * A real race may admit one more than the cap.
  * See docs/development/postgresql/reference-transactions.md#lock-scope.
  */
-async function countCapped(
-  sqlText: ReturnType<typeof sql>,
-  options: QueryOptions,
-): Promise<number> {
-  const { rows } = await write<{ count: number }>(sqlText, options)
-  return rows[0]?.count ?? 0
-}
-
-/** Insert an owned household, or refuse when the capped count already sees the cap. */
 export async function insertOwnedHousehold(
   userId: string,
   options: QueryOptions,
 ): Promise<HouseholdRow> {
   const { householdsPerUser } = getHouseholdLimits()
-  const owned = await countCapped(
+  const { rows: ownedRows } = await write<{ count: number }>(
     sql`/* insertOwnedHousehold:count */
       SELECT count(*)::int AS count FROM (
         SELECT 1 FROM households WHERE owner_user_id = ${userId} LIMIT ${householdsPerUser + 1}
       ) owned`,
     options,
   )
+  const owned = ownedRows[0]?.count ?? 0
   if (owned >= householdsPerUser) {
     throw createCodedError(409, 'Household limit reached', HOUSEHOLD_LIMIT_REACHED)
   }

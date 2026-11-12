@@ -134,16 +134,14 @@ export async function cleanupDeletedConversationPage(
   }
 
   for (const stage of CHILD_STAGES) {
-    // no-mistakes-disable-next-line query-reached-per-item: fixed FK-ordered child stages each delete at most batchSize rows in this one parent transaction
-    const deleted = await query(stage.deletion, [candidate.id, batchSize])
+    const deleted = await stage.deletion(query, candidate.id, batchSize)
     if ((deleted.rowCount ?? 0) > 0) {
       // no-mistakes-disable-next-line query-reached-per-item: checkpoint must follow the bounded child deletion in the same transaction
       await checkpoint(query, cursor, cutoff)
       return { deleted: 0, hasMore: true, continuation: null, stalled: false }
     }
     // A locked child keeps the parent until next run, preventing unbounded CASCADE work.
-    // no-mistakes-disable-next-line query-reached-per-item: each fixed child stage checks for remaining rows before the next FK-ordered stage
-    const remains = await query<{ remaining: boolean }>(stage.remaining, [candidate.id])
+    const remains = await stage.remaining(query, candidate.id)
     if (remains.rows[0]?.remaining) {
       // no-mistakes-disable-next-line query-reached-per-item: a skipped locked child keeps the parent and checkpoint together
       await checkpoint(query, cursor, cutoff)

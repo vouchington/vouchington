@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { SQLStatement } from 'sql-template-strings'
 import {
   lockPaymentCleanupCursor,
   savePaymentCleanupCursor,
@@ -20,7 +19,7 @@ export async function runCursorCleanupPage(options: {
   kind: CursorPageKind
   pageSize: number
   recordIds?: readonly string[]
-  permitDelete: SQLStatement
+  permitDelete: (query: CursorTransaction) => Promise<unknown>
   selectPage: (query: CursorTransaction, cursorId: string | null) => Promise<CursorPageRow[]>
   lockDue: (query: CursorTransaction, dueId: string) => Promise<string | undefined>
   drainChildren: (query: CursorTransaction, rowId: string) => Promise<number>
@@ -28,7 +27,7 @@ export async function runCursorCleanupPage(options: {
 }) {
   const { kind, pageSize, recordIds } = options
   await using query = await beginTransaction()
-  await query(options.permitDelete)
+  await options.permitDelete(query)
   const cursorId = recordIds ? null : await lockPaymentCleanupCursor(query, kind)
   const rows = await options.selectPage(query, cursorId)
   const page = rows.slice(0, pageSize)
