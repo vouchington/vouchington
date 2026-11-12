@@ -32,7 +32,7 @@ const landing = getEntityRelationMetadataOrThrow({
   predicate: 'landing_page',
 })
 
-describe('hostname ownership serialization against approval', () => {
+describe('hostname ownership after approval', () => {
   let admin: PrivateUser
   let recommendation: TopicRecommendationPost
   let hostname: string

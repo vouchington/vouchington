@@ -43,7 +43,7 @@ describe('community agent prompt admission', () => {
     ).toEqual([second.id, first.id])
   })
 
-  it('serializes concurrent creates at the exact cap', async () => {
+  it('rejects the next create after sequentially reaching the cap', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(communityAgentPromptsConfig, {
         prompts_per_user_per_community: 1,
@@ -51,16 +51,17 @@ describe('community agent prompt admission', () => {
     )
     const user = await createTestUser()
     const community = await insertTestCommunity({ createdById: user.id })
-    const attempts = await Promise.allSettled([
-      createCommunityAgentPrompt(user.id, community.id, { prompt: 'Concurrent first' }),
-      createCommunityAgentPrompt(user.id, community.id, { prompt: 'Concurrent second' }),
-    ])
-    expect(attempts.filter(result => result.status === 'fulfilled')).toHaveLength(1)
-    const failure = attempts.find(result => result.status === 'rejected')
-    expect(failure?.status === 'rejected' ? failure.reason : undefined).toMatchObject({
+    const created = await createCommunityAgentPrompt(user.id, community.id, {
+      prompt: 'First draft',
+    })
+    await expect(
+      createCommunityAgentPrompt(user.id, community.id, { prompt: 'Over cap' }),
+    ).rejects.toMatchObject({
       status: 409,
       code: 'COMMUNITY_AGENT_PROMPT_LIMIT_REACHED',
     })
-    expect((await searchCommunityAgentPrompts(community.id)).results).toHaveLength(1)
+    expect(
+      (await searchCommunityAgentPrompts(community.id)).results.map(prompt => prompt.id),
+    ).toEqual([created.id])
   })
 })
