@@ -2,16 +2,16 @@ import type pg from 'pg'
 import { writePool } from '@data-stores/psql'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
-/** Commit the real erasure marker while an agent write waits on the same intake lock. */
+/** Start a writer after the marker UPDATE, retaining either valid outcome if erasure aborts. */
 export async function waitForCopyrightEmailMarkerBeforeWriter<T, WriterResult>(
   intakeId: string,
   erase: () => Promise<T>,
   append: () => Promise<WriterResult>,
   writerStatementMarker = '/* appendCopyrightEmailIntakeRecommendation:lockIntake */',
-): Promise<{ erasure: T; appended: WriterResult }> {
+): Promise<{ erasure: PromiseSettledResult<T>; appended: PromiseSettledResult<WriterResult> }> {
   return runPoolObservationExclusively(async () => {
     const markerWritten = Promise.withResolvers<void>()
-    const writerWaiting = Promise.withResolvers<void>()
+    const writerDispatched = Promise.withResolvers<void>()
     const releaseMarker = Promise.withResolvers<void>()
     const restorations = new Map<pg.PoolClient, () => void>()
     const observe = (client: pg.PoolClient) => {
@@ -48,7 +48,7 @@ export async function waitForCopyrightEmailMarkerBeforeWriter<T, WriterResult>(
           Array.isArray(values) &&
           values.includes(intakeId)
         )
-          writerWaiting.resolve()
+          writerDispatched.resolve()
         return pending
       }) as pg.PoolClient['query']
       Object.defineProperty(client, 'query', { configurable: true, writable: true, value: query })
@@ -57,13 +57,13 @@ export async function waitForCopyrightEmailMarkerBeforeWriter<T, WriterResult>(
     const erasure = erase()
     let writer: Promise<WriterResult> | undefined
     try {
-      void erasure.catch((err: unknown) => markerWritten.reject(err))
-      await markerWritten.promise
+      const settledErasure = Promise.allSettled([erasure]).then(([result]) => result!)
+      await Promise.race([markerWritten.promise, settledErasure])
       writer = append()
-      void writer.catch((err: unknown) => writerWaiting.reject(err))
-      await writerWaiting.promise
+      const settledWriter = Promise.allSettled([writer]).then(([result]) => result!)
+      await Promise.race([writerDispatched.promise, settledWriter])
       releaseMarker.resolve()
-      return { erasure: await erasure, appended: await writer }
+      return { erasure: await settledErasure, appended: await settledWriter }
     } finally {
       releaseMarker.resolve()
       await erasure.catch(() => undefined)

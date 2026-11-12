@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function readCopyrightEmailReceiptErasedAt(intakeId: string): Promise<Date | null> {
@@ -51,4 +51,17 @@ export async function readCopyrightIntakeRetentionState(intakeId: string): Promi
     deliveryBody: row.delivery_body,
     ancestorCount: row.ancestor_count,
   }
+}
+
+/** Seed a receipt already fenced by a committed erasure tick, before testing later writers. */
+export async function commitCopyrightEmailReceiptErasureMarker(intakeId: string): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* commitCopyrightEmailReceiptErasureMarker:context */
+    SELECT set_config('app.copyright_retention_erasure', 'on', true),
+      set_config('app.copyright_operational_retention', 'on', true)`)
+  const { rowCount } = await transaction(sql`/* commitCopyrightEmailReceiptErasureMarker */
+    UPDATE copyright_notice_email_intake_receipts
+    SET erased_at = COALESCE(erased_at, CURRENT_TIMESTAMP) WHERE id = ${intakeId}`)
+  if (rowCount !== 1) throw new Error('Expected exactly one owned copyright email receipt')
+  await transaction.commit()
 }
