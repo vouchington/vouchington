@@ -1,0 +1,26 @@
+{
+  "import": {
+    "completed_at": "2026-11-01T00:01:00.000Z",
+    "completed_rows": 0,
+    "created_at": "2026-11-01T00:00:00.000Z",
+    "failed_rows": 1,
+    "id": "70000000-0000-7000-8000-000000005383",
+    "pending_rows": 0,
+    "skipped_rows": 1,
+    "total_rows": 1
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwNTM4NCIsInNjb3BlIjoicnNzLWZlZWQtaW1wb3J0LXJvd3M6NzAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDA1MzgzOnJvdy1pbmRleC1hc2MifQ"
+  },
+  "rows": [
+    {
+      "entity_id": "70000000-0000-7000-8000-000000005382",
+      "error_code": "RELATION_LIMIT_REACHED",
+      "id": "70000000-0000-7000-8000-000000005384",
+      "input": "https://example.com/feed.xml",
+      "status": "error"
+    }
+  ]
+}

@@ -691,6 +691,7 @@
       "fixtureIds": [
         "native.import-export.rss-feeds.status.partial",
         "native.import-export.rss-feeds.status.retrying",
+        "native.relation-limits.rss-feeds.import.skipped",
         "native.rss-feeds.create.status.completed",
         "native.rss-feeds.create.status.failed",
         "native.rss-feeds.create.status.pending"
@@ -1617,7 +1618,10 @@
       "hash": "decb40d52aefa349a521cbb03f22fc8f438e20b6b3dc2770ad8b27fbc2690978"
     },
     "POST:/api/v1/my/import/topics": {
-      "fixtureIds": ["native.import-export.topics.import.outcomes"],
+      "fixtureIds": [
+        "native.import-export.topics.import.outcomes",
+        "native.relation-limits.topics.import.skipped"
+      ],
       "hash": "ea40b2fcc07bb8577a0df69484f79ef83c33207d02ef1ba1ff6fcc93640e347d"
     },
     "POST:/api/v1/my/messages": {
@@ -1755,6 +1759,13 @@
     "PUT:/api/v1/admin/oauth-clients/:id/verification": {
       "fixtureIds": ["web.admin.oauth-clients.verify"],
       "hash": "32c1489270bb528f61f4bdb436d30b05e4bd1be44c0802252a4c774af527e6dd"
+    },
+    "PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate#relation-limit": {
+      "fixtureIds": [
+        "native.relation-limits.rss-subscribe.conflict",
+        "native.relation-limits.topic-follow.conflict"
+      ],
+      "hash": "169d99ed60b0f3baaff5c0a187e0697770a5e6a71253aa2985965f653fc24bac"
     },
     "PUT:/api/v1/communities/:communitySlug/ai-agents/:agentSlug": {
       "fixtureIds": ["web.communities.ai-agent.default"],
@@ -3089,6 +3100,22 @@
     "native.referral-links.user.public": {
       "fixtureIds": ["native.referral-links.user.public"],
       "hash": "5c36e85b9c7bf1a6e39fa625d4f782c2ab8ca1759de1b46999a7d475256f0aaf"
+    },
+    "native.relation-limits.rss-feeds.import.skipped": {
+      "fixtureIds": ["native.relation-limits.rss-feeds.import.skipped"],
+      "hash": "c684af40e59c703b886c1394ec50a24381073899029e70330ebae13d8af8aa7b"
+    },
+    "native.relation-limits.rss-subscribe.conflict": {
+      "fixtureIds": ["native.relation-limits.rss-subscribe.conflict"],
+      "hash": "99bf708cb0cedd797029293ae07734fc205fce184be19bae21179cf98d8ece1f"
+    },
+    "native.relation-limits.topic-follow.conflict": {
+      "fixtureIds": ["native.relation-limits.topic-follow.conflict"],
+      "hash": "99bf708cb0cedd797029293ae07734fc205fce184be19bae21179cf98d8ece1f"
+    },
+    "native.relation-limits.topics.import.skipped": {
+      "fixtureIds": ["native.relation-limits.topics.import.skipped"],
+      "hash": "c0dcdf76cf33581107ff7d28a89f64bb2fec1c85ff5a7fd8cf88a6ff44737d88"
     },
     "native.rewards-program-status-topics.search.default": {
       "fixtureIds": ["native.rewards-program-status-topics.search.default"],

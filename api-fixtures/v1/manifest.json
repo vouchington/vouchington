@@ -100588,6 +100588,38 @@
       "source": "backend/api/v1/admin/oauth-clients.mts",
       "statusKnowledge": "default"
     },
+    "PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate#relation-limit": {
+      "bodyKind": "content",
+      "hash": "169d99ed60b0f3baaff5c0a187e0697770a5e6a71253aa2985965f653fc24bac",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "PUT",
+      "routeTemplate": "/api/v1/bookmarks/:entityType/:entityId/:predicate",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "message": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/bookmarks/bookmarks.mts",
+      "statusCodes": [409],
+      "statusKnowledge": "explicit"
+    },
     "PUT:/api/v1/communities/:communitySlug/ai-agents/:agentSlug": {
       "bodyKind": "content",
       "hash": "874fe50d1a0390a29de33d122cfebcf0ba8bbf0f117906d77ffdb6edf79835e4",
@@ -111495,6 +111527,106 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-import-export-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate#relation-limit",
+      "bodyFile": "responses/native.relation-limits.topic-follow.conflict.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.relation-limits.topic-follow.conflict",
+      "method": "PUT",
+      "migratedFrom": ["backend/api/v1/bookmarks/relation-limits.test.mts"],
+      "path": "/api/v1/bookmarks/topic/70000000-0000-7000-8000-000000005381/follow",
+      "responseSchema": {
+        "hash": "99bf708cb0cedd797029293ae07734fc205fce184be19bae21179cf98d8ece1f",
+        "key": "native.relation-limits.topic-follow.conflict"
+      },
+      "route": {
+        "pathParams": {
+          "entityId": "70000000-0000-7000-8000-000000005381",
+          "entityType": "topic",
+          "predicate": "follow"
+        },
+        "routeTemplate": "/api/v1/bookmarks/:entityType/:entityId/:predicate"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-relation-limit-cases.mts"
+      },
+      "status": 409
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate#relation-limit",
+      "bodyFile": "responses/native.relation-limits.rss-subscribe.conflict.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.relation-limits.rss-subscribe.conflict",
+      "method": "PUT",
+      "migratedFrom": ["backend/api/v1/bookmarks/bookmarks.mts"],
+      "path": "/api/v1/bookmarks/rss_feed/70000000-0000-7000-8000-000000005382/subscribe",
+      "responseSchema": {
+        "hash": "99bf708cb0cedd797029293ae07734fc205fce184be19bae21179cf98d8ece1f",
+        "key": "native.relation-limits.rss-subscribe.conflict"
+      },
+      "route": {
+        "pathParams": {
+          "entityId": "70000000-0000-7000-8000-000000005382",
+          "entityType": "rss_feed",
+          "predicate": "subscribe"
+        },
+        "routeTemplate": "/api/v1/bookmarks/:entityType/:entityId/:predicate"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-relation-limit-cases.mts"
+      },
+      "status": 409
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/my/import/topics",
+      "bodyFile": "responses/native.relation-limits.topics.import.skipped.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.relation-limits.topics.import.skipped",
+      "method": "POST",
+      "migratedFrom": ["backend/services/user-import-export/import-topics.test.mts"],
+      "path": "/api/v1/my/import/topics",
+      "requestBody": {
+        "names": ["Local News"]
+      },
+      "responseSchema": {
+        "hash": "c0dcdf76cf33581107ff7d28a89f64bb2fec1c85ff5a7fd8cf88a6ff44737d88",
+        "key": "native.relation-limits.topics.import.skipped"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/my/import/topics"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-relation-limit-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/import/rss-feeds/:importId",
+      "bodyFile": "responses/native.relation-limits.rss-feeds.import.skipped.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.relation-limits.rss-feeds.import.skipped",
+      "method": "GET",
+      "migratedFrom": ["backend/services/user-import-export/rss-feed-import-row-updates.test.mts"],
+      "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000005383",
+      "responseSchema": {
+        "hash": "c684af40e59c703b886c1394ec50a24381073899029e70330ebae13d8af8aa7b",
+        "key": "native.relation-limits.rss-feeds.import.skipped"
+      },
+      "route": {
+        "pathParams": {
+          "importId": "70000000-0000-7000-8000-000000005383"
+        },
+        "routeTemplate": "/api/v1/my/import/rss-feeds/:importId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-relation-limit-cases.mts"
       },
       "status": 200
     },
