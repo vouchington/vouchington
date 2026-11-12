@@ -134,6 +134,7 @@ export async function runPostTopicSemiJoinScenarios(): Promise<void> {
     'relation__post__category__topic_alias_pkey',
     'relation__post__category__topic_alias_subject_id_id_key',
     'idx_relation__post__category__topic_alias__subject__newest',
+    'idx_relation__post__category__topic_alias__subject__best',
   ])
   await captureTopicPair('sparse', aliasRelationLeaves)
   await captureTopicPair('dense', aliasRelationLeaves)
