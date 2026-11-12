@@ -25,7 +25,6 @@ export async function assertMonthlyRetirementControls(
       chunk_partition: false,
       chunk_exists: false,
       entity_exists: false,
-      bedrock_entity_exists: false,
       crawl_partition: true,
     })
   })
@@ -37,9 +36,7 @@ export async function assertMonthlyRetirementControls(
       crawl_partition: false,
       chunk_exists: false,
       entity_exists: false,
-      bedrock_entity_exists: false,
       batch_crawl_id: null,
-      bedrock_batch_crawl_id: null,
       referral_crawl_id: null,
       discovery_crawl_id: null,
     })
@@ -57,9 +54,7 @@ export async function assertMonthlyRetirementControls(
       crawl_partition: true,
       chunk_exists: true,
       entity_exists: true,
-      bedrock_entity_exists: true,
       batch_crawl_id: '00000000-0000-7000-8000-000000000001',
-      bedrock_batch_crawl_id: '00000000-0000-7000-8000-000000000001',
       referral_crawl_id: '00000000-0000-7000-8000-000000000001',
       discovery_crawl_id: '00000000-0000-7000-8000-000000000001',
       rss_partition: false,
