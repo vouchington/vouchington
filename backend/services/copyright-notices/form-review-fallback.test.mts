@@ -1,3 +1,5 @@
+import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
+import { commitCopyrightWritersInOrder } from '@voucha/test-helpers/copyright-form-review-assessment-race'
 import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
@@ -113,68 +115,41 @@ describe('copyright form moderator fallback', () => {
   })
 
   it('keeps a moderator rejection authoritative when it races a clean automated screening', async () => {
-    const [poster, claimant, moderatorRecord] = await Promise.all([
-      createTestUser(),
-      createTestUser(),
-      createTestUser(),
-    ])
-    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-    const postId = await insertTestPost({
-      title: `racing copyright ${crypto.randomUUID()}`,
-      slug: `racing-copyright-${crypto.randomUUID()}`,
-      createdById: poster.id,
-      markdown: 'image',
-    })
-    const imageId = await insertTestImage(poster.id)
-    await insertTestPostImage({ postId, imageId })
-    const notice = await createCopyrightFormIntake({
-      currentUser: claimant,
-      requesterIdentity: `user:${claimant.id}`,
-      idempotencyKey: crypto.randomUUID(),
-      request: {
-        jurisdiction: 'us_dmca',
-        claimantDisplayName: 'Claimant',
-        claimantContact: 'Claimant contact record',
-        claimantEmail: 'claimant@example.test',
-        workDescription: 'A disputed photograph',
-        goodFaithBelief: true,
-        accuracyAuthorityUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        claimantTargets: [
-          {
-            surfaceKind: 'post-image' as const,
-            postId,
-            imageId,
-            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-          },
-        ],
-      },
-    })
-    await appendTestCopyrightFormScreening({
-      intakeId: notice.intake.id,
-      inputSha256: Buffer.alloc(32, 10),
-      recommendation: 'not_obviously_invalid',
-      rationale: 'No obvious spam markers.',
-      guidance: testCopyrightFormGuidance,
-      promptVersion: 'copyright-form-screening-v2',
-      model: 'test-model',
-    })
-
-    await Promise.all([
-      reviewCopyrightFormIntake({
-        intakeId: notice.intake.id,
-        currentUser: moderator,
-        is_accepted: false,
-        rationale: 'The claimant did not substantiate this complaint.',
-      }),
-      applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id),
-    ])
-    const remaining = await countCopyrightActiveRestrictionsForNotice(
-      notice.intake.copyright_notice_id,
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const { notice } = await createClearScreenedForm()
+    const [reviewed, screened] = await commitCopyrightWritersInOrder(
+      () =>
+        reviewCopyrightFormIntake({
+          intakeId: notice.intake.id,
+          currentUser: moderator,
+          is_accepted: false,
+          rationale: 'The claimant did not substantiate this complaint.',
+        }),
+      () =>
+        applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id),
+      'reviewCopyrightFormIntake:review',
+      'applyNonSpamSignedInCopyrightFormScreening:lock',
+      notice.intake.copyright_notice_submission_id,
+      [
+        notice.intake.id,
+        notice.intake.copyright_notice_id,
+        notice.intake.copyright_notice_submission_id,
+      ],
     )
-    if (remaining === 0) return
-    expect(remaining).toBe(1)
-    await expectQueuedRestore(notice.intake.copyright_notice_id)
+    expect(reviewed).toMatchObject({ status: 'fulfilled', value: { is_accepted: false } })
+    expect(screened).toMatchObject({ status: 'rejected', reason: { code: '40001' } })
+    expect(await countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id)).toBe(
+      0,
+    )
+    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    expect(aggregate?.assessments).toEqual([
+      expect.objectContaining({
+        is_substantially_compliant: false,
+        copyright_notice_form_screening_id: null,
+        assessed_by_id: moderator.id,
+      }),
+    ])
+    expect(aggregate?.actionIntents).toEqual([])
   })
 
   it('lets a moderator reverse an automated signed-in restriction', async () => {

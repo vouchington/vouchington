@@ -4,6 +4,7 @@ import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyri
 import {
   createCopyrightNoticeForManualAssociation,
   readCopyrightEmailManualAssociationEvent,
+  readCopyrightEmailManualAssociationReview,
 } from '@voucha/test-helpers/copyright-email-manual-association'
 import {
   copyrightEmailMessageId,
@@ -19,7 +20,7 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 
 describe('copyright failed delivery recovery and intake association', () => {
-  it('commits a current assessment and the concurrent source association', async () => {
+  it('commits assessment and rolls back the overlapping source association', async () => {
     const currentUser = await createTestUser({ extraRoles: ['moderator'] })
     const noticeId = await createCopyrightNoticeForManualAssociation()
     const submission = await appendTestCopyrightNoticeSubmission({
@@ -44,24 +45,32 @@ describe('copyright failed delivery recovery and intake association', () => {
       noticeId,
       reply.intakeId,
     )
-    expect(result.assessment.copyright_notice_submission_id).toBe(submission.id)
-    const after = await getCopyrightNoticePrivateAggregate(noticeId)
-    expect(after?.submissions.find(row => row.id === submission.id)).toMatchObject({
-      current_assessment_identity_id: result.assessment.id,
+    expect(result.assessment).toMatchObject({
+      status: 'fulfilled',
+      value: { copyright_notice_submission_id: submission.id },
     })
-    expect(after?.assessments.find(row => row.id === result.assessment.id)).toBeDefined()
+    expect(result.association).toMatchObject({
+      status: 'rejected',
+      reason: { status: 409, code: 'copyright_email_thread_changed', cause: { code: '40001' } },
+    })
+    const after = await getCopyrightNoticePrivateAggregate(noticeId)
+    const assessment = after?.assessments[0]
+    if (!assessment) throw new Error('Committed assessment missing')
+    expect(after?.assessments).toHaveLength(1)
+    expect(after?.submissions.find(row => row.id === submission.id)).toMatchObject({
+      current_assessment_identity_id: assessment.id,
+    })
     expect(
       after?.lifecycleEvents.filter(
-        row => row.copyright_notice_submission_assessment_identity_id === result.assessment.id,
+        row => row.copyright_notice_submission_assessment_identity_id === assessment.id,
       ),
     ).toHaveLength(1)
-    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([
-      { copyright_notice_id: noticeId, link_kind: 'thread' },
-    ])
-    expect(await readCopyrightEmailManualAssociationEvent(reply.intakeId)).toHaveLength(1)
+    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationReview(reply.intakeId)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationEvent(reply.intakeId)).toEqual([])
   })
 
-  it('commits the reset, one replay audit and the concurrent source association', async () => {
+  it('commits delivery replay and rolls back the overlapping source association', async () => {
     const currentUser = await createTestUser({ extraRoles: ['moderator'] })
     const noticeId = await createCopyrightNoticeForManualAssociation()
     const reply = await recordThreadedCopyrightEmail({
@@ -85,11 +94,14 @@ describe('copyright failed delivery recovery and intake association', () => {
       intent.id,
       reply.intakeId,
     )
-    expect(result.replayed).toBe(true)
-    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([
-      { copyright_notice_id: noticeId, link_kind: 'thread' },
-    ])
-    expect(await readCopyrightEmailManualAssociationEvent(reply.intakeId)).toHaveLength(1)
+    expect(result.replayed).toEqual({ status: 'fulfilled', value: true })
+    expect(result.association).toMatchObject({
+      status: 'rejected',
+      reason: { status: 409, code: 'copyright_email_thread_changed', cause: { code: '40001' } },
+    })
+    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationReview(reply.intakeId)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationEvent(reply.intakeId)).toEqual([])
     const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
     expect(aggregate?.deliveryIntents.find(row => row.id === intent.id)?.state).toBe('pending')
     expect(

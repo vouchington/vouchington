@@ -1,11 +1,8 @@
+import { seedCopyrightCounterNotice } from '@voucha/test-helpers/copyright-notice-submissions'
 import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
 import { describe, expect, it } from 'vitest'
 import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
-import {
-  completeCopyrightMandatoryHumanReview,
-  createCopyrightCounterNotice,
-  enforceCopyrightAssessment,
-} from './index.mts'
+import { completeCopyrightMandatoryHumanReview, enforceCopyrightAssessment } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { createEligibleCopyrightRestoreIntent } from './restoration.mts'
@@ -51,21 +48,8 @@ describe('copyright notice persistence', () => {
 
   it('derives a deadline from the immutable qualifying counter-notice receipt', async () => {
     const { aggregate, claimant, moderator, notice } = await createFixture()
-    const submission = await createCopyrightCounterNotice(
-      claimant,
-      notice.id,
-      crypto.randomUUID(),
-      {
-        name: 'Claimant',
-        address: '1 Main Street',
-        telephone: '555-0100',
-        consentToFederalJurisdiction: true,
-        consentToServiceOfProcess: true,
-        goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        targetIds: [aggregate.targets[0].id],
-      },
-    )
+    const target = aggregate.targets[0]!
+    const submission = await seedCopyrightCounterNotice(notice.id, claimant.id, [target.id])
     const { deadline } = await acceptCounterNoticeForRestoration({
       noticeId: notice.id,
       submissionId: submission.submission.id,
@@ -92,21 +76,7 @@ describe('copyright notice persistence', () => {
       imposedAt: new Date('2026-07-01T12:00:00.000Z'),
       imposedById: null,
     })
-    const submission = await createCopyrightCounterNotice(
-      claimant,
-      notice.id,
-      crypto.randomUUID(),
-      {
-        name: 'Claimant',
-        address: '1 Main Street',
-        telephone: '555-0100',
-        consentToFederalJurisdiction: true,
-        consentToServiceOfProcess: true,
-        goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        targetIds: [target.id],
-      },
-    )
+    const submission = await seedCopyrightCounterNotice(notice.id, claimant.id, [target.id])
     const { deadline } = await acceptCounterNoticeForRestoration({
       noticeId: notice.id,
       submissionId: submission.submission.id,
@@ -161,21 +131,7 @@ describe('copyright notice persistence', () => {
       imposedAt: new Date('2026-07-01T12:00:00.000Z'),
       imposedById: moderator.id,
     })
-    const submission = await createCopyrightCounterNotice(
-      claimant,
-      notice.id,
-      crypto.randomUUID(),
-      {
-        name: 'Claimant',
-        address: '1 Main Street',
-        telephone: '555-0100',
-        consentToFederalJurisdiction: true,
-        consentToServiceOfProcess: true,
-        goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        targetIds: [target.id],
-      },
-    )
+    const submission = await seedCopyrightCounterNotice(notice.id, claimant.id, [target.id])
     const { assessmentId, deadline } = await acceptCounterNoticeForRestoration({
       noticeId: notice.id,
       submissionId: submission.submission.id,

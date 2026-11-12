@@ -3,12 +3,13 @@ import { createTestUserDirect, getTestUserRaw } from '@voucha/test-helpers'
 import { createTestPostgresMultiWait } from '@voucha/test-helpers/postgres-multi-client-lock-observer'
 import {
   holdTestFinalPurgeUserLifecycle,
+  readReciprocalTestUserDeletionActor,
   setReciprocalTestUserDeletionActors,
 } from '../../../test-helpers/reciprocal-user-purge.mts'
 import { cleanupSoftDeletedUser } from '../cleanup-soft-deleted-user.mts'
 
 describe('reciprocal final user purges', () => {
-  it('serializes overlapping purges before either acquires user locks', async () => {
+  it('commits the first reciprocal purge and rolls back the sibling snapshot', async () => {
     const [firstUser, secondUser] = await Promise.all([
       createTestUserDirect(),
       createTestUserDirect(),
@@ -50,11 +51,17 @@ describe('reciprocal final user purges', () => {
     expect(await getTestUserRaw(firstUser.id)).not.toBeNull()
     expect(await getTestUserRaw(secondUser.id)).not.toBeNull()
     await barrier.commit()
-    await expect(Promise.all([first.operation, second.operation])).resolves.toEqual([
-      { deleted: 1, hasMore: false },
-      { deleted: 1, hasMore: false },
+    const [firstResult, secondResult] = await Promise.allSettled([
+      first.operation,
+      second.operation,
     ])
+    expect(firstResult).toEqual({ status: 'fulfilled', value: { deleted: 1, hasMore: false } })
+    expect(secondResult).toMatchObject({ status: 'rejected', reason: { code: '40001' } })
     expect(await getTestUserRaw(firstUser.id)).toBeNull()
-    expect(await getTestUserRaw(secondUser.id)).toBeNull()
+    expect(await getTestUserRaw(secondUser.id)).toMatchObject({
+      id: secondUser.id,
+      deleted_at: new Date('2020-01-01T00:00:00.000Z'),
+    })
+    expect(await readReciprocalTestUserDeletionActor(secondUser.id)).toBeNull()
   })
 })
