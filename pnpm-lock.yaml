@@ -2332,12 +2332,6 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1165.0
         version: 3.1165.0
-      '@data-stores/graceful-shutdown':
-        specifier: workspace:^
-        version: link:../../data-stores/graceful-shutdown
-      '@modules/api-egress-proxy':
-        specifier: workspace:^
-        version: link:../api-egress-proxy
       '@modules/on-error':
         specifier: workspace:^
         version: link:../on-error
@@ -2359,9 +2353,6 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
-      https-proxy-agent:
-        specifier: ^9.1.0
-        version: 9.1.0(supports-color@10.2.2)
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
