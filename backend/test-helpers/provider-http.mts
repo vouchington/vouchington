@@ -82,9 +82,11 @@ export function installMockAgentDefaultFetchForTest(
   const originalFetch = undici.fetch
   const fetch = vi.spyOn(undici, 'fetch').mockImplementation((input, init) => {
     const origin =
-      typeof input === 'string' || input instanceof URL
+      typeof input === 'string'
         ? new URL(input).origin
-        : new URL(input.url).origin
+        : 'url' in input
+          ? new URL(input.url).origin
+          : input.origin
     return originalFetch(
       input,
       passthroughOrigins.includes(origin) ? init : { ...init, dispatcher: agent },
