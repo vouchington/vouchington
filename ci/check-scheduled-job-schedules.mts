@@ -11,8 +11,6 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const schedulePaths = [
   ...globSync('backend/queues/*/enqueues/schedules.mts', { cwd: repoRoot }).filter(
     path =>
-      // #5635 lower layer retains this module without scheduling paid Bedrock work; the removal layer deletes this exclusion.
-      path !== 'backend/queues/bedrock-embeddings-batch/enqueues/schedules.mts' &&
       !path.startsWith('backend/queues/background/') &&
       !path.startsWith('backend/queues/background-cpu/'),
   ),
