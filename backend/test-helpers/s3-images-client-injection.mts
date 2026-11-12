@@ -44,6 +44,43 @@ export function omitS3ImagesClientResponseFieldsForTest(
 }
 
 /**
+ * Rejects the next `commandName` with `error` after the real stack's retries would have given up,
+ * for failures the emulator cannot produce: a 429 carrying `Retry-After`, or a Smithy error marked
+ * retryable. Earlier commands in the same test still reach the emulator.
+ */
+export function failNextS3ImagesClientCommandForTest(commandName: string, error: unknown): void {
+  let pending = true
+  addInitializeMiddleware(
+    (next, context) => async args => {
+      if (pending && context.commandName === commandName) {
+        pending = false
+        throw error
+      }
+      return next(args)
+    },
+    'fail-next-command',
+  )
+}
+
+/**
+ * Hands the real `commandName` output to `mutate`, so a test can change what S3 reported (a
+ * declared `ContentLength` over the limit) or what its body stream does (a mid-stream reset).
+ */
+export function mutateS3ImagesClientResponseForTest(
+  commandName: string,
+  mutate: (output: Record<string, unknown>) => void,
+): void {
+  addInitializeMiddleware(
+    (next, context) => async args => {
+      const result = await next(args)
+      if (context.commandName === commandName) mutate(result.output as Record<string, unknown>)
+      return result
+    },
+    'mutate-response',
+  )
+}
+
+/**
  * Caps `ListObjectsV2` pages for one bucket at `maxKeys`, so real continuation tokens appear
  * without seeding more than S3's default 1,000-key page.
  */

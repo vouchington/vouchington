@@ -12728,6 +12728,9 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1164.0
         version: 3.1164.0
+      '@aws-sdk/client-sqs':
+        specifier: ^3.1164.0
+        version: 3.1164.0
       '@data-stores/analytics':
         specifier: workspace:^
         version: link:../data-stores/analytics
@@ -14882,6 +14885,9 @@ importers:
       '@aws-sdk/client-sqs':
         specifier: ^3.1164.0
         version: 3.1164.0
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/sitemaps:
     dependencies:
@@ -14944,6 +14950,9 @@ importers:
       '@aws-sdk/client-sqs':
         specifier: ^3.1164.0
         version: 3.1164.0
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/topic-merge:
     dependencies:
