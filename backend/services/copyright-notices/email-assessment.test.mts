@@ -1,3 +1,4 @@
+import { commitCopyrightWritersInOrder } from '@voucha/test-helpers/copyright-form-review-assessment-race'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -11,7 +12,7 @@ import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/co
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('getOrCreateEmailAssessment', () => {
-  it('reuses the current compliant assessment when concurrent reviewers race', async () => {
+  it('commits one concurrent assessment and reuses its result on a later nonwriting replay', async () => {
     const moderatorRecord = await createTestUser()
     const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
     const poster = await createTestUser()
@@ -45,11 +46,30 @@ describe('getOrCreateEmailAssessment', () => {
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
     const submissionId = aggregate?.submissions[0]?.id
     if (!submissionId) throw new Error('email submission missing')
-    const [first, second] = await Promise.all([
-      getOrCreateEmailAssessment(moderator, { noticeId: notice.id, submissionId }),
-      getOrCreateEmailAssessment(moderator, { noticeId: notice.id, submissionId }),
-    ])
-    expect(first.id).toBe(second.id)
+    const assess = () =>
+      getOrCreateEmailAssessment(moderator, { noticeId: notice.id, submissionId })
+    const [first, second] = await commitCopyrightWritersInOrder(
+      assess,
+      assess,
+      'appendCopyrightSubmissionAssessment:event',
+      'appendCopyrightSubmissionAssessment:lockSubmission',
+      submissionId,
+      [notice.id, submissionId],
+    )
+    const after = await getCopyrightNoticePrivateAggregate(notice.id)
+    expect(after?.assessments).toHaveLength(1)
+    const assessmentId = after!.assessments[0]!.id
+    expect(first).toMatchObject({ status: 'fulfilled', value: { id: assessmentId } })
+    expect(second).toMatchObject({
+      status: 'rejected',
+      reason: { status: 409, code: 'CONFLICT', cause: { code: '40001' } },
+    })
+    expect(after?.submissions[0]).toMatchObject({ current_assessment_identity_id: assessmentId })
+    expect(
+      after?.lifecycleEvents.filter(event => event.change_type === 'submission_assessed'),
+    ).toEqual([expect.objectContaining({ changed_by_id: moderator.id })])
+    await expect(assess()).resolves.toEqual({ id: assessmentId })
+    expect(await getCopyrightNoticePrivateAggregate(notice.id)).toEqual(after)
   })
 
   it('fails closed when a non-compliant current assessment blocks a compliant create', async () => {

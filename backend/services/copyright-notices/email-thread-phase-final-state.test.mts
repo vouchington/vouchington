@@ -1,3 +1,4 @@
+import { readCopyrightEmailAncestorIds } from '@voucha/test-helpers/copyright-email-ancestor-edges'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
@@ -91,8 +92,16 @@ describe('copyright email committed reference final state', () => {
     })
     expect(await readCopyrightThreadRetirementBound(notice.noticeId)).not.toBeNull()
     const after = await readCopyrightThreadReferenceState(intake.id)
+    const links = await readCopyrightEmailIntakeNoticeLinks(intake.id)
+    const ancestors = await readCopyrightEmailAncestorIds(intake.id)
+    expect(after).toEqual({ tokenId: null, referenceCount: 0 })
     await expect(deriveCopyrightEmailThread(input, rows)).resolves.toBeNull()
-    await expect(recordCopyrightEmailThreadReferences(input)).resolves.toBeNull()
+    await expect(recordCopyrightEmailThreadReferences(input)).rejects.toMatchObject({
+      status: 409,
+      code: 'copyright_email_thread_changed',
+    })
     expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(after)
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual(links)
+    expect(await readCopyrightEmailAncestorIds(intake.id)).toEqual(ancestors)
   })
 })

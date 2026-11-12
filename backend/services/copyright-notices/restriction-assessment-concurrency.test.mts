@@ -68,7 +68,7 @@ async function createScene() {
 }
 
 describe('copyright enforcement and superseding assessment', () => {
-  it('commits a valid restriction before a waiting superseding assessment', async () => {
+  it('commits a valid restriction and rolls back the overlapping superseding assessment', async () => {
     const { noticeId, acceptance, assessment } = await createScene()
     const { restricted, assessed } = await acceptAndSupersedeCopyrightNotice(
       acceptance,
@@ -84,8 +84,14 @@ describe('copyright enforcement and superseding assessment', () => {
       },
     })
     const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-    expect(aggregate?.submissions[0]).toMatchObject({ current_assessment_identity_id: assessed.id })
-    expect(aggregate?.assessments).toHaveLength(2)
+    expect(assessed).toMatchObject({
+      status: 'rejected',
+      reason: { status: 409, code: 'CONFLICT', cause: { code: '40001' } },
+    })
+    expect(aggregate?.submissions[0]).toMatchObject({
+      current_assessment_identity_id: acceptance.assessmentId,
+    })
+    expect(aggregate?.assessments).toHaveLength(1)
     expect(aggregate?.restrictions).toEqual([
       expect.objectContaining({
         authorizing_assessment_id: acceptance.assessmentId,
@@ -102,7 +108,7 @@ describe('copyright enforcement and superseding assessment', () => {
     ).toHaveLength(1)
   })
 
-  it('rejects the superseded authority if the new assessment commits before acceptance reads it', async () => {
+  it('rolls back overlapping acceptance and rejects stale authority after the superseding commit', async () => {
     const { noticeId, acceptance, assessment } = await createScene()
     const { restricted, assessed } = await acceptAndSupersedeCopyrightNotice(
       acceptance,
@@ -111,14 +117,23 @@ describe('copyright enforcement and superseding assessment', () => {
     )
     expect(restricted).toMatchObject({
       status: 'rejected',
-      reason: {
-        status: 422,
-        message: 'A current notice assessment is required before restriction',
-      },
+      reason: { code: '40001' },
     })
     const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-    expect(aggregate?.submissions[0]).toMatchObject({ current_assessment_identity_id: assessed.id })
     expect(aggregate?.assessments).toHaveLength(2)
+    const superseding = aggregate?.assessments.find(
+      row => row.supersedes_assessment_id === acceptance.assessmentId,
+    )
+    expect(superseding).toMatchObject({ id: expect.any(String) })
+    expect(assessed).toMatchObject({ status: 'fulfilled', value: { id: superseding?.id } })
+    expect(aggregate?.submissions[0]).toMatchObject({
+      current_assessment_identity_id: superseding?.id,
+    })
+    await expect(acceptCopyrightNoticeAndImposeRestriction(acceptance)).rejects.toMatchObject({
+      status: 422,
+      message: 'A current notice assessment is required before restriction',
+    })
+    expect(await getCopyrightNoticePrivateAggregate(noticeId)).toEqual(aggregate)
     expect(aggregate?.notice.accepted_at).toBeNull()
     expect(aggregate?.restrictions).toEqual([])
     expect(aggregate?.actionIntents).toEqual([])

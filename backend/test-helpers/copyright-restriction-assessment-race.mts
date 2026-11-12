@@ -17,35 +17,23 @@ export async function acceptAndSupersedeCopyrightNotice(
   assessment: Parameters<typeof appendCopyrightSubmissionAssessment>[0],
   first: 'restriction' | 'assessment',
 ) {
-  const accept = async () => {
-    try {
-      return {
-        status: 'fulfilled' as const,
-        value: await acceptCopyrightNoticeAndImposeRestriction(acceptance),
-      }
-    } catch (err) {
-      if ((err as { status?: number } | null)?.status !== 422) throw err
-      return { status: 'rejected' as const, reason: err }
-    }
-  }
+  const accept = () => acceptCopyrightNoticeAndImposeRestriction(acceptance)
   const assess = () => appendCopyrightSubmissionAssessment(assessment)
-  const ownedIds = [acceptance.noticeId, acceptance.targetId, assessment.submissionId]
-  if (first === 'restriction') {
-    const [restricted, assessed] = await overlapCopyrightWriters(
-      'acceptCopyrightNoticeAndImposeRestriction:lockNotice',
-      accept,
-      assess,
-      ownedIds,
-    )
-    return { restricted, assessed }
-  }
-  const [assessed, restricted] = await overlapCopyrightWriters(
-    'appendCopyrightSubmissionAssessment',
-    assess,
-    accept,
-    ownedIds,
+  const [winner, loser] = await commitCopyrightWritersInOrder(
+    first === 'restriction' ? accept : assess,
+    first === 'restriction' ? assess : accept,
+    first === 'restriction'
+      ? 'acceptCopyrightNoticeAndImposeRestriction:event'
+      : 'appendCopyrightSubmissionAssessment:event',
+    first === 'restriction'
+      ? 'appendCopyrightSubmissionAssessment:lockSubmission'
+      : 'acceptCopyrightNoticeAndImposeRestriction:lockNotice',
+    first === 'restriction' ? assessment.submissionId : acceptance.noticeId,
+    [acceptance.noticeId, acceptance.targetId, assessment.submissionId],
   )
-  return { restricted, assessed }
+  return first === 'restriction'
+    ? { restricted: winner, assessed: loser }
+    : { restricted: loser, assessed: winner }
 }
 
 export async function reviewAndRestoreCopyrightRestriction(

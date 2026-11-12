@@ -70,10 +70,8 @@ describe('copyright case purge shared evidence ownership', () => {
   it('keeps a shared object for its other owner, then resumes a claimed deletion after a page boundary', async () => {
     await setPageSize(2)
     const sharedKey = `copyright-inbound/${randomUUID()}.pdf`
-    const [first, second] = await Promise.all([
-      createRetentionEmailCase(),
-      createRetentionEmailCase(),
-    ])
+    const first = await createRetentionEmailCase()
+    const second = await createRetentionEmailCase()
     for (const entry of [first, second]) {
       const aggregate = await getCopyrightNoticePrivateAggregate(entry.noticeId)
       const submissionId = aggregate?.submissions[0]?.id
