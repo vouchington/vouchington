@@ -80,7 +80,8 @@ describe('merge-group self-cancel', () => {
         const [step, ...rest] = job.steps ?? []
         const ok =
           needsOf(job).join() === id.slice('cancel-'.length) &&
-          job.if === "${{ failure() && github.event_name == 'merge_group' }}" &&
+          job.if ===
+            `\${{ failure() && needs.${id.slice('cancel-'.length)}.result == 'failure' && github.event_name == 'merge_group' }}` &&
           job['runs-on'] === 'ubuntu-slim' &&
           job['continue-on-error'] === undefined &&
           rest.length === 0 &&
@@ -88,7 +89,9 @@ describe('merge-group self-cancel', () => {
           step?.env?.GH_TOKEN === '${{ github.token }}' &&
           step.env.GH_REPO === '${{ github.repository }}' &&
           step.env.RUN_ID === '${{ github.run_id }}' &&
-          step.run?.includes('gh run cancel "$RUN_ID"') === true &&
+          step.run?.includes(
+            'gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel"',
+          ) === true &&
           // Only an already-finished run (HTTP 409) is a warning; a 403 or a missing gh fails.
           step.run.includes('HTTP 409') &&
           step.run.includes('exit 1')
@@ -99,8 +102,12 @@ describe('merge-group self-cancel', () => {
   })
 
   it('grants actions: write only to the checkout-free cancel jobs', () => {
-    const cancelling = areas.flatMap(({ cancels }) => cancels.map(([, job]) => job.permissions))
-    expect(cancelling.every(perms => JSON.stringify(perms) === '{"actions":"write"}')).toBe(true)
+    const widened = areas.flatMap(({ gate, cancels }) =>
+      cancels
+        .filter(([, job]) => JSON.stringify(job.permissions) !== '{"actions":"write"}')
+        .map(([id]) => `${gate}#${id}`),
+    )
+    expect(widened).toEqual([])
     // No other area job, and no job in a reusable workflow it calls, can write with the run token.
     const writers = areas.flatMap(({ gate, jobs }) =>
       Object.entries(jobs)

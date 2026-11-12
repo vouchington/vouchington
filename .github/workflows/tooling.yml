@@ -124,7 +124,7 @@ jobs:
 
   cancel-test-ts-shared:
     needs: [test-ts-shared]
-    if: ${{ failure() && github.event_name == 'merge_group' }}
+    if: ${{ failure() && needs.test-ts-shared.result == 'failure' && github.event_name == 'merge_group' }}
     runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
@@ -137,13 +137,13 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          output=$(gh run cancel "$RUN_ID" 2>&1) && exit 0
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
           [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
           echo "$output" >&2; exit 1
 
   cancel-test-tooling:
     needs: [test-tooling]
-    if: ${{ failure() && github.event_name == 'merge_group' }}
+    if: ${{ failure() && needs.test-tooling.result == 'failure' && github.event_name == 'merge_group' }}
     runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
@@ -156,13 +156,13 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          output=$(gh run cancel "$RUN_ID" 2>&1) && exit 0
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
           [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
           echo "$output" >&2; exit 1
 
   cancel-test-portability:
     needs: [test-portability]
-    if: ${{ failure() && github.event_name == 'merge_group' }}
+    if: ${{ failure() && needs.test-portability.result == 'failure' && github.event_name == 'merge_group' }}
     runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
@@ -175,13 +175,13 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          output=$(gh run cancel "$RUN_ID" 2>&1) && exit 0
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
           [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
           echo "$output" >&2; exit 1
 
   cancel-initialize-smoke-test:
     needs: [initialize-smoke-test]
-    if: ${{ failure() && github.event_name == 'merge_group' }}
+    if: ${{ failure() && needs.initialize-smoke-test.result == 'failure' && github.event_name == 'merge_group' }}
     runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
@@ -194,6 +194,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          output=$(gh run cancel "$RUN_ID" 2>&1) && exit 0
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
           [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
           echo "$output" >&2; exit 1

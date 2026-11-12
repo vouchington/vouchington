@@ -10,8 +10,11 @@ suite's own failure.
 ## How it works
 
 1. **Cancel job.** Beside each gate-feeding suite, the area workflow has a `cancel-<suite>` job with
-   `needs: [<suite>]` and `if: ${{ failure() && github.event_name == 'merge_group' }}`. It runs
-   `gh run cancel` on `github.run_id` and nothing else.
+   `needs: [<suite>]` and
+   `if: ${{ failure() && needs.<suite>.result == 'failure' && github.event_name == 'merge_group' }}`.
+   The `result` check matters: `failure()` alone is true when any upstream job failed, such as a
+   static check, which must not cancel. The job POSTs to the run's cancel endpoint (`gh api`) and
+   does nothing else.
 2. **Gate condition.** Each gate uses
    `if: ${{ !cancelled() || github.event_name == 'merge_group' }}`. A cancelled merge-group run
    still evaluates the gate, which reads its `needs` and fails on the failed job, so the queue
@@ -46,14 +49,14 @@ shared `prepare-postgres` caller in `backend.yml`. These do not:
 ## Edge cases
 
 - **Cancel races a finished run.** The cancel request can land after the run completed, or a
-  sibling cancel job already cancelled it. GitHub answers HTTP 409; the step warns and succeeds.
+  sibling cancel job already cancelled it. GitHub answers HTTP 409, which `gh api` keeps in its error text (`gh run cancel` rewrites it); the step warns and succeeds.
   Any other error (for example a 403, or `gh` missing) fails the cancel job and shows in the run.
 - **Results after cancelling.** The suite job that failed has already finished, so it keeps
   `failure`. Jobs still running become `cancelled`, including the cancel job itself and any sibling
   suite. Triage must read the failed jobs of the run, and for a `cancelled` job its failed step,
   not the run conclusion; see the
   [merge-queue-ejection prompt](../../../prompts/automation/merge-queue-ejection.md).
-- **Job timeouts.** A timed-out suite ends as `cancelled`, so `failure()` is false and no cancel
+- **Job timeouts.** A timed-out suite ends as `cancelled`, so its result is not `failure` and no cancel
   runs; that entry waits as before.
 - **Re-run of failed jobs.** A re-run starts a new attempt of the same run and event, so a
   merge-group re-run can cancel again on a second failure.
