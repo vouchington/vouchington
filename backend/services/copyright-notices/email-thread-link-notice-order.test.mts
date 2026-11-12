@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction } from '@voucha/test-helpers'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
+import { holdCopyrightEmailReceiptShareForReplayTest } from '@voucha/test-helpers/copyright-operational-email-retention'
 import { rejectQuery } from '@voucha/test-helpers/injected-failures'
 import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
@@ -103,5 +104,41 @@ describe('copyright email notice link write order', () => {
       expect(await readCopyrightEmailIntakeNoticeLinks(intakeId)).toEqual([
         { copyright_notice_id: notice.noticeId, link_kind: 'thread' },
       ])
+  })
+
+  it('replays one thread link after both transactions acquire the receipt source guard', async () => {
+    const notice = await createRetentionMinimalCase()
+    const intake = await createRetentionParsedEmail(`same-intake-link-${randomUUID()}`, {
+      reply: true,
+    })
+    const bothHolding = Promise.withResolvers<void>()
+    let held = 0
+    const link = async () => {
+      await using transaction = await beginTransaction()
+      await holdCopyrightEmailReceiptShareForReplayTest(transaction, intake.id)
+      held += 1
+      if (held === 2) bothHolding.resolve()
+      await bothHolding.promise
+      const linked = await insertCopyrightEmailIntakeNoticeLink(transaction, {
+        intakeId: intake.id,
+        noticeId: notice.noticeId,
+        linkKind: 'thread',
+      })
+      await transaction.commit()
+      return linked
+    }
+    const first = link()
+    const second = link()
+    void first.catch(bothHolding.reject)
+    void second.catch(bothHolding.reject)
+    const outcomes = await Promise.allSettled([first, second])
+    expect(held).toBe(2)
+    expect(outcomes).toEqual([
+      { status: 'fulfilled', value: true },
+      { status: 'fulfilled', value: true },
+    ])
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
+      { copyright_notice_id: notice.noticeId, link_kind: 'thread' },
+    ])
   })
 })

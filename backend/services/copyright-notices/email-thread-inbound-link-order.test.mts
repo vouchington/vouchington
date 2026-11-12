@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction } from '@voucha/test-helpers'
 import { readCopyrightEmailAncestorIds } from '@voucha/test-helpers/copyright-email-ancestor-edges'
 import { linkTestCopyrightEmailIntake } from '@voucha/test-helpers/copyright-operational-email-retention'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'

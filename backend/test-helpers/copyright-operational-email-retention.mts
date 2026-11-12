@@ -1,8 +1,18 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { createTestUserDirect } from './entities/index.mts'
+
+/** Holds the receipt SHARE mode that the active-source trigger takes before a thread link. */
+export async function holdCopyrightEmailReceiptShareForReplayTest(
+  transaction: TransactionQuery,
+  intakeId: string,
+): Promise<void> {
+  await transaction(sql`/* holdCopyrightEmailReceiptShareForReplayTest */
+    SELECT id FROM copyright_notice_email_intake_receipts WHERE id = ${intakeId} FOR SHARE`)
+}
 
 export async function seedCopyrightIntakeLegalDelivery(intakeId: string): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* seedCopyrightIntakeLegalDelivery */

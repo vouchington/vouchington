@@ -150,7 +150,7 @@ BEGIN
     WHERE id = intake_id;
   IF TG_OP = 'INSERT' AND NEW.link_kind = 'thread' THEN
     SELECT review_decision IS NOT NULL INTO terminal_review
-      FROM copyright_notice_email_intake_receipts WHERE id = intake_id FOR UPDATE;
+      FROM copyright_notice_email_intake_receipts WHERE id = intake_id;
     IF COALESCE(terminal_review, false) THEN
       RAISE EXCEPTION 'reviewed copyright email intake cannot be linked as thread correspondence'
         USING ERRCODE = 'check_violation';
