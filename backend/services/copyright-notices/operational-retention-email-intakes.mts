@@ -115,14 +115,16 @@ export async function sweepUnlinkedCopyrightEmailIntakes(options: {
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
     let page: PageResult
     try {
-      // oxlint-disable-next-line no-await-in-loop -- each committed cursor selects the next intake.
+      // oxlint-disable no-await-in-loop -- each committed cursor selects the next intake.
+      // no-mistakes-disable-next-line query-reached-per-item: each bounded intake transaction commits before the next page reads its durable or caller-owned cursor.
       page = await sweepPage(
         cutoffId,
         cutoff,
         options.childLimit,
         options.queryAfterStorage,
         options.scope,
-      ) // no-mistakes-disable-line query-reached-per-item: each bounded intake transaction commits its durable keyset cursor before the next page.
+      )
+      // oxlint-enable no-await-in-loop
     } catch (err) {
       if (!['40001', '40P01'].includes((err as { code?: string } | null)?.code ?? '')) throw err
       // The aborted page left its cursor unchanged; the next scheduled run resumes it.
