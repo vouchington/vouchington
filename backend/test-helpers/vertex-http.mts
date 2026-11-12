@@ -16,11 +16,17 @@ export type VertexHttpFixture = {
     onSubmit?: () => Promise<string> | string
   }) => { uploads: Mock<() => void>; submissions: Mock<() => void> }
 }
-export function createVertexHttpFixture(): VertexHttpFixture {
+export function createVertexHttpFixture(
+  network: { gcsEmulator?: boolean; authenticationResponses?: boolean } = {},
+): VertexHttpFixture {
+  const emulator = inject('awsEmulator')
+  const gcs = network.gcsEmulator ? inject('gcsEmulator') : undefined
+  const passthroughOrigins = [
+    ...(emulator ? [new URL(emulator.endpoint).origin] : []),
+    ...(gcs ? [new URL(gcs.endpoint).origin] : []),
+  ]
   vi.stubEnv('AWS_PROFILE', undefined)
   vi.stubEnv('AWS_DEFAULT_PROFILE', undefined)
-  const emulator = inject('awsEmulator')
-  const passthroughOrigins = emulator ? [new URL(emulator.endpoint).origin] : []
   const binaryBodyOrigins = ['https://storage.googleapis.com']
   const agent = new MockAgent()
   agent.disableNetConnect()
@@ -38,23 +44,25 @@ export function createVertexHttpFixture(): VertexHttpFixture {
     VERTEX_BATCH_BUCKET: 'synthetic-embeddings',
   }
   for (const [key, value] of Object.entries(environment)) vi.stubEnv(key, value)
-  agent
-    .get('https://sts.googleapis.com')
-    .intercept({ method: 'POST', path: '/v1/token' })
-    .reply(200, {
-      access_token: 'synthetic-federated-token',
-      expires_in: 3600,
-      token_type: 'Bearer',
-    })
-    .persist()
-  agent
-    .get('https://iamcredentials.googleapis.com')
-    .intercept({ method: 'POST', path: /:generateAccessToken$/ })
-    .reply(200, {
-      accessToken: 'synthetic-vertex-token',
-      expireTime: '2099-01-01T00:00:00Z',
-    })
-    .persist()
+  if (network.authenticationResponses !== false) {
+    agent
+      .get('https://sts.googleapis.com')
+      .intercept({ method: 'POST', path: '/v1/token' })
+      .reply(200, {
+        access_token: 'synthetic-federated-token',
+        expires_in: 3600,
+        token_type: 'Bearer',
+      })
+      .persist()
+    agent
+      .get('https://iamcredentials.googleapis.com')
+      .intercept({ method: 'POST', path: /:generateAccessToken$/ })
+      .reply(200, {
+        accessToken: 'synthetic-vertex-token',
+        expireTime: '2099-01-01T00:00:00Z',
+      })
+      .persist()
+  }
   onTestFinished(async () => {
     await agent.close()
     vi.unstubAllEnvs()

@@ -1,6 +1,7 @@
 // Dependency-injected unit tests need neither database bootstrap nor module mocking.
 export const backendNoDataUnitTestFiles = [
   'backend/services/embeddings/single/request.test.mts',
+  'backend/services/embeddings/vertex-errors.test.mts',
   'backend/services/embeddings-batch/bounded-lines.test.mts',
   'backend/services/embeddings-batch/result-manifest.test.mts',
   'backend/services/embeddings-batch/gcs.test.mts',

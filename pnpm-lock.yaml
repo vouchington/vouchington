@@ -14613,6 +14613,9 @@ importers:
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../../data-stores/valkey-core
+      '@services/crawl-chunks':
+        specifier: workspace:^
+        version: link:../../services/crawl-chunks
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
