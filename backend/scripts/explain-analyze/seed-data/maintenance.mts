@@ -1,4 +1,5 @@
-import { write } from '@data-stores/psql'
+import { write, writePool } from '@data-stores/psql'
+import { withSeedMaintenanceTimeout } from './maintenance-timeout.mts'
 import { CRAWL_SEED_PREFIX, SEED_PREFIX } from './common.mts'
 import { printPlanDiagnostics } from './plan-diagnostics.mts'
 
@@ -143,7 +144,22 @@ export async function runAnalyze(): Promise<void> {
   console.log('\nRunning VACUUM (ANALYZE) on seeded tables...')
   // Settle first-capture statistics and visibility before autovacuum can choose the plan.
   // PostgreSQL includes default children when vacuuming partitioned parents.
-  for (const table of ANALYZE_TARGETS)
-    await write(`/* seedExplainData */ VACUUM (ANALYZE) "${table}"`)
+  const client = await writePool.connect()
+  let failed = false
+  try {
+    // Standalone VACUUM cannot run in a transaction. Keep its scoped setting on this
+    // connection; the seed workflow also bounds the complete operation to six minutes.
+    await withSeedMaintenanceTimeout(client, async () => {
+      await client.query(
+        `/* seedExplainData */ VACUUM (ANALYZE) ${ANALYZE_TARGETS.map(table => `"${table}"`).join(', ')}`,
+      )
+    })
+  } catch (err) {
+    failed = true
+    throw err
+  } finally {
+    // In particular, never return a connection whose setting failed to restore.
+    client.release(failed)
+  }
   await printPlanDiagnostics(ANALYZE_TARGETS)
 }
