@@ -8,45 +8,63 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 type PageResult = { scanned: number; erased: number; hasMore: boolean }
 
+type IntakeCursor = {
+  cursor_record_id: string | null
+  sweep_upper_bound_record_id: string | null
+  cursor_phase: EdgeCursor['phase']
+  cursor_edge_id: string | null
+}
+
+export type CopyrightEmailIntakeSweepScope = {
+  intakeIds: readonly string[]
+  cursor: IntakeCursor
+}
+
 async function sweepPage(
   cutoffId: string,
   cutoff: Date,
   childLimit: number,
   queryAfterStorage?: (transaction: TransactionQuery) => QueryExecutor,
+  scope?: CopyrightEmailIntakeSweepScope,
 ): Promise<PageResult> {
   await using transaction = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
     statementTimeoutMs: 20_000,
     isolationLevel: 'serializable',
   })
-  await transaction(sql`/* seedUnlinkedCopyrightEmailRetentionCursor */
+  let cursor: IntakeCursor
+  if (scope) {
+    cursor = scope.cursor
+  } else {
+    await transaction(sql`/* seedUnlinkedCopyrightEmailRetentionCursor */
     INSERT INTO copyright_notice_operational_retention_cursors (kind)
     VALUES ('unlinked_email_intakes') ON CONFLICT DO NOTHING`)
-  const { rows: cursorRows } = await transaction<{
-    cursor_record_id: string | null
-    sweep_upper_bound_record_id: string | null
-    cursor_phase: EdgeCursor['phase']
-    cursor_edge_id: string | null
-  }>(sql`/* lockUnlinkedCopyrightEmailRetentionCursor */
+    const { rows: cursorRows } =
+      await transaction<IntakeCursor>(sql`/* lockUnlinkedCopyrightEmailRetentionCursor */
     SELECT cursor_record_id, sweep_upper_bound_record_id, cursor_phase, cursor_edge_id
     FROM copyright_notice_operational_retention_cursors
     WHERE kind = 'unlinked_email_intakes' FOR UPDATE`)
-  const cursor = cursorRows[0]!
+    cursor = cursorRows[0]!
+  }
   const upperBound = cursor.sweep_upper_bound_record_id ?? cutoffId
-  const { rows: candidates } = await transaction<{
-    id: string
-  }>(sql`/* scanUnlinkedCopyrightEmailIntake */
+  const candidatesQuery = sql`/* scanUnlinkedCopyrightEmailIntake */
     SELECT id FROM copyright_notice_email_intakes
     WHERE id > COALESCE(${cursor.cursor_record_id}::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
       AND id < LEAST(${upperBound}::uuid, ${cutoffId}::uuid)
-    ORDER BY id LIMIT 1`)
+  `
+  if (scope) candidatesQuery.append(sql` AND id = ANY(${scope.intakeIds}::uuid[])`)
+  candidatesQuery.append(' ORDER BY id LIMIT 1')
+  const { rows: candidates } = await transaction<{ id: string }>(candidatesQuery)
   const intakeId = candidates[0]?.id
   if (!intakeId) {
-    await transaction(sql`/* resetUnlinkedCopyrightEmailRetentionCursor */
+    if (!scope)
+      await transaction(sql`/* resetUnlinkedCopyrightEmailRetentionCursor */
       UPDATE copyright_notice_operational_retention_cursors
       SET cursor_record_id = NULL, sweep_upper_bound_record_id = NULL
       WHERE kind = 'unlinked_email_intakes'`)
     await transaction.commit()
+    if (scope)
+      Object.assign(scope.cursor, { cursor_record_id: null, sweep_upper_bound_record_id: null })
     return { scanned: 0, erased: 0, hasMore: false }
   }
   const edgeCursor: EdgeCursor = { phase: cursor.cursor_phase, edgeId: cursor.cursor_edge_id }
@@ -58,7 +76,14 @@ async function sweepPage(
     edgeCursor,
     queryAfterStorage,
   )
-  await transaction(sql`/* advanceUnlinkedCopyrightEmailRetentionCursor */
+  const nextCursor: IntakeCursor = {
+    cursor_record_id: result.complete ? intakeId : cursor.cursor_record_id,
+    sweep_upper_bound_record_id: upperBound,
+    cursor_phase: result.complete ? null : edgeCursor.phase,
+    cursor_edge_id: result.complete ? null : edgeCursor.edgeId,
+  }
+  if (!scope)
+    await transaction(sql`/* advanceUnlinkedCopyrightEmailRetentionCursor */
     UPDATE copyright_notice_operational_retention_cursors
     SET cursor_record_id = ${result.complete ? intakeId : cursor.cursor_record_id}::uuid,
       sweep_upper_bound_record_id = ${upperBound}::uuid,
@@ -66,6 +91,7 @@ async function sweepPage(
       cursor_edge_id = ${result.complete ? null : edgeCursor.edgeId}::uuid
     WHERE kind = 'unlinked_email_intakes'`)
   await transaction.commit()
+  if (scope) Object.assign(scope.cursor, nextCursor)
   if (result.failure instanceof Error) throw result.failure
   if (result.failure !== undefined)
     throw new Error('Copyright evidence erasure failed', { cause: result.failure })
@@ -78,6 +104,7 @@ export async function sweepUnlinkedCopyrightEmailIntakes(options: {
   childLimit: number
   maxBatches: number
   queryAfterStorage?: (transaction: TransactionQuery) => QueryExecutor
+  scope?: CopyrightEmailIntakeSweepScope
 }): Promise<PageResult> {
   const now = options.now ?? new Date()
   const cutoff = new Date(now.getTime() - options.retentionDays * DAY_MS)
@@ -89,7 +116,13 @@ export async function sweepUnlinkedCopyrightEmailIntakes(options: {
     let page: PageResult
     try {
       // oxlint-disable-next-line no-await-in-loop -- each committed cursor selects the next intake.
-      page = await sweepPage(cutoffId, cutoff, options.childLimit, options.queryAfterStorage) // no-mistakes-disable-line query-reached-per-item: each bounded intake transaction commits its durable keyset cursor before the next page.
+      page = await sweepPage(
+        cutoffId,
+        cutoff,
+        options.childLimit,
+        options.queryAfterStorage,
+        options.scope,
+      ) // no-mistakes-disable-line query-reached-per-item: each bounded intake transaction commits its durable keyset cursor before the next page.
     } catch (err) {
       if (!['40001', '40P01'].includes((err as { code?: string } | null)?.code ?? '')) throw err
       // The aborted page left its cursor unchanged; the next scheduled run resumes it.

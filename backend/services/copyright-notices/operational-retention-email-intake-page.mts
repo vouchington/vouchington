@@ -56,8 +56,10 @@ export async function eraseIntakePage(
       intakeId,
       liveRows[0]!.raw_storage_object_id,
       childLimit,
+      queryAfterStorage,
     )
   } catch (err) {
+    if (['40001', '40P01'].includes((err as { code?: string } | null)?.code ?? '')) throw err
     // S3 can delete some versions while refusing others. Commit the replay fence even then;
     // the live pointer remains owned by the next bounded retry.
     return { complete: false, erased: true, failure: err }

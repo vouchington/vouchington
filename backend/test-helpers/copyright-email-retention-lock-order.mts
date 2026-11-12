@@ -2,7 +2,7 @@ import type pg from 'pg'
 import { writePool } from '@data-stores/psql'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
-/** Commit the real erasure marker while an agent write waits on the same intake lock. */
+/** Start a writer after the marker UPDATE, retaining either valid outcome if erasure aborts. */
 export async function waitForCopyrightEmailMarkerBeforeWriter<T, WriterResult>(
   intakeId: string,
   erase: () => Promise<T>,
@@ -11,7 +11,7 @@ export async function waitForCopyrightEmailMarkerBeforeWriter<T, WriterResult>(
 ): Promise<{ erasure: T; appended: WriterResult }> {
   return runPoolObservationExclusively(async () => {
     const markerWritten = Promise.withResolvers<void>()
-    const writerWaiting = Promise.withResolvers<void>()
+    const writerDispatched = Promise.withResolvers<void>()
     const releaseMarker = Promise.withResolvers<void>()
     const restorations = new Map<pg.PoolClient, () => void>()
     const observe = (client: pg.PoolClient) => {
@@ -48,7 +48,7 @@ export async function waitForCopyrightEmailMarkerBeforeWriter<T, WriterResult>(
           Array.isArray(values) &&
           values.includes(intakeId)
         )
-          writerWaiting.resolve()
+          writerDispatched.resolve()
         return pending
       }) as pg.PoolClient['query']
       Object.defineProperty(client, 'query', { configurable: true, writable: true, value: query })
@@ -58,10 +58,14 @@ export async function waitForCopyrightEmailMarkerBeforeWriter<T, WriterResult>(
     let writer: Promise<WriterResult> | undefined
     try {
       void erasure.catch((err: unknown) => markerWritten.reject(err))
-      await markerWritten.promise
+      const marked = await Promise.race([
+        markerWritten.promise.then(() => true),
+        erasure.then(() => false),
+      ])
+      if (!marked) return { erasure: await erasure, appended: await append() }
       writer = append()
-      void writer.catch((err: unknown) => writerWaiting.reject(err))
-      await writerWaiting.promise
+      void writer.catch((err: unknown) => writerDispatched.reject(err))
+      await writerDispatched.promise
       releaseMarker.resolve()
       return { erasure: await erasure, appended: await writer }
     } finally {
