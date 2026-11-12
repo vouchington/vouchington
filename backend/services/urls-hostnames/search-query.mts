@@ -5,15 +5,14 @@ import sql from 'sql-template-strings'
 import { appendDescendantRootFilter, appendTopicFilters } from './search-topic-filters.mts'
 import type { SearchUrlHostnamesOptions } from './search-types.mts'
 
-export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions) {
+export function buildSearchUrlHostnamesQueryBody(options: SearchUrlHostnamesOptions) {
   const { limit, topic_id, topic_ids = [], include_descendants = false, sort } = options
   const effectiveLimit = limit || 50
   const effectiveTopicIds = Array.from(new Set(topic_id ? [topic_id] : topic_ids))
   const textQuery = options.query || options.hostname
   const walkTopics = effectiveTopicIds.length > 0 && include_descendants && !textQuery
   const filters = buildSearchFilters(options, effectiveTopicIds, walkTopics)
-  const searchQuery = sql`/* searchUrlHostnames */
-    `
+  const searchQuery = sql``
 
   if (effectiveTopicIds.length > 0 && include_descendants) {
     searchQuery.append(sql`WITH RECURSIVE `)

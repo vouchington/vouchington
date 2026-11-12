@@ -2,10 +2,11 @@ import { clampLimit } from '@services/pagination'
 import type { PrivateUser } from '@services/users/types'
 import type { PostFeedOptions, PostFeedResponse } from '../types.mts'
 import { read } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { getTimeRangeLowerBoundDate } from '../time-range-utils.mts'
 import type { PostFeedWalkSort } from './get-ids/eligible-posts-cte.mts'
 import { mapPostFeedResponse, parsePostFeedCursor } from './get-ids/feed-cursor.mts'
-import { buildPostFeedPageQuery } from './get-ids/page-query.mts'
+import { buildPostFeedPageQueryBody } from './get-ids/page-query.mts'
 
 const DEFAULT_MIN_SCORE_FOLLOW_USERS = -5
 const DEFAULT_MIN_SCORE_FOLLOW_TOPICS = 0
@@ -38,7 +39,7 @@ export async function getPostFeedIds(
     sort === 'hot' && (!requestedCutoff || requestedCutoff < hotFloor) ? hotFloor : requestedCutoff
   const safeLimit = clampLimit(limit)
 
-  const query = buildPostFeedPageQuery({
+  const body = buildPostFeedPageQueryBody({
     communityId: options.community_id,
     currentUserId: currentUser.id,
     cursor,
@@ -60,6 +61,9 @@ export async function getPostFeedIds(
     minScoreFollowUsers: options.min_score_follow_users ?? DEFAULT_MIN_SCORE_FOLLOW_USERS,
     safeLimit,
   })
+  const query = sql`/* getPostFeedIds */
+    `
+  query.append(body)
   const { rows } = await read(query)
   return mapPostFeedResponse(rows, safeLimit, sort, decisionInstant)
 }

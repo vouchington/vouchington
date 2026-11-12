@@ -1,7 +1,8 @@
 import { read } from '@data-stores/psql'
 import { buildPageInfo, decodeUuidCursor, isNameCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
-import { buildSearchUrlHostnamesQuery } from './search-query.mts'
+import { buildSearchUrlHostnamesQueryBody } from './search-query.mts'
+import sql from 'sql-template-strings'
 import type { ViewHostname } from './types.mts'
 import type { SearchUrlHostnamesOptions } from './search-types.mts'
 import { readHostnameCandidatePage } from './candidate-page.mts'
@@ -10,7 +11,10 @@ export type { SearchUrlHostnamesOptions } from './search-types.mts'
 export const searchUrlHostnames = async (
   options: SearchUrlHostnamesOptions = {},
 ): Promise<{ results: ViewHostname[]; page_info: PageInfo }> => {
-  const { effectiveLimit, searchQuery } = buildSearchUrlHostnamesQuery(options)
+  const { effectiveLimit, searchQuery: body } = buildSearchUrlHostnamesQueryBody(options)
+  const searchQuery = sql`/* searchUrlHostnames */
+    `
+  searchQuery.append(body)
   const { rows } = await read(searchQuery)
   const all = rows as (ViewHostname & { cursor_score: number })[]
   const hasNextPage = all.length > effectiveLimit

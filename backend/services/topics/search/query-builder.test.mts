@@ -1,5 +1,5 @@
 import { expect, it, describe } from 'vitest'
-import { buildTopicSearchQuery } from './query-builder.mts'
+import { buildTopicSearchQueryBody as buildTopicSearchQuery } from './query-builder.mts'
 
 describe('query-builder', () => {
   const testEmbedding = Array.from({ length: 1024 }, (_, i) => ((i % 7) + 1) / 10)

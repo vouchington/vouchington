@@ -95,15 +95,15 @@ const cases: CursorCase[] = [
       timeRange: 'day',
     }),
   ),
-  cursorCase('buildSearchUrlHostnamesQuery trust', async () =>
-    (await import('../../urls-hostnames/search-query.mts')).buildSearchUrlHostnamesQuery({
+  cursorCase('buildSearchUrlHostnamesQueryBody trust', async () =>
+    (await import('../../urls-hostnames/search-query.mts')).buildSearchUrlHostnamesQueryBody({
       after: score,
       sort: 'trust',
       limit: 1,
     }),
   ),
-  cursorCase('buildSearchUrlHostnamesQuery name', async () =>
-    (await import('../../urls-hostnames/search-query.mts')).buildSearchUrlHostnamesQuery({
+  cursorCase('buildSearchUrlHostnamesQueryBody name', async () =>
+    (await import('../../urls-hostnames/search-query.mts')).buildSearchUrlHostnamesQueryBody({
       after: name,
       limit: 1,
     }),

@@ -22,7 +22,7 @@ export const getTopicsByAnyBatch = async (
   queryOrderedIdentifierBatch<Topic, 'id' | 'slug', QueryOptions>(idsOrSlugs, options, {
     normalize: normalizeTopicBatchIdentifier,
     partitions: topicAnyBatchPartitions,
-    statement: topicAnyBatchStatement,
+    statementBody: topicAnyBatchStatementBody,
     readRows: readTopicAnyBatchRows,
   })
 
@@ -95,9 +95,8 @@ function normalizeTopicBatchIdentifier(
   throw createError(422, `Invalid topic identifier: ${input}`)
 }
 
-function topicAnyBatchStatement(inputCtes: string): string {
-  return `/* getTopicsByAnyBatch */
-    WITH ${inputCtes},
+function topicAnyBatchStatementBody(inputCtes: string): string {
+  return `${inputCtes},
     id_lookups AS (
       SELECT COALESCE(t.merged_into_topic_id, t.id) AS id, input_data.input_order
       FROM topics t
@@ -150,13 +149,12 @@ function topicAnyBatchStatement(inputCtes: string): string {
 }
 
 async function readTopicAnyBatchRows(
-  sql: string,
+  statementBody: string,
   values: unknown[],
   options: QueryOptions,
 ): Promise<ReadonlyArray<Topic & { input_order: number }>> {
-  const prefix = `/* getTopicsByAnyBatch */
-    WITH `
-  if (!sql.startsWith(prefix)) throw new Error('Unexpected topic batch query')
-  const { rows } = await read<Topic & { input_order: number }>(sql, values, options)
+  const statement = `/* getTopicsByAnyBatch */
+    WITH ${statementBody}`
+  const { rows } = await read<Topic & { input_order: number }>(statement, values, options)
   return rows
 }
