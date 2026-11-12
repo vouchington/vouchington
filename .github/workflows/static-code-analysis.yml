@@ -12,12 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 24
     permissions:
+      actions: write
       contents: read
       issues: read
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 2 # the baseline check diffs a pull request against HEAD^1
         timeout-minutes: 3
       - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
@@ -164,14 +166,27 @@ jobs:
       - name: Verify no dependency changes needed
         timeout-minutes: 1
         run: source "$GITHUB_WORKSPACE/.github/workflows/static-code-analysis-verify-clean-worktree.sh"
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        if: ${{ failure() && github.event_name == 'merge_group' }}
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"
 
   no-mistakes:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
     timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
+        with:
+          persist-credentials: false
       - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
         timeout-minutes: 5
         with:
@@ -212,3 +227,11 @@ jobs:
       - name: Verify no dependency changes needed
         timeout-minutes: 1
         run: source "$GITHUB_WORKSPACE/.github/workflows/static-code-analysis-verify-clean-worktree.sh"
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        if: ${{ failure() && github.event_name == 'merge_group' }}
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"

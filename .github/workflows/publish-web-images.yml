@@ -143,3 +143,11 @@ jobs:
         timeout-minutes: 1
         if: ${{ always() }}
         run: docker logout ghcr.io >/dev/null 2>&1 || true
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        if: ${{ failure() && github.event_name == 'merge_group' }}
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"

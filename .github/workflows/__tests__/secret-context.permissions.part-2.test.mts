@@ -84,7 +84,7 @@ describe('secret-backed workflow context gates (permissions and security)', () =
 
       expect(section).toContain('permissions:')
       expect(section).toContain('contents: read')
-      expect(section).toContain('actions: read')
+      expect(section).toContain('actions: write')
       expect(section).not.toContain('id-token: write')
       expect(section).not.toContain('secrets: inherit')
     }
@@ -142,7 +142,7 @@ describe('secret-backed workflow context gates (permissions and security)', () =
       const workflow = read(path)
 
       expect(workflow).toContain('contents: read')
-      expect(workflow).toContain('actions: read')
+      expect(workflow).toContain('actions: write')
       expect(workflow).not.toContain('id-token: write')
       expect(workflow).not.toContain('secrets.')
     }

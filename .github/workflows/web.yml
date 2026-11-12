@@ -52,7 +52,7 @@ jobs:
     with:
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   test-web-api:
@@ -61,7 +61,7 @@ jobs:
     with:
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   test-web-integration:
@@ -71,7 +71,7 @@ jobs:
       shared_build_available: true
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   # Same-repository contributors and exact dependency bots only; see storybook.yml.
@@ -88,7 +88,7 @@ jobs:
       concurrency_key: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   test-playwright:
@@ -97,7 +97,7 @@ jobs:
     with:
       shared_build_available: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   # Informational browser checks against real cloud resources (S3 uploads, the image lambda); the
@@ -152,7 +152,7 @@ jobs:
       AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     permissions:
-      actions: read
+      actions: write
       attestations: write
       contents: read
       id-token: write
@@ -196,7 +196,7 @@ jobs:
 
   web:
     name: web
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs:
       [
         changes,

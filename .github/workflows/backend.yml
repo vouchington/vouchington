@@ -48,6 +48,7 @@ jobs:
     env:
       LINGUA_RS_SKIP_DOWNLOAD: '1'
     permissions:
+      actions: write
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -61,6 +62,14 @@ jobs:
       - name: Typecheck backend with Bun declarations
         run: pnpm --dir backend run typecheck:bun
         timeout-minutes: 5
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        if: ${{ failure() && github.event_name == 'merge_group' }}
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"
 
   prepare-postgres:
     needs: [static-backend]
@@ -75,7 +84,7 @@ jobs:
     with:
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   test-backend-unit:
@@ -85,7 +94,7 @@ jobs:
       publish_coverage: true
       prepared_database: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   # Informational real-AWS smoke check; the `backend` gate does not wait on it. The paid providers
@@ -114,7 +123,7 @@ jobs:
       prepared_database: true
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   backend-smoke:
@@ -123,7 +132,7 @@ jobs:
     with:
       prepared_database: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   test-explain-analyze:
@@ -133,7 +142,7 @@ jobs:
       prepared_database: true
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   # Pull requests validate the image without registry writes. Merge groups publish the exact
@@ -169,7 +178,7 @@ jobs:
     secrets:
       AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
     permissions:
-      actions: read
+      actions: write
       attestations: write
       contents: read
       id-token: write
@@ -230,7 +239,7 @@ jobs:
 
   backend:
     name: backend
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs:
       [
         changes,

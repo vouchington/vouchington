@@ -34,7 +34,7 @@ jobs:
     with:
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   test-tooling:
@@ -45,7 +45,7 @@ jobs:
       run_tooling: ${{ needs.changes.outputs.area-tooling == 'true' }}
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   # Minimal host-sensitive canaries on Linux.
@@ -56,7 +56,7 @@ jobs:
     with:
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   initialize-smoke-test:
@@ -64,6 +64,7 @@ jobs:
     if: needs.changes.outputs.area-tooling == 'true'
     uses: ./.github/workflows/initialize-smoke-test.yml
     permissions:
+      actions: write
       contents: read
 
   coverage:
@@ -101,7 +102,7 @@ jobs:
 
   tooling:
     name: tooling
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs:
       [changes, test-ts-shared, test-tooling, test-portability, initialize-smoke-test, coverage]
     runs-on: ubuntu-latest

@@ -24,11 +24,11 @@ function jobSection(jobName: string): string {
 }
 
 describe('Web Tests workflow', () => {
-  it('grants artifact read only to the coverage-publishing web test shards', () => {
+  it('grants artifact read and merge-group self-cancel (actions: write) to the web test shards', () => {
     expect(parsedWorkflow.permissions).toEqual({ contents: 'read' })
-    expect(parsedWorkflow.jobs?.prep?.permissions).toEqual({ contents: 'read' })
+    expect(parsedWorkflow.jobs?.prep?.permissions).toEqual({ actions: 'write', contents: 'read' })
     expect(parsedWorkflow.jobs?.['web-tests']?.permissions).toEqual({
-      actions: 'read',
+      actions: 'write',
       contents: 'read',
     })
   })

@@ -10,6 +10,9 @@ permissions:
 jobs:
   initialize-smoke-test:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
     # Chains three full ./dev/initialize passes (monorepo, backend, web) plus
     # PostgreSQL provisioning, each individually allowed up to 5 minutes below.
     # See the .no-mistakes/rules/policies.yml github-actions-job-timeouts allow-list entry for
@@ -32,6 +35,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
+        with:
+          persist-credentials: false
       - name: Prepare disposable worktree
         timeout-minutes: 1
         run: source .github/workflows/initialize-smoke-test/prepare-worktree.sh
@@ -73,3 +78,11 @@ jobs:
           S3_BUCKET_IMAGE_UPLOADS: initialize-smoke-image-uploads
         timeout-minutes: 5
         run: cd "$SMOKE_WORKTREE" && ./dev/initialize web
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        if: ${{ failure() && github.event_name == 'merge_group' }}
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"

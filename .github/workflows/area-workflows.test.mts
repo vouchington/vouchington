@@ -167,7 +167,9 @@ describe('area workflows', () => {
       id => id !== area && id !== 'codecov' && !(reportOnly[area] ?? []).includes(id),
     )
     expect(gate.name).toBe(area)
-    expect(gate.if).toBe('${{ !cancelled() }}')
+    // A cancelled merge-group run still evaluates its gate, which fails on the real failed job
+    // (merge-group-self-cancel.test.mts).
+    expect(gate.if).toBe("${{ !cancelled() || github.event_name == 'merge_group' }}")
     expect(needsOf(gate).toSorted()).toEqual(expected.toSorted())
     expect(Object.keys(results).toSorted()).toEqual(expected.toSorted())
   })

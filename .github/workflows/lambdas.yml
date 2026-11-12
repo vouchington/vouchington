@@ -42,7 +42,7 @@ jobs:
     with:
       publish_coverage: true
     permissions:
-      actions: read
+      actions: write
       contents: read
 
   coverage:
@@ -75,7 +75,7 @@ jobs:
 
   lambdas:
     name: lambdas
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs: [changes, static-lambdas, test-lambdas, coverage]
     runs-on: ubuntu-latest
     timeout-minutes: 5

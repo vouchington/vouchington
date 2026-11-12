@@ -31,6 +31,7 @@ jobs:
     env:
       LINGUA_RS_SKIP_DOWNLOAD: '1'
     permissions:
+      actions: write
       contents: read
     outputs:
       shard-total: ${{ steps.shards.outputs.shard-total }}
@@ -38,6 +39,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
+        with:
+          persist-credentials: false
       - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
         timeout-minutes: 5
         with:
@@ -55,6 +58,14 @@ jobs:
           artifact-suffix: playwright-producer
           shared-build-cache-mode: producer
           web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        if: ${{ failure() && github.event_name == 'merge_group' }}
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"
 
   playwright-tests:
     needs: [shards]
@@ -64,7 +75,7 @@ jobs:
     # stops responding, so this cap is what ends a wedged shard.
     timeout-minutes: 10
     permissions:
-      actions: read
+      actions: write
       contents: read
     env:
       LINGUA_RS_SKIP_DOWNLOAD: '1'
@@ -100,6 +111,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 3
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
       - name: Set service ports
@@ -222,3 +235,11 @@ jobs:
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        if: ${{ failure() && github.event_name == 'merge_group' }}
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh run cancel "$RUN_ID" || echo "::warning::Run $RUN_ID already finished or could not be cancelled"
