@@ -2253,7 +2253,7 @@
       "returnsSet": false
     },
     "fn_update_copyright_email_link_case_clock()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_email_link_case_clock()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE copyright_notices SET last_legal_activity_at =\n    GREATEST(last_legal_activity_at, clock_timestamp())\n    WHERE id = NEW.copyright_notice_id;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_email_link_case_clock()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE copyright_notices SET last_legal_activity_at =\n    GREATEST(last_legal_activity_at, clock_timestamp())\n    WHERE id = NEW.copyright_notice_id AND evidence_erased_at IS NULL;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_update_copyright_email_link_storage_generation()": {
