@@ -9,7 +9,8 @@ export function throwIfCopyrightEmailThreadWriteConflict(err: unknown): void {
       (failure.constraint === 'fk_copyright_notice_email_thread_references__token' ||
         failure.constraint === 'fk_copyright_notice_email_intake_notice_links__matched_token')) ||
     (failure?.code === '23514' &&
-      failure.message === 'copyright email intake is under retention erasure')
+      (failure.message === 'copyright email intake is under retention erasure' ||
+        failure.message === 'erased copyright case cannot acquire an email intake'))
   )
     throw copyrightEmailThreadChangedError(err)
 }

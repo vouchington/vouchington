@@ -19,10 +19,8 @@ export async function insertCopyrightEmailIntakeNoticeLink(
     const digest = hashToken(COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE, input.matchedReference)
     matchedTokenId = (await resolveCopyrightEmailThreadTokenIds(transaction, [digest])).get(digest)!
   }
-  // A new thread link must serialize with retention on the notice. Locking its intake
-  // first also preserves promotion's order. If it was linked while we waited, replay
-  // the immutable link without requesting a notice lock: erasure may hold that notice
-  // while updating already-linked intakes.
+  // The insert trigger checks the live notice under its row lock. Existing links replay
+  // without entering that trigger while retention updates their case.
   if (input.linkKind === 'thread') {
     const { rows: live } = await transaction<{
       raw_storage_object_id: string | null
@@ -49,17 +47,10 @@ export async function insertCopyrightEmailIntakeNoticeLink(
     if (live[0]!.reviewed) return false
     if (live[0]!.raw_storage_object_id === null) return false
     const { rows: notices } =
-      await transaction(sql`/* linkCopyrightEmailIntakeToNotice:lockNotice */
-      SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR KEY SHARE
-    `)
+      await transaction(sql`/* linkCopyrightEmailIntakeToNotice:liveNotice */
+      SELECT id FROM copyright_notices
+      WHERE id = ${input.noticeId} AND evidence_erased_at IS NULL LIMIT 1`)
     if (!notices[0]) return false
-    // A fresh READ COMMITTED statement sees a marker committed while the notice
-    // lock was pending. The lock then fences erasure through this transaction.
-    const { rows: erased } = await transaction(sql`/* linkCopyrightEmailIntakeToNotice:erasure */
-      SELECT 1 FROM copyright_notices
-      WHERE id = ${input.noticeId} AND evidence_erased_at IS NOT NULL LIMIT 1
-    `)
-    if (erased[0]) return false
     const { rows: retired } = await transaction(sql`/* linkCopyrightEmailIntakeToNotice:retired */
       SELECT 1 FROM copyright_notice_email_thread_retirements
       WHERE copyright_notice_id = ${input.noticeId}
