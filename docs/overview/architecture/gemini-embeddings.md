@@ -27,7 +27,9 @@ flowchart LR
 Text entities share a recomputable cache keyed by a framed identity of the full canonical title and
 body. The identity is separate from the bounded prompt sent to Vertex: title and body are composed
 with the model's required prefix, then sampled against an estimated-token budget with margin. The estimator is approximate rather than
-Google's tokenizer, so this budget does not guarantee staying below the model's actual token limit. Image inputs use their
+Google's tokenizer, so this budget does not guarantee staying below the model's actual token limit.
+Provider truncation is accepted and recorded so multilingual documents can complete despite that
+estimation gap; canonical identities still cover the full unsampled document. Image inputs use their
 own source identity. Batch output is matched to the submitted manifest, and entity writes compare
 the submitted identity with the current entity identity before applying a result. This prevents a
 job from overwriting newer content or applying an output to the wrong entity.

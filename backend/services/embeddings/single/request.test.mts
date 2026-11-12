@@ -167,23 +167,34 @@ describe('Vertex embedding HTTP boundary', () => {
     }
   })
 
-  it('rejects an online result the provider reports as truncated', async () => {
+  it('accepts and records provider truncation for a long multilingual document', async () => {
     const agent = new MockAgent()
     agent.disableNetConnect()
     mockVertexIdentity(agent)
+    const warning = vi.spyOn(console, 'warn')
+    const body = '漢字🙂'.repeat(2_500)
     agent
       .get('https://aiplatform.us.rep.googleapis.com')
       .intercept({ method: 'POST', path: /:embedContent$/ })
       .reply(200, {
         embedding: { values: vector },
-        usageMetadata: { promptTokenCount: 4 },
+        usageMetadata: { promptTokenCount: '8192' },
         truncated: true,
       })
     try {
       await withMockAgentDefaultFetchForTest(agent, async () => {
-        await expect(createEmbedding('document')).rejects.toThrow(
-          'Vertex embedding input was truncated by the provider',
-        )
+        await expect(
+          createEmbedding(body, {
+            entityType: 'post',
+            intent: 'document',
+            title: 'Multilingual document',
+          }),
+        ).resolves.toEqual({ embedding: vector, tokens: 8192 })
+      })
+      expect(warning).toHaveBeenCalledExactlyOnceWith('vertex_embedding_input_truncated', {
+        model: 'gemini-embedding-2',
+        entity_type: 'post',
+        invocation: 'single',
       })
       expect(
         agent
@@ -191,6 +202,7 @@ describe('Vertex embedding HTTP boundary', () => {
           .filter(item => item.origin === 'https://aiplatform.us.rep.googleapis.com'),
       ).toEqual([])
     } finally {
+      warning.mockRestore()
       await agent.close()
     }
   })

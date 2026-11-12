@@ -143,8 +143,13 @@ async function requestEmbedding(
   if (!embedding || typeof embedding !== 'object' || !('values' in embedding))
     throw new Error('Vertex embedding response did not include values')
   const usage = 'usageMetadata' in result ? result.usageMetadata : null
-  if ('truncated' in result && result.truncated === true)
-    throw new Error('Vertex embedding input was truncated by the provider')
+  if ('truncated' in result && result.truncated === true) {
+    console.warn('vertex_embedding_input_truncated', {
+      model: GEMINI_EMBEDDING_2_MODEL_NAME,
+      entity_type: options?.entityType ?? 'unknown',
+      invocation: 'single',
+    })
+  }
   const rawTokenCount =
     usage && typeof usage === 'object' && 'promptTokenCount' in usage
       ? usage.promptTokenCount
