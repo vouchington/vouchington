@@ -3,6 +3,7 @@ import { createReAuthToken } from '@services/mfa/re-auth'
 import type { OAuthAccount } from '@services/oauth-accounts'
 import { lockActiveAccountSession } from '@services/mfa/active-account-session'
 import createHttpError from 'http-errors'
+import { MFA_REAUTH_REQUIRED } from '@modules/on-error/error-codes'
 import {
   consumeProviderReAuthChallenge,
   lockLinkedProviderReAuthSubject,
@@ -35,10 +36,12 @@ export async function completeBrokerProviderReAuthProof(
     authorization.initiating_device_id !== options.deviceId ||
     authorization.initiating_session_id !== options.sessionId
   ) {
-    throw createHttpError(403, 'Provider reauthentication belongs to another session')
+    throw createHttpError(403, 'Provider reauthentication belongs to another session', {
+      code: MFA_REAUTH_REQUIRED,
+    })
   }
   if (authorization.expires_at.getTime() <= Date.now()) {
-    throw createHttpError(410, 'Provider reauthentication expired')
+    throw createHttpError(410, 'Provider reauthentication expired', { code: MFA_REAUTH_REQUIRED })
   }
   if (
     authorization.status !== 'completed' ||

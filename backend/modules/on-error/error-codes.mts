@@ -26,6 +26,8 @@ export { BOT_CHALLENGE_REQUIRED } from '@ts-shared/utils/bot-challenge'
 
 // Multi-factor authentication
 export const MFA_REAUTH_REQUIRED = 'MFA_REAUTH_REQUIRED'
+export const LAST_SIGN_IN_METHOD_REMOVAL_FORBIDDEN = 'LAST_SIGN_IN_METHOD_REMOVAL_FORBIDDEN'
+export const ADMINISTRATOR_MFA_REQUIRED = 'ADMINISTRATOR_MFA_REQUIRED'
 
 // Validation
 export const INVALID_INPUT = 'INVALID_INPUT'

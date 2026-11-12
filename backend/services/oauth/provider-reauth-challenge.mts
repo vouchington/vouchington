@@ -11,6 +11,7 @@ import { providerTableConfigs, type OAuthProvider } from '@services/oauth-accoun
 import { REAUTH_TTL_SECONDS } from '@services/mfa/re-auth'
 import { TimeUnit } from '@valkey/valkey-glide'
 import createHttpError from 'http-errors'
+import { MFA_REAUTH_REQUIRED } from '@modules/on-error/error-codes'
 
 export type ProviderReAuthIdentity = {
   userId: string
@@ -94,7 +95,11 @@ function assertChallenge(
   identity: ProviderReAuthIdentity,
   value: string | null,
 ): ProviderReAuthChallenge {
-  if (!value) throw createHttpError(401, 'Provider reauthentication expired or already used')
+  if (!value) {
+    throw createHttpError(401, 'Provider reauthentication expired or already used', {
+      code: MFA_REAUTH_REQUIRED,
+    })
+  }
   const context = JSON.parse(value) as ProviderReAuthChallenge
   if (
     context.userId !== identity.userId ||
@@ -103,7 +108,9 @@ function assertChallenge(
     context.provider !== identity.provider ||
     context.flowId !== identity.flowId
   ) {
-    throw createHttpError(401, 'Provider reauthentication belongs to another session')
+    throw createHttpError(401, 'Provider reauthentication belongs to another session', {
+      code: MFA_REAUTH_REQUIRED,
+    })
   }
   return context
 }

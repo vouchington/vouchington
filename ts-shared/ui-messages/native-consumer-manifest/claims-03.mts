@@ -111,7 +111,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_03 = [
   { key: 'native.auth.checkEmail', consumers: ['swift'] },
   { key: 'native.auth.checkingPasskey', consumers: ['swift'] },
   { key: 'native.auth.codePlaceholder', consumers: ['swift'] },
-  { key: 'native.auth.codeSent', consumers: ['swift'] },
+  { key: 'native.auth.codeSent', consumers: ['dotnet', 'swift'] },
   { key: 'native.auth.continueWithEmail', consumers: ['swift'] },
   { key: 'native.auth.differentEmail', consumers: ['swift'] },
   { key: 'native.auth.emailAddress', consumers: ['dotnet', 'swift'] },
