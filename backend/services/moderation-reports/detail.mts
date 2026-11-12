@@ -28,7 +28,11 @@ export interface ModerationReportDetail {
   judgement: ModerationReportDetailJudgement | null
 }
 
-/** Callers enforce staff access; missing or deleted targets expose neither report nor judgement. */
+/**
+ * Callers enforce staff access; missing or deleted targets expose neither report nor judgement.
+ * Each target is a LIMIT 1 lateral probe so the planner cannot merge-join, and Sort, the one report
+ * row against a whole target index when the costs nearly tie.
+ */
 export function getModerationReportDetail(
   reportId: string,
 ): Promise<ModerationReportDetail | null> {
@@ -48,10 +52,18 @@ export function getModerationReportDetail(
         END::moderation_report_entity_types AS entity_type,
         COALESCE(r.post_id, r.reported_user_id, r.hostname_id, r.rss_feed_item_id) AS entity_id
       FROM moderation_reports r
-      LEFT JOIN posts target_post ON r.post_id IS NOT NULL AND target_post.id = r.post_id
-      LEFT JOIN users target_user ON r.reported_user_id IS NOT NULL AND target_user.id = r.reported_user_id
-      LEFT JOIN url_hostnames target_hostname ON r.hostname_id IS NOT NULL AND target_hostname.id = r.hostname_id
-      LEFT JOIN rss_feed_items target_rss_item ON r.rss_feed_item_id IS NOT NULL AND target_rss_item.id = r.rss_feed_item_id
+      LEFT JOIN LATERAL (
+        SELECT p.id, p.post_type, p.deleted_at FROM posts p WHERE p.id = r.post_id LIMIT 1
+      ) target_post ON true
+      LEFT JOIN LATERAL (
+        SELECT u.id, u.deleted_at FROM users u WHERE u.id = r.reported_user_id LIMIT 1
+      ) target_user ON true
+      LEFT JOIN LATERAL (
+        SELECT h.id FROM url_hostnames h WHERE h.id = r.hostname_id LIMIT 1
+      ) target_hostname ON true
+      LEFT JOIN LATERAL (
+        SELECT i.id, i.deleted_at FROM rss_feed_items i WHERE i.id = r.rss_feed_item_id LIMIT 1
+      ) target_rss_item ON true
       WHERE r.id = ${reportId}::uuid
         AND (
           (r.post_id IS NOT NULL AND target_post.id IS NOT NULL AND target_post.deleted_at IS NULL)
