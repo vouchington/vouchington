@@ -1,17 +1,17 @@
+import { identifier, type Phase } from '@data-stores/psql/copyright-case-purge-path'
+import { copyrightCasePurgePreservationAllowedSql } from './retention-case-purge-eligibility.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql from 'sql-template-strings'
-import { COPYRIGHT_CASE_PURGE_PHASES } from './retention-case-purge-order.mts'
+import { COPYRIGHT_CASE_PURGE_PHASES } from '@data-stores/psql/copyright-case-purge-order'
 import { COPYRIGHT_CASE_CHILD_BLOCKERS } from './retention-case-purge-blockers.mts'
 import {
   afterClause,
   ascend,
   childPredicate,
   equality,
-  identifier,
   parentValues,
   type Frame,
-  type Phase,
 } from './retention-case-purge-child-path.mts'
 
 export const COPYRIGHT_CASE_CHILD_PHASE_COUNT = COPYRIGHT_CASE_PURGE_PHASES.length
@@ -62,7 +62,7 @@ async function runCopyrightCaseChildPage(
     // no-mistakes-disable-next-line query-reached-per-item: path depth is a fixed schema-derived maximum of five, and each ancestor lookup is indexed LIMIT 1.
     const { rows } = await query<Record<string, string | number>>( // oxlint-disable-line no-await-in-loop -- each indexed ancestor key supplies the next bounded path lookup.
       `/* selectCopyrightCasePurgeAncestor */ SELECT ${selected} FROM ${identifier(edge[0])} child
-       WHERE ${where}${after.clause} ORDER BY ${order} LIMIT 1 FOR UPDATE OF child NOWAIT`,
+       WHERE ${where}${after.clause} ORDER BY ${order} LIMIT 1`,
       [...values, ...after.values],
     )
     if (!rows[0]) {
@@ -91,6 +91,12 @@ async function runCopyrightCaseChildPage(
   const order = cursorColumns.join(', ')
   const reverseOrder = cursorColumns.map(column => `${column} DESC`).join(', ')
   const blocker = COPYRIGHT_CASE_CHILD_BLOCKERS[phase[0]] ?? 'false'
+  const preservation = copyrightCasePurgePreservationAllowedSql(noticeId)
+  const parameterCount = values.length + after.values.length + 1
+  const allowed = preservation.text.replace(
+    /\$(\d+)/g,
+    (_match, position: string) => `$${parameterCount + Number(position)}`,
+  )
   // A unique-key probe per page row keeps generic plans from scanning the whole child table.
   const statement = verifyOnly
     ? `/* verifyCopyrightCaseChildPage */
@@ -112,14 +118,14 @@ async function runCopyrightCaseChildPage(
     : `/* deleteCopyrightCaseChildPage */
     WITH candidates AS MATERIALIZED (
       SELECT ${candidates} FROM ${identifier(edge[0])} child
-      WHERE ${where}${after.clause}${childPredicate(phase)}
+      WHERE ${where}${after.clause}${childPredicate(phase)} AND (${allowed})
       ORDER BY ${order} LIMIT $${values.length + after.values.length + 1}
       FOR UPDATE OF child
     ), deleted AS (
       DELETE FROM ${identifier(edge[0])} child USING candidates page
-      WHERE ${join} RETURNING 1
+      WHERE ${join} AND (${allowed}) RETURNING 1
     ) SELECT (SELECT count(*)::integer FROM deleted) AS processed,
-      false AS blocked,
+      NOT (${allowed}) AS blocked,
       (SELECT row_to_json(last_row) FROM (
         SELECT ${cursorColumns.join(', ')} FROM candidates ORDER BY ${reverseOrder} LIMIT 1
       ) last_row) AS last_key`
@@ -127,7 +133,7 @@ async function runCopyrightCaseChildPage(
     processed: number
     blocked: boolean
     last_key: Record<string, string | number> | null
-  }>(statement, [...values, ...after.values, limit])
+  }>(statement, [...values, ...after.values, limit, ...(verifyOnly ? [] : preservation.values)])
   const processed = rows[0]?.processed ?? 0
   if (processed === limit) {
     const lastKey = rows[0]?.last_key
@@ -155,6 +161,7 @@ export async function deleteCopyrightCaseChildPage(
     deleted: page.processed,
     nextPhaseIndex: page.nextPhaseIndex,
     childFrames: page.childFrames,
+    deferred: page.blocked,
   }
 }
 

@@ -8,6 +8,7 @@ export async function holdCopyrightCaseAfterPurgeProof<Result>(
   noticeId: string,
   placeHold: () => Promise<unknown>,
   purge: () => Promise<Result>,
+  queryMarker = 'readCopyrightCasePurgeEligibility',
 ): Promise<Result> {
   return runPoolObservationExclusively(async () => {
     let placed = false
@@ -29,7 +30,7 @@ export async function holdCopyrightCaseAfterPurgeProof<Result>(
           statement === null ||
           !('text' in statement) ||
           typeof statement.text !== 'string' ||
-          !statement.text.includes('/* readCopyrightCasePurgeEligibility */') ||
+          !statement.text.includes(`/* ${queryMarker} */`) ||
           !('values' in statement) ||
           !Array.isArray(statement.values) ||
           !statement.values.includes(noticeId)

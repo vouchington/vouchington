@@ -1,3 +1,4 @@
+import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -39,7 +40,9 @@ async function readUserCopyrightCases(query: QueryExecutor, userId: string) {
 
 /** Inventory all records preserved by an account hold. */
 export async function readUserCopyrightPreservationCoverage(query: QueryExecutor, userId: string) {
-  await readCopyrightCasePreservationCoverage(query, await readUserCopyrightCases(query, userId))
+  const cases = await readUserCopyrightCases(query, userId)
+  await readCopyrightCasePreservationCoverage(query, cases)
+  return cases
 }
 
 /** Account erasure changes case qualification, so inventory the affected thread records. */
@@ -59,7 +62,10 @@ export async function readUserCopyrightThreadProtectedRecords(
 
 /** Existing case work protects these records from operational thread retirement. */
 async function readCopyrightHeldThreadRecords(query: QueryExecutor, cases: readonly string[]) {
-  await query(sql`/* readCopyrightThreadProtectedRecords */ SELECT
+  const { rows } = await query<{
+    earliest_created_at: Date | null
+  }>(sql`/* readCopyrightThreadProtectedRecords */ SELECT
+    (SELECT min(created_at) FROM copyright_notices WHERE id = ANY(${cases}::uuid[])) AS earliest_created_at,
     (SELECT count(matched_token_id) FROM copyright_notice_email_intake_notice_links
       WHERE copyright_notice_id = ANY(${cases}::uuid[])) AS links,
     (SELECT count(*) FROM copyright_notice_email_thread_retirements
@@ -76,6 +82,7 @@ async function readCopyrightHeldThreadRecords(query: QueryExecutor, cases: reado
       JOIN copyright_notice_email_intake_notice_links link
         ON link.copyright_notice_email_intake_id = edge.ancestor_message_intake_receipt_id
       WHERE link.copyright_notice_id = ANY(${cases}::uuid[])) AS ancestor_edges`)
+  return rows[0]?.earliest_created_at ?? null
 }
 
 /** Record families covered by a case hold, including both directions of shared ancestry. */
@@ -83,10 +90,15 @@ export async function readCopyrightCasePreservationCoverage(
   query: QueryExecutor,
   cases: readonly string[],
 ) {
-  await readCopyrightHeldThreadRecords(query, cases)
+  const earliestCreatedAt = await readCopyrightHeldThreadRecords(query, cases)
+  if (!earliestCreatedAt) return
+  const lifecycleLowerBound = getMinUUIDv7ForDate(earliestCreatedAt)
   // Counts inventory all covered rows without returning an unbounded evidence list.
   await query(sql`/* readUserCopyrightPreservationCoverage */ SELECT
     (SELECT count(evidence_erased_at) FROM copyright_notices WHERE id = ANY(${cases}::uuid[])) AS notices,
+    (SELECT count(*) FROM copyright_notice_lifecycle_changes
+      WHERE id >= ${lifecycleLowerBound}::uuid
+        AND copyright_notice_id = ANY(${cases}::uuid[])) AS lifecycle_changes,
     (SELECT count(*) FROM copyright_notice_evidence_artifacts artifact
       JOIN copyright_notice_submissions submission ON submission.id = artifact.copyright_notice_submission_id
       WHERE submission.copyright_notice_id = ANY(${cases}::uuid[])) AS artifacts,

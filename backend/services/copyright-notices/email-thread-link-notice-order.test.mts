@@ -58,7 +58,10 @@ describe('copyright email notice link write order', () => {
     const second = await createRetentionParsedEmail(`link-second-${randomUUID()}`)
     const bothPrechecked = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
-    onTestFinished(() => release.resolve())
+    onTestFinished(() => {
+      bothPrechecked.reject(new Error('Owned thread-link preflight was not observed'))
+      release.resolve()
+    })
     let prechecked = 0
     const link = async (intakeId: string) => {
       await using transaction = await beginTransaction()
@@ -86,7 +89,11 @@ describe('copyright email notice link write order', () => {
         }
       },
       async query => {
-        if (!query.text.includes('linkCopyrightEmailIntakeToNotice:retired')) return
+        if (
+          !query.text.includes('/* readCopyrightThreadRetirement */') ||
+          !query.values.some(value => Array.isArray(value) && value.includes(notice.noticeId))
+        )
+          return
         prechecked += 1
         if (prechecked === 2) bothPrechecked.resolve()
         await release.promise
@@ -94,7 +101,11 @@ describe('copyright email notice link write order', () => {
     )
     expect(prechecked).toBe(2)
     expect(
-      queries.filter(query => query.text.includes('linkCopyrightEmailIntakeToNotice:retired')),
+      queries.filter(
+        query =>
+          query.text.includes('/* readCopyrightThreadRetirement */') &&
+          query.values.some(value => Array.isArray(value) && value.includes(notice.noticeId)),
+      ),
     ).toHaveLength(2)
     expect(outcomes).toEqual([
       { status: 'fulfilled', value: true },

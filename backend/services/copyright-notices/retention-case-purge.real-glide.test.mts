@@ -23,7 +23,7 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
 import { placeCopyrightCasePreservationHold } from './retention-review-closures.mts'
 import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
-import { COPYRIGHT_CASE_PURGE_PHASES } from './retention-case-purge-order.mts'
+import { COPYRIGHT_CASE_PURGE_PHASES } from '@data-stores/psql/copyright-case-purge-order'
 import { processCopyrightCasePurge } from '../../workers/psql/processors/copyright-case-purge.mts'
 
 // PostgreSQL fixtures use clock_timestamp(), so only the service's injected clock moves forward.

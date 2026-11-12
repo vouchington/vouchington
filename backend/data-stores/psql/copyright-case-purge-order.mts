@@ -1,15 +1,15 @@
-import { COPYRIGHT_CASE_PURGE_PATH_1 } from './retention-case-purge-path-1.mts'
-import { COPYRIGHT_CASE_PURGE_PATH_1_REST } from './retention-case-purge-path-1-rest.mts'
-import { COPYRIGHT_CASE_PURGE_PATH_2 } from './retention-case-purge-path-2.mts'
-import { COPYRIGHT_CASE_PURGE_PATH_2_REST } from './retention-case-purge-path-2-rest.mts'
-import { COPYRIGHT_CASE_PURGE_PATH_3 } from './retention-case-purge-path-3.mts'
-import { COPYRIGHT_CASE_PURGE_PATH_4 } from './retention-case-purge-path-4.mts'
-import { COPYRIGHT_CASE_PURGE_PATH_5 } from './retention-case-purge-path-5.mts'
-import { COPYRIGHT_CASE_PURGE_PATH_5_REST } from './retention-case-purge-path-5-rest.mts'
+import { COPYRIGHT_CASE_PURGE_PATH_1 } from './copyright-case-purge-path-1.mts'
+import { COPYRIGHT_CASE_PURGE_PATH_1_REST } from './copyright-case-purge-path-1-rest.mts'
+import { COPYRIGHT_CASE_PURGE_PATH_2 } from './copyright-case-purge-path-2.mts'
+import { COPYRIGHT_CASE_PURGE_PATH_2_REST } from './copyright-case-purge-path-2-rest.mts'
+import { COPYRIGHT_CASE_PURGE_PATH_3 } from './copyright-case-purge-path-3.mts'
+import { COPYRIGHT_CASE_PURGE_PATH_4 } from './copyright-case-purge-path-4.mts'
+import { COPYRIGHT_CASE_PURGE_PATH_5 } from './copyright-case-purge-path-5.mts'
+import { COPYRIGHT_CASE_PURGE_PATH_5_REST } from './copyright-case-purge-path-5-rest.mts'
 import {
   COPYRIGHT_CASE_EMAIL_LINK_PHASE,
   COPYRIGHT_CASE_EMAIL_PRIVATE_PATHS,
-} from './retention-case-purge-email-paths.mts'
+} from './copyright-case-purge-email-paths.mts'
 
 const CASE_PATHS = [
   ...COPYRIGHT_CASE_PURGE_PATH_1,

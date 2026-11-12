@@ -217,6 +217,18 @@ The approved case clock retains each jurisdiction for six calendar years after i
 activity, including the final decision's complaint window. A new legal fact or hold release advances
 that clock. Detailed history has its own guarded partition retirement until the case is purged.
 
+Case SQL pointer cuts, child deletion and final removal share a serializable preservation boundary.
+Account and case hold placement read the affected legal-record families through their case foreign
+keys, including current pointer values. A conflicting destructive page rolls back without advancing
+its cursor; the next scheduled page sees the committed hold. The page does not retry within its run.
+
+Case evidence deletion checks current preservation again on the primary immediately before each
+physical S3 deletion batch, after listing its versions. Completion is checked again before clearing
+evidence pointers, including when no versions remain. A hold visible at either admission stops the
+page and retains its evidence pointer. A hold committed afterward protects later pages; it does
+not cancel the already-admitted external request. A database rollback cannot restore object
+versions that S3 has already deleted.
+
 Operational thread retirement admits only records without a current account or case preservation
 hold. Hold placement inventories the records it protects in the same serializable transaction;
 retirement reads those holds before deleting the records. A serialization conflict rolls back the

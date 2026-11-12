@@ -69,6 +69,10 @@ export async function runCopyrightCasePurgePage(
   await using query = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
     statementTimeoutMs: 20_000,
+    isolationLevel:
+      data.phase === 'pointers' || data.phase === 'children' || data.phase === 'final'
+        ? 'serializable'
+        : undefined,
   })
   if (data.phase === 'final')
     await query(sql`/* lockCopyrightCasePurgeAccountFinalization */
@@ -85,7 +89,10 @@ export async function runCopyrightCasePurgePage(
     return { data, hasMore: true, deferred: true }
   }
   const { rows: locked } = await query<LockedNotice>(
-    copyrightCasePurgeProofSql(data.noticeId, true),
+    copyrightCasePurgeProofSql(
+      data.noticeId,
+      data.phase !== 'pointers' && data.phase !== 'children',
+    ),
   )
   if (locked.length === 0) {
     await query.commit()

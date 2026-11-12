@@ -1,5 +1,5 @@
 import { copyrightCasePurgePreservationAllowedSql } from './retention-case-purge-eligibility.mts'
-import type { TransactionQuery } from '@data-stores/psql'
+import { write, type TransactionQuery } from '@data-stores/psql'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import sql from 'sql-template-strings'
 import { deleteCopyrightEvidenceObjectVersionPage } from './evidence-object-version-page.mts'
@@ -137,7 +137,17 @@ export async function eraseCopyrightCaseEvidencePage(
   if (!preservation[0]?.is_allowed)
     return { nextId: afterId, nextSourceIndex: sourceIndex, hasMore: true, deferred: true }
 
-  const page = await deleteCopyrightEvidenceObjectVersionPage(object.storage_key, workLimit)
+  const page = await deleteCopyrightEvidenceObjectVersionPage(
+    object.storage_key,
+    workLimit,
+    async () => {
+      // This primary autocommit SELECT has a fresh READ COMMITTED snapshot after S3 listing.
+      const { rows } = await write<{ is_allowed: boolean }>(preservationCheck)
+      return rows.length === 1 && rows[0]!.is_allowed
+    },
+  )
+  if (page.deferred)
+    return { nextId: afterId, nextSourceIndex: sourceIndex, hasMore: true, deferred: true }
   if (page.hasMore) return { nextId: afterId, nextSourceIndex: sourceIndex, hasMore: true }
   await query(sql`/* scopeCopyrightCaseEvidenceUnlink */
     SET LOCAL app.copyright_retention_erasure = 'on'`)

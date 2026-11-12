@@ -1,3 +1,7 @@
+import { readCopyrightAssessmentPointers } from '@voucha/test-helpers/copyright-form-review-assessment-race'
+import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
+import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
+import { linkTestCopyrightEmailIntake } from '@voucha/test-helpers/copyright-operational-email-retention'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { holdCopyrightCaseAfterPurgeProof } from '@voucha/test-helpers/copyright-case-hold-interleave'
@@ -22,14 +26,136 @@ import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import {
   COPYRIGHT_CASE_PURGE_PHASES,
   COPYRIGHT_CASE_EMAIL_LINK_PHASE_INDEX,
-} from './retention-case-purge-order.mts'
+} from '@data-stores/psql/copyright-case-purge-order'
 import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
 
 const purgeNow = new Date('2100-01-01T12:00:00.000Z')
 
 describe('account preservation at destructive copyright page admission', () => {
+  it('rolls back a lifecycle child page when an account hold commits after final SQL admission', async () => {
+    const admin = await createTestUser({ administrator: true, extraRoles: ['moderator'] })
+    const party = await createTestUser()
+    const noticeId = await createCopyrightNoticeForManualAssociation()
+    await addCopyrightCasePurgeFixtureParty(noticeId, party.id)
+    const submission = await appendTestCopyrightNoticeSubmission({
+      noticeId,
+      kind: 'notice',
+      sourceKind: 'staff',
+      submittedByUserId: admin.id,
+      receivedAt: new Date(),
+      bodyCiphertext: 'Held lifecycle child.',
+    })
+    await appendCopyrightSubmissionAssessment({
+      submissionId: submission.id,
+      currentUser: admin,
+      assessedAt: new Date(),
+      substantiallyCompliant: true,
+    })
+    await markTestCopyrightNoticeErasedAndCommit(noticeId)
+    const first = await runCopyrightCasePurgePage(
+      {
+        noticeId,
+        phase: 'parties',
+        phaseIndex: 0,
+        afterId: null,
+        legalClockAt: null,
+        proofVersion: null,
+      },
+      purgeNow,
+    )
+    const phaseIndex = COPYRIGHT_CASE_PURGE_PHASES.findIndex(
+      phase => phase[0] === 'copyright_notice_lifecycle_changes',
+    )
+    const before = await getCopyrightNoticePrivateAggregate(noticeId)
+    expect(before!.lifecycleEvents.length).toBeGreaterThan(0)
+    let holdPlaced = false
+    try {
+      await expect(
+        holdCopyrightCaseAfterPurgeProof(
+          noticeId,
+          async () => {
+            await placeUserPreservationHold(admin, party.id, 'after-final-SQL-admission')
+            holdPlaced = true
+          },
+          () =>
+            runCopyrightCasePurgePage(
+              { ...first.data, phase: 'children', phaseIndex, afterId: null },
+              purgeNow,
+            ),
+          'readCopyrightCaseDestructionPreservation',
+        ),
+      ).rejects.toMatchObject({ code: '40001' })
+      expect(holdPlaced).toBe(true)
+      expect(await getCopyrightNoticePrivateAggregate(noticeId)).toEqual(before)
+      const nextTick = await runCopyrightCasePurgePage(
+        { ...first.data, phase: 'children', phaseIndex, afterId: null },
+        purgeNow,
+      )
+      expect(nextTick).toMatchObject({ hasMore: true, deferred: true })
+      expect(await getCopyrightNoticePrivateAggregate(noticeId)).toEqual(before)
+    } finally {
+      if (holdPlaced) await releaseUserPreservationHold(admin, party.id)
+    }
+  })
+
+  it('rolls back a nested attachment leaf when an account hold commits after final admission', async () => {
+    const admin = await createTestUser({ administrator: true, extraRoles: ['moderator'] })
+    const party = await createTestUser()
+    const noticeId = await createCopyrightNoticeForManualAssociation()
+    await addCopyrightCasePurgeFixtureParty(noticeId, party.id)
+    const intake = await createRetentionParsedEmail('held-nested-leaf', {
+      replyReferences: [`<${crypto.randomUUID()}@example.test>`],
+    })
+    await linkTestCopyrightEmailIntake(intake.id, noticeId, 'thread', admin.id)
+    await markTestCopyrightNoticeErasedAndCommit(noticeId)
+    const first = await runCopyrightCasePurgePage(
+      {
+        noticeId,
+        phase: 'parties',
+        phaseIndex: 0,
+        afterId: null,
+        legalClockAt: null,
+        proofVersion: null,
+      },
+      purgeNow,
+    )
+    const phaseIndex = COPYRIGHT_CASE_PURGE_PHASES.findIndex(
+      phase => phase[0] === 'copyright_notice_email_intake_attachments',
+    )
+    const before = await readCopyrightIntakeRetentionState(intake.id)
+    expect(before.attachmentCount).toBe(1)
+    let holdPlaced = false
+    try {
+      await expect(
+        holdCopyrightCaseAfterPurgeProof(
+          noticeId,
+          async () => {
+            await placeUserPreservationHold(admin, party.id, 'after-nested-leaf-admission')
+            holdPlaced = true
+          },
+          () =>
+            runCopyrightCasePurgePage(
+              { ...first.data, phase: 'children', phaseIndex, afterId: null },
+              purgeNow,
+            ),
+          'readCopyrightCaseDestructionPreservation',
+        ),
+      ).rejects.toMatchObject({ code: '40001' })
+      expect(holdPlaced).toBe(true)
+      expect(await readCopyrightIntakeRetentionState(intake.id)).toEqual(before)
+      const nextTick = await runCopyrightCasePurgePage(
+        { ...first.data, phase: 'children', phaseIndex, afterId: null },
+        purgeNow,
+      )
+      expect(nextTick).toMatchObject({ hasMore: true, deferred: true })
+      expect(await readCopyrightIntakeRetentionState(intake.id)).toEqual(before)
+    } finally {
+      if (holdPlaced) await releaseUserPreservationHold(admin, party.id)
+    }
+  })
+
   it.each(['pointers', 'children', 'email_links', 'final'] as const)(
-    'defers %s when a hold commits after the old proof',
+    'rolls back %s when a hold commits after final admission',
     async branch => {
       const admin = await createTestUser({ administrator: true, extraRoles: ['moderator'] })
       const party = await createTestUser()
@@ -84,8 +210,12 @@ describe('account preservation at destructive copyright page admission', () => {
       const before = {
         aggregate: await getCopyrightNoticePrivateAggregate(noticeId),
         links: intakeId ? await readCopyrightEmailIntakeNoticeLinks(intakeId) : null,
+        pointers: await readCopyrightAssessmentPointers(noticeId),
       }
       expect(before.aggregate).not.toBeNull()
+      expect(before.pointers.some(row => row.current_assessment_identity_id !== null)).toBe(
+        branch === 'pointers' || branch === 'children',
+      )
       const childIndex = COPYRIGHT_CASE_PURGE_PHASES.findIndex(
         phase => phase[0] === 'copyright_notice_lifecycle_changes',
       )
@@ -101,7 +231,7 @@ describe('account preservation at destructive copyright page admission', () => {
               : 0
       let holdPlaced = false
       try {
-        const result = await holdCopyrightCaseAfterPurgeProof(
+        const attempted = holdCopyrightCaseAfterPurgeProof(
           noticeId,
           async () => {
             await placeUserPreservationHold(admin, party.id, `before-${branch}-admission`)
@@ -112,15 +242,19 @@ describe('account preservation at destructive copyright page admission', () => {
               { ...first.data, phase, phaseIndex, afterId: null },
               purgeNow,
             ),
+          'readCopyrightCaseDestructionPreservation',
         )
-        expect(result).toMatchObject({
-          hasMore: true,
-          deferred: true,
-          data: { phase: 'parties', phaseIndex: 0, afterId: null },
-        })
+        await expect(attempted).rejects.toMatchObject({ code: '40001' })
+        expect(holdPlaced).toBe(true)
+        const nextTick = await runCopyrightCasePurgePage(
+          { ...first.data, phase, phaseIndex, afterId: null },
+          purgeNow,
+        )
+        expect(nextTick).toMatchObject({ hasMore: true, deferred: true })
         expect({
           aggregate: await getCopyrightNoticePrivateAggregate(noticeId),
           links: intakeId ? await readCopyrightEmailIntakeNoticeLinks(intakeId) : null,
+          pointers: await readCopyrightAssessmentPointers(noticeId),
         }).toEqual(before)
         expect(await isTestCopyrightCaseEvidenceErased(noticeId)).toBe(true)
       } finally {

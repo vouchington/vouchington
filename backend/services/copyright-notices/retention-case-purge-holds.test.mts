@@ -1,3 +1,12 @@
+import { afterCopyrightHoldCoverage } from '@voucha/test-helpers/copyright-preservation-coverage-interleave'
+import {
+  createCopyrightNoticeForManualAssociation,
+  markTestCopyrightNoticeErasedAndCommit,
+} from '@voucha/test-helpers/copyright-email-manual-association'
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+import { COPYRIGHT_CASE_PURGE_PHASES } from '@data-stores/psql/copyright-case-purge-order'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
@@ -11,7 +20,11 @@ import {
   settleCopyrightCasePurgeFixtureActions,
   useCopyrightCasePurgePageSize,
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
-import { placeUserPreservationHold } from '../users/preservation-holds.mts'
+import {
+  placeUserPreservationHold,
+  releaseUserPreservationHold,
+  getUserPreservationHoldState,
+} from '../users/preservation-holds.mts'
 import { runCopyrightAccountClockSyncPage } from './retention-account-clock-sync.mts'
 import { placeCopyrightCasePreservationHold } from './retention-review-closures.mts'
 import { runCopyrightCasePurgePage } from './retention-case-purge-page.mts'
@@ -34,6 +47,67 @@ describe('copyright case purge holds placed mid-purge', () => {
   useAutomaticProvisionalWithholding()
   const bucket = useCopyrightEvidenceBucket()
   const setPageSize = useCopyrightCasePurgePageSize()
+
+  it('commits the SQL child page first and rejects the overlapping account hold without partial state', async () => {
+    const admin = await createTestUser({ administrator: true, extraRoles: ['moderator'] })
+    const party = await createTestUser()
+    const noticeId = await createCopyrightNoticeForManualAssociation()
+    await addCopyrightCasePurgeFixtureParty(noticeId, party.id)
+    const submission = await appendTestCopyrightNoticeSubmission({
+      noticeId,
+      kind: 'notice',
+      sourceKind: 'staff',
+      submittedByUserId: admin.id,
+      receivedAt: new Date(),
+      bodyCiphertext: 'First committed child purge.',
+    })
+    await appendCopyrightSubmissionAssessment({
+      submissionId: submission.id,
+      currentUser: admin,
+      assessedAt: new Date(),
+      substantiallyCompliant: true,
+    })
+    await markTestCopyrightNoticeErasedAndCommit(noticeId)
+    const first = await runCopyrightCasePurgePage(firstPage(noticeId), PURGE_NOW)
+    const phaseIndex = COPYRIGHT_CASE_PURGE_PHASES.findIndex(
+      phase => phase[0] === 'copyright_notice_lifecycle_changes',
+    )
+    expect(
+      (await getCopyrightNoticePrivateAggregate(noticeId))!.lifecycleEvents.length,
+    ).toBeGreaterThan(0)
+    let committedPage: Awaited<ReturnType<typeof runCopyrightCasePurgePage>> | undefined
+    let holdPlaced = false
+    try {
+      await expect(
+        afterCopyrightHoldCoverage(
+          noticeId,
+          async () => {
+            committedPage = await runCopyrightCasePurgePage(
+              { ...first.data, phase: 'children', phaseIndex, afterId: null },
+              PURGE_NOW,
+            )
+          },
+          async () => {
+            const result = await placeUserPreservationHold(
+              admin,
+              party.id,
+              'hold-loses-to-child-page',
+            )
+            holdPlaced = true
+            return result
+          },
+        ),
+      ).rejects.toMatchObject({ status: 409, code: 'CONFLICT', cause: { code: '40001' } })
+      expect(committedPage).toMatchObject({
+        hasMore: true,
+        data: { phase: 'children', phaseIndex: phaseIndex + 1 },
+      })
+      expect((await getCopyrightNoticePrivateAggregate(noticeId))!.lifecycleEvents).toEqual([])
+      expect((await getUserPreservationHoldState(admin, party.id)).holds).toEqual([])
+    } finally {
+      if (holdPlaced) await releaseUserPreservationHold(admin, party.id)
+    }
+  })
 
   // no-mistakes-timeout-reason: reviewed email fixture and bounded PostgreSQL purge pages
   it('defers while a party account hold waits for its clock sync, then stops on the hold', async () => {

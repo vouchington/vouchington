@@ -1,4 +1,7 @@
-import { readCopyrightThreadRetirement } from '@data-stores/psql/copyright-preservation-coverage'
+import {
+  readCopyrightThreadRetirement,
+  readCopyrightCasePreservationCoverage,
+} from '@data-stores/psql/copyright-preservation-coverage'
 import { appendCopyrightSubmissionAssessmentInTransaction } from '../services/copyright-notices/compliance-assessment.mts'
 import type pg from 'pg'
 import { beginTransaction, writePool } from '@data-stores/psql'
@@ -97,4 +100,28 @@ export async function assessAfterMixedCopyrightRetirementRead(
   )
   await transaction.commit()
   return assessment
+}
+
+/** Seed real ledger rows and consume the production hold inventory through the same transaction. */
+export async function readTestCopyrightLifecycleCoverage(
+  cases: readonly string[],
+  events: readonly { noticeId: string; id: string }[],
+): Promise<number> {
+  await using transaction = await beginTransaction()
+  for (const event of events) {
+    await transaction(
+      `/* seedTestCopyrightLifecycleCoverage */ INSERT INTO copyright_notice_lifecycle_changes
+        (id, copyright_notice_id, change_type) VALUES ($1::uuid, $2::uuid, 'notice_received')`,
+      [event.id, event.noticeId],
+    )
+  }
+  let count = 0
+  const observe = (async (...args: Parameters<import('@data-stores/psql').QueryExecutor>) => {
+    const result = await Reflect.apply(transaction, undefined, args)
+    const row = result.rows[0] as { lifecycle_changes?: string } | undefined
+    if (row?.lifecycle_changes !== undefined) count = Number(row.lifecycle_changes)
+    return result
+  }) as import('@data-stores/psql').QueryExecutor
+  await readCopyrightCasePreservationCoverage(observe, cases)
+  return count
 }

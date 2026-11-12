@@ -96,3 +96,41 @@ export function capS3ImagesClientListPageSizeForTest(bucket: string, maxKeys: nu
     'cap-list-page-size',
   )
 }
+
+/** Commit an owned mutation after a real version listing, before the caller can delete it. */
+export function afterS3ImagesClientVersionListForTest(
+  bucket: string,
+  key: string,
+  afterList: () => Promise<void>,
+) {
+  let pending = true
+  let deleteCalls = 0
+  addInitializeMiddleware(
+    (next, context) => async args => {
+      const input = args.input as {
+        Bucket?: string
+        Prefix?: string
+        Delete?: { Objects?: { Key?: string }[] }
+      }
+      if (
+        context.commandName === 'DeleteObjectsCommand' &&
+        input.Bucket === bucket &&
+        input.Delete?.Objects?.some(object => object.Key === key)
+      )
+        deleteCalls += 1
+      const result = await next(args)
+      if (
+        pending &&
+        context.commandName === 'ListObjectVersionsCommand' &&
+        input.Bucket === bucket &&
+        input.Prefix === key
+      ) {
+        pending = false
+        await afterList()
+      }
+      return result
+    },
+    'after-owned-version-list',
+  )
+  return { deleteCalls: () => deleteCalls }
+}

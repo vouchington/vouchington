@@ -13,7 +13,8 @@ const REQUEST_TIMEOUT_MS = 20_000
 export async function deleteCopyrightEvidenceObjectVersionPage(
   key: string,
   workLimit: number,
-): Promise<{ hasMore: boolean; scanned: number }> {
+  canDelete?: () => Promise<boolean>,
+): Promise<{ hasMore: boolean; scanned: number; deferred?: boolean }> {
   if (!Number.isSafeInteger(workLimit) || workLimit < 1)
     throw new Error('Invalid copyright evidence work limit')
   const bucket = process.env.S3_BUCKET_COPYRIGHT_EVIDENCE?.trim()
@@ -31,7 +32,12 @@ export async function deleteCopyrightEvidenceObjectVersionPage(
     if (entry.Key === key && entry.VersionId)
       versions.push({ Key: key, VersionId: entry.VersionId })
   }
-  if (versions.length > 0) await deleteVersions(bucket, versions)
+  if (versions.length > 0 && !(await deleteVersions(bucket, versions, canDelete)))
+    return {
+      hasMore: true,
+      scanned: (page.Versions?.length ?? 0) + (page.DeleteMarkers?.length ?? 0),
+      deferred: true,
+    }
   // Exact-key versions sort before longer keys sharing the prefix. This single-entry check
   // confirms completion without traversing unrelated prefixed keys or every old version.
   const confirmation = await S3ImagesClient.send(
@@ -42,16 +48,24 @@ export async function deleteCopyrightEvidenceObjectVersionPage(
     }),
     { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
   )
-  return {
-    hasMore: [...(confirmation.Versions ?? []), ...(confirmation.DeleteMarkers ?? [])].some(
-      entry => entry.Key === key,
-    ),
-    scanned: (page.Versions?.length ?? 0) + (page.DeleteMarkers?.length ?? 0),
-  }
+  const hasMore = [...(confirmation.Versions ?? []), ...(confirmation.DeleteMarkers ?? [])].some(
+    entry => entry.Key === key,
+  )
+  const scanned = (page.Versions?.length ?? 0) + (page.DeleteMarkers?.length ?? 0)
+  // Completion authorizes clearing the evidence pointer, even when no versions were listed.
+  if (!hasMore && canDelete && !(await canDelete()))
+    return { hasMore: true, scanned, deferred: true }
+  return { hasMore, scanned }
 }
 
-async function deleteVersions(bucket: string, versions: ObjectIdentifier[]): Promise<void> {
+async function deleteVersions(
+  bucket: string,
+  versions: ObjectIdentifier[],
+  canDelete?: () => Promise<boolean>,
+): Promise<boolean> {
   for (let start = 0; start < versions.length; start += DELETE_BATCH_SIZE) {
+    // oxlint-disable-next-line no-await-in-loop -- fresh legal admission belongs immediately before each physical delete batch.
+    if (canDelete && !(await canDelete())) return false
     // oxlint-disable-next-line no-await-in-loop -- a failed batch must stop the keys after it.
     const result = await S3ImagesClient.send(
       new DeleteObjectsCommand({
@@ -65,4 +79,5 @@ async function deleteVersions(bucket: string, versions: ObjectIdentifier[]): Pro
       throw new Error(`Copyright evidence delete refused ${result.Errors.length} object versions`)
     }
   }
+  return true
 }

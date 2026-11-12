@@ -1,5 +1,5 @@
+import { readUserCopyrightHoldCoverage } from '@data-stores/psql/copyright-preservation-child-coverage'
 import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
-import { readUserCopyrightPreservationCoverage } from '@data-stores/psql/copyright-preservation-coverage'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -115,7 +115,7 @@ export async function placeUserPreservationHold(
     `)
       const row = rows[0]
       if (!row) throw createCodedError(409, 'User already has an open preservation hold', CONFLICT)
-      await readUserCopyrightPreservationCoverage(query, userId)
+      await readUserCopyrightHoldCoverage(query, userId)
       await recordModeratorAction(
         currentUser.id,
         { actionType: 'preservation_hold_place', targetUserId: userId },

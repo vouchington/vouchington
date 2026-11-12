@@ -1,4 +1,4 @@
-import type { Edge, Phase } from './retention-case-purge-child-path.mts'
+import type { Edge, Phase } from './copyright-case-purge-path.mts'
 
 const link: Edge = [
   'copyright_notice_email_intake_notice_links',
