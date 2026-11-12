@@ -2,23 +2,15 @@
 
 [Back to Dev Environment Reference](README.md#gemini-embeddings-local)
 
-Local online embedding requests use Vertex AI's `embedContent` endpoint. Batch creation and polling
-use the Google Cloud batch prediction API. Configure a development Google Cloud project and
-application default credentials with access to the required Vertex AI model and batch resources.
-Deployed environments use workload identity federation; follow the private infrastructure runbook
-for the environment-specific setup.
+Local requests use the same AWS workload identity federation path as deployed workloads. Configure
+a development Google Cloud project, its AWS identity provider, and a service account that the AWS
+identity can impersonate. The standard AWS credential chain must resolve that permitted identity.
+Google application default credentials are not an application authentication mode.
 
-The app reads the Vertex project from `VERTEX_PROJECT_ID`. Keep credentials in your local
-credential store or generated `.env`; never copy credential values, project identities, or private
-infrastructure output into this repository.
+The [environment contract](../local-env-vars.md) owns the non-secret Vertex project, location,
+bucket, and federation inputs. Follow the private infrastructure runbook to obtain those values;
+keep AWS credentials in your normal local credential configuration, outside the repository.
 
-After configuring credentials, regenerate the worktree environment and restart backend services:
-
-```bash
-./dev/initialize web
-./dev/stop-services
-./dev/tmux
-```
-
-Use only an isolated development project. Local runs must not target staging or production
-resources.
+After changing the local configuration, use the [managed local development workflow](README.md)
+to regenerate the environment and restart services. Use an isolated development project rather
+than staging or production resources.
