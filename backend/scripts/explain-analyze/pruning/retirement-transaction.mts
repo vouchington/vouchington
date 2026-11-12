@@ -87,6 +87,7 @@ export async function openRetirementTransaction(deadline: number) {
     }
     try {
       // PG18 terminates only this owned session at the remaining transaction wall budget.
+      // no-mistakes-disable-next-line postgres-sql-statement-policy: lowers statement_timeout to the remaining deadline budget; it never raises it
       await transaction(
         "/* monthlyRetirementControlBudget */ SELECT set_config('transaction_timeout', $1, true), set_config('statement_timeout', $1, true)",
         [`${remaining(deadline)}ms`],
