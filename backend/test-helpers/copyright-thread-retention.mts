@@ -97,3 +97,15 @@ export async function insertCopyrightThreadReferenceWithoutToken(intakeId: strin
       copyright_notice_email_intake_id, token_id, reference_kind
     ) VALUES (${intakeId}, NULL, 'message_id')`)
 }
+
+/** A digest can remain in the dictionary without authorizing a retained graph. */
+export async function readCopyrightThreadDigestUsage(digest: string) {
+  const { rows } = await read<{ references: number; matched_links: number }>(sql`
+    /* readCopyrightThreadDigestUsage */
+    SELECT (SELECT count(*)::integer FROM copyright_notice_email_thread_references reference
+      WHERE reference.token_id = token.id) AS references,
+      (SELECT count(*)::integer FROM copyright_notice_email_intake_notice_links link
+        WHERE link.matched_token_id = token.id) AS matched_links
+    FROM copyright_notice_email_thread_tokens token WHERE lookup_digest = ${digest}`)
+  return rows[0] ?? null
+}

@@ -26,8 +26,10 @@ obligations. The runbook owns the activation procedure.
 Email thread assignment uses the references known when an intake is admitted. A later arriving
 message may extend or make that graph ambiguous without rewriting an immutable case link. The
 retained receipt prevents erased private evidence from being admitted again on replay.
-Reference digests are admitted against the live receipt and case retirement boundary before
-thread ancestry and case matching are derived from committed references. An interrupted derivation
+The digest dictionary resolves independently before reference admission. An unsuccessful admission
+may leave an unreferenced digest for ordinary token cleanup; that dictionary entry grants no case
+link or evidence authority. References are admitted against the live receipt and case retirement
+boundary before thread ancestry and case matching are derived from committed references. An interrupted derivation
 may leave hash-only references for replay; they do not authorize a case link or private evidence
 processing.
 
@@ -224,7 +226,9 @@ cleanup; the separate case and standalone legal-record clocks still advance on r
 
 Writers that can introduce retention blockers read the case's existing thread-retirement state
 in the same serializable transaction. Adding or relinking thread references, ancestry or reply
-links to a retired graph returns a conflict without retaining partial graph changes. This does not
+links to a retired graph returns a conflict and rolls back those additions in their owning transaction.
+Reference admission and graph derivation commit separately; a later conflict does not undo already
+admitted reference facts. Pure duplicate graph replays remain no-ops. This does not
 bar legal decisions or account erasure: final account deletion still clears a form requester while
 retaining the case and its identities. PostgreSQL may also reject transactions on different cases
 because its physical predicate locks can cover more than one case; the same conflict boundary

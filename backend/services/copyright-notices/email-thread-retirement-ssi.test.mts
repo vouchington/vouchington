@@ -66,7 +66,10 @@ async function assertRetiredWriterRejected(
   expect(outcome.status).toBe('rejected')
   if (outcome.status === 'rejected') assertMappedSerializationConflict(outcome.error)
   expect(await readCopyrightThreadReferenceState(intakeId)).toEqual(afterRetirement)
-  await expect(recordCopyrightEmailThreadReferences(input)).resolves.toBeNull()
+  await expect(recordCopyrightEmailThreadReferences(input)).rejects.toMatchObject({
+    status: 409,
+    code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+  })
   expect(await readCopyrightThreadReferenceState(intakeId)).toEqual(afterRetirement)
 }
 
@@ -86,12 +89,16 @@ async function assertCommittedThreadPage(noticeId: string, intakeId: string): Pr
   expect((await readCopyrightThreadReferenceState(intakeId)).referenceCount).toBe(0)
 }
 
-function assertAbortedThreadStats(stats: {
-  scanned: number
-  deleted: number
-  hasMore: boolean
-}): void {
-  expect(stats).toMatchObject({ scanned: 0, deleted: 0, hasMore: false })
+function assertAbortedThreadStats(
+  stats: {
+    scanned: number
+    deleted: number
+    hasMore: boolean
+  },
+  priorProofPages = false,
+): void {
+  expect(priorProofPages || stats.scanned === 0).toBe(true)
+  expect(stats).toMatchObject({ deleted: 0, hasMore: false })
 }
 
 function assertCommittedWriterReferenceCount(previousCount: number, currentCount: number): void {
@@ -118,7 +125,7 @@ describe('copyright email reference and retirement SSI', () => {
       })
       let reachedProofPage = false
       const restore = runBeforePostgresStatementForTest(
-        '/* advanceCopyrightThreadLegalProof */',
+        '/* readCopyrightThreadBlockerGeneration */',
         async () => {
           reachedProofPage = true
           throw failure
@@ -212,12 +219,13 @@ describe('copyright email reference and retirement SSI', () => {
     await linkTestCopyrightEmailIntake(intake.id, notice.noticeId)
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
     const before = await readCopyrightThreadReferenceState(intake.id)
-    const beforeCursor = await readCopyrightThreadOperationalCursor()
+    let beforeCursor = await readCopyrightThreadOperationalCursor()
     const atProof = Promise.withResolvers<void>()
     const releaseProof = Promise.withResolvers<void>()
     const restore = runBeforePostgresStatementForTest(
-      '/* lockCopyrightThreadPreservationGate */',
+      '/* readCopyrightThreadRetirementAdmission */',
       async () => {
+        beforeCursor = await readCopyrightThreadOperationalCursor()
         atProof.resolve()
         await releaseProof.promise
       },
@@ -258,12 +266,12 @@ describe('copyright email reference and retirement SSI', () => {
       if (firstTick.status === 'rejected') throw firstTick.error
       const first = firstTick.value.copyrightCaseThreads!
       if (afterWriter.referenceCount > before.referenceCount) {
-        assertAbortedThreadStats(first)
+        assertAbortedThreadStats(first, true)
         await assertAbortedThreadPage(notice.noticeId, intake.id, afterWriter, beforeCursor)
       } else if (first.deleted > 0) {
         await assertCommittedThreadPage(notice.noticeId, intake.id)
       } else {
-        assertAbortedThreadStats(first)
+        assertAbortedThreadStats(first, true)
         await assertAbortedThreadPage(notice.noticeId, intake.id, afterWriter, beforeCursor)
       }
     } finally {

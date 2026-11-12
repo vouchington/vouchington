@@ -4,10 +4,7 @@ import {
   resolveCopyrightEmailThreadTokenIds,
 } from './email-thread-ancestors.mts'
 import type { CopyrightEmailThreadReferenceRow } from './email-thread-references.mts'
-import {
-  hasLiveCopyrightEmailSource,
-  hasRetiredCopyrightEmailCaseLink,
-} from './email-thread-source.mts'
+import { hasLiveCopyrightEmailSource } from './email-thread-source.mts'
 import { throwIfCopyrightEmailThreadWriteConflict } from './email-thread-write-conflict.mts'
 
 /** Admit keyed reference facts before deriving a best-effort graph from committed facts. */
@@ -16,12 +13,9 @@ export async function admitCopyrightEmailReferenceFacts(
   referenceRows: readonly CopyrightEmailThreadReferenceRow[],
 ): Promise<boolean> {
   await using tokenTransaction = await beginTransaction()
-  // A plain preflight avoids recreating orphan digests for already erased or retired replays.
+  // A plain preflight avoids recreating orphan digests for already erased sources.
   // The serializable transaction below remains the authoritative admission check.
-  if (
-    !(await hasLiveCopyrightEmailSource(tokenTransaction, intakeId)) ||
-    (await hasRetiredCopyrightEmailCaseLink(tokenTransaction, intakeId))
-  ) {
+  if (!(await hasLiveCopyrightEmailSource(tokenTransaction, intakeId))) {
     await tokenTransaction.commit()
     return false
   }
@@ -34,10 +28,6 @@ export async function admitCopyrightEmailReferenceFacts(
   try {
     await using transaction = await beginTransaction({ serializable: true })
     if (!(await hasLiveCopyrightEmailSource(transaction, intakeId))) {
-      await transaction.commit()
-      return false
-    }
-    if (await hasRetiredCopyrightEmailCaseLink(transaction, intakeId)) {
       await transaction.commit()
       return false
     }

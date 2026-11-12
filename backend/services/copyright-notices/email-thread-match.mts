@@ -169,3 +169,22 @@ function toInboundMatch(
     matchedReference,
   }
 }
+
+/** True when this intake's own Message-ID is already claimed by another intake. */
+export async function copyrightEmailMessageIdIsAmbiguous(
+  transaction: TransactionQuery,
+  intakeId: string,
+): Promise<boolean> {
+  const { rows } = await transaction(sql`/* copyrightEmailMessageIdIsAmbiguous */
+    SELECT 1
+    FROM copyright_notice_email_thread_references own_message
+    JOIN copyright_notice_email_thread_references other_message
+      ON other_message.token_id = own_message.token_id
+     AND other_message.reference_kind = 'message_id'
+     AND other_message.copyright_notice_email_intake_id <> own_message.copyright_notice_email_intake_id
+    WHERE own_message.copyright_notice_email_intake_id = ${intakeId}
+      AND own_message.reference_kind = 'message_id'
+    LIMIT 1
+  `)
+  return rows.length > 0
+}

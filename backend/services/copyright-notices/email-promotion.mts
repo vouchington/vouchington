@@ -19,27 +19,31 @@ export async function promoteCopyrightEmailIntake(
 ): Promise<{ noticeId: string; submissionId: string }> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assertStatutoryEmailFields(input)
-  return conflictOnSerializationFailure(async () => {
-  const admitted = await admitCopyrightEmailIntake(input).catch((err: unknown) => {
-    const failure = err as { code?: string; message?: string } | null
-    if (
-      failure?.code === '40001' ||
-      failure?.code === '40P01' ||
-      (failure?.code === '23514' &&
-        failure.message === 'erased copyright case cannot acquire an email intake')
-    )
-      throw copyrightEmailThreadChangedError(err)
-    throw err
-  })
-  if (!admitted.evidenceErased) {
-    try {
-      await assessAndEnforceCopyrightEmailIntake(input, admitted)
-    } catch (err) {
-      if (!admitted.isDuplicate || !isErasedCaseConflict(err)) throw err
-    }
-  }
-  return { noticeId: admitted.noticeId, submissionId: admitted.submissionId }
-  }, 'Copyright email changed during promotion', COPYRIGHT_EMAIL_THREAD_CHANGED)
+  return conflictOnSerializationFailure(
+    async () => {
+      const admitted = await admitCopyrightEmailIntake(input).catch((err: unknown) => {
+        const failure = err as { code?: string; message?: string } | null
+        if (
+          failure?.code === '40001' ||
+          failure?.code === '40P01' ||
+          (failure?.code === '23514' &&
+            failure.message === 'erased copyright case cannot acquire an email intake')
+        )
+          throw copyrightEmailThreadChangedError(err)
+        throw err
+      })
+      if (!admitted.evidenceErased) {
+        try {
+          await assessAndEnforceCopyrightEmailIntake(input, admitted)
+        } catch (err) {
+          if (!admitted.isDuplicate || !isErasedCaseConflict(err)) throw err
+        }
+      }
+      return { noticeId: admitted.noticeId, submissionId: admitted.submissionId }
+    },
+    'Copyright email changed during promotion',
+    COPYRIGHT_EMAIL_THREAD_CHANGED,
+  )
 }
 
 async function assessAndEnforceCopyrightEmailIntake(

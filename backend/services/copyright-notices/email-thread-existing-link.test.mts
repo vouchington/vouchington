@@ -1,14 +1,22 @@
+import { readCopyrightThreadDigestUsage } from '@voucha/test-helpers/copyright-thread-retention'
+import { getMinUUIDv7ForDate } from '@modules/utils'
+import { readCopyrightCaseLifecycleClock } from '@voucha/test-helpers/copyright-lifecycle-clock'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { randomUUID } from 'node:crypto'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { describe, expect, it } from 'vitest'
 import {
+  seedCopyrightThreadRetirement,
   linkTestCopyrightEmailIntake,
   readCopyrightThreadReferenceState,
 } from '@voucha/test-helpers/copyright-operational-email-retention'
 import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
-import { createRetentionThreadSeedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
+import {
+  createRetentionThreadSeedEmail,
+  createRetentionParsedEmail,
+} from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
 import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 import {
   claimCopyrightDeliveryIntent,
@@ -19,6 +27,70 @@ import { recordCopyrightEmailThreadReferences } from './email-threading.mts'
 import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
 
 describe('copyright email thread ownership', () => {
+  it('rejects fresh thread evidence after retirement without adding graph rows or legal activity', async () => {
+    const notice = await createRetentionMinimalCase()
+    const fresh = await createRetentionParsedEmail('fresh-after-retirement')
+    await seedCopyrightThreadRetirement(
+      notice.noticeId,
+      getMinUUIDv7ForDate(new Date(Date.now() - 180 * 24 * 60 * 60 * 1000)),
+    )
+    const referencesBefore = await readCopyrightThreadReferenceState(fresh.id)
+    const intakeBefore = await readCopyrightIntakeRetentionState(fresh.id)
+    const clockBefore = await readCopyrightCaseLifecycleClock(notice.noticeId)
+    await expect(
+      linkCopyrightEmailIntakeToNotice({
+        intakeId: fresh.id,
+        noticeId: notice.noticeId,
+        linkKind: 'thread',
+      }),
+    ).rejects.toMatchObject({ status: 409, code: 'copyright_email_thread_changed' })
+    expect(await readCopyrightEmailIntakeNoticeLinks(fresh.id)).toEqual([])
+    expect(await readCopyrightThreadReferenceState(fresh.id)).toEqual(referencesBefore)
+    expect(await readCopyrightIntakeRetentionState(fresh.id)).toEqual(intakeBefore)
+    expect(await readCopyrightCaseLifecycleClock(notice.noticeId)).toEqual(clockBefore)
+  })
+
+  it('keeps nonempty duplicate reference and edge replay a no-op after retirement', async () => {
+    const notice = await createRetentionMinimalCase()
+    const ancestorCase = await createRetentionMinimalCase()
+    const ancestorMessage = `<ancestor-${randomUUID()}@example.test>`
+    const messageId = `<reply-${randomUUID()}@example.test>`
+    const ancestor = await createRetentionThreadSeedEmail('duplicate-ancestor', {
+      messageId: ancestorMessage,
+    })
+    const reply = await createRetentionThreadSeedEmail('duplicate-reply', {
+      messageId,
+      replyReferences: [ancestorMessage],
+    })
+    await linkTestCopyrightEmailIntake(ancestor.id, ancestorCase.noticeId)
+    await linkTestCopyrightEmailIntake(reply.id, notice.noticeId)
+    const input = { intakeId: reply.id, messageId, inReplyTo: [ancestorMessage], references: [] }
+    await recordCopyrightEmailThreadReferences(input)
+    await seedCopyrightThreadRetirement(notice.noticeId, reply.id)
+    const referencesBefore = await readCopyrightThreadReferenceState(reply.id)
+    const intakeBefore = await readCopyrightIntakeRetentionState(reply.id)
+    const linksBefore = await readCopyrightEmailIntakeNoticeLinks(reply.id)
+    await expect(recordCopyrightEmailThreadReferences(input)).resolves.toBeNull()
+    expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(referencesBefore)
+    expect(await readCopyrightIntakeRetentionState(reply.id)).toEqual(intakeBefore)
+    expect(await readCopyrightEmailIntakeNoticeLinks(reply.id)).toEqual(linksBefore)
+    const freshInput = { ...input, messageId: `<fresh-${randomUUID()}@example.test>` }
+    await expect(recordCopyrightEmailThreadReferences(freshInput)).rejects.toMatchObject({
+      status: 409,
+      code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+    })
+    const freshDigest = buildCopyrightEmailThreadReferenceRows(freshInput).find(
+      row => row.reference_kind === 'message_id',
+    )!.lookup_digest
+    expect(await readCopyrightThreadDigestUsage(freshDigest)).toEqual({
+      references: 0,
+      matched_links: 0,
+    })
+    expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(referencesBefore)
+    expect(await readCopyrightIntakeRetentionState(reply.id)).toEqual(intakeBefore)
+    expect(await readCopyrightEmailIntakeNoticeLinks(reply.id)).toEqual(linksBefore)
+  })
+
   it('keeps an existing case link when a later outbound reference names another case', async () => {
     const source = await createRetentionMinimalCase()
     const owner = await createRetentionMinimalCase()

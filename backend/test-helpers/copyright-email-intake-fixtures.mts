@@ -7,7 +7,10 @@ import {
   buildCopyrightEmailThreadReferenceRows,
   encryptCopyrightEmailReplyHeaders,
 } from '../services/copyright-notices/email-thread-references.mts'
-import { insertCopyrightEmailThreadReferences } from '../services/copyright-notices/email-thread-ancestors.mts'
+import {
+  insertResolvedCopyrightEmailThreadReferences,
+  resolveCopyrightEmailThreadTokenIds,
+} from '../services/copyright-notices/email-thread-ancestors.mts'
 import sql from 'sql-template-strings'
 import {
   createCopyrightEmailIntake,
@@ -91,11 +94,12 @@ export async function seedUnmatchedCopyrightEmailReply() {
     ) VALUES (${intake.id}, 'succeeded', ${encryptSecret('claimant@example.test', purpose)},
       ${encryptSecret('Copyright reply', purpose)}, ${encryptSecret('Owned reply.', purpose)},
       ${encryptSecret(messageId, purpose)}, ${encryptCopyrightEmailReplyHeaders(headers, purpose)})`)
-  await insertCopyrightEmailThreadReferences(
+  const references = buildCopyrightEmailThreadReferenceRows({ messageId, ...headers })
+  const tokenIds = await resolveCopyrightEmailThreadTokenIds(
     transaction,
-    intake.id,
-    buildCopyrightEmailThreadReferenceRows({ messageId, ...headers }),
+    references.map(row => row.lookup_digest),
   )
+  await insertResolvedCopyrightEmailThreadReferences(transaction, intake.id, references, tokenIds)
   await transaction.commit()
   return intake
 }

@@ -176,7 +176,7 @@ export async function sweepCopyrightCaseThreads(options: {
       page = await sweepPage(now, cutoff, cutoffId, options.batchSize) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
     } catch (err) {
       if (!isCopyrightEmailTokenGcConflict(err)) throw err
-      return { scanned, deleted, hasMore: true }
+      return { scanned, deleted, hasMore: false }
     }
     scanned += page.scanned
     deleted += page.deleted

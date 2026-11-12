@@ -1,9 +1,6 @@
-import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
-import { readCopyrightCaseLifecycleClock } from '@voucha/test-helpers/copyright-lifecycle-clock'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
-import { getMinUUIDv7ForDate } from '@modules/utils'
 import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
 import {
   positionCopyrightOperationalCursor,
@@ -14,7 +11,6 @@ import {
   linkTestCopyrightEmailIntake,
   readCopyrightThreadReferenceState,
   seedCopyrightIntakeAuditReview,
-  seedCopyrightThreadRetirement,
   seedCopyrightThreadPartySubmission,
   seedTestCopyrightAncestorEdge,
 } from '@voucha/test-helpers/copyright-operational-email-retention'
@@ -31,7 +27,6 @@ import {
 } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
-import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 import { recordCopyrightEmailThreadReferences } from './email-threading.mts'
 import { sweepCopyrightCaseThreads } from './operational-retention-threading.mts'
 
@@ -138,30 +133,8 @@ describe('copyright operational thread retention', () => {
         inReplyTo: [],
         references: [],
       }),
-    ).rejects.toMatchObject({ status: 409, code: 'copyright_email_thread_changed' })    expect((await readCopyrightThreadReferenceState(reply.id)).referenceCount).toBe(0)
-  })
-
-  it('rejects fresh thread evidence after retirement without adding graph rows or legal activity', async () => {
-    const notice = await createRetentionMinimalCase()
-    const fresh = await createRetentionParsedEmail('fresh-after-retirement')
-    await seedCopyrightThreadRetirement(
-      notice.noticeId,
-      getMinUUIDv7ForDate(new Date(Date.now() - 180 * DAY_MS)),
-    )
-    const referencesBefore = await readCopyrightThreadReferenceState(fresh.id)
-    const intakeBefore = await readCopyrightIntakeRetentionState(fresh.id)
-    const clockBefore = await readCopyrightCaseLifecycleClock(notice.noticeId)
-    await expect(
-      linkCopyrightEmailIntakeToNotice({
-        intakeId: fresh.id,
-        noticeId: notice.noticeId,
-        linkKind: 'thread',
-      }),
     ).rejects.toMatchObject({ status: 409, code: 'copyright_email_thread_changed' })
-    expect(await readCopyrightEmailIntakeNoticeLinks(fresh.id)).toEqual([])
-    expect(await readCopyrightThreadReferenceState(fresh.id)).toEqual(referencesBefore)
-    expect(await readCopyrightIntakeRetentionState(fresh.id)).toEqual(intakeBefore)
-    expect(await readCopyrightCaseLifecycleClock(notice.noticeId)).toEqual(clockBefore)
+    expect((await readCopyrightThreadReferenceState(reply.id)).referenceCount).toBe(0)
   })
 
   it('stops later cleanup pages when a linked intake receives a fresh staff review', async () => {

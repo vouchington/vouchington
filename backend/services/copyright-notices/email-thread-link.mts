@@ -1,4 +1,4 @@
-import { assertCopyrightThreadAcceptsEvidence } from '@data-stores/psql/copyright-preservation-coverage'
+import { assertCopyrightThreadAcceptsEvidence } from './thread-retirement-admission.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import sql from 'sql-template-strings'

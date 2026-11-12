@@ -74,15 +74,15 @@ export async function readCopyrightThreadOperationalCursor(): Promise<{
   cursor_record_id: string | null
   cursor_child_id: string | null
   cursor_phase: string | null
-  cursor_legal_phase: string | null
+  cursor_blocker_phase: string | null
 }> {
   const { rows } = await read<{
     cursor_record_id: string | null
     cursor_child_id: string | null
     cursor_phase: string | null
-    cursor_legal_phase: string | null
+    cursor_blocker_phase: string | null
   }>(sql`/* readCopyrightThreadOperationalCursor */
-    SELECT cursor_record_id, cursor_child_id, cursor_phase, cursor_legal_phase
+    SELECT cursor_record_id, cursor_child_id, cursor_phase, cursor_blocker_phase
     FROM copyright_notice_operational_retention_cursors
     WHERE kind = 'email_thread_references'`)
   if (!rows[0]) throw new Error('Reserved copyright thread cursor was not found')
