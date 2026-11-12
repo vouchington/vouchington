@@ -8,7 +8,7 @@ const SEMANTIC_POST_COUNT = 40_000
  * Representative vector corpus: about five percent of 40k rows match the query threshold.
  *
  * Bounded UPDATE pages fill embeddings while the HNSW index is dropped, then one bulk
- * build recreates the identical index with enough maintenance memory to hold the graph.
+ * build after seed heap maintenance recreates the identical index with enough memory for the graph.
  * Per-tuple graph inserts cost about 1.2s per 1000 rows (about 50s for the corpus); the
  * serial bulk build over the same rows takes about 27s. Parallel workers are disabled because
  * their shared-memory segment exceeds the CI Postgres container's /dev/shm.
@@ -16,7 +16,7 @@ const SEMANTIC_POST_COUNT = 40_000
 export async function seedSemanticPosts(): Promise<void> {
   const ids = Array.from({ length: SEMANTIC_POST_COUNT }, (_, index) => seedUuid(index, '05'))
   await using transaction = await beginTransaction()
-  await transaction(`/* seedSemanticPosts */ DROP INDEX ${HNSW_INDEX}`)
+  await transaction(`/* seedSemanticPosts */ DROP INDEX IF EXISTS ${HNSW_INDEX}`)
   for (let offset = 0; offset < ids.length; offset += 1_000) {
     // no-mistakes-disable-next-line query-reached-per-item: 40 fixed 1k-row pages keep vector writes below one statement deadline.
     await transaction(
@@ -49,10 +49,16 @@ export async function seedSemanticPosts(): Promise<void> {
      WHERE id = ANY($1::uuid[])`,
     [[seedUuid(0, '05'), seedUuid(2, '05')]],
   )
-  await transaction(`/* seedSemanticPosts */ SET LOCAL maintenance_work_mem = '512MB'`)
-  await transaction(`/* seedSemanticPosts */ SET LOCAL max_parallel_maintenance_workers = 0`)
+  await transaction.commit()
+}
+
+/** Build after initial heap VACUUM so dead seed-update versions never require graph cleanup. */
+export async function buildSemanticPostIndex(): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(`/* buildSemanticPostIndex */ SET LOCAL maintenance_work_mem = '512MB'`)
+  await transaction(`/* buildSemanticPostIndex */ SET LOCAL max_parallel_maintenance_workers = 0`)
   await transaction(
-    `/* seedSemanticPosts */ CREATE INDEX ${HNSW_INDEX}
+    `/* buildSemanticPostIndex */ CREATE INDEX ${HNSW_INDEX}
      ON posts USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops)
      WHERE gemini_embedding_2_embedding IS NOT NULL`,
   )
