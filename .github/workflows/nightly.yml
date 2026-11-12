@@ -18,6 +18,7 @@ jobs:
   static:
     uses: ./.github/workflows/static.yml
     permissions:
+      actions: write
       contents: read
       issues: read
 
@@ -26,7 +27,7 @@ jobs:
     secrets:
       AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
     permissions:
-      actions: read
+      actions: write
       attestations: write
       contents: read
       id-token: write
@@ -60,7 +61,7 @@ jobs:
       S3_BUCKET_IMAGES: ${{ secrets.S3_BUCKET_IMAGES }}
       S3_BUCKET_IMAGE_UPLOADS: ${{ secrets.S3_BUCKET_IMAGE_UPLOADS }}
     permissions:
-      actions: read
+      actions: write
       attestations: write
       contents: read
       id-token: write
@@ -70,7 +71,7 @@ jobs:
   cloudflare-worker:
     uses: ./.github/workflows/cloudflare-worker.yml
     permissions:
-      actions: read
+      actions: write
       contents: read
       id-token: write
       pull-requests: read
@@ -78,7 +79,7 @@ jobs:
   lambdas:
     uses: ./.github/workflows/lambdas.yml
     permissions:
-      actions: read
+      actions: write
       contents: read
       id-token: write
       pull-requests: read
@@ -86,7 +87,7 @@ jobs:
   tooling:
     uses: ./.github/workflows/tooling.yml
     permissions:
-      actions: read
+      actions: write
       contents: read
       id-token: write
       pull-requests: read

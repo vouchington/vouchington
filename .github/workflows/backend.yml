@@ -230,7 +230,7 @@ jobs:
 
   backend:
     name: backend
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs:
       [
         changes,
@@ -258,3 +258,160 @@ jobs:
         with:
           results: >-
             {"changes":{"result":"${{ needs.changes.result }}"},"static-backend":{"result":"${{ needs.static-backend.result }}"},"prepare-postgres":{"result":"${{ needs.prepare-postgres.result }}"},"test-backend-modules":{"result":"${{ needs.test-backend-modules.result }}"},"test-backend-unit":{"result":"${{ needs.test-backend-unit.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"typecheck-bun":{"result":"${{ needs.typecheck-bun.result }}"},"validate-backend-images":{"result":"${{ needs.validate-backend-images.result }}"},"publish-backend-images":{"result":"${{ needs.publish-backend-images.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
+
+  # Merge-group fail fast: when a gate-feeding suite fails, cancel this run so the required gate
+  # fails on that job now instead of after the slowest suite. These jobs check out nothing and run no
+  # repository code, so the `actions: write` token never meets pull-request-controlled content. See
+  # docs/development/ci/workflows/reference-merge-queue-fail-fast.md.
+
+  cancel-prepare-postgres:
+    needs: [prepare-postgres]
+    if: ${{ failure() && needs.prepare-postgres.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-typecheck-bun:
+    needs: [typecheck-bun]
+    if: ${{ failure() && needs.typecheck-bun.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-test-backend-modules:
+    needs: [test-backend-modules]
+    if: ${{ failure() && needs.test-backend-modules.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-test-backend-unit:
+    needs: [test-backend-unit]
+    if: ${{ failure() && needs.test-backend-unit.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-test-postgres-schema:
+    needs: [test-postgres-schema]
+    if: ${{ failure() && needs.test-postgres-schema.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-backend-smoke:
+    needs: [backend-smoke]
+    if: ${{ failure() && needs.backend-smoke.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-test-explain-analyze:
+    needs: [test-explain-analyze]
+    if: ${{ failure() && needs.test-explain-analyze.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-publish-backend-images:
+    needs: [publish-backend-images]
+    if: ${{ failure() && needs.publish-backend-images.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1

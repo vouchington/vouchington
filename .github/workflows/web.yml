@@ -196,7 +196,7 @@ jobs:
 
   web:
     name: web
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs:
       [
         changes,
@@ -222,3 +222,122 @@ jobs:
         with:
           results: >-
             {"changes":{"result":"${{ needs.changes.result }}"},"static-web":{"result":"${{ needs.static-web.result }}"},"test-web":{"result":"${{ needs.test-web.result }}"},"test-web-api":{"result":"${{ needs.test-web-api.result }}"},"test-web-integration":{"result":"${{ needs.test-web-integration.result }}"},"storybook":{"result":"${{ needs.storybook.result }}"},"test-playwright":{"result":"${{ needs.test-playwright.result }}"},"validate-web-images":{"result":"${{ needs.validate-web-images.result }}"},"publish-web-images":{"result":"${{ needs.publish-web-images.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
+
+  # Merge-group fail fast: when a gate-feeding suite fails, cancel this run so the required gate
+  # fails on that job now instead of after the slowest suite. These jobs check out nothing and run no
+  # repository code, so the `actions: write` token never meets pull-request-controlled content. See
+  # docs/development/ci/workflows/reference-merge-queue-fail-fast.md.
+
+  cancel-test-web:
+    needs: [test-web]
+    if: ${{ failure() && needs.test-web.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-test-web-api:
+    needs: [test-web-api]
+    if: ${{ failure() && needs.test-web-api.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-test-web-integration:
+    needs: [test-web-integration]
+    if: ${{ failure() && needs.test-web-integration.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-storybook:
+    needs: [storybook]
+    if: ${{ failure() && needs.storybook.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-test-playwright:
+    needs: [test-playwright]
+    if: ${{ failure() && needs.test-playwright.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
+
+  cancel-publish-web-images:
+    needs: [publish-web-images]
+    if: ${{ failure() && needs.publish-web-images.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1

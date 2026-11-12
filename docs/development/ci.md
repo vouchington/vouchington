@@ -190,7 +190,10 @@ runs the [prompts](../prompts/README.md) on its own schedule. Rerunning a transi
   changes an ejected PR. Replaced or dequeued queue entries leave runs that nothing else cancels, so
   a cancel workflow handles them; see
   [merge queue run cancellation](ci/workflows/reference-merge-queue-run-cancellation.md) for why
-  `concurrency:` cannot.
+  `concurrency:` cannot. On a merge group, a failing gate-feeding suite job cancels its own run and
+  the gate fails on it, so an entry ejects without waiting for the slowest suite while pull requests
+  still run every suite to the end; see
+  [merge queue fail fast](ci/workflows/reference-merge-queue-fail-fast.md).
 - **Plan completion** ([`plan-completion.yml`](../../.github/workflows/plan-completion.yml)) is an
   advisory snapshot after every `main` push. It updates only its own marker comment and never edits
   a PR body or closes a Plan, so a clear marker means only that no warning was found, and

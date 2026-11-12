@@ -61,7 +61,11 @@ request's timeline closest to the occurrence's run `created_at`. Page through
 `gh api "repos/{{REPOSITORY}}/actions/runs?event=merge_group&per_page=100&page=<n>"`, newest first,
 and keep the runs whose `head_branch` starts with `gh-readonly-queue/main/pr-<N>-`. Stop at the first
 page whose runs were all created more than a day before the ejection. The newest group created
-before the ejection time has the failed or timed-out runs that caused it. A rerun after the ejection
+before the ejection time has the failed or timed-out runs that caused it. A failing gate-feeding job cancels its own run (see Merge Queue Fail Fast), so that run's
+conclusion is `cancelled` and jobs still running at the time are `cancelled` too. Read the jobs of
+every run in the group: the cause is a job with conclusion `failure` or `timed_out`, and where a
+`cancelled` job has a failed step, that step is the cause. Skip jobs cancelled with no failed step,
+and the gate around them. A rerun after the ejection
 overwrites a run's result, so a run whose `run_attempt` is above 1 can now show success: read the
 attempt that finished before the ejection with
 `gh api repos/{{REPOSITORY}}/actions/runs/<id>/attempts/<n>` and its `/jobs`. A group commit also

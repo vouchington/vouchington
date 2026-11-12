@@ -3368,6 +3368,14 @@
         [
           backend,
           backend-smoke,
+          cancel-backend-smoke,
+          cancel-prepare-postgres,
+          cancel-publish-backend-images,
+          cancel-test-backend-modules,
+          cancel-test-backend-unit,
+          cancel-test-explain-analyze,
+          cancel-test-postgres-schema,
+          cancel-typecheck-bun,
           changes,
           codecov,
           coverage,
@@ -3394,6 +3402,7 @@
       .github/workflows/cleanup-artifacts.yml: [cleanup-sweep]
       .github/workflows/cloudflare-worker.yml:
         [
+          cancel-test-cloudflare-worker,
           changes,
           cloudflare-worker,
           codecov,
@@ -3411,7 +3420,7 @@
       .github/workflows/initialize-smoke-test.yml: [initialize-smoke-test]
       .github/workflows/label-pr.yml: [label]
       .github/workflows/lambdas.yml:
-        [changes, codecov, coverage, lambdas, static-lambdas, test-lambdas]
+        [cancel-test-lambdas, changes, codecov, coverage, lambdas, static-lambdas, test-lambdas]
       .github/workflows/lint-links.yml: [lint-links]
       .github/workflows/main-backend.yml:
         [backend-deploy-intent, detect-image-publication, publish-backend-images]
@@ -3429,7 +3438,7 @@
       .github/workflows/publish-backend-images.yml: [build, resolve-main-images]
       .github/workflows/publish-web-images.yml: [build, resolve-main-images]
       .github/workflows/static-code-analysis.yml: [no-mistakes, static-code-analysis]
-      .github/workflows/static.yml: [static, static-code-analysis]
+      .github/workflows/static.yml: [cancel-static-code-analysis, static, static-code-analysis]
       .github/workflows/storybook.yml: [storybook]
       .github/workflows/sync-articles.yml: [publish]
       .github/workflows/tests-backend-credentialed.yml:
@@ -3459,6 +3468,10 @@
       .github/workflows/tests-web.yml: [prep, web-tests]
       .github/workflows/tooling.yml:
         [
+          cancel-initialize-smoke-test,
+          cancel-test-portability,
+          cancel-test-tooling,
+          cancel-test-ts-shared,
           changes,
           codecov,
           coverage,
@@ -3470,6 +3483,12 @@
         ]
       .github/workflows/web.yml:
         [
+          cancel-publish-web-images,
+          cancel-storybook,
+          cancel-test-playwright,
+          cancel-test-web,
+          cancel-test-web-api,
+          cancel-test-web-integration,
           changes,
           codecov,
           coverage,

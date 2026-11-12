@@ -59,7 +59,8 @@ The dequeued workflow runs from `main` and checks out no pull-request content. G
    from the [merge-queue-ejection prompt](../../../prompts/automation/merge-queue-ejection.md),
    which reads the group's runs because the newest group's "failed or timed-out runs caused this
    ejection". Cancelling a run changes its
-   run-level conclusion to `cancelled` even when one of its jobs failed. A `CI_TIMEOUT` removal
+   run-level conclusion to `cancelled` even when one of its jobs failed, which
+   [merge queue fail fast](reference-merge-queue-fail-fast.md) also does on its own. A `CI_TIMEOUT` removal
    leaves timed-out runs still active, so the reason is excluded. Any run that already holds a
    `failure` or `timed_out` job is kept for the same reason and reported as kept.
 4. **Run order.** Only runs with an id lower than the cancelling run's are cancelled. GitHub reuses

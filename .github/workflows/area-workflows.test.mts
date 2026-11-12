@@ -37,6 +37,14 @@ const preparations: Record<string, string[]> = {
 }
 
 const readWorkflow = (path: string): Workflow => load(readFileSync(path, 'utf8')) as Workflow
+// Merge-group fail-fast jobs sit beside the suites and are not part of the gate DAG; see
+// merge-group-self-cancel.test.mts.
+const withoutCancelJobs = (workflow: Workflow): Workflow => ({
+  ...workflow,
+  jobs: Object.fromEntries(
+    Object.entries(workflow.jobs ?? {}).filter(([id]) => !id.startsWith('cancel-')),
+  ),
+})
 const needsOf = (job: Job): string[] => [job.needs ?? []].flat()
 const nightly = readWorkflow(`${workflowsDir}/nightly.yml`)
 // `backend-live-providers` is a nightly-only suite, not an area: it never runs on a pull request.
@@ -45,7 +53,8 @@ const areas = Object.entries(nightly.jobs ?? {})
   .map(([id, job]) => ({
     area: id,
     caller: job,
-    workflow: readWorkflow(job.uses!.slice(2)),
+    fullWorkflow: readWorkflow(job.uses!.slice(2)),
+    workflow: withoutCancelJobs(readWorkflow(job.uses!.slice(2))),
   }))
 // Every area but static selects itself from the changed files.
 const selectedAreas = areas.filter(({ area }) => area !== 'static')
@@ -71,12 +80,13 @@ describe('area workflows', () => {
   // only the nightly run; the live topology check also rejects any grant beyond what it needs.
   it.each(areas)(
     'passes $area exactly the secrets and permissions it needs',
-    ({ area, caller, workflow }) => {
+    ({ area, caller, workflow, fullWorkflow }) => {
       const secrets = Object.keys(workflow.on?.workflow_call?.secrets ?? {}).filter(
         secret => !(area === 'web' && secret === 'SENTRY_AUTH_TOKEN'),
       )
       const required: Record<string, string> = {}
-      for (const job of Object.values(workflow.jobs ?? {})) {
+      // The cancel jobs' `actions: write` counts: the nightly caller must allow it.
+      for (const job of Object.values(fullWorkflow.jobs ?? {})) {
         for (const [scope, level] of Object.entries(job.permissions ?? {})) {
           if (required[scope] !== 'write') required[scope] = level
         }
@@ -167,7 +177,9 @@ describe('area workflows', () => {
       id => id !== area && id !== 'codecov' && !(reportOnly[area] ?? []).includes(id),
     )
     expect(gate.name).toBe(area)
-    expect(gate.if).toBe('${{ !cancelled() }}')
+    // A cancelled merge-group run still evaluates its gate, which fails on the real failed job
+    // (merge-group-self-cancel.test.mts).
+    expect(gate.if).toBe("${{ !cancelled() || github.event_name == 'merge_group' }}")
     expect(needsOf(gate).toSorted()).toEqual(expected.toSorted())
     expect(Object.keys(results).toSorted()).toEqual(expected.toSorted())
   })

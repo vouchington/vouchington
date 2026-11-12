@@ -75,7 +75,7 @@ jobs:
 
   cloudflare-worker:
     name: cloudflare-worker
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() || github.event_name == 'merge_group' }}
     needs: [changes, static-cloudflare-worker, test-cloudflare-worker, coverage]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -89,3 +89,27 @@ jobs:
         with:
           results: >-
             {"changes":{"result":"${{ needs.changes.result }}"},"static-cloudflare-worker":{"result":"${{ needs.static-cloudflare-worker.result }}"},"test-cloudflare-worker":{"result":"${{ needs.test-cloudflare-worker.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
+
+  # Merge-group fail fast: when a gate-feeding suite fails, cancel this run so the required gate
+  # fails on that job now instead of after the slowest suite. These jobs check out nothing and run no
+  # repository code, so the `actions: write` token never meets pull-request-controlled content. See
+  # docs/development/ci/workflows/reference-merge-queue-fail-fast.md.
+
+  cancel-test-cloudflare-worker:
+    needs: [test-cloudflare-worker]
+    if: ${{ failure() && needs.test-cloudflare-worker.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
