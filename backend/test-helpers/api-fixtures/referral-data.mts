@@ -59,6 +59,21 @@ export const referralLink = {
   unfurl_last_error: null,
 }
 
+/** Another user's active link as served to any reader: public columns only. */
+export const publicReferralLink = {
+  id: 'referral-link-2',
+  user_id: 'user-2',
+  referral_program_id: referralProgram.id,
+  url_id: 'url-referral-2',
+  url: 'https://example.com/apply/test-card/user-2',
+  created_at: timestamp,
+  updated_at: timestamp,
+  deleted_at: null,
+  parent_link_id: null,
+  referral_program_name: referralProgram.name,
+  referral_program_slug: referralProgram.slug,
+}
+
 export const referralLinkFeedUser = {
   account_type: null,
   id: user.id,

@@ -1,4 +1,5 @@
 import { pageInfo } from './data.mts'
+import { nativeReferralLinkFixtureCases } from './native-referral-link-cases.mts'
 import { topicMetricsFor } from './topic-metrics-data.mts'
 import { encodeCursor } from '@modules/pagination'
 import {
@@ -37,6 +38,7 @@ const referralProgramTopicSearchBody = {
 }
 
 export const referralApiFixtureCases: ApiFixtureCase[] = [
+  ...nativeReferralLinkFixtureCases,
   {
     id: 'web.topics.search.referral-programs.default',
     method: 'GET',
