@@ -1,3 +1,4 @@
+import type { QueryOptions } from '@data-stores/psql/types'
 import { stat, unlink } from 'node:fs/promises'
 import { write } from '@data-stores/psql'
 import onError from '@modules/on-error'
@@ -9,7 +10,7 @@ import {
 import type { BatchJobType } from '@services/embeddings/batch/types'
 import type { BatchMetadata, BatchSource } from './shared.mts'
 import { cleanupBatchLocks } from './cleanup.mts'
-import { stopVertexBatch, createVertexBatch } from '../provider.mts'
+import { createVertexBatch } from '../provider.mts'
 import { GoogleBatchApiError } from '../google-http.mts'
 import { gcsUri, uploadGcsFile } from '../gcs.mts'
 import { requireVertexEnvironment } from '@services/embeddings/vertex'
@@ -39,6 +40,7 @@ export const createBatch = async (
   source: BatchSource | undefined,
   beforeSubmit: (preparingBatchId: string) => Promise<void>,
   isLeaseHeld: () => boolean,
+  persistence: QueryOptions = {},
 ): Promise<string> => {
   const batchId = mintUUIDv7()
   const prefix = metadata?.storagePrefix ?? `gemini-embeddings/${batchId}/`
@@ -77,6 +79,7 @@ export const createBatch = async (
       batchId,
       undefined,
       batchDocument('JOB_STATE_PENDING', inputUri, outputUri, batchMetadata),
+      persistence,
     )
     submissionStarted = true
     const job = await createVertexBatch(batchId, inputUri, outputUri)
@@ -85,6 +88,7 @@ export const createBatch = async (
       batchId,
       job.name,
       batchDocument('JOB_STATE_PENDING', inputUri, outputUri, batchMetadata, job.name),
+      persistence,
     )
   } catch (err) {
     const rejectedBeforeAcceptance =
@@ -93,38 +97,9 @@ export const createBatch = async (
       err.status < 500 &&
       err.status !== 408
     let canReleaseLocks = !submissionStarted || rejectedBeforeAcceptance
-    if (submittedJobName) {
-      try {
-        await stopVertexBatch(submittedJobName)
-        // Cancellation is asynchronous: preserve polling and locks until the provider is terminal.
-        await markBatchSubmittedForPolling(
-          batchId,
-          submittedJobName,
-          batchDocument(
-            'JOB_STATE_CANCELLING',
-            inputUri,
-            outputUri,
-            batchMetadata,
-            submittedJobName,
-          ),
-        )
-      } catch (err_) {
-        onError(err_ instanceof Error ? err_ : new Error(String(err_)))
-        await markBatchSubmittedForPolling(
-          batchId,
-          submittedJobName,
-          batchDocument(
-            'JOB_STATE_PENDING',
-            inputUri,
-            outputUri,
-            batchMetadata,
-            submittedJobName,
-            new Date().toISOString(),
-          ),
-        ).catch(onError)
-      }
-      canReleaseLocks = false
-    }
+    // A receipt write failure cannot undo an accepted paid job. Preserve the durable
+    // display-name intent; polling discovers the provider job without another submission.
+    if (submittedJobName) canReleaseLocks = false
     if (canReleaseLocks && batchPersisted) {
       await cleanupBatchLocks(batchId).catch(onError)
       await write('/* createBatch:cleanup */ DELETE FROM gemini_embedding_batches WHERE id = $1', [

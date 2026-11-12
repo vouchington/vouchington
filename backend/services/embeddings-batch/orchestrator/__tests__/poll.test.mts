@@ -129,4 +129,50 @@ describe('processBatch', () => {
 
     expect(await getTestBatchSummary(id)).toEqual({ job_type: 'topics', status: 'failed' })
   })
+  it.each([
+    [90, 'submitted'],
+    [121, 'failed'],
+  ] as const)(
+    'expires a missing receipt only after its two-hour window (%s minutes)',
+    async (minutes, status) => {
+      const id = batchId()
+      await insertTestEmbeddingsBatch({
+        id,
+        jobName: null,
+        submittedAt: new Date(Date.now() - minutes * 60_000),
+      })
+      fixture.agent
+        .get('https://us-aiplatform.googleapis.com')
+        .intercept({ method: 'GET', path: /batchPredictionJobs\?/ })
+        .reply(200, {})
+      await processBatch(id)
+      expect(await getTestBatchSummary(id)).toMatchObject({ status })
+    },
+  )
+
+  it('retains an old receipt intent when provider lookup fails', async () => {
+    const id = batchId()
+    await insertTestEmbeddingsBatch({
+      id,
+      jobName: null,
+      submittedAt: new Date(Date.now() - 3 * 60 * 60_000),
+    })
+    fixture.agent
+      .get('https://us-aiplatform.googleapis.com')
+      .intercept({ method: 'GET', path: /batchPredictionJobs\?/ })
+      .reply(503, {})
+    await expect(processBatch(id)).rejects.toThrow('(503)')
+    expect(await getTestBatchSummary(id)).toMatchObject({ status: 'submitted' })
+  })
+
+  it('keeps a paused provider job in progress', async () => {
+    const id = batchId()
+    await insertTestEmbeddingsBatch({
+      id,
+      jobName: `projects/123456/locations/us/batchPredictionJobs/${id}`,
+    })
+    replyState('JOB_STATE_PAUSED')
+    await processBatch(id)
+    expect(await getTestBatchSummary(id)).toMatchObject({ status: 'in_progress' })
+  })
 })

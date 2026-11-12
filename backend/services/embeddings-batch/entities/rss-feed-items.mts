@@ -1,3 +1,4 @@
+import type { BatchIngestionFence } from '../orchestrator/ingestion-transaction.mts'
 import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createRssFeedItemEmbeddingContent } from '@services/rss-feed-items/content'
@@ -54,7 +55,10 @@ export async function* streamPendingRssFeedItems(
   )
 }
 
-export async function applyRssFeedItemBatchUpdates(items: BatchUpdateItem[]): Promise<void> {
-  const updatedIds = await applyBatchUpdates('rss_feed_items', items)
+export async function applyRssFeedItemBatchUpdates(
+  items: BatchUpdateItem[],
+  fence?: BatchIngestionFence,
+): Promise<void> {
+  const updatedIds = await applyBatchUpdates('rss_feed_items', items, fence)
   await dispatchStoryClusteringForEmbeddedItems(updatedIds)
 }

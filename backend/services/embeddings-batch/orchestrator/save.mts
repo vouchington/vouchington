@@ -1,7 +1,11 @@
+import {
+  beginBatchIngestionTransaction,
+  type BatchIngestionFence,
+} from './ingestion-transaction.mts'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { beginTransaction, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import {
   EMBEDDING_COLUMNS,
@@ -18,6 +22,7 @@ type EmbeddingTable = (typeof EMBEDDING_TABLES)[number]
 export async function applyBatchUpdates(
   tableName: EmbeddingTable,
   items: BatchUpdateItem[],
+  fence?: BatchIngestionFence,
 ): Promise<string[]> {
   if (items.length === 0) return []
   if (!EMBEDDING_TABLES.includes(tableName)) {
@@ -26,7 +31,7 @@ export async function applyBatchUpdates(
 
   const tempTable = `temp_embedding_updates_${randomUUID().replaceAll('-', '')}`
   let updatedIds: string[] = []
-  await using query = await beginTransaction()
+  await using query = await beginBatchIngestionTransaction(fence)
 
   await query(
     `/* applyBatchUpdates */ CREATE TEMP TABLE ${tempTable} (

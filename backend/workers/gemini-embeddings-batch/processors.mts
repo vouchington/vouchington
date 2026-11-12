@@ -1,3 +1,4 @@
+import { ingestBatchResults } from '@services/embeddings-batch/orchestrator/ingestion'
 import type { BatchListingCursor } from '@services/embeddings/batch/orchestrator/listing-page'
 import { completeBatchIngestion, processBatch } from '@services/embeddings-batch/orchestrator/poll'
 import {
@@ -61,59 +62,61 @@ export const processBatchPolling = async (
 
   if (batchInfo.completed_at) return { success: true, processed: true }
 
-  const manifest = await loadBatchManifest(batchId)
-  let resultsFilePath: string | null = null
-  try {
-    resultsFilePath = await downloadBatchResults(batchId)
-    await validateBatchOutput(resultsFilePath, manifest)
+  const processed = await ingestBatchResults(batchId, async fence => {
+    const manifest = await loadBatchManifest(batchId)
+    let resultsFilePath: string | null = null
+    try {
+      resultsFilePath = await downloadBatchResults(batchId)
+      await validateBatchOutput(resultsFilePath, manifest)
 
-    // Process results in batches based on job type
-    if (jobType === 'topics') {
-      await processBatchResultsInBatches(
-        resultsFilePath,
-        applyTopicBatchUpdates,
-        1000,
-        'topics',
-        manifest,
-      )
-    } else if (jobType === 'posts') {
-      await processBatchResultsInBatches(
-        resultsFilePath,
-        applyPostBatchUpdates,
-        1000,
-        'posts',
-        manifest,
-      )
-    } else if (jobType === 'rss_feed_items') {
-      await processBatchResultsInBatches(
-        resultsFilePath,
-        applyRssFeedItemBatchUpdates,
-        1000,
-        'rss_feed_items',
-        manifest,
-      )
-    } else if (jobType === 'crawl_chunks') {
-      await processBatchResultsInBatches(
-        resultsFilePath,
-        processCrawlChunkBatchResults,
-        1000,
-        'crawl_chunks',
-        manifest,
-      )
-    } else if (jobType === 'images') {
-      await processImageBatchResultsInBatches(
-        resultsFilePath,
-        applyImageBatchUpdates,
-        1000,
-        manifest,
-      )
-    } else throw new Error(`Unsupported embedding batch entity type: ${String(jobType)}`)
-    await completeBatchIngestion(batchId)
-  } finally {
-    if (resultsFilePath) await cleanupResultsFile(resultsFilePath)
-  }
+      // Process results in batches based on job type
+      if (jobType === 'topics') {
+        await processBatchResultsInBatches(
+          resultsFilePath,
+          updates => applyTopicBatchUpdates(updates, fence),
+          1000,
+          'topics',
+          manifest,
+        )
+      } else if (jobType === 'posts') {
+        await processBatchResultsInBatches(
+          resultsFilePath,
+          updates => applyPostBatchUpdates(updates, fence),
+          1000,
+          'posts',
+          manifest,
+        )
+      } else if (jobType === 'rss_feed_items') {
+        await processBatchResultsInBatches(
+          resultsFilePath,
+          updates => applyRssFeedItemBatchUpdates(updates, fence),
+          1000,
+          'rss_feed_items',
+          manifest,
+        )
+      } else if (jobType === 'crawl_chunks') {
+        await processBatchResultsInBatches(
+          resultsFilePath,
+          updates => processCrawlChunkBatchResults(updates, fence),
+          1000,
+          'crawl_chunks',
+          manifest,
+        )
+      } else if (jobType === 'images') {
+        await processImageBatchResultsInBatches(
+          resultsFilePath,
+          updates => applyImageBatchUpdates(updates, fence),
+          1000,
+          manifest,
+        )
+      } else throw new Error(`Unsupported embedding batch entity type: ${String(jobType)}`)
+      await completeBatchIngestion(batchId, fence)
+    } finally {
+      if (resultsFilePath) await cleanupResultsFile(resultsFilePath)
+    }
+  })
 
-  return { success: true, processed: true }
+  return { success: true, processed }
 }
 
 export const processBatchPollingDispatcher = async (cursor?: BatchListingCursor) => {

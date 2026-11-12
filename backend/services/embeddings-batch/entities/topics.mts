@@ -1,3 +1,4 @@
+import type { BatchIngestionFence } from '../orchestrator/ingestion-transaction.mts'
 import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createTopicEmbeddingContent } from '@services/topics/content'
@@ -61,6 +62,9 @@ export async function* streamPendingTopics(
   )
 }
 
-export async function applyTopicBatchUpdates(items: BatchUpdateItem[]): Promise<void> {
-  await applyBatchUpdates('topics', items)
+export async function applyTopicBatchUpdates(
+  items: BatchUpdateItem[],
+  fence?: BatchIngestionFence,
+): Promise<void> {
+  await applyBatchUpdates('topics', items, fence)
 }

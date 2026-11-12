@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS gemini_embedding_batches (
   records INT NOT NULL DEFAULT 0 CHECK (records BETWEEN 0 AND 1000000),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ingestion_generation INTEGER NOT NULL DEFAULT 0 CHECK (ingestion_generation >= 0),
+  ingestion_failures SMALLINT NOT NULL DEFAULT 0 CHECK (ingestion_failures BETWEEN 0 AND 3),
   submitted_at TIMESTAMPTZ,
   in_progress_at TIMESTAMPTZ,
   completed_at TIMESTAMPTZ,
@@ -92,10 +94,12 @@ COMMENT ON COLUMN gemini_embedding_batches.data IS 'JSONB batch document: state,
 COMMENT ON COLUMN gemini_embedding_batches.url_id IS 'Optional URL this batch was created for.';
 COMMENT ON COLUMN gemini_embedding_batches.crawl_id IS 'Optional crawl this batch was created for. Cleared before that crawl partition is dropped.';
 COMMENT ON COLUMN gemini_embedding_batches.records IS 'Number of records in this batch.';
-COMMENT ON COLUMN gemini_embedding_batches.submitted_at IS 'When the Vertex job was successfully submitted (JOB_STATE_PENDING/JOB_STATE_QUEUED).';
-COMMENT ON COLUMN gemini_embedding_batches.in_progress_at IS 'When the Vertex job first reported JOB_STATE_RUNNING or JOB_STATE_CANCELLING.';
-COMMENT ON COLUMN gemini_embedding_batches.completed_at IS 'When the Vertex job first reached a successful terminal status (JOB_STATE_SUCCEEDED or JOB_STATE_PARTIALLY_SUCCEEDED).';
-COMMENT ON COLUMN gemini_embedding_batches.failed_at IS 'When the Vertex job terminated unsuccessfully (JOB_STATE_FAILED or JOB_STATE_EXPIRED).';
+COMMENT ON COLUMN gemini_embedding_batches.ingestion_generation IS 'Recovery attempt generation fencing stale result writers; every chunk and terminal transition verifies this value.';
+COMMENT ON COLUMN gemini_embedding_batches.ingestion_failures IS 'Failed terminal-result ingestion attempts, bounded at three before failing and unlocking this batch.';
+COMMENT ON COLUMN gemini_embedding_batches.submitted_at IS 'When submission intent was persisted before contacting Vertex; a missing receipt is reconciled by display name.';
+COMMENT ON COLUMN gemini_embedding_batches.in_progress_at IS 'When the Vertex job first reported running, cancelling or paused, or successful output awaiting ingestion.';
+COMMENT ON COLUMN gemini_embedding_batches.completed_at IS 'When all successful terminal output was validated and applied.';
+COMMENT ON COLUMN gemini_embedding_batches.failed_at IS 'When the provider failed, a submission receipt expired, or three terminal-result ingestion attempts failed.';
 COMMENT ON COLUMN gemini_embedding_batches.cancelled_at IS 'When the Vertex job was JOB_STATE_CANCELLED before completion.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

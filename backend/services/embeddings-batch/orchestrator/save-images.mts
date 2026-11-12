@@ -1,18 +1,25 @@
+import {
+  beginBatchIngestionTransaction,
+  type BatchIngestionFence,
+} from './ingestion-transaction.mts'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { beginTransaction, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { EMBEDDING_DIMENSION } from '@services/embeddings/config'
 import { from as copyFrom } from 'pg-copy-streams'
 import type { ImageBatchUpdateItem } from '@services/embeddings/batch/types'
 import { csvEscape } from './csv.mts'
 
-export async function applyImageBatchUpdates(items: ImageBatchUpdateItem[]): Promise<string[]> {
+export async function applyImageBatchUpdates(
+  items: ImageBatchUpdateItem[],
+  fence?: BatchIngestionFence,
+): Promise<string[]> {
   if (items.length === 0) return []
 
   const tempTable = `temp_image_embedding_updates_${randomUUID().replaceAll('-', '')}`
   let updatedIds: string[] = []
-  await using query = await beginTransaction()
+  await using query = await beginBatchIngestionTransaction(fence)
 
   await query(
     `/* applyImageBatchUpdates */ CREATE TEMP TABLE ${tempTable} (

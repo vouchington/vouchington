@@ -1,3 +1,5 @@
+import { rejectVertexReceipt } from '@voucha/test-helpers/gemini-batch-ingestion'
+import { processBatch } from './poll.mts'
 import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -10,6 +12,7 @@ import {
   cleanupTestEmbeddingsBatches,
   getTestBatchEntities,
   getTestBatchSummary,
+  getTestBatchIdByJobName,
 } from '@voucha/test-helpers/entities/gemini-embeddings-batches'
 import { createBatch } from './create.mts'
 
@@ -137,6 +140,60 @@ describe('Vertex batch submission', () => {
       { entity_type: 'topics', entity_id: entityId },
     ])
   })
+  it('reconciles an accepted paid job when saving its receipt fails', async () => {
+    const fixture = createVertexHttpFixture()
+    const owner = await createTestUserDirect()
+    const entityId = await createLockedEntityId('topics', owner.id)
+    const file = await files([entityId])
+    const jobName = `projects/123456/locations/us/batchPredictionJobs/${randomUUID()}`
+    fixture.agent
+      .get('https://storage.googleapis.com')
+      .intercept({ method: 'POST', path: /\/upload\/storage\/v1\// })
+      .reply(200, {})
+      .times(2)
+    fixture.agent
+      .get('https://us-aiplatform.googleapis.com')
+      .intercept({ method: 'POST', path: /\/batchPredictionJobs$/ })
+      .reply(200, { name: jobName, state: 'JOB_STATE_PENDING' })
+    let candidate = ''
+    await fixture.run(async () => {
+      await expect(
+        createBatch(
+          file.input,
+          'topics',
+          1,
+          file.locks,
+          {},
+          {},
+          async id => {
+            candidate = id
+            batches.push(id)
+          },
+          () => true,
+          { query: rejectVertexReceipt() },
+        ),
+      ).rejects.toThrow('synthetic receipt failure')
+      expect(await getTestBatchIdByJobName(jobName)).toBeNull()
+      expect(await getTestBatchEntities(candidate)).toHaveLength(1)
+      fixture.agent
+        .get('https://us-aiplatform.googleapis.com')
+        .intercept({ method: 'GET', path: /batchPredictionJobs\?/ })
+        .reply(200, {
+          batchPredictionJobs: [
+            {
+              name: jobName,
+              displayName: `voucha-${candidate}`,
+              state: 'JOB_STATE_RUNNING',
+            },
+          ],
+        })
+      await processBatch(candidate)
+    })
+    expect(await getTestBatchIdByJobName(jobName)).toBe(candidate)
+    expect(await getTestBatchSummary(candidate)).toMatchObject({ status: 'in_progress' })
+    expect(await getTestBatchEntities(candidate)).toHaveLength(1)
+  })
+
   it('rejects the provider hard record cap before durable or external effects', async () => {
     const file = await files([])
     const fixture = createVertexHttpFixture()

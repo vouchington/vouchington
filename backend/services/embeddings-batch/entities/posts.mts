@@ -1,3 +1,4 @@
+import type { BatchIngestionFence } from '../orchestrator/ingestion-transaction.mts'
 import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createPostTextEmbeddingContent } from '@services/posts/content'
@@ -87,7 +88,10 @@ export async function* streamPendingPosts(
   )
 }
 
-export async function applyPostBatchUpdates(items: BatchUpdateItem[]): Promise<void> {
-  const updatedIds = await applyBatchUpdates('posts', items)
+export async function applyPostBatchUpdates(
+  items: BatchUpdateItem[],
+  fence?: BatchIngestionFence,
+): Promise<void> {
+  const updatedIds = await applyBatchUpdates('posts', items, fence)
   await banEvasion.enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts(updatedIds)
 }

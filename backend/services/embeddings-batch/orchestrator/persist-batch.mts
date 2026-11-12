@@ -1,3 +1,4 @@
+import type { QueryOptions } from '@data-stores/psql/types'
 import { beginTransaction, write } from '@data-stores/psql'
 import { GEMINI_EMBEDDING_2_MODEL_ID } from '@services/embeddings/config'
 import type { BatchJobType } from '@services/embeddings/batch/types'
@@ -28,6 +29,7 @@ export async function markBatchSubmittedForPolling(
   batchId: string,
   jobName: string | undefined,
   data: Record<string, unknown>,
+  options: QueryOptions = {},
 ): Promise<void> {
   await write(
     `/* createBatch:markSubmitted */
@@ -38,6 +40,7 @@ export async function markBatchSubmittedForPolling(
     WHERE id = $1
   `,
     [batchId, jobName || null, JSON.stringify(data)],
+    options,
   )
 }
 

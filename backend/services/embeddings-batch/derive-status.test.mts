@@ -22,6 +22,10 @@ describe('lifecycleColumnForVertexState', () => {
     expect(lifecycleColumnForVertexState('JOB_STATE_CANCELLING')).toBe('in_progress_at')
   })
 
+  it('keeps paused jobs in progress because they can resume', () => {
+    expect(lifecycleColumnForVertexState('JOB_STATE_PAUSED')).toBe('in_progress_at')
+  })
+
   it('returns completed_at for Completed', () => {
     expect(lifecycleColumnForVertexState('JOB_STATE_SUCCEEDED')).toBe('completed_at')
   })

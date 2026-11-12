@@ -1,8 +1,12 @@
+import {
+  beginBatchIngestionTransaction,
+  type BatchIngestionFence,
+} from '../orchestrator/ingestion-transaction.mts'
 import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { createAsyncGeneratorFromCursor, beginTransaction } from '@data-stores/psql'
+import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { from as copyFrom } from 'pg-copy-streams'
 import { EMBEDDING_DIMENSION, EMBEDDINGS_TABLE } from '@services/embeddings/config'
 import type { BatchUpdateItem } from '@services/embeddings/batch/types'
@@ -66,7 +70,10 @@ export async function* streamPendingCrawlChunks(
   }
 }
 
-export async function applyCrawlChunkBatchUpdates(items: BatchUpdateItem[]): Promise<void> {
+export async function applyCrawlChunkBatchUpdates(
+  items: BatchUpdateItem[],
+  fence?: BatchIngestionFence,
+): Promise<void> {
   if (items.length === 0) return
 
   const parsed = items.flatMap(item => {
@@ -85,7 +92,7 @@ export async function applyCrawlChunkBatchUpdates(items: BatchUpdateItem[]): Pro
   if (parsed.length === 0) return
 
   const tempTable = `temp_crawl_chunk_updates_${randomUUID().replaceAll('-', '')}`
-  await using query = await beginTransaction()
+  await using query = await beginBatchIngestionTransaction(fence)
 
   await query(
     `/* applyCrawlChunkBatchUpdates */ CREATE TEMP TABLE ${tempTable} (

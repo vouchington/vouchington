@@ -1,11 +1,7 @@
 import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import {
-  GEMINI_EMBEDDINGS_BATCH_DEFAULTS,
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-} from './config.mts'
+import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
@@ -52,15 +48,14 @@ const enqueueBulkProcessEmbeddingBatchPollingJobs = createBulkEnqueueFunction({
   defaults: requireBackgroundCpuJob(POLL_BATCH_JOB_NAME).options,
   buildJob: (batchId: string) => ({
     data: { batch_id: batchId } satisfies BackgroundCpuJobPayloads[typeof POLL_BATCH_JOB_NAME],
-    opts: {
-      deduplication: {
-        id: `gemini-embeddings:batch-polling:${batchId}`,
-        mode: 'throttle',
-        ttl: GEMINI_EMBEDDINGS_BATCH_DEFAULTS.deduplicationTtlMs,
-      },
-    },
+    opts: pollingJobOptions(batchId),
   }),
 })
+
+/** Keep one batch delivery waiting, active or retrying until it becomes terminal. */
+export function pollingJobOptions(batchId: string): Partial<JobOptions> {
+  return { deduplication: { id: `gemini-embeddings:batch-polling:${batchId}`, mode: 'simple' } }
+}
 
 function createDispatcherEnqueue(jobName: EmbeddingsBatchDispatcherJob) {
   const enqueue = createBackgroundCpuEnqueueFunction(`gemini-embeddings.${jobName}`)

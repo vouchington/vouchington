@@ -1,8 +1,11 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
+import {
+  beginBatchIngestionTransaction,
+  type BatchIngestionFence,
+} from './ingestion-transaction.mts'
+import { beginTransaction, read } from '@data-stores/psql'
 import { findVertexBatch, retrieveVertexBatch } from '../provider.mts'
 import { lifecycleColumnForVertexState } from '../derive-status.mts'
 import { cleanupBatchLocks } from './cleanup.mts'
-import { getStaleTtlHours } from '@services/embeddings/batch/config'
 
 export const processBatch = async (batchId: string): Promise<void> => {
   const { rows: batchRows } = await read<{
@@ -37,25 +40,32 @@ export const processBatch = async (batchId: string): Promise<void> => {
     persistedBatch.job_name === null
       ? await findVertexBatch(batchId)
       : await retrieveVertexBatch(persistedBatch.job_name)
+  await using query = await beginTransaction()
   // Reconcile a lost receipt before allowing another paid request. Missing jobs become
-  // retryable after the configured stale window, rather than retaining locks indefinitely.
+  // retryable after the two-hour receipt window, rather than retaining locks indefinitely.
   if (!batch) {
-    const expired = await write(
+    const expired = await query(
       `/* processBatch unresolved submission */
       UPDATE gemini_embedding_batches
       SET failed_at = CURRENT_TIMESTAMP, data = data || '{"state":"JOB_STATE_FAILED"}'::jsonb
       WHERE id = $1 AND job_name IS NULL AND failed_at IS NULL AND cancelled_at IS NULL
-        AND completed_at IS NULL AND submitted_at < CURRENT_TIMESTAMP - ($2 || ' hours')::interval`,
-      [batchId, getStaleTtlHours()],
+        AND completed_at IS NULL AND submitted_at < CURRENT_TIMESTAMP - INTERVAL '2 hours'`,
+      [batchId],
     )
-    if (expired.rowCount) await cleanupBatchLocks(batchId)
+    if (expired.rowCount) {
+      await query(
+        '/* processBatch unresolved unlock */ DELETE FROM gemini_embedding_batch_entities WHERE batch_id = $1',
+        [batchId],
+      )
+    }
+    await query.commit()
     return
   }
   const status = batch.state || 'JOB_STATE_PENDING'
   // Treat unrecognised statuses as failed to prevent indefinite polling
   const column = lifecycleColumnForVertexState(status) ?? 'failed_at'
 
-  const transition = await write(
+  const transition = await query(
     `/* processBatch */
     UPDATE gemini_embedding_batches
     SET data = data || $2::jsonb,
@@ -70,23 +80,32 @@ export const processBatch = async (batchId: string): Promise<void> => {
   )
 
   if ((transition.rowCount ?? 0) > 0 && (column === 'failed_at' || column === 'cancelled_at')) {
-    await cleanupBatchLocks(batchId)
+    await query(
+      '/* processBatch terminal unlock */ DELETE FROM gemini_embedding_batch_entities WHERE batch_id = $1',
+      [batchId],
+    )
   }
+  await query.commit()
 }
 
 export { retrieveVertexBatch } from '../provider.mts'
 
-export async function completeBatchIngestion(batchId: string): Promise<void> {
-  await using query = await beginTransaction()
-  await query(
-    '/* completeBatchIngestion cleanup */ DELETE FROM gemini_embedding_batch_entities WHERE batch_id = $1',
-    [batchId],
-  )
-  await query(
+export async function completeBatchIngestion(
+  batchId: string,
+  fence?: BatchIngestionFence,
+): Promise<void> {
+  await using query = await beginBatchIngestionTransaction(fence)
+  const completed = await query(
     `/* completeBatchIngestion */ UPDATE gemini_embedding_batches
-    SET completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP)
-    WHERE id = $1 AND failed_at IS NULL AND cancelled_at IS NULL`,
+    SET completed_at = CURRENT_TIMESTAMP
+    WHERE id = $1 AND completed_at IS NULL AND failed_at IS NULL AND cancelled_at IS NULL`,
     [batchId],
   )
+  if (completed.rowCount) {
+    await query(
+      '/* completeBatchIngestion cleanup */ DELETE FROM gemini_embedding_batch_entities WHERE batch_id = $1',
+      [batchId],
+    )
+  }
   await query.commit()
 }
