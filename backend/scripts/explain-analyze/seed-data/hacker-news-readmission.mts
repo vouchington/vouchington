@@ -80,7 +80,13 @@ export async function seedHackerNewsReadmissionFixture(
 
 export async function cleanupHackerNewsReadmissionFixture(): Promise<void> {
   await deleteOwnedUrlsInBatches(
-    (text, values) => write(text, [...values]),
+    (hostnameId, limit) =>
+      write(
+        `/* deleteOwnedUrlsInBatches */
+        WITH owned AS (SELECT id FROM urls WHERE hostname_id=$1 ORDER BY id LIMIT $2)
+        DELETE FROM urls USING owned WHERE urls.id=owned.id`,
+        [hostnameId, limit],
+      ),
     HOSTNAME_ID,
     READMISSION_FIXTURE_ROWS,
   )

@@ -1,8 +1,8 @@
 export const READMISSION_URL_DELETE_BATCH_ROWS = 2_000
 
 export type OwnedUrlDelete = (
-  text: string,
-  values: readonly unknown[],
+  hostnameId: string,
+  limit: number,
 ) => Promise<{ rowCount: number | null }>
 
 export class OwnedUrlDeleteBatchError extends Error {
@@ -50,12 +50,7 @@ export async function deleteOwnedUrlsInBatches(
     let deleted = 0
     try {
       // no-mistakes-disable-next-line query-reached-per-item: each cleanup statement deletes one explicitly limited owned fixture batch; the loop has a finite corpus cap.
-      const result = await query(
-        `/* deleteOwnedUrlsInBatches */
-        WITH owned AS (SELECT id FROM urls WHERE hostname_id=$1 ORDER BY id LIMIT $2)
-        DELETE FROM urls USING owned WHERE urls.id=owned.id`,
-        [hostnameId, READMISSION_URL_DELETE_BATCH_ROWS],
-      )
+      const result = await query(hostnameId, READMISSION_URL_DELETE_BATCH_ROWS)
       deleted = result.rowCount ?? 0
     } catch (err) {
       const elapsedMs = Math.round(performance.now() - started)
