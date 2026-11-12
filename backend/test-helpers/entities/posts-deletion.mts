@@ -62,10 +62,10 @@ export async function insertTestPostsForUser(userId: string, count: number): Pro
       gemini_embedding_2_content_sha256,
       llm_moderation_content_sha256,
       created_via
-    , bedrock_nova_multimodal_v1_content_sha256)
+    )
     SELECT 'discussion', 'Deletion batch ' || value, '', ${userId},
       ${sha256}, ${sha256}, 'system'
-    , ${sha256} FROM generate_series(1, ${count}) AS value
+    FROM generate_series(1, ${count}) AS value
     RETURNING id
   `)
   return rows.map(row => row.id)

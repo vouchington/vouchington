@@ -10,7 +10,6 @@ async function seedPlaywrightPaginationReviews(query: TransactionQuery): Promise
       'Pagination test review ${idx}: This is a seeded review to ensure the /reviews page has enough items for infinite scroll pagination testing.',
       decode('000000000000000000000000000000000000000000000000000000000000ff${idx}', 'hex'),
       decode('000000000000000000000000000000000000000000000000000000000000ff${idx}', 'hex'),
-      decode('000000000000000000000000000000000000000000000000000000000000ff${idx}', 'hex'),
       'system'
     )`
   }).join(',\n        ')
@@ -19,7 +18,7 @@ async function seedPlaywrightPaginationReviews(query: TransactionQuery): Promise
     id,
     post_type,
     markdown,
-    gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256,
+    gemini_embedding_2_content_sha256,
     llm_moderation_content_sha256,
     created_via
   )
@@ -57,7 +56,7 @@ async function seedPlaywrightPaginationReviews(query: TransactionQuery): Promise
     `/* seedPlaywrightPaginationReviews */ DELETE FROM posts WHERE id = '019c64e6-f720-7002-a002-000000000020'`,
   )
   await query(
-    `/* seedPlaywrightPaginationReviews */ INSERT INTO posts ( id, post_type, markdown, gemini_embedding_2_content_sha256, llm_moderation_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256) VALUES ( '019c64e6-f720-7002-a002-000000000020', 'review', 'Comparing Chase Sapphire Preferred vs American Express Gold. Both are excellent travel cards but serve different purposes.', decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex'), decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex'), 'system' , decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex')) ON CONFLICT (id) DO NOTHING`,
+    `/* seedPlaywrightPaginationReviews */ INSERT INTO posts ( id, post_type, markdown, gemini_embedding_2_content_sha256, llm_moderation_content_sha256, created_via ) VALUES ( '019c64e6-f720-7002-a002-000000000020', 'review', 'Comparing Chase Sapphire Preferred vs American Express Gold. Both are excellent travel cards but serve different purposes.', decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex'), decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex'), 'system' ) ON CONFLICT (id) DO NOTHING`,
   )
   await approveSeedPosts(query, ['019c64e6-f720-7002-a002-000000000020'])
   await query(

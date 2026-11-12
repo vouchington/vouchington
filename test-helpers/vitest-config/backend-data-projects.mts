@@ -113,7 +113,6 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         '**/*.anthropic*.test.mts',
         '**/*.openai*.test.mts',
         '**/*.openrouter.test.mts',
-        '**/*.bedrock.test.mts',
         '**/*.s3.test.mts',
         '**/*.stripe.test.mts',
         'backend/services/browser-crawl/crawl.integration.test.mts',

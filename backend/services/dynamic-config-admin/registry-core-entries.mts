@@ -1,5 +1,4 @@
 import { geminiBatchRegistryEntry } from './registry-gemini-entry.mts'
-import { retainedBedrockRegistryEntry } from './registry-bedrock-retained-entry.mts'
 import { communityAgentPromptsRegistryEntry } from './registry-community-agent-prompts-entry.mts'
 import { appAttestationConfig } from '@services/app-attestation/config'
 import { turnstileConfig } from '@services/captcha/config'
@@ -117,6 +116,5 @@ export const coreDynamicConfigRegistryEntries = [
       },
     },
   }),
-  retainedBedrockRegistryEntry,
   geminiBatchRegistryEntry,
 ]

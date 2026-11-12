@@ -72,9 +72,9 @@ export async function seedPosts(
           gemini_embedding_2_content_sha256,
           llm_moderation_content_sha256,
           data_point_vertical, structured_data
-        , bedrock_nova_multimodal_v1_content_sha256) SELECT 'system', id, post_type, title, markdown, author_id,
+        ) SELECT 'system', id, post_type, title, markdown, author_id,
             hash, hash, vertical, data
-          , hash FROM UNNEST($1::uuid[], $2::post_types[], $3::text[], $4::text[],
+          FROM UNNEST($1::uuid[], $2::post_types[], $3::text[], $4::text[],
             $5::uuid[], $6::bytea[], $7::text[], $8::jsonb[])
             WITH ORDINALITY AS seed (
               id, post_type, title, markdown, author_id, hash, vertical, data, ordinal

@@ -79,8 +79,6 @@ function appendContentHashes(
     images: post.images ?? [],
     structured_data: newStructuredData,
   }).content_sha256
-  updateQuery.append(
-    sql`, gemini_embedding_2_content_sha256 = ${embeddingContentSha}, bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha}`,
-  )
+  updateQuery.append(sql`, gemini_embedding_2_content_sha256 = ${embeddingContentSha}`)
   updateQuery.append(sql`, llm_moderation_content_sha256 = ${moderationContentSha}`)
 }

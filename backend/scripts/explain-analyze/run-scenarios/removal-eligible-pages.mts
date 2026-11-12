@@ -37,11 +37,11 @@ export async function runRemovalEligiblePageScenarios(): Promise<void> {
     `/* seedRemovalEligiblePosts */ INSERT INTO posts
       (id, created_via, post_type, title, markdown, created_by_id, community_id,
        gemini_embedding_2_content_sha256, llm_moderation_content_sha256,
-       deleted_at, rejected_at, bedrock_nova_multimodal_v1_content_sha256)
+       deleted_at, rejected_at)
     SELECT id, 'system', 'discussion', 'Removal eligible ' || ordinal, 'Removed twice', $2, $3, $4, $4,
       CASE WHEN ordinal <= $5 THEN CURRENT_TIMESTAMP END,
       $6::timestamptz - make_interval(secs => (ordinal - 1)::double precision)
-    , $4 FROM unnest($1::uuid[]) WITH ORDINALITY AS input(id, ordinal)
+    FROM unnest($1::uuid[]) WITH ORDINALITY AS input(id, ordinal)
     ON CONFLICT DO NOTHING`,
     [postIds, userId, communityId, hash, PREFIX, removedAt(0)],
   )

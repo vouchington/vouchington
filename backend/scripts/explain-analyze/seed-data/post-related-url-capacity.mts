@@ -32,10 +32,10 @@ export async function seedPostUrlCapacity(): Promise<void> {
   await query(
     `/* seedPostUrlCapacity:posts */
     INSERT INTO posts (id, created_by_id, post_type, title, markdown, created_via,
-      gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+      gemini_embedding_2_content_sha256, llm_moderation_content_sha256)
     SELECT id, $2, 'discussion', 'Capacity seed', 'Capacity seed', 'system',
       decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex')
-    , decode(repeat('00',32),'hex') FROM unnest($1::uuid[]) input(id)`,
+    FROM unnest($1::uuid[]) input(id)`,
     [s.posts, s.user],
   )
   await query(

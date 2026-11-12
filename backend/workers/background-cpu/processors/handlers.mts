@@ -21,10 +21,6 @@ async function runCpuJob(rawJob: Job<unknown>): Promise<unknown> {
   // The registry and route guard are the deserialization boundary for the shared queue.
   const job = rawJob as CpuJob
   const route = resolveCpuJobRoute(job.name)
-  if (route === 'retained-bedrock') {
-    const { processRetainedBedrockJob } = await import('./bedrock-retained-handlers.mts')
-    return processRetainedBedrockJob(job)
-  }
   if (route === 'crawler' && job.name === 'crawl.crawl_url') {
     const { processCrawlerJob } = await import('@workers/crawler/processors')
     return processCrawlerJob(job)

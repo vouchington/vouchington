@@ -21,7 +21,7 @@ process.env.AWS_PROFILE = ''
 process.env.AWS_DEFAULT_PROFILE = ''
 // Each client reads its own credential tuple before the shared one. Every tuple names the
 // emulator's keys, so a real key in the environment can never be paired with the emulator.
-for (const prefix of ['', 'S3_', 'SES_', 'SQS_', 'BEDROCK_', 'FIREHOSE_']) {
+for (const prefix of ['', 'S3_', 'SES_', 'SQS_', 'FIREHOSE_']) {
   process.env[`${prefix}AWS_ACCESS_KEY_ID`] = emulator.accessKeyId
   process.env[`${prefix}AWS_SECRET_ACCESS_KEY`] = emulator.secretAccessKey
   process.env[`${prefix}AWS_SESSION_TOKEN`] = ''

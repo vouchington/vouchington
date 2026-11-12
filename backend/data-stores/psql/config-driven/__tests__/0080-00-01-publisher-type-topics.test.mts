@@ -17,9 +17,8 @@ describe('0080-00-01-publisher-type-topics', () => {
     expect(inserts).toHaveLength(PUBLISHER_TYPE_SLUGS.length + 1)
     for (const insert of inserts) {
       expect(insert).toContain('gemini_embedding_2_content_sha256')
-      expect(insert).toContain('bedrock_nova_multimodal_v1_content_sha256')
       expect(insert).toContain("'system'")
-      expect(insert.match(/decode\('[a-f0-9]+', 'hex'\)/g)).toHaveLength(2)
+      expect(insert.match(/decode\('[a-f0-9]+', 'hex'\)/g)).toHaveLength(1)
     }
   })
 

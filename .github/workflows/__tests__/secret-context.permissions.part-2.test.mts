@@ -170,7 +170,6 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(credentialedWorkflow).not.toContain('OPENAI_API_KEY')
     expect(credentialedWorkflow).not.toContain('backend-aws-tests:')
     expect(credentialedWorkflow).not.toContain('backend-openai-tests:')
-    expect(credentialedWorkflow).not.toContain('backend-bedrock-tests:')
 
     expect(unitWorkflow).not.toContain('backend-aws-tests:')
     expect(unitWorkflow).not.toContain('backend-openai-tests:')

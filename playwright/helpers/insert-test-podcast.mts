@@ -48,8 +48,8 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   const topicSlug = `podcast-show-${suffix}`
   const topicName = `Test Podcast Show ${suffix}`
   const topicResult = await write(
-    allowUnannotatedQuery(`INSERT INTO topics (created_via, name, slug, topic_type, created_by_id, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-     VALUES ('system', $1, $2, 'rss_feed', '019f0000-0000-7000-8000-000000000000', $3, $3)
+    allowUnannotatedQuery(`INSERT INTO topics (created_via, name, slug, topic_type, created_by_id, gemini_embedding_2_content_sha256)
+     VALUES ('system', $1, $2, 'rss_feed', '019f0000-0000-7000-8000-000000000000', $3)
      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
      RETURNING id`),
     [topicName, topicSlug, ZERO_SHA],
@@ -110,8 +110,8 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   // With a per-run suffix the slug has never been seen before, so the lookup always hits the DB.
   const categorySlug = `business-${suffix}`
   const bizTopicResult = await write(
-    allowUnannotatedQuery(`INSERT INTO topics (created_via, name, slug, topic_type, created_by_id, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-     VALUES ('system', $1, $2, 'topic', '019f0000-0000-7000-8000-000000000000', $3, $3)
+    allowUnannotatedQuery(`INSERT INTO topics (created_via, name, slug, topic_type, created_by_id, gemini_embedding_2_content_sha256)
+     VALUES ('system', $1, $2, 'topic', '019f0000-0000-7000-8000-000000000000', $3)
      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
      RETURNING id`),
     [`Business ${suffix}`, categorySlug, ZERO_SHA],

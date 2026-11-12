@@ -59,9 +59,9 @@ updated_topic AS (
   RETURNING id
 ),
 inserted_topic AS (
-  INSERT INTO topics (name, slug, topic_type, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
+  INSERT INTO topics (name, slug, topic_type, gemini_embedding_2_content_sha256, created_via)
   SELECT '${safeName}', '${safeSlug}', 'topic', decode('${hash}', 'hex'), 'system'
-  , decode('${hash}', 'hex') WHERE NOT EXISTS (SELECT 1 FROM existing_topic)
+  WHERE NOT EXISTS (SELECT 1 FROM existing_topic)
   RETURNING id
 )
 SELECT id FROM updated_topic

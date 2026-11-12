@@ -29,7 +29,7 @@ export async function seedCommentDescendantDepth(): Promise<void> {
     `/* seedCommentDescendantDepth:root */ INSERT INTO posts (
       id, post_type, created_via, markdown, created_by_id, approved_at,
       gemini_embedding_2_content_sha256, llm_moderation_content_sha256
-    , bedrock_nova_multimodal_v1_content_sha256) VALUES ($1, 'discussion', 'system', 'seed', $2, now(), $3, $3, $3)
+    ) VALUES ($1, 'discussion', 'system', 'seed', $2, now(), $3, $3)
     ON CONFLICT DO NOTHING`,
     [rootId, seedUuid(0, '01'), hash],
   )
@@ -42,10 +42,10 @@ export async function seedCommentDescendantDepth(): Promise<void> {
       id, post_type, created_via, markdown, parent_post_id, root_post_id,
       approved_at, gemini_embedding_2_content_sha256,
       llm_moderation_content_sha256
-    , bedrock_nova_multimodal_v1_content_sha256)
+    )
     SELECT chain.id, 'comment', 'system', 'seed', chain.parent_id, $3,
       now(), $4, $4
-    , $4 FROM UNNEST($1::uuid[], $2::uuid[]) AS chain(id, parent_id)
+    FROM UNNEST($1::uuid[], $2::uuid[]) AS chain(id, parent_id)
     ON CONFLICT DO NOTHING`,
     [ids, parentIds, rootId, hash],
   )
@@ -58,10 +58,10 @@ export async function seedCommentDescendantDepth(): Promise<void> {
       id, post_type, created_via, markdown, parent_post_id, root_post_id,
       approved_at, gemini_embedding_2_content_sha256,
       llm_moderation_content_sha256
-    , bedrock_nova_multimodal_v1_content_sha256)
+    )
     SELECT leaf.id, 'comment', 'system', 'seed', $2, $3,
       now(), $4, $4
-    , $4 FROM UNNEST($1::uuid[]) AS leaf(id)
+    FROM UNNEST($1::uuid[]) AS leaf(id)
     ON CONFLICT DO NOTHING`,
     [leafIds, ids.at(-1), rootId, hash],
   )

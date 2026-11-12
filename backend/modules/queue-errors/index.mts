@@ -42,12 +42,6 @@ export function isAwsThrottlingError(error: unknown): error is Error {
   )
 }
 
-export function isBedrockRateLimitError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false
-  const metadata = (error as { $metadata?: { httpStatusCode?: unknown } }).$metadata
-  return error.name === 'ThrottlingException' || metadata?.httpStatusCode === 429
-}
-
 function getHttpStatus(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null) return undefined
   const candidate = error as {

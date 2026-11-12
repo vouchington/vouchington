@@ -53,7 +53,6 @@
     "@queues/vote-aggregation": "workspace:^",
     "@vouchington/worker-runtime": "^0.3.1",
     "@workers/background": "workspace:^",
-    "@workers/bedrock-batch-sqs": "workspace:^",
     "@workers/bloom-filters": "workspace:^",
     "@workers/crawl-embeds": "workspace:^",
     "@workers/emails": "workspace:^",

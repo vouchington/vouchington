@@ -162,14 +162,6 @@
 - `user_sessions`
 - `web_push_subscriptions`
 
-## `bedrock_embedding_batch_job_types`
-
-- `topics`
-- `posts`
-- `rss_feed_items`
-- `crawl_chunks`
-- `images`
-
 ## `bluesky_link_authorization_statuses`
 
 - `pending`

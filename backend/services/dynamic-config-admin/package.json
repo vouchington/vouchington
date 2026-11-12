@@ -42,7 +42,6 @@
     "@services/app-attestation": "workspace:^",
     "@services/articles": "workspace:^",
     "@services/autotagger": "workspace:^",
-    "@services/bedrock-embeddings": "workspace:^",
     "@services/bloom-filter-config": "workspace:^",
     "@services/bluesky-follows": "workspace:^",
     "@services/bookmarks": "workspace:^",

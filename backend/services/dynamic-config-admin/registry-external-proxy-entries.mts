@@ -81,9 +81,6 @@ export const externalProxyDynamicConfigRegistryEntries = [
       stripe_enabled: {
         description: 'Routes Stripe calls through the API egress proxy.',
       },
-      bedrock_embeddings_enabled: {
-        description: 'Routes API-originated Bedrock embeddings through the API egress proxy.',
-      },
       gemini_embeddings_enabled: {
         description: 'Routes API-originated Vertex embeddings through the API egress proxy.',
       },

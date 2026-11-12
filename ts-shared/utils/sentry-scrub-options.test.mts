@@ -15,7 +15,6 @@ describe('Voucha credential scrubbing policy', () => {
   it('filters product credentials in request metadata and span headers', () => {
     const headers = {
       'x-cf-worker-secret': 'worker',
-      'x-bedrock-batch-shared-key': 'batch',
       'x-voucha-cache-purge-secret': 'purge',
       'x-app-attest-assertion': 'assertion',
       'x-app-attest-nonce': 'nonce',

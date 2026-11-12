@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { UnrecoverableError as GlideUnrecoverableError } from 'glide-mq'
-import { isBedrockRateLimitError, wrapHttpForRetry } from './index.mts'
+import { wrapHttpForRetry } from './index.mts'
 
 describe('queue error adapter', () => {
   it('preserves status, statusCode, and AWS metadata precedence for HTTP classification', () => {
@@ -40,29 +40,6 @@ describe('queue error adapter', () => {
 
     const missingStatus = new Error('network failure')
     expect(catchThrown(() => wrapHttpForRetry(missingStatus))).toBe(missingStatus)
-  })
-
-  it('recognizes Bedrock throttling from the provider error', () => {
-    const throttling = Object.assign(new Error('throttled'), { name: 'ThrottlingException' })
-
-    expect(isBedrockRateLimitError(throttling)).toBe(true)
-    expect(
-      isBedrockRateLimitError(
-        Object.assign(new Error('rate limited'), { $metadata: { httpStatusCode: 429 } }),
-      ),
-    ).toBe(true)
-    expect(
-      isBedrockRateLimitError(
-        Object.assign(new Error('rate limited'), {
-          status: 503,
-          $metadata: { httpStatusCode: 429 },
-        }),
-      ),
-    ).toBe(true)
-    expect(isBedrockRateLimitError(Object.assign(new Error('rate limited'), { status: 429 }))).toBe(
-      false,
-    )
-    expect(isBedrockRateLimitError({ name: 'ThrottlingException' })).toBe(false)
   })
 })
 

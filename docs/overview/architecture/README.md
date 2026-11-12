@@ -115,5 +115,3 @@ When architecture decisions change, update the relevant doc here and cross-link 
 - [TypeScript Standards reference](reference-typescript-standards-function-naming-prefixes.md)
 - [TypeScript Standards reference](reference-typescript-standards-third-party-type-declarations.md)
 - [TypeScript Standards reference](reference-typescript-standards-type-ownership-model.md)
-
-- [Bedrock embeddings](bedrock-embeddings.md)

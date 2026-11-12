@@ -142,9 +142,6 @@
         "web_push_subscriptions"
       ]
     },
-    "bedrock_embedding_batch_job_types": {
-      "values": ["topics", "posts", "rss_feed_items", "crawl_chunks", "images"]
-    },
     "bluesky_link_authorization_statuses": {
       "values": [
         "pending",
@@ -9442,824 +9439,6 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "bedrock_embedding_batch_entities": {
-      "checkConstraints": {
-        "chk_bedrock_embedding_batch_entities__entity_columns": {
-          "definition": "CHECK ((((entity_type = 'topics'::bedrock_embedding_batch_job_types) AND (topic_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NULL)) OR ((entity_type = 'posts'::bedrock_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NOT NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NULL)) OR ((entity_type = 'rss_feed_items'::bedrock_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NOT NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NULL)) OR ((entity_type = 'crawl_chunks'::bedrock_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NOT NULL) AND (crawl_order_index IS NOT NULL) AND (image_id IS NULL)) OR ((entity_type = 'images'::bedrock_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NOT NULL))))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "batch_id": {
-          "comment": "The batch job processing this entity.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "crawl_id": {
-          "comment": "Crawl containing the crawl chunk currently being processed in a Bedrock embeddings batch.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6
-        },
-        "crawl_order_index": {
-          "comment": "Order index of the crawl chunk currently being processed in a Bedrock embeddings batch.",
-          "dataType": "integer",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
-        },
-        "created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9
-        },
-        "entity_type": {
-          "comment": "The entity type being processed.",
-          "dataType": "bedrock_embedding_batch_job_types",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "image_id": {
-          "comment": "Image currently being processed in a Bedrock embeddings batch.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
-        },
-        "post_id": {
-          "comment": "Post currently being processed in a Bedrock embeddings batch.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4
-        },
-        "rss_feed_item_id": {
-          "comment": "RSS feed item currently being processed in a Bedrock embeddings batch.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5
-        },
-        "topic_id": {
-          "comment": "Topic currently being processed in a Bedrock embeddings batch.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3
-        },
-        "updated_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 10
-        }
-      },
-      "comment": "Lock table tracking which entities are currently being processed in a Bedrock embeddings batch.",
-      "foreignKeys": {
-        "bedrock_embedding_batch_entities_batch_id_fkey": {
-          "columns": ["batch_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "bedrock_embedding_batches",
-          "validated": true
-        },
-        "bedrock_embedding_batch_entities_image_id_fkey": {
-          "columns": ["image_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "images",
-          "validated": true
-        },
-        "bedrock_embedding_batch_entities_post_id_fkey": {
-          "columns": ["post_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "posts",
-          "validated": true
-        },
-        "bedrock_embedding_batch_entities_rss_feed_item_id_fkey": {
-          "columns": ["rss_feed_item_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "rss_feed_items",
-          "validated": true
-        },
-        "bedrock_embedding_batch_entities_topic_id_fkey": {
-          "columns": ["topic_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "topics",
-          "validated": true
-        },
-        "fk_bedrock_embedding_batch_entities__crawl_chunk": {
-          "columns": ["crawl_id", "crawl_order_index"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["crawl_id", "order_index"],
-          "referencedTable": "crawl_chunks",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "idx_bedrock_embedding_batch_entities__batch_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_embedding_batch_entities__batch_id ON public.bedrock_embedding_batch_entities USING btree (batch_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "batch_id",
-              "descending": false,
-              "expression": "batch_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batch_entities__crawl_chunk": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_bedrock_embedding_batch_entities__crawl_chunk ON public.bedrock_embedding_batch_entities USING btree (crawl_id, crawl_order_index) WHERE ((crawl_id IS NOT NULL) AND (crawl_order_index IS NOT NULL))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "crawl_id",
-              "descending": false,
-              "expression": "crawl_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "crawl_order_index",
-              "descending": false,
-              "expression": "crawl_order_index",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.int4_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((crawl_id IS NOT NULL) AND (crawl_order_index IS NOT NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batch_entities__crawl_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_embedding_batch_entities__crawl_id ON public.bedrock_embedding_batch_entities USING btree (crawl_id) WHERE (crawl_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "crawl_id",
-              "descending": false,
-              "expression": "crawl_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(crawl_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batch_entities__image": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_bedrock_embedding_batch_entities__image ON public.bedrock_embedding_batch_entities USING btree (image_id) WHERE (image_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "image_id",
-              "descending": false,
-              "expression": "image_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(image_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batch_entities__post": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_bedrock_embedding_batch_entities__post ON public.bedrock_embedding_batch_entities USING btree (post_id) WHERE (post_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(post_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batch_entities__rss_feed_item": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_bedrock_embedding_batch_entities__rss_feed_item ON public.bedrock_embedding_batch_entities USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(rss_feed_item_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batch_entities__topic": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_bedrock_embedding_batch_entities__topic ON public.bedrock_embedding_batch_entities USING btree (topic_id) WHERE (topic_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": null,
-      "relationKind": "table",
-      "triggers": {
-        "trigger_bedrock_embedding_batch_entities_updated_at": {
-          "definition": "CREATE TRIGGER trigger_bedrock_embedding_batch_entities_updated_at BEFORE UPDATE ON public.bedrock_embedding_batch_entities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
-      "uniqueConstraints": {}
-    },
-    "bedrock_embedding_batches": {
-      "checkConstraints": {
-        "chk_bedrock_embedding_batches__lifecycle": {
-          "definition": "CHECK ((((submitted_at IS NOT NULL) OR (num_nonnulls(in_progress_at, completed_at, failed_at, cancelled_at) = 0)) AND (num_nonnulls(completed_at, failed_at, cancelled_at) <= 1)))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "cancelled_at": {
-          "comment": "When the Bedrock job was Stopped before completion.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 15
-        },
-        "completed_at": {
-          "comment": "When the Bedrock job first reached a successful terminal status (Completed or PartiallyCompleted).",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 13
-        },
-        "crawl_id": {
-          "comment": "Optional crawl this batch was created for. Cleared before that crawl partition is dropped.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
-        },
-        "created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        },
-        "data": {
-          "comment": "JSONB batch document: status, model id, job ARN, S3 URIs, input size, and submission metadata.",
-          "dataType": "jsonb",
-          "defaultExpression": "'{}'::jsonb",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5
-        },
-        "failed_at": {
-          "comment": "When the Bedrock job terminated unsuccessfully (Failed or Expired).",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 14
-        },
-        "id": {
-          "comment": "UUIDv7 identifier of this Bedrock embedding batch.",
-          "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "in_progress_at": {
-          "comment": "When the Bedrock job first reported InProgress or Stopping.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12
-        },
-        "job_arn": {
-          "comment": "The Bedrock model invocation job ARN.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 2
-        },
-        "job_type": {
-          "comment": "Which entity type this batch processes.",
-          "dataType": "bedrock_embedding_batch_job_types",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        },
-        "model_id": {
-          "comment": "The Amazon Bedrock model id used for embeddings.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        },
-        "records": {
-          "comment": "Number of records in this batch.",
-          "dataType": "integer",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 8
-        },
-        "submitted_at": {
-          "comment": "When the Bedrock job was successfully submitted (Submitted/Validating/Scheduled).",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
-        },
-        "updated_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 10
-        },
-        "url_id": {
-          "comment": "Optional URL this batch was created for.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6
-        }
-      },
-      "comment": "Tracks Amazon Bedrock batch embedding jobs and their lifecycle.",
-      "foreignKeys": {
-        "bedrock_embedding_batches_crawl_id_fkey": {
-          "columns": ["crawl_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "crawls",
-          "validated": true
-        },
-        "bedrock_embedding_batches_url_id_fkey": {
-          "columns": ["url_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "urls",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "bedrock_embedding_batches_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX bedrock_embedding_batches_pkey ON public.bedrock_embedding_batches USING btree (id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batches__active": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_embedding_batches__active ON public.bedrock_embedding_batches USING btree (id) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batches__crawl_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_embedding_batches__crawl_id ON public.bedrock_embedding_batches USING btree (crawl_id) WHERE (crawl_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "crawl_id",
-              "descending": false,
-              "expression": "crawl_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(crawl_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batches__job_arn": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_bedrock_embedding_batches__job_arn ON public.bedrock_embedding_batches USING btree (job_arn) WHERE (job_arn IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "job_arn",
-              "descending": false,
-              "expression": "job_arn",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(job_arn IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batches__terminal_retention": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_embedding_batches__terminal_retention ON public.bedrock_embedding_batches USING btree (COALESCE(completed_at, failed_at, cancelled_at), id) WHERE ((completed_at IS NOT NULL) OR (failed_at IS NOT NULL) OR (cancelled_at IS NOT NULL))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": null,
-              "descending": false,
-              "expression": "COALESCE(completed_at, failed_at, cancelled_at)",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((completed_at IS NOT NULL) OR (failed_at IS NOT NULL) OR (cancelled_at IS NOT NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batches__url_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_embedding_batches__url_id ON public.bedrock_embedding_batches USING btree (url_id) WHERE (url_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "url_id",
-              "descending": false,
-              "expression": "url_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(url_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"]
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_bedrock_embedding_batches_guard_terminal_lifecycle": {
-          "definition": "CREATE TRIGGER trigger_bedrock_embedding_batches_guard_terminal_lifecycle BEFORE UPDATE ON public.bedrock_embedding_batches FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at', 'cancelled_at')"
-        },
-        "trigger_bedrock_embedding_batches_updated_at": {
-          "definition": "CREATE TRIGGER trigger_bedrock_embedding_batches_updated_at BEFORE UPDATE ON public.bedrock_embedding_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
-      "uniqueConstraints": {}
-    },
-    "bedrock_nova_multimodal_v1_embeddings": {
-      "checkConstraints": {
-        "bedrock_nova_multimodal_v1_embeddings_content_sha256_check": {
-          "definition": "CHECK ((octet_length(content_sha256) = 32))",
-          "validated": true
-        },
-        "bedrock_nova_multimodal_v1_embeddings_input_token_count_check": {
-          "definition": "CHECK (((input_token_count IS NULL) OR (input_token_count >= 0)))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "content_sha256": {
-          "comment": "SHA-256 of the input content. Primary key for deduplication.",
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        },
-        "embedding": {
-          "comment": "1024-dimensional vector from Amazon Nova 2 Multimodal Embeddings V1.",
-          "dataType": "vector(1024)",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "input_token_count": {
-          "comment": "Number of tokens Bedrock consumed for this content. NULL until first embedded; populated on insert and backfilled on cache hits.",
-          "dataType": "integer",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3
-        },
-        "updated_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5
-        }
-      },
-      "comment": "Centralized lookup table for Amazon Nova multimodal text vectors, keyed by content hash.",
-      "foreignKeys": {},
-      "indexes": {
-        "bedrock_nova_multimodal_v1_embeddings_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX bedrock_nova_multimodal_v1_embeddings_pkey ON public.bedrock_nova_multimodal_v1_embeddings USING btree (content_sha256)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "content_sha256",
-              "descending": false,
-              "expression": "content_sha256",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bytea_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash ON public.bedrock_nova_multimodal_v1_embeddings USING btree (updated_at, encode(content_sha256, 'hex'::text))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "updated_at",
-              "descending": false,
-              "expression": "updated_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": null,
-              "descending": false,
-              "expression": "encode(content_sha256, 'hex'::text)",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["content_sha256"]
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_bedrock_nova_multimodal_v1_embeddings_updated_at": {
-          "definition": "CREATE TRIGGER trigger_bedrock_nova_multimodal_v1_embeddings_updated_at BEFORE UPDATE ON public.bedrock_nova_multimodal_v1_embeddings FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
       "uniqueConstraints": {}
     },
     "blocklisted_domains": {
@@ -51539,18 +50718,6 @@
     },
     "crawl_chunks": {
       "checkConstraints": {
-        "crawl_chunks_bedrock_nova_multimodal_v1_content_sha256_check": {
-          "definition": "CHECK ((octet_length(bedrock_nova_multimodal_v1_content_sha256) = 32))",
-          "validated": true
-        },
-        "crawl_chunks_bedrock_nova_multimodal_v1_input_sha256_check": {
-          "definition": "CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))",
-          "validated": true
-        },
-        "crawl_chunks_bedrock_nova_multimodal_v1_input_token_count_check": {
-          "definition": "CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))",
-          "validated": true
-        },
         "crawl_chunks_gemini_embedding_2_content_sha256_check": {
           "definition": "CHECK ((octet_length(gemini_embedding_2_content_sha256) = 32))",
           "validated": true
@@ -51565,56 +50732,6 @@
         }
       },
       "columns": {
-        "bedrock_nova_multimodal_v1_content_sha256": {
-          "comment": null,
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5
-        },
-        "bedrock_nova_multimodal_v1_embedding": {
-          "comment": null,
-          "dataType": "vector(1024)",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
-        },
-        "bedrock_nova_multimodal_v1_embedding_created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
-        },
-        "bedrock_nova_multimodal_v1_input_sha256": {
-          "comment": null,
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6
-        },
-        "bedrock_nova_multimodal_v1_input_token_count": {
-          "comment": null,
-          "dataType": "integer",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        },
         "crawl_id": {
           "comment": "The crawl this chunk was extracted from.",
           "dataType": "uuid",
@@ -51633,7 +50750,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15
+          "ordinalPosition": 10
         },
         "gemini_embedding_2_content_sha256": {
           "comment": null,
@@ -51643,7 +50760,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 5
         },
         "gemini_embedding_2_embedding": {
           "comment": null,
@@ -51653,7 +50770,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 7
         },
         "gemini_embedding_2_embedding_created_at": {
           "comment": null,
@@ -51663,7 +50780,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 8
         },
         "gemini_embedding_2_input_sha256": {
           "comment": null,
@@ -51673,7 +50790,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 6
         },
         "gemini_embedding_2_input_token_count": {
           "comment": null,
@@ -51683,7 +50800,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 9
         },
         "markdown": {
           "comment": "The markdown content of this chunk.",
@@ -51723,7 +50840,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16
+          "ordinalPosition": 11
         }
       },
       "comment": "Chunked content from crawls for embedding and search. RANGE-partitioned by crawl_id.",
@@ -51768,52 +50885,6 @@
           "primary": true,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_crawl_chunks__bedrock_nova_multimodal_v1_embedding": {
-          "accessMethod": "hnsw",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crawl_chunks__bedrock_nova_multimodal_v1_embedding ON ONLY public.crawl_chunks USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "bedrock_nova_multimodal_v1_embedding",
-              "descending": false,
-              "expression": "bedrock_nova_multimodal_v1_embedding",
-              "nullsFirst": false,
-              "opclass": "public.vector_cosine_ops",
-              "orderingSupported": false
-            }
-          ],
-          "live": true,
-          "predicate": "(bedrock_nova_multimodal_v1_embedding IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256 ON ONLY public.crawl_chunks USING btree (bedrock_nova_multimodal_v1_input_sha256) WHERE (bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "bedrock_nova_multimodal_v1_input_sha256",
-              "descending": false,
-              "expression": "bedrock_nova_multimodal_v1_input_sha256",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bytea_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_crawl_chunks__embedding_pending": {
@@ -60937,26 +60008,6 @@
         }
       },
       "columns": {
-        "bedrock_nova_multimodal_v1_embedding": {
-          "comment": "1024-dimensional vector from Amazon Nova 2 Multimodal Embeddings V1 for the image.",
-          "dataType": "vector(1024)",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 24
-        },
-        "bedrock_nova_multimodal_v1_embedding_created_at": {
-          "comment": "When the image embedding was generated.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 25
-        },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -61035,7 +60086,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 24
         },
         "gemini_embedding_2_embedding_created_at": {
           "comment": "When the image embedding was generated.",
@@ -61045,7 +60096,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27
+          "ordinalPosition": 25
         },
         "id": {
           "comment": "Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.",
@@ -61263,29 +60314,6 @@
           ],
           "live": true,
           "predicate": "((upload_staged_at IS NOT NULL) AND (deleted_at IS NULL) AND (upload_completed_at IS NULL) AND (upload_failed_at IS NULL) AND (NOT ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_images__bedrock_nova_multimodal_v1_embedding": {
-          "accessMethod": "hnsw",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_images__bedrock_nova_multimodal_v1_embedding ON public.images USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "bedrock_nova_multimodal_v1_embedding",
-              "descending": false,
-              "expression": "bedrock_nova_multimodal_v1_embedding",
-              "nullsFirst": false,
-              "opclass": "public.vector_cosine_ops",
-              "orderingSupported": false
-            }
-          ],
-          "live": true,
-          "predicate": "(bedrock_nova_multimodal_v1_embedding IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -99251,18 +98279,6 @@
           "definition": "CHECK (((ban_evasion_post_embedding_input_sha256 IS NULL) OR (octet_length(ban_evasion_post_embedding_input_sha256) = 32)))",
           "validated": true
         },
-        "posts_bedrock_nova_multimodal_v1_content_sha256_check": {
-          "definition": "CHECK ((octet_length(bedrock_nova_multimodal_v1_content_sha256) = 32))",
-          "validated": true
-        },
-        "posts_bedrock_nova_multimodal_v1_input_sha256_check": {
-          "definition": "CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))",
-          "validated": true
-        },
-        "posts_bedrock_nova_multimodal_v1_input_token_count_check": {
-          "definition": "CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))",
-          "validated": true
-        },
         "posts_check": {
           "definition": "CHECK ((((title IS NOT NULL) AND (title <> ''::text)) OR ((markdown IS NOT NULL) AND (markdown <> ''::text)) OR ((ai_summary_markdown IS NOT NULL) AND (ai_summary_markdown <> ''::text))))",
           "validated": true
@@ -99413,57 +98429,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 62
-        },
-        "bedrock_nova_multimodal_v1_content_sha256": {
-          "comment": null,
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 52
-        },
-        "bedrock_nova_multimodal_v1_embedding": {
-          "comment": null,
-          "dataType": "vector(1024)",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 54
-        },
-        "bedrock_nova_multimodal_v1_embedding_created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 55
-        },
-        "bedrock_nova_multimodal_v1_input_sha256": {
-          "comment": null,
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 53
-        },
-        "bedrock_nova_multimodal_v1_input_token_count": {
-          "comment": null,
-          "dataType": "integer",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 56
+          "ordinalPosition": 57
         },
         "broadcast": {
           "comment": "Audience for this post: everyone, users, followers, or mutual_followers.",
@@ -99633,7 +98599,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 57
+          "ordinalPosition": 52
         },
         "gemini_embedding_2_embedding": {
           "comment": null,
@@ -99643,7 +98609,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 59
+          "ordinalPosition": 54
         },
         "gemini_embedding_2_embedding_created_at": {
           "comment": null,
@@ -99653,7 +98619,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 60
+          "ordinalPosition": 55
         },
         "gemini_embedding_2_input_sha256": {
           "comment": null,
@@ -99663,7 +98629,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 58
+          "ordinalPosition": 53
         },
         "gemini_embedding_2_input_token_count": {
           "comment": null,
@@ -99673,7 +98639,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 61
+          "ordinalPosition": 56
         },
         "has_creation_moderation_bypass": {
           "comment": "Whether an administrator explicitly bypassed creation moderation; remains true after later resets.",
@@ -99783,7 +98749,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 63
+          "ordinalPosition": 58
         },
         "markdown": {
           "comment": "Post body in markdown format.",
@@ -99853,7 +98819,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 64
+          "ordinalPosition": 59
         },
         "structured_data": {
           "comment": "Structured JSONB payload for data point posts. Schema is determined by data_point_vertical.",
@@ -100202,75 +99168,6 @@
           ],
           "live": true,
           "predicate": "((community_id IS NOT NULL) AND (created_by_id IS NOT NULL) AND (created_by_id <> '00000000-0000-7000-8000-000000000000'::uuid) AND (deleted_at IS NULL) AND (gemini_embedding_2_embedding IS NOT NULL) AND (gemini_embedding_2_embedding_created_at IS NOT NULL) AND (gemini_embedding_2_input_sha256 = gemini_embedding_2_content_sha256) AND ((ban_evasion_post_embedding_input_sha256 IS NULL) OR (ban_evasion_post_embedding_input_sha256 <> gemini_embedding_2_input_sha256)))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_posts__bedrock_nova_multimodal_v1_embedding": {
-          "accessMethod": "hnsw",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__bedrock_nova_multimodal_v1_embedding ON ONLY public.posts USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "bedrock_nova_multimodal_v1_embedding",
-              "descending": false,
-              "expression": "bedrock_nova_multimodal_v1_embedding",
-              "nullsFirst": false,
-              "opclass": "public.vector_cosine_ops",
-              "orderingSupported": false
-            }
-          ],
-          "live": true,
-          "predicate": "(bedrock_nova_multimodal_v1_embedding IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_posts__bedrock_nova_multimodal_v1_input_sha256": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__bedrock_nova_multimodal_v1_input_sha256 ON ONLY public.posts USING btree (bedrock_nova_multimodal_v1_input_sha256) WHERE (bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "bedrock_nova_multimodal_v1_input_sha256",
-              "descending": false,
-              "expression": "bedrock_nova_multimodal_v1_input_sha256",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bytea_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_posts__bedrock_nova_multimodal_v1_to_update": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__bedrock_nova_multimodal_v1_to_update ON ONLY public.posts USING btree (id) WHERE ((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -136783,10 +135680,6 @@
     },
     "rss_feed_items": {
       "checkConstraints": {
-        "chk_rss_feed_item__bedrock_nova_multimodal_v1_input_token_count": {
-          "definition": "CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))",
-          "validated": true
-        },
         "chk_rss_feed_item__gemini_embedding_2_input_token_count": {
           "definition": "CHECK (((gemini_embedding_2_input_token_count IS NULL) OR (gemini_embedding_2_input_token_count >= 0)))",
           "validated": true
@@ -136817,14 +135710,6 @@
         },
         "chk_rss_feed_items_votes_snapshot_complete": {
           "definition": "CHECK ((((votes_snapshot_xmax IS NULL) AND (votes_snapshot_xip_count IS NULL)) OR ((votes_snapshot_xmax IS NOT NULL) AND (votes_snapshot_xip_count IS NOT NULL) AND (votes_snapshot_xip_count >= 0))))",
-          "validated": true
-        },
-        "rss_feed_items_bedrock_nova_multimodal_v1_content_sha256_check": {
-          "definition": "CHECK ((octet_length(bedrock_nova_multimodal_v1_content_sha256) = 32))",
-          "validated": true
-        },
-        "rss_feed_items_bedrock_nova_multimodal_v1_input_sha256_check": {
-          "definition": "CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))",
           "validated": true
         },
         "rss_feed_items_duration_seconds_check": {
@@ -136873,56 +135758,6 @@
         }
       },
       "columns": {
-        "bedrock_nova_multimodal_v1_content_sha256": {
-          "comment": null,
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 13
-        },
-        "bedrock_nova_multimodal_v1_embedding": {
-          "comment": null,
-          "dataType": "vector(1024)",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 15
-        },
-        "bedrock_nova_multimodal_v1_embedding_created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 16
-        },
-        "bedrock_nova_multimodal_v1_input_sha256": {
-          "comment": null,
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 14
-        },
-        "bedrock_nova_multimodal_v1_input_token_count": {
-          "comment": null,
-          "dataType": "integer",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 17
-        },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -136931,7 +135766,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 19
         },
         "data": {
           "comment": "Raw JSONB dump of the parsed feed item data.",
@@ -136951,7 +135786,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 20
         },
         "duration_seconds": {
           "comment": "Duration of audio/video content in seconds.",
@@ -136961,7 +135796,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 26
         },
         "enclosure_length": {
           "comment": "File size of the enclosure in bytes.",
@@ -136971,7 +135806,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 25
         },
         "enclosure_media_type_id": {
           "comment": "MIME type of the enclosure (e.g. audio/mpeg).",
@@ -136981,7 +135816,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 24
         },
         "enclosure_url": {
           "comment": "URL of the media enclosure (podcast audio, video file).",
@@ -136991,7 +135826,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 23
         },
         "gemini_embedding_2_content_sha256": {
           "comment": null,
@@ -137001,7 +135836,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18
+          "ordinalPosition": 13
         },
         "gemini_embedding_2_embedding": {
           "comment": null,
@@ -137011,7 +135846,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 15
         },
         "gemini_embedding_2_embedding_created_at": {
           "comment": null,
@@ -137021,7 +135856,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 16
         },
         "gemini_embedding_2_input_sha256": {
           "comment": null,
@@ -137031,7 +135866,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 14
         },
         "gemini_embedding_2_input_token_count": {
           "comment": null,
@@ -137041,7 +135876,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 17
         },
         "has_hacker_news_references": {
           "comment": "Whether the item has a qualifying Hacker News reference, maintained asynchronously.",
@@ -137071,7 +135906,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36
+          "ordinalPosition": 31
         },
         "lingua_rs_detected_at": {
           "comment": null,
@@ -137081,7 +135916,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39
+          "ordinalPosition": 34
         },
         "lingua_rs_detected_language": {
           "comment": null,
@@ -137091,7 +135926,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35
+          "ordinalPosition": 30
         },
         "lingua_rs_input_sha256": {
           "comment": null,
@@ -137101,7 +135936,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37
+          "ordinalPosition": 32
         },
         "lingua_rs_results": {
           "comment": null,
@@ -137111,7 +135946,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38
+          "ordinalPosition": 33
         },
         "media_type": {
           "comment": "Content type: article, audio, or video.",
@@ -137121,7 +135956,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 22
         },
         "published_at": {
           "comment": "Computed publication timestamp: earliest of feed dates and fetch time.",
@@ -137131,7 +135966,7 @@
           "generatedExpression": "LEAST(COALESCE(fn_text_to_timestamptz((data ->> 'isoDate'::text)), 'infinity'::timestamp with time zone), COALESCE(fn_text_to_timestamptz((data ->> 'pubDate'::text)), 'infinity'::timestamp with time zone), uuid_extract_timestamp(id))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44
+          "ordinalPosition": 39
         },
         "search_vector": {
           "comment": null,
@@ -137141,7 +135976,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 18
         },
         "story_id": {
           "comment": "FK to the story this item belongs to.",
@@ -137151,7 +135986,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40
+          "ordinalPosition": 35
         },
         "story_locked_at": {
           "comment": "When set by admin, auto-clustering will not override the story assignment.",
@@ -137161,7 +135996,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41
+          "ordinalPosition": 36
         },
         "thumbnail_url": {
           "comment": "URL of a thumbnail image for the item.",
@@ -137171,7 +136006,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 27
         },
         "updated_at": {
           "comment": null,
@@ -137181,7 +136016,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 21
         },
         "url_id": {
           "comment": "The canonical URL for this feed item.",
@@ -137201,7 +136036,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33
+          "ordinalPosition": 28
         },
         "video_platform": {
           "comment": "Video hosting platform name (e.g. youtube).",
@@ -137211,7 +136046,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34
+          "ordinalPosition": 29
         },
         "votes_count_down": {
           "comment": null,
@@ -137301,7 +136136,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43
+          "ordinalPosition": 38
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -137311,7 +136146,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42
+          "ordinalPosition": 37
         }
       },
       "comment": "Partitioned RSS feed item content keyed by rss_feed_item_guids.id.",
@@ -137358,75 +136193,6 @@
         }
       },
       "indexes": {
-        "idx_rss_feed_items__bedrock_nova_multimodal_v1_embedding": {
-          "accessMethod": "hnsw",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_items__bedrock_nova_multimodal_v1_embedding ON ONLY public.rss_feed_items USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "bedrock_nova_multimodal_v1_embedding",
-              "descending": false,
-              "expression": "bedrock_nova_multimodal_v1_embedding",
-              "nullsFirst": false,
-              "opclass": "public.vector_cosine_ops",
-              "orderingSupported": false
-            }
-          ],
-          "live": true,
-          "predicate": "(bedrock_nova_multimodal_v1_embedding IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_rss_feed_items__bedrock_nova_multimodal_v1_input_sha256": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_items__bedrock_nova_multimodal_v1_input_sha256 ON ONLY public.rss_feed_items USING btree (bedrock_nova_multimodal_v1_input_sha256) WHERE (bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "bedrock_nova_multimodal_v1_input_sha256",
-              "descending": false,
-              "expression": "bedrock_nova_multimodal_v1_input_sha256",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bytea_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_rss_feed_items__bedrock_nova_multimodal_v1_to_update": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_items__bedrock_nova_multimodal_v1_to_update ON ONLY public.rss_feed_items USING btree (id) WHERE ((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_rss_feed_items__embedding_candidates__published_at__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -150639,18 +149405,6 @@
           "definition": "CHECK ((((votes_snapshot_xmax IS NULL) AND (votes_snapshot_xip_count IS NULL)) OR ((votes_snapshot_xmax IS NOT NULL) AND (votes_snapshot_xip_count IS NOT NULL) AND (votes_snapshot_xip_count >= 0))))",
           "validated": true
         },
-        "topics_bedrock_nova_multimodal_v1_content_sha256_check": {
-          "definition": "CHECK ((octet_length(bedrock_nova_multimodal_v1_content_sha256) = 32))",
-          "validated": true
-        },
-        "topics_bedrock_nova_multimodal_v1_input_sha256_check": {
-          "definition": "CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))",
-          "validated": true
-        },
-        "topics_bedrock_nova_multimodal_v1_input_token_count_check": {
-          "definition": "CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))",
-          "validated": true
-        },
         "topics_created_via_oauth_client_id_check": {
           "definition": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
           "validated": true
@@ -150710,56 +149464,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 7
-        },
-        "bedrock_nova_multimodal_v1_content_sha256": {
-          "comment": null,
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 36
-        },
-        "bedrock_nova_multimodal_v1_embedding": {
-          "comment": null,
-          "dataType": "vector(1024)",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 38
-        },
-        "bedrock_nova_multimodal_v1_embedding_created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 39
-        },
-        "bedrock_nova_multimodal_v1_input_sha256": {
-          "comment": null,
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 37
-        },
-        "bedrock_nova_multimodal_v1_input_token_count": {
-          "comment": null,
-          "dataType": "integer",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 40
         },
         "content_updated_at": {
           "comment": "Timestamp of the latest administrator-authored name or markdown revision, retained independently of revision history.",
@@ -150849,7 +149553,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 41
+          "ordinalPosition": 36
         },
         "gemini_embedding_2_embedding": {
           "comment": null,
@@ -150859,7 +149563,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43
+          "ordinalPosition": 38
         },
         "gemini_embedding_2_embedding_created_at": {
           "comment": null,
@@ -150869,7 +149573,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44
+          "ordinalPosition": 39
         },
         "gemini_embedding_2_input_sha256": {
           "comment": null,
@@ -150879,7 +149583,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42
+          "ordinalPosition": 37
         },
         "gemini_embedding_2_input_token_count": {
           "comment": null,
@@ -150889,7 +149593,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45
+          "ordinalPosition": 40
         },
         "hero_image_id": {
           "comment": "Hero/banner image for the topic, displayed prominently on the topic page.",
@@ -150949,7 +149653,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50
+          "ordinalPosition": 45
         },
         "lingua_rs_detected_at": {
           "comment": null,
@@ -150959,7 +149663,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53
+          "ordinalPosition": 48
         },
         "lingua_rs_detected_language": {
           "comment": null,
@@ -150969,7 +149673,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49
+          "ordinalPosition": 44
         },
         "lingua_rs_input_sha256": {
           "comment": null,
@@ -150979,7 +149683,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 51
+          "ordinalPosition": 46
         },
         "lingua_rs_results": {
           "comment": null,
@@ -150989,7 +149693,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 52
+          "ordinalPosition": 47
         },
         "logo_image_id": {
           "comment": "Reference to the topic's logo image.",
@@ -151059,7 +149763,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48
+          "ordinalPosition": 43
         },
         "rewards_program_topic_id": {
           "comment": "The rewards program this topic is associated with. Any topic type can link to a rewards program.",
@@ -151069,7 +149773,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47
+          "ordinalPosition": 42
         },
         "search_vector": {
           "comment": null,
@@ -151079,7 +149783,7 @@
           "generatedExpression": "(((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(fn_immutable_array_to_string(aliases, ' '::text), ''::text)), 'B'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'D'::\"char\"))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46
+          "ordinalPosition": 41
         },
         "should_allow_reviews": {
           "comment": "When false, reviews cannot be created for this topic and review UI is hidden (e.g. private individuals). Replaced the former person topic type.",
@@ -151348,75 +150052,6 @@
         }
       },
       "indexes": {
-        "idx_topics__bedrock_nova_multimodal_v1_embedding": {
-          "accessMethod": "hnsw",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__bedrock_nova_multimodal_v1_embedding ON public.topics USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "bedrock_nova_multimodal_v1_embedding",
-              "descending": false,
-              "expression": "bedrock_nova_multimodal_v1_embedding",
-              "nullsFirst": false,
-              "opclass": "public.vector_cosine_ops",
-              "orderingSupported": false
-            }
-          ],
-          "live": true,
-          "predicate": "(bedrock_nova_multimodal_v1_embedding IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_topics__bedrock_nova_multimodal_v1_input_sha256": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__bedrock_nova_multimodal_v1_input_sha256 ON public.topics USING btree (bedrock_nova_multimodal_v1_input_sha256) WHERE (bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "bedrock_nova_multimodal_v1_input_sha256",
-              "descending": false,
-              "expression": "bedrock_nova_multimodal_v1_input_sha256",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bytea_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_topics__bedrock_nova_multimodal_v1_to_update": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__bedrock_nova_multimodal_v1_to_update ON public.topics USING btree (id) WHERE ((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_topics__content_updated_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,

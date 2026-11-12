@@ -1,4 +1,3 @@
-import { isRetainedBedrockJob } from './bedrock-retained-handlers.mts'
 import type { BatchJobType } from '@services/embeddings/batch/types'
 import type { CpuJob, LanguageBackfillJob, LanguageDetectionJob } from './job-types.mts'
 
@@ -60,7 +59,6 @@ const LANGUAGE_BACKFILL = new Set([
 
 /** Selects the production runner before reading a job payload. */
 export function resolveCpuJobRoute(name: string): string | undefined {
-  if (isRetainedBedrockJob(name)) return 'retained-bedrock'
   if (name === 'crawl.crawl_url') return 'crawler'
   if (CRAWL_DISPATCH.has(name)) return 'crawl-dispatch'
   if (CRAWL_REFERRAL.has(name)) return 'crawl-referral'

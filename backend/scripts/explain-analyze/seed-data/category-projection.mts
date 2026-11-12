@@ -23,8 +23,8 @@ export async function seedCategoryProjection(): Promise<string> {
         ON CONFLICT (url_hostname_id, guid) DO UPDATE SET guid = EXCLUDED.guid
         RETURNING id
       ), items AS (
-        INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-        SELECT id, $3::uuid, '{}'::jsonb, $4::bytea , $4::bytea FROM identities
+        INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256)
+        SELECT id, $3::uuid, '{}'::jsonb, $4::bytea FROM identities
         ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data
         RETURNING id
       )

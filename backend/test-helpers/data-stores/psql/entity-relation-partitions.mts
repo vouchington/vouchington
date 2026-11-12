@@ -90,8 +90,8 @@ export async function createTopicForRelationPartitionTest(
 ): Promise<string> {
   const { rows } = await write(
     sql`/* createTopicForRelationPartitionTest */
-    INSERT INTO topics (name, slug, created_by_id, topic_type, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
-    VALUES (${topicName}, ${topicSlug}, ${userId}, 'topic', ${sha256}, 'system', ${sha256})
+    INSERT INTO topics (name, slug, created_by_id, topic_type, gemini_embedding_2_content_sha256, created_via)
+    VALUES (${topicName}, ${topicSlug}, ${userId}, 'topic', ${sha256}, 'system')
     RETURNING id
   `,
   )

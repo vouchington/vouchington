@@ -1,37 +1,4 @@
 {
   "version": 1,
-  "findings": [
-    {
-      "category": "unused-file",
-      "path": "backend/queues/bedrock-embeddings/enqueues.mts",
-      "parent": "",
-      "name": "",
-      "symbolKind": "",
-      "count": 1
-    },
-    {
-      "category": "unused-file",
-      "path": "backend/queues/bedrock-embeddings/types.mts",
-      "parent": "",
-      "name": "",
-      "symbolKind": "",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "backend/services/bedrock-embeddings-batch/entities/rss-feed-items.mts",
-      "parent": "",
-      "name": "PendingRssFeedItem",
-      "symbolKind": "typeAlias",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "backend/services/bedrock-embeddings-batch/entities/topics.mts",
-      "parent": "",
-      "name": "PendingTopic",
-      "symbolKind": "typeAlias",
-      "count": 1
-    }
-  ]
+  "findings": []
 }

@@ -17,8 +17,8 @@ export async function createEmbeddingCacheApplicationFixture(
     `/* createEmbeddingCacheApplicationTopic */
     INSERT INTO topics (name, slug, created_by_id, created_via,
       gemini_embedding_2_content_sha256, gemini_embedding_2_input_sha256,
-      gemini_embedding_2_embedding, gemini_embedding_2_input_token_count, bedrock_nova_multimodal_v1_content_sha256)
-    VALUES ($1, $1, $2, 'system', $3, $4, $5, 7, $3) RETURNING id`,
+      gemini_embedding_2_embedding, gemini_embedding_2_input_token_count)
+    VALUES ($1, $1, $2, 'system', $3, $4, $5, 7) RETURNING id`,
     [
       randomUUID(),
       users[0]!.id,

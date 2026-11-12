@@ -23,7 +23,7 @@ export function buildUpsertRssFeedItemsQuery(
         thumbnail_url,
         video_id,
         video_platform
-      , bedrock_nova_multimodal_v1_content_sha256)
+      )
       SELECT
         input.id,
         input.url_id,
@@ -37,7 +37,7 @@ export function buildUpsertRssFeedItemsQuery(
         input.thumbnail_url,
         input.video_id,
         input.video_platform
-      , input.gemini_embedding_2_content_sha256 FROM unnest(
+      FROM unnest(
         $1::uuid[], $2::uuid[], $3::jsonb[], $4::bytea[], $5::rss_feed_item_media_types[],
         $6::text[], $7::bigint[], $8::bigint[], $9::integer[], $10::text[], $11::text[], $12::text[]
       ) AS input(
@@ -51,7 +51,6 @@ export function buildUpsertRssFeedItemsQuery(
         url_id = EXCLUDED.url_id,
         data = EXCLUDED.data,
         gemini_embedding_2_content_sha256 = EXCLUDED.gemini_embedding_2_content_sha256,
-        bedrock_nova_multimodal_v1_content_sha256 = EXCLUDED.gemini_embedding_2_content_sha256,
         media_type = EXCLUDED.media_type,
         enclosure_url = EXCLUDED.enclosure_url,
         enclosure_media_type_id = EXCLUDED.enclosure_media_type_id,

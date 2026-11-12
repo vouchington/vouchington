@@ -82,9 +82,9 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
       CURRENT_TIMESTAMP
     )
   )
-  INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256, gemini_embedding_2_input_sha256, gemini_embedding_2_embedding, gemini_embedding_2_embedding_created_at, bedrock_nova_multimodal_v1_content_sha256)
+  INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256, gemini_embedding_2_input_sha256, gemini_embedding_2_embedding, gemini_embedding_2_embedding_created_at)
   SELECT identity.id, seeded.url_id, seeded.data, seeded.content_sha256, seeded.input_sha256, seeded.embedding, seeded.embedding_created_at
-  , seeded.content_sha256 FROM seeded
+  FROM seeded
   JOIN rss_feed_item_guids identity USING (url_hostname_id, guid)
   ON CONFLICT (id) DO UPDATE SET
     url_id = EXCLUDED.url_id,

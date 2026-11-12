@@ -105,7 +105,6 @@ export const createCrawlChunks = async (
       $${embeddingValues.push(i)},
       $${embeddingValues.push(content)},
       $${embeddingValues.push(contentSha256)},
-      $${embeddingValues.push(contentSha256)},
       ${existingEmbedding ? `$${embeddingValues.push(contentSha256)}` : 'NULL'},
       ${existingEmbedding ? `$${embeddingValues.push(pgvector.toSql(existingEmbedding.embedding))}` : 'NULL'},
       ${existingEmbedding ? `$${embeddingValues.push(existingEmbedding.created_at)}` : 'NULL'}
@@ -121,7 +120,6 @@ export const createCrawlChunks = async (
       order_index,
       markdown,
       gemini_embedding_2_content_sha256,
-      bedrock_nova_multimodal_v1_content_sha256,
       gemini_embedding_2_input_sha256,
       gemini_embedding_2_embedding,
       gemini_embedding_2_embedding_created_at

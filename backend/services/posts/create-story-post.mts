@@ -52,7 +52,7 @@ export async function insertStoryPostRecord(
       llm_moderation_content_sha256,
       created_via,
       created_via_oauth_client_id
-    , bedrock_nova_multimodal_v1_content_sha256)
+    )
     SELECT
       'story',
       ${input.title},
@@ -66,7 +66,7 @@ export async function insertStoryPostRecord(
       ${input.moderationContentSha},
       ${SYSTEM_PROVENANCE.createdVia},
       ${SYSTEM_PROVENANCE.oauthClientId}
-    , ${input.embeddingContentSha} FROM users author
+    FROM users author
     WHERE author.id = ${input.createdById} AND author.deleted_at IS NULL
       AND author.platform_account_kind = 'system'
     RETURNING id, title, markdown, ai_summary_markdown, broadcast, privacy, is_anonymous, structured_data,

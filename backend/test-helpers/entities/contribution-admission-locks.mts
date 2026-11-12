@@ -13,10 +13,10 @@ export async function insertContributionAdmissionFkLockedTopicForTest(
     INSERT INTO topics (
       name, slug, created_by_id, gemini_embedding_2_content_sha256,
       created_via
-    , bedrock_nova_multimodal_v1_content_sha256) VALUES (
+    ) VALUES (
       ${randomUUID()}, ${randomUUID()}, ${actorId}, ${`\\x${'0'.repeat(64)}`},
       'system'
-    , ${`\\x${'0'.repeat(64)}`})
+    )
     RETURNING id`)
   const topicId = result.rows[0]?.id
   if (!topicId) throw new Error('Test contribution admission topic was not created')

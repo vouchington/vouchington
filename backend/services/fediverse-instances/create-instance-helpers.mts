@@ -68,11 +68,11 @@ async function createInstanceInTransaction(
         INSERT INTO topics (
           name, slug, topic_type, created_by_id, gemini_embedding_2_content_sha256,
           created_via, created_via_oauth_client_id
-        , bedrock_nova_multimodal_v1_content_sha256)
+        )
         VALUES (
           ${name}, ${slug}, 'fediverse_instance', ${createdById}, ${content_sha256},
           ${provenance.createdVia}, ${provenance.oauthClientId}
-        , ${content_sha256})
+        )
         RETURNING id
       `,
       options,

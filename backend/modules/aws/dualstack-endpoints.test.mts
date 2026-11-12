@@ -6,12 +6,9 @@ import {
   AWS_LONG_POLL_SOCKET_TIMEOUT_MS,
   AWS_SOCKET_TIMEOUT_MS,
 } from '@vouchington/aws/request-handler'
-import { BedrockControlClient } from './bedrock-control.mts'
-import { BedrockEmbeddingsClient } from './bedrock-runtime.mts'
 import { CloudWatchMetricsClient } from './cloudwatch.mts'
 import { FirehoseDeliveryClient } from './firehose.mts'
 import { S3ImagesClient, S3ImageUploadsClient } from './s3.mts'
-import { S3BedrockBatchClient } from './s3-bedrock-batch.mts'
 import { SESClient } from './ses.mts'
 import { SQSClient as LazySQSClient } from './sqs.mts'
 
@@ -29,7 +26,7 @@ describe('AWS client configuration', () => {
 
   afterEach(() => restoreCredentials())
 
-  it('selects dual-stack delivery clients and IPv4 Bedrock clients', async () => {
+  it('selects dual-stack delivery clients', async () => {
     for (const [client, useDualstackEndpoint] of [
       [CloudWatchMetricsClient, true],
       [FirehoseDeliveryClient, true],
@@ -37,8 +34,6 @@ describe('AWS client configuration', () => {
       [S3ImageUploadsClient, true],
       [SESClient, true],
       [LazySQSClient, true],
-      [BedrockControlClient, false],
-      [BedrockEmbeddingsClient, false],
     ] as const) {
       const config = client.config as EndpointProviderConfig
       await expect(config.useDualstackEndpoint()).resolves.toBe(useDualstackEndpoint)
@@ -47,13 +42,10 @@ describe('AWS client configuration', () => {
 
   it('configures production clients with the shared request bounds and long-poll policy', async () => {
     for (const [client, socketTimeout] of [
-      [BedrockControlClient, AWS_SOCKET_TIMEOUT_MS],
-      [BedrockEmbeddingsClient, AWS_SOCKET_TIMEOUT_MS],
       [CloudWatchMetricsClient, AWS_SOCKET_TIMEOUT_MS],
       [FirehoseDeliveryClient, AWS_SOCKET_TIMEOUT_MS],
       [S3ImagesClient, AWS_SOCKET_TIMEOUT_MS],
       [S3ImageUploadsClient, AWS_SOCKET_TIMEOUT_MS],
-      [S3BedrockBatchClient, AWS_SOCKET_TIMEOUT_MS],
       [SESClient, AWS_SOCKET_TIMEOUT_MS],
       [LazySQSClient, AWS_LONG_POLL_SOCKET_TIMEOUT_MS],
     ] as const) {
