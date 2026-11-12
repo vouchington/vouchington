@@ -31,7 +31,6 @@
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",
-    "@modules/aws": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

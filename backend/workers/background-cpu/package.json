@@ -44,7 +44,6 @@
     "@aws-sdk/client-bedrock": "^3.1165.0",
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-core": "workspace:^",
-    "@modules/aws": "workspace:^",
     "@queues/bedrock-embeddings-batch": "workspace:^",
     "@queues/crawl-referral-links": "workspace:^",
     "@queues/crawler": "workspace:^",

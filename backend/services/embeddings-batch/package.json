@@ -23,7 +23,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1164.0",
     "@data-stores/psql": "workspace:^",
     "@modules/api-egress-proxy": "workspace:^",
     "@modules/aws": "workspace:^",
@@ -41,7 +40,6 @@
     "@services/topics": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@vouchington/image-resize": "^0.2.0",
-    "@vouchington/utils": "^0.12.0",
     "pg-copy-streams": "^7.0.0"
   },
   "devDependencies": {

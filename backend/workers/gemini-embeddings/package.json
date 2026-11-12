@@ -19,7 +19,6 @@
   "dependencies": {
     "@queues/ai-agents": "workspace:^",
     "@queues/gemini-embeddings-batch": "workspace:^",
-    "@services/embeddings": "workspace:^",
     "@services/embeddings-batch": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",

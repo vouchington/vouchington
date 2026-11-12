@@ -977,9 +977,6 @@ importers:
       '@services/email-address-validator':
         specifier: workspace:^
         version: link:../services/email-address-validator
-      '@services/embeddings':
-        specifier: workspace:^
-        version: link:../services/embeddings
       '@services/embeddings-batch':
         specifier: workspace:^
         version: link:../services/embeddings-batch
@@ -1632,12 +1629,6 @@ importers:
       '@services/classifier-runs':
         specifier: workspace:^
         version: link:../../services/classifier-runs
-      '@services/embeddings':
-        specifier: workspace:^
-        version: link:../../services/embeddings
-      '@services/embeddings-batch':
-        specifier: workspace:^
-        version: link:../../services/embeddings-batch
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../../services/entity-listener-reconciliation
@@ -6890,27 +6881,15 @@ importers:
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
       '@vouchington/queue-errors':
         specifier: ^0.2.1
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
-      '@vouchington/utils':
-        specifier: ^0.12.0
-        version: 0.12.0
       google-auth-library:
         specifier: ^11.3.4
         version: 11.3.4(supports-color@10.2.2)
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
-      pgvector:
-        specifier: ^0.3.0
-        version: 0.3.1
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
       valkyries:
         specifier: ^0.15.0
         version: 0.15.0
@@ -6924,9 +6903,6 @@ importers:
 
   backend/services/embeddings-batch:
     dependencies:
-      '@aws-sdk/client-s3':
-        specifier: ^3.1164.0
-        version: 3.1164.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -6978,9 +6954,6 @@ importers:
       '@vouchington/image-resize':
         specifier: ^0.2.0
         version: 0.2.0(@types/node@26.6.6)
-      '@vouchington/utils':
-        specifier: ^0.12.0
-        version: 0.12.0
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
@@ -13828,9 +13801,6 @@ importers:
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../../data-stores/valkey-core
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings-batch
@@ -14584,9 +14554,6 @@ importers:
       '@queues/gemini-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/gemini-embeddings-batch
-      '@services/embeddings':
-        specifier: workspace:^
-        version: link:../../services/embeddings
       '@services/embeddings-batch':
         specifier: workspace:^
         version: link:../../services/embeddings-batch
@@ -14649,9 +14616,6 @@ importers:
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../../data-stores/valkey-core
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
