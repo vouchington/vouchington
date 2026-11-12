@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import {
   insertResolvedCopyrightEmailThreadReferences,
   resolveCopyrightEmailThreadTokenIds,
@@ -9,6 +8,7 @@ import {
   hasLiveCopyrightEmailSource,
   hasRetiredCopyrightEmailCaseLink,
 } from './email-thread-source.mts'
+import { throwIfCopyrightEmailThreadWriteConflict } from './email-thread-write-conflict.mts'
 
 /** Admit keyed reference facts before deriving a best-effort graph from committed facts. */
 export async function admitCopyrightEmailReferenceFacts(
@@ -31,7 +31,7 @@ export async function admitCopyrightEmailReferenceFacts(
   )
   await tokenTransaction.commit()
 
-  return await conflictOnSerializationFailure(async () => {
+  try {
     await using transaction = await beginTransaction({ serializable: true })
     if (!(await hasLiveCopyrightEmailSource(transaction, intakeId))) {
       await transaction.commit()
@@ -49,5 +49,8 @@ export async function admitCopyrightEmailReferenceFacts(
     )
     await transaction.commit()
     return true
-  }, 'Copyright email thread changed; retry')
+  } catch (err) {
+    throwIfCopyrightEmailThreadWriteConflict(err)
+    throw err
+  }
 }

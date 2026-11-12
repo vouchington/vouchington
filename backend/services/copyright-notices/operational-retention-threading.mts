@@ -4,6 +4,7 @@ import sql from 'sql-template-strings'
 import { copyrightOperationalThreadEligibleSql } from './operational-retention-thread-eligibility.mts'
 import { lockCopyrightThreadPreservationGate } from './operational-retention-thread-lock.mts'
 import { deleteCaseThreadPage, type ThreadPhase } from './operational-retention-thread-page.mts'
+import { isCopyrightEmailTokenGcConflict } from './operational-retention-token-gc.mts'
 import {
   advanceCopyrightThreadCaseCursor,
   resetCopyrightThreadRetentionCursor,
@@ -176,7 +177,7 @@ export async function sweepCopyrightCaseThreads(options: {
       // oxlint-disable-next-line no-await-in-loop -- each transaction advances the durable keyset.
       page = await sweepPage(now, cutoff, cutoffId, options.batchSize) // no-mistakes-disable-line query-reached-per-item: each fixed-budget transaction commits its durable cursor before the next page.
     } catch (err) {
-      if ((err as { code?: string } | null)?.code !== '40001') throw err
+      if (!isCopyrightEmailTokenGcConflict(err)) throw err
       // The aborted page did not advance its cursor. Let the next scheduled run resume it.
       return { scanned, deleted, hasMore: false }
     }

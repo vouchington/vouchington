@@ -70,7 +70,7 @@ export function afterNextPostgresCommitForTest(effect: () => void): () => void {
 export function afterPostgresTransactionQueryForTest(
   marker: string,
   matchesValues: (values: readonly unknown[]) => boolean,
-  effect: () => Promise<void>,
+  effect: (transaction: QueryExecutor) => Promise<void>,
 ): () => void {
   let applied = false
   return interceptPostgresTransactionsForTest(
@@ -83,7 +83,7 @@ export function afterPostgresTransactionQueryForTest(
           const values = typeof input === 'string' ? (parameters ?? []) : (input.values ?? [])
           if (!applied && text.includes(marker) && matchesValues(values)) {
             applied = true
-            await effect()
+            await effect(target)
           }
           return result
         },

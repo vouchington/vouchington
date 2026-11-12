@@ -2,6 +2,8 @@ import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { readCopyrightEmailPromotionEffects } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { seedTestCopyrightAncestorEdge } from '@voucha/test-helpers/copyright-operational-email-retention'
+import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
 import {
   copyrightEmailMessageId,
   copyrightEmailPromotionInput,
@@ -102,28 +104,29 @@ describe('copyright email promotion graph bound', () => {
   it('leaves every reply unlinked when a two-reply graph exceeds the cap', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()
-    const root = await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
+    const root = await createRetentionParsedEmail('graph-cap-root', { messageId })
     const replies = [
-      await recordThreadedCopyrightEmail({
+      await createRetentionParsedEmail('graph-cap-reply-one', {
         messageId: copyrightEmailMessageId(),
         replyReferences: [messageId],
       }),
-      await recordThreadedCopyrightEmail({
+      await createRetentionParsedEmail('graph-cap-reply-two', {
         messageId: copyrightEmailMessageId(),
         replyReferences: [messageId],
       }),
     ]
+    for (const reply of replies) await seedTestCopyrightAncestorEdge(reply.id, root.id)
     const restore = overrideDynamicConfigFieldsForTest(copyrightConfig, {
       emailThreadGraphMaxRows: 3,
     })
     const log = vi.spyOn(console, 'info').mockImplementation(() => {})
     try {
       const promoted = await promoteCopyrightEmailIntake(
-        await copyrightEmailPromotionInput(moderator, root.intakeId),
+        await copyrightEmailPromotionInput(moderator, root.id),
       )
       const queue = await searchCopyrightStaffEmailIntakes(moderator, {
         limit: 2,
-        intakeIds: replies.map(reply => reply.intakeId),
+        intakeIds: replies.map(reply => reply.id),
       })
       expect(queue.intakes.map(row => [row.linked_notice_id, row.review_path])).toEqual([
         [null, 'unresolved_thread'],

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import {
@@ -21,7 +22,11 @@ import { sweepCopyrightCaseThreads } from './operational-retention-threading.mts
 const DAY_MS = 24 * 60 * 60 * 1000
 
 function assertMappedSerializationConflict(err: unknown): void {
-  expect(err).toMatchObject({ status: 409, cause: { code: '40001' } })
+  expect(err).toMatchObject({
+    status: 409,
+    code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+    cause: { code: '40001' },
+  })
 }
 
 async function assertAbortedRetirementRun(

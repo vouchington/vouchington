@@ -5,7 +5,9 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   copyrightEmailTokenGcCutoffId,
   deleteOrphanCopyrightEmailThreadTokens,
+  isCopyrightEmailTokenGcConflict,
 } from './operational-retention-token-gc.mts'
+import { deleteAttemptBatch } from './operational-retention-attempt-batch.mts'
 import {
   deleteExpiredCopyrightGuestCapabilities,
   lockCopyrightGuestCapabilityCases,
@@ -24,52 +26,6 @@ const TABLES = {
 export type CopyrightOperationalSweepKind = keyof typeof TABLES
 
 const DAY_MS = 24 * 60 * 60 * 1000
-
-async function deleteAttemptBatch(
-  transaction: TransactionQuery,
-  kind: 'action_attempts' | 'delivery_attempts',
-  ids: readonly string[],
-  cutoff: Date,
-): Promise<number> {
-  const table = TABLES[kind]
-  const resultTable =
-    kind === 'action_attempts'
-      ? 'copyright_notice_action_attempt_results'
-      : 'copyright_notice_delivery_attempt_results'
-  const terminalAt =
-    kind === 'action_attempts'
-      ? 'COALESCE(result.completed_at, result.stale_at, result.blocked_at, result.failed_at, result.abandoned_at)'
-      : 'COALESCE(result.sent_at, result.failed_at, result.bounced_at, result.abandoned_at)'
-  const { rows } = await transaction<{ id: string }>(
-    sql`/* selectExpiredCopyrightExecutionAttempts */ SELECT attempt.id FROM `
-      .append(table)
-      .append(sql` attempt JOIN `)
-      .append(resultTable)
-      .append(sql` result ON result.attempt_id = attempt.id
-        WHERE attempt.id = ANY(${[...ids]}::uuid[])
-          AND `)
-      .append(terminalAt)
-      .append(sql` <= ${cutoff}
-          AND EXISTS (
-            SELECT 1 FROM `)
-      .append(table).append(sql` newer WHERE newer.work_item_id = attempt.work_item_id
-              AND newer.attempt_number > attempt.attempt_number)
-        ORDER BY attempt.id`),
-  )
-  const eligible = rows.map(row => row.id)
-  if (eligible.length === 0) return 0
-  await transaction(
-    sql`/* deleteExpiredCopyrightExecutionResults */ DELETE FROM `
-      .append(resultTable)
-      .append(sql` WHERE attempt_id = ANY(${eligible}::uuid[])`),
-  )
-  const { rowCount } = await transaction(
-    sql`/* deleteExpiredCopyrightExecutionAttempts */ DELETE FROM `
-      .append(table)
-      .append(sql` WHERE id = ANY(${eligible}::uuid[])`),
-  )
-  return rowCount ?? 0
-}
 
 async function deleteSelected(
   transaction: TransactionQuery,
@@ -181,15 +137,22 @@ export async function sweepCopyrightOperationalRetention(
   let hasMore = false
   // oxlint-disable no-await-in-loop -- the committed cursor determines the next page.
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
-    // no-mistakes-disable-next-line query-reached-per-item: each capped transaction commits its durable keyset cursor before the next page.
-    const page = await sweepPage(
-      kind,
-      options.batchSize,
-      cutoffId,
-      cutoff,
-      tokenGcCutoffId,
-      options.recordIds,
-    )
+    let page: SweepResult
+    try {
+      // no-mistakes-disable-next-line query-reached-per-item: each capped transaction commits its durable keyset cursor before the next page.
+      page = await sweepPage(
+        kind,
+        options.batchSize,
+        cutoffId,
+        cutoff,
+        tokenGcCutoffId,
+        options.recordIds,
+      )
+    } catch (err) {
+      if (kind !== 'orphan_email_thread_tokens' || !isCopyrightEmailTokenGcConflict(err)) throw err
+      // The aborted page did not advance its cursor; resume on the next scheduled run.
+      return { scanned, deleted, hasMore: false }
+    }
     scanned += page.scanned
     deleted += page.deleted
     hasMore = page.hasMore

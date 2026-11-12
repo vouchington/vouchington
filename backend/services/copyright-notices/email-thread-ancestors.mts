@@ -76,11 +76,11 @@ export async function recordCopyrightEmailAncestorEdges(
   transaction: TransactionQuery,
   intakeId: string,
 ): Promise<void> {
-  await transaction(sql`/* recordCopyrightEmailAncestorEdges:reply */
+  await transaction(sql`/* recordCopyrightEmailAncestorEdges */
     INSERT INTO copyright_notice_email_message_ancestors (
       reply_message_intake_receipt_id, ancestor_message_intake_receipt_id, reference_kind
     )
-    WITH resolved AS MATERIALIZED (
+    WITH reply_resolved AS MATERIALIZED (
       SELECT DISTINCT ON (parent.copyright_notice_email_intake_id)
         parent.copyright_notice_email_intake_id AS ancestor_id, own.reference_kind
       FROM copyright_notice_email_thread_references own
@@ -97,24 +97,15 @@ export async function recordCopyrightEmailAncestorEdges(
         )
       ORDER BY parent.copyright_notice_email_intake_id,
         CASE own.reference_kind WHEN 'in_reply_to' THEN 0 ELSE 1 END
-    ), live AS MATERIALIZED (
-      SELECT resolved.ancestor_id, resolved.reference_kind
-      FROM resolved
-      JOIN copyright_notice_email_intakes candidate ON candidate.id = resolved.ancestor_id
+    ), reply_live AS MATERIALIZED (
+      SELECT reply_resolved.ancestor_id, reply_resolved.reference_kind
+      FROM reply_resolved
+      JOIN copyright_notice_email_intakes candidate ON candidate.id = reply_resolved.ancestor_id
       JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = candidate.id
       WHERE candidate.raw_storage_object_id IS NOT NULL AND receipt.erased_at IS NULL
-      ORDER BY resolved.ancestor_id
+      ORDER BY reply_resolved.ancestor_id
       FOR KEY SHARE OF candidate FOR SHARE OF receipt
-    )
-    SELECT ${intakeId}::uuid, live.ancestor_id, live.reference_kind
-    FROM live ORDER BY live.ancestor_id
-    ON CONFLICT (reply_message_intake_receipt_id, ancestor_message_intake_receipt_id) DO NOTHING
-  `)
-  await transaction(sql`/* recordCopyrightEmailAncestorEdges:waiting */
-    INSERT INTO copyright_notice_email_message_ancestors (
-      reply_message_intake_receipt_id, ancestor_message_intake_receipt_id, reference_kind
-    )
-    WITH waiting AS MATERIALIZED (
+    ), waiting_resolved AS MATERIALIZED (
       SELECT DISTINCT ON (reference.copyright_notice_email_intake_id)
         reference.copyright_notice_email_intake_id AS reply_id, reference.reference_kind
       FROM copyright_notice_email_thread_references own_message
@@ -142,17 +133,23 @@ export async function recordCopyrightEmailAncestorEdges(
         )
       ORDER BY reference.copyright_notice_email_intake_id,
         CASE reference.reference_kind WHEN 'in_reply_to' THEN 0 ELSE 1 END
-    ), live AS MATERIALIZED (
-      SELECT waiting.reply_id, waiting.reference_kind
-      FROM waiting
-      JOIN copyright_notice_email_intakes candidate ON candidate.id = waiting.reply_id
+    ), waiting_live AS MATERIALIZED (
+      SELECT waiting_resolved.reply_id, waiting_resolved.reference_kind
+      FROM waiting_resolved
+      JOIN copyright_notice_email_intakes candidate ON candidate.id = waiting_resolved.reply_id
       JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = candidate.id
       WHERE candidate.raw_storage_object_id IS NOT NULL AND receipt.erased_at IS NULL
-      ORDER BY waiting.reply_id
+      ORDER BY waiting_resolved.reply_id
       FOR KEY SHARE OF candidate FOR SHARE OF receipt
+    ), edges AS (
+      SELECT ${intakeId}::uuid AS reply_id, reply_live.ancestor_id,
+        reply_live.reference_kind FROM reply_live
+      UNION ALL
+      SELECT waiting_live.reply_id, ${intakeId}::uuid AS ancestor_id,
+        waiting_live.reference_kind FROM waiting_live
     )
-    SELECT live.reply_id, ${intakeId}::uuid, live.reference_kind
-    FROM live ORDER BY live.reply_id
+    SELECT edges.reply_id, edges.ancestor_id, edges.reference_kind
+    FROM edges ORDER BY edges.reply_id, edges.ancestor_id
     ON CONFLICT (reply_message_intake_receipt_id, ancestor_message_intake_receipt_id) DO NOTHING
   `)
 }

@@ -21,7 +21,7 @@ import sql from 'sql-template-strings'
 /** A real intake and reference fact for setup that does not run the threading service. */
 export async function createRetentionThreadSeedEmail(
   label: string,
-  options: { messageId: string; sesMessageId?: string },
+  options: { messageId: string; sesMessageId?: string; replyReferences?: string[] },
 ) {
   const sesMessageId = options.sesMessageId ?? `ses-${label}-${randomUUID()}`
   const { intake } = await createCopyrightEmailIntake({
@@ -36,7 +36,7 @@ export async function createRetentionThreadSeedEmail(
   await using transaction = await beginTransaction()
   const rows = buildCopyrightEmailThreadReferenceRows({
     messageId: options.messageId,
-    inReplyTo: [],
+    inReplyTo: options.replyReferences ?? [],
     references: [],
   })
   const tokens = await resolveCopyrightEmailThreadTokenIds(
@@ -63,12 +63,18 @@ export type RetentionCase = {
  */
 export async function createRetentionParsedEmail(
   label: string,
-  options: { reply?: boolean; messageId?: string; sesMessageId?: string } = {},
+  options: {
+    reply?: boolean
+    replyReferences?: string[]
+    messageId?: string
+    sesMessageId?: string
+  } = {},
 ) {
   const sesMessageId = options.sesMessageId ?? `ses-${label}-${randomUUID()}`
   const senderEmail = `sender-${randomUUID()}@example.test`
   const messageId = options.messageId ?? `<${randomUUID()}@example.test>`
-  const replyReferences = options.reply ? [`<${randomUUID()}@example.test>`] : []
+  const replyReferences =
+    options.replyReferences ?? (options.reply ? [`<${randomUUID()}@example.test>`] : [])
   const { intake } = await createCopyrightEmailIntake({
     sesMessageId,
     receivedAt: new Date(),
@@ -115,7 +121,7 @@ export async function createRetentionParsedEmail(
     rows.map(row => row.lookup_digest),
   )
   await insertResolvedCopyrightEmailThreadReferences(transaction, intake.id, rows, tokens)
-  if (!options.reply && isCopyrightIntakeEnabled())
+  if (replyReferences.length === 0 && isCopyrightIntakeEnabled())
     await createCopyrightEmailIntakeResponseInTransaction(
       {
         intakeId: intake.id,

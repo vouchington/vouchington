@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { describe, expect, it } from 'vitest'
 import {
   linkTestCopyrightEmailIntake,
@@ -67,12 +68,14 @@ describe('copyright email thread ownership', () => {
     const [attempt] = await Promise.allSettled([recordCopyrightEmailThreadReferences(input)])
     const rejection =
       attempt.status === 'rejected' && attempt.reason instanceof Error
-        ? (attempt.reason as Error & { status?: number; cause?: { code?: string } })
+        ? (attempt.reason as Error & { status?: number; code?: string; cause?: { code?: string } })
         : null
     const actual = {
       status: attempt.status,
       value: attempt.status === 'fulfilled' ? attempt.value : null,
-      error: rejection ? { status: rejection.status, causeCode: rejection.cause?.code } : null,
+      error: rejection
+        ? { status: rejection.status, code: rejection.code, causeCode: rejection.cause?.code }
+        : null,
       links: await readCopyrightEmailIntakeNoticeLinks(reply.id),
       ancestorCount: (await readCopyrightIntakeRetentionState(reply.id)).ancestorCount,
       referenceCount: (await readCopyrightThreadReferenceState(reply.id)).referenceCount,
@@ -92,7 +95,7 @@ describe('copyright email thread ownership', () => {
       {
         status: 'rejected',
         value: null,
-        error: { status: 409, causeCode: '40001' },
+        error: { status: 409, code: COPYRIGHT_EMAIL_THREAD_CHANGED, causeCode: '40001' },
         links: unchangedLinks,
         ancestorCount: beforeAncestry,
         referenceCount: beforeReferences.referenceCount,
@@ -100,7 +103,7 @@ describe('copyright email thread ownership', () => {
       {
         status: 'rejected',
         value: null,
-        error: { status: 409, causeCode: '40001' },
+        error: { status: 409, code: COPYRIGHT_EMAIL_THREAD_CHANGED, causeCode: '40001' },
         links: unchangedLinks,
         ancestorCount: beforeAncestry,
         referenceCount: completeReferenceCount,

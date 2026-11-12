@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import {
@@ -145,7 +146,7 @@ describe('copyright unlinked email retention serializable boundaries', () => {
     expect(erasure).toEqual({ scanned: 1, erased: 1, hasMore: true })
     expect(writer).toMatchObject({
       status: 'rejected',
-      error: { status: 409, cause: { code: '40001' } },
+      error: { status: 409, code: COPYRIGHT_EMAIL_THREAD_CHANGED, cause: { code: '40001' } },
     })
     expect(await readCopyrightEmailReceiptErasedAt(intake.id)).not.toBeNull()
     expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(beforeReferences)

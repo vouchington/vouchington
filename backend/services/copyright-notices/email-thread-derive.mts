@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
 import sql from 'sql-template-strings'
 import {
   copyrightEmailMessageIdIsAmbiguous,
@@ -19,16 +18,19 @@ import {
   hasLiveCopyrightEmailSource,
   hasRetiredCopyrightEmailCaseLink,
 } from './email-thread-source.mts'
+import { throwIfCopyrightEmailThreadWriteConflict } from './email-thread-write-conflict.mts'
 
 /** Derive from current committed facts; never assume the admission snapshot remains current. */
 export async function deriveCopyrightEmailThread(
   input: CopyrightEmailThreadInput,
   referenceRows: readonly CopyrightEmailThreadReferenceRow[],
 ): Promise<CopyrightEmailThreadMatch | null> {
-  return conflictOnSerializationFailure(
-    () => deriveCopyrightEmailThreadInTransaction(input, referenceRows),
-    'Copyright email thread changed; retry',
-  )
+  try {
+    return await deriveCopyrightEmailThreadInTransaction(input, referenceRows)
+  } catch (err) {
+    throwIfCopyrightEmailThreadWriteConflict(err)
+    throw err
+  }
 }
 
 async function deriveCopyrightEmailThreadInTransaction(
