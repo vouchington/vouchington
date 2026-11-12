@@ -6,7 +6,8 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanDeleteCommunity } from './authorization.mts'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import type { CommunityMember } from './types.mts'
-import { writeCommunitiesUpdate, writeCommunityUpdate } from './community-update-returning.mts'
+import { communityUpdateReturning } from './community-update-returning.mts'
+import { mapCommunityWithOwner, type CommunityRowWithOwner } from './get-mapping.mts'
 import { updateCommunity, type UpdateCommunityInput } from './update.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueCommunityMemberMetricInvalidationBestEffort } from './members/invalidate-user-metrics.mts'
@@ -28,7 +29,9 @@ export async function archiveCommunities(
     SET archived_at = CURRENT_TIMESTAMP, archived_by_id = ${archivedById}
     WHERE id = ANY(${[...communityIds]}::uuid[]) AND deleted_at IS NULL AND archived_at IS NULL`
   const run = async (query: TransactionQuery): Promise<CommunityWithOwner[]> => {
-    const updated = await writeCommunitiesUpdate(sql`/* archiveCommunities */`, update, { query })
+    const statement = sql`/* archiveCommunities */`.append(communityUpdateReturning(sql``, update))
+    const { rows } = await query<CommunityRowWithOwner>(statement)
+    const updated = rows.map(mapCommunityWithOwner)
     await recordPostPublicationChangeBatch(
       query,
       updated.map(({ id }) => ({
@@ -56,7 +59,9 @@ export async function unarchiveCommunity(
     SET archived_at = NULL, archived_by_id = NULL
     WHERE id = ${communityId} AND deleted_at IS NULL AND archived_at IS NOT NULL`
   const run = async (query: TransactionQuery): Promise<CommunityWithOwner | null> => {
-    const updated = await writeCommunityUpdate(sql`/* unarchiveCommunity */`, update, { query })
+    const statement = sql`/* unarchiveCommunity */`.append(communityUpdateReturning(sql``, update))
+    const { rows } = await query<CommunityRowWithOwner>(statement)
+    const updated = rows[0] ? mapCommunityWithOwner(rows[0]) : null
     if (updated) {
       await recordPostPublicationChange(query, {
         scope: { type: 'community', communityId },

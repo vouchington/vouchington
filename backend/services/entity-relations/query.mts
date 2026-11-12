@@ -6,6 +6,7 @@ import { parseSigningKeys } from '@vouchington/utils/url-signing'
 import { buildSideloadImageUrl, SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
 import { getImageOrigin } from '@modules/utils/image-origin'
 import {
+  buildEntityRelationSelectBody,
   buildEntityRelationSelectQuery,
   type EntityRelationPageCursor,
 } from './build-select-query.mts'
@@ -86,12 +87,14 @@ async function loadEntityRelationRows(
   options: EntityRelationQueryOptions & { limit: number; sort: 'best' | 'newest' },
 ): Promise<EntityRelationResult[]> {
   const { readOnly, limit, sort, ...selectOptions } = options
-  const query = buildEntityRelationSelectQuery(metadata, subjectId, {
-    ...selectOptions,
-    limit,
-    sort,
-  })
-  const { rows } = await (readOnly === false ? write : read)(query)
+  const statement = sql`/* buildEntityRelationSelectQuery */`.append(
+    buildEntityRelationSelectBody(metadata, subjectId, {
+      ...selectOptions,
+      limit,
+      sort,
+    }),
+  )
+  const { rows } = await (readOnly === false ? write : read)(statement)
   return rows as EntityRelationResult[]
 }
 

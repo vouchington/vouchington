@@ -105,7 +105,10 @@ export const softDeleteEntityRelation = async (
       subject.id,
       objects.map(object => object.id),
     )
-    await deleteBidirectionalRelationRows(transactionQuery, query, reverseQuery)
+    await deleteBidirectionalRelationRows(
+      () => transactionQuery(query),
+      () => transactionQuery(reverseQuery),
+    )
   })
   /* c8 ignore next 3 -- no bidirectional relation is remote-actor-sourced today; see the matching
      note in upsert.mts's bidirectional branch. */
@@ -182,7 +185,6 @@ export const softDeleteEntityRelationsForSubjects = async (
   reverseQuery.append(sql`
       AND deleted_at IS NULL
   `)
-
   await runRelationTransaction(options, async transactionQuery => {
     await lockBidirectionalRelationPairs(
       transactionQuery,
@@ -190,6 +192,9 @@ export const softDeleteEntityRelationsForSubjects = async (
       object.id,
       subjects.map(subject => subject.id),
     )
-    await deleteBidirectionalRelationRows(transactionQuery, query, reverseQuery)
+    await deleteBidirectionalRelationRows(
+      () => transactionQuery(query),
+      () => transactionQuery(reverseQuery),
+    )
   })
 }

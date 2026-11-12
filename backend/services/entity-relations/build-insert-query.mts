@@ -32,6 +32,18 @@ export function buildInsertQuery(
   }>,
   options?: UpsertEntityRelationsOptions,
 ): SQLStatement {
+  return sql`/* buildInsertQuery */`.append(buildInsertBody(relation, creator, pairs, options))
+}
+
+export function buildInsertBody(
+  relation: EntityRelationMetadata,
+  creator: BasicUser | null,
+  pairs: Array<{
+    subject: UpsertEntityTypes | EntityIdentifier
+    object: UpsertEntityTypes | EntityIdentifier
+  }>,
+  options?: UpsertEntityRelationsOptions,
+): SQLStatement {
   if (pairs.length === 0) throw new Error('buildInsertQuery requires at least one pair')
   const { columns, primaryKeyColumns } = buildRelationColumns(relation)
   const subjectIds = pairs.map(({ subject }) => subject.id)
@@ -46,7 +58,7 @@ export function buildInsertQuery(
   // The final SELECT therefore exposes `newly_active`: true for a fresh insert or a resurrection,
   // false for a no-op retry of an already-active row. `xmax = 0` alone can't make this distinction
   // because both a no-op retry and a resurrection take the ON CONFLICT DO UPDATE path.
-  const query = sql`/* buildInsertQuery */
+  const query = sql`
     WITH input AS (
       SELECT subject_id, object_id, ordinality
       FROM unnest(${subjectIds}::uuid[], ${objectIds}::uuid[]) WITH ORDINALITY

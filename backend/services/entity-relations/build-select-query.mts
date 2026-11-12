@@ -35,6 +35,17 @@ export function buildEntityRelationSelectQuery(
   subjectId: string,
   options: EntityRelationSelectOptions,
 ): SQLStatement {
+  return sql`/* buildEntityRelationSelectQuery */`.append(
+    buildEntityRelationSelectBody(metadata, subjectId, options),
+  )
+}
+
+/** The projection and filters shared by annotated scalar and batch relation reads. */
+export function buildEntityRelationSelectBody(
+  metadata: EntityRelationMetadata,
+  subjectId: string,
+  options: EntityRelationSelectOptions,
+): SQLStatement {
   const { limit, sort, after, viewer, objectIds } = options
   const objectIsPost = metadata.object_type === 'post'
   const objectPostFilter = objectIsPost
@@ -48,7 +59,7 @@ export function buildEntityRelationSelectQuery(
   const objectEntityConfig = entityRelationEntityTables[metadata.object_type]
   const objectTable = objectEntityConfig.select_table ?? objectEntityConfig.foreign_key_table
 
-  const query = sql`/* buildEntityRelationSelectQuery */
+  const query = sql`
     SELECT
       r.subject_id,
       r.object_id,

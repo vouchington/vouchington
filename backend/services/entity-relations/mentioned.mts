@@ -19,7 +19,8 @@ export async function getExistingMentionedRelations(postId: string) {
   }
 
   const { query, values } = buildMentionedRelationsQuery(relations, postId)
-  const { rows } = await read<{ subject_type: string; subject_id: string }>(query, values)
+  const statement = `/* getExistingMentionedRelations */${query}`
+  const { rows } = await read<{ subject_type: string; subject_id: string }>(statement, values)
 
   const users = rows.flatMap(r => (r.subject_type === 'user' ? [r.subject_id] : []))
   const topics = rows.flatMap(r => (r.subject_type === 'topic' ? [r.subject_id] : []))
@@ -49,7 +50,8 @@ function buildMentionedRelationsQuery(
     const paramIndex = params.length + 1
     params.push(relation.subject_type)
 
-    subqueries.push(`/* getExistingMentionedRelations */
+    const annotation = subqueries.length === 0 ? '' : '/* getExistingMentionedRelations */'
+    subqueries.push(`${annotation}
       SELECT
         subject_id,
         $${paramIndex} AS subject_type

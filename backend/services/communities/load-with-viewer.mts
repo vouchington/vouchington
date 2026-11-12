@@ -67,15 +67,17 @@ async function queryCommunityWithViewer(
   includePendingApplication: boolean,
 ): Promise<LoadedCommunity | null> {
   const extra = viewerExtra(viewerId, includePendingApplication)
-  const byId = isUUID(idOrSlug)
-  const query = byId
-    ? selectCommunityWithOwner(sql`/* getCommunityWithViewerById */ SELECT `, extra).append(
-        sql` WHERE c.id = ${idOrSlug} AND c.deleted_at IS NULL LIMIT 1`,
-      )
-    : selectCommunityWithOwner(sql`/* getCommunityWithViewerBySlug */ SELECT `, extra).append(
-        sql` WHERE c.slug = ${idOrSlug.toLowerCase()} AND c.deleted_at IS NULL LIMIT 1`,
-      )
-  const { rows } = await read(query.text, query.values, options)
+  if (isUUID(idOrSlug)) {
+    const statement = sql`/* getCommunityWithViewerById */`
+      .append(selectCommunityWithOwner(sql` SELECT `, extra))
+      .append(sql` WHERE c.id = ${idOrSlug} AND c.deleted_at IS NULL LIMIT 1`)
+    const { rows } = await read(statement, options)
+    return mapViewerRow(rows[0] as ViewerRow | undefined)
+  }
+  const statement = sql`/* getCommunityWithViewerBySlug */`
+    .append(selectCommunityWithOwner(sql` SELECT `, extra))
+    .append(sql` WHERE c.slug = ${idOrSlug.toLowerCase()} AND c.deleted_at IS NULL LIMIT 1`)
+  const { rows } = await read(statement, options)
   return mapViewerRow(rows[0] as ViewerRow | undefined)
 }
 
@@ -85,11 +87,10 @@ export async function lockCommunityWithViewer(
   communityId: string,
   viewerId: string,
 ): Promise<LoadedCommunity | null> {
-  const statement = selectCommunityWithOwner(
-    sql`/* lockCommunityRestrictionWrites */ SELECT `,
-    viewerExtra(viewerId, false),
-  ).append(sql` WHERE c.id = ${communityId} AND c.deleted_at IS NULL`)
-  const { rows } = await query(statement.text, statement.values)
+  const statement = sql`/* lockCommunityRestrictionWrites */`
+    .append(selectCommunityWithOwner(sql` SELECT `, viewerExtra(viewerId, false)))
+    .append(sql` WHERE c.id = ${communityId} AND c.deleted_at IS NULL`)
+  const { rows } = await query(statement)
   return mapViewerRow(rows[0] as ViewerRow | undefined)
 }
 
