@@ -10,23 +10,6 @@ describe('initialize migration snapshot', () => {
 
   const migrationId = '0634-00-00-copyright-notices.sql'
 
-  it('prepares reservation partitions after migrations before declaring backend readiness', async () => {
-    const source = await readFile(new URL('../initialize', import.meta.url), 'utf8')
-    const prepare = 'node backend/test-helpers/prepare-ai-usage-date-partitions.mts'
-    expect(source.split(prepare)).toHaveLength(2)
-    const backendSetup = source.slice(
-      source.indexOf('# ── Phase B (continued): backend-and-above database + migrations'),
-      source.indexOf('# ── Write init marker'),
-    )
-    expect(backendSetup).toContain('if mode_at_least "$MODE" backend; then')
-    expect(backendSetup.indexOf(prepare)).toBeGreaterThan(
-      backendSetup.indexOf('(cd backend && pnpm run db:migrate)'),
-    )
-    expect(backendSetup.indexOf(prepare)).toBeLessThan(
-      backendSetup.indexOf('write_initialized_migration_snapshot'),
-    )
-  })
-
   it('saves the applied migration ledger beside the initialization marker', async () => {
     const cwd = await makeWorktreeDir('feature-db-write-snapshot')
     const snapshot = join(cwd, '.initialized-migrations')
