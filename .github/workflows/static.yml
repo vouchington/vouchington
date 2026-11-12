@@ -64,8 +64,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          if ! output=$(gh run cancel "$RUN_ID" 2>&1); then
-            # HTTP 409: the run already completed or was cancelled, which is the goal.
-            [[ "$output" == *"HTTP 409"* ]] || { echo "$output" >&2; exit 1; }
-            echo "::warning::Run $RUN_ID was already finished: $output"
-          fi
+          output=$(gh run cancel "$RUN_ID" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
