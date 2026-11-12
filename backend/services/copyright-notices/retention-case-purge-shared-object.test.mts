@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
-import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import {
   addRetentionArtifact,
   createRetentionMinimalCase,
@@ -63,7 +63,7 @@ async function assertKeyReused(key: string): Promise<void> {
 
 describe('copyright case purge shared evidence ownership', () => {
   useAutomaticProvisionalWithholding()
-  const bucket = useFakeCopyrightEvidenceBucket()
+  const bucket = useCopyrightEvidenceBucket()
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: two reviewed email cases and their bounded PostgreSQL and S3 pages
@@ -81,13 +81,13 @@ describe('copyright case purge shared evidence ownership', () => {
       await addRetentionArtifact(submissionId, sharedKey)
       await settleCopyrightCasePurgeFixtureActions(entry.noticeId)
       await publishCopyrightCasePurgeCoverage(entry.noticeId)
-      for (const key of entry.evidenceKeys) bucket.put(key)
+      for (const key of entry.evidenceKeys) await bucket.put(key)
     }
-    bucket.put(sharedKey, { versions: 3, deleteMarker: true })
+    await bucket.put(sharedKey, { versions: 3, deleteMarker: true })
     const originalGeneration = (await readCopyrightCasePurgeFixtureObject(sharedKey))?.generation
 
     await finishCase(firstPage(first.noticeId))
-    expect(bucket.countVersions(sharedKey)).toBe(4)
+    expect(await bucket.countVersions(sharedKey)).toBe(4)
     expect((await readCopyrightCasePurgeFixtureObject(sharedKey))?.claimed).toBe(false)
     expect((await readCopyrightCasePurgeFixtureObject(sharedKey))?.generation).not.toBe(
       originalGeneration,
@@ -106,9 +106,9 @@ describe('copyright case purge shared evidence ownership', () => {
         data.phase === 'evidence' &&
         (await readCopyrightCasePurgeFixtureObject(sharedKey))?.claimed
       ) {
-        assertClaimPrecedesDelete(bucket.countVersions(sharedKey))
+        assertClaimPrecedesDelete(await bucket.countVersions(sharedKey))
         await finishCase(data)
-        await assertSharedObjectDeleted(sharedKey, bucket.countVersions(sharedKey))
+        await assertSharedObjectDeleted(sharedKey, await bucket.countVersions(sharedKey))
         await assertKeyReused(sharedKey)
         return
       }

@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { cleanupOwnedTestUploads } from '@voucha/test-helpers/image-upload-cleanup'
 import { createOwnedStagedImage } from '@voucha/test-helpers/image-upload-cleanup-fixtures'
-import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { seedOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { cleanupAbandonedUploads } from './cleanup-abandoned-uploads.mts'
 import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 import { getImageByHash, getImageById } from './get.mts'
@@ -31,10 +31,12 @@ describe('abandoned upload cleanup', () => {
     const now = new Date()
     const oldId = await createOwnedStagedImage(new Date(now.getTime() - 25 * HOUR))
     const recentId = await createOwnedStagedImage(now)
-    const storage = installOwnedUploadCleanupStorage([oldId, recentId])
+    const storage = await seedOwnedUploadCleanupStorage([oldId, recentId])
     const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, [oldId, recentId], now)
     expect(result.cleaned).toBe(1)
-    expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: oldId }])
+    await expect(storage.deleted()).resolves.toEqual([
+      { Bucket: S3Buckets.imageUploads, Key: oldId },
+    ])
     expect(await getImageById(oldId)).toBeNull()
     expect(await getImageById(recentId)).not.toBeNull()
   })
@@ -43,25 +45,16 @@ describe('abandoned upload cleanup', () => {
     const stagedAt = new Date(Date.now() - 2 * HOUR)
     const id = await createOwnedStagedImage(stagedAt)
     await backdateImageUploadStagedAt(id, stagedAt, 'complete')
-    let failed = false
-    const storage = installOwnedUploadCleanupStorage(
-      [id, id.replaceAll('-', '').repeat(2)],
-      async input => {
-        if (!failed && input.Key === id) {
-          failed = true
-          throw new Error('owned storage failure')
-        }
-      },
-    )
+    const storage = await seedOwnedUploadCleanupStorage([id, id.replaceAll('-', '').repeat(2)])
+    const restoreUploads = storage.failBucket('imageUploads')
     expect(await cleanupStagedUploadSource(id)).toBe(false)
+    restoreUploads()
+    await expect(storage.deleted()).resolves.toEqual([])
     expect((await getImageById(id, true))?.upload_source_deleted_at).toBeNull()
     expect(await cleanupStagedUploadSource(id)).toBe(true)
     expect((await getImageById(id, true))?.upload_source_deleted_at).toBeInstanceOf(Date)
     expect((await getImageById(id))?.upload_completed_at).toBeInstanceOf(Date)
-    expect(storage.calls).toEqual([
-      { Bucket: S3Buckets.imageUploads, Key: id },
-      { Bucket: S3Buckets.imageUploads, Key: id },
-    ])
+    await expect(storage.deleted()).resolves.toEqual([{ Bucket: S3Buckets.imageUploads, Key: id }])
   })
 
   it('cleans an old unpromoted processing upload and its known storage', async () => {
@@ -70,13 +63,13 @@ describe('abandoned upload cleanup', () => {
     await backdateImageUploadStagedAt(id, new Date(now.getTime() - 25 * HOUR), 'processing')
     const digest = randomBytes(32)
     await setTestImageHashWhileProcessing(id, digest)
-    const storage = installOwnedUploadCleanupStorage([id, digest.toString('hex')])
+    const storage = await seedOwnedUploadCleanupStorage([id, digest.toString('hex')])
     const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, [id], now)
     expect(result.cleaned).toBe(1)
-    expect(storage.calls).toEqual([
+    await expect(storage.deleted()).resolves.toEqual([
       { Bucket: S3Buckets.imageUploads, Key: id },
-      { Bucket: S3Buckets.images, Key: digest.toString('hex') },
       { Bucket: S3Buckets.images, Key: id },
+      { Bucket: S3Buckets.images, Key: digest.toString('hex') },
     ])
     expect(await getImageById(id)).toBeNull()
     expect((await getImageById(id, true))?.sha_256).toBeNull()
@@ -87,10 +80,10 @@ describe('abandoned upload cleanup', () => {
     const id = await createOwnedStagedImage(new Date(now.getTime() - 25 * HOUR), true)
     const digest = randomBytes(32)
     await setImageHashAndProcessing(id, digest)
-    const storage = installOwnedUploadCleanupStorage([id])
+    const storage = await seedOwnedUploadCleanupStorage([id, digest.toString('hex')])
     const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, [id], now)
     expect(result).toMatchObject({ cleaned: 0, recovered: 1, stagedSourcesDeleted: 1 })
-    expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: id }])
+    await expect(storage.deleted()).resolves.toEqual([{ Bucket: S3Buckets.imageUploads, Key: id }])
     expect(await getImageById(id)).not.toBeNull()
     expect((await getImageById(id))?.upload_source_deleted_at).toBeInstanceOf(Date)
   })
@@ -100,25 +93,24 @@ describe('abandoned upload cleanup', () => {
     const id = await createOwnedStagedImage(new Date(now.getTime() - 25 * HOUR), true)
     const digest = randomBytes(32)
     await setTestImageHashWhileProcessing(id, digest)
-    let failed = false
-    const storage = installOwnedUploadCleanupStorage([id, digest.toString('hex')], async input => {
-      if (!failed && input.Key === id) {
-        failed = true
-        throw new Error('owned storage failure')
-      }
-    })
+    const storage = await seedOwnedUploadCleanupStorage([id, digest.toString('hex')])
+    const restoreUploads = storage.failBucket('imageUploads')
     const first = await cleanupOwnedTestUploads(cleanupAbandonedUploads, [id], now)
+    restoreUploads()
     expect(first.cleaned).toBe(1)
+    // Only the staged source failed; the final media in the images bucket is already gone.
+    await expect(storage.deleted()).resolves.toEqual([
+      { Bucket: S3Buckets.images, Key: id },
+      { Bucket: S3Buckets.images, Key: digest.toString('hex') },
+    ])
     expect((await getImageById(id, true))?.sha_256).toEqual(digest)
     expect(await cleanupStagedUploadSource(id)).toBe(true)
     await cleanupOwnedTestUploads(cleanupAbandonedUploads, [id], now)
-    expect(storage.calls).toEqual(
-      Array.from({ length: 2 }, () => [
-        { Bucket: S3Buckets.imageUploads, Key: id },
-        { Bucket: S3Buckets.images, Key: digest.toString('hex') },
-        { Bucket: S3Buckets.images, Key: id },
-      ]).flat(),
-    )
+    await expect(storage.deleted()).resolves.toEqual([
+      { Bucket: S3Buckets.imageUploads, Key: id },
+      { Bucket: S3Buckets.images, Key: id },
+      { Bucket: S3Buckets.images, Key: digest.toString('hex') },
+    ])
     expect((await getImageById(id, true))?.sha_256).toBeNull()
     expect(await getImageByHash(digest, true)).toBeNull()
   })
@@ -132,7 +124,7 @@ describe('abandoned upload cleanup', () => {
       ),
     )
     for (const id of ids) await setImageHashAndProcessing(id, randomBytes(32))
-    const storage = installOwnedUploadCleanupStorage(ids)
+    const storage = await seedOwnedUploadCleanupStorage(ids)
     const admissions: EnqueueAdmission[] = []
     const off = onEnqueueAdmission(event => {
       const [input] = event.inputs
@@ -155,7 +147,9 @@ describe('abandoned upload cleanup', () => {
       expect((await readEnqueuedJob(imageUploadsQueue, await admission.completion)).data).toEqual({
         id: ids[0],
       })
-      expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: ids[0] }])
+      await expect(storage.deleted()).resolves.toEqual([
+        { Bucket: S3Buckets.imageUploads, Key: ids[0] },
+      ])
       for (const id of ids) expect(await getImageById(id)).not.toBeNull()
     } finally {
       off()
@@ -171,10 +165,12 @@ describe('abandoned upload cleanup', () => {
         createOwnedStagedImage(new Date(now.getTime() - 24 * HOUR + delta), false, user),
       ),
     )
-    const storage = installOwnedUploadCleanupStorage(ids)
+    const storage = await seedOwnedUploadCleanupStorage(ids)
     const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, ids, now)
     expect(result.cleaned).toBe(1)
-    expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: ids[0] }])
+    await expect(storage.deleted()).resolves.toEqual([
+      { Bucket: S3Buckets.imageUploads, Key: ids[0] },
+    ])
     expect(await getImageById(ids[0]!)).toBeNull()
     expect(await getImageById(ids[1]!)).not.toBeNull()
     expect(await getImageById(ids[2]!)).not.toBeNull()

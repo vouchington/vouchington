@@ -6,7 +6,7 @@ import { getImageByIdFromPrimary } from '@services/images/get'
 import { imagesWorkConfig } from '@services/images/work-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createOwnedStagedImage } from '@voucha/test-helpers/image-upload-cleanup-fixtures'
-import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { seedOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { readImageDeletionRootRecoveryJobIds } from '@voucha/test-helpers/image-deletion'
 import { BACKGROUND_CPU_HANDLERS } from './handlers.mts'
 
@@ -32,7 +32,7 @@ describe('upload cleanup processor', () => {
     )
     if (!handler) throw new Error('Expected the registered upload cleanup handler')
     const saved: unknown[] = []
-    const storage = installOwnedUploadCleanupStorage([imageId])
+    const storage = await seedOwnedUploadCleanupStorage([imageId])
     for (const job of jobs) {
       if (!job) throw new Error('Expected an owned cleanup job')
       vi.spyOn(job, 'updateData').mockImplementation(async data => {
@@ -63,6 +63,6 @@ describe('upload cleanup processor', () => {
       deleted_at: null,
       upload_source_deleted_at: null,
     })
-    expect(storage.calls).toEqual([])
+    await expect(storage.deleted()).resolves.toEqual([])
   })
 })

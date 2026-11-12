@@ -13,10 +13,12 @@ import {
 } from '@voucha/test-helpers/query-capture'
 import {
   createArticleSyncFixtures,
+  holdArticleRead,
+  oversizedArticleMarkdown,
   seedArticleSyncTimestamp,
-  stubArticleBucket,
   syncOwnedArticles,
-  type ArticleBucketObject,
+  useArticleBucket,
+  type ArticleBucket,
 } from '../../test-helpers/article-sync-fixtures.mts'
 import { drainOwnedTestAction } from '../../test-helpers/post-commit-completion.mts'
 
@@ -28,8 +30,7 @@ describe('syncArticles', () => {
   let aboutSlug = ''
   let keyboardSlug = ''
   let ownedSlugs = new Set<string>()
-  let objects = new Map<string, ArticleBucketObject>()
-  let fetchedKeys: string[] = []
+  let bucket: ArticleBucket
 
   function syncFixtureArticles(release: () => void = () => {}) {
     return syncOwnedArticles(ownedSlugs, () => syncArticles(adminUser), release)
@@ -39,14 +40,13 @@ describe('syncArticles', () => {
     adminUser = await createTestUser({ administrator: true })
   })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     const fixtures = createArticleSyncFixtures()
     articleFixtures = fixtures.articles
     aboutSlug = fixtures.aboutSlug
     keyboardSlug = fixtures.keyboardSlug
     ownedSlugs = new Set([aboutSlug, keyboardSlug])
-    objects = new Map<string, ArticleBucketObject>(articleFixtures)
-    ;({ fetchedKeys } = stubArticleBucket(objects))
+    bucket = await useArticleBucket(articleFixtures)
   })
 
   it('syncs articles from markdown files', async () => {
@@ -77,11 +77,12 @@ describe('syncArticles', () => {
   it('prefetches distinct slugs once and processes duplicate slugs in file order', async () => {
     const slug = `ordered-sync-${randomUUID()}`
     ownedSlugs = new Set([slug, keyboardSlug])
-    objects.clear()
-    objects.set('a-first.md', `---\ntitle: First\nslug: ${slug}\n---\nFirst body.`)
-    objects.set('b-second.md', `---\ntitle: Second\nslug: ${slug}\n---\nSecond body.`)
-    objects.set('c-third.md', `---\ntitle: Second\nslug: ${slug}\n---\nSecond body.`)
-    objects.set('d-keyboard-shortcuts.md', articleFixtures.get('keyboard-shortcuts.md')!)
+    await bucket.replace([
+      ['a-first.md', `---\ntitle: First\nslug: ${slug}\n---\nFirst body.`],
+      ['b-second.md', `---\ntitle: Second\nslug: ${slug}\n---\nSecond body.`],
+      ['c-third.md', `---\ntitle: Second\nslug: ${slug}\n---\nSecond body.`],
+      ['d-keyboard-shortcuts.md', articleFixtures.get('keyboard-shortcuts.md')!],
+    ])
 
     const { result, queries } = await withCapturedTestQueries(() => syncFixtureArticles())
 
@@ -103,10 +104,9 @@ describe('syncArticles', () => {
       slug = `relative-links-${randomUUID()}`
     })
 
-    function syncOnly(content: string) {
+    async function syncOnly(content: string) {
       ownedSlugs.add(slug)
-      objects.clear()
-      objects.set('relative.md', content)
+      await bucket.replace([['relative.md', content]])
       return syncFixtureArticles()
     }
 
@@ -172,14 +172,14 @@ describe('syncArticles', () => {
   it('reports an error for unreadable article objects and continues syncing', async () => {
     await syncFixtureArticles()
 
-    objects.set('about.md', new Error('S3 read failed'))
+    await bucket.put('about.md', oversizedArticleMarkdown())
 
     const result = await syncFixtureArticles()
 
     expect(result.summary.errored).toBe(1)
     expect(result.results.find(item => item.file === 'about.md')).toMatchObject({
       action: 'error',
-      error: 'S3 read failed',
+      error: 'Article object from S3 exceeds 262144 bytes',
     })
     expect(result.results.find(item => item.file === 'keyboard-shortcuts.md')?.action).toBe(
       'skipped',
@@ -189,12 +189,14 @@ describe('syncArticles', () => {
   it('waits for each article before loading the next and preserves error result order', async () => {
     const firstLoad = Promise.withResolvers<string>()
     const firstRequested = Promise.withResolvers<void>()
-    objects.clear()
-    objects.set('aa-first.md', () => {
+    await bucket.replace([
+      ['aa-first.md', 'held by the read below'],
+      ['about.md', articleFixtures.get('about.md')!],
+    ])
+    const { fetchedKeys } = holdArticleRead('aa-first.md', () => {
       firstRequested.resolve()
       return firstLoad.promise
     })
-    objects.set('about.md', articleFixtures.get('about.md')!)
 
     const syncPromise = () =>
       syncFixtureArticles(() => firstLoad.reject(new Error('first load failed')))

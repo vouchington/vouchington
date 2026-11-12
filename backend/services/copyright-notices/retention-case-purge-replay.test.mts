@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
-import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import {
   isCopyrightRationaleRetentionEligibleNow,
   publishCopyrightCasePurgeCoverage,
@@ -65,7 +65,7 @@ async function finishCase(data: CopyrightCasePurgeJobData): Promise<void> {
 
 describe('initial copyright submission replay during case purge', () => {
   useAutomaticProvisionalWithholding()
-  const bucket = useFakeCopyrightEvidenceBucket()
+  const bucket = useCopyrightEvidenceBucket()
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed form fixture and bounded case purge pages through final root deletion
@@ -106,7 +106,7 @@ describe('initial copyright submission replay during case purge', () => {
     expect(before.rationaleIds.length).toBeGreaterThanOrEqual(3)
     await settleCopyrightCasePurgeFixtureActions(email.noticeId)
     await publishCopyrightCasePurgeCoverage(email.noticeId)
-    for (const key of email.evidenceKeys) bucket.put(key)
+    for (const key of email.evidenceKeys) await bucket.put(key)
     const input = await readReplayableCopyrightCasePurgeEmail(email.intakeId)
     await expect(createCopyrightEmailIntake(input)).resolves.toMatchObject({ isNew: false })
 

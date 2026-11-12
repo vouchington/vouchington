@@ -4,7 +4,7 @@ import {
   GetObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
-import { S3ImagesClient } from '@modules/aws'
+import { discardAwsResponseBody, S3ImagesClient } from '@modules/aws'
 import { isAwsThrottlingError, wrapHttpForRetry } from '@modules/queue-errors'
 import type { Readable } from 'node:stream'
 import {
@@ -38,7 +38,12 @@ async function loadSesInboundObjectWithMetadata(
         : {}),
     }),
   ).catch(wrapS3HttpForRetry)
-  rejectOversizedRawEmail(response.ContentLength)
+  try {
+    rejectOversizedRawEmail(response.ContentLength)
+  } catch (err) {
+    discardAwsResponseBody(response.Body)
+    throw err
+  }
   if (!response.Body) throw new SesInboundTerminalError('Raw SES object has no body')
   if (!response.LastModified)
     throw new SesInboundTerminalError('Raw SES object has no receipt time')

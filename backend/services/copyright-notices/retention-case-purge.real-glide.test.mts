@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
 import {
@@ -11,10 +11,9 @@ import {
   workerQueuePrefix,
 } from '../../data-stores/valkey-core/glide-mq-client.mts'
 import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
-import { installS3TestCredentials } from '@voucha/test-helpers/s3-test-environment'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
-import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import {
   advanceCopyrightCasePurgeFixtureClock,
   publishCopyrightCasePurgeCoverage,
@@ -61,7 +60,7 @@ async function assertPurgeFinished(input: {
   phases: Set<string>
   evidenceErasedBeforeRoot: boolean
   proofRestartVerified: boolean
-  deleteRequests: number
+  evidenceVersionsAfterPages: number[]
 }) {
   expect(await readCopyrightCasePurgeFixture(input.noticeId)).toMatchObject({
     live: false,
@@ -83,7 +82,8 @@ async function assertPurgeFinished(input: {
   )
   expect(input.evidenceErasedBeforeRoot).toBe(true)
   expect(input.proofRestartVerified).toBe(true)
-  expect(input.deleteRequests).toBeGreaterThan(1)
+  // Bounded evidence pages erase the four seeded versions over several runs, not all at once.
+  expect(input.evidenceVersionsAfterPages.some(count => count > 0 && count < 4)).toBe(true)
 }
 
 function assertPageProof(data: CopyrightCasePurgeJobData): void {
@@ -116,15 +116,8 @@ async function finishResidualWithNativeWorker(data: CopyrightCasePurgeJobData): 
 }
 
 describe('copyright case purge pages', () => {
-  let restoreS3Credentials: (() => void) | undefined
-  beforeEach(() => {
-    restoreS3Credentials = installS3TestCredentials()
-  })
-  afterEach(() => {
-    restoreS3Credentials?.()
-  })
   useAutomaticProvisionalWithholding()
-  const bucket = useFakeCopyrightEvidenceBucket()
+  const bucket = useCopyrightEvidenceBucket()
   const setPageSize = useCopyrightCasePurgePageSize()
 
   // no-mistakes-timeout-reason: reviewed email fixture, bounded PostgreSQL pages, and native worker continuation
@@ -134,11 +127,12 @@ describe('copyright case purge pages', () => {
     const entry = await createRetentionEmailCase()
     await settleCopyrightCasePurgeFixtureActions(entry.noticeId)
     await publishCopyrightCasePurgeCoverage(entry.noticeId)
-    for (const key of entry.evidenceKeys) bucket.put(key, { versions: 3, deleteMarker: true })
+    for (const key of entry.evidenceKeys) await bucket.put(key, { versions: 3, deleteMarker: true })
     let data = firstPage(entry.noticeId)
     const phases = new Set<string>()
     const trace: string[] = []
     let evidenceErasedBeforeRoot = false
+    const evidenceVersionsAfterPages: number[] = []
     let proofRestartVerified = false
 
     for (let page = 0; page < 1_000; page += 1) {
@@ -164,11 +158,13 @@ describe('copyright case purge pages', () => {
         `${data.phase}:${data.phaseIndex}:${data.afterId ?? '-'}>${result.data.phase}:${result.data.phaseIndex}:${result.data.afterId ?? '-'}`,
       )
       if (trace.length > 24) trace.shift()
+      if (data.phase === 'evidence')
+        evidenceVersionsAfterPages.push(await bucket.countVersions(entry.evidenceKeys[0]!))
       if (result.data.phase === 'pointers' && !evidenceErasedBeforeRoot) {
         evidenceErasedBeforeRoot = true
         await assertEvidenceGoneBeforeRoot(
           entry.noticeId,
-          bucket.countVersions(entry.evidenceKeys[0]!),
+          await bucket.countVersions(entry.evidenceKeys[0]!),
         )
       }
       if (result.data.phase === 'residual_parties') {
@@ -185,7 +181,7 @@ describe('copyright case purge pages', () => {
           phases,
           evidenceErasedBeforeRoot,
           proofRestartVerified,
-          deleteRequests: bucket.deleteRequests(),
+          evidenceVersionsAfterPages,
         })
         return
       }

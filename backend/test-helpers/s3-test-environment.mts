@@ -15,6 +15,13 @@ for (const [name, value] of Object.entries(buckets)) {
   if (!process.env[name]?.trim()) process.env[name] = value
 }
 
+/** Bucket names the application reads from the environment; the AWS Emulator setup creates them. */
+export function testS3BucketNames(): string[] {
+  return Object.keys(buckets).map(
+    name => process.env[name] ?? buckets[name as keyof typeof buckets],
+  )
+}
+
 /** Only SDK-mocked projects install synthetic credentials; credentialed projects keep their gate. */
 export function installS3TestCredentials(): () => void {
   const hasServiceCredentials =

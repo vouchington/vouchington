@@ -24,7 +24,8 @@ selection, parallel safety, and validation commands. Read
    setup/assertion operations in `backend/test-helpers`; never import raw SQL from a backend test.
 3. Randomize persistent fixtures with the shared helpers, register concurrent listener waits before
    mutations, and make assertions safe on a dirty, parallel database.
-4. Mock only external provider boundaries — see
+4. AWS SDK calls reach the local AWS Emulator, never a mock; own state through unique keys or a
+   per-test bucket. Mock only other external provider boundaries — see
    [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) for the exact boundary and naming
    rules. Gate a provider integration on a recorded response replayed through the SDK's `fetch`
    (`createProviderReplay()` in `backend/test-helpers/provider-replay.mts`);

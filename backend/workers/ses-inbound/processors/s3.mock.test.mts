@@ -140,6 +140,21 @@ describe('loadSesInboundObjectAndHash', () => {
     expect(vi.mocked(S3ImagesClient.send).mock.calls[1]?.[0]).toBeInstanceOf(DeleteObjectCommand)
   })
 
+  it('releases the unread body of an object whose declared size exceeds the limit', async () => {
+    const body = new Readable({ read() {} })
+    vi.mocked(S3ImagesClient.send).mockResolvedValueOnce({
+      Body: body,
+      ContentLength: 40 * 1024 * 1024 + 1,
+      LastModified: receivedAt,
+      ETag: '"etag-1"',
+    } as never)
+
+    await expect(loadSesInboundObjectAndHash('copyright-incoming/abc')).rejects.toThrow(
+      'exceeds the 41943040-byte limit',
+    )
+    expect(body.destroyed).toBe(true)
+  })
+
   it('rejects the digest when the object stream fails part-way through', async () => {
     async function* failing() {
       yield Buffer.from(RAW_MIME.slice(0, 20))

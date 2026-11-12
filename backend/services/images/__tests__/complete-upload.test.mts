@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { randomBytes, createHash } from 'node:crypto'
-import { Readable } from 'node:stream'
-import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Buckets } from '@modules/aws'
+import { putS3Object, readS3ObjectBytes } from '@voucha/test-helpers/aws-emulator-s3'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { markImageUploadFailed } from '../upload-state.mts'
+import * as digestModule from '../complete-upload-digest.mts'
 import { getImageByIdFromPrimary } from '../get.mts'
 import {
   createTestUser,
@@ -78,49 +79,45 @@ describe('completeImageUpload', () => {
     const imageId = await insertPendingTestImage(user.id)
     const bytes = randomBytes(64)
     const digest = createHash('sha256').update(bytes).digest('hex')
-    const originalSend = S3Client.prototype.send
-    const promotedBodies: Buffer[] = []
-    const send = vi.fn<VitestLooseMock>(async function (this: S3Client, command: unknown) {
-      if (command instanceof GetObjectCommand && command.input.Key === imageId) {
-        return { $metadata: {}, Body: Readable.from([bytes]), ContentType: 'image/png' }
-      }
-      if (
-        command instanceof PutObjectCommand &&
-        (command.input.Key === imageId || command.input.Key === digest)
-      ) {
-        const body = command.input.Body
-        if (!(body instanceof Readable)) throw new Error('Expected a readable promotion body')
-        const chunks: Buffer[] = []
-        for await (const chunk of body) chunks.push(Buffer.from(chunk))
-        promotedBodies.push(Buffer.concat(chunks))
-        if (command.input.Key === digest)
-          await markImageUploadFailed(imageId, 'Owned terminal failure during promotion')
-        return { $metadata: {} }
-      }
-      return Reflect.apply(originalSend, this, [command])
+    await putS3Object({
+      Bucket: S3Buckets.imageUploads,
+      Key: imageId,
+      Body: bytes,
+      ContentType: 'image/png',
     })
-    const sendSpy = vi.spyOn(S3Client.prototype, 'send').mockImplementation(send)
-    try {
-      const { result, error } = await withPostgresPoolQueryFailureForTest(
-        '/* getImageByIdFromPrimary */',
-        () => completeImageUpload(user, imageId).catch((err: unknown) => err),
-        { command: 'SELECT' },
-      )
-      expect(error).toMatchObject({ code: '25P02' })
-      expect(promotedBodies.length).toBeGreaterThan(0)
-      expect(promotedBodies.every(body => body.equals(bytes))).toBe(true)
-      expect(result).toMatchObject({
-        status: 409,
-        message: 'Image upload is no longer eligible for promotion',
-      })
-      expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(error, expect.anything())
-      await expect(getImageByIdFromPrimary(imageId, true)).resolves.toMatchObject({
-        upload_completed_at: null,
-        upload_failed_at: expect.any(Date),
-        upload_error: 'Owned terminal failure during promotion',
-      })
-    } finally {
-      sendSpy.mockRestore()
-    }
+    // A concurrent terminal transition lands after the digest is claimed and before promotion
+    // persists its key; storage stays real.
+    const persistDigest = digestModule.persistImageHashWhileProcessing
+    vi.spyOn(digestModule, 'persistImageHashWhileProcessing').mockImplementation(
+      async (hash, id) => {
+        const claimed = await persistDigest(hash, id)
+        if (id === imageId)
+          await markImageUploadFailed(imageId, 'Owned terminal failure during promotion')
+        return claimed
+      },
+    )
+
+    const { result, error } = await withPostgresPoolQueryFailureForTest(
+      '/* getImageByIdFromPrimary */',
+      () => completeImageUpload(user, imageId).catch((err: unknown) => err),
+      { command: 'SELECT' },
+    )
+
+    expect(error).toMatchObject({ code: '25P02' })
+    expect(result).toMatchObject({
+      status: 409,
+      message: 'Image upload is no longer eligible for promotion',
+    })
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(error, expect.anything())
+    await expect(getImageByIdFromPrimary(imageId, true)).resolves.toMatchObject({
+      upload_completed_at: null,
+      upload_failed_at: expect.any(Date),
+      upload_error: 'Owned terminal failure during promotion',
+    })
+    // Cleanup could not read the terminal state, so both promoted objects stay as written.
+    const promoted = await Promise.all(
+      [digest, imageId].map(key => readS3ObjectBytes(S3Buckets.images, key)),
+    )
+    expect(promoted.every(body => body?.equals(bytes))).toBe(true)
   })
 })

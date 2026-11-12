@@ -8,7 +8,7 @@ import {
   readAllQueueJobs,
   withDominantPostFixtures,
 } from '@voucha/test-helpers'
-import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
+import { useSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
 import {
   getSitemapPostDayData,
   getSitemapArchiveBackfillData,
@@ -56,13 +56,12 @@ describe('sitemap processors', () => {
 
   it('publishes a post-day sitemap and admits dependent index work', async () => {
     const day = uniqueDay()
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
     const add = vi.spyOn(sitemapsQueue, 'add')
 
     await processUpdatePostDaySitemap({ postType: 'discussion', day })
 
-    expect(objects.has(postDayIndexKey(day))).toBe(true)
+    expect(await store.has(postDayIndexKey(day))).toBe(true)
     const admittedNames = add.mock.calls.map(([name]) => name)
     expect(admittedNames).toContain('sitemaps.processUpdatePostTypeIndex')
     expect(admittedNames).toContain('sitemaps.processUpdatePostsIndex')
@@ -74,8 +73,7 @@ describe('sitemap processors', () => {
       overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { generation_page_row_limit: 1 }),
     )
     const day = uniqueDay()
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
     await withDominantPostFixtures(
       [
         { postType: 'discussion', votesScoreUp: 1, createdAt: new Date(`${day}T12:00:00.000Z`) },
@@ -84,9 +82,7 @@ describe('sitemap processors', () => {
       async () => {
         const beforeIds = new Set((await readAllQueueJobs(sitemapsQueue)).map(job => job.id))
         await processUpdatePostDaySitemap({ postType: 'discussion', day })
-        const progress = JSON.parse(objects.get(postDayProgressKey(day))!.toString()) as {
-          generation_id: string
-        }
+        const progress = (await store.json<{ generation_id: string }>(postDayProgressKey(day)))!
         const continuation = (await readAllQueueJobs(sitemapsQueue)).find(
           job =>
             !beforeIds.has(job.id) &&
@@ -95,28 +91,28 @@ describe('sitemap processors', () => {
             getSitemapPostDayData(job)?.generationId === progress.generation_id,
         )
         expect(continuation).toBeDefined()
-        expect(objects.has(postDayIndexKey(day))).toBe(false)
+        expect(await store.has(postDayIndexKey(day))).toBe(false)
         await processUpdatePostDaySitemap({
           postType: 'discussion',
           day,
           generationId: progress.generation_id,
         })
-        expect(objects.has(postDayIndexKey(day))).toBe(true)
+        expect(await store.has(postDayIndexKey(day))).toBe(true)
       },
     )
   })
 
   it('preserves a completed post-day generation when an old continuation arrives', async () => {
     const day = uniqueDay()
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
     await processUpdatePostDaySitemap({ postType: 'discussion', day })
-    const published = objects.get(postDayIndexKey(day))
+    const published = await store.get(postDayIndexKey(day))
+    expect(published).toBeDefined()
     const add = vi.spyOn(sitemapsQueue, 'add')
 
     await processUpdatePostDaySitemap({ postType: 'discussion', day, generationId: randomUUID() })
 
-    expect(objects.get(postDayIndexKey(day))).toEqual(published)
+    expect(await store.get(postDayIndexKey(day))).toEqual(published)
     expect(add).not.toHaveBeenCalled()
   })
 
@@ -125,36 +121,34 @@ describe('sitemap processors', () => {
       overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { generation_page_row_limit: 1 }),
     )
     await createTestUser()
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
     await processUpdateFamilySitemap({ family: 'users' })
-    const progress = objects.get('families/users/_progress.json')
-    const published = objects.get('sitemaps/families/users.xml')
+    const progress = await store.get('families/users/_progress.json')
+    const published = await store.get('sitemaps/families/users.xml')
     const add = vi.spyOn(sitemapsQueue, 'add')
 
     await processUpdateFamilySitemap({ family: 'users', generationId: randomUUID() })
 
-    expect(objects.get('families/users/_progress.json')).toEqual(progress)
-    expect(objects.get('sitemaps/families/users.xml')).toEqual(published)
+    expect(await store.get('families/users/_progress.json')).toEqual(progress)
+    expect(await store.get('sitemaps/families/users.xml')).toEqual(published)
     expect(add).not.toHaveBeenCalled()
   })
 
   it('writes each sitemap index through real gzip storage', async () => {
     vi.stubEnv('SITEMAP_BASE_URL', 'https://example.com')
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
 
     await processUpdatePostTypeIndex('review')
     await processUpdatePostsIndex()
     await processUpdateRootIndex()
 
-    expect(gunzipSync(objects.get('sitemaps/types/review.xml')!).toString()).toContain(
+    expect(gunzipSync((await store.get('sitemaps/types/review.xml'))!).toString()).toContain(
       '<sitemapindex',
     )
-    expect(gunzipSync(objects.get('sitemaps/posts.xml')!).toString()).toContain(
+    expect(gunzipSync((await store.get('sitemaps/posts.xml'))!).toString()).toContain(
       'https://example.com/sitemaps/review.xml',
     )
-    expect(gunzipSync(objects.get('sitemaps/root.xml')!).toString()).toContain(
+    expect(gunzipSync((await store.get('sitemaps/root.xml'))!).toString()).toContain(
       'https://example.com/sitemaps/static.xml',
     )
   })
@@ -163,9 +157,11 @@ describe('sitemap processors', () => {
     vi.stubEnv('SITEMAP_BASE_URL', 'https://example.com')
     const generationId = randomUUID()
     const pageKey = `families/users/${generationId}/1.xml`
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
-    objects.set(pageKey, gzipSync('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>'))
+    const store = await useSitemapObjectStore()
+    await store.put(
+      pageKey,
+      gzipSync('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>'),
+    )
     await putSitemapFamilyProgress('users', {
       generation_id: generationId,
       started_at: new Date(Date.now() - 1000).toISOString(),
@@ -182,7 +178,7 @@ describe('sitemap processors', () => {
 
     await processUpdateFamilySitemap({ family: 'users' })
 
-    const index = objects.get('sitemaps/families/users.xml')
+    const index = await store.get('sitemaps/families/users.xml')
     expect(index).toBeDefined()
     const indexXml = gunzipSync(index!).toString()
     expect(indexXml).toContain(`https://example.com/sitemaps/users/${generationId}/1.xml`)
@@ -200,8 +196,7 @@ describe('sitemap processors', () => {
     )
     const day = uniqueDay()
     const now = new Date(`${day}T08:00:00.000Z`)
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
+    await useSitemapObjectStore()
     const add = vi.spyOn(sitemapsQueue, 'add')
     const addBulk = vi.spyOn(sitemapsQueue, 'addBulk')
 
@@ -236,13 +231,11 @@ describe('sitemap processors', () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { archive_backfill_day_page_size: 2 }),
     )
-    const objects = new Map<string, Buffer>([
-      [
-        'sitemaps/meta/posts-tracked-range.json',
-        Buffer.from(JSON.stringify({ earliestDay, latestDay: earliestDay })),
-      ],
-    ])
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
+    await store.put(
+      'sitemaps/meta/posts-tracked-range.json',
+      JSON.stringify({ earliestDay, latestDay: earliestDay }),
+    )
     const add = vi.spyOn(sitemapsQueue, 'add')
     const addBulk = vi.spyOn(sitemapsQueue, 'addBulk')
 
@@ -266,8 +259,7 @@ describe('sitemap processors', () => {
   })
 
   it('enqueues nothing for the archive when no day has been tracked', async () => {
-    const objects = new Map<string, Buffer>()
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
     const add = vi.spyOn(sitemapsQueue, 'add')
     const addBulk = vi.spyOn(sitemapsQueue, 'addBulk')
     const archiveYear = 4000 + (Number.parseInt(randomUUID().slice(0, 4), 16) % 5000)
@@ -277,9 +269,9 @@ describe('sitemap processors', () => {
     const emptyAdmissionCounts = [add.mock.calls.length, addBulk.mock.calls.length]
 
     const trackedDay = getPreviousUtcDays(34, { baseDate: now }).at(-1)!
-    objects.set(
+    await store.put(
       'sitemaps/meta/posts-tracked-range.json',
-      Buffer.from(JSON.stringify({ earliestDay: trackedDay, latestDay: trackedDay })),
+      JSON.stringify({ earliestDay: trackedDay, latestDay: trackedDay }),
     )
     const populated = await processMonthlyBackfillArchiveDispatcher(undefined, now)
 

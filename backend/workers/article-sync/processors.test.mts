@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3'
 import { GlideClient } from '@valkey/valkey-glide'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { articleSyncPubSub, type ArticleSyncStatus } from '@data-stores/valkey-pubsub'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
+import { useArticleBucket } from '@voucha/test-helpers/article-sync-fixtures'
+import { useMissingS3Bucket } from '@voucha/test-helpers/missing-s3-bucket'
 import { processArticleSync } from './processors.mts'
 
 const restoreMethods: Array<() => void> = []
@@ -17,13 +18,12 @@ describe('article-sync processors', () => {
 
   it('resolves a real user and returns the empty article sync result', async () => {
     const user = await createTestUser()
-    const listCalls = mockArticleListResponse(() => Promise.resolve({ Contents: [] }))
+    await useArticleBucket()
 
     await expect(processArticleSync(user.id)).resolves.toEqual({
       results: [],
       summary: { created: 0, updated: 0, skipped: 0, errored: 0 },
     })
-    expect(listCalls()).toBe(1)
   })
 
   it('throws UnrecoverableError when the user does not exist', async () => {
@@ -37,47 +37,51 @@ describe('article-sync processors', () => {
 
   it('publishes completed status on the real pub/sub channel when jobId is provided', async () => {
     const user = await createTestUser()
-    mockArticleListResponse(() => Promise.resolve({ Contents: [] }))
+    await useArticleBucket()
     const jobId = randomUUID()
     const result = {
       results: [],
       summary: { created: 0, updated: 0, skipped: 0, errored: 0 },
     }
 
-    await withPublishedStatus(jobId, { status: 'completed', result }, async () => {
+    const published = await withPublishedStatus(jobId, async () => {
       await expect(processArticleSync(user.id, jobId)).resolves.toEqual(result)
     })
+    expect(published).toEqual({ status: 'completed', result })
   })
 
   it('publishes failed status on S3 listing failure and rethrows it', async () => {
     const user = await createTestUser()
-    const failure = new Error('article list unavailable')
-    mockArticleListResponse(() => Promise.reject(failure))
+    useMissingS3Bucket('assets')
     const jobId = randomUUID()
 
-    await withPublishedStatus(jobId, { status: 'failed', error: failure.message }, async () => {
-      await expect(processArticleSync(user.id, jobId)).rejects.toBe(failure)
+    let failure: unknown
+    const published = await withPublishedStatus(jobId, async () => {
+      failure = await processArticleSync(user.id, jobId).catch((err: unknown) => err)
     })
+    expect(failure).toMatchObject({ name: 'NoSuchBucket' })
+    expect(published).toEqual({ status: 'failed', error: (failure as Error).message })
   })
 
   it('retries a transient terminal publish failure before returning the sync result', async () => {
     const user = await createTestUser()
-    mockArticleListResponse(() => Promise.resolve({ Contents: [] }))
+    await useArticleBucket()
     const jobId = randomUUID()
     const publish = interceptOwnedPublish(jobId, attempt =>
       attempt === 1 ? Promise.reject(new Error('transient')) : null,
     )
 
-    await withPublishedStatus(jobId, { status: 'completed', result: emptyResult() }, async () => {
+    const published = await withPublishedStatus(jobId, async () => {
       await expect(processArticleSync(user.id, jobId)).resolves.toEqual(emptyResult())
     })
+    expect(published).toEqual({ status: 'completed', result: emptyResult() })
     expect(publish()).toHaveLength(2)
     expect(sentryCaptureExceptionMock).not.toHaveBeenCalled()
   })
 
   it('reports a failed terminal publish after three attempts without undoing the sync', async () => {
     const user = await createTestUser()
-    mockArticleListResponse(() => Promise.resolve({ Contents: [] }))
+    await useArticleBucket()
     const jobId = randomUUID()
     const publishFailure = 'pub/sub unavailable'
     const rejectedPublish = vi.fn<() => Promise<number>>().mockRejectedValue(publishFailure)
@@ -95,22 +99,6 @@ describe('article-sync processors', () => {
 
 function emptyResult() {
   return { results: [], summary: { created: 0, updated: 0, skipped: 0, errored: 0 } }
-}
-
-function mockArticleListResponse(answer: () => Promise<unknown>): () => number {
-  const original = S3Client.prototype.send
-  let calls = 0
-  S3Client.prototype.send = vi.fn<VitestLooseMock>(function (this: S3Client, command: unknown) {
-    if (command instanceof ListObjectsV2Command && command.input.Prefix === 'articles/') {
-      calls++
-      return answer()
-    }
-    return Reflect.apply(original, this, [command])
-  }) as typeof original
-  restoreMethods.push(() => {
-    S3Client.prototype.send = original
-  })
-  return () => calls
 }
 
 function interceptOwnedPublish(
@@ -134,17 +122,17 @@ function interceptOwnedPublish(
   return () => attempts
 }
 
+/** Runs the job with a live subscription and returns the terminal status it published. */
 async function withPublishedStatus(
   jobId: string,
-  expected: ArticleSyncStatus,
   run: () => Promise<void>,
-): Promise<void> {
+): Promise<ArticleSyncStatus> {
   const subscription = await articleSyncPubSub.subscribe(jobId)
   const published = Promise.withResolvers<ArticleSyncStatus>()
   subscription.setHandler(value => published.resolve(value))
   try {
     await run()
-    await expect(published.promise).resolves.toEqual(expected)
+    return await published.promise
   } finally {
     await subscription.close()
   }

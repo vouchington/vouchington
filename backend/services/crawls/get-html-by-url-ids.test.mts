@@ -1,11 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
-import { Readable } from 'node:stream'
 import { gzipSync } from 'node:zlib'
-import { GetObjectCommand, S3Client, type GetObjectCommandOutput } from '@aws-sdk/client-s3'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { S3Buckets } from '@modules/aws'
+import { putS3Object } from '@voucha/test-helpers/aws-emulator-s3'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import {
   hardDeleteTestUrl,
@@ -29,17 +28,17 @@ type SnapshotOptions = {
   statusCode?: number
 }
 
-type S3Response = { html: string } | { error: Error }
-
 describe('getLatestHtmlByUrlIds', () => {
   it('selects recent uploaded snapshots and continues after download failures and missing objects', async () => {
-    const now = Date.now() + 14 * 24 * 60 * 60 * 1000
+    // Near the real clock: the frozen service time also signs the real S3 reads, and S3 rejects
+    // requests signed more than 15 minutes from its own clock.
+    const now = Date.now()
     const freshTime = new Date(now - 60_000)
     const previousTime = new Date(now - 2 * 60 * 60 * 1000)
     const staleTime = new Date(now - (CRAWL_HTML_SNAPSHOT_RETENTION_DAYS + 1) * 24 * 60 * 60 * 1000)
 
     const latestUrl = await createUrl('latest')
-    await insertSnapshot(latestUrl, {
+    const previous = await insertSnapshot(latestUrl, {
       completedAt: previousTime,
       hashByte: 1,
       htmlSnapshotUploadedAt: previousTime,
@@ -70,13 +69,13 @@ describe('getLatestHtmlByUrlIds', () => {
       hashByte: 6,
     })
     const staleCompletionUrl = await createUrl('stale-completion')
-    await insertSnapshot(staleCompletionUrl, {
+    const staleCompletion = await insertSnapshot(staleCompletionUrl, {
       completedAt: staleTime,
       hashByte: 7,
       htmlSnapshotUploadedAt: freshTime,
     })
     const staleUploadUrl = await createUrl('stale-upload')
-    await insertSnapshot(staleUploadUrl, {
+    const staleUpload = await insertSnapshot(staleUploadUrl, {
       completedAt: freshTime,
       hashByte: 8,
       htmlSnapshotUploadedAt: staleTime,
@@ -89,36 +88,27 @@ describe('getLatestHtmlByUrlIds', () => {
       completedAt: freshTime,
     })
     const failedStatusUrl = await createUrl('failed-status')
-    await insertSnapshot(failedStatusUrl, {
+    const failedStatus = await insertSnapshot(failedStatusUrl, {
       completedAt: freshTime,
       hashByte: 9,
       htmlSnapshotUploadedAt: freshTime,
       statusCode: 404,
     })
 
-    const downloadError = new Error('Owned S3 download failed')
-    const missingObjectError = new Error('Crawl HTML snapshot no longer exists')
-    missingObjectError.name = 'NoSuchKey'
-    const snapshots = [latest, failed, afterFailure, missing, completionFallback]
-    const ownedUrlIds = new Set([
-      latest.urlId,
-      failed.urlId,
-      afterFailure.urlId,
-      missing.urlId,
-      completionFallback.urlId,
-      staleCompletionUrl.id,
-      staleUploadUrl.id,
-      missingHashUrl.id,
-      failedStatusUrl.id,
+    const successful = new Map([
+      [latest, '<main>newest snapshot</main>'],
+      [afterFailure, '<main>download continued</main>'],
+      [completionFallback, '<main>completion timestamp fallback</main>'],
     ])
-    const responses = new Map<string, S3Response>([
-      [s3Key(latest), { html: '<main>newest snapshot</main>' }],
-      [s3Key(failed), { error: downloadError }],
-      [s3Key(afterFailure), { html: '<main>download continued</main>' }],
-      [s3Key(missing), { error: missingObjectError }],
-      [s3Key(completionFallback), { html: '<main>completion timestamp fallback</main>' }],
+    // Snapshots the query must not select still have objects, so selecting one would surface it.
+    const unselected = [previous, staleCompletion, staleUpload, failedStatus]
+    await Promise.all([
+      ...[...successful].map(([snapshot, html]) => seedSnapshotHtml(snapshot, html)),
+      ...unselected.map(snapshot => seedSnapshotHtml(snapshot, '<main>not selected</main>')),
+      // A stored object that is not gzip fails its download; `missing` has no object at all.
+      putS3Object({ Bucket: S3Buckets.crawls, Key: s3Key(failed), Body: '<main>not gzip</main>' }),
     ])
-    const downloads = stubOwnedCrawlS3Responses(ownedUrlIds, responses)
+    const capturedBefore = sentryCaptureExceptionMock.mock.calls.length
 
     let files: Awaited<ReturnType<typeof getLatestHtmlByUrlIds>> = []
     try {
@@ -136,37 +126,24 @@ describe('getLatestHtmlByUrlIds', () => {
         ]),
       )
 
-      const requested = snapshots.toSorted((left, right) => left.urlId.localeCompare(right.urlId))
-      const successful = [latest, afterFailure, completionFallback].toSorted((left, right) =>
-        left.urlId.localeCompare(right.urlId),
-      )
-      expect(downloads.requests).toEqual(
-        requested.map(snapshot => ({ bucket: S3Buckets.crawls, key: s3Key(snapshot) })),
-      )
+      const expected = [...successful]
+        .toSorted(([left], [right]) => left.urlId.localeCompare(right.urlId))
+        .map(([, html]) => html)
       expect(await Promise.all(files.map(file => readFile(file.filePath, 'utf8')))).toEqual(
-        successful.map(snapshot => {
-          const response = responses.get(s3Key(snapshot))
-          if (!response || !('html' in response)) throw new Error('Expected successful S3 fixture')
-          return response.html
-        }),
+        expected,
       )
-      expect(
-        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === downloadError),
-      ).toHaveLength(1)
-      expect(
-        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === missingObjectError),
-      ).toHaveLength(0)
+      const captured = sentryCaptureExceptionMock.mock.calls
+        .slice(capturedBefore)
+        .map(([error]) => error as Error)
+      expect(captured).toHaveLength(1)
+      expect(captured[0]).toMatchObject({ code: 'Z_DATA_ERROR' })
     } finally {
-      try {
-        await Promise.all(files.map(file => file.cleanup()))
-      } finally {
-        downloads.restore()
-      }
+      await Promise.all(files.map(file => file.cleanup()))
     }
   })
 
   it('includes snapshots exactly on the retention cutoff for each date predicate', async () => {
-    const frozenNow = Date.now() + 30 * 24 * 60 * 60 * 1000
+    const frozenNow = Date.now()
     const cutoff = frozenNow - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000
     const freshTime = new Date(frozenNow - 60_000)
     const boundaries = [
@@ -182,7 +159,7 @@ describe('getLatestHtmlByUrlIds', () => {
     ] as const
     const snapshots: CrawlSnapshot[] = []
     const expected: CrawlSnapshot[] = []
-    const htmlResponses = new Map<string, { html: string }>()
+    const htmlBySnapshot = new Map<CrawlSnapshot, string>()
 
     for (const [index, { predicate, delta }] of boundaries.entries()) {
       const url = await createUrl(`cutoff-${predicate}-${delta}`)
@@ -197,13 +174,12 @@ describe('getLatestHtmlByUrlIds', () => {
             }),
       })
       snapshots.push(snapshot)
-      htmlResponses.set(s3Key(snapshot), { html: `<main>${predicate}:${delta}</main>` })
+      htmlBySnapshot.set(snapshot, `<main>${predicate}:${delta}</main>`)
       if (delta >= 0) expected.push(snapshot)
     }
 
-    const downloads = stubOwnedCrawlS3Responses(
-      new Set(snapshots.map(snapshot => snapshot.urlId)),
-      htmlResponses,
+    await Promise.all(
+      [...htmlBySnapshot].map(([snapshot, html]) => seedSnapshotHtml(snapshot, html)),
     )
     let files: Awaited<ReturnType<typeof getLatestHtmlByUrlIds>> = []
     try {
@@ -211,18 +187,11 @@ describe('getLatestHtmlByUrlIds', () => {
         getLatestHtmlByUrlIds(snapshots.map(snapshot => snapshot.urlId)),
       )
       const selected = expected.toSorted((left, right) => left.urlId.localeCompare(right.urlId))
-      expect(downloads.requests).toEqual(
-        selected.map(snapshot => ({ bucket: S3Buckets.crawls, key: s3Key(snapshot) })),
-      )
       expect(await Promise.all(files.map(file => readFile(file.filePath, 'utf8')))).toEqual(
-        selected.map(snapshot => htmlResponses.get(s3Key(snapshot))?.html),
+        selected.map(snapshot => htmlBySnapshot.get(snapshot)),
       )
     } finally {
-      try {
-        await Promise.all(files.map(file => file.cleanup()))
-      } finally {
-        downloads.restore()
-      }
+      await Promise.all(files.map(file => file.cleanup()))
     }
   })
 })
@@ -269,29 +238,12 @@ async function runWithServiceNow<T>(now: number, operation: () => Promise<T>): P
   }
 }
 
-function stubOwnedCrawlS3Responses(
-  ownedUrlIds: ReadonlySet<string>,
-  responses: ReadonlyMap<string, S3Response>,
-) {
-  const requests: Array<{ bucket: string | undefined; key: string | undefined }> = []
-  const previousSend = S3Client.prototype.send
-  const send = vi.spyOn(S3Client.prototype, 'send')
-  send.mockImplementation(async function (this: S3Client, command, ...args) {
-    const delegate = () => Reflect.apply(previousSend, this, [command, ...args])
-    if (!(command instanceof GetObjectCommand)) return delegate()
-    const { Bucket, Key } = command.input
-    const urlId = Key?.split('/')[1]
-    if (!urlId || !ownedUrlIds.has(urlId)) return delegate()
-    requests.push({ bucket: Bucket, key: Key })
-    if (Bucket !== S3Buckets.crawls || !Key) return delegate()
-    const response = responses.get(Key)
-    if (!response) return delegate()
-    if ('error' in response) throw response.error
-    const output: GetObjectCommandOutput = {
-      $metadata: { httpStatusCode: 200 },
-      Body: Readable.from([gzipSync(Buffer.from(response.html))]) as GetObjectCommandOutput['Body'],
-    }
-    return output
+/** Stores a snapshot's HTML where the crawl writer puts it; each URL hostname is test-owned. */
+async function seedSnapshotHtml(snapshot: CrawlSnapshot, html: string): Promise<void> {
+  await putS3Object({
+    Bucket: S3Buckets.crawls,
+    Key: s3Key(snapshot),
+    Body: gzipSync(Buffer.from(html)),
+    ContentEncoding: 'gzip',
   })
-  return { requests, restore: () => send.mockRestore() }
 }

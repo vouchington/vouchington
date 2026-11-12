@@ -49,9 +49,11 @@ Supertest reports only the status, and `onError` is silent under `NODE_ENV=test`
 
 Pass a throwing `QueryExecutor` (`rejectQuery`) through the production query option to the targeted write. The wrapper is scoped to one test call, so it does not affect concurrent tests. Never install schema objects such as triggers for failure injection: they lock shared tables and can outlive a failed cleanup.
 
-## Database-backed projects never reach AWS
+## AWS calls reach the AWS Emulator
 
-An unstubbed S3 call in a database-backed project can only return 403 or hang, because the AWS SDK sets no connect timeout and the statement timeout does not cover it. These projects replace `S3Client.prototype.send` with an offline rejection. A test needing another answer spies on `send`; real S3 coverage stays in the credentialed `backend-aws` project. Other AWS clients are not covered by this default.
+Test projects that are not credentialed point every AWS SDK client at one local [AWS Emulator](https://github.com/aws/aws-emulator) per Vitest process, so a test exercises real requests, signatures, presigned URLs, and stored state instead of a stubbed `send`. Credentials, endpoint, and the emulator's per-run certificate come from the environment; the only module override is the shared dual-stack client setting, because the SDK refuses a custom endpoint with dual-stack enabled. The emulator is in memory, shared by every fork, and never reset, so a test owns its objects through a unique key prefix or its own bucket and asserts on that state. Failures come from real conditions (a missing key or bucket) wherever the emulator produces them. The emulator does not run model inference, so Bedrock runtime calls stay on recorded responses. It does not evaluate IAM policies, so authorization against AWS stays in the non-gating credentialed projects.
+
+AWS publishes the emulator as versioned, signed Linux packages but no container image, so the harness pins a package digest, caches the extracted binary in the checkout, and on hosts that cannot run it uses the mirrored Debian Node image. A version bump verifies the package signature against AWS's published key before recording the new digest.
 
 ## Stuck statements and Valkey budgets
 

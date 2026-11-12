@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
-import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
+import { useSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
 import { sitemapsWorkConfig } from './work-limits.mts'
 import { cleanupRetiredSitemapGenerations } from './retired-generation-cleanup.mts'
 import type { putRetiredSitemapGeneration } from './generation-storage.mts'
@@ -30,26 +30,23 @@ describe('retired sitemap cleanup', () => {
       next_page: 1,
       retire_after: '2026-10-24T00:00:00.000Z',
     }
-    const objects = new Map<string, Buffer>([
-      [recordKey, Buffer.from(JSON.stringify(record))],
-      ...[1, 2, 3].map(page => [`${pagePrefix}${page}.xml`, Buffer.from('page')] as const),
-    ])
-    spyOnSitemapObjectStore(objects, () => undefined)
+    const store = await useSitemapObjectStore()
+    await store.put(recordKey, JSON.stringify(record))
+    await Promise.all([1, 2, 3].map(page => store.put(`${pagePrefix}${page}.xml`, 'page')))
+    const pageKeys = [1, 2, 3].map(page => `${pagePrefix}${page}.xml`)
 
     await cleanupRetiredSitemapGenerations(new Date('2026-10-23T00:00:00.000Z'))
-    expect([1, 2, 3].every(page => objects.has(`${pagePrefix}${page}.xml`))).toBe(true)
-    expect(JSON.parse(objects.get(recordKey)!.toString()).next_page).toBe(1)
+    expect(await store.keys(pagePrefix)).toEqual(pageKeys)
+    expect((await store.json<RetiredSitemapGeneration>(recordKey))?.next_page).toBe(1)
 
     const partial = await cleanupRetiredSitemapGenerations(new Date('2026-10-25T00:00:00.000Z'))
     expect(partial).toMatchObject({ deletedPages: 2, hasMore: true })
-    expect(objects.has(`${pagePrefix}1.xml`)).toBe(false)
-    expect(objects.has(`${pagePrefix}2.xml`)).toBe(false)
-    expect(objects.has(`${pagePrefix}3.xml`)).toBe(true)
-    expect(JSON.parse(objects.get(recordKey)!.toString()).next_page).toBe(3)
+    expect(await store.keys(pagePrefix)).toEqual([`${pagePrefix}3.xml`])
+    expect((await store.json<RetiredSitemapGeneration>(recordKey))?.next_page).toBe(3)
 
     const final = await cleanupRetiredSitemapGenerations(new Date('2026-10-25T00:00:00.000Z'))
     expect(final).toMatchObject({ deletedPages: 1, hasMore: false })
-    expect(objects.has(`${pagePrefix}3.xml`)).toBe(false)
-    expect(objects.has(recordKey)).toBe(false)
+    expect(await store.keys(pagePrefix)).toEqual([])
+    expect(await store.has(recordKey)).toBe(false)
   })
 })

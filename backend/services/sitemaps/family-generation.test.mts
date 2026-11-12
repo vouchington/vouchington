@@ -1,4 +1,4 @@
-import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
+import { useSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
 import { randomUUID } from 'node:crypto'
 import { gunzipSync } from 'node:zlib'
 import {
@@ -30,67 +30,53 @@ describe('sitemap generation publication', () => {
     const candidateId = randomUUID()
     const previousGenerationId = randomUUID()
     const indexKey = 'sitemaps/families/users.xml'
-    const objects = new Map<string, Buffer>([[indexKey, Buffer.from('previous-public-index')]])
-    objects.set(
+    const store = await useSitemapObjectStore()
+    await store.put(indexKey, 'previous-public-index', {
+      active_page_count: 1,
+      generation_id: previousGenerationId,
+      generated_at: '2026-01-01T00:00:00.000Z',
+      content_hash: 'previous-content',
+    })
+    await store.put(
       'families/users/_progress.json',
-      Buffer.from(
-        JSON.stringify({
-          generation_id: candidateId,
-          started_at: new Date().toISOString(),
-          content_hash: '',
-          high_water_id: user.id,
-          after_id: null,
-          after_path: null,
-          page_count: 0,
-          finished: false,
-          previous_generation_id: previousGenerationId,
-          previous_page_count: 1,
-        } satisfies SitemapGenerationProgress),
-      ),
+      JSON.stringify({
+        generation_id: candidateId,
+        started_at: new Date().toISOString(),
+        content_hash: '',
+        high_water_id: user.id,
+        after_id: null,
+        after_path: null,
+        page_count: 0,
+        finished: false,
+        previous_generation_id: previousGenerationId,
+        previous_page_count: 1,
+      } satisfies SitemapGenerationProgress),
     )
-    const metadata = new Map([
-      [
-        indexKey,
-        {
-          active_page_count: 1,
-          generation_id: previousGenerationId,
-          generated_at: '2026-01-01T00:00:00.000Z',
-          content_hash: 'previous-content',
-        },
-      ],
-    ])
-    let failStagedPage = true
-    spyOnSitemapObjectStore(
-      objects,
-      key =>
-        /^families\/users\/[^/]+\/1\.xml$/u.test(key) && failStagedPage
-          ? new Error('staged family page failed')
-          : undefined,
-      metadata,
-    )
+    await store.deny({ put: ['families/users/*/1.xml'] })
 
-    await expect(generateSitemapFamilyFiles('users')).rejects.toThrow('staged family page failed')
-    expect(objects.get(indexKey)?.toString()).toBe('previous-public-index')
-    const failedProgress = JSON.parse(objects.get('families/users/_progress.json')!.toString()) as {
-      generation_id: string
-      page_count: number
-    }
+    await expect(generateSitemapFamilyFiles('users')).rejects.toMatchObject({
+      name: 'AccessDenied',
+    })
+    expect((await store.get(indexKey))?.toString()).toBe('previous-public-index')
+    const failedProgress = (await store.json<SitemapGenerationProgress>(
+      'families/users/_progress.json',
+    ))!
     expect(failedProgress.page_count).toBe(0)
 
-    failStagedPage = false
+    await store.allowAll()
     const resumed = await generateSitemapFamilyFiles('users')
     expect(resumed.hasMore).toBe(true)
-    expect(objects.get(indexKey)?.toString()).toBe('previous-public-index')
-    expect(gunzipSync(objects.get(`families/users/${candidateId}/1.xml`)!).toString()).toContain(
-      `/user/${user.username}`,
-    )
+    expect((await store.get(indexKey))?.toString()).toBe('previous-public-index')
+    expect(
+      gunzipSync((await store.get(`families/users/${candidateId}/1.xml`))!).toString(),
+    ).toContain(`/user/${user.username}`)
     // Finalization resumes a completed checkpoint, independently of unrelated users.
-    const completed = JSON.parse(
-      objects.get('families/users/_progress.json')!.toString(),
-    ) as SitemapGenerationProgress
-    objects.set(
+    const completed = (await store.json<SitemapGenerationProgress>(
       'families/users/_progress.json',
-      Buffer.from(JSON.stringify({ ...completed, finished: true })),
+    ))!
+    await store.put(
+      'families/users/_progress.json',
+      JSON.stringify({ ...completed, finished: true }),
     )
     const result = await generateSitemapFamilyFiles('users')
     expect(result.hasMore).toBe(false)
@@ -98,16 +84,18 @@ describe('sitemap generation publication', () => {
       active_page_count: 1,
       generation_id: failedProgress.generation_id,
     })
-    expect(objects.has('families/users/_progress.json')).toBe(false)
+    expect(await store.has('families/users/_progress.json')).toBe(false)
     expect(
-      gunzipSync(objects.get(`families/users/${failedProgress.generation_id}/1.xml`)!).toString(),
+      gunzipSync(
+        (await store.get(`families/users/${failedProgress.generation_id}/1.xml`))!,
+      ).toString(),
     ).toContain(`/user/${user.username}`)
-    expect(gunzipSync(objects.get(indexKey)!).toString()).toContain(
+    expect(gunzipSync((await store.get(indexKey))!).toString()).toContain(
       `https://example.com/sitemaps/users/${failedProgress.generation_id}/1.xml`,
     )
-    expect(
-      JSON.parse(objects.get(`sitemaps/retired/records/${previousGenerationId}.json`)!.toString()),
-    ).toMatchObject({ generation_id: previousGenerationId, page_count: 1, next_page: 1 })
+    expect(await store.json(`sitemaps/retired/records/${previousGenerationId}.json`)).toMatchObject(
+      { generation_id: previousGenerationId, page_count: 1, next_page: 1 },
+    )
   })
 
   it('stages an eligible post-day page without replacing the prior index when index upload fails', async () => {
@@ -125,45 +113,33 @@ describe('sitemap generation publication', () => {
     await setPostVotesScoreUp(postId, 1)
     const previousGenerationId = randomUUID()
     const indexKey = 'posts/2026/06/10/article/index.xml'
-    const objects = new Map<string, Buffer>([[indexKey, Buffer.from('previous-public-index')]])
-    const metadata = new Map([
-      [
-        indexKey,
-        {
-          active_page_count: 1,
-          generation_id: previousGenerationId,
-          generated_at: '2026-06-09T00:00:00.000Z',
-          content_hash: 'previous-content',
-        },
-      ],
-    ])
-    spyOnSitemapObjectStore(
-      objects,
-      key => (key === indexKey ? new Error('post-day index upload failed') : undefined),
-      metadata,
-    )
+    const store = await useSitemapObjectStore()
+    await store.put(indexKey, 'previous-public-index', {
+      active_page_count: 1,
+      generation_id: previousGenerationId,
+      generated_at: '2026-06-09T00:00:00.000Z',
+      content_hash: 'previous-content',
+    })
+    await store.deny({ put: [indexKey] })
 
-    await expect(generatePostDaySitemapFiles('article', '2026-06-10')).rejects.toThrow(
-      'post-day index upload failed',
-    )
-    expect(objects.get(indexKey)?.toString()).toBe('previous-public-index')
+    await expect(generatePostDaySitemapFiles('article', '2026-06-10')).rejects.toMatchObject({
+      name: 'AccessDenied',
+    })
+    expect((await store.get(indexKey))?.toString()).toBe('previous-public-index')
     expect((await getPostDayManifest('article', '2026-06-10'))?.generation_id).toBe(
       previousGenerationId,
     )
-    const progress = JSON.parse(
-      objects.get('posts/2026/06/10/article/_progress.json')!.toString(),
-    ) as {
-      generation_id: string
-      page_count: number
-    }
+    const progress = (await store.json<SitemapGenerationProgress>(
+      'posts/2026/06/10/article/_progress.json',
+    ))!
     expect(progress.page_count).toBeGreaterThan(0)
     expect(
       gunzipSync(
-        objects.get(`posts/2026/06/10/article/${progress.generation_id}/1.xml`)!,
+        (await store.get(`posts/2026/06/10/article/${progress.generation_id}/1.xml`))!,
       ).toString(),
     ).toContain(`https://example.com/article/${slug}`)
-    expect(objects.has(`sitemaps/retired/records/${previousGenerationId}.json`)).toBe(false)
-    expect(objects.has('sitemaps/meta/posts-tracked-range.json')).toBe(false)
+    expect(await store.has(`sitemaps/retired/records/${previousGenerationId}.json`)).toBe(false)
+    expect(await store.has('sitemaps/meta/posts-tracked-range.json')).toBe(false)
   })
 
   it('builds root-index entries for family indexes', () => {

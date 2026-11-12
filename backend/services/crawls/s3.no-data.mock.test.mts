@@ -1,16 +1,18 @@
+import { randomUUID } from 'node:crypto'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import * as fsPromises from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
 import { gunzipSync, gzipSync } from 'node:zlib'
-import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest'
+import { GetObjectCommand, HeadObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { S3Buckets } from '@modules/aws'
+import { emulatorS3, putS3Object, s3ObjectExists } from '@voucha/test-helpers/aws-emulator-s3'
+import { denyS3ObjectActions, useOwnedS3Bucket } from '@voucha/test-helpers/s3-owned-bucket'
 import { downloadCrawlHtmlToTempFile, uploadCrawlHtmlFileToS3 } from './s3.mts'
 
 const recordedGzipDirectories = vi.hoisted(() => ({ paths: [] as string[] }))
-const mocks = vi.hoisted(() => ({
-  send: vi.fn<typeof import('@aws-sdk/client-s3').S3Client.prototype.send>(),
-}))
 
 vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), async importOriginal => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
@@ -24,38 +26,38 @@ vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), async imp
   }
 })
 
-vi.mock<typeof import('@aws-sdk/client-s3')>(import('@aws-sdk/client-s3'), async importOriginal => {
-  const sdk = await importOriginal()
-  vi.spyOn(sdk.S3Client.prototype, 'send').mockImplementation(mocks.send)
-  return sdk
-})
+/** A hostname no other test or fork writes, so crawl keys stay owned in the shared bucket. */
+function ownedHostname(): string {
+  return `crawl-${randomUUID()}.example.com`
+}
 
-import { S3Buckets } from '@modules/aws'
+async function seedCrawlObject(key: string, body: Uint8Array): Promise<void> {
+  await putS3Object({ Bucket: S3Buckets.crawls, Key: key, Body: body, ContentEncoding: 'gzip' })
+}
 
 describe('s3', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.send.mockReset()
     recordedGzipDirectories.paths.length = 0
   })
 
-  afterAll(() => {
+  afterEach(() => {
     vi.restoreAllMocks()
   })
 
   describe('crawl S3 operations', () => {
-    const mockSend = mocks.send
-
     it('propagates a vanished upload source and removes its partial gzip directory', async () => {
+      const hostname = ownedHostname()
       const directory = mkdtempSync(path.join(os.tmpdir(), 'crawl-vanished-source-'))
       const filePath = path.join(directory, 'page.html')
       writeFileSync(filePath, '<html>vanished</html>')
       await fsPromises.rm(filePath)
       try {
         await expect(
-          uploadCrawlHtmlFileToS3('example.com', 'missing-source', 'deadbeef', filePath),
+          uploadCrawlHtmlFileToS3(hostname, 'missing-source', 'deadbeef', filePath),
         ).rejects.toMatchObject({ code: 'ENOENT', path: filePath })
-        expect(mockSend).not.toHaveBeenCalled()
+        expect(await s3ObjectExists(S3Buckets.crawls, `${hostname}/missing-source/deadbeef`)).toBe(
+          false,
+        )
         expect(recordedGzipDirectories.paths).toHaveLength(1)
         await expect(fsPromises.access(recordedGzipDirectories.paths[0]!)).rejects.toMatchObject({
           code: 'ENOENT',
@@ -65,61 +67,54 @@ describe('s3', () => {
       }
     })
 
-    it('should upload gzipped HTML with correct S3 key', async () => {
+    it('stores gzipped HTML with its encoding, type, and storage class', async () => {
+      const hostname = ownedHostname()
+      const key = `${hostname}/url-123/deadbeef`
       const source = createSourceHtmlFile()
       const html = await fsPromises.readFile(source.filePath)
-      let uploadedBody: Buffer | null = null
-
-      mockSend.mockImplementationOnce(async command => {
-        const input = (command as unknown as { input: Record<string, unknown> }).input
-        expect(input.Body).toBeInstanceOf(Readable)
-        uploadedBody = await collectReadable(input.Body as Readable)
-        expect(input.ContentLength).toBe(uploadedBody.byteLength)
-        return {} as never
-      })
 
       try {
-        await uploadCrawlHtmlFileToS3('example.com', 'url-123', 'deadbeef', source.filePath)
+        await uploadCrawlHtmlFileToS3(hostname, 'url-123', 'deadbeef', source.filePath)
 
-        expect(mockSend).toHaveBeenCalledOnce()
-        const command = mockSend.mock.calls[0]![0] as unknown as { input: Record<string, unknown> }
-        expect(command.input.Bucket).toBe(S3Buckets.crawls)
-        expect(command.input.Key).toBe('example.com/url-123/deadbeef')
-        expect(command.input.ContentType).toBe('text/html')
-        expect(command.input.ContentEncoding).toBe('gzip')
-        expect(command.input.StorageClass).toBe('REDUCED_REDUNDANCY')
-        expect(uploadedBody).not.toBeNull()
-        expect(gunzipSync(uploadedBody!).equals(html)).toBe(true)
+        const stored = await emulatorS3().send(
+          new GetObjectCommand({ Bucket: S3Buckets.crawls, Key: key }),
+        )
+        const body = Buffer.from(await stored.Body!.transformToByteArray())
+        expect(stored).toMatchObject({
+          ContentType: 'text/html',
+          ContentEncoding: 'gzip',
+          ContentLength: body.byteLength,
+        })
+        expect(gunzipSync(body).equals(html)).toBe(true)
+        const head = await emulatorS3().send(
+          new HeadObjectCommand({ Bucket: S3Buckets.crawls, Key: key }),
+        )
+        expect(head.StorageClass).toBe('REDUCED_REDUNDANCY')
+        await expect(fsPromises.access(recordedGzipDirectories.paths[0]!)).rejects.toThrow(/ENOENT/)
       } finally {
         await fsPromises.rm(source.directory, { recursive: true, force: true })
       }
     })
 
     it('should construct correct key format', async () => {
-      mockSend.mockResolvedValueOnce({} as never)
+      const hostname = `sub.${ownedHostname()}`
       const source = createSourceHtmlFile()
 
       try {
-        await uploadCrawlHtmlFileToS3('sub.example.com', 'abc-def', 'cafef00d', source.filePath)
+        await uploadCrawlHtmlFileToS3(hostname, 'abc-def', 'cafef00d', source.filePath)
 
-        const command = mockSend.mock.calls[0]![0] as unknown as {
-          input: Record<string, unknown>
-        }
-        expect(command.input.Key).toBe('sub.example.com/abc-def/cafef00d')
+        expect(await s3ObjectExists(S3Buckets.crawls, `${hostname}/abc-def/cafef00d`)).toBe(true)
       } finally {
         await fsPromises.rm(source.directory, { recursive: true, force: true })
       }
     })
 
     it('should fetch and decompress HTML from S3', async () => {
+      const hostname = ownedHostname()
       const html = '<html><body>Hello</body></html>'
-      const gzipped = gzipSync(Buffer.from(html))
+      await seedCrawlObject(`${hostname}/url-123/deadbeef`, gzipSync(Buffer.from(html)))
 
-      mockSend.mockResolvedValueOnce({
-        Body: Readable.from([gzipped]),
-      } as never)
-
-      const result = await downloadCrawlHtmlToTempFile('example.com', 'url-123', 'deadbeef')
+      const result = await downloadCrawlHtmlToTempFile(hostname, 'url-123', 'deadbeef')
 
       expect(result).not.toBeNull()
       expect((await fsPromises.readFile(result!.filePath)).toString()).toBe(html)
@@ -127,69 +122,66 @@ describe('s3', () => {
       await result!.cleanup()
       await expect(fsPromises.access(result!.filePath)).rejects.toThrow(/ENOENT/)
       await expect(result!.cleanup()).resolves.toBeUndefined()
-
-      const command = mockSend.mock.calls[0]![0] as unknown as { input: Record<string, unknown> }
-      expect(command.input.Bucket).toBe(S3Buckets.crawls)
-      expect(command.input.Key).toBe('example.com/url-123/deadbeef')
     })
 
+    // The Node SDK always returns a Node stream; a web stream body needs an injected response.
     it('should fetch and decompress HTML from S3 when Body is a web ReadableStream', async () => {
       const html = '<html><body>Web stream</body></html>'
       const gzipped = gzipSync(Buffer.from(html))
-
-      mockSend.mockResolvedValueOnce({
+      vi.spyOn(S3Client.prototype, 'send').mockResolvedValueOnce({
         Body: Readable.toWeb(Readable.from([gzipped])),
       } as never)
 
-      const result = await downloadCrawlHtmlToTempFile('example.com', 'url-123', 'deadbeef')
+      const result = await downloadCrawlHtmlToTempFile(ownedHostname(), 'url-123', 'deadbeef')
 
       expect(result).not.toBeNull()
       expect((await fsPromises.readFile(result!.filePath)).toString()).toBe(html)
       await result!.cleanup()
     })
 
-    it('should return null for NoSuchKey error', async () => {
-      const error = new Error('NoSuchKey')
-      error.name = 'NoSuchKey'
-      mockSend.mockRejectedValueOnce(error)
-
-      const result = await downloadCrawlHtmlToTempFile('example.com', 'url-123', 'deadbeef')
+    it('should return null for a missing object', async () => {
+      const result = await downloadCrawlHtmlToTempFile(ownedHostname(), 'url-123', 'deadbeef')
       expect(result).toBeNull()
+      const downloadDirectory = recordedGzipDirectories.paths[0]!
+      await expect(fsPromises.access(downloadDirectory)).rejects.toThrow(/ENOENT/)
     })
 
+    // A real GetObject response always carries a body stream.
     it('should return null when Body is empty', async () => {
-      mockSend.mockResolvedValueOnce({
-        Body: null,
-      } as never)
+      vi.spyOn(S3Client.prototype, 'send').mockResolvedValueOnce({ Body: null } as never)
 
-      const result = await downloadCrawlHtmlToTempFile('example.com', 'url-123', 'deadbeef')
+      const result = await downloadCrawlHtmlToTempFile(ownedHostname(), 'url-123', 'deadbeef')
       expect(result).toBeNull()
     })
 
     it('should throw non-NoSuchKey errors', async () => {
-      const error = new Error('AccessDenied')
-      error.name = 'AccessDenied'
-      mockSend.mockRejectedValueOnce(error)
+      const bucket = await useOwnedS3Bucket('crawls')
+      const hostname = ownedHostname()
+      const key = `${hostname}/url-123/deadbeef`
+      await putS3Object({ Bucket: bucket, Key: key, Body: gzipSync('<html></html>') })
+      await denyS3ObjectActions(bucket, [{ action: 's3:GetObject', keys: [key] }])
 
       await expect(
-        downloadCrawlHtmlToTempFile('example.com', 'url-123', 'deadbeef'),
-      ).rejects.toThrow('AccessDenied')
+        downloadCrawlHtmlToTempFile(hostname, 'url-123', 'deadbeef'),
+      ).rejects.toMatchObject({ name: 'AccessDenied' })
     })
 
     it('stops decompression at the caller byte budget without returning a partial file', async () => {
-      const gzipped = gzipSync(Buffer.alloc(1025, 'a'))
-      mockSend.mockResolvedValueOnce({ Body: Readable.from([gzipped]) } as never)
+      const hostname = ownedHostname()
+      await seedCrawlObject(`${hostname}/url-123/deadbeef`, gzipSync(Buffer.alloc(1025, 'a')))
 
       await expect(
-        downloadCrawlHtmlToTempFile('example.com', 'url-123', 'deadbeef', 1024),
+        downloadCrawlHtmlToTempFile(hostname, 'url-123', 'deadbeef', 1024),
       ).rejects.toThrow('exceeds 1024 bytes')
+      await expect(fsPromises.access(recordedGzipDirectories.paths[0]!)).rejects.toThrow(/ENOENT/)
     })
 
+    // A real upload always reads its body; only an injected send can leave the stream unread.
     it('destroys an unread file upload stream when send resolves without reading', async () => {
       const source = createSourceHtmlFile()
       try {
         const captured = captureUnreadBody(false)
-        await uploadCrawlHtmlFileToS3('example.com', 'url-123', 'deadbeef', source.filePath)
+        await uploadCrawlHtmlFileToS3(ownedHostname(), 'url-123', 'deadbeef', source.filePath)
         expectUnreadBodyClosed(captured)
         await expect(fsPromises.access(recordedGzipDirectories.paths[0]!)).rejects.toThrow(/ENOENT/)
         await expect(fsPromises.access(source.filePath)).resolves.toBeUndefined()
@@ -203,7 +195,7 @@ describe('s3', () => {
       try {
         const captured = captureUnreadBody(true)
         await expect(
-          uploadCrawlHtmlFileToS3('example.com', 'url-123', 'deadbeef', source.filePath),
+          uploadCrawlHtmlFileToS3(ownedHostname(), 'url-123', 'deadbeef', source.filePath),
         ).rejects.toThrow('upload failed')
         expectUnreadBodyClosed(captured)
         await expect(fsPromises.access(recordedGzipDirectories.paths[0]!)).rejects.toThrow(/ENOENT/)
@@ -216,7 +208,7 @@ describe('s3', () => {
     function captureUnreadBody(rejectSend: boolean): { errors: unknown[]; body?: Readable } {
       recordedGzipDirectories.paths.length = 0
       const captured: { errors: unknown[]; body?: Readable } = { errors: [] }
-      mockSend.mockImplementationOnce(async command => {
+      vi.spyOn(S3Client.prototype, 'send').mockImplementationOnce(async command => {
         const body = (command as { input: { Body: Readable } }).input.Body
         captured.body = body
         body.on('error', error => {
@@ -241,13 +233,5 @@ describe('s3', () => {
     const filePath = path.join(directory, 'page.html')
     writeFileSync(filePath, '<html>file</html>')
     return { directory, filePath }
-  }
-
-  async function collectReadable(stream: Readable): Promise<Buffer> {
-    const chunks: Buffer[] = []
-    for await (const chunk of stream) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-    }
-    return Buffer.concat(chunks)
   }
 })

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { beginTransaction } from '@data-stores/psql'
-import { S3ImagesClient } from '@modules/aws'
+import { discardAwsResponseBody, S3ImagesClient } from '@modules/aws'
 import { createCodedError } from '@vouchington/sentry'
 import { COPYRIGHT_EMAIL_QUARANTINED } from '@modules/on-error/error-codes'
 import sql from 'sql-template-strings'
@@ -47,6 +47,7 @@ export async function loadCopyrightEmailRawEvidence(
   )
   if (!response.Body) throw new Error('Copyright email evidence object has no body')
   if (response.ContentLength !== undefined && response.ContentLength !== record.raw_byte_size) {
+    discardAwsResponseBody(response.Body)
     throw new Error('Copyright email evidence size does not match its immutable receipt')
   }
   const bytes = await readExactBytes(

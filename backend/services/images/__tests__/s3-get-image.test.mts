@@ -1,45 +1,30 @@
-import { S3Client } from '@aws-sdk/client-s3'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-
-const ENV_KEYS = ['NODE_ENV', 'S3_BUCKET_IMAGES', 'VITEST'] as const
-const originalEnv = Object.fromEntries(ENV_KEYS.map(key => [key, process.env[key]])) as Record<
-  (typeof ENV_KEYS)[number],
-  string | undefined
->
+import { describe, expect, it } from 'vitest'
+import { S3Buckets } from '@modules/aws'
+import { getDeployEnvironment } from '@ts-shared/deploy-environment'
+import { putS3Object, uniqueS3Prefix } from '@voucha/test-helpers/aws-emulator-s3'
+import { getImageFromS3 } from '../s3.mts'
 
 describe('getImageFromS3', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-    restoreEnv()
+  it('reads the stored image from the images bucket', async () => {
+    const key = `${uniqueS3Prefix('get-image')}image`
+    await putS3Object({
+      Bucket: S3Buckets.images,
+      Key: key,
+      Body: 'stored image bytes',
+      ContentType: 'image/png',
+    })
+
+    const result = await getImageFromS3(getDeployEnvironment(), key)
+
+    expect(result.ContentType).toBe('image/png')
+    await expect(result.Body?.transformToString()).resolves.toBe('stored image bytes')
   })
 
-  it('reads images from the selected bucket', async () => {
-    vi.resetModules()
-    process.env.S3_BUCKET_IMAGES = 'test-images'
-    process.env.NODE_ENV = 'development'
-    process.env.VITEST = 'true'
-    const sendSpy = vi
-      .spyOn(S3Client.prototype, 'send')
-      .mockResolvedValue({ Body: undefined } as never)
-    const { getImageFromS3 } = await import('../s3.mts')
+  it('rejects a key that is not stored', async () => {
+    const key = `${uniqueS3Prefix('get-image')}missing`
 
-    await getImageFromS3('development', 'image-key')
-
-    const command = sendSpy.mock.calls[0]?.[0] as { input?: unknown }
-    expect(command.input).toMatchObject({
-      Bucket: 'test-images',
-      Key: 'image-key',
+    await expect(getImageFromS3(getDeployEnvironment(), key)).rejects.toMatchObject({
+      name: 'NoSuchKey',
     })
   })
 })
-
-function restoreEnv() {
-  for (const key of ENV_KEYS) {
-    const value = originalEnv[key]
-    if (value === undefined) {
-      delete process.env[key]
-    } else {
-      process.env[key] = value
-    }
-  }
-}

@@ -19,7 +19,7 @@ import {
 import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
 import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
-import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { createCopyrightEmailIntake, ErasedCopyrightEmailIntakeReplay } from './email-intakes.mts'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
@@ -31,7 +31,7 @@ const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 
 describe('copyright operational email intake retention', () => {
   useCopyrightOperationalCursorReservation()
-  const bucket = useFakeCopyrightEvidenceBucket()
+  const bucket = useCopyrightEvidenceBucket()
   it('preserves private intake evidence while its standalone final review is held', async () => {
     const reviewer = await createTestUserDirect({ extraRoles: ['moderator'] })
     const intake = await createRetentionParsedEmail('held-standalone-receipt')
@@ -101,7 +101,7 @@ describe('copyright operational email intake retention', () => {
   })
   it('keeps the replay fence if a database child write fails after S3 deletion', async () => {
     const intake = await createRetentionParsedEmail('post-s3-database-failure')
-    bucket.put(intake.raw_storage_key)
+    await bucket.put(intake.raw_storage_key)
     await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
     const options = { now: future(91), retentionDays: 90, childLimit: 2, maxBatches: 1 }
     await sweepUnlinkedCopyrightEmailIntakes(options) // commits erasure intent before S3
@@ -116,7 +116,7 @@ describe('copyright operational email intake retention', () => {
           ),
       }),
     ).rejects.toThrow('injected child delete failure after S3')
-    expect(bucket.countVersions(intake.raw_storage_key)).toBe(0)
+    expect(await bucket.countVersions(intake.raw_storage_key)).toBe(0)
     expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({
       intakeExists: true,
       receiptExists: true,
@@ -144,8 +144,8 @@ describe('copyright operational email intake retention', () => {
     await linkTestCopyrightEmailIntake(linked.id, notice.noticeId)
     const deliveryId = await seedCopyrightIntakeLegalDelivery(legal.id)
     const legalDelivery = await readCopyrightIntakeLegalDelivery(deliveryId)
-    bucket.put(linked.raw_storage_key)
-    bucket.put(legal.raw_storage_key, { versions: 2 })
+    await bucket.put(linked.raw_storage_key)
+    await bucket.put(legal.raw_storage_key, { versions: 2 })
     await positionCopyrightOperationalCursor('unlinked_email_intakes', linked.id)
     await sweepUnlinkedCopyrightEmailIntakes({
       now: future(91),
@@ -160,8 +160,8 @@ describe('copyright operational email intake retention', () => {
       childLimit: 20,
       maxBatches: 10,
     })
-    expect(bucket.countVersions(linked.raw_storage_key)).toBe(1)
-    expect(bucket.countVersions(legal.raw_storage_key)).toBe(0)
+    expect(await bucket.countVersions(linked.raw_storage_key)).toBe(1)
+    expect(await bucket.countVersions(legal.raw_storage_key)).toBe(0)
     expect(await readCopyrightIntakeRetentionState(linked.id)).toMatchObject({
       intakeExists: true,
       receiptExists: true,
@@ -188,7 +188,7 @@ describe('copyright operational email intake retention', () => {
     await seedTestCopyrightAncestorEdge(unlinked.id, linked.id)
     await seedTestCopyrightAncestorEdge(linked.id, unlinked.id)
     await seedTestCopyrightAncestorEdge(unlinked.id, other.id)
-    bucket.put(unlinked.raw_storage_key)
+    await bucket.put(unlinked.raw_storage_key)
     await positionCopyrightOperationalCursor('unlinked_email_intakes', unlinked.id)
     await sweepUnlinkedCopyrightEmailIntakes({
       now: future(91),
@@ -201,7 +201,7 @@ describe('copyright operational email intake retention', () => {
       receiptExists: true,
       ancestorCount: 2,
     })
-    expect(bucket.countVersions(unlinked.raw_storage_key)).toBe(0)
+    expect(await bucket.countVersions(unlinked.raw_storage_key)).toBe(0)
   })
 
   it('preserves an unlinked staff decision audit row while erasing its raw private intake', async () => {
@@ -209,7 +209,7 @@ describe('copyright operational email intake retention', () => {
     const { reviewId, recommendationId } = await seedCopyrightIntakeAuditReview(intake.id)
     const legalReview = await readCopyrightIntakeAuditReview(reviewId)
     const referencedRecommendation = await readCopyrightIntakeAuditRecommendation(recommendationId)
-    bucket.put(intake.raw_storage_key)
+    await bucket.put(intake.raw_storage_key)
     await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
     await sweepUnlinkedCopyrightEmailIntakes({
       now: future(91),
@@ -217,7 +217,7 @@ describe('copyright operational email intake retention', () => {
       childLimit: 20,
       maxBatches: 10,
     })
-    expect(bucket.countVersions(intake.raw_storage_key)).toBe(0)
+    expect(await bucket.countVersions(intake.raw_storage_key)).toBe(0)
     expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({
       intakeExists: false,
       receiptExists: true,

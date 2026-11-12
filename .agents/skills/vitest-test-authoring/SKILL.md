@@ -40,7 +40,9 @@ policy; this skill is the checklist, not a restatement.
    that doesn't spread `...(await vi.importActual('<specifier>'))` — a static factory silently omits
    the new export.
 5. Prefer real PostgreSQL, Valkey, queue, worker, and service integration over mocks; assert
-   persisted rows, queued jobs, or processor results. Avoid partial internal mocks and mock-only
+   persisted rows, queued jobs, or processor results. AWS SDK calls go to the local AWS Emulator;
+   do not stub an AWS client's `send` — seed and assert emulator state under a key prefix or bucket
+   the test owns ([AWS Emulator](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#aws-calls-reach-the-aws-emulator)). Avoid partial internal mocks and mock-only
    helper barrels — they drift when imports change and can hide missing exports.
 6. Select the exact owning Vitest project before running a file; see
    [`docs/development/tests.md`](../../../docs/development/tests.md) for project selection and

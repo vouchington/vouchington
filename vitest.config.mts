@@ -105,7 +105,11 @@ export default defineConfig({
           env: {
             PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '2000',
           },
-          setupFiles: ['./test-helpers/vitest.setup.postgres-sessions.mts'],
+          globalSetup: './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+          setupFiles: [
+            './test-helpers/vitest.setup.postgres-sessions.mts',
+            './backend/test-helpers/vitest.setup.aws-emulator.mts',
+          ],
           include: ['backend/**/*.real-glide.mock.test.mts', 'backend/**/*.real-glide.test.mts'],
           exclude: ['**/node_modules/**', '**/.git/**'],
           testTimeout: 5_000,

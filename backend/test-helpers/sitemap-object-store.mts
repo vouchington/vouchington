@@ -1,92 +1,79 @@
 import { randomUUID } from 'node:crypto'
+import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
-import { Readable } from 'node:stream'
-import {
-  DeleteObjectCommand,
-  DeleteObjectsCommand,
-  GetObjectCommand,
-  HeadObjectCommand,
-  ListObjectsV2Command,
-  NoSuchKey,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3'
 import { onTestFinished, vi } from 'vitest'
+import { listS3Keys, emulatorS3, putS3Object, s3ObjectExists } from './aws-emulator-s3.mts'
+import { clearS3ObjectDenials, denyS3ObjectActions, useOwnedS3Bucket } from './s3-owned-bucket.mts'
 
-export function spyOnSitemapObjectStore<Metadata>(
-  objects: Map<string, Buffer>,
-  rejectPut: (key: string) => Error | undefined,
-  metadata = new Map<string, Metadata>(),
-  rejectDelete: (key: string) => Error | undefined = () => undefined,
-): void {
+type SitemapManifest = {
+  active_page_count: number
+  generation_id: string
+  generated_at: string
+  content_hash: string
+}
+
+/** Sitemap storage keys as production names them, before `SITEMAP_S3_PREFIX` is applied. */
+export type SitemapObjectStore = {
+  get: (key: string) => Promise<Buffer | undefined>
+  json: <T>(key: string) => Promise<T | undefined>
+  has: (key: string) => Promise<boolean>
+  keys: (keyPrefix: string) => Promise<string[]>
+  /** Seeds an object; a manifest is stored as the index's publication metadata. */
+  put: (key: string, body: string | Uint8Array, manifest?: SitemapManifest) => Promise<void>
+  /** Real AccessDenied for these keys (`*` wildcards allowed); replaces earlier denials. */
+  deny: (keys: { put?: readonly string[]; delete?: readonly string[] }) => Promise<void>
+  allowAll: () => Promise<void>
+}
+
+/**
+ * Gives the current test its own sitemap bucket in the AWS Emulator and its own storage prefix,
+ * so fixed sitemap paths and the tracked-range cache key cannot collide with concurrent tests.
+ */
+export async function useSitemapObjectStore(): Promise<SitemapObjectStore> {
   const prefix = `sitemap-fixture-${randomUUID()}/`
   vi.stubEnv('SITEMAP_S3_PREFIX', prefix)
   onTestFinished(async () => {
     await cacheValkeyClient.unlink([`${prefix}sitemaps:posts:tracked-range:v1`])
   })
-  const logicalKey = (key: string): string => {
-    if (!key.startsWith(prefix)) throw new Error('Sitemap fixture escaped its storage namespace')
-    return key.slice(prefix.length)
+  const bucket = await useOwnedS3Bucket('sitemaps')
+  const physical = (key: string) => `${prefix}${key}`
+
+  const get = async (key: string): Promise<Buffer | undefined> => {
+    try {
+      const result = await emulatorS3().send(
+        new GetObjectCommand({ Bucket: bucket, Key: physical(key) }),
+      )
+      return result.Body ? Buffer.from(await result.Body.transformToByteArray()) : undefined
+    } catch (err) {
+      if ((err as { name?: string }).name === 'NoSuchKey') return undefined
+      throw err
+    }
   }
-  vi.spyOn(S3Client.prototype, 'send').mockImplementation(async command => {
-    if (command instanceof HeadObjectCommand) {
-      const manifest = metadata.get(logicalKey(command.input.Key!))
-      if (!manifest)
-        throw new NoSuchKey({ message: 'missing object', $metadata: { httpStatusCode: 404 } })
-      return { Metadata: { 'sitemap-manifest': JSON.stringify(manifest) } } as never
-    }
-    if (command instanceof ListObjectsV2Command) {
-      const keyPrefix = logicalKey(command.input.Prefix!)
-      const after = command.input.StartAfter ? logicalKey(command.input.StartAfter) : null
-      const keys = [...objects.keys()]
-        .filter(key => key.startsWith(keyPrefix) && (after === null || key > after))
-        .toSorted()
-      const limit = command.input.MaxKeys ?? 1000
-      return {
-        Contents: keys.slice(0, limit).map(key => ({ Key: `${prefix}${key}` })),
-        IsTruncated: keys.length > limit,
-      } as never
-    }
-    if (command instanceof GetObjectCommand) {
-      const body = objects.get(logicalKey(command.input.Key!))
-      if (!body)
-        throw new NoSuchKey({ message: 'missing object', $metadata: { httpStatusCode: 404 } })
-      return { Body: { transformToString: async () => body.toString() } } as never
-    }
-    if (command instanceof PutObjectCommand) {
-      const key = logicalKey(command.input.Key!)
-      const failure = rejectPut(key)
-      if (failure) throw failure
-      const body = command.input.Body
-      const chunks: Buffer[] = []
-      if (typeof body === 'string' || body instanceof Uint8Array) {
-        chunks.push(Buffer.from(body))
-      } else {
-        for await (const chunk of body as Readable) chunks.push(Buffer.from(chunk))
-      }
-      const bytes = Buffer.concat(chunks)
-      objects.set(key, bytes)
-      if (command.input.Metadata?.['sitemap-manifest'])
-        metadata.set(key, JSON.parse(command.input.Metadata['sitemap-manifest']) as Metadata)
-      return {} as never
-    }
-    if (command instanceof DeleteObjectsCommand) {
-      for (const object of command.input.Delete?.Objects ?? []) {
-        const key = logicalKey(object.Key!)
-        const failure = rejectDelete(key)
-        if (failure) throw failure
-        objects.delete(key)
-        metadata.delete(key)
-      }
-      return {} as never
-    }
-    if (command instanceof DeleteObjectCommand) {
-      const failure = rejectDelete(logicalKey(command.input.Key!))
-      if (failure) throw failure
-      objects.delete(logicalKey(command.input.Key!))
-      metadata.delete(logicalKey(command.input.Key!))
-      return {} as never
-    }
-    throw new Error(`Unexpected S3 command: ${command.constructor.name}`)
-  })
+
+  return {
+    get,
+    json: async <T,>(key: string) => {
+      const body = await get(key)
+      return body === undefined ? undefined : (JSON.parse(body.toString()) as T)
+    },
+    has: key => s3ObjectExists(bucket, physical(key)),
+    keys: async keyPrefix =>
+      (await listS3Keys(bucket, physical(keyPrefix))).map(key => key.slice(prefix.length)),
+    put: async (key, body, manifest) => {
+      await putS3Object({
+        Bucket: bucket,
+        Key: physical(key),
+        Body: body,
+        ...(manifest ? { Metadata: { 'sitemap-manifest': JSON.stringify(manifest) } } : {}),
+      })
+    },
+    deny: ({ put = [], delete: deleted = [] }) =>
+      denyS3ObjectActions(bucket, [
+        ...(put.length ? [{ action: 's3:PutObject' as const, keys: put.map(physical) }] : []),
+        ...(deleted.length
+          ? [{ action: 's3:DeleteObject' as const, keys: deleted.map(physical) }]
+          : []),
+      ]),
+    allowAll: () => clearS3ObjectDenials(bucket),
+  }
 }

@@ -1,13 +1,13 @@
 import { createHash } from 'node:crypto'
-import { Readable } from 'node:stream'
-import { S3Client } from '@aws-sdk/client-s3'
 import { createTestUser } from '@voucha/test-helpers'
+import { putS3Object } from '@voucha/test-helpers/aws-emulator-s3'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   copyrightEmailSesVerdictsWithVirus,
   PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
 } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
+import { describe, expect, it } from 'vitest'
 import {
   createCopyrightEmailIntake,
   type CopyrightEmailSesVerdicts,
@@ -15,11 +15,13 @@ import {
 
 const bytes = Buffer.from('From: claimant@example.test\r\n\r\nCopyright notice')
 
-async function createIntakeId(sesVerdicts: CopyrightEmailSesVerdicts) {
+async function createIntakeId(sesVerdicts: CopyrightEmailSesVerdicts, bucket: string) {
+  const rawStorageKey = `email/${crypto.randomUUID()}/original.eml`
+  await putS3Object({ Bucket: bucket, Key: rawStorageKey, Body: bytes })
   const { intake } = await createCopyrightEmailIntake({
     sesMessageId: `ses-api-quarantine-${crypto.randomUUID()}`,
     receivedAt: new Date(),
-    rawStorageKey: `email/${crypto.randomUUID()}/original.eml`,
+    rawStorageKey,
     rawSha256: createHash('sha256').update(bytes).digest(),
     rawMimeType: 'message/rfc822',
     rawByteSize: bytes.byteLength,
@@ -35,20 +37,16 @@ async function createModeratorRequest() {
 }
 
 describe('copyright email original download', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
-  })
+  const evidence = useCopyrightEvidenceBucket()
 
   it.each(['fail', 'gray', 'processing_failed', 'unknown'] as const)(
     'refuses an original without a passing SES virus verdict (%s)',
     async virus => {
-      const intakeId = await createIntakeId(copyrightEmailSesVerdictsWithVirus(virus))
-      vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
-      const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({
-        Body: Readable.from([bytes]),
-        ContentLength: bytes.byteLength,
-      } as never)
+      // The stored original is intact, so only the verdict can refuse the download.
+      const intakeId = await createIntakeId(
+        copyrightEmailSesVerdictsWithVirus(virus),
+        evidence.name(),
+      )
       const moderator = await createModeratorRequest()
 
       const refused = await moderator
@@ -59,7 +57,6 @@ describe('copyright email original download', () => {
         message: expect.any(String),
       })
       expect(refused.headers['cache-control']).toBe('private, no-store')
-      expect(send).not.toHaveBeenCalled()
 
       const detail = await moderator.get(`/api/v1/copyright-email-intakes/${intakeId}`).expect(200)
       expect(detail.body.copyright_email_intake).toMatchObject({
@@ -70,15 +67,20 @@ describe('copyright email original download', () => {
   )
 
   it('still downloads an original SES passed', async () => {
-    const intakeId = await createIntakeId(PASSING_COPYRIGHT_EMAIL_SES_VERDICTS)
-    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
-    vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({
-      Body: Readable.from([bytes]),
-      ContentLength: bytes.byteLength,
-    } as never)
+    const intakeId = await createIntakeId(PASSING_COPYRIGHT_EMAIL_SES_VERDICTS, evidence.name())
     const moderator = await createModeratorRequest()
 
-    const raw = await moderator.get(`/api/v1/copyright-email-intakes/${intakeId}/raw`).expect(200)
+    const raw = await moderator
+      .get(`/api/v1/copyright-email-intakes/${intakeId}/raw`)
+      .buffer(true)
+      .parse((stream, done) => {
+        const chunks: Buffer[] = []
+        stream.on('data', (chunk: Buffer) => chunks.push(chunk))
+        stream.on('end', () => done(null, Buffer.concat(chunks)))
+        stream.on('error', done)
+      })
+      .expect(200)
     expect(raw.headers['content-type']).toBe('message/rfc822')
+    expect(raw.body).toEqual(bytes)
   })
 })

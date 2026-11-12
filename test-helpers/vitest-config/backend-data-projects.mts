@@ -5,7 +5,10 @@ const backendDataStoreTestDefaults = {
   pool: 'forks' as const,
   isolate: false,
   env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '2000' }, // Leave SQL attribution and cleanup headroom inside the project deadline.
-  globalSetup: './test-helpers/vitest.setup.data-stores.mts',
+  globalSetup: [
+    './test-helpers/vitest.setup.data-stores.mts',
+    './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+  ],
   setupFiles: [
     // Sentry must precede glide workers' on-error preload; setup resets every isolate:false file (a test import only registers in the first cached worker file).
     './backend/test-helpers/vitest.setup.sentry-mock.mts',
@@ -14,8 +17,7 @@ const backendDataStoreTestDefaults = {
     './test-helpers/vitest.setup.psql-pool-metrics.mts',
     './test-helpers/vitest.setup.dynamic-config-isolation.mts',
     './test-helpers/vitest.setup.glide-mq-workers.mts',
-    './backend/test-helpers/vitest.setup.aws-mocks.mts',
-    './backend/test-helpers/vitest.setup.s3-offline.mts',
+    './backend/test-helpers/vitest.setup.aws-emulator.mts',
     './backend/test-helpers/vitest.setup.captcha-skip.mts',
     './backend/test-helpers/vitest.setup.server-error-responses.mts',
     './backend/test-helpers/vitest.setup.request-query-profile.mts',
@@ -56,7 +58,10 @@ const backendMocksProject = {
       'backend/data-stores/psql/migrate.mock.test.mts',
       'backend/api/v1/images/__tests__/index.real-presigner.s3.mock.test.mts', // Real S3 presigner; collected by the credentialed backend-aws project.
     ],
-    globalSetup: './test-helpers/vitest.setup.data-stores.mts',
+    globalSetup: [
+      './test-helpers/vitest.setup.data-stores.mts',
+      './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+    ],
     setupFiles: [
       './backend/test-helpers/vitest.setup.sentry-mock.mts', // Must precede glide workers, which preload on-error and bind the SDK.
       './test-helpers/vitest.setup.request-query-timing.mts',
@@ -64,7 +69,7 @@ const backendMocksProject = {
       './test-helpers/vitest.setup.psql-pool-metrics.mts',
       './test-helpers/vitest.setup.dynamic-config-isolation.mts',
       './test-helpers/vitest.setup.glide-mq-workers.mts',
-      './backend/test-helpers/vitest.setup.aws-mocks.mts',
+      './backend/test-helpers/vitest.setup.aws-emulator.mts',
       './backend/test-helpers/vitest.setup.server-error-responses.mts',
       './backend/test-helpers/vitest.setup.request-query-profile.mts',
       './backend/test-helpers/vitest.setup.request-contract-enforcement.mts',

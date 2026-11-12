@@ -5,7 +5,7 @@ import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { rejectPostgresReadForTest } from '@voucha/test-helpers/injected-failures'
 
-import { stubArticleBucket } from '../../test-helpers/article-sync-fixtures.mts'
+import { useArticleBucket } from '../../test-helpers/article-sync-fixtures.mts'
 import { syncArticles } from './sync.mts'
 import { articlesWorkConfig } from './work-limits.mts'
 
@@ -24,13 +24,11 @@ describe('syncArticles errors', () => {
     const currentUser = await createTestUser({ administrator: true })
     const firstSlug = `first-${randomUUID()}`
     const lastSlug = `last-${randomUUID()}`
-    stubArticleBucket(
-      new Map([
-        ['first.md', `---\ntitle: First\nslug: ${firstSlug}\n---\nFirst body.`],
-        ['invalid.md', '---\ntitle: Invalid\nslug: bad slug\n---\nInvalid body.'],
-        ['last.md', `---\ntitle: Last\nslug: ${lastSlug}\n---\nLast body.`],
-      ]),
-    )
+    await useArticleBucket([
+      ['first.md', `---\ntitle: First\nslug: ${firstSlug}\n---\nFirst body.`],
+      ['invalid.md', '---\ntitle: Invalid\nslug: bad slug\n---\nInvalid body.'],
+      ['last.md', `---\ntitle: Last\nslug: ${lastSlug}\n---\nLast body.`],
+    ])
     const lookups = rejectArticlePrefetch()
 
     const result = await syncArticles(currentUser)
@@ -51,10 +49,8 @@ describe('syncArticles errors', () => {
       { length: 51 },
       (_, index) => `article-${String(index).padStart(2, '0')}.md`,
     )
-    stubArticleBucket(
-      new Map(
-        files.map(file => [file, `---\ntitle: Article\nslug: ${file.slice(0, -3)}\n---\nBody.`]),
-      ),
+    await useArticleBucket(
+      files.map(file => [file, `---\ntitle: Article\nslug: ${file.slice(0, -3)}\n---\nBody.`]),
     )
     const lookups = rejectArticlePrefetch()
 
@@ -68,10 +64,8 @@ describe('syncArticles errors', () => {
   it('uses the runtime article batch bound for the whole sync', async () => {
     const currentUser = await createTestUser({ administrator: true })
     const files = ['a-one.md', 'b-two.md', 'c-three.md']
-    stubArticleBucket(
-      new Map(
-        files.map(file => [file, `---\ntitle: Article\nslug: ${file.slice(0, -3)}\n---\nBody.`]),
-      ),
+    await useArticleBucket(
+      files.map(file => [file, `---\ntitle: Article\nslug: ${file.slice(0, -3)}\n---\nBody.`]),
     )
     await articlesWorkConfig.waitForInitialization()
     onTestFinished(overrideDynamicConfigFieldsForTest(articlesWorkConfig, { sync_batch_size: 2 }))

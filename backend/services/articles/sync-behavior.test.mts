@@ -8,19 +8,17 @@ import {
   withCapturedTestQueries,
 } from '@voucha/test-helpers/query-capture'
 
-import { stubArticleBucket, syncOwnedArticles } from '../../test-helpers/article-sync-fixtures.mts'
+import { syncOwnedArticles, useArticleBucket } from '../../test-helpers/article-sync-fixtures.mts'
 
 import { syncArticles } from './sync.mts'
 
 describe('article sync decisions', () => {
   it('rejects files without titles or with unsupported post types before lookup', async () => {
     const currentUser = await createTestUser({ administrator: true })
-    stubArticleBucket(
-      new Map([
-        ['a-no-title.md', '---\nslug: no-title\n---\nBody without a heading.'],
-        ['b-bad-type.md', '---\ntitle: Bad Type\npost_type: comment\n---\nBody.'],
-      ]),
-    )
+    await useArticleBucket([
+      ['a-no-title.md', '---\nslug: no-title\n---\nBody without a heading.'],
+      ['b-bad-type.md', '---\ntitle: Bad Type\npost_type: comment\n---\nBody.'],
+    ])
 
     const { result, queries } = await withCapturedTestQueries(() => syncArticles(currentUser))
 
@@ -35,12 +33,10 @@ describe('article sync decisions', () => {
   it('reports a post type mismatch after an earlier file creates the slug', async () => {
     const currentUser = await createTestUser({ administrator: true })
     const slug = `type-mismatch-${randomUUID()}`
-    stubArticleBucket(
-      new Map([
-        ['article.md', `---\ntitle: Article\nslug: ${slug}\npost_type: article\n---\nBody.`],
-        ['blog.md', `---\ntitle: Blog\nslug: ${slug}\npost_type: blog_post\n---\nBody.`],
-      ]),
-    )
+    await useArticleBucket([
+      ['article.md', `---\ntitle: Article\nslug: ${slug}\npost_type: article\n---\nBody.`],
+      ['blog.md', `---\ntitle: Blog\nslug: ${slug}\npost_type: blog_post\n---\nBody.`],
+    ])
 
     const result = await syncOwnedArticles(new Set([slug]), () => syncArticles(currentUser))
 
@@ -63,12 +59,11 @@ describe('article sync decisions', () => {
         }),
       ),
     )
-    const objects = new Map<string, string>()
-    stubArticleBucket(objects)
+    const bucket = await useArticleBucket()
 
     for (const [index, topic] of topics.entries()) {
       const title = index === 0 ? 'First title' : 'Updated title'
-      objects.set(
+      await bucket.put(
         'topic.md',
         `---\ntitle: ${title}\nslug: ${slug}\ntopics:\n  - ${topic.slug}\n---\nBody.`,
       )

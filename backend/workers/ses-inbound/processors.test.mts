@@ -8,7 +8,20 @@ import {
 } from '@queues/background/enqueues/ses-inbound-jobs'
 import { background } from '@queues/background/queues'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { stubSesInboundS3ForTest } from '@voucha/test-helpers/ses-inbound-s3'
+import { ListObjectsV2Command } from '@aws-sdk/client-s3'
+import {
+  emulatorS3,
+  listS3Keys,
+  putS3Object,
+  readS3ObjectText,
+  s3ObjectExists,
+} from '@voucha/test-helpers/aws-emulator-s3'
+import { clearS3ObjectDenials, denyS3ObjectActions } from '@voucha/test-helpers/s3-owned-bucket'
+import {
+  capS3ImagesClientListPageSizeForTest,
+  omitS3ImagesClientResponseFieldsForTest,
+} from '@voucha/test-helpers/s3-images-client-injection'
+import { useSesInboundBucket } from '@voucha/test-helpers/ses-inbound-s3'
 import { getSesInboundProcessJobOptions } from '@ts-shared/ses-inbound-contract'
 import { sesInboundWorkConfig } from '@queues/ses-inbound/config'
 import { processSesInboundEmail, reconcileSesInboundEmails } from './processors.mts'
@@ -16,6 +29,15 @@ import { listCopyrightSesInboundObjects } from './processors/s3.mts'
 
 const continuationJobId = (token: string) =>
   `ses_inbound_reconcile_continuation__${createHash('sha256').update(token).digest('hex')}`
+
+/** The token S3 returns after the first key of a one-key page under the copyright prefix. */
+async function firstPageToken(bucket: string): Promise<string> {
+  const page = await emulatorS3().send(
+    new ListObjectsV2Command({ Bucket: bucket, Prefix: 'copyright-incoming/', MaxKeys: 1 }),
+  )
+  if (!page.NextContinuationToken) throw new Error('Expected a second listing page')
+  return page.NextContinuationToken
+}
 
 function ownedKeys() {
   const suffix = randomUUID()
@@ -45,14 +67,12 @@ describe('reconcileSesInboundEmails without an SES inbound bucket', () => {
     'skips loudly instead of throwing when S3_BUCKET_SES_INBOUND is %j',
     async bucket => {
       vi.stubEnv('S3_BUCKET_SES_INBOUND', bucket)
-      const s3Calls = stubSesInboundS3ForTest()
 
       await expect(reconcileSesInboundEmails({})).resolves.toEqual({
         enqueued: 0,
         hasMore: false,
       })
 
-      expect(s3Calls).toEqual([])
       expect(sentryCaptureMessageMock).toHaveBeenCalledExactlyOnceWith(
         'scheduled_job_config_missing',
         {
@@ -69,75 +89,67 @@ describe('reconcileSesInboundEmails without an SES inbound bucket', () => {
 })
 
 describe('SES inbound reconciliation pages', () => {
-  afterEach(() => vi.unstubAllEnvs())
+  const inbound = useSesInboundBucket()
+
+  async function receive(...keys: Array<{ objectKey: string }>): Promise<void> {
+    await Promise.all(
+      keys.map(({ objectKey }) =>
+        putS3Object({ Bucket: inbound.name(), Key: objectKey, Body: 'raw' }),
+      ),
+    )
+  }
 
   it('caps a run and enqueues one token continuation', async () => {
-    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
     await sesInboundWorkConfig.waitForInitialization()
     onTestFinished(
       overrideDynamicConfigFieldsForTest(sesInboundWorkConfig, { reconcile_max_pages_per_run: 1 }),
     )
-    const [first] = ownedKeys()
-    const token = `opaque:${randomUUID()}`
-    const s3Calls = stubSesInboundS3ForTest({
-      listPages: { '': { keys: [first!.objectKey], next: token } },
-    })
+    const [first, second] = ownedKeys()
+    // A key outside the copyright prefix is never listed.
+    await receive(first!, second!, { objectKey: `incoming/${randomUUID()}` })
+    // Real pages hold 1,000 keys; one-key pages reach the cap with two objects.
+    capS3ImagesClientListPageSizeForTest(inbound.name(), 1)
+    const token = await firstPageToken(inbound.name())
 
     await expect(reconcileSesInboundEmails({})).resolves.toEqual({ enqueued: 1, hasMore: true })
 
-    expect(s3Calls).toEqual([
-      {
-        command: 'ListObjectsV2Command',
-        input: { Bucket: 'ses-inbound-test', Prefix: 'copyright-incoming/' },
-      },
-    ])
     const processJob = await background.getJob(getSesInboundProcessJobOptions(first!).jobId)
     expect(processJob?.name).toBe(SES_INBOUND_PROCESS_JOB.name)
     expect(processJob?.data).toEqual(first)
     const continuation = await background.getJob(continuationJobId(token))
     expect(continuation?.name).toBe(SES_INBOUND_RECONCILE_JOB.name)
     expect(continuation?.data).toEqual({ continuationToken: token })
+    expect(await background.getJob(getSesInboundProcessJobOptions(second!).jobId!)).toBeFalsy()
   })
 
   it('resumes at an incoming token and does not continue after the last page', async () => {
-    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
-    const resumeToken = `resume:${randomUUID()}`
-    const s3Calls = stubSesInboundS3ForTest({ listPages: { [resumeToken]: { keys: [] } } })
+    const [first, second] = ownedKeys()
+    await receive(first!, second!)
+    const resumeToken = await firstPageToken(inbound.name())
     const add = vi.spyOn(background, 'add')
     onTestFinished(() => add.mockRestore())
 
     await expect(reconcileSesInboundEmails({ continuationToken: resumeToken })).resolves.toEqual({
-      enqueued: 0,
+      enqueued: 1,
       hasMore: false,
     })
 
-    expect(s3Calls).toEqual([
-      {
-        command: 'ListObjectsV2Command',
-        input: {
-          Bucket: 'ses-inbound-test',
-          Prefix: 'copyright-incoming/',
-          ContinuationToken: resumeToken,
-        },
-      },
-    ])
+    // Only the key after the token is enqueued, and no continuation follows the last page.
+    expect((await background.getJob(getSesInboundProcessJobOptions(second!).jobId!))?.data).toEqual(
+      second,
+    )
+    expect(await background.getJob(getSesInboundProcessJobOptions(first!).jobId!)).toBeFalsy()
     expect(add).not.toHaveBeenCalled()
   })
 
   it('reads retained failed jobs once and filters the same list across pages', async () => {
-    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
     await sesInboundWorkConfig.waitForInitialization()
     onTestFinished(
       overrideDynamicConfigFieldsForTest(sesInboundWorkConfig, { reconcile_max_pages_per_run: 2 }),
     )
     const [first, second] = ownedKeys()
-    const token = `next:${randomUUID()}`
-    stubSesInboundS3ForTest({
-      listPages: {
-        '': { keys: [first!.objectKey], next: token },
-        [token]: { keys: [second!.objectKey] },
-      },
-    })
+    await receive(first!, second!)
+    capS3ImagesClientListPageSizeForTest(inbound.name(), 1)
     const failedJobs = [first!, second!].map(data => ({
       id: getSesInboundProcessJobOptions(data).jobId!,
       name: SES_INBOUND_PROCESS_JOB.name,
@@ -165,74 +177,52 @@ describe('SES inbound reconciliation pages', () => {
     { continuationToken: 12 },
     { continuationToken: 'x'.repeat(1025) },
   ])('rejects invalid job data before S3 work: %j', async data => {
-    const s3Calls = stubSesInboundS3ForTest()
+    // Listing this missing bucket would fail with NoSuchBucket instead of the validation error.
+    vi.stubEnv('S3_BUCKET_SES_INBOUND', `missing-ses-inbound-${randomUUID()}`)
     await expect(reconcileSesInboundEmails(data as never)).rejects.toThrow('SES inbound')
-    expect(s3Calls).toEqual([])
   })
 })
 
 describe('processSesInboundEmail key boundary', () => {
-  afterEach(() => vi.unstubAllEnvs())
+  const inbound = useSesInboundBucket()
 
   it('rejects a non-copyright key before any copy, write, parse, enqueue or source change', async () => {
-    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
-    const s3Calls = stubSesInboundS3ForTest()
+    const objectKey = 'incoming/ses-unhandled-message'
+    await putS3Object({ Bucket: inbound.name(), Key: objectKey, Body: 'raw' })
 
     await expect(
-      processSesInboundEmail({
-        sesMessageId: 'ses-unhandled-message',
-        objectKey: 'incoming/ses-unhandled-message',
-      }),
+      processSesInboundEmail({ sesMessageId: 'ses-unhandled-message', objectKey }),
     ).rejects.toThrow('unknown prefix')
 
-    // No read, delete or move may run: the source object stays at its original key.
-    expect(s3Calls).toEqual([])
+    // No delete or move ran: the source object stays alone at its original key.
+    expect(await listS3Keys(inbound.name(), '')).toEqual([objectKey])
   })
 
   it('still sends a copyright job through the S3 read', async () => {
-    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
-    const s3Calls = stubSesInboundS3ForTest({ getError: new Error('S3 is unavailable') })
+    const objectKey = 'copyright-incoming/ses-copyright-message'
+    await putS3Object({ Bucket: inbound.name(), Key: objectKey, Body: 'raw' })
+    await denyS3ObjectActions(inbound.name(), [{ action: 's3:GetObject', keys: [objectKey] }])
 
     await expect(
-      processSesInboundEmail({
-        sesMessageId: 'ses-copyright-message',
-        objectKey: 'copyright-incoming/ses-copyright-message',
-      }),
-    ).rejects.toThrow('S3 is unavailable')
+      processSesInboundEmail({ sesMessageId: 'ses-copyright-message', objectKey }),
+    ).rejects.toThrow(/not authorized to perform: s3:GetObject/)
 
-    // The source is neither deleted nor moved after a retryable read failure.
-    expect(s3Calls).toEqual([
-      {
-        command: 'GetObjectCommand',
-        input: { Bucket: 'ses-inbound-test', Key: 'copyright-incoming/ses-copyright-message' },
-      },
-    ])
+    // The source is neither deleted nor moved after a failed read.
+    await clearS3ObjectDenials(inbound.name())
+    expect(await listS3Keys(inbound.name(), '')).toEqual([objectKey])
   })
 
   it('moves a source object with no body to the failed prefix and stops retrying it', async () => {
-    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
-    const s3Calls = stubSesInboundS3ForTest({ getWithoutBody: true })
+    const objectKey = 'copyright-incoming/ses-bodyless-message'
+    await putS3Object({ Bucket: inbound.name(), Key: objectKey, Body: 'raw' })
+    // S3 always streams a body, even an empty one, so only a dropped field reaches this guard.
+    omitS3ImagesClientResponseFieldsForTest('GetObjectCommand', ['Body'])
 
     await expect(
-      processSesInboundEmail({
-        sesMessageId: 'ses-bodyless-message',
-        objectKey: 'copyright-incoming/ses-bodyless-message',
-      }),
+      processSesInboundEmail({ sesMessageId: 'ses-bodyless-message', objectKey }),
     ).rejects.toBeInstanceOf(UnrecoverableError)
 
-    expect(s3Calls.map(call => call.command)).toEqual([
-      'GetObjectCommand',
-      'CopyObjectCommand',
-      'DeleteObjectCommand',
-    ])
-    expect(s3Calls[1]!.input).toEqual({
-      Bucket: 'ses-inbound-test',
-      Key: 'failed/ses-bodyless-message',
-      CopySource: 'ses-inbound-test/copyright-incoming/ses-bodyless-message',
-    })
-    expect(s3Calls[2]!.input).toEqual({
-      Bucket: 'ses-inbound-test',
-      Key: 'copyright-incoming/ses-bodyless-message',
-    })
+    expect(await s3ObjectExists(inbound.name(), objectKey)).toBe(false)
+    expect(await readS3ObjectText(inbound.name(), 'failed/ses-bodyless-message')).toBe('raw')
   })
 })

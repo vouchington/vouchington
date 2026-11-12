@@ -18,7 +18,7 @@ import {
   readImageDeletionPostOutcome,
   quarantineBeforeImageDeletionTransaction,
 } from '@voucha/test-helpers/image-deletion'
-import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { seedOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { background } from '@queues/background/queues'
@@ -38,8 +38,6 @@ describe('paged image deletion', () => {
     await expect(getPostByAnyCached(postId)).resolves.toMatchObject({
       clearance_status: 'approved',
     })
-    const image = await getImageByIdFromPrimary(fixture.imageId)
-    installOwnedUploadCleanupStorage([image!.id, image!.s3_key, image!.sha_256!.toString('hex')])
     await withEntityListenerCompletion([{ jobName: 'processPostUpdated', entityId: postId }], () =>
       deleteImageById(fixture.imageId),
     )
@@ -54,7 +52,7 @@ describe('paged image deletion', () => {
     const fixture = await createImageDeletionFixture(1)
     const before = await getPostModerationResetState(fixture.postIds[0]!)
     const image = await getImageByIdFromPrimary(fixture.imageId)
-    const storage = installOwnedUploadCleanupStorage([
+    const storage = await seedOwnedUploadCleanupStorage([
       image!.id,
       image!.s3_key,
       image!.sha_256!.toString('hex'),
@@ -69,14 +67,14 @@ describe('paged image deletion', () => {
     await expect(getImageByAny(fixture.imageId)).resolves.toBeNull()
     await expect(getPostModerationResetState(fixture.postIds[0]!)).resolves.toEqual(before)
     await expect(countPostImageRevisions(fixture.postIds[0]!)).resolves.toBe(0)
-    expect(storage.calls).toEqual([])
+    await expect(storage.deleted()).resolves.toEqual([])
   })
 
   it('retains source storage and post state for a soft-deleted unconfirmed quarantine', async () => {
     const fixture = await createImageDeletionFixture(1)
     const before = await getPostModerationResetState(fixture.postIds[0]!)
     const image = await getImageByIdFromPrimary(fixture.imageId)
-    const storage = installOwnedUploadCleanupStorage([
+    const storage = await seedOwnedUploadCleanupStorage([
       image!.id,
       image!.s3_key,
       image!.sha_256!.toString('hex'),
@@ -89,13 +87,13 @@ describe('paged image deletion', () => {
     await expect(getImageByAny(fixture.imageId)).resolves.toBeNull()
     await expect(getPostModerationResetState(fixture.postIds[0]!)).resolves.toEqual(before)
     await expect(countPostImageRevisions(fixture.postIds[0]!)).resolves.toBe(0)
-    expect(storage.calls).toEqual([])
+    await expect(storage.deleted()).resolves.toEqual([])
   })
 
   it('replays committed listener receipts under a smaller limit without a second post reset', async () => {
     const fixture = await createImageDeletionFixture()
     const image = await getImageByIdFromPrimary(fixture.imageId)
-    const storage = installOwnedUploadCleanupStorage([
+    const storage = await seedOwnedUploadCleanupStorage([
       image!.id,
       image!.s3_key,
       image!.sha_256!.toString('hex'),
@@ -134,18 +132,20 @@ describe('paged image deletion', () => {
         await expect(
           Promise.all(fixture.postIds.slice(0, 2).map(getPostModerationResetState)),
         ).resolves.toEqual(committed)
-        expect(storage.calls).toEqual([])
+        await expect(storage.deleted()).resolves.toEqual([])
         await processImageDeletionPage(fixture.imageId)
         await expect(Promise.all(fixture.postIds.map(countPostImageRevisions))).resolves.toEqual([
           1, 1, 1,
         ])
-        expect(storage.calls.some(call => call.Key === fixture.imageId)).toBe(true)
+        await expect(storage.deleted()).resolves.toContainEqual({
+          Bucket: storage.buckets.images,
+          Key: fixture.imageId,
+        })
       } finally {
         restoreSmaller()
       }
     } finally {
       restore()
-      storage.restore()
     }
   })
 
@@ -156,7 +156,7 @@ describe('paged image deletion', () => {
     const images = await Promise.all(
       [paged, baseline].map(fixture => getImageByIdFromPrimary(fixture.imageId)),
     )
-    const storage = installOwnedUploadCleanupStorage(
+    const storage = await seedOwnedUploadCleanupStorage(
       images.flatMap(image => [image!.id, image!.s3_key, image!.sha_256!.toString('hex')]),
     )
     const transactions = captureImageDeletionTransactions()
@@ -170,7 +170,7 @@ describe('paged image deletion', () => {
         1, 0, 0,
       ])
       const firstPageState = await getPostModerationResetState(paged.postIds[0]!)
-      expect(storage.calls).toEqual([])
+      await expect(storage.deleted()).resolves.toEqual([])
       const continuation = await background.getJob(
         `image-deletion-${paged.imageId}-${paged.postIds[0]!}-${paged.postIds[0]!}`,
       )
@@ -188,14 +188,14 @@ describe('paged image deletion', () => {
       await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([
         1, 0, 0,
       ])
-      expect(storage.calls).toEqual([])
+      await expect(storage.deleted()).resolves.toEqual([])
 
       await processImageDeletionPage(paged.imageId)
       await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([
         1, 1, 0,
       ])
       await expect(getPostModerationResetState(paged.postIds[0]!)).resolves.toEqual(firstPageState)
-      expect(storage.calls).toEqual([])
+      await expect(storage.deleted()).resolves.toEqual([])
       const pageJobs = (await readAllQueueJobs(entitiesListeners)).filter(
         job =>
           job.name === ENTITY_LISTENERS_POST_UPDATED_JOB.name &&
@@ -215,7 +215,10 @@ describe('paged image deletion', () => {
       await expect(Promise.all(paged.postIds.map(getPostModerationResetState))).resolves.toEqual(
         completed,
       )
-      expect(storage.calls.some(call => call.Key === paged.imageId)).toBe(true)
+      await expect(storage.deleted()).resolves.toContainEqual({
+        Bucket: storage.buckets.images,
+        Key: paged.imageId,
+      })
 
       restore()
       const restoreBaseline = overrideDynamicConfigFieldsForTest(imagesWorkConfig, {
@@ -235,7 +238,6 @@ describe('paged image deletion', () => {
       }
     } finally {
       restore()
-      storage.restore()
     }
   })
 })

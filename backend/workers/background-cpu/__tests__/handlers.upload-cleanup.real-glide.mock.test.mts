@@ -23,7 +23,7 @@ import {
   insertOwnedUploadCleanupCluster,
   makeOwnedUploadCleanupSweep,
 } from '@voucha/test-helpers/image-upload-cleanup'
-import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { seedOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { getImageById } from '@services/images/get'
 import { createBackgroundCpuWorker } from '../workers/create-worker.mts'
 import { BACKGROUND_CPU_HANDLERS } from '../processors/handlers.mts'
@@ -60,7 +60,8 @@ describe('background CPU abandoned upload cleanup', () => {
     const outsideBefore = await getImageById(outsideId, true)
     const sweep = await makeOwnedUploadCleanupSweep(ids.slice(0, 3), now)
     context.signal.throwIfAborted()
-    const storage = installOwnedUploadCleanupStorage(ids.slice(0, 3))
+    // The outside upload is stored too, so its retained source proves the window held.
+    const storage = await seedOwnedUploadCleanupStorage(ids)
     const prefix = `${workerQueuePrefix}-upload-cleanup-${randomUUID()}`
     const queue = new Queue(BACKGROUND_CPU_QUEUE_NAME, {
       connection: workerQueueConnection,
@@ -98,7 +99,6 @@ describe('background CPU abandoned upload cleanup', () => {
       (closing ??= (async () => {
         await Promise.allSettled(mutations)
         await using resources = new AsyncDisposableStack()
-        resources.defer(() => storage.restore())
         resources.defer(() => off())
         resources.defer(() => queue.close())
         resources.defer(() => queue.obliterate({ force: true }))
@@ -136,11 +136,12 @@ describe('background CPU abandoned upload cleanup', () => {
       expect(stored?.data.sweep.windows.staged.done).toBe(true)
       expect(stored?.data.sweep.windows.recovery.done).toBe(true)
       expect(stored?.data.sweep.windows.abandonment.done).toBe(true)
-      expect(
-        storage.calls
-          .map(call => call.Key)
-          .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-      ).toEqual([completedId, recoveryId, abandonedId].toSorted())
+      await expect(storage.deleted()).resolves.toEqual(
+        [completedId, recoveryId, abandonedId].map(Key => ({
+          Bucket: storage.buckets.imageUploads,
+          Key,
+        })),
+      )
       expect(await getImageById(abandonedId)).toBeNull()
       expect(await getImageById(completedId)).not.toBeNull()
       expect(await getImageById(recoveryId)).not.toBeNull()

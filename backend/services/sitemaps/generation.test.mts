@@ -1,7 +1,7 @@
 import { gunzipSync } from 'node:zlib'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generatePostTypeIndex, generateRootIndex } from './generation.mts'
-import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
+import { useSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
 import { buildPostTypeIndexEntries, buildRootIndexEntries } from './index-entries.mts'
 import type { PostDayManifest } from './storage.mts'
 
@@ -72,18 +72,16 @@ describe('sitemap index generation entries', () => {
   })
 
   it('writes a compressed post type index from the tracked range and published manifests', async () => {
-    const objects = new Map<string, Buffer>([
-      [
-        'sitemaps/meta/posts-tracked-range.json',
-        Buffer.from(JSON.stringify({ earliestDay: '2026-06-09', latestDay: '2026-06-10' })),
-      ],
-    ])
-    const metadata = new Map([['posts/2026/06/10/article/index.xml', manifest]])
-    spyOnSitemapObjectStore(objects, () => undefined, metadata)
+    const store = await useSitemapObjectStore()
+    await store.put(
+      'sitemaps/meta/posts-tracked-range.json',
+      JSON.stringify({ earliestDay: '2026-06-09', latestDay: '2026-06-10' }),
+    )
+    await store.put('posts/2026/06/10/article/index.xml', 'published-index', manifest)
 
     await generatePostTypeIndex('article')
 
-    const compressed = objects.get('sitemaps/types/article.xml')
+    const compressed = await store.get('sitemaps/types/article.xml')
     expect(compressed).toBeDefined()
     const xml = gunzipSync(compressed!).toString()
     expect(xml).toContain('https://example.com/sitemaps/article/2026-06-10/index.xml')
@@ -91,14 +89,13 @@ describe('sitemap index generation entries', () => {
   })
 
   it('writes compressed static and root indexes with published family links', async () => {
-    const objects = new Map<string, Buffer>()
-    const metadata = new Map([['sitemaps/families/topics.xml', manifest]])
-    spyOnSitemapObjectStore(objects, () => undefined, metadata)
+    const store = await useSitemapObjectStore()
+    await store.put('sitemaps/families/topics.xml', 'published-index', manifest)
 
     await generateRootIndex()
 
-    const staticIndex = objects.get('sitemaps/static.xml')
-    const rootIndex = objects.get('sitemaps/root.xml')
+    const staticIndex = await store.get('sitemaps/static.xml')
+    const rootIndex = await store.get('sitemaps/root.xml')
     expect(staticIndex).toBeDefined()
     expect(rootIndex).toBeDefined()
     expect(gunzipSync(staticIndex!).toString()).toContain('https://example.com/news')

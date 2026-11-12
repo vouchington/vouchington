@@ -4,7 +4,9 @@ import { createImageUploadUrl } from './create-upload-url.mts'
 import { getImageById } from './get.mts'
 import { deriveUploadStatus } from './get-upload-state.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { S3Buckets } from '@modules/aws'
+import { HeadObjectCommand } from '@aws-sdk/client-s3'
+import { sendToPresignedS3Url } from '@voucha/test-helpers/aws-emulator-s3'
+import { S3Buckets, S3ImageUploadsClient } from '@modules/aws'
 
 const NOW = Date.UTC(2026, 0, 31, 23, 59, 59)
 
@@ -41,7 +43,6 @@ describe('createImageUploadUrl', () => {
 
     expect(result.image_id).toBeDefined()
     expect(uploadUrl.pathname).toContain(result.image_id)
-    expect(uploadUrl.hostname).toContain(S3Buckets.imageUploads)
     expect(uploadUrl.searchParams.get('X-Amz-Algorithm')).toBe('AWS4-HMAC-SHA256')
     expect(uploadUrl.searchParams.get('X-Amz-Credential')).toBeTruthy()
     expect(uploadUrl.searchParams.get('X-Amz-Expires')).toBe('3600')
@@ -51,6 +52,27 @@ describe('createImageUploadUrl', () => {
     expect(result.expires_at).toBeDefined()
 
     expect(result.expires_at).toBe(new Date(NOW + 3600 * 1000).toISOString())
+  })
+
+  it('accepts an upload through the presigned URL into the uploads bucket', async () => {
+    vi.useRealTimers()
+    const body = Buffer.from('presigned upload body')
+    const result = await createImageUploadUrl(user, {
+      contentType: 'image/jpeg',
+      contentLength: body.length,
+    })
+
+    const response = await sendToPresignedS3Url(result.upload_url, {
+      method: 'PUT',
+      contentType: result.content_type,
+      body,
+    })
+    expect(response.status).toBe(200)
+
+    const stored = await S3ImageUploadsClient.send(
+      new HeadObjectCommand({ Bucket: S3Buckets.imageUploads, Key: result.image_id }),
+    )
+    expect(stored).toMatchObject({ ContentLength: body.length, ContentType: 'image/jpeg' })
   })
 
   it('should reject unsupported formats', async () => {
