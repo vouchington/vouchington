@@ -56120,6 +56120,14 @@
           "definition": "CHECK ((((submitted_at IS NOT NULL) OR (num_nonnulls(in_progress_at, completed_at, failed_at, cancelled_at) = 0)) AND (num_nonnulls(completed_at, failed_at, cancelled_at) <= 1)))",
           "validated": true
         },
+        "gemini_embedding_batches_ingestion_failures_check": {
+          "definition": "CHECK (((ingestion_failures >= 0) AND (ingestion_failures <= 3)))",
+          "validated": true
+        },
+        "gemini_embedding_batches_ingestion_generation_check": {
+          "definition": "CHECK ((ingestion_generation >= 0))",
+          "validated": true
+        },
         "gemini_embedding_batches_records_check": {
           "definition": "CHECK (((records >= 0) AND (records <= 1000000)))",
           "validated": true
@@ -56134,17 +56142,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 17
         },
         "completed_at": {
-          "comment": "When the Vertex job first reached a successful terminal status (JOB_STATE_SUCCEEDED or JOB_STATE_PARTIALLY_SUCCEEDED).",
+          "comment": "When all successful terminal output was validated and applied.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 15
         },
         "crawl_id": {
           "comment": "Optional crawl this batch was created for. Cleared before that crawl partition is dropped.",
@@ -56177,14 +56185,14 @@
           "ordinalPosition": 5
         },
         "failed_at": {
-          "comment": "When the Vertex job terminated unsuccessfully (JOB_STATE_FAILED or JOB_STATE_EXPIRED).",
+          "comment": "When the provider failed, a submission receipt expired, or three terminal-result ingestion attempts failed.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 16
         },
         "id": {
           "comment": "UUIDv7 identifier of this Vertex embedding batch.",
@@ -56197,14 +56205,34 @@
           "ordinalPosition": 1
         },
         "in_progress_at": {
-          "comment": "When the Vertex job first reported JOB_STATE_RUNNING or JOB_STATE_CANCELLING.",
+          "comment": "When the Vertex job first reported running, cancelling or paused, or successful output awaiting ingestion.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
+          "ordinalPosition": 14
+        },
+        "ingestion_failures": {
+          "comment": "Failed terminal-result ingestion attempts, bounded at three before failing and unlocking this batch.",
+          "dataType": "smallint",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
           "ordinalPosition": 12
+        },
+        "ingestion_generation": {
+          "comment": "Recovery attempt generation fencing stale result writers; every chunk and terminal transition verifies this value.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11
         },
         "job_name": {
           "comment": "The Vertex batch prediction resource name.",
@@ -56247,14 +56275,14 @@
           "ordinalPosition": 8
         },
         "submitted_at": {
-          "comment": "When the Vertex job was successfully submitted (JOB_STATE_PENDING/JOB_STATE_QUEUED).",
+          "comment": "When submission intent was persisted before contacting Vertex; a missing receipt is reconciled by display name.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 13
         },
         "updated_at": {
           "comment": null,
