@@ -262,7 +262,10 @@
       "hash": "1c37bbe8d6d9a074a5b6e31f693b16c76d5a93cbe714d90647a4475d2fc34817"
     },
     "GET:/api/v1/communities/:communitySlug/moderator-stats": {
-      "fixtureIds": ["web.communities.moderator-stats.default"],
+      "fixtureIds": [
+        "native.communities.moderator-stats.placement",
+        "web.communities.moderator-stats.default"
+      ],
       "hash": "b5e9ef258d75dac4df562614c9f96d5e57fcca4948ca7121abe38a01ee77d8f7"
     },
     "GET:/api/v1/communities/:communitySlug/moderator-vacation": {
@@ -2165,6 +2168,10 @@
     "native.communities.moderator-cap.promotion.conflict": {
       "fixtureIds": ["native.communities.moderator-cap.promotion.conflict"],
       "hash": "99bf708cb0cedd797029293ae07734fc205fce184be19bae21179cf98d8ece1f"
+    },
+    "native.communities.moderator-stats.placement": {
+      "fixtureIds": ["native.communities.moderator-stats.placement"],
+      "hash": "854cff06b9ab0f62bdc2b63ea223d06fb43068b04f9de91dd75e61a30eb6b89f"
     },
     "native.community.moderation-transparency.default": {
       "fixtureIds": ["native.community.moderation-transparency.default"],

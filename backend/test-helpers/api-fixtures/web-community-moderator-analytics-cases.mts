@@ -1,4 +1,5 @@
 import { community, timestamp, user } from './web-community-data.mts'
+import { nativeModerationFixtureCase as fixtureCase } from './native-moderation-fixture-case.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 export const webCommunityModeratorAnalyticsApiFixtureCases: ApiFixtureCase[] = [
@@ -68,6 +69,35 @@ export const webCommunityModeratorAnalyticsApiFixtureCases: ApiFixtureCase[] = [
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['backend/api/v1/communities/moderator-stats.mts'],
   },
+  fixtureCase({
+    id: 'native.communities.moderator-stats.placement',
+    method: 'GET',
+    path: `/api/v1/communities/${community.slug}/moderator-stats`,
+    query: { window: '30' },
+    route: {
+      routeTemplate: '/api/v1/communities/:communitySlug/moderator-stats',
+      pathParams: { communitySlug: community.slug },
+    },
+    auth: 'fixture-user',
+    body: {
+      window: 30,
+      stats: [{ actor_user_id: user.id, total: 16, counts: { approve: 12, remove: 4 } }],
+      users: {
+        [user.id]: {
+          ...user,
+          name: 'Mara Moderator',
+          username: 'mara_mod',
+          profile_image_id: '00000000-0000-7000-8000-000000000299',
+          profile_image_placement: {
+            placement_id: '00000000-0000-7000-8000-000000000399',
+            placement_revision: 3,
+            image_id: '00000000-0000-7000-8000-000000000299',
+          },
+        },
+      },
+    },
+    migratedFrom: [],
+  }),
   {
     id: 'web.communities.moderator-vacation.default',
     method: 'GET',
