@@ -30,6 +30,8 @@
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.1164.0",
     "@aws-sdk/client-dynamodb": "^3.1164.0",
+    "@aws-sdk/client-firehose": "^3.1164.0",
+    "@aws-sdk/client-iam": "^3.1164.0",
     "@aws-sdk/client-s3": "^3.1164.0",
     "@aws-sdk/client-sqs": "^3.1164.0",
     "@data-stores/analytics": "workspace:^",
@@ -55,6 +57,7 @@
     "@queues/notifications": "workspace:^",
     "@queues/psql": "workspace:^",
     "@sentry/node": "^11.11.0",
+    "@smithy/core": "^3.39.0",
     "@ts-shared/money": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",

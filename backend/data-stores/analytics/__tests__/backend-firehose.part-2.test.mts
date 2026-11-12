@@ -14,7 +14,7 @@ import { emit } from '../emit.mts'
 import { onGracefulShutdown } from '../graceful-shutdown.mts'
 
 import { writeRecord as writeLocalRecord } from '../backend-local.mts'
-
+import { ANALYTICS_TEST_FIREHOSE_PREFIX } from '../../../test-helpers/aws-emulator-firehose.mts'
 import { flush, writeRecord } from '../backend-firehose.mts'
 type PutBatch = (input: PutRecordBatchCommandInput) => Promise<PutRecordBatchCommandOutput>
 
@@ -25,24 +25,16 @@ describe('backend-firehose', () => {
 
   const originalPrefix = process.env.ANALYTICS_FIREHOSE_PREFIX
 
-  let calls: PutRecordBatchCommandInput[]
-
-  let responses: Array<PutRecordBatchCommandOutput | Error>
-
+  // Observes each batch the writer sends. Every call still reaches the AWS Emulator's real
+  // delivery streams (provisioned by global setup), so request shape and acceptance are real.
   let firehoseSender: MockInstance<PutBatch>
 
+  const sent = () => firehoseSender.mock.calls.map(([input]) => input)
+
   beforeEach(async () => {
-    process.env.ANALYTICS_FIREHOSE_PREFIX = 'voucha-analytics-test-'
-    calls = []
-    responses = []
-    firehoseSender = vi.spyOn(firehoseProvider, 'putFirehoseRecordBatch')
-    firehoseSender.mockImplementation((input: PutRecordBatchCommandInput) => {
-      calls.push(input)
-      const response = responses.shift()
-      if (response instanceof Error) return Promise.reject(response)
-      return Promise.resolve(response ?? makeFirehoseOutput())
-    })
+    process.env.ANALYTICS_FIREHOSE_PREFIX = ANALYTICS_TEST_FIREHOSE_PREFIX
     await flush()
+    firehoseSender = vi.spyOn(firehoseProvider, 'putFirehoseRecordBatch')
   })
 
   afterEach(async () => {
@@ -74,10 +66,6 @@ describe('backend-firehose', () => {
     return new TextDecoder().decode(data as Uint8Array)
   }
 
-  function makeFirehoseOutput(): PutRecordBatchCommandOutput {
-    return { $metadata: {}, FailedPutCount: 0, RequestResponses: [] }
-  }
-
   function makeQueueWorkerRecord(overrides: { event_id: string }) {
     return {
       event_time: new Date('2026-01-02T03:04:05.000Z'),
@@ -91,29 +79,20 @@ describe('backend-firehose', () => {
 
   it('waits for an active flush before resolving a concurrent flush', async () => {
     const events: string[] = []
-    const firstSendStarted = Promise.withResolvers<void>()
-    const firstSendReleased = Promise.withResolvers<PutRecordBatchCommandOutput>()
-    firehoseSender.mockImplementation(input => {
-      calls.push(input)
-      firstSendStarted.resolve()
-      return firstSendReleased.promise.then(output => {
-        events.push('send finished')
-        return output
-      })
-    })
-
     writeRecord('queue_workers', makeQueueWorkerRecord({ event_id: 'first' }))
     const firstFlushPromise = flush()
-    await firstSendStarted.promise
+    // The first request is on the wire; note when its real response arrives.
+    void Promise.resolve(firehoseSender.mock.results[0]?.value).then(() =>
+      events.push('send finished'),
+    )
     const concurrentFlushPromise = flush().then(() => {
       events.push('concurrent flush finished')
       return undefined
     })
-    firstSendReleased.resolve(makeFirehoseOutput())
     await Promise.all([firstFlushPromise, concurrentFlushPromise])
 
     expect(events).toEqual(['send finished', 'concurrent flush finished'])
-    expect(calls).toHaveLength(1)
+    expect(sent()).toHaveLength(1)
   })
 
   it('writes Firehose records through emit()', async () => {
@@ -122,8 +101,11 @@ describe('backend-firehose', () => {
     emit('queue_workers', makeQueueWorkerRecord({ event_id: 'emit' }))
     await flush()
 
-    expect(calls).toHaveLength(1)
-    expect(JSON.parse(decodeRecord(calls[0]!))).toMatchObject({ event_id: 'emit' })
+    expect(sent()).toHaveLength(1)
+    expect(JSON.parse(decodeRecord(sent()[0]!))).toMatchObject({ event_id: 'emit' })
+    await expect(firehoseSender.mock.results[0]?.value).resolves.toMatchObject({
+      FailedPutCount: 0,
+    })
   })
 
   it('flushes Firehose records on graceful shutdown', async () => {
@@ -132,8 +114,8 @@ describe('backend-firehose', () => {
 
     await onGracefulShutdown()
 
-    expect(calls).toHaveLength(1)
-    expect(JSON.parse(decodeRecord(calls[0]!))).toMatchObject({
+    expect(sent()).toHaveLength(1)
+    expect(JSON.parse(decodeRecord(sent()[0]!))).toMatchObject({
       event_id: 'shutdown-firehose',
     })
   })

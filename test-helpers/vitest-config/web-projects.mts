@@ -102,6 +102,8 @@ export const webProjects: TestProjectConfiguration[] = [
       isolate: false,
       name: 'lambdas',
       ...fiveSecondTestBudget,
+      globalSetup: './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
+      setupFiles: ['./backend/test-helpers/vitest.setup.aws-emulator.mts'],
       include: ['lambdas/**/*.test.mts'],
       exclude: [
         '**/node_modules/**',
