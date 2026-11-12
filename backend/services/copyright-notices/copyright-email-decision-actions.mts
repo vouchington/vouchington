@@ -7,6 +7,7 @@ import { parseCopyrightNoticeForm } from './http-input.mts'
 import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
+import { copyrightEmailThreadChangedError } from './email-thread-graph.mts'
 import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
 import { rejectCopyrightEmailCorrespondence } from './email-correspondence-rejection.mts'
 
@@ -48,7 +49,11 @@ export async function approveCopyrightEmailIntakeDecision(
 export async function rejectCopyrightEmailIntakeDecision(
   input: Parameters<typeof rejectCopyrightEmailIntake>[0],
 ) {
-  const rejected = await rejectCopyrightEmailIntake(input)
+  const rejected = await rejectCopyrightEmailIntake(input).catch((err: unknown) => {
+    const code = (err as { code?: string } | null)?.code
+    if (code === '40001' || code === '40P01') throw copyrightEmailThreadChangedError(err)
+    throw err
+  })
   if (rejected.responseId) void enqueueSendCopyrightNoticeEmail(rejected.responseId)
   return { reply_queued: rejected.replyQueued }
 }
