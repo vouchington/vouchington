@@ -4,10 +4,8 @@ import { createAuthenticatedTestSession } from '@voucha/test-helpers/authenticat
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
-import {
-  acquireTestAiUsageDateReservationControlSlot,
-  getTestAiUsageSlotGridForDate,
-} from '@voucha/test-helpers/entities/ai-usage-date-reservation'
+import { acquireTestAiUsageDateReservationControlSlot } from '@voucha/test-helpers/entities/ai-usage-date-reservation'
+import { getTestAiUsageSlotGridForDate } from '@voucha/test-helpers/ai-usage-date-grid'
 import {
   getDailyAiCostTotalMicrounits,
   refreshDailyAiCostTotalMicrounits,

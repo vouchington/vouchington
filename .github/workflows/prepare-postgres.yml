@@ -80,6 +80,7 @@ jobs:
       - name: Dump prepared PostgreSQL database
         timeout-minutes: 2
         run: |
+          node backend/test-helpers/prepare-ai-usage-date-partitions.mts
           docker run --rm --network host \
             ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
             pg_dump --format=custom --no-owner --no-privileges "$DATABASE_URL" > "$RUNNER_TEMP/backend-postgres.dump"
