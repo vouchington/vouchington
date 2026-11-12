@@ -113819,6 +113819,33 @@
     },
     {
       "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/users/:idOrSlug#self",
+      "bodyFile": "responses/native.users.profile.private-counts.owner.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.users.profile.private-counts.owner",
+      "method": "GET",
+      "migratedFrom": [],
+      "path": "/api/v1/users/alice",
+      "query": {
+        "include_bio": "1"
+      },
+      "responseSchema": {
+        "hash": "e3cf53636f7e7d4b93528a8920d76f015164841fda3fa1d6e6490e5787cd90b6",
+        "key": "native.users.profile.private-counts.owner"
+      },
+      "route": {
+        "pathParams": {
+          "username": "alice"
+        },
+        "routeTemplate": "/api/v1/users/:username"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-user-profile-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/posts",
       "bodyFile": "responses/native.users.profile.posts.all.json",
       "consumers": ["swift-core", "swift-ui"],
