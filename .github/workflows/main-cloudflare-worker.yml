@@ -42,7 +42,7 @@ jobs:
         timeout-minutes: 3
         with:
           fetch-depth: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@4785f63496e0b00a2518c9129a57920d7450b683 # v1.0.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@8a48840ca216dfaa119d6cacd2789cb3c0dcdba1 # v2.0.0
         timeout-minutes: 3
         with:
           deadline-seconds: '150'
