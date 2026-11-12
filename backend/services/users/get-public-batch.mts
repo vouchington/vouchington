@@ -21,7 +21,7 @@ export const getPublicUsersByAnyBatch = async (
   queryOrderedIdentifierBatch<PublicUser, 'id' | 'username', QueryOptions>(identifiers, options, {
     normalize: normalizePublicUserBatchIdentifier,
     partitions: publicUserBatchPartitions,
-    statement: publicUserBatchStatement,
+    statementBody: publicUserBatchStatementBody,
     readRows: readPublicUserBatchRows,
   })
 
@@ -39,9 +39,8 @@ function normalizePublicUserBatchIdentifier(
   throw createError(422, `Invalid user identifier: ${input}`)
 }
 
-function publicUserBatchStatement(inputCtes: string): string {
-  return `/* getPublicUsersByAnyBatch */
-    WITH ${inputCtes},
+function publicUserBatchStatementBody(inputCtes: string): string {
+  return `${inputCtes},
     id_lookups AS (
       SELECT u.id, id_input.input_order
       FROM users u
@@ -67,12 +66,12 @@ function publicUserBatchStatement(inputCtes: string): string {
 }
 
 async function readPublicUserBatchRows(
-  sql: string,
+  statementBody: string,
   values: unknown[],
   options: QueryOptions,
 ): Promise<ReadonlyArray<PublicUser & { input_order: number }>> {
-  const prefix = '/* getPublicUsersByAnyBatch */\n    WITH '
-  if (!sql.startsWith(prefix)) throw new Error('Unexpected public user batch query')
-  const { rows } = await read<PublicUser & { input_order: number }>(sql, values, options)
+  const statement = `/* getPublicUsersByAnyBatch */
+    WITH ${statementBody}`
+  const { rows } = await read<PublicUser & { input_order: number }>(statement, values, options)
   return rows
 }

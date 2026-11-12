@@ -25,7 +25,7 @@ export const getUrlHostnamesByAnyBatch = async (
     {
       normalize: normalizeUrlHostnameBatchIdentifier,
       partitions: urlHostnameBatchPartitions,
-      statement: urlHostnameBatchStatement,
+      statementBody: urlHostnameBatchStatementBody,
       readRows: readUrlHostnameBatchRows,
     },
   )
@@ -45,9 +45,8 @@ function normalizeUrlHostnameBatchIdentifier(
   throw createError(422, `Invalid URL hostname identifier: ${input}`)
 }
 
-function urlHostnameBatchStatement(inputCtes: string): string {
-  return `/* getUrlHostnamesByAnyBatch */
-    WITH ${inputCtes},
+function urlHostnameBatchStatementBody(inputCtes: string): string {
+  return `${inputCtes},
     id_lookups AS (
       SELECT uh.id, id_input.input_order
       FROM url_hostnames uh
@@ -71,12 +70,12 @@ function urlHostnameBatchStatement(inputCtes: string): string {
 }
 
 async function readUrlHostnameBatchRows(
-  sql: string,
+  statementBody: string,
   values: unknown[],
   options: QueryOptions,
 ): Promise<ReadonlyArray<ViewHostname & { input_order: number }>> {
-  const prefix = '/* getUrlHostnamesByAnyBatch */\n    WITH '
-  if (!sql.startsWith(prefix)) throw new Error('Unexpected URL hostname batch query')
-  const { rows } = await read<ViewHostname & { input_order: number }>(sql, values, options)
+  const statement = `/* getUrlHostnamesByAnyBatch */
+    WITH ${statementBody}`
+  const { rows } = await read<ViewHostname & { input_order: number }>(statement, values, options)
   return rows
 }

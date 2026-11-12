@@ -6,7 +6,7 @@ describe('queryOrderedIdentifierBatch', () => {
     const results = await queryOrderedIdentifierBatch<string, 'id', undefined>([], undefined, {
       normalize: input => ({ value: input, type: 'id' }),
       partitions: [{ cteName: 'id_input', sqlType: 'uuid', type: 'id' }],
-      statement: () => 'unused',
+      statementBody: () => 'unused',
       readRows: () => Promise.reject(new Error('readRows should not run')),
     })
 
@@ -33,7 +33,7 @@ describe('queryOrderedIdentifierBatch', () => {
           { cteName: 'id_input', sqlType: 'uuid', type: 'id' },
           { cteName: 'slug_input', sqlType: 'text', type: 'slug' },
         ],
-        statement: inputCtes => `WITH ${inputCtes}, body`,
+        statementBody: inputCtes => `${inputCtes}, body`,
         readRows: (sql, values, options) => {
           expect(options).toEqual({ label: 'options' })
           seenSql = sql
@@ -43,7 +43,7 @@ describe('queryOrderedIdentifierBatch', () => {
       },
     )
 
-    expect(seenSql).toContain('id_input AS')
+    expect(seenSql).toMatch(/^id_input AS/)
     expect(seenSql).toContain('unnest($1::uuid[])')
     expect(seenSql).toContain('slug_input AS')
     expect(seenSql).toContain('unnest($3::text[])')
