@@ -573,6 +573,9 @@
     "follower_distribution_audiences": {
       "values": ["all_followers", "selected_followers"]
     },
+    "gemini_embedding_batch_job_types": {
+      "values": ["topics", "posts", "rss_feed_items", "crawl_chunks", "images"]
+    },
     "history_retention_cleanup_names": {
       "values": [
         "dynamic_configuration_revisions",
@@ -48638,7 +48641,10 @@
       "checkConstraints": {
         "crawl_chunks_bedrock_nova_multimodal_v1_content_sha256_check": "CHECK ((octet_length(bedrock_nova_multimodal_v1_content_sha256) = 32))",
         "crawl_chunks_bedrock_nova_multimodal_v1_input_sha256_check": "CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))",
-        "crawl_chunks_bedrock_nova_multimodal_v1_input_token_count_check": "CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))"
+        "crawl_chunks_bedrock_nova_multimodal_v1_input_token_count_check": "CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))",
+        "crawl_chunks_gemini_embedding_2_content_sha256_check": "CHECK ((octet_length(gemini_embedding_2_content_sha256) = 32))",
+        "crawl_chunks_gemini_embedding_2_input_sha256_check": "CHECK (((gemini_embedding_2_input_sha256 IS NULL) OR (octet_length(gemini_embedding_2_input_sha256) = 32)))",
+        "crawl_chunks_gemini_embedding_2_input_token_count_check": "CHECK (((gemini_embedding_2_input_token_count IS NULL) OR (gemini_embedding_2_input_token_count >= 0)))"
       },
       "columns": {
         "bedrock_nova_multimodal_v1_content_sha256": {
@@ -48715,8 +48721,63 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
+        },
+        "gemini_embedding_2_content_sha256": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "bytea"
+        },
+        "gemini_embedding_2_embedding": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "halfvec(1536)"
+        },
+        "gemini_embedding_2_embedding_created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "gemini_embedding_2_input_sha256": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "bytea"
+        },
+        "gemini_embedding_2_input_token_count": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "integer"
         },
         "markdown": {
           "collation": null,
@@ -48759,7 +48820,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         }
       },
@@ -48847,7 +48908,7 @@
         "idx_crawl_chunks__embedding_pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crawl_chunks__embedding_pending ON ONLY public.crawl_chunks USING btree (crawl_id) WHERE (bedrock_nova_multimodal_v1_embedding_created_at IS NULL)",
+          "definition": "CREATE INDEX idx_crawl_chunks__embedding_pending ON ONLY public.crawl_chunks USING btree (crawl_id) WHERE (gemini_embedding_2_embedding_created_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -48858,7 +48919,47 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(bedrock_nova_multimodal_v1_embedding_created_at IS NULL)",
+          "predicate": "(gemini_embedding_2_embedding_created_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_crawl_chunks__gemini_embedding_2_embedding": {
+          "accessMethod": "hnsw",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_crawl_chunks__gemini_embedding_2_embedding ON ONLY public.crawl_chunks USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops) WHERE (gemini_embedding_2_embedding IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "gemini_embedding_2_embedding",
+              "descending": false,
+              "expression": "gemini_embedding_2_embedding",
+              "nullsFirst": false,
+              "opclass": "halfvec_cosine_ops"
+            }
+          ],
+          "predicate": "(gemini_embedding_2_embedding IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_crawl_chunks__gemini_embedding_2_input_sha256": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_crawl_chunks__gemini_embedding_2_input_sha256 ON ONLY public.crawl_chunks USING btree (gemini_embedding_2_input_sha256) WHERE (gemini_embedding_2_input_sha256 IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "gemini_embedding_2_input_sha256",
+              "descending": false,
+              "expression": "gemini_embedding_2_input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(gemini_embedding_2_input_sha256 IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -52432,6 +52533,820 @@
       "triggers": {
         "trigger_fd_distributions_recipient_bounds": "CREATE CONSTRAINT TRIGGER trigger_fd_distributions_recipient_bounds AFTER INSERT OR UPDATE OF audience ON public.follower_distributions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_reject_follower_distribution_recipient_bounds()",
         "trigger_follower_distributions_updated_at": "CREATE TRIGGER trigger_follower_distributions_updated_at BEFORE UPDATE ON public.follower_distributions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "gemini_embedding_2_embeddings": {
+      "checkConstraints": {
+        "gemini_embedding_2_embeddings_content_sha256_check": "CHECK ((octet_length(content_sha256) = 32))",
+        "gemini_embedding_2_embeddings_input_token_count_check": "CHECK (((input_token_count IS NULL) OR (input_token_count >= 0)))"
+      },
+      "columns": {
+        "content_sha256": {
+          "collation": null,
+          "comment": "SHA-256 of the input content. Primary key for deduplication.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "bytea"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "embedding": {
+          "collation": null,
+          "comment": "1536-dimensional vector from Gemini Embedding 2.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "halfvec(1536)"
+        },
+        "input_token_count": {
+          "collation": null,
+          "comment": "Number of tokens Vertex consumed for this content. NULL until first embedded; populated on insert and backfilled on cache hits.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Centralized lookup table for Amazon Nova multimodal text vectors, keyed by content hash.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "gemini_embedding_2_embeddings_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX gemini_embedding_2_embeddings_pkey ON public.gemini_embedding_2_embeddings USING btree (content_sha256)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "content_sha256",
+              "descending": false,
+              "expression": "content_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_gemini_embedding_2_embeddings__updated_at_hash": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_gemini_embedding_2_embeddings__updated_at_hash ON public.gemini_embedding_2_embeddings USING btree (updated_at, encode(content_sha256, 'hex'::text))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "encode(content_sha256, 'hex'::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["content_sha256"],
+        "definition": "PRIMARY KEY (content_sha256)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_gemini_embedding_2_embeddings_updated_at": "CREATE TRIGGER trigger_gemini_embedding_2_embeddings_updated_at BEFORE UPDATE ON public.gemini_embedding_2_embeddings FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "gemini_embedding_batch_entities": {
+      "checkConstraints": {
+        "chk_gemini_embedding_batch_entities__entity_columns": "CHECK ((((entity_type = 'topics'::gemini_embedding_batch_job_types) AND (topic_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NULL)) OR ((entity_type = 'posts'::gemini_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NOT NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NULL)) OR ((entity_type = 'rss_feed_items'::gemini_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NOT NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NULL)) OR ((entity_type = 'crawl_chunks'::gemini_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NOT NULL) AND (crawl_order_index IS NOT NULL) AND (image_id IS NULL)) OR ((entity_type = 'images'::gemini_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NOT NULL))))"
+      },
+      "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "The batch job processing this entity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "crawl_id": {
+          "collation": null,
+          "comment": "Crawl containing the crawl chunk currently being processed in a Vertex embeddings batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "crawl_order_index": {
+          "collation": null,
+          "comment": "Order index of the crawl chunk currently being processed in a Vertex embeddings batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "integer"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "entity_type": {
+          "collation": null,
+          "comment": "The entity type being processed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "gemini_embedding_batch_job_types"
+        },
+        "image_id": {
+          "collation": null,
+          "comment": "Image currently being processed in a Vertex embeddings batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Post currently being processed in a Vertex embeddings batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "RSS feed item currently being processed in a Vertex embeddings batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": "Topic currently being processed in a Vertex embeddings batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Lock table tracking which entities are currently being processed in a Vertex embeddings batch.",
+      "foreignKeys": {
+        "fk_gemini_embedding_batch_entities__crawl_chunk": {
+          "columns": ["crawl_id", "crawl_order_index"],
+          "definition": "FOREIGN KEY (crawl_id, crawl_order_index) REFERENCES crawl_chunks(crawl_id, order_index) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["crawl_id", "order_index"],
+          "referencedTable": "crawl_chunks",
+          "validated": true
+        },
+        "gemini_embedding_batch_entities_batch_id_fkey": {
+          "columns": ["batch_id"],
+          "definition": "FOREIGN KEY (batch_id) REFERENCES gemini_embedding_batches(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "gemini_embedding_batches",
+          "validated": true
+        },
+        "gemini_embedding_batch_entities_image_id_fkey": {
+          "columns": ["image_id"],
+          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "gemini_embedding_batch_entities_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "gemini_embedding_batch_entities_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        },
+        "gemini_embedding_batch_entities_topic_id_fkey": {
+          "columns": ["topic_id"],
+          "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "topics",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_gemini_embedding_batch_entities__batch_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_gemini_embedding_batch_entities__batch_id ON public.gemini_embedding_batch_entities USING btree (batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_gemini_embedding_batch_entities__crawl_chunk": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batch_entities__crawl_chunk ON public.gemini_embedding_batch_entities USING btree (crawl_id, crawl_order_index) WHERE ((crawl_id IS NOT NULL) AND (crawl_order_index IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "crawl_id",
+              "descending": false,
+              "expression": "crawl_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "crawl_order_index",
+              "descending": false,
+              "expression": "crawl_order_index",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            }
+          ],
+          "predicate": "((crawl_id IS NOT NULL) AND (crawl_order_index IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_gemini_embedding_batch_entities__crawl_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_gemini_embedding_batch_entities__crawl_id ON public.gemini_embedding_batch_entities USING btree (crawl_id) WHERE (crawl_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "crawl_id",
+              "descending": false,
+              "expression": "crawl_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(crawl_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_gemini_embedding_batch_entities__image": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batch_entities__image ON public.gemini_embedding_batch_entities USING btree (image_id) WHERE (image_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(image_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_gemini_embedding_batch_entities__post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batch_entities__post ON public.gemini_embedding_batch_entities USING btree (post_id) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_gemini_embedding_batch_entities__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batch_entities__rss_feed_item ON public.gemini_embedding_batch_entities USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_gemini_embedding_batch_entities__topic": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batch_entities__topic ON public.gemini_embedding_batch_entities USING btree (topic_id) WHERE (topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": null,
+      "relationKind": "table",
+      "triggers": {
+        "trigger_gemini_embedding_batch_entities_updated_at": "CREATE TRIGGER trigger_gemini_embedding_batch_entities_updated_at BEFORE UPDATE ON public.gemini_embedding_batch_entities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "gemini_embedding_batches": {
+      "checkConstraints": {
+        "chk_gemini_embedding_batches__lifecycle": "CHECK ((((submitted_at IS NOT NULL) OR (num_nonnulls(in_progress_at, completed_at, failed_at, cancelled_at) = 0)) AND (num_nonnulls(completed_at, failed_at, cancelled_at) <= 1)))",
+        "gemini_embedding_batches_records_check": "CHECK (((records >= 0) AND (records <= 1000000)))"
+      },
+      "columns": {
+        "cancelled_at": {
+          "collation": null,
+          "comment": "When the Vertex job was JOB_STATE_CANCELLED before completion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "timestamp with time zone"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": "When the Vertex job first reached a successful terminal status (JOB_STATE_SUCCEEDED or JOB_STATE_PARTIALLY_SUCCEEDED).",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "crawl_id": {
+          "collation": null,
+          "comment": "Optional crawl this batch was created for. Cleared before that crawl partition is dropped.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "data": {
+          "collation": null,
+          "comment": "JSONB batch document: state, model id, job name, GCS URIs, input size, and submission metadata.",
+          "defaultExpression": "'{}'::jsonb",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "jsonb"
+        },
+        "failed_at": {
+          "collation": null,
+          "comment": "When the Vertex job terminated unsuccessfully (JOB_STATE_FAILED or JOB_STATE_EXPIRED).",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": "UUIDv7 identifier of this Vertex embedding batch.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "in_progress_at": {
+          "collation": null,
+          "comment": "When the Vertex job first reported JOB_STATE_RUNNING or JOB_STATE_CANCELLING.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "timestamp with time zone"
+        },
+        "job_name": {
+          "collation": null,
+          "comment": "The Vertex batch prediction resource name.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "job_type": {
+          "collation": null,
+          "comment": "Which entity type this batch processes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "gemini_embedding_batch_job_types"
+        },
+        "model_id": {
+          "collation": null,
+          "comment": "The Vertex AI model id used for embeddings.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "records": {
+          "collation": null,
+          "comment": "Number of records in this batch.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "integer"
+        },
+        "submitted_at": {
+          "collation": null,
+          "comment": "When the Vertex job was successfully submitted (JOB_STATE_PENDING/JOB_STATE_QUEUED).",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "url_id": {
+          "collation": null,
+          "comment": "Optional URL this batch was created for.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        }
+      },
+      "comment": "Tracks Vertex AI batch embedding jobs and their lifecycle.",
+      "foreignKeys": {
+        "gemini_embedding_batches_crawl_id_fkey": {
+          "columns": ["crawl_id"],
+          "definition": "FOREIGN KEY (crawl_id) REFERENCES crawls(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "crawls",
+          "validated": true
+        },
+        "gemini_embedding_batches_url_id_fkey": {
+          "columns": ["url_id"],
+          "definition": "FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "gemini_embedding_batches_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX gemini_embedding_batches_pkey ON public.gemini_embedding_batches USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_gemini_embedding_batches__active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_gemini_embedding_batches__active ON public.gemini_embedding_batches USING btree (id) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_gemini_embedding_batches__crawl_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_gemini_embedding_batches__crawl_id ON public.gemini_embedding_batches USING btree (crawl_id) WHERE (crawl_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "crawl_id",
+              "descending": false,
+              "expression": "crawl_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(crawl_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_gemini_embedding_batches__job_name": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_gemini_embedding_batches__job_name ON public.gemini_embedding_batches USING btree (job_name) WHERE (job_name IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "job_name",
+              "descending": false,
+              "expression": "job_name",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(job_name IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_gemini_embedding_batches__preparing": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_gemini_embedding_batches__preparing ON public.gemini_embedding_batches USING btree (id) WHERE ((submitted_at IS NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((submitted_at IS NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_gemini_embedding_batches__terminal_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_gemini_embedding_batches__terminal_retention ON public.gemini_embedding_batches USING btree (COALESCE(completed_at, failed_at, cancelled_at), id) WHERE ((completed_at IS NOT NULL) OR (failed_at IS NOT NULL) OR (cancelled_at IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(completed_at, failed_at, cancelled_at)",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((completed_at IS NOT NULL) OR (failed_at IS NOT NULL) OR (cancelled_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_gemini_embedding_batches__url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_gemini_embedding_batches__url_id ON public.gemini_embedding_batches USING btree (url_id) WHERE (url_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_gemini_embedding_batches_guard_terminal_lifecycle": "CREATE TRIGGER trigger_gemini_embedding_batches_guard_terminal_lifecycle BEFORE UPDATE ON public.gemini_embedding_batches FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at', 'cancelled_at')",
+        "trigger_gemini_embedding_batches_updated_at": "CREATE TRIGGER trigger_gemini_embedding_batches_updated_at BEFORE UPDATE ON public.gemini_embedding_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -56786,6 +57701,28 @@
           "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
+        "gemini_embedding_2_embedding": {
+          "collation": null,
+          "comment": "1536-dimensional vector from Gemini Embedding 2 for the image.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 26,
+          "type": "halfvec(1536)"
+        },
+        "gemini_embedding_2_embedding_created_at": {
+          "collation": null,
+          "comment": "When the image embedding was generated.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 27,
+          "type": "timestamp with time zone"
+        },
         "id": {
           "collation": null,
           "comment": "Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.",
@@ -57077,6 +58014,26 @@
             }
           ],
           "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_images__gemini_embedding_2_embedding": {
+          "accessMethod": "hnsw",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_images__gemini_embedding_2_embedding ON public.images USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops) WHERE (gemini_embedding_2_embedding IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "gemini_embedding_2_embedding",
+              "descending": false,
+              "expression": "gemini_embedding_2_embedding",
+              "nullsFirst": false,
+              "opclass": "halfvec_cosine_ops"
+            }
+          ],
+          "predicate": "(gemini_embedding_2_embedding IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -92777,6 +93734,9 @@
         "posts_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "posts_creation_source_url_id_check": "CHECK (((creation_source_url_id IS NULL) OR (post_type = 'link'::post_types)))",
         "posts_declared_language_check": "CHECK (((declared_language IS NULL) OR ((declared_language = lower(declared_language)) AND (length(declared_language) <= 10))))",
+        "posts_gemini_embedding_2_content_sha256_check": "CHECK ((octet_length(gemini_embedding_2_content_sha256) = 32))",
+        "posts_gemini_embedding_2_input_sha256_check": "CHECK (((gemini_embedding_2_input_sha256 IS NULL) OR (octet_length(gemini_embedding_2_input_sha256) = 32)))",
+        "posts_gemini_embedding_2_input_token_count_check": "CHECK (((gemini_embedding_2_input_token_count IS NULL) OR (gemini_embedding_2_input_token_count >= 0)))",
         "posts_lingua_rs_content_sha256_check": "CHECK (((lingua_rs_content_sha256 IS NULL) OR (length(lingua_rs_content_sha256) = 32)))",
         "posts_lingua_rs_detected_language_check": "CHECK (((lingua_rs_detected_language IS NULL) OR ((lingua_rs_detected_language = lower(lingua_rs_detected_language)) AND (length(lingua_rs_detected_language) <= 10))))",
         "posts_lingua_rs_input_sha256_check": "CHECK (((lingua_rs_input_sha256 IS NULL) OR (length(lingua_rs_input_sha256) = 32)))",
@@ -92839,7 +93799,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 57,
+          "ordinalPosition": 62,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_content_sha256": {
@@ -93073,6 +94033,61 @@
           "ordinalPosition": 39,
           "type": "uuid"
         },
+        "gemini_embedding_2_content_sha256": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 57,
+          "type": "bytea"
+        },
+        "gemini_embedding_2_embedding": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 59,
+          "type": "halfvec(1536)"
+        },
+        "gemini_embedding_2_embedding_created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 60,
+          "type": "timestamp with time zone"
+        },
+        "gemini_embedding_2_input_sha256": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 58,
+          "type": "bytea"
+        },
+        "gemini_embedding_2_input_token_count": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 61,
+          "type": "integer"
+        },
         "has_creation_moderation_bypass": {
           "collation": null,
           "comment": "Whether an administrator explicitly bypassed creation moderation; remains true after later resets.",
@@ -93191,7 +94206,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 58,
+          "ordinalPosition": 63,
           "type": "bytea"
         },
         "markdown": {
@@ -93268,7 +94283,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 59,
+          "ordinalPosition": 64,
           "type": "tsvector"
         },
         "structured_data": {
@@ -93620,7 +94635,7 @@
         "idx_posts__ban_evasion_post_embedding_pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__ban_evasion_post_embedding_pending ON ONLY public.posts USING btree (id) WHERE ((community_id IS NOT NULL) AND (created_by_id IS NOT NULL) AND (created_by_id <> '00000000-0000-7000-8000-000000000000'::uuid) AND (deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((ban_evasion_post_embedding_input_sha256 IS NULL) OR (ban_evasion_post_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))",
+          "definition": "CREATE INDEX idx_posts__ban_evasion_post_embedding_pending ON ONLY public.posts USING btree (id) WHERE ((community_id IS NOT NULL) AND (created_by_id IS NOT NULL) AND (created_by_id <> '00000000-0000-7000-8000-000000000000'::uuid) AND (deleted_at IS NULL) AND (gemini_embedding_2_embedding IS NOT NULL) AND (gemini_embedding_2_embedding_created_at IS NOT NULL) AND (gemini_embedding_2_input_sha256 = gemini_embedding_2_content_sha256) AND ((ban_evasion_post_embedding_input_sha256 IS NULL) OR (ban_evasion_post_embedding_input_sha256 <> gemini_embedding_2_input_sha256)))",
           "includedColumns": [],
           "keys": [
             {
@@ -93631,7 +94646,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((community_id IS NOT NULL) AND (created_by_id IS NOT NULL) AND (created_by_id <> '00000000-0000-7000-8000-000000000000'::uuid) AND (deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((ban_evasion_post_embedding_input_sha256 IS NULL) OR (ban_evasion_post_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))",
+          "predicate": "((community_id IS NOT NULL) AND (created_by_id IS NOT NULL) AND (created_by_id <> '00000000-0000-7000-8000-000000000000'::uuid) AND (deleted_at IS NULL) AND (gemini_embedding_2_embedding IS NOT NULL) AND (gemini_embedding_2_embedding_created_at IS NOT NULL) AND (gemini_embedding_2_input_sha256 = gemini_embedding_2_content_sha256) AND ((ban_evasion_post_embedding_input_sha256 IS NULL) OR (ban_evasion_post_embedding_input_sha256 <> gemini_embedding_2_input_sha256)))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -94232,6 +95247,66 @@
             }
           ],
           "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__gemini_embedding_2_embedding": {
+          "accessMethod": "hnsw",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__gemini_embedding_2_embedding ON ONLY public.posts USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops) WHERE (gemini_embedding_2_embedding IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "gemini_embedding_2_embedding",
+              "descending": false,
+              "expression": "gemini_embedding_2_embedding",
+              "nullsFirst": false,
+              "opclass": "halfvec_cosine_ops"
+            }
+          ],
+          "predicate": "(gemini_embedding_2_embedding IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__gemini_embedding_2_input_sha256": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__gemini_embedding_2_input_sha256 ON ONLY public.posts USING btree (gemini_embedding_2_input_sha256) WHERE (gemini_embedding_2_input_sha256 IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "gemini_embedding_2_input_sha256",
+              "descending": false,
+              "expression": "gemini_embedding_2_input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(gemini_embedding_2_input_sha256 IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__gemini_embedding_2_to_update": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__gemini_embedding_2_to_update ON ONLY public.posts USING btree (id) WHERE ((gemini_embedding_2_input_sha256 IS NULL) OR (gemini_embedding_2_input_sha256 <> gemini_embedding_2_content_sha256))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((gemini_embedding_2_input_sha256 IS NULL) OR (gemini_embedding_2_input_sha256 <> gemini_embedding_2_content_sha256))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -94935,7 +96010,7 @@
         "trigger_posts_landing_page_candidate_insert": "CREATE TRIGGER trigger_posts_landing_page_candidate_insert AFTER INSERT ON public.posts FOR EACH ROW WHEN (((new.post_type = 'review'::post_types) AND (new.created_by_id IS NOT NULL))) EXECUTE FUNCTION fn_project_user_landing_page_candidate_review_post()",
         "trigger_posts_landing_page_candidate_update": "CREATE TRIGGER trigger_posts_landing_page_candidate_update AFTER UPDATE OF post_type, created_by_id ON public.posts FOR EACH ROW WHEN (((old.post_type = 'review'::post_types) OR (new.post_type = 'review'::post_types))) EXECUTE FUNCTION fn_project_user_landing_page_candidate_review_post()",
         "trigger_posts_post_moderation_retention_hash": "CREATE TRIGGER trigger_posts_post_moderation_retention_hash AFTER UPDATE OF llm_moderation_content_sha256 ON public.posts FOR EACH ROW WHEN ((old.llm_moderation_content_sha256 IS DISTINCT FROM new.llm_moderation_content_sha256)) EXECUTE FUNCTION fn_create_post_moderation_retention_post_hash_work_item()",
-        "trigger_posts_updated_at": "CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_post_id, root_post_id, broadcast, privacy, is_anonymous, community_id, clearance_changed_at, clearance_version, clearance_changed_by_id, clearance_public_reason_code, clearance_is_platform_override, has_creation_moderation_bypass, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_posts_updated_at": "CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_post_id, root_post_id, broadcast, privacy, is_anonymous, community_id, clearance_changed_at, clearance_version, clearance_changed_by_id, clearance_public_reason_code, clearance_is_platform_override, has_creation_moderation_bypass, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, gemini_embedding_2_input_sha256, gemini_embedding_2_embedding, gemini_embedding_2_embedding_created_at, gemini_embedding_2_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_register_retained_post_identity": "CREATE TRIGGER trigger_register_retained_post_identity BEFORE INSERT ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('post')",
         "trigger_sync_posts_search_vector": "CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_posts_search_vector()"
       },
@@ -127980,6 +129055,7 @@
     "rss_feed_items": {
       "checkConstraints": {
         "chk_rss_feed_item__bedrock_nova_multimodal_v1_input_token_count": "CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))",
+        "chk_rss_feed_item__gemini_embedding_2_input_token_count": "CHECK (((gemini_embedding_2_input_token_count IS NULL) OR (gemini_embedding_2_input_token_count >= 0)))",
         "chk_rss_feed_items_votes_count_down": "CHECK ((votes_count_down >= 0))",
         "chk_rss_feed_items_votes_count_none": "CHECK ((votes_count_none >= 0))",
         "chk_rss_feed_items_votes_count_up": "CHECK ((votes_count_up >= 0))",
@@ -127992,6 +129068,8 @@
         "rss_feed_items_duration_seconds_check": "CHECK (((duration_seconds IS NULL) OR (duration_seconds >= 0)))",
         "rss_feed_items_enclosure_length_check": "CHECK (((enclosure_length IS NULL) OR (enclosure_length >= 0)))",
         "rss_feed_items_enclosure_url_check": "CHECK (((enclosure_url IS NULL) OR (char_length(enclosure_url) <= 2048)))",
+        "rss_feed_items_gemini_embedding_2_content_sha256_check": "CHECK ((octet_length(gemini_embedding_2_content_sha256) = 32))",
+        "rss_feed_items_gemini_embedding_2_input_sha256_check": "CHECK (((gemini_embedding_2_input_sha256 IS NULL) OR (octet_length(gemini_embedding_2_input_sha256) = 32)))",
         "rss_feed_items_lingua_rs_content_sha256_check": "CHECK (((lingua_rs_content_sha256 IS NULL) OR (length(lingua_rs_content_sha256) = 32)))",
         "rss_feed_items_lingua_rs_detected_language_check": "CHECK (((lingua_rs_detected_language IS NULL) OR ((lingua_rs_detected_language = lower(lingua_rs_detected_language)) AND (length(lingua_rs_detected_language) <= 10))))",
         "rss_feed_items_lingua_rs_input_sha256_check": "CHECK (((lingua_rs_input_sha256 IS NULL) OR (length(lingua_rs_input_sha256) = 32)))",
@@ -128063,7 +129141,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         },
         "data": {
@@ -128085,7 +129163,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "duration_seconds": {
@@ -128096,7 +129174,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 31,
           "type": "integer"
         },
         "enclosure_length": {
@@ -128107,7 +129185,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 30,
           "type": "bigint"
         },
         "enclosure_media_type_id": {
@@ -128118,7 +129196,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 29,
           "type": "bigint"
         },
         "enclosure_url": {
@@ -128129,8 +129207,63 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 28,
           "type": "text"
+        },
+        "gemini_embedding_2_content_sha256": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 18,
+          "type": "bytea"
+        },
+        "gemini_embedding_2_embedding": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "halfvec(1536)"
+        },
+        "gemini_embedding_2_embedding_created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
+          "type": "timestamp with time zone"
+        },
+        "gemini_embedding_2_input_sha256": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "bytea"
+        },
+        "gemini_embedding_2_input_token_count": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22,
+          "type": "integer"
         },
         "has_hacker_news_references": {
           "collation": null,
@@ -128162,7 +129295,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 36,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -128173,7 +129306,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 39,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -128184,7 +129317,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 35,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -128195,7 +129328,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 37,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -128206,7 +129339,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 38,
           "type": "jsonb"
         },
         "media_type": {
@@ -128217,7 +129350,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22,
+          "ordinalPosition": 27,
           "type": "rss_feed_item_media_types"
         },
         "published_at": {
@@ -128228,7 +129361,7 @@
           "generatedExpression": "LEAST(COALESCE(fn_text_to_timestamptz((data ->> 'isoDate'::text)), 'infinity'::timestamp with time zone), COALESCE(fn_text_to_timestamptz((data ->> 'pubDate'::text)), 'infinity'::timestamp with time zone), uuid_extract_timestamp(id))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 44,
           "type": "timestamp with time zone"
         },
         "search_vector": {
@@ -128239,7 +129372,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 23,
           "type": "tsvector"
         },
         "story_id": {
@@ -128250,7 +129383,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 40,
           "type": "uuid"
         },
         "story_locked_at": {
@@ -128261,7 +129394,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 41,
           "type": "timestamp with time zone"
         },
         "thumbnail_url": {
@@ -128272,7 +129405,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 32,
           "type": "text"
         },
         "updated_at": {
@@ -128283,7 +129416,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         },
         "url_id": {
@@ -128305,7 +129438,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 33,
           "type": "text"
         },
         "video_platform": {
@@ -128316,7 +129449,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 34,
           "type": "text"
         },
         "votes_count_down": {
@@ -128415,7 +129548,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 43,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -128426,7 +129559,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 42,
           "type": "xid8"
         }
       },
@@ -128543,7 +129676,7 @@
         "idx_rss_feed_items__embedding_candidates__published_at__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_items__embedding_candidates__published_at__id ON ONLY public.rss_feed_items USING btree (published_at DESC, id DESC) WHERE ((deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL))",
+          "definition": "CREATE INDEX idx_rss_feed_items__embedding_candidates__published_at__id ON ONLY public.rss_feed_items USING btree (published_at DESC, id DESC) WHERE ((deleted_at IS NULL) AND (gemini_embedding_2_embedding IS NOT NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -128561,7 +129694,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL))",
+          "predicate": "((deleted_at IS NULL) AND (gemini_embedding_2_embedding IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -128582,6 +129715,66 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_items__gemini_embedding_2_embedding": {
+          "accessMethod": "hnsw",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__gemini_embedding_2_embedding ON ONLY public.rss_feed_items USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops) WHERE (gemini_embedding_2_embedding IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "gemini_embedding_2_embedding",
+              "descending": false,
+              "expression": "gemini_embedding_2_embedding",
+              "nullsFirst": false,
+              "opclass": "halfvec_cosine_ops"
+            }
+          ],
+          "predicate": "(gemini_embedding_2_embedding IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_items__gemini_embedding_2_input_sha256": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__gemini_embedding_2_input_sha256 ON ONLY public.rss_feed_items USING btree (gemini_embedding_2_input_sha256) WHERE (gemini_embedding_2_input_sha256 IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "gemini_embedding_2_input_sha256",
+              "descending": false,
+              "expression": "gemini_embedding_2_input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(gemini_embedding_2_input_sha256 IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_items__gemini_embedding_2_to_update": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__gemini_embedding_2_to_update ON ONLY public.rss_feed_items USING btree (id) WHERE ((gemini_embedding_2_input_sha256 IS NULL) OR (gemini_embedding_2_input_sha256 <> gemini_embedding_2_content_sha256))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((gemini_embedding_2_input_sha256 IS NULL) OR (gemini_embedding_2_input_sha256 <> gemini_embedding_2_content_sha256))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -141122,6 +142315,9 @@
         "topics_bedrock_nova_multimodal_v1_input_sha256_check": "CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))",
         "topics_bedrock_nova_multimodal_v1_input_token_count_check": "CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))",
         "topics_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
+        "topics_gemini_embedding_2_content_sha256_check": "CHECK ((octet_length(gemini_embedding_2_content_sha256) = 32))",
+        "topics_gemini_embedding_2_input_sha256_check": "CHECK (((gemini_embedding_2_input_sha256 IS NULL) OR (octet_length(gemini_embedding_2_input_sha256) = 32)))",
+        "topics_gemini_embedding_2_input_token_count_check": "CHECK (((gemini_embedding_2_input_token_count IS NULL) OR (gemini_embedding_2_input_token_count >= 0)))",
         "topics_lingua_rs_content_sha256_check": "CHECK (((lingua_rs_content_sha256 IS NULL) OR (length(lingua_rs_content_sha256) = 32)))",
         "topics_lingua_rs_detected_language_check": "CHECK (((lingua_rs_detected_language IS NULL) OR ((lingua_rs_detected_language = lower(lingua_rs_detected_language)) AND (length(lingua_rs_detected_language) <= 10))))",
         "topics_lingua_rs_input_sha256_check": "CHECK (((lingua_rs_input_sha256 IS NULL) OR (length(lingua_rs_input_sha256) = 32)))",
@@ -141286,6 +142482,61 @@
           "ordinalPosition": 28,
           "type": "uuid"
         },
+        "gemini_embedding_2_content_sha256": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 41,
+          "type": "bytea"
+        },
+        "gemini_embedding_2_embedding": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 43,
+          "type": "halfvec(1536)"
+        },
+        "gemini_embedding_2_embedding_created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 44,
+          "type": "timestamp with time zone"
+        },
+        "gemini_embedding_2_input_sha256": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 42,
+          "type": "bytea"
+        },
+        "gemini_embedding_2_input_token_count": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 45,
+          "type": "integer"
+        },
         "hero_image_id": {
           "collation": null,
           "comment": "Hero/banner image for the topic, displayed prominently on the topic page.",
@@ -141349,7 +142600,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 50,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -141360,7 +142611,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 53,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -141371,7 +142622,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 49,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -141382,7 +142633,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 51,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -141393,7 +142644,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47,
+          "ordinalPosition": 52,
           "type": "jsonb"
         },
         "logo_image_id": {
@@ -141470,7 +142721,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 48,
           "type": "uuid"
         },
         "rewards_program_topic_id": {
@@ -141481,7 +142732,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 47,
           "type": "uuid"
         },
         "search_vector": {
@@ -141492,7 +142743,7 @@
           "generatedExpression": "(((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(fn_immutable_array_to_string(aliases, ' '::text), ''::text)), 'B'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'D'::\"char\"))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 46,
           "type": "tsvector"
         },
         "should_allow_reviews": {
@@ -141950,6 +143201,66 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_topics__gemini_embedding_2_embedding": {
+          "accessMethod": "hnsw",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topics__gemini_embedding_2_embedding ON public.topics USING hnsw (gemini_embedding_2_embedding halfvec_cosine_ops) WHERE (gemini_embedding_2_embedding IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "gemini_embedding_2_embedding",
+              "descending": false,
+              "expression": "gemini_embedding_2_embedding",
+              "nullsFirst": false,
+              "opclass": "halfvec_cosine_ops"
+            }
+          ],
+          "predicate": "(gemini_embedding_2_embedding IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topics__gemini_embedding_2_input_sha256": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topics__gemini_embedding_2_input_sha256 ON public.topics USING btree (gemini_embedding_2_input_sha256) WHERE (gemini_embedding_2_input_sha256 IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "gemini_embedding_2_input_sha256",
+              "descending": false,
+              "expression": "gemini_embedding_2_input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(gemini_embedding_2_input_sha256 IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topics__gemini_embedding_2_to_update": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topics__gemini_embedding_2_to_update ON public.topics USING btree (id) WHERE ((gemini_embedding_2_input_sha256 IS NULL) OR (gemini_embedding_2_input_sha256 <> gemini_embedding_2_content_sha256))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((gemini_embedding_2_input_sha256 IS NULL) OR (gemini_embedding_2_input_sha256 <> gemini_embedding_2_content_sha256))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_topics__hero_image_id": {
