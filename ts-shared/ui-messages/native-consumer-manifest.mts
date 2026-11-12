@@ -40,6 +40,7 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_34_MCP_WARNINGS } from './native-consum
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_35_QUEUE_DOMAINS } from './native-consumer-manifest/claims-35-queue-domains.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_36_JUDGEMENT_RUNS } from './native-consumer-manifest/claims-36-judgement-runs.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_37_TOPIC_MERGE } from './native-consumer-manifest/claims-37-topic-merge.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_38_HACKER_NEWS } from './native-consumer-manifest/claims-38-hacker-news.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
 
 export type {
@@ -91,6 +92,7 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_35_QUEUE_DOMAINS,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_36_JUDGEMENT_RUNS,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_37_TOPIC_MERGE,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_38_HACKER_NEWS,
 ]
 
 export const NATIVE_CONSUMER_MANIFEST =
