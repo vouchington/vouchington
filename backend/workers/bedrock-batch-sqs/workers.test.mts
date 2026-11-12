@@ -1,5 +1,5 @@
 import { once } from 'node:events'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   countTestSqsMessages,
   sendTestSqsMessage,
@@ -37,9 +37,11 @@ describe('loadBedrockBatchSqs', () => {
     await sendTestSqsMessage(queueUrl, JSON.stringify({ detail: {} }))
 
     const consumer = await loadBedrockBatchSqs()
-    expect(consumer?.name).toBe('bedrock-batch-sqs')
-    await once(consumer!, 'message-failed')
-    await consumer!.close()
+    if (!consumer) throw new Error('The consumer did not load')
+    // close() returns one shared promise, so closing again after a failed assertion is safe.
+    onTestFinished(() => consumer.close())
+    expect(consumer.name).toBe('bedrock-batch-sqs')
+    await once(consumer, 'message-failed')
 
     expect(await countTestSqsMessages(queueUrl)).toBe(1)
   })

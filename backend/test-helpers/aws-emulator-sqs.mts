@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { onTestFinished, vi } from 'vitest'
+import { vi } from 'vitest'
 import {
   CreateQueueCommand,
   GetQueueAttributesCommand,
@@ -49,13 +49,10 @@ export async function countTestSqsMessages(QueueUrl: string): Promise<number> {
 
 /**
  * A queue owned by this test whose URL is exported through `envName`, which the worker reads when
- * it loads.
+ * it loads. The caller's suite unstubs environment variables after each test.
  */
 export async function useTestSqsQueue(envName: string, label: string): Promise<string> {
   const queueUrl = await createTestSqsQueue(label)
   vi.stubEnv(envName, queueUrl)
-  onTestFinished(() => {
-    vi.unstubAllEnvs()
-  })
   return queueUrl
 }
