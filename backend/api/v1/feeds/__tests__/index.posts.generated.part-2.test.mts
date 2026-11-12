@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { encodeCursor } from '@modules/pagination'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -22,6 +23,26 @@ describe('GET /api/v1/feeds/posts/:feed_type - hot sort and post type filtering'
     await request.authenticateAs(user)
 
     const response = await request.get('/api/v1/feeds/posts/any').query({ sort: 'hot' }).expect(200)
+
+    expect(response.body.results).toBeInstanceOf(Array)
+    expect(typeof response.body.posts).toBe('object')
+  })
+
+  it('accepts a hot continuation cursor', async () => {
+    const user = await createTestUser()
+    const request = createRequest()
+    await request.authenticateAs(user)
+
+    const after = encodeCursor({
+      score: 0,
+      post_id: user.id,
+      id: user.id,
+      as_of: new Date('2026-11-10T00:00:00Z').getTime(),
+    })
+    const response = await request
+      .get('/api/v1/feeds/posts/any')
+      .query({ sort: 'hot', after })
+      .expect(200)
 
     expect(response.body.results).toBeInstanceOf(Array)
     expect(typeof response.body.posts).toBe('object')

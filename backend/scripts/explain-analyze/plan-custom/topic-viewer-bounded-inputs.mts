@@ -1,6 +1,6 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { getTopicsWorkLimit } from '@services/topics/work-limits'
-import { baseRelationName, collectPlanNodes, type PlanNode } from '../plan-nodes.mts'
+import { baseRelationName, collectPlanNodes, processedRows, type PlanNode } from '../plan-nodes.mts'
 import {
   validRecursiveWalk,
   topicViewerPlanChildren,
@@ -33,6 +33,39 @@ const INPUTS = [
     limits: 2,
   },
 ] as const
+
+const KEYED_PREFIX_INPUTS = [
+  { cte: 'viewer_review_inputs', relation: 'post_review_topic_ratings' },
+  { cte: 'viewer_data_point_inputs', relation: 'post_data_point_topics' },
+] as const
+
+function boundedKeyedPrefix(raw: PlanNode | undefined, relation: string, cap: number): boolean {
+  if (!raw || raw['Node Type'] !== 'Limit' || Number(raw['Actual Loops']) !== 1) return false
+  if (typeof raw['Actual Rows'] !== 'number' || raw['Actual Rows'] > cap) return false
+  const descendants = collectPlanNodes(raw).slice(1)
+  if (descendants.some(node => baseRelationName(node) === 'posts')) return false
+  const scans = descendants.filter(node => baseRelationName(node) === relation)
+  if (
+    scans.length === 0 ||
+    scans.some(
+      node =>
+        !['Index Scan', 'Index Only Scan'].includes(String(node['Node Type'])) ||
+        typeof node['Index Cond'] !== 'string' ||
+        !/\btopic_id\s*=/u.test(node['Index Cond']),
+    )
+  )
+    return false
+  if (
+    descendants.some(
+      node =>
+        !['Index Scan', 'Index Only Scan', 'Append', 'Merge Append'].includes(
+          String(node['Node Type']),
+        ),
+    )
+  )
+    return false
+  return scans.reduce((total, scan) => total + processedRows(scan), 0) <= cap
+}
 
 /** Structural seek evidence complements the scenario's unchanged physical-row budgets. */
 export function assertTopicViewerInputsAreBounded(result: ExplainResult): void {
@@ -70,5 +103,17 @@ export function assertTopicViewerInputsAreBounded(result: ExplainResult): void {
   if (missing.length > 0)
     throw new Error(
       `${result.name} must bound keyed reads of topic viewer inputs: ${missing.map(input => input.relation).join(', ')}`,
+    )
+  const unboundedPrefixes = KEYED_PREFIX_INPUTS.filter(
+    input =>
+      !boundedKeyedPrefix(
+        nodes.find(node => node['Subplan Name'] === `CTE ${input.cte}`),
+        input.relation,
+        inputCap,
+      ),
+  )
+  if (unboundedPrefixes.length > 0)
+    throw new Error(
+      `${result.name} must bound keyed reads of topic viewer inputs: ${unboundedPrefixes.map(input => input.relation).join(', ')}`,
     )
 }

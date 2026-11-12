@@ -102,7 +102,9 @@ function appendNewArm(
     .append(sql`(SELECT `)
     .append(resultId)
     .append(sql` AS result_id,
-    posts.id AS entity_id, `)
+    `)
+    .append(shares ? sql`post_feed_shares.post_id` : sql`posts.id`)
+    .append(sql` AS entity_id, `)
     .append(sortAt)
     .append(sql` AS sort_at, `)
     .append(sql`NULL::float8`)
@@ -111,9 +113,9 @@ function appendNewArm(
       shares
         ? sql`'share'::text AS delivery_type, post_feed_shares.shared_by_id,
           post_feed_shares.created_at AS shared_at
-        FROM post_feed_shares JOIN posts ON posts.id = post_feed_shares.post_id
+        FROM post_feed_shares
         WHERE post_feed_shares.recipient_user_id = ${options.currentUserId}
-          AND post_feed_shares.shared_by_id IS NOT NULL AND posts.deleted_at IS NULL`
+          AND post_feed_shares.shared_by_id IS NOT NULL`
         : sql`'direct'::text AS delivery_type, NULL::uuid AS shared_by_id,
           NULL::timestamptz AS shared_at FROM posts WHERE posts.deleted_at IS NULL`,
     )

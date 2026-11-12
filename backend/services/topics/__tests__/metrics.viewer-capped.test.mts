@@ -7,6 +7,9 @@ import {
   createTestTopic,
   createTestUser,
   insertScoredPostTopicCategoryRelation,
+  insertTestReview,
+  insertTestDataPoint,
+  setPostBroadcastForTest,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { profileCountConfig } from '@services/users/profile-count-cap'
@@ -187,4 +190,96 @@ describe('capped topic viewer counts', () => {
       restore()
     }
   })
+
+  it.each(['reviews', 'data-points'] as const)(
+    'bounds raw %s inputs before checking viewer eligibility',
+    async kind => {
+      await topicsWorkConfig.waitForInitialization()
+      const restore = overrideDynamicConfigFieldsForTest(topicsWorkConfig, {
+        viewer_count_input_cap: 1,
+      })
+      try {
+        const viewer = await createTestUser()
+        const author = await createTestUser()
+        const topic = await createTestTopic({ user: author })
+        const insert = async (createdAt: Date): Promise<string> =>
+          kind === 'reviews'
+            ? insertTestReview({
+                userId: author.id,
+                topicRatings: [{ topicId: topic.id, rating: 5 }],
+                createdAt,
+              })
+            : insertTestDataPoint({
+                title: `Bounded ${topic.id}`,
+                slug: `bounded-${topic.id}-${createdAt.getTime()}`,
+                createdById: author.id,
+                topicId: topic.id,
+                createdAt,
+              })
+        const hidden = await insert(new Date('2026-01-01T00:00:00Z'))
+        await setPostBroadcastForTest(hidden, 'followers')
+        await insert(new Date('2026-01-02T00:00:00Z'))
+        expect(await getTopicViewerCounts(viewer, topic.id)).toMatchObject({
+          [kind]: 0,
+          count_capped: { [kind]: true },
+        })
+        const restoreMore = overrideDynamicConfigFieldsForTest(topicsWorkConfig, {
+          viewer_count_input_cap: 3,
+        })
+        try {
+          expect(await getTopicViewerCounts(viewer, topic.id)).toMatchObject({
+            [kind]: 1,
+            count_capped: { [kind]: false },
+          })
+        } finally {
+          restoreMore()
+        }
+      } finally {
+        restore()
+      }
+    },
+  )
+
+  it.each(['reviews', 'data-points'] as const)(
+    'marks exact %s input exhaustion conservatively',
+    async kind => {
+      await topicsWorkConfig.waitForInitialization()
+      const restore = overrideDynamicConfigFieldsForTest(topicsWorkConfig, {
+        viewer_count_input_cap: 1,
+      })
+      try {
+        const viewer = await createTestUser()
+        const topic = await createTestTopic({ user: viewer })
+        if (kind === 'reviews')
+          await insertTestReview({
+            userId: viewer.id,
+            topicRatings: [{ topicId: topic.id, rating: 5 }],
+          })
+        else
+          await insertTestDataPoint({
+            title: `Exact ${topic.id}`,
+            slug: `exact-${topic.id}`,
+            createdById: viewer.id,
+            topicId: topic.id,
+          })
+        expect(await getTopicViewerCounts(viewer, topic.id)).toMatchObject({
+          [kind]: 1,
+          count_capped: { [kind]: true },
+        })
+        const restoreMore = overrideDynamicConfigFieldsForTest(topicsWorkConfig, {
+          viewer_count_input_cap: 2,
+        })
+        try {
+          expect(await getTopicViewerCounts(viewer, topic.id)).toMatchObject({
+            [kind]: 1,
+            count_capped: { [kind]: false },
+          })
+        } finally {
+          restoreMore()
+        }
+      } finally {
+        restore()
+      }
+    },
+  )
 })

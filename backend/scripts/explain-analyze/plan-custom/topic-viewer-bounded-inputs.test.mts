@@ -39,7 +39,7 @@ function scan(relation: string, condition: string): Node {
   }
 }
 function fixture(): ExplainResult {
-  const inputs = specs.map(([cte, walk, relation, key, next]) => {
+  const inputs: Node[] = specs.map(([cte, walk, relation, key, next]) => {
     const recursive: Node = {
       'Node Type': 'Recursive Union',
       'Subplan Name': `CTE ${walk}`,
@@ -65,6 +65,16 @@ function fixture(): ExplainResult {
       'Actual Rows': 1,
     }
   })
+  for (const [cte, relation] of [
+    ['viewer_review_inputs', 'post_review_topic_ratings'],
+    ['viewer_data_point_inputs', 'post_data_point_topics'],
+  ] as const)
+    inputs.push({
+      ...limit(scan(relation, 'topic_id = $1')),
+      'Subplan Name': `CTE ${cte}`,
+      'Actual Rows': 1,
+      'Actual Loops': 1,
+    })
   return {
     name: 'viewer-inputs',
     query_text: 'WITH RECURSIVE viewer inputs',
@@ -183,4 +193,20 @@ describe('bounded viewer input plans', () => {
       'relation__post__category__topic_alias',
     )
   })
+  it.each(['viewer_review_inputs', 'viewer_data_point_inputs'])(
+    'rejects unbounded or unkeyed %s before eligibility',
+    cte => {
+      const result = fixture()
+      const raw = nodes(result).find(node => node['Subplan Name'] === `CTE ${cte}`)!
+      const scanNode = (raw.Plans as Node[])[0]!
+      scanNode['Node Type'] = 'Seq Scan'
+      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound keyed reads')
+      scanNode['Node Type'] = 'Index Scan'
+      scanNode['Index Cond'] = 'post_id = $1'
+      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound keyed reads')
+      scanNode['Index Cond'] = 'topic_id = $1'
+      raw['Actual Rows'] = getTopicsWorkLimit('viewer_count_input_cap') + 1
+      expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound keyed reads')
+    },
+  )
 })

@@ -42,12 +42,21 @@ export async function getTopicViewerCounts(
   })
   const query = sql`/* getTopicViewerCounts */ WITH `.append(
     buildTopicViewerDiscussionInputs(topicId, inputCap),
-  ).append(sql`
+  ).append(sql`, viewer_review_inputs AS MATERIALIZED (
+      SELECT post_id FROM post_review_topic_ratings
+      WHERE topic_id = ${topicId} ORDER BY post_id LIMIT ${inputCap}
+    ), viewer_data_point_inputs AS MATERIALIZED (
+      SELECT post_id FROM post_data_point_topics
+      WHERE topic_id = ${topicId} ORDER BY post_id LIMIT ${inputCap}
+    )
       SELECT
         (SELECT COUNT(*) >= ${inputCap} FROM viewer_alias_inputs)
           OR (SELECT COUNT(*) >= ${inputCap} FROM viewer_direct_inputs)
           OR (SELECT COUNT(*) >= ${inputCap} FROM viewer_alias_relation_inputs)
           AS discussions_input_capped,
+        (SELECT COUNT(*) >= ${inputCap} FROM viewer_review_inputs) AS reviews_input_capped,
+        (SELECT COUNT(*) >= ${inputCap} FROM viewer_data_point_inputs)
+          AS data_points_input_capped,
         (
         `)
   query.append(buildTopicViewerDiscussionCount(probeLimit, eligibility)).append(sql`
@@ -58,9 +67,7 @@ export async function getTopicViewerCounts(
           FROM posts candidate_post
           JOIN posts root_post
             ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-          JOIN post_review_topic_ratings prtr
-            ON prtr.post_id = candidate_post.id
-           AND prtr.topic_id = ${topicId}
+          JOIN viewer_review_inputs input ON input.post_id = candidate_post.id
           WHERE candidate_post.post_type = 'review'
             AND `)
   query.append(eligibility).append(sql`
@@ -73,9 +80,7 @@ export async function getTopicViewerCounts(
           FROM posts candidate_post
           JOIN posts root_post
             ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-          JOIN post_data_point_topics pdpt
-            ON pdpt.post_id = candidate_post.id
-           AND pdpt.topic_id = ${topicId}
+          JOIN viewer_data_point_inputs input ON input.post_id = candidate_post.id
           WHERE candidate_post.post_type = 'data_point'
             AND `)
   query.append(eligibility).append(sql`
@@ -96,8 +101,8 @@ export async function getTopicViewerCounts(
     'data-points': dataPoints.count,
     count_capped: {
       discussions: discussions.capped || row.discussions_input_capped === true,
-      reviews: reviews.capped,
-      'data-points': dataPoints.capped,
+      reviews: reviews.capped || row.reviews_input_capped === true,
+      'data-points': dataPoints.capped || row.data_points_input_capped === true,
     },
   }
 }

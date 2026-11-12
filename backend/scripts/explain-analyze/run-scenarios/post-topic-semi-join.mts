@@ -14,7 +14,8 @@ const MAX_POST_ROWS = 1200
 const MAX_ALIAS_RELATION_ROWS = 1200
 const MAX_FEED_POST_ROWS = 15_000
 const MAX_FEED_MEMBERSHIP_ROWS = 30_000
-const TOPIC_ALIAS_INDEX = 'idx_topic_aliases__topic_id'
+// The post-keyed alias relation resolves one alias id; topic_id only checks that row's owner.
+const TOPIC_ALIAS_INDEX = 'topic_aliases_pkey'
 
 type TopicFixture = 'sparse' | 'dense'
 

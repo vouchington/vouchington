@@ -80,11 +80,12 @@ trailing plus when a shown count is capped. Swift and .NET render it the same wa
 that native work does not gate this producer change.
 
 Authenticated topic metrics also expose `viewer_count_capped`, parallel to `viewer_count`.
-A true viewer flag means the displayed count is a conservative lower bound. For discussions,
-either the output count cap or an input work limit was reached; reviews and data points flag
-output count overflow. The discussions flag may be true at zero or when the observed number
-happens to equal the actual total; it does not prove another visible post exists. A false flag
-means the viewer count is exact. Public `count_capped` keeps its output-overflow meaning.
+A true viewer flag means the displayed count is a conservative lower bound. Discussions, reviews,
+and data points each have an independently reported flag; each category is flagged when its output
+count cap or its inputs reach the shared `viewer_count_input_cap`. Reaching that input cap is
+conservative even when the observed count equals the actual total or is zero, so a viewer count
+with a true flag can display as `0+`. A false flag means the viewer count is exact. Public
+`count_capped` keeps its output-overflow meaning.
 Posts, Reviews, and Data Points tab labels retain a plus when either the public count or viewer
 count is capped, including when the two numbers are equal or zero ("0+").
 Swift and .NET must preserve these flags and the same lower-bound presentation; native adoption

@@ -12,6 +12,7 @@ export async function insertTestDataPoint(data: {
   title: string
   slug: string
   createdById: string
+  createdAt?: Date
   vertical?: 'credit_card' | 'bank_account'
   topicId?: string
   result?: 'approved' | 'denied' | 'pending'
@@ -19,7 +20,7 @@ export async function insertTestDataPoint(data: {
   creditLimit?: Money
 }): Promise<string> {
   const sha256 = `\\x${'0'.repeat(64)}`
-  const id = uuidv7()
+  const id = data.createdAt ? uuidv7({ msecs: data.createdAt.getTime() }) : uuidv7()
   const vertical = data.vertical ?? 'credit_card'
   const structuredData: Record<string, unknown> = {
     vertical,
