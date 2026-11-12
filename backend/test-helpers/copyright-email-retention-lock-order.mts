@@ -8,7 +8,7 @@ export async function waitForCopyrightEmailMarkerBeforeWriter<T, WriterResult>(
   erase: () => Promise<T>,
   append: () => Promise<WriterResult>,
   writerStatementMarker = '/* appendCopyrightEmailIntakeRecommendation:lockIntake */',
-): Promise<{ erasure: T; appended: WriterResult }> {
+): Promise<{ erasure: PromiseSettledResult<T>; appended: PromiseSettledResult<WriterResult> }> {
   return runPoolObservationExclusively(async () => {
     const markerWritten = Promise.withResolvers<void>()
     const writerDispatched = Promise.withResolvers<void>()
@@ -57,17 +57,13 @@ export async function waitForCopyrightEmailMarkerBeforeWriter<T, WriterResult>(
     const erasure = erase()
     let writer: Promise<WriterResult> | undefined
     try {
-      void erasure.catch((err: unknown) => markerWritten.reject(err))
-      const marked = await Promise.race([
-        markerWritten.promise.then(() => true),
-        erasure.then(() => false),
-      ])
-      if (!marked) return { erasure: await erasure, appended: await append() }
+      const settledErasure = Promise.allSettled([erasure]).then(([result]) => result!)
+      await Promise.race([markerWritten.promise, settledErasure])
       writer = append()
-      void writer.catch((err: unknown) => writerDispatched.reject(err))
-      await writerDispatched.promise
+      const settledWriter = Promise.allSettled([writer]).then(([result]) => result!)
+      await Promise.race([writerDispatched.promise, settledWriter])
       releaseMarker.resolve()
-      return { erasure: await erasure, appended: await writer }
+      return { erasure: await settledErasure, appended: await settledWriter }
     } finally {
       releaseMarker.resolve()
       await erasure.catch(() => undefined)

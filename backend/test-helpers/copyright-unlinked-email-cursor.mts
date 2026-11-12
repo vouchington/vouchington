@@ -1,4 +1,3 @@
-import type { CopyrightEmailIntakeSweepScope } from '../services/copyright-notices/operational-retention-email-intakes.mts'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -20,19 +19,4 @@ export async function readCopyrightUnlinkedEmailOperationalCursor(): Promise<{
     WHERE kind = 'unlinked_email_intakes'`)
   if (!rows[0]) throw new Error('Reserved unlinked copyright email cursor was not found')
   return rows[0]
-}
-
-/** Keep fixture intake selection and resumable state independent of singleton sweep progress. */
-export function createCopyrightUnlinkedEmailSweepScope(
-  intakeIds: readonly string[],
-): CopyrightEmailIntakeSweepScope {
-  return {
-    intakeIds,
-    cursor: {
-      cursor_record_id: null,
-      sweep_upper_bound_record_id: null,
-      cursor_phase: null,
-      cursor_edge_id: null,
-    },
-  }
 }

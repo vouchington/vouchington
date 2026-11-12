@@ -56,7 +56,6 @@ export async function eraseIntakePage(
       intakeId,
       liveRows[0]!.raw_storage_object_id,
       childLimit,
-      queryAfterStorage,
     )
   } catch (err) {
     if (['40001', '40P01'].includes((err as { code?: string } | null)?.code ?? '')) throw err

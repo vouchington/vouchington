@@ -149,7 +149,6 @@ export async function eraseStorage(
   intakeId: string,
   storageObjectId: string | null,
   workLimit: number,
-  queryAfterStorage?: (transaction: TransactionQuery) => QueryExecutor,
 ): Promise<{ complete: boolean; scanned: number }> {
   if (!storageObjectId) return { complete: true, scanned: 0 }
   const { rows } = await transaction<{
@@ -172,11 +171,10 @@ export async function eraseStorage(
     ? await deleteCopyrightEvidenceObjectVersionPage(rows[0]!.storage_key, workLimit)
     : { hasMore: false, scanned: 0 }
   if (versionPage.hasMore) return { complete: false, scanned: versionPage.scanned }
-  const postStorageQuery = queryAfterStorage?.(transaction) ?? transaction
-  await postStorageQuery(sql`/* clearUnlinkedCopyrightEmailStorageObject */
+  await transaction(sql`/* clearUnlinkedCopyrightEmailStorageObject */
     UPDATE copyright_notice_email_intakes SET raw_storage_object_id = NULL WHERE id = ${intakeId}`)
   if (ownership[0]?.is_exclusive) {
-    await postStorageQuery(sql`/* deleteUnlinkedCopyrightEmailStorageObject */
+    await transaction(sql`/* deleteUnlinkedCopyrightEmailStorageObject */
       DELETE FROM copyright_notice_storage_objects WHERE id = ${storageObjectId}`)
   }
   return { complete: true, scanned: versionPage.scanned }
