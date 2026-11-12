@@ -233,8 +233,9 @@ enforces the plan gates, baselines and native coverage over the merged results. 
 `explain-analyze-results`; a failed shard leaves only its own `explain-analyze-results-<shard>`
 artifact.
 
-The seed step has a 30-second budget. Shrink fixtures or batch seed work to fit it; never raise the
-budget to accommodate a larger fixture.
+The [EXPLAIN ANALYZE workflow](../../../../.github/workflows/explain-analyze.yml) owns the seed-step
+timeout. Shrink fixtures or batch seed work to fit it; never raise that timeout to accommodate a
+larger fixture.
 
 Unsharded `explain:run` runs everything in the original order. The seed records per-batch timing and
 resource samples to the `explain-seed-diagnostics` artifact so a seed that hits the CI step limit
