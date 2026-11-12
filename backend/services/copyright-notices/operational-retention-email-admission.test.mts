@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
+import { readCopyrightIntakeRecommendationCount } from '@voucha/test-helpers/copyright-operational-email-retention'
+import { deleteCopyrightRecommendationPageForTest } from '@voucha/test-helpers/copyright-recommendation-page'
 import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
 import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
-import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { createCopyrightEmailIntake } from './email-intakes.mts'
@@ -19,7 +20,6 @@ const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 
 describe('copyright email admission during operational erasure', () => {
   useCopyrightOperationalCursorReservation()
-  const bucket = useCopyrightEvidenceBucket()
   it('caps recommendation deletion to the remaining child budget', async () => {
     const intake = await createRetentionParsedEmail('recommendation-page-budget')
     for (const marker of [1, 2]) {
@@ -31,16 +31,13 @@ describe('copyright email admission during operational erasure', () => {
         structuredOutput: { marker },
       })
     }
-    await bucket.put(intake.raw_storage_key)
-    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
-    await sweepUnlinkedCopyrightEmailIntakes({
-      now: future(91),
-      retentionDays: 90,
-      childLimit: 1,
-      maxBatches: 30,
-    })
+    expect(await readCopyrightIntakeRecommendationCount(intake.id)).toBe(2)
+    expect(await deleteCopyrightRecommendationPageForTest(intake.id, 1)).toBe(1)
+    expect(await readCopyrightIntakeRecommendationCount(intake.id)).toBe(1)
+    expect(await deleteCopyrightRecommendationPageForTest(intake.id, 1)).toBe(1)
+    expect(await readCopyrightIntakeRecommendationCount(intake.id)).toBe(0)
     expect(await readCopyrightIntakeRetentionState(intake.id)).toMatchObject({
-      intakeExists: false,
+      intakeExists: true,
       receiptExists: true,
     })
   })

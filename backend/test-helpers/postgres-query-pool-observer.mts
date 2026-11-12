@@ -3,13 +3,17 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 
 import { readPool, writePool } from '@data-stores/psql'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
+import {
+  clientQueryText,
+  tapClientQueries,
+  type ObservedClientQuery,
+  type ObservedPostgresQueryPool,
+} from './postgres-client-query-tap.mts'
 
-export type ObservedPostgresQueryPool = 'read' | 'write'
-
-export type ObservedClientQuery = {
-  pool: ObservedPostgresQueryPool
-  text: string
-}
+export type {
+  ObservedClientQuery,
+  ObservedPostgresQueryPool,
+} from './postgres-client-query-tap.mts'
 
 interface PoolObservationContext {
   active: boolean
@@ -95,65 +99,6 @@ export async function observeTestPostgresClientQueries<Result>(
       restoreRead()
     }
   })
-}
-
-function tapClientQueries(
-  pool: pg.Pool,
-  label: ObservedPostgresQueryPool,
-  queries: ObservedClientQuery[],
-  onQueryComplete: (query: ObservedClientQuery) => Promise<void>,
-): () => void {
-  const restoreClients: Array<() => void> = []
-  const descriptor = Object.getOwnPropertyDescriptor(pool, 'connect')
-  const original = pool.connect
-  Object.defineProperty(pool, 'connect', {
-    configurable: true,
-    enumerable: true,
-    writable: true,
-    value: ((...args: unknown[]) => {
-      if (args.some(arg => typeof arg === 'function')) return Reflect.apply(original, pool, args)
-      return Promise.resolve(Reflect.apply(original, pool, args)).then(client => {
-        if (!client) return client
-        const queryDescriptor = Object.getOwnPropertyDescriptor(client, 'query')
-        const query = client.query
-        const wrappedQuery = ((...queryArgs: unknown[]) => {
-          const observed = { pool: label, text: clientQueryText(queryArgs[0]) }
-          queries.push(observed)
-          const pending = Reflect.apply(query, client, queryArgs)
-          if (
-            queryArgs.some(arg => typeof arg === 'function') ||
-            typeof pending !== 'object' ||
-            pending === null ||
-            !('then' in pending) ||
-            typeof pending.then !== 'function'
-          )
-            return pending
-          return Promise.resolve(pending).then(async (result: unknown) => {
-            await onQueryComplete(observed)
-            return result
-          })
-        }) as typeof client.query
-        client.query = wrappedQuery
-        restoreClients.push(() => {
-          if (client.query !== wrappedQuery) return
-          if (queryDescriptor) Object.defineProperty(client, 'query', queryDescriptor)
-          else Reflect.deleteProperty(client, 'query')
-        })
-        return client
-      })
-    }) as typeof pool.connect,
-  })
-  return () => {
-    if (descriptor) Object.defineProperty(pool, 'connect', descriptor)
-    else Reflect.deleteProperty(pool, 'connect')
-    for (const restore of restoreClients.toReversed()) restore()
-  }
-}
-
-function clientQueryText(input: unknown): string {
-  if (typeof input === 'string') return input
-  if (typeof input === 'object' && input !== null && 'text' in input) return String(input.text)
-  return ''
 }
 
 function installQueryWrapper(pool: pg.Pool, query: pg.Pool['query']): void {

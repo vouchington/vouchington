@@ -1,17 +1,20 @@
 import { randomUUID } from 'node:crypto'
+import { createTestUser } from '@voucha/test-helpers'
 import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { describe, expect, it } from 'vitest'
 import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
+import { waitForCopyrightEmailMarkerBeforeWriter } from '@voucha/test-helpers/copyright-email-retention-lock-order'
 import {
-  waitForCopyrightEmailMarkerBeforeWriter,
-  writeCopyrightEmailDuringErasure,
-} from '@voucha/test-helpers/copyright-email-retention-lock-order'
-import { rejectQuery } from '@voucha/test-helpers/injected-failures'
+  createUnparsedCopyrightEmailIntake,
+  readCopyrightEmailPromotionEffects,
+} from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
+import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
+import { copyrightEmailPromotionInput } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { rejectQuery } from '@voucha/test-helpers/injected-failures'
 import { positionCopyrightOperationalCursor } from '@voucha/test-helpers/copyright-operational-retention'
 import { readCopyrightUnlinkedEmailOperationalCursor } from '@voucha/test-helpers/copyright-unlinked-email-cursor'
 import {
-  readCopyrightIntakeAuditRecommendation,
   readCopyrightIntakeRecommendationCount,
   readCopyrightThreadReferenceState,
 } from '@voucha/test-helpers/copyright-operational-email-retention'
@@ -23,6 +26,7 @@ import { createRetentionParsedEmail } from '@voucha/test-helpers/services/copyri
 import { useCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { createCopyrightEmailIntake } from './email-intakes.mts'
+import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { recordCopyrightEmailThreadReferences } from './email-threading.mts'
 import { sweepUnlinkedCopyrightEmailIntakes } from './operational-retention-email-intakes.mts'
@@ -33,29 +37,53 @@ const future = (days: number) => new Date(Date.now() + days * DAY_MS)
 describe('copyright unlinked email retention serializable boundaries', () => {
   useCopyrightOperationalCursorReservation()
   const bucket = useCopyrightEvidenceBucket()
-  it('ends an erasure run when a concurrent source write wins the intake', async () => {
-    const intake = await createRetentionParsedEmail('concurrent-retention-lock-order')
+  it('keeps a promoted intake when the receipt decision commits before erasure marking', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const intake = await createUnparsedCopyrightEmailIntake()
+    const input = await copyrightEmailPromotionInput(moderator, intake.id)
     await bucket.put(intake.raw_storage_key)
     await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
     const beforeCursor = await readCopyrightUnlinkedEmailOperationalCursor()
-    const before = await readCopyrightIntakeRetentionState(intake.id)
-    const beforeReferences = await readCopyrightThreadReferenceState(intake.id)
-    const { erasure, recommendationId } = await writeCopyrightEmailDuringErasure(intake.id, () =>
-      sweepUnlinkedCopyrightEmailIntakes({
-        now: future(91),
-        retentionDays: 90,
-        childLimit: 2,
-        maxBatches: 1,
-      }),
+    const inspected = Promise.withResolvers<void>()
+    const releaseErasure = Promise.withResolvers<void>()
+    const { result } = await observeTestPostgresClientQueries(
+      async () => {
+        const erasure = sweepUnlinkedCopyrightEmailIntakes({
+          now: future(91),
+          retentionDays: 90,
+          childLimit: 2,
+          maxBatches: 1,
+        })
+        void erasure.catch(inspected.reject)
+        try {
+          await inspected.promise
+          const promoted = await promoteCopyrightEmailIntake(input)
+          releaseErasure.resolve()
+          return { erasure: await erasure, promoted }
+        } finally {
+          releaseErasure.resolve()
+          await erasure.catch(() => undefined)
+        }
+      },
+      async query => {
+        if (
+          !query.text.includes('/* inspectUnlinkedCopyrightEmailIntakeActivity */') ||
+          !query.values.includes(intake.id)
+        )
+          return
+        inspected.resolve()
+        await releaseErasure.promise
+      },
     )
-    expect(erasure).toEqual({ scanned: 0, erased: 0, hasMore: false })
+    expect(result.erasure).toEqual({ scanned: 0, erased: 0, hasMore: false })
     expect(await readCopyrightUnlinkedEmailOperationalCursor()).toEqual(beforeCursor)
-    expect(await readCopyrightIntakeRetentionState(intake.id)).toEqual(before)
-    expect(await readCopyrightThreadReferenceState(intake.id)).toEqual(beforeReferences)
     expect(await readCopyrightEmailReceiptErasedAt(intake.id)).toBeNull()
-    expect(await readCopyrightIntakeAuditRecommendation(recommendationId)).toMatchObject({
-      id: recommendationId,
-    })
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
+      { copyright_notice_id: result.promoted.noticeId, link_kind: 'initial' },
+    ])
+    expect(
+      await readCopyrightEmailPromotionEffects(intake.id, input.targets[0]!.placementId),
+    ).toMatchObject({ reviews: 1, evidence: 1, notice_targets: 1 })
     expect(await bucket.countVersions(intake.raw_storage_key)).toBe(1)
     await expect(
       createCopyrightEmailIntake({
@@ -68,6 +96,38 @@ describe('copyright unlinked email retention serializable boundaries', () => {
         sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
       }),
     ).resolves.toMatchObject({ intake: { id: intake.id }, isNew: false })
+  })
+  it('rejects promotion when the erasure marker commits first', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const intake = await createUnparsedCopyrightEmailIntake()
+    const input = await copyrightEmailPromotionInput(moderator, intake.id)
+    await bucket.put(intake.raw_storage_key)
+    await positionCopyrightOperationalCursor('unlinked_email_intakes', intake.id)
+    const beforeCursor = await readCopyrightUnlinkedEmailOperationalCursor()
+    const { erasure, appended: promotion } = await waitForCopyrightEmailMarkerBeforeWriter(
+      intake.id,
+      () =>
+        sweepUnlinkedCopyrightEmailIntakes({
+          now: future(91),
+          retentionDays: 90,
+          childLimit: 2,
+          maxBatches: 1,
+        }),
+      () =>
+        promoteCopyrightEmailIntake(input)
+          .then(value => ({ status: 'fulfilled' as const, value }))
+          .catch((err: unknown) => ({ status: 'rejected' as const, error: err })),
+      '/* promoteCopyrightEmailIntake:currentDecision */',
+    )
+    expect(erasure).toEqual({ scanned: 1, erased: 1, hasMore: true })
+    expect(promotion).toMatchObject({ status: 'rejected', error: { status: 409 } })
+    expect(await readCopyrightEmailReceiptErasedAt(intake.id)).not.toBeNull()
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
+    expect(
+      await readCopyrightEmailPromotionEffects(intake.id, input.targets[0]!.placementId),
+    ).toMatchObject({ reviews: 0, evidence: 0, notice_targets: 0 })
+    expect(await readCopyrightUnlinkedEmailOperationalCursor()).toEqual(beforeCursor)
+    expect(await bucket.countVersions(intake.raw_storage_key)).toBe(1)
   })
   it('orders a waiting recommendation against the unlinked erasure marker', async () => {
     const intake = await createRetentionParsedEmail('recommendation-after-erasure-marker')
