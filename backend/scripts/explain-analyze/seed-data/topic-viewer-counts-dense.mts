@@ -1,6 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
-import { getTopicsWorkLimit } from '@services/topics/work-limits'
+import { topicsWorkMaxValues } from '@services/topics/work-limits'
+import { getProfileCountCap } from '@services/users/profile-count-cap'
 
 export const DENSE_TOPIC_VIEWER_TOPIC_ID = seedUuid(2400, '04')
 
@@ -10,18 +11,23 @@ const UNRELATED_ALIAS_RELATIONS = 10_000
 const NONPOSITIVE_TOPIC_RELATIONS = 20_000
 const REVIEWS = 10_000
 const DATA_POINTS = 10_000
-const inputCap = getTopicsWorkLimit('viewer_count_input_cap')
+// This scale fixture uses the default/full topic input budget; output caps may be smaller.
+export const TOPIC_VIEWER_INPUT_CAP = topicsWorkMaxValues.viewer_count_input_cap
 
-export const DENSE_TOPIC_VIEWER_COUNTS = {
-  discussions: DIRECT_DISCUSSIONS + ALIAS_DISCUSSIONS,
-  reviews: Math.min(REVIEWS, inputCap),
-  'data-points': Math.min(DATA_POINTS, inputCap),
-  count_capped: {
-    discussions: false,
-    reviews: true,
-    'data-points': true,
-  },
-} as const
+export function getDenseTopicViewerCounts() {
+  const countCap = getProfileCountCap()
+  const discussions = DIRECT_DISCUSSIONS + ALIAS_DISCUSSIONS
+  return {
+    discussions: Math.min(discussions, countCap),
+    reviews: Math.min(REVIEWS, TOPIC_VIEWER_INPUT_CAP, countCap),
+    'data-points': Math.min(DATA_POINTS, TOPIC_VIEWER_INPUT_CAP, countCap),
+    count_capped: {
+      discussions: discussions > countCap,
+      reviews: true,
+      'data-points': true,
+    },
+  }
+}
 
 // Topic 2400 has no positively voted direct/alias post relation or review/data-point attachment
 // in the ordinary seed. These older seeded posts are outside its existing relation range and the

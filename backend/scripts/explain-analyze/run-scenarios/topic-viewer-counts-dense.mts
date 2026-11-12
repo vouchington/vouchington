@@ -1,13 +1,18 @@
+import { getTopicsWorkLimit, topicsWorkConfig } from '@services/topics/work-limits'
 import { getTopicViewerCounts } from '@services/topics/metrics'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import {
-  DENSE_TOPIC_VIEWER_COUNTS,
+  getDenseTopicViewerCounts,
+  TOPIC_VIEWER_INPUT_CAP,
   DENSE_TOPIC_VIEWER_TOPIC_ID,
   seedDenseTopicViewerCounts,
 } from '../seed-data/topic-viewer-counts-dense.mts'
 
 export async function runDenseTopicViewerCountsScenario(): Promise<void> {
+  await topicsWorkConfig.waitForInitialization()
+  if (getTopicsWorkLimit('viewer_count_input_cap') !== TOPIC_VIEWER_INPUT_CAP)
+    throw new Error('Dense topic viewer fixture requires its declared full input budget')
   await seedDenseTopicViewerCounts()
   registerScenarioContract('topic-viewer-counts-dense', {
     expectations: [
@@ -33,9 +38,10 @@ export async function runDenseTopicViewerCountsScenario(): Promise<void> {
   })
   await runAndCapture('topic-viewer-counts-dense', async () => {
     const counts = await getTopicViewerCounts(seedUser, DENSE_TOPIC_VIEWER_TOPIC_ID)
-    if (JSON.stringify(counts) !== JSON.stringify(DENSE_TOPIC_VIEWER_COUNTS)) {
+    const expected = getDenseTopicViewerCounts()
+    if (JSON.stringify(counts) !== JSON.stringify(expected)) {
       throw new Error(
-        `Dense topic viewer counts returned ${JSON.stringify(counts)}; expected ${JSON.stringify(DENSE_TOPIC_VIEWER_COUNTS)}`,
+        `Dense topic viewer counts returned ${JSON.stringify(counts)}; expected ${JSON.stringify(expected)}`,
       )
     }
   })

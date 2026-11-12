@@ -14,7 +14,7 @@ const INPUTS = [
     cte: 'viewer_alias_inputs',
     walk: 'viewer_alias_key_walk',
     relation: 'topic_aliases',
-    key: /\btopic_id\b/u,
+    key: /\btopic_id\s*=\s*(?:\$\d+|'[0-9a-f-]+'::uuid)/u,
     next: /\balias\s*>/u,
     limits: 1,
   },
@@ -22,7 +22,7 @@ const INPUTS = [
     cte: 'viewer_direct_inputs',
     walk: 'viewer_direct_key_walk',
     relation: 'relation__post__category__topic',
-    key: /\bobject_id\b/u,
+    key: /\bobject_id(?:\s+ELSE\s+NULL::uuid\s+END)?\s*=\s*(?:\$\d+|'[0-9a-f-]+'::uuid|alias(?:_\d+)?\.id)/u,
     next: /\bsubject_id\s*>/u,
     limits: 1,
   },
@@ -30,7 +30,7 @@ const INPUTS = [
     cte: 'viewer_alias_relation_inputs',
     walk: 'viewer_alias_relation_key_walk',
     relation: 'relation__post__category__topic_alias',
-    key: /\bobject_id\b/u,
+    key: /\bobject_id(?:\s+ELSE\s+NULL::uuid\s+END)?\s*=\s*(?:\$\d+|'[0-9a-f-]+'::uuid|alias(?:_\d+)?\.id)/u,
     next: /\bsubject_id\s*>/u,
     limits: 2,
   },
@@ -58,7 +58,7 @@ export function assertTopicViewerInputsAreBounded(result: ExplainResult): void {
           node['Subplan Name'] === `CTE ${input.walk}` &&
           depth >= input.limits &&
           (input.limits === 1 || local) &&
-          validRecursiveWalk(node, input)
+          validRecursiveWalk(node, input, result.query_text)
         )
       }
       if (!VIEWER_INPUT_STREAMING_NODES.has(type) || baseRelationName(node) === input.relation)

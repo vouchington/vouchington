@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ExplainResult } from '@data-stores/psql'
 import { getTopicsWorkLimit } from '@services/topics/work-limits'
+import { buildTopicViewerDiscussionInputs } from '@services/topics/metrics-viewer-discussions'
 import { assertTopicViewerInputsAreBounded } from './topic-viewer-bounded-inputs.mts'
 
 type Node = Record<string, unknown>
@@ -77,7 +78,7 @@ function fixture(): ExplainResult {
     })
   return {
     name: 'viewer-inputs',
-    query_text: 'WITH RECURSIVE viewer inputs',
+    query_text: `WITH ${buildTopicViewerDiscussionInputs('019e0000-0400-7000-8000-000000000960', 1000).text} SELECT 1`,
     plan: { Plan: { 'Node Type': 'Result', Plans: inputs } },
     execution_time_ms: 1,
     planning_time_ms: 1,
@@ -143,12 +144,16 @@ describe('bounded viewer input plans', () => {
       'relation__post__category__topic_alias',
     )
   })
-  it('rejects missing recursive next-key predicates', () => {
+  it.each([
+    'object_id = $1',
+    'object_id >= $1 AND subject_id > walk.post_id',
+    'object_id IS NOT NULL AND subject_id > walk.post_id',
+  ])('rejects invalid recursive topic/next-key predicates: %s', condition => {
     const result = fixture()
     const target = nodes(result).find(
       node => typeof node['Index Cond'] === 'string' && node['Index Cond'].includes('subject_id >'),
     )!
-    target['Index Cond'] = 'object_id = $1'
+    target['Index Cond'] = condition
     expect(() => assertTopicViewerInputsAreBounded(result)).toThrow(
       'relation__post__category__topic',
     )

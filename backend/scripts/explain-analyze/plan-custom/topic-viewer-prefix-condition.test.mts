@@ -12,11 +12,25 @@ const source = `WITH viewer_review_inputs AS MATERIALIZED (
  WHERE (topic_id, post_id) >= ($12::uuid, $13::uuid)
  AND (topic_id, post_id) <= ($14::uuid, $15::uuid)
  ORDER BY topic_id, post_id LIMIT $16
-)`
+) SELECT post_id FROM viewer_review_inputs`
 const range = (lowerTopic: string, lower: string, upperTopic: string, upper: string) =>
   `((ROW(topic_id, post_id) >= ROW(${lowerTopic}, ${lower})) AND (ROW(topic_id, post_id) <= ROW(${upperTopic}, ${upper})))`
 
 describe('canonical topic attachment interval', () => {
+  it.each(['topic_id = $12', `(topic_id = ${topic})`])(
+    'accepts one complete equality: %s',
+    condition => {
+      expect(validTopicViewerPrefixCondition(condition, input, source)).toBe(true)
+    },
+  )
+  it.each([
+    '((topic_id = $12) OR (topic_id = $99))',
+    'topic_id = ANY($12)',
+    'topic_id >= $12',
+    '(topic_id = $12) AND (topic_id = $99)',
+  ])('rejects a non-scalar topic equality: %s', condition => {
+    expect(validTopicViewerPrefixCondition(condition, input, source)).toBe(false)
+  })
   it('accepts the full UUID domain for one literal topic', () => {
     expect(validTopicViewerPrefixCondition(range(topic, min, topic, max), input, source)).toBe(true)
   })
