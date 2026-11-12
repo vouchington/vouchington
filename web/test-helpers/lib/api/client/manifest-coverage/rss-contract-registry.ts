@@ -47,6 +47,23 @@ export const rssContractEndpointRegistry = {
     method: 'DELETE',
     path: '/api/v1/rss-feeds/70000000-0000-7000-8000-000000003680',
   },
+  'native.relation-limits.topic-follow.conflict': {
+    method: 'PUT',
+    path: '/api/v1/bookmarks/topic/70000000-0000-7000-8000-000000005381/follow',
+  },
+  'native.relation-limits.rss-subscribe.conflict': {
+    method: 'PUT',
+    path: '/api/v1/bookmarks/rss_feed/70000000-0000-7000-8000-000000005382/subscribe',
+  },
+  'native.relation-limits.topics.import.skipped': {
+    method: 'POST',
+    path: '/api/v1/my/import/topics',
+    requestBody: { names: ['Local News'] },
+  },
+  'native.relation-limits.rss-feeds.import.skipped': {
+    method: 'GET',
+    path: '/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000005383',
+  },
   'native.rss-personal.seven-day.1m': {
     method: 'GET',
     path: '/api/v1/feeds/rss_feed_items/all',
