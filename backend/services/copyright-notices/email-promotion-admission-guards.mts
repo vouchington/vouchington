@@ -13,8 +13,8 @@ export function logCopyrightEmailGraphOverflow(
   })
 }
 
-export function logCopyrightEmailTokenLockOverflow(noticeId: string, maxRows: number): void {
-  console.info('copyright_email_thread_token_lock_overflow', {
+export function logCopyrightEmailTokenOverflow(noticeId: string, maxRows: number): void {
+  console.info('copyright_email_thread_token_overflow', {
     noticeId,
     observedRows: maxRows + 1,
   })

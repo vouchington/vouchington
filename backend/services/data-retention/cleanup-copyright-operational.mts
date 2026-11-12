@@ -85,6 +85,7 @@ export async function runCopyrightOperationalRetentionCleanup(
       batchSize: limits.batchSize,
       maxBatches: limits.maxBatches,
       replyDays: readDataRetentionField('copyright_email_thread_reply_days'),
+      now: options.now,
     })
   if (active('copyrightOrphanEmailThreadTokens'))
     result.copyrightOrphanEmailThreadTokens = await sweepCopyrightOperationalRetention(

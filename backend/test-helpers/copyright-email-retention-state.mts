@@ -1,6 +1,14 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+export async function readCopyrightEmailReceiptErasedAt(intakeId: string): Promise<Date | null> {
+  const { rows } = await read<{ erased_at: Date | null }>(sql`
+    /* readCopyrightEmailReceiptErasedAt */
+    SELECT erased_at FROM copyright_notice_email_intake_receipts WHERE id = ${intakeId}`)
+  if (!rows[0]) throw new Error('Owned copyright email receipt was not found')
+  return rows[0].erased_at
+}
+
 export async function readCopyrightIntakeRetentionState(intakeId: string): Promise<{
   intakeExists: boolean
   receiptExists: boolean

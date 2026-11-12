@@ -1,7 +1,6 @@
 import { DELETED_USER_ID } from '@services/users/constants'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import assert from 'http-assert'
 import { createDeterministicCopyrightCorrespondencesInTransaction } from './correspondence.mts'
 import { createCopyrightDeliveryIntents } from './delivery-intent-batch.mts'
 import type {
@@ -26,7 +25,7 @@ export type CopyrightStatementDeliveryInput = {
 
 /**
  * Check stable event identity before creating immutable correspondence, so replays reuse it. Every
- * recipient's identity check, lifecycle lock, account check, correspondence and intents run as one
+ * recipient's identity check, account check, correspondence and intents run as one
  * statement each, however many recipients there are.
  */
 export async function createCopyrightStatementDeliveriesInTransaction(
@@ -65,7 +64,7 @@ export async function createCopyrightStatementDeliveriesInTransaction(
       ),
     ),
   ]
-  const activeAccountIds = await lockActiveRecipientAccounts(accountIds, transaction)
+  const activeAccountIds = await readActiveRecipientAccounts(accountIds, transaction)
   const deliveries = pending.flatMap(input => {
     const activeUserId =
       input.recipientUserId && activeAccountIds.has(input.recipientUserId)
@@ -107,24 +106,11 @@ export async function createCopyrightStatementDeliveriesInTransaction(
 }
 
 /** Returns the accounts that are still live. Others lose their in-app delivery. */
-async function lockActiveRecipientAccounts(
+async function readActiveRecipientAccounts(
   accountIds: readonly string[],
   transaction: TransactionQuery,
 ): Promise<Set<string>> {
   if (accountIds.length === 0) return new Set()
-  // Legal rows may already be locked; waiting would invert user-deletion lock order.
-  // Shared readers allow parallel legal writes; deletion owns this key exclusively.
-  // An exclusive lifecycle transition aborts this atomic operation with 409 for retry.
-  const { rows: locks } = await transaction<{
-    all_locked: boolean
-  }>(sql`/* createCopyrightStatementDeliveriesInTransaction:recipientLifecycleLock */
-    SELECT COALESCE(bool_and(lock_taken.locked), true) AS all_locked
-    FROM (
-      SELECT pg_try_advisory_xact_lock_shared(hashtextextended(account_id, 0)) AS locked
-      FROM unnest(${accountIds}::text[]) AS account(account_id)
-    ) lock_taken
-  `)
-  assert(locks[0]?.all_locked, 409, 'Recipient account lifecycle transition is in progress')
   const { rows: accounts } = await transaction<{
     id: string
   }>(sql`/* createCopyrightStatementDeliveriesInTransaction:activeRecipient */

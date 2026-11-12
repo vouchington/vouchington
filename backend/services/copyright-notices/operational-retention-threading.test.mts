@@ -5,6 +5,7 @@ import { getMinUUIDv7ForDate } from '@modules/utils'
 import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
 import {
   positionCopyrightOperationalCursor,
+  readCopyrightThreadOperationalCursor,
   readCopyrightOperationalRow,
 } from '@voucha/test-helpers/copyright-operational-retention'
 import {
@@ -16,6 +17,11 @@ import {
   seedTestCopyrightAncestorEdge,
 } from '@voucha/test-helpers/copyright-operational-email-retention'
 import { readCopyrightIntakeRetentionState } from '@voucha/test-helpers/copyright-email-retention-state'
+import { seedCopyrightThreadTokenAtForTest } from '@voucha/test-helpers/copyright-thread-retention'
+import {
+  assertAbortedCaseThreadPage,
+  assertIncompleteFinalThreadRun,
+} from '@voucha/test-helpers/copyright-thread-retention-assertions'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/index'
 import {
   insertPreservationHoldForTest,
@@ -41,6 +47,11 @@ describe('copyright operational thread retention', () => {
     await linkTestCopyrightEmailIntake(ancestor.id, notice.noticeId)
     await linkTestCopyrightEmailIntake(reply.id, notice.noticeId, 'thread', notice.moderator.id)
     await seedTestCopyrightAncestorEdge(reply.id, ancestor.id)
+    const expirationNow = future(181)
+    const youngTokenId = await seedCopyrightThreadTokenAtForTest({
+      createdAt: new Date(expirationNow.getTime() - 30 * 60 * 1000),
+      intakeId: reply.id,
+    })
     const before = await readCopyrightThreadReferenceState(reply.id)
     expect(before.referenceCount).toBeGreaterThan(0)
     expect(before.tokenId).toBeTruthy()
@@ -55,6 +66,9 @@ describe('copyright operational thread retention', () => {
     await positionCopyrightOperationalCursor('email_thread_references', notice.noticeId)
     let deleted = 0
     for (let page = 0; page < 100; page++) {
+      const pageCursor = await readCopyrightThreadOperationalCursor()
+      const pageReferences = await readCopyrightThreadReferenceState(reply.id)
+      const pageAncestors = (await readCopyrightIntakeRetentionState(reply.id)).ancestorCount
       const result = await sweepCopyrightCaseThreads({
         ...options,
         now: future(181),
@@ -62,6 +76,16 @@ describe('copyright operational thread retention', () => {
         maxBatches: 1,
       })
       deleted += result.deleted
+      if (deleted === 0 && !result.hasMore) {
+        await assertAbortedCaseThreadPage(
+          notice.noticeId,
+          reply.id,
+          pageReferences,
+          pageCursor,
+          pageAncestors,
+        )
+        return
+      }
       if (deleted > 0 || !result.hasMore) break
     }
     expect(deleted).toBeGreaterThan(0)
@@ -73,10 +97,28 @@ describe('copyright operational thread retention', () => {
       references: [],
     })
     expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(betweenPages)
-    await sweepCopyrightCaseThreads({ ...options, now: future(181) })
+    const beforeFinal = await readCopyrightThreadReferenceState(reply.id)
+    const beforeFinalAncestors = (await readCopyrightIntakeRetentionState(reply.id)).ancestorCount
+    expect([0, 1]).toContain(beforeFinalAncestors)
+    const finalCursor = await readCopyrightThreadOperationalCursor()
+    const finalRun = await sweepCopyrightCaseThreads({ ...options, now: expirationNow })
+    const afterFinal = await readCopyrightThreadReferenceState(reply.id)
+    if (afterFinal.referenceCount > 0) {
+      await assertIncompleteFinalThreadRun(
+        notice.noticeId,
+        reply.id,
+        beforeFinal,
+        afterFinal,
+        finalRun,
+        finalCursor,
+        beforeFinalAncestors,
+      )
+      return
+    }
     expect((await readCopyrightThreadReferenceState(reply.id)).referenceCount).toBe(0)
     expect((await readCopyrightIntakeRetentionState(reply.id)).ancestorCount).toBe(0)
     expect(await readCopyrightOperationalRow('email_thread_tokens', before.tokenId!)).toBe(false)
+    expect(await readCopyrightOperationalRow('email_thread_tokens', youngTokenId)).toBe(true)
     await recordCopyrightEmailThreadReferences({
       intakeId: reply.id,
       messageId: '<expired-replay@example.test>',

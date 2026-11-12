@@ -1,51 +1,51 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { copyrightEmailThreadChangedError } from './email-thread-graph.mts'
 import type { CopyrightEmailThreadReferenceRow } from './email-thread-references.mts'
+import { throwIfCopyrightEmailThreadWriteConflict } from './email-thread-write-conflict.mts'
 
-/** Both arrival orders take the same private-token locks before either reads for an edge. */
-export async function lockCopyrightEmailThreadTokens(
-  transaction: TransactionQuery,
-  lookupTokens: readonly string[],
-): Promise<void> {
-  const tokens = [...new Set(lookupTokens)].toSorted()
-  if (tokens.length === 0) return
-  await transaction(sql`/* lockCopyrightEmailThreadTokens */
-    SELECT pg_advisory_xact_lock(hashtextextended(ordered.lookup_token, 0))
-    FROM (
-      SELECT unnest(${tokens}::text[]) AS lookup_token
-      ORDER BY lookup_token
-    ) ordered
-  `)
-}
-
-export async function insertCopyrightEmailThreadReferences(
+export async function insertResolvedCopyrightEmailThreadReferences(
   transaction: TransactionQuery,
   intakeId: string,
   rows: readonly CopyrightEmailThreadReferenceRow[],
-): Promise<Map<string, string>> {
-  const tokenIds = await resolveCopyrightEmailThreadTokenIds(
-    transaction,
-    rows.map(row => row.lookup_digest),
-  )
+  tokenIds: ReadonlyMap<string, string>,
+): Promise<void> {
   const payload = JSON.stringify(
     rows.map(row => ({
       token_id: tokenIds.get(row.lookup_digest)!,
       reference_kind: row.reference_kind,
     })),
   )
-  await transaction(sql`/* insertCopyrightEmailThreadReferences */
-    INSERT INTO copyright_notice_email_thread_references (
-      copyright_notice_email_intake_id, token_id, reference_kind
-    )
-    SELECT ${intakeId}::uuid AS intake_id, reference.token_id, reference.reference_kind
-    FROM jsonb_to_recordset(${payload}::jsonb) AS reference(
-      token_id uuid, reference_kind copyright_notice_email_thread_reference_kinds
-    )
-    ORDER BY intake_id, reference.token_id, reference.reference_kind
-    ON CONFLICT (copyright_notice_email_intake_id, token_id, reference_kind) DO NOTHING
-  `)
-  return tokenIds
+  try {
+    const { rowCount } = await transaction(sql`/* insertCopyrightEmailThreadReferences */
+      INSERT INTO copyright_notice_email_thread_references (
+        copyright_notice_email_intake_id, token_id, reference_kind
+      )
+      SELECT ${intakeId}::uuid AS intake_id, reference.token_id, reference.reference_kind
+      FROM jsonb_to_recordset(${payload}::jsonb) AS reference(
+        token_id uuid, reference_kind copyright_notice_email_thread_reference_kinds
+      )
+      WHERE EXISTS (
+        SELECT 1 FROM copyright_notice_email_intakes intake
+        JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
+        WHERE intake.id = ${intakeId} AND intake.raw_storage_object_id IS NOT NULL
+          AND receipt.erased_at IS NULL
+      )
+      ORDER BY intake_id, reference.token_id, reference.reference_kind
+      ON CONFLICT (copyright_notice_email_intake_id, token_id, reference_kind) DO NOTHING
+    `)
+    if (rowCount === 0) {
+      const { rows: live } = await transaction(sql`/* insertCopyrightEmailThreadReferences:live */
+        SELECT 1 FROM copyright_notice_email_intakes intake
+        JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = intake.id
+        WHERE intake.id = ${intakeId} AND intake.raw_storage_object_id IS NOT NULL
+          AND receipt.erased_at IS NULL LIMIT 1`)
+      if (live.length === 0) throw copyrightEmailThreadChangedError()
+    }
+  } catch (err) {
+    throwIfCopyrightEmailThreadWriteConflict(err)
+    throw err
+  }
 }
 
 /** Resolve private input digests once at ingestion; persisted joins use only token UUIDs. */
@@ -64,7 +64,7 @@ export async function resolveCopyrightEmailThreadTokenIds(
       SELECT id, lookup_digest FROM copyright_notice_email_thread_tokens
       WHERE lookup_digest = ANY(${digests}::text[])`,
   )
-  assert(rows.length === digests.length, 500, 'Copyright email thread token resolution incomplete')
+  if (rows.length !== digests.length) throw copyrightEmailThreadChangedError()
   return new Map(rows.map(row => [row.lookup_digest, row.id]))
 }
 
@@ -76,11 +76,11 @@ export async function recordCopyrightEmailAncestorEdges(
   transaction: TransactionQuery,
   intakeId: string,
 ): Promise<void> {
-  await transaction(sql`/* recordCopyrightEmailAncestorEdges:reply */
+  await transaction(sql`/* recordCopyrightEmailAncestorEdges */
     INSERT INTO copyright_notice_email_message_ancestors (
       reply_message_intake_receipt_id, ancestor_message_intake_receipt_id, reference_kind
     )
-    WITH resolved AS MATERIALIZED (
+    WITH reply_resolved AS MATERIALIZED (
       SELECT DISTINCT ON (parent.copyright_notice_email_intake_id)
         parent.copyright_notice_email_intake_id AS ancestor_id, own.reference_kind
       FROM copyright_notice_email_thread_references own
@@ -97,24 +97,14 @@ export async function recordCopyrightEmailAncestorEdges(
         )
       ORDER BY parent.copyright_notice_email_intake_id,
         CASE own.reference_kind WHEN 'in_reply_to' THEN 0 ELSE 1 END
-    ), live AS MATERIALIZED (
-      SELECT resolved.ancestor_id, resolved.reference_kind
-      FROM resolved
-      JOIN copyright_notice_email_intakes candidate ON candidate.id = resolved.ancestor_id
+    ), reply_live AS MATERIALIZED (
+      SELECT reply_resolved.ancestor_id, reply_resolved.reference_kind
+      FROM reply_resolved
+      JOIN copyright_notice_email_intakes candidate ON candidate.id = reply_resolved.ancestor_id
       JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = candidate.id
       WHERE candidate.raw_storage_object_id IS NOT NULL AND receipt.erased_at IS NULL
-      ORDER BY resolved.ancestor_id
-      FOR KEY SHARE OF candidate FOR SHARE OF receipt
-    )
-    SELECT ${intakeId}::uuid, live.ancestor_id, live.reference_kind
-    FROM live ORDER BY live.ancestor_id
-    ON CONFLICT (reply_message_intake_receipt_id, ancestor_message_intake_receipt_id) DO NOTHING
-  `)
-  await transaction(sql`/* recordCopyrightEmailAncestorEdges:waiting */
-    INSERT INTO copyright_notice_email_message_ancestors (
-      reply_message_intake_receipt_id, ancestor_message_intake_receipt_id, reference_kind
-    )
-    WITH waiting AS MATERIALIZED (
+      ORDER BY reply_resolved.ancestor_id
+    ), waiting_resolved AS MATERIALIZED (
       SELECT DISTINCT ON (reference.copyright_notice_email_intake_id)
         reference.copyright_notice_email_intake_id AS reply_id, reference.reference_kind
       FROM copyright_notice_email_thread_references own_message
@@ -142,17 +132,22 @@ export async function recordCopyrightEmailAncestorEdges(
         )
       ORDER BY reference.copyright_notice_email_intake_id,
         CASE reference.reference_kind WHEN 'in_reply_to' THEN 0 ELSE 1 END
-    ), live AS MATERIALIZED (
-      SELECT waiting.reply_id, waiting.reference_kind
-      FROM waiting
-      JOIN copyright_notice_email_intakes candidate ON candidate.id = waiting.reply_id
+    ), waiting_live AS MATERIALIZED (
+      SELECT waiting_resolved.reply_id, waiting_resolved.reference_kind
+      FROM waiting_resolved
+      JOIN copyright_notice_email_intakes candidate ON candidate.id = waiting_resolved.reply_id
       JOIN copyright_notice_email_intake_receipts receipt ON receipt.id = candidate.id
       WHERE candidate.raw_storage_object_id IS NOT NULL AND receipt.erased_at IS NULL
-      ORDER BY waiting.reply_id
-      FOR KEY SHARE OF candidate FOR SHARE OF receipt
+      ORDER BY waiting_resolved.reply_id
+    ), edges AS (
+      SELECT ${intakeId}::uuid AS reply_id, reply_live.ancestor_id,
+        reply_live.reference_kind FROM reply_live
+      UNION ALL
+      SELECT waiting_live.reply_id, ${intakeId}::uuid AS ancestor_id,
+        waiting_live.reference_kind FROM waiting_live
     )
-    SELECT live.reply_id, ${intakeId}::uuid, live.reference_kind
-    FROM live ORDER BY live.reply_id
+    SELECT edges.reply_id, edges.ancestor_id, edges.reference_kind
+    FROM edges ORDER BY edges.reply_id, edges.ancestor_id
     ON CONFLICT (reply_message_intake_receipt_id, ancestor_message_intake_receipt_id) DO NOTHING
   `)
 }

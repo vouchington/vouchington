@@ -1,7 +1,68 @@
-import { read, write } from '@data-stores/psql'
+import { randomBytes } from 'node:crypto'
+import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 
 type Token = { id: string; lookup_digest: string }
+
+export async function readCopyrightThreadRetirementBound(noticeId: string): Promise<string | null> {
+  const { rows } = await read<{ retired_before_intake_bound: string }>(sql`
+    /* readCopyrightThreadRetirementBound */
+    SELECT retired_before_intake_bound
+    FROM copyright_notice_email_thread_retirements
+    WHERE copyright_notice_id = ${noticeId}`)
+  return rows[0]?.retired_before_intake_bound ?? null
+}
+
+/** Seed an owned token with its UUIDv7 creation time, leaving source identities untouched. */
+export async function seedCopyrightThreadTokenAtForTest(input: {
+  createdAt: Date
+  intakeId?: string
+  lookupDigest?: string
+}): Promise<string> {
+  const id = uuidv7({ msecs: input.createdAt.getTime() })
+  const digest = input.lookupDigest ?? randomBytes(32).toString('hex')
+  await write(sql`/* seedCopyrightThreadTokenAtForTest */
+    INSERT INTO copyright_notice_email_thread_tokens (id, lookup_digest)
+    VALUES (${id}, ${digest})`)
+  if (input.intakeId)
+    await write(sql`/* seedCopyrightThreadTokenReferenceAtForTest */
+      INSERT INTO copyright_notice_email_thread_references (
+        copyright_notice_email_intake_id, token_id, reference_kind
+      ) VALUES (${input.intakeId}, ${id}, 'message_id')`)
+  return id
+}
+
+/** Remove an owned orphan at one real query boundary to exercise the GC/ingestion race. */
+export async function deleteCopyrightThreadTokenBeforeQueryForTest<T>(
+  tokenId: string,
+  annotation: string,
+  work: (query: TransactionQuery) => Promise<T>,
+): Promise<T> {
+  await using transaction = await beginTransaction()
+  let removed = false
+  const query = new Proxy(transaction, {
+    apply(target, thisArg, args) {
+      const input = args[0] as string | { text: string }
+      const text = typeof input === 'string' ? input : input.text
+      if (removed || !text.includes(annotation)) return Reflect.apply(target, thisArg, args)
+      removed = true
+      return (async () => {
+        await using deletion = await beginTransaction()
+        await deletion(sql`/* deleteCopyrightThreadTokenBeforeQueryForTest:enable */
+          SELECT set_config('app.copyright_operational_retention', 'on', true)`)
+        await deletion(sql`/* deleteCopyrightThreadTokenBeforeQueryForTest */
+          DELETE FROM copyright_notice_email_thread_tokens WHERE id = ${tokenId}`)
+        await deletion.commit()
+        return Reflect.apply(target, thisArg, args)
+      })()
+    },
+  }) as TransactionQuery
+  const result = await work(query)
+  if (!removed) throw new Error(`Expected owned query ${annotation}`)
+  await transaction.commit()
+  return result
+}
 
 export async function readCopyrightThreadTokenForIntake(
   intakeId: string,

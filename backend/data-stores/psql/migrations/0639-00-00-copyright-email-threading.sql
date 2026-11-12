@@ -150,7 +150,7 @@ BEGIN
     WHERE id = intake_id;
   IF TG_OP = 'INSERT' AND NEW.link_kind = 'thread' THEN
     SELECT review_decision IS NOT NULL INTO terminal_review
-      FROM copyright_notice_email_intake_receipts WHERE id = intake_id FOR UPDATE;
+      FROM copyright_notice_email_intake_receipts WHERE id = intake_id;
     IF COALESCE(terminal_review, false) THEN
       RAISE EXCEPTION 'reviewed copyright email intake cannot be linked as thread correspondence'
         USING ERRCODE = 'check_violation';
@@ -158,8 +158,7 @@ BEGIN
   END IF;
   IF TG_OP = 'INSERT' THEN
     PERFORM 1 FROM copyright_notices notice
-      WHERE notice.id = NEW.copyright_notice_id AND notice.evidence_erased_at IS NULL
-      FOR UPDATE;
+      WHERE notice.id = NEW.copyright_notice_id AND notice.evidence_erased_at IS NULL;
     IF NOT FOUND THEN
       RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'
         USING ERRCODE = 'check_violation';
@@ -206,7 +205,11 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE copyright_notices SET last_legal_activity_at =
     GREATEST(last_legal_activity_at, clock_timestamp())
-    WHERE id = NEW.copyright_notice_id;
+    WHERE id = NEW.copyright_notice_id AND evidence_erased_at IS NULL;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'erased copyright case cannot acquire an email intake'
+      USING ERRCODE = 'check_violation';
+  END IF;
   RETURN NEW;
 END;
 $$;

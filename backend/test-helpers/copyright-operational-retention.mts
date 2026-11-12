@@ -72,6 +72,26 @@ export async function positionCopyrightOperationalCursor(
       cursor_blocker_generation = NULL`)
 }
 
+/** Read the reserved thread cursor so a serialization abort proves page rollback. */
+export async function readCopyrightThreadOperationalCursor(): Promise<{
+  cursor_record_id: string | null
+  cursor_child_id: string | null
+  cursor_phase: string | null
+  cursor_legal_phase: string | null
+}> {
+  const { rows } = await read<{
+    cursor_record_id: string | null
+    cursor_child_id: string | null
+    cursor_phase: string | null
+    cursor_legal_phase: string | null
+  }>(sql`/* readCopyrightThreadOperationalCursor */
+    SELECT cursor_record_id, cursor_child_id, cursor_phase, cursor_legal_phase
+    FROM copyright_notice_operational_retention_cursors
+    WHERE kind = 'email_thread_references'`)
+  if (!rows[0]) throw new Error('Reserved copyright thread cursor was not found')
+  return rows[0]
+}
+
 export async function seedCopyrightExecutionAttemptPair(
   kind: 'action' | 'delivery',
   workItemId: string,

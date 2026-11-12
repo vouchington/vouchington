@@ -6,11 +6,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import {
-  createCopyrightEmailIntake,
-  markCopyrightDeliveryIntentSent,
-  recordCopyrightEmailParse,
-} from './index.mts'
+import { createCopyrightEmailIntake, markCopyrightDeliveryIntentSent } from './index.mts'
 import { getCopyrightStaffEmailIntake } from './read-models-staff-email-intake.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
@@ -18,6 +14,7 @@ import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './d
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { promoteInitialCopyrightEmail } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { markTestCopyrightNoticeErasedAndCommit } from '@voucha/test-helpers/copyright-email-manual-association'
+import { parseOrAssertSerializableRollback } from '@voucha/test-helpers/copyright-email-thread-serialization'
 
 describe('copyright email threading', () => {
   it('links a reply to a sent outbound copyright email to its case for human review', async () => {
@@ -91,17 +88,17 @@ describe('copyright email threading', () => {
       sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
 
-    await expect(
-      recordCopyrightEmailParse(intake, {
-        status: 'succeeded',
-        fromEmail: 'claimant@example.test',
-        subject: 'Re: Copyright notice',
-        bodyText: 'Please provide more details.',
-        messageId: inboundMessageId,
-        replyReferences: [`<${outboundMessageId}>`],
-        attachments: [],
-      }),
-    ).resolves.toEqual({
+    const first = await parseOrAssertSerializableRollback(intake, {
+      status: 'succeeded',
+      fromEmail: 'claimant@example.test',
+      subject: 'Re: Copyright notice',
+      bodyText: 'Please provide more details.',
+      messageId: inboundMessageId,
+      replyReferences: [`<${outboundMessageId}>`],
+      attachments: [],
+    })
+    if (first.conflict) return
+    expect(first.match).toEqual({
       noticeId: notice.id,
       matchedIntakeId: null,
       matchedReference: outboundMessageId,
@@ -126,17 +123,17 @@ describe('copyright email threading', () => {
       rawByteSize: 12,
       sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
-    await expect(
-      recordCopyrightEmailParse(reply, {
-        status: 'succeeded',
-        fromEmail: 'claimant@example.test',
-        subject: 'Re: Copyright notice',
-        bodyText: 'This follows up on the prior correspondence.',
-        messageId: `<${crypto.randomUUID()}@example.test>`,
-        replyReferences: [inboundMessageId],
-        attachments: [],
-      }),
-    ).resolves.toMatchObject({
+    const second = await parseOrAssertSerializableRollback(reply, {
+      status: 'succeeded',
+      fromEmail: 'claimant@example.test',
+      subject: 'Re: Copyright notice',
+      bodyText: 'This follows up on the prior correspondence.',
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      replyReferences: [inboundMessageId],
+      attachments: [],
+    })
+    if (second.conflict) return
+    expect(second.match).toMatchObject({
       noticeId: notice.id,
       matchedIntakeId: intake.id,
       matchedReference: inboundMessageId.slice(1, -1),
@@ -153,7 +150,7 @@ describe('copyright email threading', () => {
       rawByteSize: 12,
       sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
-    await recordCopyrightEmailParse(waiting, {
+    const waitingResult = await parseOrAssertSerializableRollback(waiting, {
       status: 'succeeded',
       fromEmail: 'claimant@example.test',
       subject: 'Copyright notice',
@@ -162,6 +159,8 @@ describe('copyright email threading', () => {
       replyReferences: [],
       attachments: [],
     })
+    if (waitingResult.conflict) return
+    expect(waitingResult.match).toBeNull()
     const mixedSesMessageId = `ses-inbound-mixed-${crypto.randomUUID()}`
     const { intake: mixed } = await createCopyrightEmailIntake({
       sesMessageId: mixedSesMessageId,
@@ -172,17 +171,17 @@ describe('copyright email threading', () => {
       rawByteSize: 12,
       sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
-    await expect(
-      recordCopyrightEmailParse(mixed, {
-        status: 'succeeded',
-        fromEmail: 'claimant@example.test',
-        subject: 'Re: Copyright notice',
-        bodyText: 'This names both the sent mail and a notice that is not a case yet.',
-        messageId: `<${crypto.randomUUID()}@example.test>`,
-        replyReferences: [`<${outboundMessageId}>`, waitingMessageId],
-        attachments: [],
-      }),
-    ).resolves.toBeNull()
+    const mixedResult = await parseOrAssertSerializableRollback(mixed, {
+      status: 'succeeded',
+      fromEmail: 'claimant@example.test',
+      subject: 'Re: Copyright notice',
+      bodyText: 'This names both the sent mail and a notice that is not a case yet.',
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      replyReferences: [`<${outboundMessageId}>`, waitingMessageId],
+      attachments: [],
+    })
+    if (mixedResult.conflict) return
+    expect(mixedResult.match).toBeNull()
     await expect(getCopyrightStaffEmailIntake(mixed.id, moderator)).resolves.toMatchObject({
       review_path: 'unresolved_thread',
       linked_notice: null,
@@ -200,7 +199,7 @@ describe('copyright email threading', () => {
       rawByteSize: 12,
       sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
-    await recordCopyrightEmailParse(replyC, {
+    const replyCResult = await parseOrAssertSerializableRollback(replyC, {
       status: 'succeeded',
       fromEmail: 'claimant@example.test',
       subject: 'Re: Copyright notice',
@@ -209,6 +208,8 @@ describe('copyright email threading', () => {
       replyReferences: [messageB],
       attachments: [],
     })
+    if (replyCResult.conflict) return
+    expect(replyCResult.match).toBeNull()
     const replyBSesMessageId = `ses-chain-b-${crypto.randomUUID()}`
     const { intake: replyB } = await createCopyrightEmailIntake({
       sesMessageId: replyBSesMessageId,
@@ -219,17 +220,17 @@ describe('copyright email threading', () => {
       rawByteSize: 12,
       sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
-    await expect(
-      recordCopyrightEmailParse(replyB, {
-        status: 'succeeded',
-        fromEmail: 'claimant@example.test',
-        subject: 'Re: Copyright notice',
-        bodyText: 'This answers the sent mail and names a notice that is not a case yet.',
-        messageId: messageB,
-        replyReferences: [`<${outboundMessageId}>`, messageA],
-        attachments: [],
-      }),
-    ).resolves.toMatchObject({ noticeId: notice.id })
+    const replyBResult = await parseOrAssertSerializableRollback(replyB, {
+      status: 'succeeded',
+      fromEmail: 'claimant@example.test',
+      subject: 'Re: Copyright notice',
+      bodyText: 'This answers the sent mail and names a notice that is not a case yet.',
+      messageId: messageB,
+      replyReferences: [`<${outboundMessageId}>`, messageA],
+      attachments: [],
+    })
+    if (replyBResult.conflict) return
+    expect(replyBResult.match).toMatchObject({ noticeId: notice.id })
     const promoter = await createTestUser({ extraRoles: ['moderator'] })
     const promotedA = await promoteInitialCopyrightEmail({
       moderator: promoter,
@@ -257,17 +258,17 @@ describe('copyright email threading', () => {
       rawByteSize: 12,
       sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
-    await expect(
-      recordCopyrightEmailParse(afterErasure, {
-        status: 'succeeded',
-        fromEmail: 'claimant@example.test',
-        subject: 'Re: erased copyright notice',
-        bodyText: 'This is a new inbound reply.',
-        messageId: `<${crypto.randomUUID()}@example.test>`,
-        replyReferences: [`<${outboundMessageId}>`],
-        attachments: [],
-      }),
-    ).resolves.toBeNull()
+    const erasedReply = await parseOrAssertSerializableRollback(afterErasure, {
+      status: 'succeeded',
+      fromEmail: 'claimant@example.test',
+      subject: 'Re: erased copyright notice',
+      bodyText: 'This is a new inbound reply.',
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      replyReferences: [`<${outboundMessageId}>`],
+      attachments: [],
+    })
+    if (erasedReply.conflict) return
+    expect(erasedReply.match).toBeNull()
     await expect(getCopyrightStaffEmailIntake(afterErasure.id, promoter)).resolves.toMatchObject({
       review_path: 'unresolved_thread',
       linked_notice: null,

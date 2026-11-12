@@ -20,16 +20,12 @@ export async function eraseIntakePage(
   edgeCursor: EdgeCursor,
   queryAfterStorage?: (transaction: TransactionQuery) => QueryExecutor,
 ): Promise<{ complete: boolean; erased: boolean; failure?: unknown }> {
-  // Live-source writers lock the intake before the receipt. Keep the same order while the
-  // receipt marker fences SES replay and every later source write.
   const { rows: liveRows } = await transaction<{ raw_storage_object_id: string | null }>(
-    sql`/* lockUnlinkedCopyrightEmailIntake */
+    sql`/* inspectUnlinkedCopyrightEmailIntake */
       SELECT raw_storage_object_id FROM copyright_notice_email_intakes
-      WHERE id = ${intakeId} FOR UPDATE`,
+      WHERE id = ${intakeId}`,
   )
   if (liveRows.length === 0) return { complete: true, erased: false }
-  await transaction(sql`/* lockUnlinkedCopyrightEmailReceipt */
-    SELECT id FROM copyright_notice_email_intake_receipts WHERE id = ${intakeId} FOR UPDATE`)
   const state = await lastActivityAndBlockers(transaction, intakeId)
   if (
     !state ||
@@ -44,13 +40,15 @@ export async function eraseIntakePage(
   await transaction(sql`/* enableUnlinkedCopyrightEmailRetention */
     SELECT set_config('app.copyright_retention_erasure', 'on', true),
       set_config('app.copyright_operational_retention', 'on', true)`)
-  await transaction(sql`/* markUnlinkedCopyrightEmailReceiptErased */
-    UPDATE copyright_notice_email_intake_receipts
-    SET erased_at = COALESCE(erased_at, CURRENT_TIMESTAMP)
-    WHERE id = ${intakeId}`)
   // Commit the replay fence on its own bounded tick before any irreversible S3 call.
   // A process crash or later database failure cannot make partly erased evidence admissible.
-  if (state.erased_at === null) return { complete: false, erased: true }
+  if (state.erased_at === null) {
+    await transaction(sql`/* markUnlinkedCopyrightEmailReceiptErased */
+      UPDATE copyright_notice_email_intake_receipts
+      SET erased_at = COALESCE(erased_at, CURRENT_TIMESTAMP)
+      WHERE id = ${intakeId}`)
+    return { complete: false, erased: true }
+  }
   let storage: Awaited<ReturnType<typeof eraseStorage>>
   try {
     storage = await eraseStorage(

@@ -23,6 +23,14 @@ obligations. The runbook owns the activation procedure.
 - A delivery worker can never decide that a counter-notice is compliant or that a hold is
   qualifying.
 
+Email thread assignment uses the references known when an intake is admitted. A later arriving
+message may extend or make that graph ambiguous without rewriting an immutable case link. The
+retained receipt prevents erased private evidence from being admitted again on replay.
+Reference digests are admitted against the live receipt and case retirement boundary before
+thread ancestry and case matching are derived from committed references. An interrupted derivation
+may leave hash-only references for replay; they do not authorize a case link or private evidence
+processing.
+
 ## Current screening authority
 
 AI screening of a structured form is advisory unless a current, completed clear result, a compliant
@@ -174,12 +182,16 @@ export. See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-reco
 The daily operational cleanup separately expires screening and transport attempts, unused guest
 capabilities, and case-exclusive email threading after the case has no open work and its reply
 window has passed. Appeal and counter-notice retry keys are stored only as digests; exact
-replay remains available while the case exists. A per-case intake-age high-water prevents old
+replay remains available while the case exists. Orphan thread digests age before deletion so
+concurrent intake can finish reference admission; a disappearing digest results in a conflict.
+A per-case intake-age high-water prevents old
 SES replays from rebuilding expired references while fresh email can still thread through an eligible case. An unlinked email
 intake loses its original object and private MIME parse and attachment data after inactivity; a
 minimal SES receipt remains to prevent re-admission on replay. Erasure intent is committed before
 the first object-version delete, and the receipt blocks new processing while bounded cleanup
-continues. Case-linked ancestry can retain a receipt endpoint without keeping the unlinked private
+continues. Unlinked erasure and source admission use serializable boundaries around their receipt
+decisions; a conflicted cleanup page leaves its cursor unchanged for the next scheduled run.
+Case-linked ancestry can retain a receipt endpoint without keeping the unlinked private
 intake. A standalone unlinked email receipt keeps its final review decision, reviewer, time, and
 encrypted explanation for six years from the latest receipt, review, delivery, or preservation
 release activity. An active legal preservation hold, a linked case, live private intake, or pending

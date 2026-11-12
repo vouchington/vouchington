@@ -1,6 +1,7 @@
 import assert from 'http-assert'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { getOrCreateEmailAssessment } from './email-assessment.mts'
+import { copyrightEmailThreadChangedError } from './email-thread-graph.mts'
 import { admitCopyrightEmailIntake } from './email-promotion-admission.mts'
 import {
   assertStatutoryEmailFields,
@@ -16,7 +17,17 @@ export async function promoteCopyrightEmailIntake(
 ): Promise<{ noticeId: string; submissionId: string }> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assertStatutoryEmailFields(input)
-  const admitted = await admitCopyrightEmailIntake(input)
+  const admitted = await admitCopyrightEmailIntake(input).catch((err: unknown) => {
+    const failure = err as { code?: string; message?: string } | null
+    if (
+      failure?.code === '40001' ||
+      failure?.code === '40P01' ||
+      (failure?.code === '23514' &&
+        failure.message === 'erased copyright case cannot acquire an email intake')
+    )
+      throw copyrightEmailThreadChangedError(err)
+    throw err
+  })
   if (!admitted.evidenceErased) {
     try {
       await assessAndEnforceCopyrightEmailIntake(input, admitted)

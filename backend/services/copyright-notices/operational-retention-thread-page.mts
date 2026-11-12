@@ -1,17 +1,22 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import {
+  copyrightEmailTokenGcCutoffId,
+  deleteOrphanCopyrightEmailThreadTokens,
+} from './operational-retention-token-gc.mts'
 
 export type ThreadPhase = 'references' | 'reply_edges' | 'ancestor_edges'
 
 /** Select raw intake children before ownership checks; a link to another case retains its edge. */
 export async function deleteCaseThreadPage(
   transaction: TransactionQuery,
+  now: Date,
   noticeId: string,
   intakeId: string,
   phase: ThreadPhase,
   edgeCursor: string | null,
   batchSize: number,
-  lockedReferenceIds: readonly string[],
+  referenceIds: readonly string[],
   matchedTokenId: string | null,
 ): Promise<{ deleted: number; phase: ThreadPhase | null; edgeCursor: string | null }> {
   await transaction(sql`/* enableCopyrightCaseThreadErasure */
@@ -22,17 +27,20 @@ export async function deleteCaseThreadPage(
       /* deleteExpiredCopyrightCaseThreadReferences */
       DELETE FROM copyright_notice_email_thread_references
       WHERE copyright_notice_email_intake_id = ${intakeId}
-        AND id = ANY(${[...lockedReferenceIds]}::uuid[])
+        AND id = ANY(${[...referenceIds]}::uuid[])
       RETURNING token_id`)
     if (removed.length > 0) {
-      await deleteOrphanTokens(
-        transaction,
-        removed.flatMap(row => (row.token_id ? [row.token_id] : [])),
-      )
+      const tokenIds = removed.flatMap(row => (row.token_id ? [row.token_id] : []))
+      if (tokenIds.length > 0)
+        await deleteOrphanCopyrightEmailThreadTokens(
+          transaction,
+          tokenIds,
+          copyrightEmailTokenGcCutoffId(now),
+        )
       return { deleted: removed.length, phase, edgeCursor: null }
     }
-    // A reference may have committed while the token and case locks were being acquired.
-    // Leave this phase in place so the next bounded transaction locks its digest first.
+    // A reference may have committed after the page read. Leave this phase in place so
+    // the next bounded transaction rechecks the intake.
     const { rows: remaining } = await transaction<{ id: string }>(sql`
       /* recheckCopyrightThreadIntakeReferences */
       WITH owner AS MATERIALIZED (SELECT ${intakeId}::uuid AS intake_id)
@@ -47,7 +55,11 @@ export async function deleteCaseThreadPage(
         WHERE copyright_notice_email_intake_id = ${intakeId}
           AND copyright_notice_id = ${noticeId}
           AND matched_token_id = ${matchedTokenId}::uuid`)
-      await deleteOrphanTokens(transaction, [matchedTokenId])
+      await deleteOrphanCopyrightEmailThreadTokens(
+        transaction,
+        [matchedTokenId],
+        copyrightEmailTokenGcCutoffId(now),
+      )
     }
     return { deleted: 0, phase: 'reply_edges', edgeCursor: null }
   }
@@ -92,15 +104,4 @@ export async function deleteCaseThreadPage(
                 AND other.copyright_notice_id <> ${noticeId})`,
   )
   return { deleted: rowCount ?? 0, phase, edgeCursor: ids.at(-1)! }
-}
-
-async function deleteOrphanTokens(transaction: TransactionQuery, ids: readonly string[]) {
-  if (ids.length === 0) return
-  await transaction(sql`/* deleteExpiredCopyrightCaseOrphanTokens */
-    DELETE FROM copyright_notice_email_thread_tokens token
-    WHERE token.id = ANY(${[...new Set(ids)]}::uuid[])
-      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_thread_references reference
-        WHERE reference.token_id = token.id)
-      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.matched_token_id = token.id)`)
 }

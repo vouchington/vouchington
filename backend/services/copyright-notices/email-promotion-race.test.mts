@@ -1,8 +1,13 @@
-import { beginTransaction, createTestUser } from '@voucha/test-helpers'
+import { createTestUser } from '@voucha/test-helpers'
+import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import {
   createUnparsedCopyrightEmailIntake,
   readCopyrightEmailPromotionEffects,
 } from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
 import {
   readCopyrightEmailIntakeNoticeLinks,
   readCopyrightEmailIntakeReview,
@@ -11,196 +16,215 @@ import {
   copyrightEmailMessageId,
   copyrightEmailPromotionInput,
   promoteInitialCopyrightEmail,
-  recordThreadedCopyrightEmail,
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
-import { describe, expect, it } from 'vitest'
-import { installSharedDbScopeObserver } from '../../../test-helpers/vitest-shared-db-scope-observer.mts'
-import {
-  insertCopyrightEmailThreadReferences,
-  lockCopyrightEmailThreadTokens,
-  recordCopyrightEmailAncestorEdges,
-} from './email-thread-ancestors.mts'
-import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
-import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
 
-describe('copyright email promotion and threading serialization', () => {
-  it('waits for a pending ancestor token claim before locking or linking its descendant', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const rootMessageId = copyrightEmailMessageId()
-    const pendingMessageId = copyrightEmailMessageId()
-    const root = await recordThreadedCopyrightEmail({
-      messageId: rootMessageId,
-      replyReferences: [],
-    })
-    const reply = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
-      replyReferences: [rootMessageId, pendingMessageId],
-    })
-    const claimant = await createUnparsedCopyrightEmailIntake()
-    const referenceRows = buildCopyrightEmailThreadReferenceRows({
-      messageId: pendingMessageId,
-      inReplyTo: [],
-      references: [],
-    })
-    await using ingestion = await beginTransaction()
-    await lockCopyrightEmailThreadTokens(ingestion, [referenceRows[0]!.lookup_digest])
-    await insertCopyrightEmailThreadReferences(ingestion, claimant.id, referenceRows)
-
-    let graphRead!: () => void
-    let graphLocked!: () => void
-    const reachedGraphRead = new Promise<void>(resolve => {
-      graphRead = resolve
-    })
-    const reachedGraphLock = new Promise<void>(resolve => {
-      graphLocked = resolve
-    })
-    const dispose = installSharedDbScopeObserver(event => {
-      if (event.scope.kind !== 'ids' || event.scope.ids[0] !== root.intakeId) return
-      if (event.operation === 'promoteCopyrightEmailIntakeGraph') graphRead()
-      if (event.operation === 'promoteCopyrightEmailIntakeGraphLocked') graphLocked()
-    })
-    const input = await copyrightEmailPromotionInput(moderator, root.intakeId)
-    try {
-      const promotion = promoteCopyrightEmailIntake(input)
-        .then(() => null)
-        .catch((err: unknown) => err)
-      await reachedGraphRead
-      const edge = recordCopyrightEmailAncestorEdges(ingestion, claimant.id)
-      const first = await Promise.race([
-        edge.then(() => 'edge' as const),
-        reachedGraphLock.then(() => 'graph-locked' as const),
-      ])
-      if (first === 'graph-locked') {
-        await promotion
-        await edge
-        await ingestion.commit()
-      } else {
-        await ingestion.commit()
-      }
-      expect(first).toBe('edge')
-      expect(await promotion).toMatchObject({
-        status: 409,
-        code: 'copyright_email_thread_changed',
-      })
-    } finally {
-      dispose()
-    }
-    expect(await readCopyrightEmailIntakeNoticeLinks(root.intakeId)).toEqual([])
-    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
-    expect(await readCopyrightEmailIntakeReview(root.intakeId)).toEqual([])
-    expect(
-      await readCopyrightEmailPromotionEffects(root.intakeId, input.targets[0]!.placementId),
-    ).toMatchObject({ reviews: 0, evidence: 0, deliveries: 0, notice_targets: 0 })
-  })
-
-  it('rejects promotion after a token-first thread link commits, without creating a second case', async () => {
+describe('copyright email promotion and threading', () => {
+  it('retains one case link and a matching review when promotion races a thread link', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()
     const parent = await promoteInitialCopyrightEmail({ moderator, messageId })
     const intake = await createUnparsedCopyrightEmailIntake()
-    const digest = buildCopyrightEmailThreadReferenceRows({
-      messageId,
-      inReplyTo: [],
-      references: [],
-    })[0]!.lookup_digest
-    await using threading = await beginTransaction()
-    await lockCopyrightEmailThreadTokens(threading, [digest])
-    expect(
-      await linkCopyrightEmailIntakeToNotice(
-        {
-          intakeId: intake.id,
-          noticeId: parent.noticeId,
-          linkKind: 'thread',
-          matchedReference: messageId,
-        },
-        threading,
-      ),
-    ).toBe(true)
-
-    let graphRead!: () => void
-    const reachedGraphRead = new Promise<void>(resolve => {
-      graphRead = resolve
-    })
-    const dispose = installSharedDbScopeObserver(event => {
-      if (
-        event.operation === 'promoteCopyrightEmailIntakeGraph' &&
-        event.scope.kind === 'ids' &&
-        event.scope.ids[0] === intake.id
-      )
-        graphRead()
-    })
     const input = await copyrightEmailPromotionInput(moderator, intake.id)
-    try {
-      const promotion = promoteCopyrightEmailIntake(input)
-        .then(() => new Error('Thread-linked intake was unexpectedly promoted'))
-        .catch((err: unknown) => err)
-      await reachedGraphRead
-      await threading.commit()
-      expect(await promotion).toMatchObject({ status: 409 })
-    } finally {
-      dispose()
-    }
-    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
-      { copyright_notice_id: parent.noticeId, link_kind: 'thread' },
-    ])
-    expect(await readCopyrightEmailIntakeReview(intake.id)).toEqual([])
-    expect(
-      await readCopyrightEmailPromotionEffects(intake.id, input.targets[0]!.placementId),
-    ).toMatchObject({
-      reviews: 0,
-      evidence: 0,
-      deliveries: 0,
-      thread_reviews: 1,
-      notice_targets: 0,
-    })
-  })
 
-  it('keeps the promoted initial notice when threading starts after its intake lock', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const messageId = copyrightEmailMessageId()
-    const parent = await promoteInitialCopyrightEmail({ moderator, messageId })
-    const intake = await createUnparsedCopyrightEmailIntake()
-    let graphLocked!: () => void
-    const reachedGraphLock = new Promise<void>(resolve => {
-      graphLocked = resolve
-    })
-    const dispose = installSharedDbScopeObserver(event => {
-      if (
-        event.operation === 'promoteCopyrightEmailIntakeGraphLocked' &&
-        event.scope.kind === 'ids' &&
-        event.scope.ids[0] === intake.id
-      )
-        graphLocked()
-    })
-    const input = await copyrightEmailPromotionInput(moderator, intake.id)
-    try {
-      const promotion = promoteCopyrightEmailIntake(input)
-      await reachedGraphLock
-      const losingThreadLink = linkCopyrightEmailIntakeToNotice({
+    const [promotion, threadLink] = await Promise.allSettled([
+      promoteCopyrightEmailIntake(input),
+      linkCopyrightEmailIntakeToNotice({
         intakeId: intake.id,
         noticeId: parent.noticeId,
         linkKind: 'thread',
         matchedReference: messageId,
-      })
-      const admitted = await promotion
-      expect(await losingThreadLink).toBe(false)
-      expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
-        { copyright_notice_id: admitted.noticeId, link_kind: 'initial' },
-      ])
-      expect(await readCopyrightEmailIntakeReview(intake.id)).toEqual([
-        { decision: 'approved', promoted_copyright_notice_id: admitted.noticeId },
-      ])
-      expect(
-        await readCopyrightEmailPromotionEffects(intake.id, input.targets[0]!.placementId),
-      ).toMatchObject({
-        reviews: 1,
-        evidence: 1,
-        thread_reviews: 0,
-        notice_targets: 1,
-      })
+      }),
+    ])
+    const links = await readCopyrightEmailIntakeNoticeLinks(intake.id)
+    const reviews = await readCopyrightEmailIntakeReview(intake.id)
+    const wasPromoted = promotion.status === 'fulfilled'
+    const expectedNoticeId = wasPromoted ? promotion.value.noticeId : parent.noticeId
+    const effects = await readCopyrightEmailPromotionEffects(
+      intake.id,
+      input.targets[0]!.placementId,
+    )
+    const threadLinkOutcome =
+      threadLink.status === 'fulfilled'
+        ? { status: 'fulfilled', value: threadLink.value }
+        : {
+            status: 'rejected',
+            code: (threadLink.reason as { code?: string }).code,
+            statusCode: (threadLink.reason as { status?: number }).status,
+            causeCode: (threadLink.reason as { cause?: { code?: string } }).cause?.code,
+            causeMessage: (threadLink.reason as { cause?: { message?: string } }).cause?.message,
+          }
+    expect([
+      { wasPromoted: true, threadLink: { status: 'fulfilled', value: false } },
+      {
+        wasPromoted: true,
+        threadLink: {
+          status: 'rejected',
+          code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+          statusCode: 409,
+          causeCode: '23514',
+          causeMessage: 'reviewed copyright email intake cannot be linked as thread correspondence',
+        },
+      },
+      { wasPromoted: false, threadLink: { status: 'fulfilled', value: true } },
+    ]).toContainEqual({ wasPromoted, threadLink: threadLinkOutcome })
+    const rejectionStatus =
+      promotion.status === 'rejected'
+        ? (promotion.reason as { status?: number } | null)?.status
+        : null
+    expect(rejectionStatus).toBe(wasPromoted ? null : 409)
+    expect(links).toEqual([
+      { copyright_notice_id: expectedNoticeId, link_kind: wasPromoted ? 'initial' : 'thread' },
+    ])
+    expect(reviews).toEqual(
+      wasPromoted ? [{ decision: 'approved', promoted_copyright_notice_id: expectedNoticeId }] : [],
+    )
+    expect(effects).toMatchObject({
+      reviews: Number(wasPromoted),
+      evidence: Number(wasPromoted),
+      notice_targets: Number(wasPromoted),
+    })
+  })
+
+  it('commits a review before a competing thread link can touch its evidence object', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const messageId = copyrightEmailMessageId()
+    const parent = await promoteInitialCopyrightEmail({ moderator, messageId })
+    const intake = await createUnparsedCopyrightEmailIntake()
+    const input = await copyrightEmailPromotionInput(moderator, intake.id)
+    const evidenceInserted = Promise.withResolvers<void>()
+    const releasePromotion = Promise.withResolvers<void>()
+    let holderProcessId: number | undefined
+    const restore = afterPostgresTransactionQueryForTest(
+      'promoteCopyrightEmailIntake:evidence',
+      values => values.includes(intake.raw_storage_object_id),
+      async transaction => {
+        holderProcessId = await getTestPostgresBackendProcessId(transaction)
+        evidenceInserted.resolve()
+        await releasePromotion.promise
+      },
+    )
+    onTestFinished(restore)
+    const promotion = promoteCopyrightEmailIntake(input)
+    void promotion.catch(evidenceInserted.reject)
+    let threadLink: PromiseSettledResult<boolean>
+    try {
+      await evidenceInserted.promise
+      if (holderProcessId === undefined)
+        throw new Error('Promotion evidence had no PostgreSQL owner')
+      threadLink = await withTestOwnedPostgresWait(
+        {
+          holderProcessId,
+          pool: 'write',
+          lock: { kind: 'transaction' },
+          queryMarker: '/* linkCopyrightEmailIntakeToNotice */',
+          releaseHolder: async () => releasePromotion.resolve(),
+        },
+        async waitForLock => {
+          const attempt = linkCopyrightEmailIntakeToNotice({
+            intakeId: intake.id,
+            noticeId: parent.noticeId,
+            linkKind: 'thread',
+            matchedReference: messageId,
+          })
+          await waitForLock(attempt)
+          releasePromotion.resolve()
+          return (await Promise.allSettled([attempt]))[0]!
+        },
+      )
     } finally {
-      dispose()
+      releasePromotion.resolve()
+      await Promise.allSettled([promotion])
+      restore()
     }
+    const promoted = await promotion
+    expect(threadLink).toMatchObject({
+      status: 'rejected',
+      reason: {
+        status: 409,
+        code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+        cause: {
+          code: '23514',
+          message: 'reviewed copyright email intake cannot be linked as thread correspondence',
+        },
+      },
+    })
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
+      { copyright_notice_id: promoted.noticeId, link_kind: 'initial' },
+    ])
+    expect(await readCopyrightEmailIntakeReview(intake.id)).toEqual([
+      { decision: 'approved', promoted_copyright_notice_id: promoted.noticeId },
+    ])
+    expect(
+      await readCopyrightEmailPromotionEffects(intake.id, input.targets[0]!.placementId),
+    ).toMatchObject({
+      reviews: 1,
+      evidence: 1,
+      notice_targets: 1,
+    })
+  })
+
+  it('admits one case when two promotions race on the same receipt', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const intake = await createUnparsedCopyrightEmailIntake()
+    const input = await copyrightEmailPromotionInput(moderator, intake.id)
+    const firstReviewed = Promise.withResolvers<void>()
+    const releaseFirst = Promise.withResolvers<void>()
+    let holderProcessId: number | undefined
+    const restore = afterPostgresTransactionQueryForTest(
+      'promoteCopyrightEmailIntake:review',
+      values => values.includes(intake.id),
+      async transaction => {
+        holderProcessId = await getTestPostgresBackendProcessId(transaction)
+        firstReviewed.resolve()
+        await releaseFirst.promise
+      },
+    )
+    onTestFinished(restore)
+    const first = promoteCopyrightEmailIntake(input)
+    void first.catch(firstReviewed.reject)
+    let second: PromiseSettledResult<Awaited<typeof first>>
+    try {
+      await firstReviewed.promise
+      if (holderProcessId === undefined) throw new Error('First promotion had no PostgreSQL owner')
+      second = await withTestOwnedPostgresWait(
+        {
+          holderProcessId,
+          pool: 'write',
+          lock: { kind: 'transaction' },
+          queryMarker: '/* promoteCopyrightEmailIntake:currentDecision */',
+          releaseHolder: async () => releaseFirst.resolve(),
+        },
+        async waitForLock => {
+          const attempt = promoteCopyrightEmailIntake(input)
+          await waitForLock(attempt)
+          releaseFirst.resolve()
+          return (await Promise.allSettled([attempt]))[0]!
+        },
+      )
+    } finally {
+      releaseFirst.resolve()
+      await Promise.allSettled([first])
+      restore()
+    }
+    const admitted = await first
+    expect(second).toMatchObject({
+      status: 'rejected',
+      reason: { status: 409, message: 'Copyright email intake was decided concurrently' },
+    })
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
+      { copyright_notice_id: admitted.noticeId, link_kind: 'initial' },
+    ])
+    expect(await readCopyrightEmailIntakeReview(intake.id)).toEqual([
+      { decision: 'approved', promoted_copyright_notice_id: admitted.noticeId },
+    ])
+    expect(
+      await readCopyrightEmailPromotionEffects(intake.id, input.targets[0]!.placementId),
+    ).toMatchObject({
+      reviews: 1,
+      evidence: 1,
+      notice_targets: 1,
+    })
   })
 })

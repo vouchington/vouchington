@@ -1,7 +1,5 @@
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
-import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
-import { completeCopyrightMandatoryHumanReview } from './human-review.mts'
 import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
@@ -11,12 +9,8 @@ import {
   createMultiOwnerStatementFixture,
   markStatementPosterDeleted,
   reassignStatementTargetToTombstone,
-  withStatementPosterLifecycleFence,
 } from '@voucha/test-helpers/copyright-statement-recipient-fixture'
-import {
-  createSignedInCopyrightForm,
-  createClearScreenedForm,
-} from '@voucha/test-helpers/services/copyright-notices/screened-form'
+import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
   readTestCopyrightStatementIntents,
@@ -132,42 +126,5 @@ describe('statement recipient scope and lifecycle', () => {
     ).filter(row => row.recipient_role === 'claimant')
     expect(intents).toHaveLength(1)
     expect(intents[0]).toMatchObject({ channel: 'email', recipient_user_id: null })
-  })
-  it('rolls back a busy same-owner legal transition without waiting and succeeds on retry', async () => {
-    const participant = await createTestUser()
-    const { notice } = await createClearScreenedForm(1, {
-      poster: participant,
-      claimant: participant,
-    })
-    const noticeId = notice.intake.copyright_notice_id
-    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-    const before = (await getCopyrightNoticePrivateAggregate(noticeId))!
-    const input = {
-      noticeId,
-      restrictionId: before.restrictions[0].id,
-      currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      action: 'confirm' as const,
-      rationale: 'Reviewed.',
-      reviewedAt: new Date(),
-    }
-    const intents = await readTestCopyrightStatementIntents(noticeId)
-    await withStatementPosterLifecycleFence(participant.id, async () => {
-      await expect(completeCopyrightMandatoryHumanReview(input)).rejects.toMatchObject({
-        status: 409,
-        message: 'Recipient account lifecycle transition is in progress',
-      })
-      const during = (await getCopyrightNoticePrivateAggregate(noticeId))!
-      expect(during.restrictions[0].human_reviewed_at).toBeNull()
-      expect(during.lifecycleEvents).toEqual(before.lifecycleEvents)
-      expect(await readTestCopyrightStatementIntents(noticeId)).toEqual(intents)
-    })
-    await expect(completeCopyrightMandatoryHumanReview(input)).resolves.toMatchObject({
-      human_review_action: 'confirm',
-    })
-    expect(
-      (await readTestCopyrightStatementIntents(noticeId)).filter(
-        row => row.delivery_kind === 'poster_review_notice',
-      ),
-    ).toHaveLength(2)
   })
 })

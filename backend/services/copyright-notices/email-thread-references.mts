@@ -9,6 +9,13 @@ export type CopyrightEmailThreadReferenceRow = {
   reference_kind: CopyrightEmailThreadReferenceKind
 }
 
+export type CopyrightEmailThreadInput = {
+  intakeId: string
+  messageId: string | null
+  inReplyTo: string[]
+  references: string[]
+}
+
 export type CopyrightEmailReplyHeaders = {
   inReplyTo: string[]
   references: string[]

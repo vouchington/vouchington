@@ -17,6 +17,7 @@ async function sweepPage(
   await using transaction = await beginBoundedTransaction({
     connectionTimeoutMs: 5_000,
     statementTimeoutMs: 20_000,
+    isolationLevel: 'serializable',
   })
   await transaction(sql`/* seedUnlinkedCopyrightEmailRetentionCursor */
     INSERT INTO copyright_notice_operational_retention_cursors (kind)
@@ -85,8 +86,15 @@ export async function sweepUnlinkedCopyrightEmailIntakes(options: {
   let erased = 0
   let hasMore = false
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each committed cursor selects the next intake.
-    const page = await sweepPage(cutoffId, cutoff, options.childLimit, options.queryAfterStorage) // no-mistakes-disable-line query-reached-per-item: each bounded intake transaction commits its durable keyset cursor before the next page.
+    let page: PageResult
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- each committed cursor selects the next intake.
+      page = await sweepPage(cutoffId, cutoff, options.childLimit, options.queryAfterStorage) // no-mistakes-disable-line query-reached-per-item: each bounded intake transaction commits its durable keyset cursor before the next page.
+    } catch (err) {
+      if (!['40001', '40P01'].includes((err as { code?: string } | null)?.code ?? '')) throw err
+      // The aborted page left its cursor unchanged; the next scheduled run resumes it.
+      return { scanned, erased, hasMore: false }
+    }
     scanned += page.scanned
     erased += page.erased
     hasMore = page.hasMore
