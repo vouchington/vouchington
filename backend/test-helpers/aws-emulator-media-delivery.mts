@@ -1,5 +1,9 @@
 import { CreateTableCommand, DynamoDBClient, waitUntilTableExists } from '@aws-sdk/client-dynamodb'
-import { CloudFrontClient, CreateDistributionCommand } from '@aws-sdk/client-cloudfront'
+import {
+  CloudFrontClient,
+  CreateDistributionCommand,
+  type DistributionConfig,
+} from '@aws-sdk/client-cloudfront'
 import type { AwsEmulatorConnection } from './aws-emulator.mts'
 
 /** The DynamoDB table the edge viewer-request function reads; Lambda@Edge runs in us-east-1. */
@@ -7,6 +11,34 @@ export const MEDIA_DELIVERY_REGISTRY_TEST_TABLE = 'test-media-delivery-registry'
 export const MEDIA_DELIVERY_REGISTRY_TEST_REGION = 'us-east-1'
 /** CloudFront assigns the distribution id, so workers find it again by this comment. */
 export const MEDIA_DELIVERY_DISTRIBUTION_COMMENT = 'voucha-test-media-delivery'
+
+/** The one distribution shape global setup and tests that own a distribution both create. */
+export function mediaDeliveryDistributionConfig(
+  callerReference: string,
+  comment: string,
+): DistributionConfig {
+  return {
+    CallerReference: callerReference,
+    Comment: comment,
+    Enabled: true,
+    Origins: {
+      Quantity: 1,
+      Items: [
+        {
+          Id: 'origin',
+          DomainName: 'media.example.com',
+          CustomOriginConfig: { HTTPPort: 80, HTTPSPort: 443, OriginProtocolPolicy: 'https-only' },
+        },
+      ],
+    },
+    DefaultCacheBehavior: {
+      TargetOriginId: 'origin',
+      ViewerProtocolPolicy: 'allow-all',
+      // The AWS-managed CachingOptimized policy.
+      CachePolicyId: '658327ea-f89d-4fab-a63d-7e88639e58f6',
+    },
+  }
+}
 
 /**
  * Creates the one media-delivery registry table and CloudFront distribution the application reads
@@ -44,31 +76,10 @@ export async function provisionMediaDeliveryEdge(emulator: AwsEmulatorConnection
       ),
       cloudFront.send(
         new CreateDistributionCommand({
-          DistributionConfig: {
-            CallerReference: MEDIA_DELIVERY_DISTRIBUTION_COMMENT,
-            Comment: MEDIA_DELIVERY_DISTRIBUTION_COMMENT,
-            Enabled: true,
-            Origins: {
-              Quantity: 1,
-              Items: [
-                {
-                  Id: 'origin',
-                  DomainName: 'media.example.com',
-                  CustomOriginConfig: {
-                    HTTPPort: 80,
-                    HTTPSPort: 443,
-                    OriginProtocolPolicy: 'https-only',
-                  },
-                },
-              ],
-            },
-            DefaultCacheBehavior: {
-              TargetOriginId: 'origin',
-              ViewerProtocolPolicy: 'allow-all',
-              // The AWS-managed CachingOptimized policy.
-              CachePolicyId: '658327ea-f89d-4fab-a63d-7e88639e58f6',
-            },
-          },
+          DistributionConfig: mediaDeliveryDistributionConfig(
+            MEDIA_DELIVERY_DISTRIBUTION_COMMENT,
+            MEDIA_DELIVERY_DISTRIBUTION_COMMENT,
+          ),
         }),
       ),
     ])

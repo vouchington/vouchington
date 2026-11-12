@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   listInvalidatedPaths,
-  mediaDeliveryDistributionId,
+  createOwnedCloudFrontDistribution,
   readMediaDeliveryRegistryItem,
 } from '@voucha/test-helpers/media-delivery-emulator'
 import {
@@ -55,12 +55,13 @@ describe('media delivery registry against the AWS Emulator', () => {
   })
 
   it('invalidates the delivery path on the configured distribution', async () => {
-    const DistributionId = await mediaDeliveryDistributionId()
+    // The shared distribution collects every other test's invalidations.
+    const DistributionId = await createOwnedCloudFrontDistribution()
     const path = `/images/${randomUUID()}/*`
     await invalidateMediaDeliveryPath(path, {
       MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID: DistributionId,
     })
 
-    expect(await listInvalidatedPaths(DistributionId)).toContain(path)
+    expect(await listInvalidatedPaths(DistributionId)).toEqual([path])
   })
 })

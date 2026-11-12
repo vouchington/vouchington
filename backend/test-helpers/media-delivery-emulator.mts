@@ -1,5 +1,7 @@
+import { randomUUID } from 'node:crypto'
 import {
   CloudFrontClient,
+  CreateDistributionCommand,
   GetInvalidationCommand,
   ListDistributionsCommand,
   ListInvalidationsCommand,
@@ -7,6 +9,7 @@ import {
 import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb'
 import {
   MEDIA_DELIVERY_DISTRIBUTION_COMMENT,
+  mediaDeliveryDistributionConfig,
   MEDIA_DELIVERY_REGISTRY_TEST_REGION,
   MEDIA_DELIVERY_REGISTRY_TEST_TABLE,
 } from './aws-emulator-media-delivery.mts'
@@ -67,15 +70,34 @@ export async function readMediaDeliveryRegistryItem(
   return { state: Item.state!.S!, generation: Item.generation!.N! }
 }
 
-/** Every path invalidated on a distribution, for asserting what CloudFront was asked to purge. */
+/** A distribution only the calling test invalidates, so its invalidation list is exact. */
+export async function createOwnedCloudFrontDistribution(): Promise<string> {
+  const reference = `test-media-delivery-${randomUUID()}`
+  const { Distribution } = await cloudFrontClient().send(
+    new CreateDistributionCommand({
+      DistributionConfig: mediaDeliveryDistributionConfig(reference, reference),
+    }),
+  )
+  if (!Distribution?.Id) throw new Error('AWS Emulator created a distribution without an id')
+  return Distribution.Id
+}
+
+/** Every path invalidated on a distribution, following pages, for asserting what CloudFront was asked to purge. */
 export async function listInvalidatedPaths(DistributionId: string): Promise<string[]> {
-  const list = await cloudFrontClient().send(new ListInvalidationsCommand({ DistributionId }))
   const paths: string[] = []
-  for (const summary of list.InvalidationList?.Items ?? []) {
-    const { Invalidation } = await cloudFrontClient().send(
-      new GetInvalidationCommand({ DistributionId, Id: summary.Id }),
+  let Marker: string | undefined
+  do {
+    const page = await cloudFrontClient().send(
+      new ListInvalidationsCommand({ DistributionId, Marker }),
     )
-    paths.push(...(Invalidation?.InvalidationBatch?.Paths?.Items ?? []))
-  }
+    const list = page.InvalidationList
+    for (const summary of list?.Items ?? []) {
+      const { Invalidation } = await cloudFrontClient().send(
+        new GetInvalidationCommand({ DistributionId, Id: summary.Id }),
+      )
+      paths.push(...(Invalidation?.InvalidationBatch?.Paths?.Items ?? []))
+    }
+    Marker = list?.IsTruncated ? list.NextMarker : undefined
+  } while (Marker)
   return paths.toSorted()
 }
