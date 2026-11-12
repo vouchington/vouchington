@@ -809,9 +809,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../queues/background-cpu
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../queues/bedrock-embeddings-batch
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../queues/bloom-filters
@@ -905,9 +902,6 @@ importers:
       '@services/availability':
         specifier: workspace:^
         version: link:../services/availability
-      '@services/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../services/bedrock-embeddings-batch
       '@services/bluesky-accounts':
         specifier: workspace:^
         version: link:../services/bluesky-accounts
@@ -1735,9 +1729,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -1895,9 +1886,6 @@ importers:
       '@workers/background':
         specifier: workspace:^
         version: link:../../workers/background
-      '@workers/bedrock-batch-sqs':
-        specifier: workspace:^
-        version: link:../../workers/bedrock-batch-sqs
       '@workers/bloom-filters':
         specifier: workspace:^
         version: link:../../workers/bloom-filters
@@ -2320,12 +2308,6 @@ importers:
 
   backend/modules/aws:
     dependencies:
-      '@aws-sdk/client-bedrock':
-        specifier: ^3.1165.0
-        version: 3.1165.0
-      '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1165.0
-        version: 3.1165.0
       '@aws-sdk/client-cloudfront':
         specifier: ^3.1165.0
         version: 3.1165.0
@@ -2925,55 +2907,6 @@ importers:
       valkyries:
         specifier: ^0.15.0
         version: 0.15.0
-
-  backend/queues/bedrock-embeddings:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@queues/background-cpu':
-        specifier: workspace:^
-        version: link:../background-cpu
-      '@services/analytics':
-        specifier: workspace:^
-        version: link:../../services/analytics
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
-      glide-mq:
-        specifier: ^0.20.0
-        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/bedrock-embeddings-batch:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
-      '@queues/background-cpu':
-        specifier: workspace:^
-        version: link:../background-cpu
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      '@vouchington/worker-runtime':
-        specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1165.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
-      glide-mq:
-        specifier: ^0.20.0
-        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@data-stores/valkey-core':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-core
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/queues/bloom-filters:
     dependencies:
@@ -3774,9 +3707,6 @@ importers:
       '@services/autotagger':
         specifier: workspace:^
         version: link:../services/autotagger
-      '@services/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../services/bedrock-embeddings-batch
       '@services/bluesky-accounts':
         specifier: workspace:^
         version: link:../services/bluesky-accounts
@@ -4735,146 +4665,6 @@ importers:
 
   backend/services/batch-lookup: {}
 
-  backend/services/bedrock-embeddings:
-    dependencies:
-      '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1165.0
-        version: 3.1165.0
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
-      '@data-stores/valkey-rate-limiter':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-rate-limiter
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@queues/bloom-filters':
-        specifier: workspace:^
-        version: link:../../queues/bloom-filters
-      '@services/analytics':
-        specifier: workspace:^
-        version: link:../analytics
-      '@services/bloom-filter-config':
-        specifier: workspace:^
-        version: link:../bloom-filter-config
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      '@vouchington/queue-errors':
-        specifier: ^0.2.1
-        version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
-      '@vouchington/utils':
-        specifier: ^0.12.0
-        version: 0.12.0
-      pg-copy-streams:
-        specifier: ^7.0.0
-        version: 7.0.0
-      pgvector:
-        specifier: ^0.3.0
-        version: 0.3.1
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-      valkyries:
-        specifier: ^0.15.0
-        version: 0.15.0
-    devDependencies:
-      '@types/pg-copy-streams':
-        specifier: ^1.2.5
-        version: 1.2.5
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/services/bedrock-embeddings-batch:
-    dependencies:
-      '@aws-sdk/client-bedrock':
-        specifier: ^3.1165.0
-        version: 3.1165.0
-      '@aws-sdk/client-s3':
-        specifier: ^3.1165.0
-        version: 3.1165.0
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
-      '@services/communities':
-        specifier: workspace:^
-        version: link:../communities
-      '@services/crawl-chunks':
-        specifier: workspace:^
-        version: link:../crawl-chunks
-      '@services/images':
-        specifier: workspace:^
-        version: link:../images
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../posts
-      '@services/rss-feed-items':
-        specifier: workspace:^
-        version: link:../rss-feed-items
-      '@services/stories':
-        specifier: workspace:^
-        version: link:../stories
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../topics
-      '@ts-shared/deploy-environment':
-        specifier: workspace:^
-        version: link:../../../ts-shared/deploy-environment
-      '@vouchington/image-resize':
-        specifier: ^0.2.0
-        version: 0.2.0(@types/node@26.6.6)
-      '@vouchington/utils':
-        specifier: ^0.12.0
-        version: 0.12.0
-      pg-copy-streams:
-        specifier: ^7.0.0
-        version: 7.0.0
-    devDependencies:
-      '@queues/ai-agents':
-        specifier: workspace:^
-        version: link:../../queues/ai-agents
-      '@services/copyright-notices':
-        specifier: workspace:^
-        version: link:../copyright-notices
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../urls
-      '@types/pg-copy-streams':
-        specifier: ^1.2.5
-        version: 1.2.5
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/services/bloom-filter-config:
     dependencies:
       '@data-stores/valkey':
@@ -5728,9 +5518,6 @@ importers:
       '@jongleberry/vurst-markdown':
         specifier: ^0.4.3
         version: 0.4.3
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/embeddings':
         specifier: workspace:^
         version: link:../embeddings
@@ -6417,9 +6204,6 @@ importers:
       '@services/autotagger':
         specifier: workspace:^
         version: link:../autotagger
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
@@ -7210,9 +6994,6 @@ importers:
       '@services/api-keys':
         specifier: workspace:^
         version: link:../api-keys
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/embeddings':
         specifier: workspace:^
         version: link:../embeddings
@@ -9605,9 +9386,6 @@ importers:
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
       '@queues/gemini-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/gemini-embeddings-batch
@@ -10004,9 +9782,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
@@ -10031,9 +9806,6 @@ importers:
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/comments':
         specifier: workspace:^
         version: link:../comments
@@ -10286,9 +10058,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
@@ -10910,9 +10679,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -10934,9 +10700,6 @@ importers:
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/classifier-runs':
         specifier: workspace:^
         version: link:../classifier-runs
@@ -11837,9 +11600,6 @@ importers:
       '@services/batch-lookup':
         specifier: workspace:^
         version: link:../batch-lookup
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
@@ -13164,9 +12924,6 @@ importers:
       '@services/api-keys':
         specifier: workspace:^
         version: link:../services/api-keys
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../services/bedrock-embeddings
       '@services/bloom-filter-maintenance':
         specifier: workspace:^
         version: link:../services/bloom-filter-maintenance
@@ -13740,9 +13497,6 @@ importers:
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
       '@services/embeddings':
         specifier: workspace:^
         version: link:../../services/embeddings
@@ -13758,12 +13512,6 @@ importers:
       '@workers/ai-agents':
         specifier: workspace:^
         version: link:../ai-agents
-      '@workers/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
-      '@workers/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings-batch
       '@workers/content-analysis':
         specifier: workspace:^
         version: link:../content-analysis
@@ -13789,18 +13537,12 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
-      '@aws-sdk/client-bedrock':
-        specifier: ^3.1165.0
-        version: 3.1165.0
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../../data-stores/valkey-core
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
@@ -13826,108 +13568,6 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
 
-  backend/workers/bedrock-batch-sqs:
-    dependencies:
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@queues/background-cpu':
-        specifier: workspace:^
-        version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
-      '@vouchington/worker-runtime':
-        specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1165.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
-    devDependencies:
-      '@aws-sdk/client-sqs':
-        specifier: ^3.1165.0
-        version: 3.1165.0
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/workers/bedrock-embeddings:
-    dependencies:
-      '@queues/ai-agents':
-        specifier: workspace:^
-        version: link:../../queues/ai-agents
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../../services/posts
-      '@services/rss-feed-items':
-        specifier: workspace:^
-        version: link:../../services/rss-feed-items
-      '@services/stories':
-        specifier: workspace:^
-        version: link:../../services/stories
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
-      glide-mq:
-        specifier: ^0.20.0
-        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/workers/bedrock-embeddings-batch:
-    dependencies:
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
-      '@services/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings-batch
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../../services/posts
-      '@vouchington/queue-errors':
-        specifier: ^0.2.1
-        version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
-      glide-mq:
-        specifier: ^0.20.0
-        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-      valkyries:
-        specifier: ^0.15.0
-        version: 0.15.0
-    devDependencies:
-      '@data-stores/valkey-core':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-core
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/workers/bloom-filters:
     dependencies:
       '@data-stores/valkey':
@@ -13945,9 +13585,6 @@ importers:
       '@services/api-keys':
         specifier: workspace:^
         version: link:../../services/api-keys
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
@@ -14372,9 +14009,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis

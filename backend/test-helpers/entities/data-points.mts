@@ -45,7 +45,7 @@ export async function insertTestDataPoint(data: {
       gemini_embedding_2_content_sha256,
       llm_moderation_content_sha256,
       created_via
-    , bedrock_nova_multimodal_v1_content_sha256)
+    )
     VALUES (
       ${id},
       'data_point',
@@ -57,7 +57,7 @@ export async function insertTestDataPoint(data: {
       ${sha256},
       ${sha256},
       'system'
-    , ${sha256})
+    )
     RETURNING id
   `,
   )

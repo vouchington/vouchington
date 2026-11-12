@@ -299,16 +299,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
   url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
   data JSONB NOT NULL, -- dump of the data
 
-  -- bedrock nova multimodal v1 embedding
-  bedrock_nova_multimodal_v1_content_sha256 BYTEA NOT NULL,
-  CHECK (OCTET_LENGTH(bedrock_nova_multimodal_v1_content_sha256) = 32),
-  bedrock_nova_multimodal_v1_input_sha256 BYTEA,
-  CHECK (bedrock_nova_multimodal_v1_input_sha256 IS NULL OR OCTET_LENGTH(bedrock_nova_multimodal_v1_input_sha256) = 32),
-  bedrock_nova_multimodal_v1_embedding VECTOR(1024),
-  bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ,
-  bedrock_nova_multimodal_v1_input_token_count INT,
-  CONSTRAINT chk_rss_feed_item__bedrock_nova_multimodal_v1_input_token_count CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
-
+  -- gemini embedding 2
   gemini_embedding_2_content_sha256 BYTEA NOT NULL,
   CHECK (OCTET_LENGTH(gemini_embedding_2_content_sha256) = 32),
   gemini_embedding_2_input_sha256 BYTEA,
@@ -904,23 +895,3 @@ WHERE story_id IS NOT NULL AND deleted_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_rss_feed_items__enclosure_media_type_id ON rss_feed_items (enclosure_media_type_id);
-
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_input_sha256
-ON rss_feed_items (bedrock_nova_multimodal_v1_input_sha256)
-WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_embedding
-ON rss_feed_items USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
-WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__embedding_candidates__published_at__id
-ON rss_feed_items (published_at DESC, id DESC)
-WHERE deleted_at IS NULL
-  AND bedrock_nova_multimodal_v1_embedding IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__bedrock_nova_multimodal_v1_to_update
-ON rss_feed_items (id)
-WHERE (
-  bedrock_nova_multimodal_v1_input_sha256 IS NULL
-  OR (bedrock_nova_multimodal_v1_input_sha256 != bedrock_nova_multimodal_v1_content_sha256)
-);

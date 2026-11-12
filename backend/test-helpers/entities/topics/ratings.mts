@@ -53,8 +53,8 @@ export async function insertTestReview(data: {
       gemini_embedding_2_content_sha256,
       llm_moderation_content_sha256,
       created_via
-    , bedrock_nova_multimodal_v1_content_sha256)
-    VALUES (COALESCE(${id}::uuid, uuidv7()), 'review', ${data.title || 'Test Review'}, ${data.markdown || ''}, ${data.userId}, ${sha256}, ${sha256}, 'system', ${sha256})
+    )
+    VALUES (COALESCE(${id}::uuid, uuidv7()), 'review', ${data.title || 'Test Review'}, ${data.markdown || ''}, ${data.userId}, ${sha256}, ${sha256}, 'system')
     RETURNING id
   `,
   )

@@ -23,11 +23,11 @@ export async function seedRewardsProgramStatuses(
     ])
     const topicRows = statusIds.map(
       (_, index) =>
-        `($${index * 4 + 1}, $${index * 4 + 2}, $${index * 4 + 3}, $${index * 4 + 4}, $${index * 4 + 4}, 'system')`,
+        `($${index * 4 + 1}, $${index * 4 + 2}, $${index * 4 + 3}, $${index * 4 + 4}, 'system')`,
     )
     await query(
       `/* seedExplainData */ INSERT INTO topics
-         (id, name, slug, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256, created_via)
+         (id, name, slug, gemini_embedding_2_content_sha256, created_via)
        VALUES ${topicRows.join(', ')}
        ON CONFLICT DO NOTHING`,
       topicValues,

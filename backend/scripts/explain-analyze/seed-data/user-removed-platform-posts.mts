@@ -20,13 +20,13 @@ export async function seedUserRemovedPlatformPosts(count = 2000): Promise<void> 
         values.push(id, title, markdown, seedUuid(0, '01'), hash, rejectedAt)
         const base = values.length - 5
         rows.push(
-          `($${base}, 'discussion', $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 4}, $${base + 4}, $${base + 5}::timestamptz, 'system')`,
+          `($${base}, 'discussion', $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 4}, $${base + 5}::timestamptz, 'system')`,
         )
       }
       await query(
         `/* seedExplainData */ INSERT INTO posts (
           id, post_type, title, markdown, created_by_id,
-          gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256,
+          gemini_embedding_2_content_sha256,
           llm_moderation_content_sha256,
           rejected_at,
           created_via

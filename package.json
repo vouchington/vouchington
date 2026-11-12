@@ -25,7 +25,6 @@
     "test:backend:modules": "node ci/run-vitest-project-group.mts backend-modules",
     "test:backend:docker": "node ci/run-vitest-project-group.mts backend-docker",
     "test:backend:aws": "node ci/run-vitest-project-group.mts backend-aws",
-    "test:backend:bedrock": "node ci/run-vitest-project-group.mts backend-bedrock",
     "test:backend:openai": "node ci/run-vitest-project-group.mts backend-openai",
     "test:backend:anthropic": "node ci/run-vitest-project-group.mts backend-anthropic",
     "test:backend:openrouter": "node ci/run-vitest-project-group.mts backend-openrouter",

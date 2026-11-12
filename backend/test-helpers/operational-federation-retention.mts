@@ -68,8 +68,8 @@ export async function insertOperationalLocalPostForTest(
     `/* insertOperationalLikePostForTest */
      INSERT INTO posts
        (post_type, title, markdown, created_by_id, created_via,
-        gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-     VALUES ('discussion', 'Retention test', '', $1, 'system', $2, $2, $2)
+        gemini_embedding_2_content_sha256, llm_moderation_content_sha256)
+     VALUES ('discussion', 'Retention test', '', $1, 'system', $2, $2)
      RETURNING id`,
     [userId, Buffer.alloc(32)],
   )

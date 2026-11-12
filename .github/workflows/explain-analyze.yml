@@ -47,7 +47,6 @@ jobs:
       S3_BUCKET_CRAWLS: test-crawls
       S3_BUCKET_USER_EXPORTS: test-user-exports
       S3_BUCKET_QUARANTINE: test-quarantine
-      S3_BUCKET_BEDROCK_BATCH: test-bedrock-batch
 
     services:
       postgres:
@@ -227,7 +226,6 @@ jobs:
       S3_BUCKET_CRAWLS: test-crawls
       S3_BUCKET_USER_EXPORTS: test-user-exports
       S3_BUCKET_QUARANTINE: test-quarantine
-      S3_BUCKET_BEDROCK_BATCH: test-bedrock-batch
       EXPLAIN_SEED_ANCHOR_DATE: ${{ needs.seed-explain.outputs.anchor-date }}
 
     steps:

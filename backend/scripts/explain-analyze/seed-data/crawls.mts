@@ -48,10 +48,10 @@ export async function seedCrawlChunks(count = 300): Promise<void> {
         const hash = contentHash(`crawl-chunk-${idx}`)
         values.push(crawlId, orderIndex, markdown, hash)
         const base = values.length - 3
-        rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 3})`)
+        rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3})`)
       }
       await query(
-        `/* seedExplainData */ INSERT INTO crawl_chunks (crawl_id, order_index, markdown, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+        `/* seedExplainData */ INSERT INTO crawl_chunks (crawl_id, order_index, markdown, gemini_embedding_2_content_sha256)
          VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )

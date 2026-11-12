@@ -23,7 +23,7 @@ export async function seedLandingPageCandidates(): Promise<void> {
       `/* seedLandingPageCandidates.posts */ INSERT INTO posts
        (id, created_via, post_type, title, markdown, created_by_id,
         gemini_embedding_2_content_sha256, llm_moderation_content_sha256,
-        privacy, broadcast, approved_at, bedrock_nova_multimodal_v1_content_sha256)
+        privacy, broadcast, approved_at)
        SELECT input.id, 'system', 'review', 'Landing page review ' || input.ordinal,
          'Heavy-author landing page fixture', $2, $3, $3,
          CASE WHEN (input.ordinal + $4) % 10 = 9 THEN 'private'::privacy_types
@@ -31,7 +31,7 @@ export async function seedLandingPageCandidates(): Promise<void> {
          CASE WHEN (input.ordinal + $4) % 10 = 9 THEN 'users'::broadcast_types
            ELSE 'everyone'::broadcast_types END,
          CASE WHEN (input.ordinal + $4) % 10 = 0 THEN NULL ELSE CURRENT_TIMESTAMP END
-       , $3 FROM unnest($1::uuid[]) WITH ORDINALITY input(id, ordinal)
+       FROM unnest($1::uuid[]) WITH ORDINALITY input(id, ordinal)
        ON CONFLICT DO NOTHING`,
       [ids, LANDING_PAGE_REVIEW_OWNER_ID, contentHash('landing-page-candidates'), start],
     )

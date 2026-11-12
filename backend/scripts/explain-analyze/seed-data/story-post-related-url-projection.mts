@@ -87,10 +87,10 @@ export async function seedStoryProjectionDispatcherWitness() {
   const storyId = stories[0]!.id
   const { rows: posts } = await query<{ id: string }>(
     `/* storyProjectionDispatcherWitness */ INSERT INTO posts (created_via, post_type, title,
-        gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+        gemini_embedding_2_content_sha256, llm_moderation_content_sha256)
       SELECT 'system', 'story', 'Native empty projection witness',
         decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex')
-      , decode(repeat('00', 32), 'hex') FROM generate_series(1, 3)
+      FROM generate_series(1, 3)
       RETURNING id`,
   )
   const postIds = posts.map(row => row.id).toSorted()

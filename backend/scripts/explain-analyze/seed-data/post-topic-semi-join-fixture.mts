@@ -65,9 +65,9 @@ export async function seedPostTopicSemiJoinFixture(): Promise<void> {
   await seedPostTopicOwnedPosts()
   await transaction(
     `/* seedPostTopicSemiJoinFixture:topics */
-     INSERT INTO topics (id, name, slug, created_via, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+     INSERT INTO topics (id, name, slug, created_via, gemini_embedding_2_content_sha256)
      SELECT topic.id, topic.name, topic.slug, 'system', decode(repeat('00', 32), 'hex')
-     , decode(repeat('00', 32), 'hex') FROM UNNEST($1::uuid[], $2::text[], $3::text[]) AS topic(id, name, slug)
+     FROM UNNEST($1::uuid[], $2::text[], $3::text[]) AS topic(id, name, slug)
      ON CONFLICT DO NOTHING`,
     [topicIds, topicNames, topicSlugs],
   )

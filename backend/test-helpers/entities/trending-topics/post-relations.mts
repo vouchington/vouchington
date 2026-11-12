@@ -19,9 +19,9 @@ export async function insertBatchPostRelations(params: {
 
   await write(
     sql`/* insertBatchPostRelations:posts */
-    INSERT INTO posts (id, post_type, title, markdown, created_by_id, broadcast, privacy, is_anonymous, gemini_embedding_2_content_sha256, llm_moderation_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
+    INSERT INTO posts (id, post_type, title, markdown, created_by_id, broadcast, privacy, is_anonymous, gemini_embedding_2_content_sha256, llm_moderation_content_sha256, created_via)
     SELECT unnest_id, 'discussion', 'Trending test post', 'test', ${userId}, 'everyone', 'public', false, ${sha256}, ${sha256}, 'system'
-    , ${sha256} FROM UNNEST(${postIds}::uuid[]) AS unnest_id`,
+    FROM UNNEST(${postIds}::uuid[]) AS unnest_id`,
   )
   await write(
     sql`/* insertBatchPostRelations:approve */

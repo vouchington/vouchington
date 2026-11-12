@@ -71,7 +71,7 @@ export async function insertTestRssFeedItem(data: {
             gemini_embedding_2_input_sha256,
             gemini_embedding_2_embedding,
             gemini_embedding_2_embedding_created_at
-          , bedrock_nova_multimodal_v1_content_sha256) VALUES (
+          ) VALUES (
             ${itemId},
             ${data.urlId},
             ${JSON.stringify(data.itemData)}::jsonb,
@@ -79,7 +79,7 @@ export async function insertTestRssFeedItem(data: {
             ${inputSha},
             ${pgvector.toSql(data.embedding)},
             CURRENT_TIMESTAMP
-          , ${data.contentSha256})
+          )
           ON CONFLICT (id) DO UPDATE
             SET data = EXCLUDED.data
         `,
@@ -92,12 +92,12 @@ export async function insertTestRssFeedItem(data: {
             url_id,
             data,
             gemini_embedding_2_content_sha256
-          , bedrock_nova_multimodal_v1_content_sha256) VALUES (
+          ) VALUES (
             ${itemId},
             ${data.urlId},
             ${JSON.stringify(data.itemData)}::jsonb,
             ${data.contentSha256}
-          , ${data.contentSha256})
+          )
           ON CONFLICT (id) DO UPDATE
             SET data = EXCLUDED.data
         `,

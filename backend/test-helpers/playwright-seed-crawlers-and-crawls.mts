@@ -88,12 +88,12 @@ async function seedPlaywrightCrawlersAndCrawls(
       order_index,
       markdown,
       gemini_embedding_2_content_sha256
-    , bedrock_nova_multimodal_v1_content_sha256) VALUES (
+    ) VALUES (
       '${crawlId1}',
       0,
       'The playwright fixture token pwwebsearchsnippet appears in this crawled page for web search tests.',
       decode('00000000000000000000000000000000000000000000000000000000000000c1', 'hex')
-    , decode('00000000000000000000000000000000000000000000000000000000000000c1', 'hex'))
+    )
     ON CONFLICT (crawl_id, order_index) DO UPDATE SET
       markdown = EXCLUDED.markdown,
       gemini_embedding_2_content_sha256 = EXCLUDED.gemini_embedding_2_content_sha256`,

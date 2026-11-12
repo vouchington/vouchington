@@ -73,7 +73,6 @@ export async function updateStoryPostAgentResult(
     UPDATE posts
     SET ai_summary_markdown = ${aiSummaryMarkdown},
         gemini_embedding_2_content_sha256 = ${embeddingContentSha},
-        bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha},
         llm_moderation_content_sha256 = ${moderationContentSha}
     WHERE id = ${postId} AND post_type = 'story'
     RETURNING id`)

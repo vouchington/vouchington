@@ -28,8 +28,8 @@ async function seedPrioritizedReferralLink(
     const query = transaction
     await query(
       `/* seedExplainData */ INSERT INTO topics
-         (id, topic_type, name, slug, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
-       VALUES ($1, 'referral_program', $2, $3, $4, 'system', $4) ON CONFLICT DO NOTHING`,
+         (id, topic_type, name, slug, gemini_embedding_2_content_sha256, created_via)
+       VALUES ($1, 'referral_program', $2, $3, $4, 'system') ON CONFLICT DO NOTHING`,
       [
         referralProgramId,
         programIndex === 0 ? 'Seed Referral Program' : 'Seed Referral Program 10k',

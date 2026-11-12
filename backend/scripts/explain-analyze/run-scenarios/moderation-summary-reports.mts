@@ -52,11 +52,11 @@ export async function runModerationSummaryReportScenario(): Promise<void> {
     await transaction(
       `/* seedSummaryReportPosts */ INSERT INTO posts
        (id, created_via, post_type, title, markdown, created_by_id, community_id,
-        gemini_embedding_2_content_sha256, llm_moderation_content_sha256, deleted_at, bedrock_nova_multimodal_v1_content_sha256)
+        gemini_embedding_2_content_sha256, llm_moderation_content_sha256, deleted_at)
        SELECT id, 'system', 'discussion', 'Summary report', 'Report fixture', $2,
          CASE WHEN ordinal = $6 THEN $3::uuid ELSE $4::uuid END, $5, $5,
          CASE WHEN ordinal = $6 THEN CURRENT_TIMESTAMP END
-       , $5 FROM unnest($1::uuid[]) WITH ORDINALITY AS input(id, ordinal)`,
+       FROM unnest($1::uuid[]) WITH ORDINALITY AS input(id, ordinal)`,
       [postIds, RECIPIENT_ID, TARGET_COMMUNITY_ID, NOISE_COMMUNITY_ID, hash, postIds.length],
     )
     await transaction(

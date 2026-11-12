@@ -59,19 +59,19 @@ export async function seedIneligibleCollectionPages(): Promise<void> {
        id, created_by_id, post_type, title, markdown, created_via, approved_at,
        privacy, broadcast, deleted_at,
        gemini_embedding_2_content_sha256, llm_moderation_content_sha256
-     , bedrock_nova_multimodal_v1_content_sha256)
+     )
      SELECT id, $1, 'discussion', 'Ineligible page', 'Ineligible page', 'system',
        CURRENT_TIMESTAMP, 'public', 'everyone', deleted_at,
        decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex')
-     , decode(repeat('00', 32), 'hex') FROM unnest($2::uuid[], $3::timestamptz[]) AS row(id, deleted_at)
+     FROM unnest($2::uuid[], $3::timestamptz[]) AS row(id, deleted_at)
      ON CONFLICT DO NOTHING`,
     [PAGE_USER_ID, postIds, deletedAt],
   )
   await transaction(
     `/* seedIneligibleCollectionPages */ INSERT INTO topics
-       (id, name, slug, created_via, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+       (id, name, slug, created_via, gemini_embedding_2_content_sha256)
      SELECT id, name, slug, 'system', decode(repeat('00', 32), 'hex')
-     , decode(repeat('00', 32), 'hex') FROM unnest($1::uuid[], $2::text[], $3::text[]) AS row(id, name, slug)
+     FROM unnest($1::uuid[], $2::text[], $3::text[]) AS row(id, name, slug)
      ON CONFLICT DO NOTHING`,
     [
       topicIds,

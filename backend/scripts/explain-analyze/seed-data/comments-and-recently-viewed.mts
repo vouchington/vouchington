@@ -21,13 +21,13 @@ export async function seedComments(): Promise<void> {
       l1Values.push(id, userId, markdown, rootPostId, rootPostId, hash, hash)
       const base = l1Values.length - 6
       l1Rows.push(
-        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 5}, $${base + 6}, 'system')`,
+        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, 'system')`,
       )
     }
     await query(
       `/* seedExplainData */ INSERT INTO posts (
         id, post_type, created_by_id, markdown, parent_post_id, root_post_id,
-        gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256,
+        gemini_embedding_2_content_sha256,
         llm_moderation_content_sha256,
         created_via
       ) VALUES ${l1Rows.join(', ')} ON CONFLICT DO NOTHING`,
@@ -42,13 +42,13 @@ export async function seedComments(): Promise<void> {
       l2Values.push(id, userId, markdown, parentId, rootPostId, hash, hash)
       const base = l2Values.length - 6
       l2Rows.push(
-        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 5}, $${base + 6}, 'system')`,
+        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, 'system')`,
       )
     }
     await query(
       `/* seedExplainData */ INSERT INTO posts (
         id, post_type, created_by_id, markdown, parent_post_id, root_post_id,
-        gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256,
+        gemini_embedding_2_content_sha256,
         llm_moderation_content_sha256,
         created_via
       ) VALUES ${l2Rows.join(', ')} ON CONFLICT DO NOTHING`,
@@ -63,13 +63,13 @@ export async function seedComments(): Promise<void> {
       l3Values.push(id, userId, markdown, parentId, rootPostId, hash, hash)
       const base = l3Values.length - 6
       l3Rows.push(
-        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 5}, $${base + 6}, 'system')`,
+        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, 'system')`,
       )
     }
     await query(
       `/* seedExplainData */ INSERT INTO posts (
         id, post_type, created_by_id, markdown, parent_post_id, root_post_id,
-        gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256,
+        gemini_embedding_2_content_sha256,
         llm_moderation_content_sha256,
         created_via
       ) VALUES ${l3Rows.join(', ')} ON CONFLICT DO NOTHING`,

@@ -81,21 +81,6 @@ export type BackgroundCpuJobPayloads = {
   'crawl.crawl_cleanup': { cutoffId?: string }
   'crawl.boilerplate_removal_dispatcher': Empty
   'crawl.boilerplate_removal': { hostname_id: string; parent_path: string }
-  'bedrock-embeddings.topic': DefaultEmbeddingsJobData
-  'bedrock-embeddings.post': DefaultEmbeddingsJobData
-  'bedrock-embeddings.rss_feed_item': DefaultEmbeddingsJobData
-  'bedrock-embeddings.create_topics': Empty
-  'bedrock-embeddings.create_posts': Empty
-  'bedrock-embeddings.create_rss_feed_items': Empty
-  'bedrock-embeddings.create_crawl_chunks': Empty
-  'bedrock-embeddings.create_images': Empty
-  'bedrock-embeddings.poll_batch': { batch_id: string }
-  'bedrock-embeddings.poll_dispatcher': { cursor?: BatchCursor }
-  'bedrock-embeddings.creation_dispatcher': { cursor?: BatchCursor }
-  'bedrock-embeddings.backlog_dispatcher': { cursor?: BatchCursor }
-  'bedrock-embeddings.stale_cleanup_dispatcher': { cursor?: BatchCursor }
-  'bedrock-embeddings.reconcile_existing': { entityType: ReconciliationEntityType; after?: string }
-  'bedrock-embeddings.post_trigger_recovery': { after?: string }
   'gemini-embeddings.topic': DefaultEmbeddingsJobData
   'gemini-embeddings.post': DefaultEmbeddingsJobData
   'gemini-embeddings.rss_feed_item': DefaultEmbeddingsJobData

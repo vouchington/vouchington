@@ -35,18 +35,18 @@ export async function seedPublicationScopePages(): Promise<void> {
   )
   await query(
     `/* seedPublicationScopePages:topic */
-    INSERT INTO topics (id, name, slug, created_via, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-    VALUES ($1, 'Scope seed', 'seed-publication-scope', 'system', decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex')),
-      ($2, 'Scope negative', 'seed-publication-scope-negative', 'system', decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex')) ON CONFLICT DO NOTHING`,
+    INSERT INTO topics (id, name, slug, created_via, gemini_embedding_2_content_sha256)
+    VALUES ($1, 'Scope seed', 'seed-publication-scope', 'system', decode(repeat('00',32),'hex')),
+      ($2, 'Scope negative', 'seed-publication-scope-negative', 'system', decode(repeat('00',32),'hex')) ON CONFLICT DO NOTHING`,
     [s.topic, s.negativeTopic],
   )
   await query(
     `/* seedPublicationScopePages:mergedSources */
     INSERT INTO topics (id,name,slug,created_via,gemini_embedding_2_content_sha256,
-      merged_into_topic_id,merged_at,merged_by_id, bedrock_nova_multimodal_v1_content_sha256)
+      merged_into_topic_id,merged_at,merged_by_id)
     SELECT ('019e0000-ea00-7000-8000-'||lpad(to_hex(n),12,'0'))::uuid,
       'Scope merged '||n,'seed-publication-scope-merged-'||n,'system',decode(repeat('00',32),'hex'),$1,CURRENT_TIMESTAMP,$2
-    , decode(repeat('00',32),'hex') FROM generate_series(0,$3::int-1) n ON CONFLICT DO NOTHING`,
+    FROM generate_series(0,$3::int-1) n ON CONFLICT DO NOTHING`,
     [s.topic, s.author, s.count],
   )
   await query(
@@ -70,8 +70,8 @@ export async function seedPublicationScopePages(): Promise<void> {
   )
   await query(
     `/* seedPublicationScopePages:item */
-    INSERT INTO rss_feed_items (id,url_id,data,gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-    VALUES ($1,$2,'{}'::jsonb,decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex')) ON CONFLICT DO NOTHING`,
+    INSERT INTO rss_feed_items (id,url_id,data,gemini_embedding_2_content_sha256)
+    VALUES ($1,$2,'{}'::jsonb,decode(repeat('00',32),'hex')) ON CONFLICT DO NOTHING`,
     [s.item, s.url],
   )
   await query(
@@ -83,17 +83,17 @@ export async function seedPublicationScopePages(): Promise<void> {
   await query(
     `/* seedPublicationScopePages:root */
     INSERT INTO posts (id, created_by_id, community_id, post_type, title, markdown, created_via,
-      gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-    VALUES ($1,$2,$3,'discussion','Scope seed','Scope seed','system',decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'), decode(repeat('00',32),'hex')) ON CONFLICT DO NOTHING`,
+      gemini_embedding_2_content_sha256, llm_moderation_content_sha256)
+    VALUES ($1,$2,$3,'discussion','Scope seed','Scope seed','system',decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex')) ON CONFLICT DO NOTHING`,
     [s.root, s.author, s.community],
   )
   await query(
     `/* seedPublicationScopePages:posts */
     INSERT INTO posts (id, created_by_id, community_id, post_type, title, markdown, created_via,
-      parent_post_id, root_post_id, gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+      parent_post_id, root_post_id, gemini_embedding_2_content_sha256, llm_moderation_content_sha256)
     SELECT ('019e0000-e500-7000-8000-' || lpad(to_hex(n),12,'0'))::uuid,
       $1,$2,'comment','Scope seed','Scope seed','system',$3,$3,decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex')
-    , decode(repeat('00',32),'hex') FROM generate_series(0,$4::int-1) n ON CONFLICT DO NOTHING`,
+    FROM generate_series(0,$4::int-1) n ON CONFLICT DO NOTHING`,
     [s.author, s.community, s.root, s.count],
   )
   await query(

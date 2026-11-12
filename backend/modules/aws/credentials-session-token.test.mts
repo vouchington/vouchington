@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  getBedrockCredentials,
-  getFirehoseCredentials,
-  getSESCredentials,
-  getS3Credentials,
-} from './credentials.mts'
+import { getFirehoseCredentials, getSESCredentials, getS3Credentials } from './credentials.mts'
 import { setupCredentialEnv } from '@voucha/test-helpers/modules/aws/credentials-fixtures'
 
 describe('credentials', () => {
@@ -29,18 +24,6 @@ describe('credentials', () => {
       setEnv('AWS_SESSION_TOKEN', 'sts-session-token')
 
       expect(getSESCredentials()).toEqual({
-        accessKeyId: 'sts-akid',
-        secretAccessKey: 'sts-secret',
-        sessionToken: 'sts-session-token',
-      })
-    })
-
-    it('getBedrockCredentials includes sessionToken when AWS_SESSION_TOKEN is set (STS / OIDC)', () => {
-      setEnv('AWS_ACCESS_KEY_ID', 'sts-akid')
-      setEnv('AWS_SECRET_ACCESS_KEY', 'sts-secret')
-      setEnv('AWS_SESSION_TOKEN', 'sts-session-token')
-
-      expect(getBedrockCredentials()).toEqual({
         accessKeyId: 'sts-akid',
         secretAccessKey: 'sts-secret',
         sessionToken: 'sts-session-token',
@@ -98,18 +81,6 @@ describe('credentials', () => {
       expect(getSESCredentials()).toEqual({
         accessKeyId: 'ses-akid',
         secretAccessKey: 'ses-secret',
-      })
-    })
-
-    it('does not pair Bedrock-specific keys with an unrelated global AWS_SESSION_TOKEN', () => {
-      setEnv('BEDROCK_AWS_ACCESS_KEY_ID', 'bedrock-akid')
-      setEnv('BEDROCK_AWS_SECRET_ACCESS_KEY', 'bedrock-secret')
-      setEnv('BEDROCK_AWS_SESSION_TOKEN', undefined)
-      setEnv('AWS_SESSION_TOKEN', 'unrelated-oidc-session-token')
-
-      expect(getBedrockCredentials()).toEqual({
-        accessKeyId: 'bedrock-akid',
-        secretAccessKey: 'bedrock-secret',
       })
     })
 

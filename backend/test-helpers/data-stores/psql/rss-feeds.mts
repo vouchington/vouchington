@@ -17,8 +17,8 @@ export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
 
   const { rows: topicRows } = await write<{ id: string }>(
     sql`/* insertLocalTestRssFeedTopic */
-    INSERT INTO topics (name, slug, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
-    VALUES (${`Test Feed Topic ${random}`}, ${`test-feed-topic-${random}`}, ${embeddingSha256}, 'system', ${embeddingSha256})
+    INSERT INTO topics (name, slug, gemini_embedding_2_content_sha256, created_via)
+    VALUES (${`Test Feed Topic ${random}`}, ${`test-feed-topic-${random}`}, ${embeddingSha256}, 'system')
     RETURNING id
   `,
   )

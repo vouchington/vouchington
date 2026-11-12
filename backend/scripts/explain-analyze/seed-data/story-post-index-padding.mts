@@ -21,10 +21,10 @@ export async function seedStoryPostIndexPadding(initiatedById: string): Promise<
   await query(
     `/* seedStoryPostIndexPadding:posts */ INSERT INTO posts (
        id, created_via, post_type, title, created_by_id, approved_at,
-       gemini_embedding_2_content_sha256, llm_moderation_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+       gemini_embedding_2_content_sha256, llm_moderation_content_sha256)
      SELECT id, 'system', 'story', 'Story post index padding', $2, CURRENT_TIMESTAMP,
        decode(repeat('ab', 32), 'hex'), decode(repeat('ab', 32), 'hex')
-     , decode(repeat('ab', 32), 'hex') FROM UNNEST($1::uuid[]) AS seed(id)`,
+     FROM UNNEST($1::uuid[]) AS seed(id)`,
     [postIds, initiatedById],
   )
   await query(

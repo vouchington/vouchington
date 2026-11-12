@@ -8,7 +8,7 @@ on:
   workflow_call:
     inputs:
       provider:
-        description: 'Provider to run: all, bedrock, openai, openrouter, anthropic, or lightpanda'
+        description: 'Provider to run: all, openai, openrouter, anthropic, or lightpanda'
         required: false
         type: string
         default: all
@@ -24,8 +24,6 @@ on:
         required: false
       OPENROUTER_API_KEY:
         required: false
-      AWS_TEST_ROLE_ARN:
-        required: false
   workflow_dispatch:
     inputs:
       provider:
@@ -33,7 +31,7 @@ on:
         required: true
         type: choice
         default: all
-        options: [all, bedrock, openai, openrouter, anthropic, lightpanda]
+        options: [all, openai, openrouter, anthropic, lightpanda]
 
 permissions:
   contents: read
@@ -49,55 +47,6 @@ jobs:
     permissions:
       actions: read
       contents: read
-
-  backend-bedrock:
-    if: ${{ !cancelled() && !failure() && (inputs.provider == 'all' || inputs.provider == 'bedrock') }}
-    permissions:
-      contents: read
-      id-token: write
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
-    env:
-      AWS_REGION: us-west-2
-      BEDROCK_AWS_REGION: us-east-1
-      VITEST_MAX_WORKERS: '3'
-      VITEST_DIAGNOSTICS: ${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 3
-        with:
-          fetch-depth: 1
-          persist-credentials: false
-      - uses: ./.github/actions/setup-backend
-        timeout-minutes: 6
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@8a48840ca216dfaa119d6cacd2789cb3c0dcdba1 # v2.0.0
-        timeout-minutes: 2
-        with:
-          role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
-          aws-region: us-west-2
-          action-timeout-s: 90
-      - name: Run Bedrock live tests
-        env:
-          GIT_COMMIT: ${{ github.sha }}
-          CI_PROJECT: backend-credentialed
-          VITEST_CI_REPORTERS: run
-          VITEST_JUNIT_OUTPUT_FILE: backend-bedrock-test-report.junit.xml
-          VITEST_COVERAGE_ENABLED: 'false'
-        run: |
-          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-bedrock
-        timeout-minutes: 5
-      - name: Upload Bedrock JUnit report
-        if: ${{ !cancelled() }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          overwrite: true
-          name: backend-live-junit-bedrock
-          path: backend-bedrock-test-report.junit.xml
-          retention-days: 1
-          if-no-files-found: warn
 
   backend-openai:
     if: ${{ !cancelled() && !failure() && (inputs.provider == 'all' || inputs.provider == 'openai') }}

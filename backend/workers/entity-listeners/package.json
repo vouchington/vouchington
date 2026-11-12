@@ -23,7 +23,6 @@
     "@queues/ai-agents": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/background-cpu": "workspace:^",
-    "@queues/bedrock-embeddings": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@queues/crawl-dispatch": "workspace:^",
     "@queues/crawler": "workspace:^",

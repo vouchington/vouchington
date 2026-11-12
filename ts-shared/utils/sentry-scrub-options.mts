@@ -12,7 +12,6 @@ const CREDENTIAL_HEADER_NAMES: readonly string[] = Object.freeze([
   'x-api-key',
   'cf-access-jwt-assertion',
   'x-cf-worker-secret',
-  'x-bedrock-batch-shared-key',
   'x-voucha-cache-purge-secret',
   'x-app-attest-assertion',
   'x-app-attest-nonce',

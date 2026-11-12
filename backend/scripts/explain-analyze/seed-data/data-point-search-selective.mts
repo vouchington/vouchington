@@ -21,20 +21,20 @@ export async function seedSelectiveDataPointMatches(createdById: string): Promis
   const query = transaction
   await query(
     `/* seedSelectiveDataPointMatches:topic */ INSERT INTO topics (
-       id, name, slug, created_via, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
+       id, name, slug, created_via, gemini_embedding_2_content_sha256)
      VALUES ($1, 'Selective data point', 'selective-data-point-search', 'system',
-       decode(repeat('ab', 32), 'hex'), decode(repeat('ab', 32), 'hex'))`,
+       decode(repeat('ab', 32), 'hex'))`,
     [SELECTIVE_TOPIC_ID],
   )
   await query(
     `/* seedSelectiveDataPointMatches:posts */ INSERT INTO posts (
        id, created_via, post_type, title, created_by_id, approved_at,
        gemini_embedding_2_content_sha256, llm_moderation_content_sha256,
-       data_point_vertical, structured_data, votes_score_up, bedrock_nova_multimodal_v1_content_sha256)
+       data_point_vertical, structured_data, votes_score_up)
      SELECT id, 'system', 'data_point', 'Selective data point', $2, CURRENT_TIMESTAMP,
        decode(repeat('ab', 32), 'hex'), decode(repeat('ab', 32), 'hex'),
        'bank_account', '{"result":"pending","credit_score_range":"800-850"}'::jsonb, 1
-     , decode(repeat('ab', 32), 'hex') FROM UNNEST($1::uuid[]) AS seed(id)`,
+     FROM UNNEST($1::uuid[]) AS seed(id)`,
     [postIds, createdById],
   )
   await query(
