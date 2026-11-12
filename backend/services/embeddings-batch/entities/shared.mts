@@ -2,26 +2,31 @@ import { EMBEDDING_COLUMNS, EMBEDDINGS_TABLE } from '@services/embeddings/config
 
 export type PendingEntity = {
   id: string
+  title?: string
   content: string
   content_sha256: Buffer
 }
 
-type EntityContentTransformer<TRow> = (
-  row: TRow,
-) =>
-  | { content: string; content_sha256: Buffer }
-  | Promise<{ content: string; content_sha256: Buffer }>
+type EmbeddingContent = {
+  title?: string
+  body?: string
+  content: string
+  content_sha256: Buffer
+}
+
+type EntityContentTransformer<TRow> = (row: TRow) => EmbeddingContent | Promise<EmbeddingContent>
 
 export async function* streamPendingEntities<TRow extends { id: string }>(
   rows: AsyncIterable<TRow>,
   contentTransformer: EntityContentTransformer<TRow>,
 ): AsyncGenerator<PendingEntity, void, unknown> {
   for await (const row of rows) {
-    const { content, content_sha256 } = await contentTransformer(row)
+    const { title, body, content, content_sha256 } = await contentTransformer(row)
 
     yield {
       id: row.id,
-      content,
+      ...(title === undefined ? {} : { title }),
+      content: body ?? content,
       content_sha256,
     }
   }

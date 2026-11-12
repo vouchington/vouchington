@@ -32,6 +32,11 @@ describe('Vertex batch result ingestion', () => {
     await Promise.all(directories.splice(0).map(directory => rm(directory, { recursive: true })))
   })
   it('recovers the submitted body hash and provider token count while skipping rejected provider rows', async () => {
+    const hash = sha256('submitted full body')
+    const manifest = new Map([
+      ['topic:id', hash],
+      ['topic:bad', sha256('failed body')],
+    ])
     const file = await results([row(), { key: 'topic:bad', status: { code: 400 } }])
     const saved: BatchUpdateItem[][] = []
     await processBatchResultsInBatches(
@@ -41,12 +46,13 @@ describe('Vertex batch result ingestion', () => {
       },
       1,
       'topics',
+      manifest,
     )
     expect(saved).toEqual([
       [
         {
           entity_id: 'id',
-          content_sha256: sha256('original body'),
+          content_sha256: hash,
           embedding: vector,
           input_token_count: 7,
         },
@@ -56,19 +62,20 @@ describe('Vertex batch result ingestion', () => {
   it('rejects a malformed successful vector instead of acknowledging incomplete ingestion', async () => {
     const file = await results([{ ...row(), response: { embedding: { values: ['bad'] } } }])
     await expect(
-      processBatchResultsInBatches(file, async () => undefined, 1, 'topics'),
+      processBatchResultsInBatches(
+        file,
+        async () => undefined,
+        1,
+        'topics',
+        new Map([['topic:id', sha256('body')]]),
+      ),
     ).rejects.toThrow('Malformed successful Vertex batch result')
   })
-  it('preserves the original image hash encoded into its GCS object path', async () => {
+  it('uses the submitted image hash without inspecting an echoed request', async () => {
     const hash = 'ab'.repeat(32)
     const file = await results([
       {
         key: 'image:id',
-        request: {
-          content: {
-            parts: [{ fileData: { fileUri: `gs://synthetic/job/images/id/${hash}.jpeg` } }],
-          },
-        },
         response: { embedding: { values: vector } },
       },
     ])
@@ -79,6 +86,7 @@ describe('Vertex batch result ingestion', () => {
         saved.push(updates)
       },
       1,
+      new Map([['image:id', Buffer.from(hash, 'hex')]]),
     )
     expect(saved).toEqual([
       [{ entity_id: 'id', image_sha_256: Buffer.from(hash, 'hex'), embedding: vector }],
@@ -93,6 +101,8 @@ describe('Vertex batch result ingestion', () => {
           throw new Error('synthetic write failure')
         },
         1,
+        'topics',
+        new Map([['topic:id', sha256('body')]]),
       ),
     ).rejects.toThrow('synthetic write failure')
   })
@@ -106,6 +116,8 @@ describe('Vertex batch result ingestion', () => {
           applied++
         },
         1,
+        'topics',
+        new Map([['topic:id', sha256('body')]]),
       ),
     ).rejects.toThrow(SyntaxError)
     expect(applied).toBe(1)
@@ -113,7 +125,13 @@ describe('Vertex batch result ingestion', () => {
   it('rejects a key for a different table', async () => {
     const file = await results([row('post:id')])
     await expect(
-      processBatchResultsInBatches(file, async () => undefined, 1, 'topics'),
+      processBatchResultsInBatches(
+        file,
+        async () => undefined,
+        1,
+        'topics',
+        new Map([['post:id', sha256('body')]]),
+      ),
     ).rejects.toThrow('wrong entity type')
   })
 })

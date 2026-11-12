@@ -46,7 +46,6 @@
     "@queues/ai-agents": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@services/topic-recommendations": "workspace:^",
-    "@services/urls": "workspace:^",
     "@types/pg-copy-streams": "^1.2.5",
     "@voucha/test-helpers": "workspace:^"
   }

@@ -16,7 +16,7 @@ import { creationSubmissionAdmission } from './submission-admission.mts'
 import type { BatchJobType } from '@services/embeddings/batch/types'
 import { getBatchCreationLimits } from '@services/embeddings-batch/rate-limits'
 
-type BatchEntity = { id: string; content: string; content_sha256: Buffer }
+type BatchEntity = { id: string; title?: string; content: string; content_sha256: Buffer }
 
 const defaultBatchCreationDependencies: BatchCreationDependencies = {
   getBatchCreationLimits,
@@ -33,6 +33,7 @@ async function streamEntityBatchUntilLimit<T extends BatchEntity>(
     const added = await fileBuilder.addEntityIfFits(
       {
         entity_id: entity.id,
+        title: entity.title,
         content: entity.content,
         content_sha256: entity.content_sha256,
       },

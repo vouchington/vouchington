@@ -1,3 +1,4 @@
+import { createEmbeddingDocumentHash } from '@voucha/types/embedding-content'
 import type { Post, CreatePostUpdates } from '@services/posts/types'
 import { sha256 } from '@modules/utils'
 
@@ -75,18 +76,15 @@ export const createPostTextEmbeddingContent = (
   const structuredDataText =
     'structured_data' in post ? getStructuredDataUserText(post.structured_data) : ''
   const topicRecommendationContent = createTopicRecommendationEmbeddingContent(post)
-  const content = [
-    title,
-    markdown,
-    aiSummaryMarkdown,
-    structuredDataText,
-    topicRecommendationContent,
-  ]
+  const body = [markdown, aiSummaryMarkdown, structuredDataText, topicRecommendationContent]
     .filter(Boolean)
     .join('\n')
+  const content = [title, body].filter(Boolean).join('\n')
   return {
     content,
-    content_sha256: sha256(content),
+    title,
+    body,
+    content_sha256: createEmbeddingDocumentHash(body, title),
   }
 }
 

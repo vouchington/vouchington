@@ -1,3 +1,4 @@
+import { hashBedrockEmbeddingContent } from '@voucha/test-helpers/bedrock-legacy-embedding-content'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { makeRandomEmbedding } from '@voucha/test-helpers/bedrock-legacy'
@@ -14,9 +15,13 @@ describe('upsertRssFeedItemEmbedding', () => {
       title: `Bedrock rss item processor ${randomUUID()}`,
       description: 'Feed item body reusing a centralized cached embedding.',
     }
-    const { content_sha256 } = createRssFeedItemEmbeddingContent(data)
+    const { content, content_sha256 } = createRssFeedItemEmbeddingContent(data)
     await insertTestCentralizedEmbeddingsBulk([
-      { content_sha256, embedding: makeRandomEmbedding(), input_token_count: 5 },
+      {
+        content_sha256: hashBedrockEmbeddingContent(content),
+        embedding: makeRandomEmbedding(),
+        input_token_count: 5,
+      },
     ])
 
     const result = await upsertRssFeedItemEmbedding({ id: randomUUID(), data } as ViewRssFeedItem)

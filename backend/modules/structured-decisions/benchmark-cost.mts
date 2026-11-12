@@ -4,6 +4,7 @@ import type {
   StructuredDecisionRequest,
   StructuredDecisionResult,
 } from '@vouchington/ai/structured-decisions'
+import { estimateTokens } from '@modules/utils'
 
 export function observedJevCost(
   config: BenchmarkConfig,
@@ -55,8 +56,4 @@ function usageTokens(
 ): number | null {
   const value = result.usage?.[primary] ?? result.usage?.[fallback]
   return typeof value === 'number' && Number.isFinite(value) ? value : null
-}
-
-function estimateTokens(value: string): number {
-  return Math.ceil(value.length / 4)
 }

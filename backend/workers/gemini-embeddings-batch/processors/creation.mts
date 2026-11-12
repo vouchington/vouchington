@@ -1,3 +1,4 @@
+import type { PendingEntity } from '@services/embeddings-batch/entities/shared'
 import { channel } from 'node:diagnostics_channel'
 import { parseEmbeddingScanCursor } from '@queues/gemini-embeddings-batch/payload/job-payload'
 import type { EmbeddingScanCursor } from '@queues/gemini-embeddings-batch/types'
@@ -73,7 +74,7 @@ export async function processEmbeddingCreationJob(
           streamPending: options => streamPendingImages({ ...options, cursor }),
           addImageToBatch,
         })
-      return await processBatchCreation({
+      return await processBatchCreation<PendingEntity>({
         cursor,
         reEnqueue,
         isLeaseHeld: () => lease.isHeld,

@@ -5728,9 +5728,6 @@ importers:
       '@jongleberry/vurst-markdown':
         specifier: ^0.4.3
         version: 0.4.3
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
@@ -6967,9 +6964,6 @@ importers:
       '@services/topic-recommendations':
         specifier: workspace:^
         version: link:../topic-recommendations
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../urls
       '@types/pg-copy-streams':
         specifier: ^1.2.5
         version: 1.2.5

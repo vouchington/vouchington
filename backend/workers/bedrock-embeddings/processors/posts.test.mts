@@ -1,3 +1,4 @@
+import { hashBedrockEmbeddingContent } from '@voucha/test-helpers/bedrock-legacy-embedding-content'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -13,10 +14,10 @@ describe('upsertPostEmbedding', () => {
     const title = `Bedrock post processor ${randomUUID()}`
     const markdown = 'Post processor body reusing a centralized cached embedding.'
     const post = (await createTestPost({ title, markdown }))!
-    const { content_sha256 } = createPostTextEmbeddingContent(post)
+    const { content, content_sha256 } = createPostTextEmbeddingContent(post)
     await updatePostEmbeddingData({
       postId: post.id,
-      inputSha256: content_sha256,
+      inputSha256: hashBedrockEmbeddingContent(content),
       embedding: makeRandomEmbedding(),
       tokens: 9,
     })

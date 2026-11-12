@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { estimateTokens } from '@modules/utils'
 import { MockAgent, withMockAgentDefaultFetchForTest } from '@voucha/test-helpers/provider-http'
-import { createEmbedding } from './request.mts'
+import { buildEmbeddingContent, createEmbedding } from './request.mts'
 
 const vector = new Array(1536).fill(0.125)
+
+function expectWellFormedUnicode(value: string) {
+  expect(value).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/u)
+  expect(value).not.toMatch(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u)
+}
 
 function mockVertexIdentity(agent: MockAgent) {
   vi.stubEnv('AWS_PROFILE', undefined)
@@ -39,6 +45,31 @@ function mockVertexIdentity(agent: MockAgent) {
 describe('Vertex embedding HTTP boundary', () => {
   afterEach(() => vi.unstubAllEnvs())
 
+  it('includes the real document title and bounds the complete Unicode prompt estimate', () => {
+    const title = 'Document title '.repeat(40).trimEnd()
+    const body = '漢字🙂 article text '.repeat(1_800)
+    const content = buildEmbeddingContent(body, 'document', title).parts[0]!.text
+
+    expect(content).toContain(`title: ${title.trimEnd()} | text: `)
+    expect(content).not.toContain('title: none')
+    expect(estimateTokens(content)).toBeLessThanOrEqual(7_680)
+    expectWellFormedUnicode(content)
+    expect(content.length).toBeLessThan('title: '.length + title.length + body.length)
+    expect(buildEmbeddingContent('body').parts[0]!.text).toBe('title: none | text: body')
+
+    const query = buildEmbeddingContent('query🙂 '.repeat(4_000), 'query').parts[0]!.text
+    expect(query.startsWith('task: search result | query: ')).toBe(true)
+    expect(estimateTokens(query)).toBeLessThanOrEqual(7_680)
+  })
+
+  it('preserves a document title when an unusually long title consumes the budget', () => {
+    const content = buildEmbeddingContent('body', 'document', '🙂'.repeat(15_500)).parts[0]!.text
+
+    expect(content).toMatch(/^title: 🙂+ \| text: /u)
+    expect(estimateTokens(content)).toBeLessThanOrEqual(7_680)
+    expectWellFormedUnicode(content)
+  })
+
   it('exchanges AWS identity and embeds queries with reduced dimensions', async () => {
     const agent = new MockAgent()
     agent.disableNetConnect()
@@ -61,7 +92,46 @@ describe('Vertex embedding HTTP boundary', () => {
           { embedding: vector, tokens: 4 },
         )
       })
-      agent.assertNoPendingInterceptors()
+      expect(
+        agent
+          .pendingInterceptors()
+          .filter(item => item.origin === 'https://aiplatform.us.rep.googleapis.com'),
+      ).toEqual([])
+    } finally {
+      await agent.close()
+    }
+  })
+
+  it('threads the public document title to the actual Vertex HTTP request', async () => {
+    const agent = new MockAgent()
+    agent.disableNetConnect()
+    mockVertexIdentity(agent)
+    agent
+      .get('https://aiplatform.us.rep.googleapis.com')
+      .intercept({
+        method: 'POST',
+        path: /:embedContent$/,
+        body: JSON.stringify({
+          content: { parts: [{ text: 'title: Actual document | text: Document body' }] },
+          embedContentConfig: { outputDimensionality: 1536 },
+        }),
+      })
+      .reply(200, { embedding: { values: vector }, usageMetadata: { promptTokenCount: 9 } })
+    try {
+      await withMockAgentDefaultFetchForTest(agent, async () => {
+        await expect(
+          createEmbedding('Document body', {
+            entityType: 'post',
+            intent: 'document',
+            title: 'Actual document',
+          }),
+        ).resolves.toEqual({ embedding: vector, tokens: 9 })
+      })
+      expect(
+        agent
+          .pendingInterceptors()
+          .filter(item => item.origin === 'https://aiplatform.us.rep.googleapis.com'),
+      ).toEqual([])
     } finally {
       await agent.close()
     }
@@ -86,6 +156,34 @@ describe('Vertex embedding HTTP boundary', () => {
         )
         await expect(createEmbedding('document')).rejects.toThrow('did not include an embedding')
       })
+    } finally {
+      await agent.close()
+    }
+  })
+
+  it('rejects an online result the provider reports as truncated', async () => {
+    const agent = new MockAgent()
+    agent.disableNetConnect()
+    mockVertexIdentity(agent)
+    agent
+      .get('https://aiplatform.us.rep.googleapis.com')
+      .intercept({ method: 'POST', path: /:embedContent$/ })
+      .reply(200, {
+        embedding: { values: vector },
+        usageMetadata: { promptTokenCount: 4 },
+        truncated: true,
+      })
+    try {
+      await withMockAgentDefaultFetchForTest(agent, async () => {
+        await expect(createEmbedding('document')).rejects.toThrow(
+          'Vertex embedding input was truncated by the provider',
+        )
+      })
+      expect(
+        agent
+          .pendingInterceptors()
+          .filter(item => item.origin === 'https://aiplatform.us.rep.googleapis.com'),
+      ).toEqual([])
     } finally {
       await agent.close()
     }

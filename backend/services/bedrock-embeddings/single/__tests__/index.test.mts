@@ -4,7 +4,7 @@ import { UnrecoverableError } from '@vouchington/queue-errors'
 import { insertCentralizedEmbeddingsBulk } from '../../centralized-table.mts'
 import { lookupExistingEmbedding } from '../../lookup.mts'
 import { addEmbeddingHashesToBloomFilter } from '../../bloom-filter/bloom-filter.mts'
-import { createTopicEmbeddingContent } from '@voucha/types/entities/topic'
+import { createBedrockTopicEmbeddingContent } from '@voucha/test-helpers/bedrock-legacy-embedding-content'
 import {
   createTestBatch,
   createTestUserDirect,
@@ -41,7 +41,7 @@ describe('createSingleEmbedding', () => {
     const user = await createTestUserDirect()
     const suffix = randomUUID().slice(0, 8)
     const name = `Cache Hit ${suffix}`
-    const { content, content_sha256 } = createTopicEmbeddingContent({ name })
+    const { content, content_sha256 } = createBedrockTopicEmbeddingContent({ name })
     const topicId = await insertTestTopic({
       name,
       slug: `cache-hit-${suffix}`,
@@ -63,7 +63,7 @@ describe('createSingleEmbedding', () => {
     const user = await createTestUserDirect()
     const suffix = randomUUID().slice(0, 8)
     const name = `Bad Vector ${suffix}`
-    const { content, content_sha256 } = createTopicEmbeddingContent({ name })
+    const { content, content_sha256 } = createBedrockTopicEmbeddingContent({ name })
     const topicId = await insertTestTopic({
       name,
       slug: `bad-vector-${suffix}`,
@@ -90,7 +90,7 @@ describe('createSingleEmbedding', () => {
     const user = await createTestUserDirect()
     const suffix = randomUUID().slice(0, 8)
     const name = `Bad Element ${suffix}`
-    const { content, content_sha256 } = createTopicEmbeddingContent({ name })
+    const { content, content_sha256 } = createBedrockTopicEmbeddingContent({ name })
     const topicId = await insertTestTopic({
       name,
       slug: `bad-element-${suffix}`,
@@ -119,7 +119,7 @@ describe('createSingleEmbedding', () => {
     const user = await createTestUserDirect()
     const suffix = randomUUID().slice(0, 8)
     const name = `Bedrock Hit ${suffix}`
-    const { content, content_sha256 } = createTopicEmbeddingContent({ name })
+    const { content, content_sha256 } = createBedrockTopicEmbeddingContent({ name })
     const topicId = await insertTestTopic({
       name,
       slug: `bedrock-hit-${suffix}`,
@@ -165,10 +165,10 @@ describe('createSingleEmbedding', () => {
     async ({ cached, sameInput }) => {
       const user = await createTestUserDirect()
       const name = `Token Provenance ${randomUUID()}`
-      const { content, content_sha256 } = createTopicEmbeddingContent({ name })
+      const { content, content_sha256 } = createBedrockTopicEmbeddingContent({ name })
       const oldHash = sameInput
         ? content_sha256
-        : createTopicEmbeddingContent({ name: `${name} old` }).content_sha256
+        : createBedrockTopicEmbeddingContent({ name: `${name} old` }).content_sha256
       const topicId = await insertTestTopic({
         name,
         slug: `token-provenance-${randomUUID()}`,

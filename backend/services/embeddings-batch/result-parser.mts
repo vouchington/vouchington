@@ -1,9 +1,8 @@
-import { sha256 } from '@modules/utils'
 import { EMBEDDING_DIMENSION } from '@services/embeddings/config'
 
 export type VertexBatchResultLine = {
   key?: string
-  request?: { content?: { parts?: Array<{ text?: string; fileData?: { fileUri?: string } }> } }
+  request?: unknown
   response?: { embedding?: { values?: unknown }; tokenCount?: string | number }
   status?: unknown
   error?: unknown
@@ -13,11 +12,9 @@ export type VertexBatchResultLine = {
 type ParsedBatchResult = {
   entityId: string
   entityType: string
-  hash: Buffer
   embedding: number[]
   inputTokenCount: number | null
 }
-const DOCUMENT_PREFIX = 'title: none | text: '
 
 export function isVertexBatchFailure(value: VertexBatchResultLine): boolean {
   if (!value || typeof value !== 'object') return false
@@ -45,23 +42,14 @@ export function parseBatchResult(value: VertexBatchResultLine): ParsedBatchResul
     !embedding.every((entry: unknown) => typeof entry === 'number' && Number.isFinite(entry))
   )
     return null
-  const parts = value.request?.content?.parts
-  if (!parts || parts.length !== 1) return null
-  const part = parts[0]!
-  let hash: Buffer
-  if (entityType === 'image') {
-    const uri = part.fileData?.fileUri
-    const match =
-      typeof uri === 'string'
-        ? /\/images\/([^/]+)\/([a-f0-9]{64})\.(?:jpeg|png|webp)$/.exec(uri)
-        : null
-    if (!match || match[1] !== entityId) return null
-    hash = Buffer.from(match[2]!, 'hex')
-  } else {
-    if (typeof part.text !== 'string' || !part.text.startsWith(DOCUMENT_PREFIX)) return null
-    hash = sha256(part.text.slice(DOCUMENT_PREFIX.length))
+  const rawTokenCount = value.response?.tokenCount
+  let inputTokenCount: number | null = null
+  if (rawTokenCount !== undefined) {
+    if (typeof rawTokenCount !== 'string' && typeof rawTokenCount !== 'number') return null
+    if (typeof rawTokenCount === 'string' && !/^\d+$/u.test(rawTokenCount)) return null
+    const count = Number(rawTokenCount)
+    if (!Number.isSafeInteger(count) || count < 0) return null
+    inputTokenCount = count
   }
-  const count = value.response?.tokenCount === undefined ? null : Number(value.response.tokenCount)
-  const inputTokenCount = count !== null && Number.isSafeInteger(count) && count >= 0 ? count : null
-  return { entityId, entityType, hash, embedding: embedding as number[], inputTokenCount }
+  return { entityId, entityType, embedding: embedding as number[], inputTokenCount }
 }

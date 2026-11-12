@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createTopicEmbeddingContent } from '@voucha/types/entities/topic'
 
 type PublisherTopic = {
   name: string
@@ -23,14 +23,12 @@ const CHILDREN: PublisherTopic[] = [
   { name: 'Review', slug: 'review', aliases: ['Reviews Site'] },
 ]
 
-function textToSha256Hex(text: string): string {
-  return createHash('sha256').update(text).digest('hex')
-}
-
 function topicContentHash(name: string, aliases: string[] = []): string {
-  const normalizedAliases = aliases.map(a => a.toLowerCase())
-  const content = `${name}\n${normalizedAliases.join(' ')}\n`
-  return textToSha256Hex(content)
+  // The alias projection stores a distinct lowercase set in lexical order.
+  const normalizedAliases = [...new Set(aliases.map(alias => alias.toLowerCase()))].toSorted()
+  return createTopicEmbeddingContent({ name, aliases: normalizedAliases }).content_sha256.toString(
+    'hex',
+  )
 }
 
 function escapeSqlString(str: string): string {

@@ -11,7 +11,12 @@ export type EmbeddingImageInput = {
   format: 'jpeg' | 'png' | 'webp'
   bytes: string
 }
-export type EmbeddingTextInput = { entity_id: string; content: string; content_sha256: Buffer }
+export type EmbeddingTextInput = {
+  entity_id: string
+  title?: string
+  content: string
+  content_sha256: Buffer
+}
 const KEY_TYPES: Record<BatchJobType, string> = {
   topics: 'topic',
   posts: 'post',
@@ -37,7 +42,7 @@ export function createEmbeddingTextRecordLine(
   return JSON.stringify({
     key: `${KEY_TYPES[jobType]}:${entity.entity_id}`,
     request: {
-      content: buildEmbeddingContent(entity.content),
+      content: buildEmbeddingContent(entity.content, 'document', entity.title),
       embed_content_config: { output_dimensionality: 1536 },
     },
   })

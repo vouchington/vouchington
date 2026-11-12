@@ -13,9 +13,9 @@ import { finalizeChunksIfCompleteForMany } from '@services/crawl-chunks/cleanup'
 export const processBatchResultsInBatches = async (
   filePath: string,
   applyUpdates: (updates: BatchUpdateItem[]) => Promise<void>,
-  batchSize: number = 1000,
-  jobType?: Exclude<BatchJobType, 'images'>,
-  manifest?: ReadonlyMap<string, Buffer>,
+  batchSize: number,
+  jobType: Exclude<BatchJobType, 'images'>,
+  manifest: ReadonlyMap<string, Buffer>,
 ): Promise<void> => {
   let updates: BatchUpdateItem[] = []
 
@@ -33,11 +33,13 @@ export const processBatchResultsInBatches = async (
       rss_feed_items: 'rss_feed_item',
       crawl_chunks: 'crawl_chunk',
     }
-    if (jobType && parsed.entityType !== expected[jobType])
+    if (parsed.entityType !== expected[jobType])
       throw new Error('Vertex result key has the wrong entity type')
+    const contentSha256 = manifest.get(result.key!)
+    if (!contentSha256) throw new Error('Missing submitted Vertex result manifest hash')
     updates.push({
       entity_id: parsed.entityId,
-      content_sha256: manifest?.get(result.key!) ?? parsed.hash,
+      content_sha256: contentSha256,
       embedding: parsed.embedding,
       input_token_count: parsed.inputTokenCount,
     })
@@ -53,8 +55,8 @@ export const processBatchResultsInBatches = async (
 export const processImageBatchResultsInBatches = async (
   filePath: string,
   applyUpdates: (updates: ImageBatchUpdateItem[]) => Promise<unknown>,
-  batchSize: number = 1000,
-  manifest?: ReadonlyMap<string, Buffer>,
+  batchSize: number,
+  manifest: ReadonlyMap<string, Buffer>,
 ): Promise<void> => {
   let updates: ImageBatchUpdateItem[] = []
 
@@ -66,9 +68,11 @@ export const processImageBatchResultsInBatches = async (
     }
 
     if (parsed.entityType !== 'image') throw new Error('Expected an image Vertex result')
+    const imageSha256 = manifest.get(result.key!)
+    if (!imageSha256) throw new Error('Missing submitted Vertex image result manifest hash')
     updates.push({
       entity_id: parsed.entityId,
-      image_sha_256: manifest?.get(result.key!) ?? parsed.hash,
+      image_sha_256: imageSha256,
       embedding: parsed.embedding,
     })
     if (updates.length >= batchSize) {

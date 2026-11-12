@@ -15,6 +15,7 @@ import { gcsUri, uploadGcsImage } from '../gcs.mts'
 import { csvEscape } from './csv.mts'
 type BatchFileEntity = {
   entity_id: string
+  title?: string
   content: string
   content_sha256: Buffer
 }

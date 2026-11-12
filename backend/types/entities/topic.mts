@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createEmbeddingDocumentHash } from '../embedding-content.mts'
 import type { PublicContentProvenance, StaffContentProvenance } from './content-provenance.mts'
 import type { BasicUser, ImagePlacementTuple } from './user.mts'
 
@@ -190,11 +190,15 @@ export type TopicElection = {
 // depends on @voucha/types) by hashing directly with node:crypto.
 export function createTopicEmbeddingContent(
   topic: Topic | { name: string; markdown?: string; aliases?: string[] },
-): { content: string; content_sha256: Buffer } {
-  const aliases = topic.aliases ?? []
-  const content = `${topic.name}\n${aliases.join(' ')}\n${topic.markdown || ''}`
+): { title: string; body: string; content: string; content_sha256: Buffer } {
+  const aliases = [...new Set(topic.aliases ?? [])].toSorted()
+  const title = topic.name
+  const body = `${aliases.join(' ')}\n${topic.markdown || ''}`
+  const content = `${title}\n${body}`
   return {
+    title,
+    body,
     content,
-    content_sha256: createHash('sha256').update(content).digest(),
+    content_sha256: createEmbeddingDocumentHash(body, title),
   }
 }
