@@ -56225,7 +56225,7 @@
           "ordinalPosition": 12
         },
         "ingestion_generation": {
-          "comment": "Recovery attempt generation fencing stale result writers; every chunk and terminal transition verifies this value.",
+          "comment": "Revision advanced by ingestion claims and committed chunks; every writer and terminal transition verifies the current revision.",
           "dataType": "integer",
           "defaultExpression": "0",
           "generated": null,
