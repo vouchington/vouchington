@@ -1,7 +1,8 @@
+import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
 import { processBatchCreation } from './utils.mts'
 import { minimumTextBatchSizeMB } from '@services/embeddings/batch/input-size-limits'
-import { describe, expect, it, vi } from 'vitest'
-import { processImageBatchCreation } from './image-batch-creation.mts'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { processImageBatchCreation as processActualImageBatchCreation } from './image-batch-creation.mts'
 import { getBatchCreationLimits } from './rate-limits.mts'
 import { createBatch } from './orchestrator/create.mts'
 import { addImageToBatch, streamPendingImages } from './entities/images.mts'
@@ -9,6 +10,15 @@ import { getEmbeddingCreationRetryDelayMs } from '@services/embeddings/batch/con
 import type { EmbeddingScanCursor } from '@queues/gemini-embeddings-batch/types'
 
 describe('minimum image capacity', () => {
+  let fixture: ReturnType<typeof createVertexHttpFixture>
+  const processImageBatchCreation: typeof processActualImageBatchCreation = (
+    params,
+    dependencies,
+  ) => fixture.run(() => processActualImageBatchCreation(params, dependencies))
+  beforeEach(() => {
+    fixture = createVertexHttpFixture()
+    fixture.batchCreationResponses()
+  })
   it('leaves cloud-failure retry to the current job without spawning a continuation', async () => {
     const ids = [crypto.randomUUID(), crypto.randomUUID()]
     const cursor = { sweepStartedAt: new Date().toISOString(), afterId: ids[1] }
@@ -56,7 +66,7 @@ describe('minimum image capacity', () => {
 
   it.each([
     { maxRecords: 2, maxSizeMB: 32 },
-    { maxRecords: 10, maxSizeMB: 5 },
+    { maxRecords: 10, maxSizeMB: 1 / 1024 / 1024 },
   ])(
     'delays the current partial continuation before scanning when capacity is insufficient: %j',
     async capacity => {

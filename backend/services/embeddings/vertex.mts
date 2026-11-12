@@ -61,10 +61,10 @@ async function exchangeAwsIdentity(): Promise<{ token: string; expiresAt: number
   const signal = AbortSignal.timeout(30_000)
   const auth = createAuth()
   const subjectToken = await untilAborted(auth.retrieveSubjectToken(), signal)
-  const fetch = getProviderFetch('gemini_embeddings_enabled')
+  const providerFetch = getProviderFetch('gemini_embeddings_enabled')
   // Keep both STS and IAM on the same provider transport. AwsClient's built-in refresh
   // constructs its STS transporter separately from the configured IAM transporter.
-  const sts = await fetch('https://sts.googleapis.com/v1/token', {
+  const sts = await providerFetch('https://sts.googleapis.com/v1/token', {
     method: 'POST',
     signal,
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -84,7 +84,7 @@ async function exchangeAwsIdentity(): Promise<{ token: string; expiresAt: number
   const identity = (await sts.json()) as { access_token?: string }
   if (!identity.access_token) throw new Error('Google STS returned no access token')
   const serviceAccount = requireVertexEnvironment('VERTEX_SERVICE_ACCOUNT_EMAIL')
-  const iam = await fetch(
+  const iam = await providerFetch(
     `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${encodeURIComponent(serviceAccount)}:generateAccessToken`,
     {
       method: 'POST',

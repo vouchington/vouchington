@@ -46,7 +46,7 @@ export const GEMINI_BATCH_MAX_VALUES: Record<keyof typeof DEFAULTS, number> = {
   max_requests_per_file: 1_000_000,
   max_file_size_gb: 1,
   max_job_size_gb: 1_000,
-  min_records_per_job: 1,
+  min_records_per_job: MAX_BATCH_RECORDS,
   cursor_batch_size: 5000,
   image_cursor_batch_size: 5000,
   max_scan_rows_per_run: 1_000_000,

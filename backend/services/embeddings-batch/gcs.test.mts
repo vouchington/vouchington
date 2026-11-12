@@ -1,3 +1,4 @@
+import { createGcsTestBucket } from '@voucha/test-helpers/gcs-emulator'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
@@ -11,13 +12,7 @@ describe('GCS batch storage', () => {
   it('streams batch input and image objects through the real GCS emulator API', async () => {
     const { endpoint } = inject('gcsEmulator')
     const bucket = `gemini-${randomUUID()}`
-    const provisioned = await fetch(`${endpoint}/storage/v1/b?project=synthetic-project`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: bucket }),
-    })
-    expect(provisioned.ok).toBe(true)
-    await provisioned.body?.cancel()
+    await createGcsTestBucket(endpoint, bucket)
     const fixture = createVertexHttpFixture()
     fixture.agent.enableNetConnect(new URL(endpoint).host)
     vi.stubEnv('VERTEX_BATCH_BUCKET', bucket)

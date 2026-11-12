@@ -41,16 +41,18 @@ const ownedTextCursor = {
 }
 
 describe('production embedding creation on real GlideMQ', () => {
-  beforeEach(() => {
+  let fixture: Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.stubEnv('ENVIRONMENT', 'staging')
+    fixture = await acquireEmbeddingQuotaFixture()
   })
   afterEach(() => vi.unstubAllEnvs())
 
   it('runs ready text before a quota-delayed image retry with the same image identity', async () => {
-    const fixture = await acquireEmbeddingQuotaFixture()
     const vertex = createVertexHttpFixture()
-    const requests = vertex.batchCreationResponses()
+    const jobName = `projects/synthetic-project/locations/us/batchPredictionJobs/${randomUUID().replaceAll('-', '')}`
+    const requests = vertex.batchCreationResponses({ onSubmit: () => jobName })
     const restoreHttp = vertex.activate()
     const owned = createOwnedEmbeddingQueue(
       fixture,
@@ -68,7 +70,6 @@ describe('production embedding creation on real GlideMQ', () => {
     })
     const user = await createTestUserDirect()
     let topicId: string | undefined
-    const jobName = `projects/synthetic-project/locations/us/batchPredictionJobs/${randomUUID().replaceAll('-', '')}`
     fixture.beforeRelease(async () => {
       const batchId = await getTestBatchIdByJobName(jobName)
       if (batchId) await cleanupTestEmbeddingsBatches([batchId])
@@ -85,7 +86,7 @@ describe('production embedding creation on real GlideMQ', () => {
           domains: ['gemini-embeddings'],
           prefix: connection.prefix,
           concurrency: 2,
-          blockTimeout: 1_000,
+          blockTimeout: 100,
           promotionInterval: 50,
         }),
       )
@@ -136,7 +137,6 @@ describe('production embedding creation on real GlideMQ', () => {
   })
 
   it('keeps two workers to one active creation and retries the contending job unchanged', async () => {
-    const fixture = await acquireEmbeddingQuotaFixture()
     const owned = createOwnedEmbeddingQueue(
       fixture,
       'two_workers',
@@ -201,7 +201,7 @@ describe('production embedding creation on real GlideMQ', () => {
             domains: ['gemini-embeddings'],
             prefix: owned.options.prefix,
             concurrency: 1,
-            blockTimeout: 1_000,
+            blockTimeout: 100,
             promotionInterval: 50,
           }),
         ),
@@ -211,7 +211,7 @@ describe('production embedding creation on real GlideMQ', () => {
             domains: ['gemini-embeddings'],
             prefix: owned.options.prefix,
             concurrency: 1,
-            blockTimeout: 1_000,
+            blockTimeout: 100,
             promotionInterval: 50,
           }),
         ),

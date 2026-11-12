@@ -1,4 +1,4 @@
-import { onTestFinished, vi, type Mock } from 'vitest'
+import { inject, onTestFinished, vi, type Mock } from 'vitest'
 import {
   installMockAgentDefaultFetchForTest,
   MockAgent,
@@ -19,6 +19,9 @@ export type VertexHttpFixture = {
 export function createVertexHttpFixture(): VertexHttpFixture {
   vi.stubEnv('AWS_PROFILE', undefined)
   vi.stubEnv('AWS_DEFAULT_PROFILE', undefined)
+  const emulator = inject('awsEmulator')
+  const passthroughOrigins = emulator ? [new URL(emulator.endpoint).origin] : []
+  const binaryBodyOrigins = ['https://storage.googleapis.com']
   const agent = new MockAgent()
   agent.disableNetConnect()
   const environment = {
@@ -31,7 +34,7 @@ export function createVertexHttpFixture(): VertexHttpFixture {
     VERTEX_PROJECT_NUMBER: '123456',
     VERTEX_WIF_POOL_ID: 'synthetic-pool',
     VERTEX_WIF_PROVIDER_ID: 'synthetic-provider',
-    VERTEX_SERVICE_ACCOUNT_EMAIL: 'embeddings@synthetic-project.iam.gserviceaccount.com',
+    VERTEX_SERVICE_ACCOUNT_EMAIL: 'embeddings@example.iam.gserviceaccount.com',
     VERTEX_BATCH_BUCKET: 'synthetic-embeddings',
   }
   for (const [key, value] of Object.entries(environment)) vi.stubEnv(key, value)
@@ -58,8 +61,10 @@ export function createVertexHttpFixture(): VertexHttpFixture {
   })
   return {
     agent,
-    run: <T,>(operation: () => Promise<T>) => withMockAgentDefaultFetchForTest(agent, operation),
-    activate: () => installMockAgentDefaultFetchForTest(agent),
+    run: <T,>(operation: () => Promise<T>) =>
+      withMockAgentDefaultFetchForTest(agent, operation, passthroughOrigins, binaryBodyOrigins),
+    activate: () =>
+      installMockAgentDefaultFetchForTest(agent, passthroughOrigins, binaryBodyOrigins),
     embeddingResponse(values: unknown, tokenCount?: number) {
       const received = vi.fn<() => void>()
       agent

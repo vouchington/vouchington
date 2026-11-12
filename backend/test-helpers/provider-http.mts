@@ -19,8 +19,9 @@ export async function withMockAgentDefaultFetchForTest<Result>(
   agent: MockAgent,
   operation: () => Promise<Result>,
   passthroughOrigins: readonly string[] = [],
+  binaryBodyOrigins: readonly string[] = [],
 ): Promise<Result> {
-  const restore = installMockAgentDefaultFetchForTest(agent, passthroughOrigins)
+  const restore = installMockAgentDefaultFetchForTest(agent, passthroughOrigins, binaryBodyOrigins)
   try {
     return await operation()
   } finally {
@@ -32,6 +33,7 @@ export async function withMockAgentDefaultFetchForTest<Result>(
 export function installMockAgentDefaultFetchForTest(
   agent: MockAgent,
   passthroughOrigins: readonly string[] = [],
+  binaryBodyOrigins: readonly string[] = [],
 ): () => void {
   const originalDispatch = Agent.prototype.dispatch
   let routingMock = false
@@ -63,7 +65,8 @@ export function installMockAgentDefaultFetchForTest(
             throw new Error('Synthetic provider HTTP body exceeds fixture bound')
           chunks.push(bytes)
         }
-        dispatch(Buffer.concat(chunks).toString())
+        const bytes = Buffer.concat(chunks)
+        dispatch(binaryBodyOrigins.includes(String(options.origin)) ? bytes : bytes.toString())
       })().catch((err: unknown) => {
         const failure =
           err instanceof Error ? err : new Error('Provider fixture request failed', { cause: err })

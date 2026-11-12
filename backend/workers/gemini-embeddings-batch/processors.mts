@@ -61,10 +61,10 @@ export const processBatchPolling = async (
 
   if (batchInfo.completed_at) return { success: true, processed: true }
 
+  const manifest = await loadBatchManifest(batchId)
   let resultsFilePath: string | null = null
   try {
     resultsFilePath = await downloadBatchResults(batchId)
-    const manifest = await loadBatchManifest(batchId)
     await validateBatchOutput(resultsFilePath, manifest)
 
     // Process results in batches based on job type

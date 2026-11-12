@@ -39,14 +39,15 @@ const emptyImageCursor = { sweepStartedAt: '1970-01-01T00:00:00.000Z' }
 const definition = (type: 'topics' | 'posts' | 'images') =>
   requireBackgroundCpuJob(`gemini-embeddings.create_${type}`)
 describe('embedding creation lease loss through real background CPU workers', () => {
-  beforeEach(() => {
+  let fixture: Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.stubEnv('ENVIRONMENT', 'staging')
+    fixture = await acquireEmbeddingQuotaFixture()
   })
   afterEach(() => vi.unstubAllEnvs())
   // no-mistakes-timeout-reason: real GlideMQ worker drain for embedding creation lease loss
   it('defers pre-submit loss, then records a Vertex receipt after in-flight loss', async () => {
-    const fixture = await acquireEmbeddingQuotaFixture()
     const connection = {
       connection: workerQueueConnection,
       prefix: `${workerQueuePrefix}-creation-loss-${randomUUID()}`,
@@ -139,7 +140,7 @@ describe('embedding creation lease loss through real background CPU workers', ()
             domains: ['gemini-embeddings'],
             prefix: connection.prefix,
             concurrency: 1,
-            blockTimeout: 1_000,
+            blockTimeout: 100,
             promotionInterval: 50,
           }),
         ),
@@ -149,7 +150,7 @@ describe('embedding creation lease loss through real background CPU workers', ()
             domains: ['gemini-embeddings'],
             prefix: connection.prefix,
             concurrency: 1,
-            blockTimeout: 1_000,
+            blockTimeout: 100,
             promotionInterval: 50,
           }),
         ),

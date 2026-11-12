@@ -60,11 +60,15 @@ describe('getPendingBatches', () => {
 
     await Promise.all([
       insertTestEmbeddingsBatch({ id: activeId1, vertexState: 'JOB_STATE_PENDING' }),
-      insertTestEmbeddingsBatch({ id: activeId2, vertexState: 'InProgress' }),
+      insertTestEmbeddingsBatch({ id: activeId2, vertexState: 'JOB_STATE_RUNNING' }),
       insertTestEmbeddingsBatch({ id: completedId, vertexState: 'JOB_STATE_SUCCEEDED' }),
-      insertTestEmbeddingsBatch({ id: failedId, vertexState: 'Failed' }),
-      insertTestEmbeddingsBatch({ id: cancelledId, vertexState: 'Stopped' }),
-      insertTestEmbeddingsBatch({ id: preparingId, vertexState: 'Preparing' }),
+      insertTestEmbeddingsBatch({ id: failedId, vertexState: 'JOB_STATE_FAILED' }),
+      insertTestEmbeddingsBatch({ id: cancelledId, vertexState: 'JOB_STATE_CANCELLED' }),
+      insertTestEmbeddingsBatch({
+        id: preparingId,
+        vertexState: 'JOB_STATE_PENDING',
+        submittedAt: null,
+      }),
     ])
 
     const pending = await getPendingBatches()
@@ -91,45 +95,44 @@ describe('getActiveBatchStats', () => {
   }
 
   it('counts and sums only active batches', async () => {
-    // Capture baseline before inserting — dirty DB may have pre-existing active batches.
-    const baseline = await getActiveBatchStats()
-
-    const activeId = batchId()
-    const completedId = batchId()
-    const failedId = batchId()
-
-    await Promise.all([
-      insertTestEmbeddingsBatch({
-        id: activeId,
-        vertexState: 'JOB_STATE_PENDING',
-        batchData: { metadata: { inputSizeMB: 100 } },
-        records: 50,
-      }),
-      insertTestEmbeddingsBatch({
-        id: completedId,
-        vertexState: 'JOB_STATE_SUCCEEDED',
-        batchData: { metadata: { inputSizeMB: 200 } },
-        records: 100,
-      }),
-      insertTestEmbeddingsBatch({
-        id: failedId,
-        vertexState: 'Failed',
-        batchData: { metadata: { inputSizeMB: 300 } },
-        records: 150,
-      }),
-    ])
-
-    // Verify via getPendingBatches that active/non-active classification is correct.
-    const pending = await getPendingBatches()
-    const pendingIds = pending.batches.map(r => r.id)
-    expect(pendingIds).toContain(activeId)
-    expect(pendingIds).not.toContain(completedId)
-    expect(pendingIds).not.toContain(failedId)
-
-    // Delta must be exactly +1 count / +100 MB — completed and failed must not be counted.
-    const stats = await getActiveBatchStats()
-    expect(stats.count).toBe(baseline.count + 1)
-    expect(stats.inputSizeMB).toBe(baseline.inputSizeMB + 100)
+    await withEmbeddingQuotaSnapshot(async query => {
+      const baseline = await getActiveBatchStats({ query })
+      const activeId = batchId()
+      const completedId = batchId()
+      const failedId = batchId()
+      await Promise.all([
+        insertTestEmbeddingsBatch(
+          {
+            id: activeId,
+            vertexState: 'JOB_STATE_PENDING',
+            batchData: { metadata: { inputSizeMB: 100 } },
+            records: 50,
+          },
+          { query },
+        ),
+        insertTestEmbeddingsBatch(
+          {
+            id: completedId,
+            vertexState: 'JOB_STATE_SUCCEEDED',
+            batchData: { metadata: { inputSizeMB: 200 } },
+            records: 100,
+          },
+          { query },
+        ),
+        insertTestEmbeddingsBatch(
+          {
+            id: failedId,
+            vertexState: 'JOB_STATE_FAILED',
+            batchData: { metadata: { inputSizeMB: 300 } },
+            records: 150,
+          },
+          { query },
+        ),
+      ])
+      const stats = await getActiveBatchStats({ query })
+      expect(stats.count).toBe(baseline.count + 1)
+      expect(stats.inputSizeMB).toBe(baseline.inputSizeMB + 100)
+    })
   })
 })
 
@@ -150,14 +153,18 @@ describe('getBatchInfo', () => {
       id,
       jobType: 'posts',
       vertexState: 'JOB_STATE_PENDING',
-      batchData: { outputS3Uri: 's3://bucket/out', metadata: { inputSizeMB: 1 } },
+      batchData: {
+        outputGcsUri: 'gs://synthetic-embeddings/output/',
+        metadata: { inputSizeMB: 1 },
+      },
     })
 
     await expect(getBatchInfo(id)).resolves.toEqual({
       job_type: 'posts',
+      completed_at: null,
       data: expect.objectContaining({
-        status: 'Submitted',
-        outputS3Uri: 's3://bucket/out',
+        state: 'JOB_STATE_PENDING',
+        outputGcsUri: 'gs://synthetic-embeddings/output/',
       }),
     })
   })

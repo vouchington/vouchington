@@ -64,6 +64,11 @@ describe('relational storage guard hardening', () => {
     )
   })
 
+  it('accepts the pgvector halfvec base type with a dimensional modifier', () => {
+    const value = snapshot('new_records', { embedding: column('halfvec(1536)') })
+    expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).toEqual([])
+  })
+
   it('rejects unresolved domain types before JSON, UUID-array, and relation classification', () => {
     const value = snapshot('new_records', {
       facts: column('document_json'),

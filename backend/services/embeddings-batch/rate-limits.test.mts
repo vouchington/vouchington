@@ -59,7 +59,7 @@ describe('getBatchCreationLimits', () => {
     await expect(getBatchCreationLimits(referenceTime)).resolves.toEqual({
       allowed: true,
       maxRecords: 200,
-      maxSizeMB: 1024,
+      maxSizeMB: 1_000_000_000 / 1024 / 1024,
       minRecords: 100,
     })
   })
@@ -147,9 +147,9 @@ describe('getBatchCreationLimits', () => {
       MAX_INFLIGHT_JOBS: 100,
       MAX_REQUESTS_PER_HOUR: 100000,
       MAX_REQUESTS_PER_BATCH: 100000,
-      MAX_BATCH_SIZE_MB: 1024,
+      MAX_BATCH_SIZE_MB: 1_000_000_000 / 1024 / 1024,
       MAX_INFLIGHT_SIZE_MB: 102400,
-      MIN_RECORDS_PER_JOB: 100,
+      MIN_RECORDS_PER_JOB: 1,
     })
   })
 })

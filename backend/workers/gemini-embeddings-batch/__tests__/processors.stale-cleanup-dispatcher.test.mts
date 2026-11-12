@@ -47,14 +47,14 @@ describe('processStaleCleanupDispatcher', () => {
 
   afterEach(async () => {
     await cleanupTestEmbeddingsBatches(createdBatchIds.splice(0))
-    overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, { stale_ttl_hours: 24 })
+    overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, { stale_ttl_hours: 144 })
   })
 
   afterAll(async () => {
     await closeScopedDynamicConfigContext([geminiEmbeddingsBatchConfig])
   })
 
-  it('uses the default 24h TTL so a 2-hour-old batch is not stale', async () => {
+  it('uses the default 144h TTL so a 2-hour-old batch is not stale', async () => {
     const id = batchId()
     await insertTestEmbeddingsBatch({
       id,
@@ -68,14 +68,14 @@ describe('processStaleCleanupDispatcher', () => {
     expect(result.inspected).toBe(0)
   })
 
-  it('uses DynamicConfig override TTL so a 2-hour-old batch is stale at TTL=1', async () => {
-    overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, { stale_ttl_hours: 1 })
+  it('uses a valid shorter TTL after the provider queue and processing windows', async () => {
+    overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, { stale_ttl_hours: 96 })
     const id = batchId()
     await insertTestEmbeddingsBatch({
       id,
       jobName: `projects/123456/locations/us/batchPredictionJobs/${id}`,
       vertexState: 'JOB_STATE_PENDING',
-      submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      submittedAt: new Date(Date.now() - 97 * 60 * 60 * 1000),
     })
 
     const result = await processStaleCleanupDispatcher(id)
@@ -85,7 +85,20 @@ describe('processStaleCleanupDispatcher', () => {
     expect(summary?.status).toBe('failed')
   })
 
-  it('falls back to default 24h when override is zero or negative', async () => {
+  it('keeps a recent batch active when an override is below the provider-safe minimum', async () => {
+    overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, { stale_ttl_hours: 1 })
+    const id = batchId()
+    await insertTestEmbeddingsBatch({
+      id,
+      jobName: `projects/123456/locations/us/batchPredictionJobs/${id}`,
+      vertexState: 'JOB_STATE_PENDING',
+      submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+    })
+    expect((await processStaleCleanupDispatcher(id)).inspected).toBe(0)
+    expect((await getTestBatchSummary(id))?.status).toBe('submitted')
+  })
+
+  it('falls back to default 144h when override is zero or negative', async () => {
     overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, { stale_ttl_hours: 0 })
     const id = batchId()
     await insertTestEmbeddingsBatch({

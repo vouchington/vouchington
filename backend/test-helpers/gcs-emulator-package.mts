@@ -8,6 +8,7 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { promisify } from 'node:util'
 import { fetch } from 'undici'
+import { createAwsEmulatorDownloadDispatcher } from './aws-emulator-dispatchers.mts'
 
 const execFileAsync = promisify(execFile)
 
@@ -53,12 +54,17 @@ export async function ensureFakeGcsServerBinary(
 
   await mkdir(dir, { recursive: true })
   const staging = await mkdtemp(join(dir, 'staging-'))
+  const dispatcher = createAwsEmulatorDownloadDispatcher()
   try {
     const asset = `fake-gcs-server_${FAKE_GCS_SERVER_PACKAGE.version}_${os}_${cpu}.tar.gz`
     const archive = join(staging, asset)
     const url = `https://github.com/fsouza/fake-gcs-server/releases/download/v${FAKE_GCS_SERVER_PACKAGE.version}/${asset}`
-    const response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_DEADLINE_MS) })
+    const response = await fetch(url, {
+      dispatcher,
+      signal: AbortSignal.timeout(DOWNLOAD_DEADLINE_MS),
+    })
     if (!response.ok || !response.body) {
+      await response.body?.cancel()
       throw new Error(`fake-gcs-server download failed: ${response.status} ${url}`)
     }
     await pipeline(Readable.fromWeb(response.body), createWriteStream(archive))
@@ -77,6 +83,7 @@ export async function ensureFakeGcsServerBinary(
     await rename(extracted, binary)
     return binary
   } finally {
+    await dispatcher.close()
     await rm(staging, { recursive: true, force: true })
   }
 }

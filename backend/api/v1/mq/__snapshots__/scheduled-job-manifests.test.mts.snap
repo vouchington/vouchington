@@ -1790,7 +1790,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "trigger": "[function]",
       },
       {
-        "backfillId": "bedrock-embedding-reconciliation",
+        "backfillId": "gemini-embedding-reconciliation",
         "kind": "backfill",
       },
     ],
@@ -1945,7 +1945,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Poll Bedrock batch embeddings status",
+        "description": "Poll Gemini batch embeddings status",
         "id": "gemini-embeddings:poll-dispatcher",
         "kind": "scheduled-jobs",
         "schedule": "* * * * *",
@@ -1987,7 +1987,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Create new Bedrock batch embedding requests",
+        "description": "Create new Gemini batch embedding requests",
         "id": "gemini-embeddings:creation-dispatcher",
         "kind": "scheduled-jobs",
         "schedule": "*/5 * * * *",
@@ -2063,7 +2063,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Stop and cancel Bedrock batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
+        "description": "Stop and cancel Gemini batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
         "id": "gemini-embeddings:stale-cleanup-dispatcher",
         "kind": "scheduled-jobs",
         "schedule": "0 * * * *",
@@ -3952,7 +3952,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueReconcileClassifierRuns",
   },
   {
-    "description": "Poll Bedrock batch embeddings status",
+    "description": "Poll Gemini batch embeddings status",
     "id": "gemini-embeddings:poll-dispatcher",
     "job_name": "gemini-embeddings.poll_dispatcher",
     "queue_name": "background-cpu",
@@ -3960,7 +3960,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "[anonymous]",
   },
   {
-    "description": "Create new Bedrock batch embedding requests",
+    "description": "Create new Gemini batch embedding requests",
     "id": "gemini-embeddings:creation-dispatcher",
     "job_name": "gemini-embeddings.creation_dispatcher",
     "queue_name": "background-cpu",
@@ -3976,7 +3976,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "[anonymous]",
   },
   {
-    "description": "Stop and cancel Bedrock batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
+    "description": "Stop and cancel Gemini batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
     "id": "gemini-embeddings:stale-cleanup-dispatcher",
     "job_name": "gemini-embeddings.stale_cleanup_dispatcher",
     "queue_name": "background-cpu",

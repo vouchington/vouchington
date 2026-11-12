@@ -1,11 +1,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: folded idx_gemini_embedding_batches__job_name from 0360-00-00-bedrock-batch-job-arn-index
--- Merged from: 0040-00-00-bedrock-batch-embeddings.sql, 0070-00-00-autotagger-embeddings.sql
 
 -- ==========================================================================
--- 0040-00-00-bedrock-batch-embeddings.sql
 -- ============================================================================
 
 DO $$ BEGIN
@@ -237,7 +233,7 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 
-COMMENT ON TABLE gemini_embedding_2_embeddings IS 'Centralized lookup table for Amazon Nova multimodal text vectors, keyed by content hash.';
+COMMENT ON TABLE gemini_embedding_2_embeddings IS 'Centralized lookup table for Gemini Embedding 2 document vectors, keyed by canonical content hash.';
 COMMENT ON COLUMN gemini_embedding_2_embeddings.content_sha256 IS 'SHA-256 of the input content. Primary key for deduplication.';
 COMMENT ON COLUMN gemini_embedding_2_embeddings.embedding IS '1536-dimensional vector from Gemini Embedding 2.';
 COMMENT ON COLUMN gemini_embedding_2_embeddings.input_token_count IS 'Number of tokens Vertex consumed for this content. NULL until first embedded; populated on insert and backfilled on cache hits.';

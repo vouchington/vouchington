@@ -172,12 +172,12 @@ describe('Gemini embeddings batch worker processor', () => {
     await insertTestEmbeddingsBatch({
       id,
       jobName: `projects/123456/locations/us/batchPredictionJobs/${id}`,
-      submittedAt: new Date(Date.now() - 172_800_000),
+      submittedAt: new Date(Date.now() - 604_800_000),
     })
     await insertTestEmbeddingsBatch({
       id: foreignId,
       jobName: `projects/123456/locations/us/batchPredictionJobs/${foreignId}`,
-      submittedAt: new Date(Date.now() - 172_800_000),
+      submittedAt: new Date(Date.now() - 604_800_000),
     })
     const before = await getTestBatchSummary(foreignId)
     const cursor = { afterId: uuidBefore(id), throughId: uuidAfter(id) }

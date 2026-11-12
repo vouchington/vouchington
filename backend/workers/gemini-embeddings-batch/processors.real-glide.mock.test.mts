@@ -199,7 +199,7 @@ describe('bounded Gemini batch dispatcher continuations', () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, {
         batch_listing_page_size: 1,
-        stale_ttl_hours: 1,
+        stale_ttl_hours: 96,
       }),
     )
     const timestamp = Date.UTC(2401, 0, 1) + parseInt(randomUUID().slice(0, 8), 16)
@@ -221,7 +221,7 @@ describe('bounded Gemini batch dispatcher continuations', () => {
         insertTestEmbeddingsBatch({
           id,
           jobName: jobNames[index],
-          submittedAt: new Date(Date.now() - 7_200_000),
+          submittedAt: new Date(Date.now() - 97 * 60 * 60 * 1000),
         }),
       ),
     )

@@ -34,12 +34,15 @@ describe('Vertex minimum request ceilings', () => {
     'rejects lowering %s or raising the minimum across that ceiling',
     ceiling => {
       const defaults = geminiEmbeddingsBatchConfig.defaultFields
-      expect(() => validateGeminiBatchConfig({ ...defaults, [ceiling]: 50 })).toThrow(ceiling)
+      expect(() =>
+        validateGeminiBatchConfig({ ...defaults, [ceiling]: 50, min_records_per_job: 51 }),
+      ).toThrow(ceiling)
       expect(() =>
         validateGeminiBatchConfig({ ...defaults, [ceiling]: 150, min_records_per_job: 200 }),
       ).toThrow(ceiling)
       const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, {
         [ceiling]: 50,
+        min_records_per_job: 51,
       })
       try {
         expect(() => getPendingEmbeddingScanLimits()).toThrow('request ceilings')
@@ -49,23 +52,29 @@ describe('Vertex minimum request ceilings', () => {
     },
   )
 
-  it.each(['max_file_size_gb', 'max_job_size_gb'] as const)(
-    'rejects undersized %s before scanning',
-    field => {
-      const fields = {
+  it('accepts image references within the configured input budgets', () => {
+    expect(() =>
+      validateGeminiBatchConfig({
         ...geminiEmbeddingsBatchConfig.defaultFields,
         min_records_per_job: 200,
-        max_file_size_gb: 2,
-        max_job_size_gb: 2,
-        [field]: 1,
-      }
-      expect(() => validateGeminiBatchConfig(fields)).toThrow(field)
-      const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, fields)
-      try {
-        expect(() => getPendingEmbeddingScanLimits(true)).toThrow(field)
-      } finally {
-        restore()
-      }
-    },
-  )
+        max_file_size_gb: 1,
+        max_job_size_gb: 1,
+      }),
+    ).not.toThrow()
+  })
+
+  it('rejects a scan budget below the configured minimum batch size', () => {
+    const fields = {
+      ...geminiEmbeddingsBatchConfig.defaultFields,
+      min_records_per_job: 200,
+      max_scan_rows_per_run: 199,
+    }
+    expect(() => validateGeminiBatchConfig(fields)).toThrow('max_scan_rows_per_run')
+    const restore = overrideDynamicConfigFieldsForTest(geminiEmbeddingsBatchConfig, fields)
+    try {
+      expect(() => getPendingEmbeddingScanLimits()).toThrow('scan')
+    } finally {
+      restore()
+    }
+  })
 })

@@ -16,7 +16,7 @@ function mockVertexIdentity(agent: MockAgent) {
   vi.stubEnv('VERTEX_PROJECT_NUMBER', '123456')
   vi.stubEnv('VERTEX_WIF_POOL_ID', 'synthetic-pool')
   vi.stubEnv('VERTEX_WIF_PROVIDER_ID', 'synthetic-provider')
-  vi.stubEnv('VERTEX_SERVICE_ACCOUNT_EMAIL', 'embeddings@synthetic-project.iam.gserviceaccount.com')
+  vi.stubEnv('VERTEX_SERVICE_ACCOUNT_EMAIL', 'embeddings@example.iam.gserviceaccount.com')
   agent
     .get('https://sts.googleapis.com')
     .intercept({ method: 'POST', path: '/v1/token' })

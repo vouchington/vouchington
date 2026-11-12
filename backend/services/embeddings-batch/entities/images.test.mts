@@ -1,97 +1,69 @@
+import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { S3Buckets } from '@modules/aws'
+import { deleteS3Object, putS3Object, uniqueS3Prefix } from '@voucha/test-helpers/aws-emulator-s3'
+import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
 import { BatchFileBuilder } from '../orchestrator/file-builder.mts'
 import { addImageToBatch } from './images.mts'
 
-const mocks = vi.hoisted(() => ({
-  getImageFromS3: vi.fn<VitestLooseMock>(),
-}))
+const gif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64')
+const png = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+)
 
-describe('entities/images', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    vi.unstubAllEnvs()
-  })
+async function storedImage(bytes: Buffer, contentType: string) {
+  const Bucket = S3Buckets.images
+  const Key = `${uniqueS3Prefix('gemini-source')}image`
+  await putS3Object({ Bucket, Key, Body: bytes, ContentType: contentType })
+  onTestFinished(() => deleteS3Object(Bucket, Key))
+  return { id: randomUUID(), s3_key: Key, sha_256: Buffer.alloc(32) }
+}
 
-  it('converts a supported private upload to a bounded Gemini JPEG representation', async () => {
-    mocks.getImageFromS3.mockResolvedValueOnce({
-      Body: streamBytes(Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64')),
-      ContentType: 'image/gif',
-    })
-    const fileBuilder = new BatchFileBuilder()
-
-    try {
-      await expect(
-        addImageToBatch(
-          fileBuilder,
-          { id: 'gif', s3_key: 'gif', sha_256: Buffer.alloc(32) },
-          10,
-          mocks,
-        ),
-      ).resolves.toBe(true)
-      const { filePath } = await fileBuilder.close()
-      const [record] = (await readFile(filePath, 'utf8'))
-        .trim()
-        .split('\n')
-        .map(line => JSON.parse(line))
-      const image = record.modelInput.singleEmbeddingParams.image
-      expect(image.format).toBe('jpeg')
-      expect(Buffer.from(image.source.bytes, 'base64')).toSatisfy(bytes => {
-        return (
-          bytes.byteLength <= 4 * 1024 * 1024 &&
-          bytes.subarray(0, 2).equals(Buffer.from([0xff, 0xd8]))
-        )
+describe('private image batch input', () => {
+  it.each([
+    { bytes: gif, contentType: 'image/gif' },
+    { bytes: png, contentType: 'image/png' },
+  ])('copies a private $contentType upload into a JPEG GCS part', async source => {
+    const image = await storedImage(source.bytes, source.contentType)
+    const fixture = createVertexHttpFixture()
+    let uploaded: Buffer | undefined
+    fixture.agent
+      .get('https://storage.googleapis.com')
+      .intercept({ method: 'POST', path: /\/upload\/storage\/v1\// })
+      .reply(200, options => {
+        uploaded = Buffer.from(options.body as Uint8Array)
+        return {}
       })
-      expect(mocks.getImageFromS3).toHaveBeenCalledWith(expect.any(String), 'gif')
-    } finally {
-      await fileBuilder.cleanup()
-    }
+    const builder = new BatchFileBuilder('images')
+    onTestFinished(() => builder.cleanup())
+    await expect(fixture.run(() => addImageToBatch(builder, image, 10))).resolves.toBe(true)
+    const { filePath } = await builder.close()
+    const record = JSON.parse(await readFile(filePath, 'utf8'))
+    expect(record).toMatchObject({
+      key: `image:${image.id}`,
+      request: {
+        content: {
+          parts: [
+            { fileData: { mimeType: 'image/jpeg', fileUri: expect.stringMatching(/^gs:\/\//) } },
+          ],
+        },
+      },
+    })
+    expect(uploaded?.subarray(0, 2)).toEqual(Buffer.from([0xff, 0xd8]))
+    expect(uploaded!.byteLength).toBeLessThanOrEqual(4 * 1024 * 1024)
   })
 
-  it('rejects a private source that exceeds the uploaded-image byte limit before transformation', async () => {
-    const megabyte = Buffer.alloc(1024 * 1024)
-    mocks.getImageFromS3.mockResolvedValueOnce({
-      Body: streamRepeatedBytes(megabyte, 51),
-      ContentType: 'image/gif',
-    })
-    const fileBuilder = new BatchFileBuilder()
-
-    await expect(
-      addImageToBatch(
-        fileBuilder,
-        { id: 'oversize', s3_key: 'oversize', sha_256: Buffer.alloc(32) },
-        10,
-        mocks,
-      ),
-    ).rejects.toThrow('52428800-byte limit')
-    await fileBuilder.cleanup()
-  })
-
-  it('reads the canonical object through the private S3 SDK boundary', async () => {
-    const pngBytes = Buffer.from(
-      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-      'base64',
-    )
-    mocks.getImageFromS3.mockResolvedValueOnce({
-      Body: streamBytes(pngBytes),
-      ContentType: 'image/png',
-    })
-
-    const fileBuilder = new BatchFileBuilder()
-    const image = { id: 'img-2', s3_key: 'img-2', sha_256: Buffer.from('00'.repeat(32), 'hex') }
-
-    const added = await addImageToBatch(fileBuilder, image, 100, mocks)
-
-    expect(added).toBe(true)
-    expect(mocks.getImageFromS3).toHaveBeenCalledWith(expect.any(String), 'img-2')
-    await fileBuilder.cleanup()
+  it('leaves image work retryable when GCS rejects the copy', async () => {
+    const image = await storedImage(gif, 'image/gif')
+    const fixture = createVertexHttpFixture()
+    fixture.agent
+      .get('https://storage.googleapis.com')
+      .intercept({ method: 'POST', path: /\/upload\/storage\/v1\// })
+      .reply(503, {})
+    const builder = new BatchFileBuilder('images')
+    onTestFinished(() => builder.cleanup())
+    await expect(fixture.run(() => addImageToBatch(builder, image, 10))).rejects.toThrow('(503)')
   })
 })
-
-async function* streamBytes(...chunks: Uint8Array[]): AsyncGenerator<Uint8Array> {
-  yield* chunks
-}
-
-async function* streamRepeatedBytes(chunk: Uint8Array, count: number): AsyncGenerator<Uint8Array> {
-  for (let index = 0; index < count; index++) yield chunk
-}

@@ -32,11 +32,7 @@ describe('Vertex batch result ingestion', () => {
     await Promise.all(directories.splice(0).map(directory => rm(directory, { recursive: true })))
   })
   it('recovers the submitted body hash and provider token count while skipping rejected provider rows', async () => {
-    const file = await results([
-      row(),
-      { key: 'topic:bad', status: { code: 400 } },
-      { ...row(), response: { embedding: { values: ['bad'] } } },
-    ])
+    const file = await results([row(), { key: 'topic:bad', status: { code: 400 } }])
     const saved: BatchUpdateItem[][] = []
     await processBatchResultsInBatches(
       file,
@@ -56,6 +52,12 @@ describe('Vertex batch result ingestion', () => {
         },
       ],
     ])
+  })
+  it('rejects a malformed successful vector instead of acknowledging incomplete ingestion', async () => {
+    const file = await results([{ ...row(), response: { embedding: { values: ['bad'] } } }])
+    await expect(
+      processBatchResultsInBatches(file, async () => undefined, 1, 'topics'),
+    ).rejects.toThrow('Malformed successful Vertex batch result')
   })
   it('preserves the original image hash encoded into its GCS object path', async () => {
     const hash = 'ab'.repeat(32)

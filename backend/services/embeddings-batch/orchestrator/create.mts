@@ -65,8 +65,10 @@ export const createBatch = async (
       crawlId: source?.crawlId ?? null,
     })
     batchPersisted = true
-    await uploadGcsFile(filePath, inputKey)
-    await uploadGcsFile(entityIdsFilePath, `${prefix}manifest.csv`)
+    await Promise.all([
+      uploadGcsFile(filePath, inputKey),
+      uploadGcsFile(entityIdsFilePath, `${prefix}manifest.csv`),
+    ])
     await beforeSubmit(batchId)
     if (!isLeaseHeld()) throw new BatchCreationDeferredError('lease_lost', 0)
     // Persist the domain submission intent before contacting Vertex. A lost response must

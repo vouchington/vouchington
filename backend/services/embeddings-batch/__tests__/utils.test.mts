@@ -1,8 +1,12 @@
+import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
 import { getEmbeddingCreationRetryDelayMs } from '@services/embeddings/batch/config'
 import type { EmbeddingScanCursor } from '@queues/gemini-embeddings-batch/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
-import { processBatchCreation, processImageBatchCreation } from '../utils.mts'
+import {
+  processBatchCreation,
+  processImageBatchCreation as processActualImageBatchCreation,
+} from '../utils.mts'
 
 const mocks = vi.hoisted(() => ({
   getBatchCreationLimits: vi.fn<VitestLooseMock>(),
@@ -155,6 +159,17 @@ describe('utils', () => {
   })
 
   describe('processImageBatchCreation', () => {
+    let fixture: ReturnType<typeof createVertexHttpFixture>
+    const processImageBatchCreation: typeof processActualImageBatchCreation = (params, inputs) =>
+      fixture.run(() => processActualImageBatchCreation(params, inputs))
+    beforeEach(() => {
+      fixture = createVertexHttpFixture()
+      fixture.agent
+        .get('https://storage.googleapis.com')
+        .intercept({ method: 'POST', path: /\/upload\/storage\/v1\// })
+        .reply(200, {})
+        .persist()
+    })
     it('returns explicit failure when all pending images fail before batch file creation', async () => {
       const result = await processImageBatchCreation(
         {
@@ -169,7 +184,7 @@ describe('utils', () => {
       expect(result).toEqual({
         hasMore: false,
         failed: true,
-        reason: 'Failed to add 2/2 images to Gemini batch input',
+        reason: 'Failed to add 2/2 images to Vertex batch input',
         attempted: 2,
       })
       expect(mocks.createBatch).not.toHaveBeenCalled()
@@ -219,7 +234,7 @@ describe('utils', () => {
       expect(result).toEqual({
         hasMore: false,
         failed: true,
-        reason: 'Failed to add 2/2 images to Gemini batch input',
+        reason: 'Failed to add 2/2 images to Vertex batch input',
         attempted: 2,
       })
       expect(mocks.createBatch).not.toHaveBeenCalled()

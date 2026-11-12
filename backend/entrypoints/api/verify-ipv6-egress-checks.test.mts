@@ -29,6 +29,7 @@ const ENABLED_API_EGRESS_PROXY_FIELDS = {
   bluesky_oauth_enabled: true,
   fediverse_search_enabled: true,
   gemini_embeddings_enabled: true,
+  bedrock_embeddings_enabled: true,
 }
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)

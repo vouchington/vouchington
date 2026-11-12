@@ -57,7 +57,7 @@ async function seedPlaywrightPaginationReviews(query: TransactionQuery): Promise
     `/* seedPlaywrightPaginationReviews */ DELETE FROM posts WHERE id = '019c64e6-f720-7002-a002-000000000020'`,
   )
   await query(
-    `/* seedPlaywrightPaginationReviews */ INSERT INTO posts ( id, post_type, markdown, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256, created_via , bedrock_nova_multimodal_v1_content_sha256) VALUES ( '019c64e6-f720-7002-a002-000000000020', 'review', 'Comparing Chase Sapphire Preferred vs American Express Gold. Both are excellent travel cards but serve different purposes.', decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex'), decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex'), 'system' , decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex')) ON CONFLICT (id) DO NOTHING`,
+    `/* seedPlaywrightPaginationReviews */ INSERT INTO posts ( id, post_type, markdown, gemini_embedding_2_content_sha256, llm_moderation_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256) VALUES ( '019c64e6-f720-7002-a002-000000000020', 'review', 'Comparing Chase Sapphire Preferred vs American Express Gold. Both are excellent travel cards but serve different purposes.', decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex'), decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex'), 'system' , decode('000000000000000000000000000000000000000000000000000000000000000e', 'hex')) ON CONFLICT (id) DO NOTHING`,
   )
   await approveSeedPosts(query, ['019c64e6-f720-7002-a002-000000000020'])
   await query(

@@ -139,17 +139,20 @@ describe('Vertex batch submission', () => {
   })
   it('rejects the provider hard record cap before durable or external effects', async () => {
     const file = await files([])
-    await expect(
-      createBatch(
-        file.input,
-        'topics',
-        1_000_001,
-        file.locks,
-        {},
-        {},
-        async () => undefined,
-        () => true,
-      ),
-    ).rejects.toThrow('record limit')
+    const fixture = createVertexHttpFixture()
+    await fixture.run(async () => {
+      await expect(
+        createBatch(
+          file.input,
+          'topics',
+          1_000_001,
+          file.locks,
+          {},
+          {},
+          async () => undefined,
+          () => true,
+        ),
+      ).rejects.toThrow('record limit')
+    })
   })
 })

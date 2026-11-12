@@ -22,8 +22,10 @@ export async function processGeminiEmbedding2SingleJob(
       const post = await getPostByAny(job.data.id)
       if (!post) return null
       await copyExistingPostEmbeddings({ ids: [post.id] })
-      await enqueueCreatePostEmbeddingsBatch()
-      await enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts([post.id])
+      await Promise.all([
+        enqueueCreatePostEmbeddingsBatch(),
+        enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts([post.id]),
+      ])
       return { success: true }
     }
     case 'gemini-embeddings.topic': {
@@ -41,8 +43,10 @@ export async function processGeminiEmbedding2SingleJob(
       const rssFeedItem = await getRssFeedItemById(job.data.rss_feed_item_id)
       if (!rssFeedItem) return null
       await copyExistingRssFeedItemEmbeddings({ ids: [rssFeedItem.id] })
-      await enqueueCreateRssFeedItemEmbeddingsBatch()
-      await dispatchStoryClusteringForEmbeddedItems([job.data.rss_feed_item_id])
+      await Promise.all([
+        enqueueCreateRssFeedItemEmbeddingsBatch(),
+        dispatchStoryClusteringForEmbeddedItems([job.data.rss_feed_item_id]),
+      ])
       return { success: true }
     }
     default:

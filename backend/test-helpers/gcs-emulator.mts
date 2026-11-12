@@ -1,3 +1,5 @@
+import { fetch } from 'undici'
+import { createAwsEmulatorLoopbackDispatcher } from './aws-emulator-dispatchers.mts'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { once } from 'node:events'
 import net from 'node:net'
@@ -105,4 +107,21 @@ async function stopChild(child: ChildProcess): Promise<void> {
       throw new Error(`fake-gcs-server did not close after SIGKILL within ${STOP_DEADLINE_MS}ms`)
     }),
   ])
+}
+
+/** Provision a test-owned bucket through the emulator's actual HTTP API. */
+export async function createGcsTestBucket(endpoint: string, bucket: string): Promise<void> {
+  const dispatcher = createAwsEmulatorLoopbackDispatcher()
+  try {
+    const response = await fetch(`${endpoint}/storage/v1/b?project=synthetic-project`, {
+      dispatcher,
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: bucket }),
+    })
+    await response.body?.cancel()
+    if (!response.ok) throw new Error(`GCS test bucket creation failed (${response.status})`)
+  } finally {
+    await dispatcher.close()
+  }
 }

@@ -28,7 +28,7 @@ describe('cleanup', () => {
     expect(embeddingsGeneratedAt).toBeNull()
   })
 
-  it('updates the crawl when all chunks complete', async () => {
+  it('keeps the current crawl pending when only retained Bedrock vectors complete', async () => {
     const uniqueText = `Test complete ${Date.now()} ${Math.random()}`
     const { url, crawl } = (await createTestCrawlWithChunks({
       markdown: uniqueText,
@@ -52,12 +52,12 @@ describe('cleanup', () => {
 
     await finalizeChunksIfCompleteForMany([crawl.id])
 
-    // Verify crawl has been finalized
+    // Current completion depends on Gemini document vectors.
     const hasPendingEmbeddings = await crawlHasPendingEmbeddings(url!.id, crawl.id)
     const embeddingsGeneratedAt = await getCrawlEmbeddingsGeneratedAt(url!.id, crawl.id)
 
-    expect(hasPendingEmbeddings).toBe(false)
-    expect(embeddingsGeneratedAt).not.toBeNull()
+    expect(hasPendingEmbeddings).toBe(true)
+    expect(embeddingsGeneratedAt).toBeNull()
   })
 
   it('clears the pending marker of superseded crawls', async () => {

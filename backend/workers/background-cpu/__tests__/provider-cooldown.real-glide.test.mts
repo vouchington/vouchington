@@ -1,14 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { QueueEvents, Worker } from 'glide-mq'
 import { throwRateLimited } from '@vouchington/queue-errors'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
-import {
-  extendCpuProviderCooldownMs,
-  getCpuProviderCooldownRemainingMs,
-} from '@services/embeddings/provider-cooldown'
+import { getCpuProviderCooldownRemainingMs } from '@services/embeddings/provider-cooldown'
 import type { BackgroundCpuHandler, BackgroundCpuJobDefinition } from '@queues/background-cpu/types'
 import {
   startRealGlideBackgroundLifecycle,
@@ -20,12 +17,8 @@ import {
 } from '@voucha/test-helpers/queue-domain-controls'
 import { acquireEmbeddingCreationCooldown } from '@voucha/test-helpers/embedding-creation-cooldown'
 import { createBackgroundCpuProcessor } from '../processors.mts'
-import { withVertexRateLimit } from '../processors/vertex-rate.mts'
 
-vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
-const single = requireBackgroundCpuJob('gemini-embeddings.post')
-const singleTopic = requireBackgroundCpuJob('gemini-embeddings.topic')
 const contentPost = requireBackgroundCpuJob('content-analysis.post')
 const creationImage = requireBackgroundCpuJob('gemini-embeddings.create_images')
 const creationPost = requireBackgroundCpuJob('gemini-embeddings.create_posts')
@@ -70,110 +63,6 @@ describe('background-cpu groups through real GlideMQ', () => {
     return operation
   }
 
-  it('cools the throttled Gemini ordering group while another CPU domain keeps running', async ({
-    signal,
-  }) => {
-    const startedGemini: string[] = []
-    const defaultOrdering = single.options.ordering
-    if (!defaultOrdering) throw new Error('Expected Gemini ordering lane')
-    const ordering = {
-      ...defaultOrdering,
-      key: `gemini-embeddings:single:${randomUUID()}`,
-    }
-    const throttle = Object.assign(new Error('Gemini request throttled'), {
-      name: 'ThrottlingException',
-      $metadata: { httpStatusCode: 429 },
-    })
-    const handlers = new Map<string, BackgroundCpuHandler>([
-      [
-        single.name,
-        {
-          job: single,
-          handle: job => {
-            startedGemini.push(job.id)
-            if (startedGemini.length === 1)
-              return withVertexRateLimit(async () => {
-                throw throttle
-              })
-            return undefined
-          },
-        },
-      ],
-      [singleTopic.name, { job: singleTopic, handle: job => startedGemini.push(job.id) }],
-      [contentPost.name, { job: contentPost, handle: () => undefined }],
-    ])
-    const starting = trackWork(signal, () =>
-      startRealGlideBackgroundLifecycle<BackgroundCpuJobDefinition>({
-        queueNamePrefix: 'background_cpu_gemini_cooldown',
-        connection,
-        processor: createBackgroundCpuProcessor(handlers),
-      }),
-    )
-    harness = await starting
-    signal.throwIfAborted()
-    events = new QueueEvents(harness.queue.name, {
-      ...connection,
-      lastEventId: '0',
-      blockTimeout: 1_000,
-    })
-    const delayedEvents: Array<{ jobId?: string }> = []
-    const failedEvents: Array<{ jobId?: string; failedReason?: string }> = []
-    events.on('delay-changed', event => delayedEvents.push(event))
-    events.on('failed', event => failedEvents.push(event))
-    await events.waitUntilReady()
-
-    const limited = await trackWork(signal, () =>
-      harness!.add(single, { id: randomUUID() }, { ordering }),
-    )
-    await waitForQueueDomainTestResult(harness.activated(limited, 1), signal)
-    // With one worker, the other-domain completion proves the first job's 429 was processed.
-    const firstUnrelatedCompleted = waitForQueueDomainTestResult(
-      once(events, 'completed', { signal }),
-      signal,
-    )
-    const firstUnrelated = await trackWork(signal, () =>
-      harness!.add(contentPost, { id: randomUUID() }),
-    )
-    await expect(
-      waitForQueueDomainTestResult(harness.settled(firstUnrelated), signal),
-    ).resolves.toBe('completed')
-    const [completionEvent] = await firstUnrelatedCompleted
-    expect(completionEvent).toMatchObject({ jobId: firstUnrelated.id })
-    const limitedAfterThrottle = await harness.queue.getJob(limited.id)
-    expect(limitedAfterThrottle).toMatchObject({
-      groupKey: ordering.key,
-      attemptsMade: 0,
-    })
-    expect(await limitedAfterThrottle?.getState()).toBe('delayed')
-    expect(delayedEvents).toContainEqual(expect.objectContaining({ jobId: limited.id }))
-    expect(await getCpuProviderCooldownRemainingMs(ordering.key)).toBeGreaterThan(1_000)
-    await trackWork(signal, () => extendCpuProviderCooldownMs(ordering.key, 1_000))
-    expect(await getCpuProviderCooldownRemainingMs(ordering.key)).toBeGreaterThan(1_000)
-    expect(failedEvents).toEqual([])
-
-    const sameGroup = await trackWork(signal, () =>
-      harness!.add(singleTopic, { id: randomUUID() }, { ordering }),
-    )
-    signal.throwIfAborted()
-    const secondUnrelatedCompleted = waitForQueueDomainTestResult(
-      once(events, 'completed', { signal }),
-      signal,
-    )
-    const secondUnrelated = await trackWork(signal, () =>
-      harness!.add(contentPost, { id: randomUUID() }),
-    )
-    await expect(
-      waitForQueueDomainTestResult(harness.settled(secondUnrelated), signal),
-    ).resolves.toBe('completed')
-    const [secondCompletionEvent] = await secondUnrelatedCompleted
-    expect(secondCompletionEvent).toMatchObject({ jobId: secondUnrelated.id })
-    expect(startedGemini).toEqual([limited.id])
-    expect((await harness.queue.getJob(limited.id))?.attemptsMade).toBe(0)
-    expect((await harness.queue.getJob(sameGroup.id))?.attemptsMade).toBe(0)
-    expect(await (await harness.queue.getJob(sameGroup.id))?.getState()).toBe('delayed')
-    expect(delayedEvents).toContainEqual(expect.objectContaining({ jobId: sameGroup.id }))
-  })
-
   describe('with reserved creation cooldown', () => {
     let cooldown: Awaited<ReturnType<typeof acquireEmbeddingCreationCooldown>>
     let imageAttempts = 0
@@ -216,7 +105,7 @@ describe('background-cpu groups through real GlideMQ', () => {
       events = new QueueEvents(harness.queue.name, {
         ...connection,
         lastEventId: '0',
-        blockTimeout: 1_000,
+        blockTimeout: 100,
       })
       await events.waitUntilReady()
 

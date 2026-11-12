@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { embeddingCreationLeaseValkeyClient } from '@data-stores/valkey/clients'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
@@ -23,8 +23,11 @@ const emptyImageCursor = { sweepStartedAt: '1970-01-01T00:00:00.000Z' }
 const imageDefinition = requireBackgroundCpuJob('gemini-embeddings.create_images')
 
 describe('crashed embedding creation lease holder', () => {
+  let fixture: Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
+  beforeEach(async () => {
+    fixture = await acquireEmbeddingQuotaFixture()
+  })
   it('retries the same creation job after a crashed lease holder expires', async () => {
-    const fixture = await acquireEmbeddingQuotaFixture()
     const connection = {
       connection: workerQueueConnection,
       prefix: `${workerQueuePrefix}-creation-orphan-${randomUUID()}`,
@@ -77,7 +80,7 @@ describe('crashed embedding creation lease holder', () => {
           domains: ['gemini-embeddings'],
           prefix: connection.prefix,
           concurrency: 1,
-          blockTimeout: 1_000,
+          blockTimeout: 100,
           promotionInterval: 50,
         }),
       )

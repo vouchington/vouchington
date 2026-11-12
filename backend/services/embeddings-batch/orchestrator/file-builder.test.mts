@@ -66,7 +66,7 @@ describe('Vertex JSONL builder', () => {
       .intercept({
         method: 'POST',
         path: `/upload/storage/v1/b/synthetic-embeddings/o?ifGenerationMatch=0&name=${encodeURIComponent(key)}&uploadType=media`,
-        body: 'abc',
+        body: bytes => Buffer.isBuffer(bytes) && bytes.equals(Buffer.from('abc')),
       })
       .reply(200, {})
     try {

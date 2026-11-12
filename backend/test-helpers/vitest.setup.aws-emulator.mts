@@ -16,6 +16,9 @@ trustAwsEmulatorCertificate(emulator.caPem)
 process.env.AWS_ENDPOINT_URL = emulator.endpoint
 // The default credential chain would otherwise dial the EC2 metadata service.
 process.env.AWS_EC2_METADATA_DISABLED = 'true'
+// Profiles override environment credentials in the default chain; keep every client on emulator keys.
+process.env.AWS_PROFILE = ''
+process.env.AWS_DEFAULT_PROFILE = ''
 // Each client reads its own credential tuple before the shared one. Every tuple names the
 // emulator's keys, so a real key in the environment can never be paired with the emulator.
 for (const prefix of ['', 'S3_', 'SES_', 'SQS_', 'BEDROCK_', 'FIREHOSE_']) {

@@ -1,3 +1,4 @@
+import onError from '@modules/on-error'
 import { createHash } from 'node:crypto'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { EMBEDDINGS_TABLE } from '../config.mts'
@@ -34,12 +35,13 @@ async function fetchEmbedding(normalizedQuery: string): Promise<number[]> {
   return direct.embedding
 }
 
-const fetchEmbeddingCached = cache.cacheGetByAny(fetchEmbedding)
-
 export async function getCachedSearchEmbedding(query: string): Promise<number[]> {
   const normalized = normalizeSearchEmbeddingQuery(query)
-  const result = await fetchEmbeddingCached(normalized)
-  if (!result) throw new Error(`unexpected null embedding for query: ${query}`)
+  const cached = await cache.get(normalized).catch(onError)
+  if (cached != null) return requireDenseEmbedding(cached)
+  const result = await fetchEmbedding(normalized)
+  // Publish the cached vector before returning so the next request avoids a paid model call.
+  await cache.set(normalized, result).catch(onError)
   return result
 }
 

@@ -44,7 +44,7 @@ describe('bedrock embeddings single worker', () => {
     ).resolves.toEqual({ success: true })
   })
 
-  it('enqueues ban-evasion detection after processing an embedded first community post', async () => {
+  it('does not admit old vectors to current-model ban-evasion detection', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id, visibility: 'public' })
@@ -77,7 +77,7 @@ describe('bedrock embeddings single worker', () => {
     ).resolves.toEqual({ success: true })
 
     await expect(getPostEmbeddingData(postId)).resolves.toMatchObject({
-      ban_evasion_post_embedding_input_sha: content_sha256,
+      ban_evasion_post_embedding_input_sha: null,
     })
   })
 

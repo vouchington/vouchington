@@ -32,8 +32,10 @@ import { createBackgroundCpuWorker } from '../workers/create-worker.mts'
 import { createVertexHttpFixture } from '@voucha/test-helpers/vertex-http'
 
 describe('creation admission on real GlideMQ', () => {
-  beforeEach(() => {
+  let fixture: Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
+  beforeEach(async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
+    fixture = await acquireEmbeddingQuotaFixture()
   })
   afterEach(() => vi.unstubAllEnvs())
 
@@ -41,7 +43,6 @@ describe('creation admission on real GlideMQ', () => {
   it('rechecks shared cooldown after S3 upload before submitting a creation batch', async ({
     signal,
   }) => {
-    const fixture = await acquireEmbeddingQuotaFixture()
     const cooldown = await acquireEmbeddingCreationCooldown(signal)
     cooldown.beforeRelease(() => fixture.close())
     const owned = createOwnedEmbeddingQueue(
@@ -114,7 +115,7 @@ describe('creation admission on real GlideMQ', () => {
           domains: ['gemini-embeddings'],
           prefix: owned.options.prefix,
           concurrency: 1,
-          blockTimeout: 1_000,
+          blockTimeout: 100,
           promotionInterval: 50,
         }),
       )
@@ -137,7 +138,7 @@ describe('creation admission on real GlideMQ', () => {
           domains: ['gemini-embeddings'],
           prefix: owned.options.prefix,
           concurrency: 1,
-          blockTimeout: 1_000,
+          blockTimeout: 100,
           promotionInterval: 50,
         }),
       )
@@ -175,7 +176,7 @@ describe('creation admission on real GlideMQ', () => {
       await topicCompleted
       await imageCompleted
       expect(requests.submissions).toHaveBeenCalledTimes(1)
-      expect(requests.uploads).toHaveBeenCalledTimes(3)
+      expect(requests.uploads).toHaveBeenCalledTimes(4)
       expect(await getTestBatchIdByJobName(jobName)).toBeTruthy()
     } finally {
       releaseUpload.resolve()

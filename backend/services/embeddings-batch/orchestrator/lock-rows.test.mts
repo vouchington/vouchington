@@ -24,7 +24,7 @@ describe('topic embedding batch admission (real PG)', () => {
     })
     await mergeTopicForTest(sourceId, destinationId, actor.id)
     const filePath = join(tmpdir(), `topic-batch-${suffix}.csv`)
-    await writeFile(filePath, `${sourceId}\n${destinationId}\n`)
+    await writeFile(filePath, `${sourceId},${'a'.repeat(64)}\n${destinationId},${'b'.repeat(64)}\n`)
     try {
       await expect(
         insertBatchAndLockRows({

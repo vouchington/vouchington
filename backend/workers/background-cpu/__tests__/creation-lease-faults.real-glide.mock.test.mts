@@ -2,7 +2,7 @@ import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.se
 import { randomInt, randomUUID } from 'node:crypto'
 import { channel } from 'node:diagnostics_channel'
 import { v7 as uuidv7 } from 'uuid'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   acquireRenewableLease,
   type RenewableLease,
@@ -40,10 +40,13 @@ vi.mock<typeof import('valkyries/lease')>(import('valkyries/lease'), async origi
 }))
 
 describe('creation lease consumer fault policy through real background CPU workers', () => {
+  let fixture: Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
+  beforeEach(async () => {
+    fixture = await acquireEmbeddingQuotaFixture()
+  })
   it('records an in-flight receipt after renewal loss and preserves a provider error over release failure', async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     const capture = sentryCaptureExceptionMock
-    const fixture = await acquireEmbeddingQuotaFixture()
     const connection = {
       connection: workerQueueConnection,
       prefix: `${workerQueuePrefix}-creation-faults-${randomUUID()}`,
@@ -124,7 +127,7 @@ describe('creation lease consumer fault policy through real background CPU worke
           domains: ['gemini-embeddings'],
           prefix: connection.prefix,
           concurrency: 1,
-          blockTimeout: 1_000,
+          blockTimeout: 100,
           promotionInterval: 50,
         }),
       )
@@ -150,11 +153,13 @@ describe('creation lease consumer fault policy through real background CPU worke
       )
       if (!first) throw new Error('Expected first creation job')
       firstJobId = first.id
-      await providerEntered.promise
+      await waitForRealGlideEvent(providerEntered.promise, 'Vertex submission entered')
       firstHeld = false
       const renewalError = new Error('lease renewal transport failed')
       firstLost.resolve({ reason: 'renewal-error', error: renewalError })
-      expect(await reportedLoss.promise).toMatchObject({
+      expect(
+        await waitForRealGlideEvent(reportedLoss.promise, 'renewal loss reported'),
+      ).toMatchObject({
         jobId: first.id,
         jobType: 'topics',
         reason: 'renewal-error',
@@ -198,7 +203,7 @@ describe('creation lease consumer fault policy through real background CPU worke
       )
       const stored = await owned.queue.getJob(second.id)
       expect(await stored?.getState()).toBe('failed')
-      expect(stored?.failedReason).toContain(primary.message)
+      expect(stored?.failedReason).toBe('fetch failed')
       expect(secondRelease).toHaveBeenCalledTimes(1)
       expect(capture.mock.calls.some(([err]) => err === secondary)).toBe(true)
     } finally {
