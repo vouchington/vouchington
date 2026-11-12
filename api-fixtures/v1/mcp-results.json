@@ -436,6 +436,48 @@
           "end_cursor": null
         }
       }
+    },
+    {
+      "id": "native.mcp.search-copyright-notices-for-association.results",
+      "tool": "search_copyright_notices_for_association",
+      "arguments": {
+        "q": "example"
+      },
+      "structuredContent": {
+        "copyright_notices": [
+          {
+            "id": "0198ffff-0000-7000-8000-000000000031",
+            "claimant_display_name": "Example Claimant",
+            "jurisdiction": "us_dmca",
+            "received_at": "2026-10-09T00:00:00.000Z",
+            "work_description": "Example work"
+          }
+        ],
+        "page_info": {
+          "has_next_page": false,
+          "start_cursor": null,
+          "end_cursor": null
+        }
+      }
+    },
+    {
+      "id": "native.mcp.list-repeat-infringer-accounts.accounts",
+      "tool": "list_repeat_infringer_accounts",
+      "arguments": {
+        "id": "0198ffff-0000-7000-8000-000000000031"
+      },
+      "structuredContent": {
+        "copyright_repeat_infringer_accounts": [
+          {
+            "account_user_id": "0198ffff-0000-7000-8000-000000000032",
+            "account_username": "example-account",
+            "incident_id": "0198ffff-0000-7000-8000-000000000033",
+            "is_operative": true,
+            "open_review_id": "0198ffff-0000-7000-8000-000000000034",
+            "termination_in_effect": false
+          }
+        ]
+      }
     }
   ]
 }
