@@ -1,6 +1,9 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { copyrightEmailTokenGcCutoffId } from './operational-retention-token-gc.mts'
+import {
+  copyrightEmailTokenGcCutoffId,
+  deleteOrphanCopyrightEmailThreadTokens,
+} from './operational-retention-token-gc.mts'
 
 export type ThreadPhase = 'references' | 'reply_edges' | 'ancestor_edges'
 
@@ -27,11 +30,13 @@ export async function deleteCaseThreadPage(
         AND id = ANY(${[...referenceIds]}::uuid[])
       RETURNING token_id`)
     if (removed.length > 0) {
-      await deleteOrphanTokens(
-        transaction,
-        removed.flatMap(row => (row.token_id ? [row.token_id] : [])),
-        now,
-      )
+      const tokenIds = removed.flatMap(row => (row.token_id ? [row.token_id] : []))
+      if (tokenIds.length > 0)
+        await deleteOrphanCopyrightEmailThreadTokens(
+          transaction,
+          tokenIds,
+          copyrightEmailTokenGcCutoffId(now),
+        )
       return { deleted: removed.length, phase, edgeCursor: null }
     }
     // A reference may have committed after the page read. Leave this phase in place so
@@ -50,7 +55,11 @@ export async function deleteCaseThreadPage(
         WHERE copyright_notice_email_intake_id = ${intakeId}
           AND copyright_notice_id = ${noticeId}
           AND matched_token_id = ${matchedTokenId}::uuid`)
-      await deleteOrphanTokens(transaction, [matchedTokenId], now)
+      await deleteOrphanCopyrightEmailThreadTokens(
+        transaction,
+        [matchedTokenId],
+        copyrightEmailTokenGcCutoffId(now),
+      )
     }
     return { deleted: 0, phase: 'reply_edges', edgeCursor: null }
   }
@@ -95,20 +104,4 @@ export async function deleteCaseThreadPage(
                 AND other.copyright_notice_id <> ${noticeId})`,
   )
   return { deleted: rowCount ?? 0, phase, edgeCursor: ids.at(-1)! }
-}
-
-async function deleteOrphanTokens(
-  transaction: TransactionQuery,
-  ids: readonly string[],
-  now: Date,
-) {
-  if (ids.length === 0) return
-  await transaction(sql`/* deleteExpiredCopyrightCaseOrphanTokens */
-    DELETE FROM copyright_notice_email_thread_tokens token
-    WHERE token.id = ANY(${[...new Set(ids)]}::uuid[])
-      AND token.id < ${copyrightEmailTokenGcCutoffId(now)}::uuid
-      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_thread_references reference
-        WHERE reference.token_id = token.id)
-      AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.matched_token_id = token.id)`)
 }
