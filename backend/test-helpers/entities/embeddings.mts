@@ -6,7 +6,7 @@ export { makeRandomEmbedding, makeNearbyEmbedding } from './embedding-vectors.mt
 
 function generateMockEmbedding(): number[] {
   const embedding = new Array(1536).fill(0)
-  for (let i = 0; i < 1024; i++) {
+  for (let i = 0; i < embedding.length; i++) {
     embedding[i] = Math.sin(i / 100) * 0.5
   }
   return embedding

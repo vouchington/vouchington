@@ -8,7 +8,7 @@ import { beginTransaction } from '@data-stores/psql'
 export function createSemanticWindowEmbedding(): number[] {
   const coordinates = [...randomBytes(32)].map(value => value / 255 - 0.5)
   const magnitude = Math.hypot(...coordinates)
-  return [...coordinates.map(value => value / magnitude), ...Array<number>(992).fill(0)]
+  return [...coordinates.map(value => value / magnitude), ...Array<number>(1504).fill(0)]
 }
 
 /** Ownership-scoped embedded rows for candidate caps and selective post-filter tests. */
@@ -33,7 +33,7 @@ export async function insertSemanticWindowPosts(
       'discussion', 'Semantic window fixture', 'Semantic window fixture', ${userId}::uuid,
       'system', decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex'),
       (${embedding.slice(0, 32)}::real[] || ARRAY[ordinal::real / ${count}::real]
-        || array_fill(0::real, ARRAY[991]))::halfvec(1536)
+        || array_fill(0::real, ARRAY[1503]))::halfvec(1536)
     , decode(repeat('00', 32), 'hex') FROM generate_series(1, ${count}::integer) AS ordinal
     RETURNING id
   `)

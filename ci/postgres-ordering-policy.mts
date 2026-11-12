@@ -53,8 +53,8 @@ export const expectedCatalogOrderingRules = [
 
 export const expectedDirectiveInventory = [
   'backend/data-stores/psql/config-driven/0503-00-00-youtube-rss-unreliable-status-codes.sql:1',
-  'backend/services/embeddings-batch/orchestrator/reconcile-existing.mts:1',
-  'backend/services/embeddings-batch/orchestrator/save.mts:1',
+  'backend/services/bedrock-embeddings-batch/orchestrator/reconcile-existing.mts:1',
+  'backend/services/bedrock-embeddings-batch/orchestrator/save.mts:1',
   'backend/services/bluesky-accounts/native-completion-persistence.mts:1',
   'backend/services/communities/list-items/add.mts:1',
   // Delivery batches take sorted case locks before the ordered blocker generation rows.
@@ -69,6 +69,8 @@ export const expectedDirectiveInventory = [
   'backend/services/data-retention/cleanup-oauth-friend-edges.mts:2',
   'backend/services/data-retention/cleanup-operational-tombstone-candidates.mts:1',
   'backend/services/data-retention/cleanup-vote-ballots.mts:1',
+  'backend/services/embeddings-batch/orchestrator/reconcile-existing.mts:1',
+  'backend/services/embeddings-batch/orchestrator/save.mts:1',
   'backend/services/entity-cache/hostname-invalidation-drain.mts:2',
   'backend/services/individuals-households/households/spending-categories.mts:1',
   'backend/services/lists/add-item.mts:1',

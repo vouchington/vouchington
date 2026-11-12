@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql'
 import { v7 } from 'uuid'
 
-const ZERO_VECTOR = `[${Array(1_024).fill(0).join(',')}]`
+const ZERO_VECTOR = `[${Array(1_536).fill(0).join(',')}]`
 
 export async function insertTextEmbeddingForRetentionTest(
   query: TransactionQuery,

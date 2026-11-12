@@ -30,7 +30,7 @@ export async function seedSemanticPosts(): Promise<void> {
           * CASE WHEN seed.ordinal % 20 = 0 THEN 0.02 ELSE 1 END)::real
         FROM generate_series(1, 30) AS coordinate
       )
-      || array_fill(0::real, ARRAY[992])
+      || array_fill(0::real, ARRAY[1504])
     )::halfvec(1536)
     FROM (SELECT id, ordinal + $2::integer AS ordinal
       FROM unnest($1::uuid[]) WITH ORDINALITY AS page(id, ordinal)) AS seed

@@ -10,7 +10,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { withPositiveSemanticNeighbours } from './semantic-hot-votes.mts'
 import { inspectSemanticPostSeed, recordSemanticPostFailure } from './semantic-post-diagnostics.mts'
 
-const embedding = [1, ...Array<number>(1023).fill(0)]
+const embedding = [1, ...Array<number>(1535).fill(0)]
 
 export async function runSemanticPostSearchScenarios(): Promise<void> {
   const variants = [

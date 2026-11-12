@@ -7,7 +7,7 @@ describe('semantic candidate window', () => {
     const query = buildPostSearchQuery(undefined, {
       semantic_search_query: 'query',
       text_search_query: 'hybrid',
-      semanticSearchEmbedding: [1, ...Array<number>(1023).fill(0)],
+      semanticSearchEmbedding: [1, ...Array<number>(1535).fill(0)],
       user_id: '019e0000-0000-7000-8000-000000000001',
       time_range: '1w',
       sort: 'relevance',
@@ -50,7 +50,7 @@ describe('semantic candidate window', () => {
   it('keeps the candidate cap even when outer limits and order are omitted for facets', () => {
     const query = buildPostSearchQuery(undefined, {
       semantic_search_query: 'query',
-      semanticSearchEmbedding: [1, ...Array<number>(1023).fill(0)],
+      semanticSearchEmbedding: [1, ...Array<number>(1535).fill(0)],
       omitLimit: true,
       omitOrderBy: true,
     })
