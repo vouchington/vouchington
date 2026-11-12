@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { acquireModerationOperationRetentionTestLock } from '@voucha/test-helpers'
 import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
+import { useCopyrightOperationalCursorReservation } from '@voucha/test-helpers/copyright-operational-cursor-reservation'
 import { reserveTestAiUsageRetentionSweep } from '@voucha/test-helpers/entities/ai-usage-rollups'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { ANALYTICS_TEST_FIREHOSE_PREFIX } from '@voucha/test-helpers/aws-emulator-firehose'
@@ -13,6 +14,7 @@ import { cleanupAnalyticsLocalFiles } from './cleanup-analytics-local.mts'
 import { runDataRetentionCleanup } from './cleanup.mts'
 
 describe('cleanupAnalyticsLocalFiles', () => {
+  useCopyrightOperationalCursorReservation()
   const originalAnalyticsBackend = process.env.ANALYTICS_BACKEND
   const originalAnalyticsLocalDir = process.env.ANALYTICS_LOCAL_DIR
   const originalFirehosePrefix = process.env.ANALYTICS_FIREHOSE_PREFIX
