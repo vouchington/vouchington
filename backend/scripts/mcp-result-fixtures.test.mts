@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { financialMcpResultCases } from '@voucha/test-helpers/native-mcp-result-cases'
+import { copyrightMcpResultCases } from '@voucha/test-helpers/native-mcp-copyright-result-cases'
 import { optionMcpResultCases } from '@voucha/test-helpers/native-mcp-option-result-cases'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
@@ -32,6 +33,19 @@ describe('MCP result catalog generation', () => {
     const results = datedFeed.structuredContent['results'] as Record<string, unknown>[]
     results[0]!['shared_at'] = 'not-a-date'
     expect(() => buildMcpResultFixtures(complete, [datedFeed])).toThrow('structuredContent')
+  })
+
+  it('validates legal-audience fixtures and rejects a result outside their schema', () => {
+    const complete = buildMcpCatalog(ALL_TOOLS)
+    expect(buildMcpResultFixtures(complete, copyrightMcpResultCases).cases).toEqual(
+      copyrightMcpResultCases,
+    )
+    const [search] = copyrightMcpResultCases
+    expect(() =>
+      buildMcpResultFixtures(complete, [
+        { ...search!, structuredContent: { copyright_notices: 1 } },
+      ]),
+    ).toThrow('structuredContent')
   })
 
   it.each(['wrong option', 'wrong type', 'missing setting', 'unknown setting'])(

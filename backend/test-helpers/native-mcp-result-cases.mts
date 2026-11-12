@@ -1,3 +1,4 @@
+import { copyrightMcpResultCases } from './native-mcp-copyright-result-cases.mts'
 import { hackerNewsMcpResultCases } from './native-mcp-hacker-news-result-cases.mts'
 import {
   optionMcpResultCases,
@@ -42,4 +43,5 @@ export const nativeMcpResultCases = [
   ...financialMcpResultCases,
   ...optionMcpResultCases,
   ...hackerNewsMcpResultCases,
+  ...copyrightMcpResultCases,
 ]
