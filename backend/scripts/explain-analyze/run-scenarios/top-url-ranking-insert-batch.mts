@@ -34,9 +34,9 @@ export async function captureTopUrlInsertBatch(): Promise<void> {
            INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
            SELECT id, $2::uuid, id::text FROM UNNEST($1::uuid[]) id RETURNING id
          )
-         INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, gemini_embedding_2_content_sha256)
+         INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256)
          SELECT id, $3::uuid, jsonb_build_object('title', 'Bulk top URL item',
-           'isoDate', '2026-02-01T00:00:00Z'), sha256(id::text::bytea), sha256(id::text::bytea)
+           'isoDate', '2026-02-01T00:00:00Z'), sha256(id::text::bytea)
          FROM inserted_guids RETURNING id`,
         [ids, topUrlHostId(0), TOP_URL_HOT],
       )

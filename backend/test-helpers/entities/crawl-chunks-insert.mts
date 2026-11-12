@@ -32,7 +32,7 @@ export async function insertTestCrawlChunk(data: {
         gemini_embedding_2_input_sha256,
         gemini_embedding_2_embedding,
         gemini_embedding_2_embedding_created_at
-      , bedrock_nova_multimodal_v1_content_sha256)
+      )
       VALUES (
         ${data.crawlId},
         ${data.orderIndex},
@@ -41,14 +41,14 @@ export async function insertTestCrawlChunk(data: {
         ${data.contentSha256},
         ${pgvector.toSql(data.embedding)},
         NOW()
-      , ${data.contentSha256})
+      )
     `,
     )
   } else {
     await write(
       sql`/* insertTestCrawlChunk:pending */
-      INSERT INTO crawl_chunks (crawl_id, order_index, markdown, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-      VALUES (${data.crawlId}, ${data.orderIndex}, ${data.markdown}, ${data.contentSha256}, ${data.contentSha256})
+      INSERT INTO crawl_chunks (crawl_id, order_index, markdown, gemini_embedding_2_content_sha256)
+      VALUES (${data.crawlId}, ${data.orderIndex}, ${data.markdown}, ${data.contentSha256})
     `,
     )
   }
@@ -66,8 +66,8 @@ export async function insertTestCrawlChunksBulk(
   for (const chunk of chunks) {
     await write(
       sql`/* insertTestCrawlChunksBulk */
-      INSERT INTO crawl_chunks (crawl_id, order_index, markdown, gemini_embedding_2_content_sha256, bedrock_nova_multimodal_v1_content_sha256)
-      VALUES (${chunk.crawlId}, ${chunk.orderIndex}, ${chunk.markdown}, decode(${chunk.contentSha256}, 'hex'), decode(${chunk.contentSha256}, 'hex'))
+      INSERT INTO crawl_chunks (crawl_id, order_index, markdown, gemini_embedding_2_content_sha256)
+      VALUES (${chunk.crawlId}, ${chunk.orderIndex}, ${chunk.markdown}, decode(${chunk.contentSha256}, 'hex'))
     `,
     )
   }

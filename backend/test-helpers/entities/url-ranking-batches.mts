@@ -14,9 +14,9 @@ export async function insertTestUrlRankingItems(
     INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
     SELECT id, ${hostnameId}, id::text FROM UNNEST(${ids}::uuid[]) id`)
   await transaction(sql`/* insertTestUrlRankingItems:items */
-    INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, gemini_embedding_2_content_sha256)
+    INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256)
     SELECT id, url_id, jsonb_build_object('title', 'Ranking batch', 'isoDate', iso_date),
-      sha256(id::text::bytea), sha256(id::text::bytea)
+      sha256(id::text::bytea)
     FROM UNNEST(${ids}::uuid[], ${items.map(item => item.urlId)}::uuid[],
       ${items.map(item => item.isoDate)}::text[]) item(id, url_id, iso_date)`)
   await transaction.commit()
@@ -43,9 +43,9 @@ export async function deleteTestUrlRankingItems(ids: string[]): Promise<void> {
 
 export async function upsertTestUrlRankingItems(items: RankedItem[]): Promise<void> {
   await write(sql`/* upsertTestUrlRankingItems */
-    INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, gemini_embedding_2_content_sha256)
+    INSERT INTO rss_feed_items (id, url_id, data, gemini_embedding_2_content_sha256)
     SELECT id, url_id, jsonb_build_object('title', 'Ranking upsert', 'isoDate', iso_date),
-      sha256(id::text::bytea), sha256(id::text::bytea)
+      sha256(id::text::bytea)
     FROM UNNEST(${items.map(item => item.id)}::uuid[], ${items.map(item => item.urlId)}::uuid[],
       ${items.map(item => item.isoDate)}::text[]) item(id, url_id, iso_date)
     ON CONFLICT (id) DO UPDATE SET url_id = EXCLUDED.url_id, data = EXCLUDED.data`)

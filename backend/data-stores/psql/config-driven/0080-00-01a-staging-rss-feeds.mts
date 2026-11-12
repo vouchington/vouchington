@@ -67,10 +67,10 @@ ON CONFLICT DO NOTHING;`,
 INSERT INTO topics (
   id, name, slug, topic_type, aliases, hostname_id, created_via,
   gemini_embedding_2_content_sha256
-, bedrock_nova_multimodal_v1_content_sha256)
+)
 SELECT ${lit(ids.topic)}, ${lit(topicName)}, ${lit(feed.slug)}, 'rss_feed',
   ARRAY[${lit(feed.slug)}], h.id, 'system', decode(${lit(sha256)}, 'hex')
-, decode(${lit(sha256)}, 'hex') FROM url_hostnames h
+FROM url_hostnames h
 WHERE h.hostname = ${lit(feed.hostname)}
   AND NOT EXISTS (
     SELECT 1 FROM topics

@@ -25,7 +25,6 @@ export type ApiEgressProxyProvider =
   | 'bluesky_oauth_enabled'
   | 'fediverse_search_enabled'
   | 'gemini_embeddings_enabled'
-  | 'bedrock_embeddings_enabled'
 
 export type ProviderFetchProfile = 'routine' | 'long-running'
 

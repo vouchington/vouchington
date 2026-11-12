@@ -139,10 +139,6 @@ vitest:
       integration_suites:
         anthropic:
           - anthropic
-    backend-bedrock:
-      integration_suites:
-        bedrock:
-          - bedrock
     backend-openai:
       integration_suites:
         openai:

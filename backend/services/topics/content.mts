@@ -21,7 +21,7 @@ export const updateTopicEmbeddingContentHash = async (topicId: string) => {
   await write(
     `/* updateTopicEmbeddingContentHash */
     UPDATE topics
-    SET gemini_embedding_2_content_sha256 = $1, bedrock_nova_multimodal_v1_content_sha256 = $1
+    SET gemini_embedding_2_content_sha256 = $1
     WHERE id = $2
   `,
     [content_sha256, topicId],

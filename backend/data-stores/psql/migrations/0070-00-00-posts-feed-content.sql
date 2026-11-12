@@ -127,16 +127,7 @@ CREATE TABLE IF NOT EXISTS posts (
   lingua_rs_results JSONB,
   lingua_rs_detected_at TIMESTAMPTZ,
 
-  -- bedrock nova multimodal v1 embedding
-  bedrock_nova_multimodal_v1_content_sha256 BYTEA NOT NULL,
-  CHECK (OCTET_LENGTH(bedrock_nova_multimodal_v1_content_sha256) = 32),
-  bedrock_nova_multimodal_v1_input_sha256 BYTEA,
-  CHECK (bedrock_nova_multimodal_v1_input_sha256 IS NULL OR OCTET_LENGTH(bedrock_nova_multimodal_v1_input_sha256) = 32),
-  bedrock_nova_multimodal_v1_embedding VECTOR(1024),
-  bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ,
-  bedrock_nova_multimodal_v1_input_token_count INT,
-  CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
-
+  -- gemini embedding 2
   gemini_embedding_2_content_sha256 BYTEA NOT NULL,
   CHECK (OCTET_LENGTH(gemini_embedding_2_content_sha256) = 32),
   gemini_embedding_2_input_sha256 BYTEA,
@@ -1216,32 +1207,3 @@ CREATE INDEX IF NOT EXISTS idx_posts__created_via_oauth_client_id
 
 CREATE INDEX IF NOT EXISTS idx_image_deletion_post_updates__post_id
 ON image_deletion_post_updates (post_id);
-
-CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_input_sha256
-ON posts (bedrock_nova_multimodal_v1_input_sha256)
-WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_embedding
-ON posts USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
-WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_to_update
-ON posts (id)
-WHERE (
-  bedrock_nova_multimodal_v1_input_sha256 IS NULL
-  OR bedrock_nova_multimodal_v1_input_sha256 != bedrock_nova_multimodal_v1_content_sha256
-);
-
-CREATE INDEX IF NOT EXISTS idx_posts__ban_evasion_post_embedding_pending
-ON posts (id)
-WHERE community_id IS NOT NULL
-  AND created_by_id IS NOT NULL
-  AND created_by_id != '00000000-0000-7000-8000-000000000000'::uuid
-  AND deleted_at IS NULL
-  AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
-  AND bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
-  AND bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
-  AND (
-    ban_evasion_post_embedding_input_sha256 IS NULL
-    OR ban_evasion_post_embedding_input_sha256 != bedrock_nova_multimodal_v1_input_sha256
-  );

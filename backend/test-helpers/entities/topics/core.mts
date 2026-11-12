@@ -32,8 +32,8 @@ export async function insertTestTopic(data: {
   const hostnameId = data.hostnameId === undefined ? null : data.hostnameId
   const aliases = data.aliases ?? []
   const { rows } = await write<{ id: string }>(sql`/* insertTestTopic */
-    INSERT INTO topics (id, name, slug, created_by_id, topic_type, is_noindexed, should_allow_reviews, hostname_id, gemini_embedding_2_content_sha256, aliases, created_via, created_via_oauth_client_id, bedrock_nova_multimodal_v1_content_sha256)
-    VALUES (COALESCE(${data.id ?? null}::uuid, uuidv7()), ${data.name}, ${data.slug}, ${data.createdById}, ${topicType}, ${noindex}, ${allowReviews}, ${hostnameId}, ${embeddingSha256}, ${aliases}, ${data.provenance?.createdVia ?? 'system'}, ${data.provenance?.oauthClientId ?? null}, ${embeddingSha256})
+    INSERT INTO topics (id, name, slug, created_by_id, topic_type, is_noindexed, should_allow_reviews, hostname_id, gemini_embedding_2_content_sha256, aliases, created_via, created_via_oauth_client_id)
+    VALUES (COALESCE(${data.id ?? null}::uuid, uuidv7()), ${data.name}, ${data.slug}, ${data.createdById}, ${topicType}, ${noindex}, ${allowReviews}, ${hostnameId}, ${embeddingSha256}, ${aliases}, ${data.provenance?.createdVia ?? 'system'}, ${data.provenance?.oauthClientId ?? null})
     RETURNING id
   `)
   const topicId = rows[0].id
@@ -60,14 +60,14 @@ export async function insertTestTopicsAndExplicitPostCategories({
     topic_id: string
   }>(sql`/* insertTestTopicsAndExplicitPostCategories */
     WITH inserted_topics AS (
-      INSERT INTO topics (name, slug, created_by_id, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
+      INSERT INTO topics (name, slug, created_by_id, gemini_embedding_2_content_sha256, created_via)
       SELECT
         ${prefix} || ' topic ' || series.ordinal,
         ${prefix} || '-topic-' || series.ordinal,
         ${createdById},
         ${embeddingSha256},
         'system'
-      , ${embeddingSha256} FROM generate_series(1, ${count}) AS series(ordinal)
+      FROM generate_series(1, ${count}) AS series(ordinal)
       RETURNING id
     )
     INSERT INTO post_explicit_topic_categories (post_id, topic_id)
@@ -84,14 +84,14 @@ export async function insertTestTopicBatch(options: {
 }): Promise<string[]> {
   const embeddingSha256 = `\\x${'0'.repeat(64)}`
   const { rows } = await write<{ id: string }>(sql`/* insertTestTopicBatch */
-    INSERT INTO topics (name, slug, created_by_id, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
+    INSERT INTO topics (name, slug, created_by_id, gemini_embedding_2_content_sha256, created_via)
     SELECT
       ${options.prefix} || ' topic ' || series.ordinal,
       ${options.prefix} || '-topic-' || series.ordinal,
       ${options.createdById},
       ${embeddingSha256},
       'system'
-    , ${embeddingSha256} FROM generate_series(1, ${options.count}) AS series(ordinal)
+    FROM generate_series(1, ${options.count}) AS series(ordinal)
     RETURNING id
   `)
   return rows.map(row => row.id)

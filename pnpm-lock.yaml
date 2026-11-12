@@ -803,9 +803,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../queues/background-cpu
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../queues/bedrock-embeddings-batch
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../queues/bloom-filters
@@ -899,9 +896,6 @@ importers:
       '@services/availability':
         specifier: workspace:^
         version: link:../services/availability
-      '@services/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../services/bedrock-embeddings-batch
       '@services/bluesky-accounts':
         specifier: workspace:^
         version: link:../services/bluesky-accounts
@@ -1732,9 +1726,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -1892,9 +1883,6 @@ importers:
       '@workers/background':
         specifier: workspace:^
         version: link:../../workers/background
-      '@workers/bedrock-batch-sqs':
-        specifier: workspace:^
-        version: link:../../workers/bedrock-batch-sqs
       '@workers/bloom-filters':
         specifier: workspace:^
         version: link:../../workers/bloom-filters
@@ -2317,12 +2305,6 @@ importers:
 
   backend/modules/aws:
     dependencies:
-      '@aws-sdk/client-bedrock':
-        specifier: ^3.1169.0
-        version: 3.1169.0
-      '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1169.0
-        version: 3.1169.0
       '@aws-sdk/client-cloudfront':
         specifier: ^3.1169.0
         version: 3.1169.0
@@ -2925,55 +2907,6 @@ importers:
       valkyries:
         specifier: ^0.15.0
         version: 0.15.0
-
-  backend/queues/bedrock-embeddings:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@queues/background-cpu':
-        specifier: workspace:^
-        version: link:../background-cpu
-      '@services/analytics':
-        specifier: workspace:^
-        version: link:../../services/analytics
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
-      glide-mq:
-        specifier: ^0.20.0
-        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/bedrock-embeddings-batch:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
-      '@queues/background-cpu':
-        specifier: workspace:^
-        version: link:../background-cpu
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      '@vouchington/worker-runtime':
-        specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
-      glide-mq:
-        specifier: ^0.20.0
-        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@data-stores/valkey-core':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-core
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/queues/bloom-filters:
     dependencies:
@@ -3765,9 +3698,6 @@ importers:
       '@services/autotagger':
         specifier: workspace:^
         version: link:../services/autotagger
-      '@services/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../services/bedrock-embeddings-batch
       '@services/bluesky-accounts':
         specifier: workspace:^
         version: link:../services/bluesky-accounts
@@ -4071,7 +4001,7 @@ importers:
         version: 9.1.7
       vouchington-tooling:
         specifier: ^3.5.0
-        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.100(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.100(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@6.0.3)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
 
   backend/service-registrations:
     dependencies:
@@ -4740,146 +4670,6 @@ importers:
         version: link:../../test-helpers
 
   backend/services/batch-lookup: {}
-
-  backend/services/bedrock-embeddings:
-    dependencies:
-      '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1169.0
-        version: 3.1169.0
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
-      '@data-stores/valkey-rate-limiter':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-rate-limiter
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@queues/bloom-filters':
-        specifier: workspace:^
-        version: link:../../queues/bloom-filters
-      '@services/analytics':
-        specifier: workspace:^
-        version: link:../analytics
-      '@services/bloom-filter-config':
-        specifier: workspace:^
-        version: link:../bloom-filter-config
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      '@vouchington/queue-errors':
-        specifier: ^0.2.1
-        version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
-      '@vouchington/utils':
-        specifier: ^0.12.0
-        version: 0.12.0
-      pg-copy-streams:
-        specifier: ^7.0.0
-        version: 7.0.0
-      pgvector:
-        specifier: ^0.3.0
-        version: 0.3.1
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-      valkyries:
-        specifier: ^0.15.0
-        version: 0.15.0
-    devDependencies:
-      '@types/pg-copy-streams':
-        specifier: ^1.2.5
-        version: 1.2.5
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/services/bedrock-embeddings-batch:
-    dependencies:
-      '@aws-sdk/client-bedrock':
-        specifier: ^3.1169.0
-        version: 3.1169.0
-      '@aws-sdk/client-s3':
-        specifier: ^3.1169.0
-        version: 3.1169.0
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
-      '@services/communities':
-        specifier: workspace:^
-        version: link:../communities
-      '@services/crawl-chunks':
-        specifier: workspace:^
-        version: link:../crawl-chunks
-      '@services/images':
-        specifier: workspace:^
-        version: link:../images
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../posts
-      '@services/rss-feed-items':
-        specifier: workspace:^
-        version: link:../rss-feed-items
-      '@services/stories':
-        specifier: workspace:^
-        version: link:../stories
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../topics
-      '@ts-shared/deploy-environment':
-        specifier: workspace:^
-        version: link:../../../ts-shared/deploy-environment
-      '@vouchington/image-resize':
-        specifier: ^0.2.0
-        version: 0.2.0(@types/node@26.6.6)
-      '@vouchington/utils':
-        specifier: ^0.12.0
-        version: 0.12.0
-      pg-copy-streams:
-        specifier: ^7.0.0
-        version: 7.0.0
-    devDependencies:
-      '@queues/ai-agents':
-        specifier: workspace:^
-        version: link:../../queues/ai-agents
-      '@services/copyright-notices':
-        specifier: workspace:^
-        version: link:../copyright-notices
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../urls
-      '@types/pg-copy-streams':
-        specifier: ^1.2.5
-        version: 1.2.5
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/services/bloom-filter-config:
     dependencies:
@@ -5740,9 +5530,6 @@ importers:
       '@jongleberry/vurst-markdown':
         specifier: ^0.4.3
         version: 0.4.3
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/embeddings':
         specifier: workspace:^
         version: link:../embeddings
@@ -6432,9 +6219,6 @@ importers:
       '@services/autotagger':
         specifier: workspace:^
         version: link:../autotagger
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
@@ -7219,9 +7003,6 @@ importers:
       '@services/api-keys':
         specifier: workspace:^
         version: link:../api-keys
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/embeddings':
         specifier: workspace:^
         version: link:../embeddings
@@ -9644,9 +9425,6 @@ importers:
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
       '@queues/gemini-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/gemini-embeddings-batch
@@ -10046,9 +9824,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
@@ -10073,9 +9848,6 @@ importers:
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/comments':
         specifier: workspace:^
         version: link:../comments
@@ -10325,9 +10097,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
@@ -10967,9 +10736,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -10991,9 +10757,6 @@ importers:
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/classifier-runs':
         specifier: workspace:^
         version: link:../classifier-runs
@@ -11903,9 +11666,6 @@ importers:
       '@services/batch-lookup':
         specifier: workspace:^
         version: link:../batch-lookup
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
@@ -13245,9 +13005,6 @@ importers:
       '@services/api-keys':
         specifier: workspace:^
         version: link:../services/api-keys
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../services/bedrock-embeddings
       '@services/bloom-filter-maintenance':
         specifier: workspace:^
         version: link:../services/bloom-filter-maintenance
@@ -13830,9 +13587,6 @@ importers:
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
       '@services/embeddings':
         specifier: workspace:^
         version: link:../../services/embeddings
@@ -13848,12 +13602,6 @@ importers:
       '@workers/ai-agents':
         specifier: workspace:^
         version: link:../ai-agents
-      '@workers/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
-      '@workers/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings-batch
       '@workers/content-analysis':
         specifier: workspace:^
         version: link:../content-analysis
@@ -13879,18 +13627,12 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
-      '@aws-sdk/client-bedrock':
-        specifier: ^3.1169.0
-        version: 3.1169.0
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../../data-stores/valkey-core
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
@@ -13916,108 +13658,6 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
 
-  backend/workers/bedrock-batch-sqs:
-    dependencies:
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@queues/background-cpu':
-        specifier: workspace:^
-        version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
-      '@vouchington/worker-runtime':
-        specifier: ^0.3.1
-        version: 0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
-    devDependencies:
-      '@aws-sdk/client-sqs':
-        specifier: ^3.1169.0
-        version: 3.1169.0
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/workers/bedrock-embeddings:
-    dependencies:
-      '@queues/ai-agents':
-        specifier: workspace:^
-        version: link:../../queues/ai-agents
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../../services/posts
-      '@services/rss-feed-items':
-        specifier: workspace:^
-        version: link:../../services/rss-feed-items
-      '@services/stories':
-        specifier: workspace:^
-        version: link:../../services/stories
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
-      glide-mq:
-        specifier: ^0.20.0
-        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/workers/bedrock-embeddings-batch:
-    dependencies:
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
-      '@queues/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings-batch
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
-      '@services/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings-batch
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../../services/posts
-      '@vouchington/queue-errors':
-        specifier: ^0.2.1
-        version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
-      glide-mq:
-        specifier: ^0.20.0
-        version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-      valkyries:
-        specifier: ^0.15.0
-        version: 0.15.0
-    devDependencies:
-      '@data-stores/valkey-core':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-core
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/workers/bloom-filters:
     dependencies:
       '@data-stores/valkey':
@@ -14035,9 +13675,6 @@ importers:
       '@services/api-keys':
         specifier: workspace:^
         version: link:../../services/api-keys
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
@@ -14462,9 +14099,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -15758,7 +15392,7 @@ importers:
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^3.5.0
-        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@typescript/typescript6@6.0.2)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.100(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
+        version: 3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.100(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@6.0.3)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76)
 
   static-code-analysis:
     dependencies:
@@ -16355,14 +15989,6 @@ packages:
     resolution: {integrity: sha512-OHlfkNzDFjYnwNPABhwAkDTUi0HPjfsKUHJDR0bSMORpCXNzRpInPCNCIT08xKDhjaPlcLJ+2Av+Sk7hHnuC8A==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-bedrock-runtime@3.1169.0':
-    resolution: {integrity: sha512-KkMuq9IW+H8VHTEw/qV+ArI70w1WoqDuM/ZLX87MXB0yV31ihqY+2lwZ+zeD5spcZpmlLuUzXTPyMpWE2ZnbtA==}
-    engines: {node: '>=20.0.0'}
-
-  '@aws-sdk/client-bedrock@3.1169.0':
-    resolution: {integrity: sha512-ZeBXxZg90apw6JVn5yJ2c+k4EFq6HiuW0NT6GmRVYHg3PmjjKEgY9180LBBpPUe4Qg37r1LdyFhqGqDh8sbsoQ==}
-    engines: {node: '>=20.0.0'}
-
   '@aws-sdk/client-cloudfront@3.1169.0':
     resolution: {integrity: sha512-WTApNj+nbEu2xKsBsWjODypbm7ZSV+dllV7SzfRmR+wh21HqjJLLExtmywgAQje1/UC/AROBtbghIjE3MpXQrw==}
     engines: {node: '>=20.0.0'}
@@ -16447,16 +16073,8 @@ packages:
     resolution: {integrity: sha512-8q1ICxcDjHId3bBryuu/j+1L9y5/3uQnwzLDt5j2ElcjZSoWmFtymdJy7OjLrluSMe0Z4mq5bcH4fxBXvlEHfw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/eventstream-handler-node@3.972.42':
-    resolution: {integrity: sha512-YVB1wrpE1WF8NvMpaRyhwm9XBYl3HTbPNEIgybi0b0XpmBrJ7Y3Y/drbxh9qAVMbR+0hcwM63GPWzhOVRuerfg==}
-    engines: {node: '>=20.0.0'}
-
   '@aws-sdk/middleware-endpoint-discovery@3.972.39':
     resolution: {integrity: sha512-AtZS+UK7CciPbdiszPoG08A23kUojFxFnWIv155uPieSPcHR9D9Sovtp19U0j5qmD2DzHpG9OI7mb0Kiyvf3mA==}
-    engines: {node: '>=20.0.0'}
-
-  '@aws-sdk/middleware-eventstream@3.972.38':
-    resolution: {integrity: sha512-4K6FDz2BxH3rve8Hw/8uApWXKCuKKMeYKzY23PoiGqUBWaA23eAy+GzW9aoG3Cm7HqgYzqkljl3ECJRJCxGs7g==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/middleware-sdk-s3@3.972.89':
@@ -16466,10 +16084,6 @@ packages:
   '@aws-sdk/middleware-sdk-sqs@3.972.50':
     resolution: {integrity: sha512-iSxF2dJT3+At+RT9eeyq0qFKVLEPto27TAQxn2zH2bw5syXj4+/H4VReFqcQAe3n0IdGlt+0T6flnPMb71FOHA==}
     engines: {node: '>=20.0.0'}
-
-  '@aws-sdk/middleware-websocket@3.972.66':
-    resolution: {integrity: sha512-feGNDB15ZgqX4DTsUykkgj7d8hzfzx03v80EIyRA1FTbsbAJQKxYB50kRbrrpE5WeFaWhgk+p5YHlsoyXrI2/g==}
-    engines: {node: '>= 14.0.0'}
 
   '@aws-sdk/nested-clients@3.998.3':
     resolution: {integrity: sha512-acHTTzMB13CU6dU4sxABYExMI3PQM2zStWH2MiUwJp/7QKTrLg2f7mbzSXoegW2kYOk2tdqQYagsZrWB8Xv7eA==}
@@ -16485,10 +16099,6 @@ packages:
 
   '@aws-sdk/token-providers@3.1166.0':
     resolution: {integrity: sha512-ngJ8mxXqtQ9mnp7QV6TWKJCxkpjVfPWxKQSc2FYhCyCfOVFIGdFv7P+/RqVffFrJAorwBPpktnv32gNlcEgF4g==}
-    engines: {node: '>=20.0.0'}
-
-  '@aws-sdk/token-providers@3.1169.0':
-    resolution: {integrity: sha512-ScQiQuJIAFevAHjCh/E159qaWeQtw8KUZ4PGUfHMeJU0VXaF4HE8PSgNXY/y4nmqrT8/gD3SoFhuFT5dy1cisA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/types@3.975.1':
@@ -21391,6 +21001,11 @@ packages:
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
+    peerDependencies:
+      ajv: ^8.0.0
+    peerDependenciesMeta:
+      ajv:
+        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -25543,33 +25158,6 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-bedrock-runtime@3.1169.0':
-    dependencies:
-      '@aws-sdk/core': 3.981.0
-      '@aws-sdk/credential-provider-node': 3.972.97
-      '@aws-sdk/eventstream-handler-node': 3.972.42
-      '@aws-sdk/middleware-eventstream': 3.972.38
-      '@aws-sdk/middleware-websocket': 3.972.66
-      '@aws-sdk/token-providers': 3.1169.0
-      '@aws-sdk/types': 3.975.1
-      '@smithy/core': 3.40.0
-      '@smithy/fetch-http-handler': 5.8.1
-      '@smithy/node-http-handler': 4.14.2
-      '@smithy/types': 4.20.0
-      tslib: 2.8.1
-
-  '@aws-sdk/client-bedrock@3.1169.0':
-    dependencies:
-      '@aws-sdk/core': 3.981.0
-      '@aws-sdk/credential-provider-node': 3.972.97
-      '@aws-sdk/token-providers': 3.1169.0
-      '@aws-sdk/types': 3.975.1
-      '@smithy/core': 3.40.0
-      '@smithy/fetch-http-handler': 5.8.1
-      '@smithy/node-http-handler': 4.14.2
-      '@smithy/types': 4.20.0
-      tslib: 2.8.1
-
   '@aws-sdk/client-cloudfront@3.1169.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
@@ -25797,23 +25385,9 @@ snapshots:
       mnemonist: 0.38.3
       tslib: 2.8.1
 
-  '@aws-sdk/eventstream-handler-node@3.972.42':
-    dependencies:
-      '@aws-sdk/types': 3.975.1
-      '@smithy/core': 3.40.0
-      '@smithy/types': 4.20.0
-      tslib: 2.8.1
-
   '@aws-sdk/middleware-endpoint-discovery@3.972.39':
     dependencies:
       '@aws-sdk/endpoint-cache': 3.972.11
-      '@aws-sdk/types': 3.975.1
-      '@smithy/core': 3.40.0
-      '@smithy/types': 4.20.0
-      tslib: 2.8.1
-
-  '@aws-sdk/middleware-eventstream@3.972.38':
-    dependencies:
       '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.40.0
       '@smithy/types': 4.20.0
@@ -25832,16 +25406,6 @@ snapshots:
     dependencies:
       '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.40.0
-      '@smithy/types': 4.20.0
-      tslib: 2.8.1
-
-  '@aws-sdk/middleware-websocket@3.972.66':
-    dependencies:
-      '@aws-sdk/core': 3.981.0
-      '@aws-sdk/types': 3.975.1
-      '@smithy/core': 3.40.0
-      '@smithy/fetch-http-handler': 5.8.1
-      '@smithy/signature-v4': 5.7.5
       '@smithy/types': 4.20.0
       tslib: 2.8.1
 
@@ -25873,15 +25437,6 @@ snapshots:
       tslib: 2.8.1
 
   '@aws-sdk/token-providers@3.1166.0':
-    dependencies:
-      '@aws-sdk/core': 3.981.0
-      '@aws-sdk/nested-clients': 3.998.3
-      '@aws-sdk/types': 3.975.1
-      '@smithy/core': 3.40.0
-      '@smithy/types': 4.20.0
-      tslib: 2.8.1
-
-  '@aws-sdk/token-providers@3.1169.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/nested-clients': 3.998.3
@@ -29784,12 +29339,34 @@ snapshots:
       - '@typescript/native'
       - supports-color
 
+  '@typescript-eslint/parser@8.73.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(typescript@7.0.2)':
+    dependencies:
+      '@typescript-eslint/scope-manager': 8.73.0
+      '@typescript-eslint/types': 8.73.0
+      '@typescript-eslint/typescript-estree': 8.73.0(supports-color@10.2.2)(typescript@6.0.3)(typescript@7.0.2)
+      '@typescript-eslint/visitor-keys': 8.73.0
+      debug: 4.4.3(supports-color@10.2.2)
+      eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
+      typescript: 6.0.3
+    transitivePeerDependencies:
+      - '@typescript/native'
+      - supports-color
+
   '@typescript-eslint/project-service@8.73.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
     dependencies:
       '@typescript-eslint/tsconfig-utils': 8.73.0(@typescript/typescript6@6.0.2)
       '@typescript-eslint/types': 8.73.0
       debug: 4.4.3(supports-color@10.2.2)
       typescript: '@typescript/typescript6@6.0.2'
+    transitivePeerDependencies:
+      - supports-color
+
+  '@typescript-eslint/project-service@8.73.0(supports-color@10.2.2)(typescript@6.0.3)':
+    dependencies:
+      '@typescript-eslint/tsconfig-utils': 8.73.0(typescript@6.0.3)
+      '@typescript-eslint/types': 8.73.0
+      debug: 4.4.3(supports-color@10.2.2)
+      typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
 
@@ -29801,6 +29378,10 @@ snapshots:
   '@typescript-eslint/tsconfig-utils@8.73.0(@typescript/typescript6@6.0.2)':
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
+
+  '@typescript-eslint/tsconfig-utils@8.73.0(typescript@6.0.3)':
+    dependencies:
+      typescript: 6.0.3
 
   '@typescript-eslint/types@8.72.1': {}
 
@@ -29818,6 +29399,23 @@ snapshots:
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(@typescript/typescript6@6.0.2)
       typescript: '@typescript/typescript6@6.0.2'
+    optionalDependencies:
+      '@typescript/native': typescript@7.0.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@typescript-eslint/typescript-estree@8.73.0(supports-color@10.2.2)(typescript@6.0.3)(typescript@7.0.2)':
+    dependencies:
+      '@typescript-eslint/project-service': 8.73.0(supports-color@10.2.2)(typescript@6.0.3)
+      '@typescript-eslint/tsconfig-utils': 8.73.0(typescript@6.0.3)
+      '@typescript-eslint/types': 8.73.0
+      '@typescript-eslint/visitor-keys': 8.73.0
+      debug: 4.4.3(supports-color@10.2.2)
+      minimatch: 11.0.5
+      semver: 7.8.6
+      tinyglobby: 0.2.17
+      ts-api-utils: 2.5.0(typescript@6.0.3)
+      typescript: 6.0.3
     optionalDependencies:
       '@typescript/native': typescript@7.0.2
     transitivePeerDependencies:
@@ -30379,8 +29977,8 @@ snapshots:
       - supports-color
       - zod
 
-  ajv-formats@2.1.1:
-    dependencies:
+  ajv-formats@2.1.1(ajv@8.20.0):
+    optionalDependencies:
       ajv: 8.20.0
     optional: true
 
@@ -33608,7 +33206,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1
+      ajv-formats: 2.1.1(ajv@8.20.0)
       ajv-keywords: 5.1.0(ajv@8.20.0)
     optional: true
 
@@ -34108,6 +33706,10 @@ snapshots:
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
+  ts-api-utils@2.5.0(typescript@6.0.3):
+    dependencies:
+      typescript: 6.0.3
+
   ts-dedent@2.3.0: {}
 
   tsconfck@3.1.6(@typescript/typescript6@6.0.2):
@@ -34423,6 +34025,44 @@ snapshots:
       pg: 8.23.1
       react: 19.3.1
       typescript: '@typescript/typescript6@6.0.2'
+      vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@typescript/native'
+      - '@vitest/coverage-v8'
+      - bufferutil
+      - eslint
+      - supports-color
+      - utf-8-validate
+      - zod
+
+  vouchington-tooling@3.5.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))(@playwright/test@1.65.1)(@vitest/coverage-v8@5.1.0)(@vouchington/postgres@0.6.1)(@vouchington/worker-runtime@0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.109.100(vitest@5.1.0))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@6.0.3)(typescript@7.0.2)(vitest@5.1.0)(zod@3.25.76):
+    dependencies:
+      '@types/mdast': 4.0.4
+      '@types/unist': 3.0.3
+      '@typescript-eslint/parser': 8.73.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(typescript@7.0.2)
+      agent-blackboard: 0.7.0(supports-color@10.2.2)(zod@3.25.76)
+      coverage-check: 0.18.1(@vitest/coverage-v8@5.1.0)(vitest@5.1.0)
+      csv-parse: 7.0.3
+      csv-stringify: 6.9.0
+      dockerfile-ast: 0.7.1
+      picomatch: 4.0.7
+      remark: 15.0.1(supports-color@10.2.2)
+      remark-gfm: 4.0.1(supports-color@10.2.2)
+      spdx-expression-parse: 5.0.0
+      yaml: 2.9.1
+    optionalDependencies:
+      '@libpg-query/parser': 18.0.0
+      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@3.25.76)
+      '@playwright/test': 1.65.1
+      '@typescript/typescript6': 6.0.2
+      '@vouchington/postgres': 0.6.1
+      '@vouchington/worker-runtime': 0.3.1(@aws-sdk/client-sqs@3.1169.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.0)
+      next: 16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      no-mistakes: 0.109.100(vitest@5.1.0)
+      pg: 8.23.1
+      react: 19.3.1
+      typescript: 6.0.3
       vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(jsdom@31.0.1(@noble/hashes@2.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     transitivePeerDependencies:
       - '@cfworker/json-schema'

@@ -43,9 +43,9 @@ updated_topic AS (
   RETURNING id
 ),
 inserted_topic AS (
-  INSERT INTO topics (name, slug, topic_type, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
+  INSERT INTO topics (name, slug, topic_type, gemini_embedding_2_content_sha256, created_via)
   SELECT '${safeName}', '${safeSlug}', 'topic', decode('${contentHash}', 'hex'), 'system'
-  , decode('${contentHash}', 'hex') WHERE NOT EXISTS (SELECT 1 FROM existing_topic)
+  WHERE NOT EXISTS (SELECT 1 FROM existing_topic)
   RETURNING id
 )
 SELECT id FROM updated_topic
@@ -88,9 +88,9 @@ updated AS (
   RETURNING id
 ),
 inserted AS (
-  INSERT INTO topics (name, slug, topic_type, gemini_embedding_2_content_sha256, created_via, bedrock_nova_multimodal_v1_content_sha256)
+  INSERT INTO topics (name, slug, topic_type, gemini_embedding_2_content_sha256, created_via)
   SELECT 'Amex Referral Program', 'amex-referral-program', 'referral_program', decode('${amexContentHash}', 'hex'), 'system'
-  , decode('${amexContentHash}', 'hex') WHERE NOT EXISTS (SELECT 1 FROM existing)
+  WHERE NOT EXISTS (SELECT 1 FROM existing)
   RETURNING id
 )
 SELECT id FROM updated UNION ALL SELECT id FROM inserted;

@@ -26,19 +26,6 @@ export function getSESCredentials(env: NodeJS.ProcessEnv = process.env) {
   return credentials
 }
 
-export function hasBedrockCredentials(): boolean {
-  return Boolean(findBedrockCredentials())
-}
-
-export function getBedrockCredentials() {
-  const credentials = findBedrockCredentials()
-  if (!credentials) {
-    throw new Error('Missing Bedrock credentials')
-  }
-
-  return credentials
-}
-
 export function hasFirehoseCredentials(): boolean {
   return Boolean(findFirehoseCredentials())
 }
@@ -73,17 +60,6 @@ function findS3Credentials(env: NodeJS.ProcessEnv) {
     env.AWS_SECRET_ACCESS_KEY,
     env.S3_AWS_SESSION_TOKEN,
     env.AWS_SESSION_TOKEN,
-  )
-}
-
-function findBedrockCredentials() {
-  return findCredentials(
-    process.env.BEDROCK_AWS_ACCESS_KEY_ID,
-    process.env.AWS_ACCESS_KEY_ID,
-    process.env.BEDROCK_AWS_SECRET_ACCESS_KEY,
-    process.env.AWS_SECRET_ACCESS_KEY,
-    process.env.BEDROCK_AWS_SESSION_TOKEN,
-    process.env.AWS_SESSION_TOKEN,
   )
 }
 

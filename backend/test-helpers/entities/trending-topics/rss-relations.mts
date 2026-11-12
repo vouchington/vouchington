@@ -42,9 +42,9 @@ export async function insertBatchRssRelations(params: {
           url_id,
           data,
           gemini_embedding_2_content_sha256
-        , bedrock_nova_multimodal_v1_content_sha256)
+        )
         SELECT r.item_id, r.url_id, '{"title":"Test Item"}'::jsonb, ${sha256}
-        , ${sha256} FROM UNNEST(${itemIds}::uuid[], ${urlIds}::uuid[]) AS r(item_id, url_id)
+        FROM UNNEST(${itemIds}::uuid[], ${urlIds}::uuid[]) AS r(item_id, url_id)
         ON CONFLICT (id) DO NOTHING`)
 
     await query(sql`/* insertBatchRssRelations:sources */

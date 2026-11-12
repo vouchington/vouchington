@@ -28,13 +28,13 @@ export async function insertSemanticWindowPosts(
       id, post_type, title, markdown, created_by_id, created_via,
       gemini_embedding_2_content_sha256, llm_moderation_content_sha256,
       gemini_embedding_2_embedding
-    , bedrock_nova_multimodal_v1_content_sha256)
+    )
     SELECT COALESCE((${explicitIds}::uuid[])[ordinal], uuidv7()),
       'discussion', 'Semantic window fixture', 'Semantic window fixture', ${userId}::uuid,
       'system', decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex'),
       (${embedding.slice(0, 32)}::real[] || ARRAY[ordinal::real / ${count}::real]
         || array_fill(0::real, ARRAY[1503]))::halfvec(1536)
-    , decode(repeat('00', 32), 'hex') FROM generate_series(1, ${count}::integer) AS ordinal
+    FROM generate_series(1, ${count}::integer) AS ordinal
     RETURNING id
   `)
   const ids = rows.map(row => row.id)

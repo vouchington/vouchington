@@ -33,9 +33,9 @@ export async function seedProfilePostCounts(): Promise<void> {
           id, post_type, created_via, markdown, created_by_id,
           parent_post_id, root_post_id, approved_at,
           gemini_embedding_2_content_sha256, llm_moderation_content_sha256
-        , bedrock_nova_multimodal_v1_content_sha256) SELECT fixture.id, fixture.post_type, 'system', 'profile count fixture', $3,
+        ) SELECT fixture.id, fixture.post_type, 'system', 'profile count fixture', $3,
             fixture.root_id, fixture.root_id, now(), $5, $5
-          , $5 FROM UNNEST($1::uuid[], $2::post_types[], $4::uuid[])
+          FROM UNNEST($1::uuid[], $2::post_types[], $4::uuid[])
             AS fixture(id, post_type, root_id)
           ON CONFLICT (id) DO NOTHING`,
     [ids, postTypes, PROFILE_POST_COUNTS_AUTHOR_ID, rootIds, hash],
