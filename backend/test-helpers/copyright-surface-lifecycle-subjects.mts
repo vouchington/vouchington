@@ -1,3 +1,4 @@
+import { restorationDeliveryStages } from './copyright-restoration-delivery-stages.mts'
 import { expect } from 'vitest'
 import { processCopyrightActionIntent } from '../services/copyright-notices/action-delivery-process.mts'
 import {
@@ -77,59 +78,12 @@ export async function assertSurfaceLifecycleRestore(
   const before = await readDeliveryContractState(input)
   // Topic assets have no personal notifier under the immutable placement-party policy.
   const recipients = fixture.ownerKind === 'topic' ? [] : [fixture.actorUserId]
-  expect(
-    before.state.deliveries.filter(row => row.startsWith('poster_restriction_notice:')),
-  ).toEqual(
-    recipients
-      .flatMap(id => [
-        `poster_restriction_notice:email:${id}`,
-        `poster_restriction_notice:in_app:${id}`,
-      ])
-      .toSorted(),
-  )
-  const claimed = claimedDeliveryState(before, intentId)
-  const prepared = {
-    ...claimed,
-    physical: { withheld: false, revision: before.physical.revision + 1 },
-    state: {
-      ...claimed.state,
-      restrictions: claimed.state.restrictions.map(row =>
-        row.id === record.restrictionId ? { ...row, lifted: now } : row,
-      ),
-      events: [...claimed.state.events, 'restoration_authorized_pending_delivery'].toSorted(),
-      correspondence: [
-        ...claimed.state.correspondence,
-        ...recipients.map(() => 'restoration_notice' as const),
-      ].toSorted(),
-      deliveries: [
-        ...claimed.state.deliveries,
-        ...recipients.flatMap(id => [
-          `poster_restoration_notice:email:${id}`,
-          `poster_restoration_notice:in_app:${id}`,
-        ]),
-      ].toSorted(),
-    },
-    registry: [
-      ...claimed.registry,
-      { revision: before.physical.revision + 1, desired: 'withheld', state: 'completed' },
-    ],
-  }
-  const published = {
-    ...prepared,
-    registry: prepared.registry.map(row =>
-      row.revision === prepared.physical.revision
-        ? { ...row, desired: 'allow', state: 'completed' }
-        : row,
-    ),
-  }
-  const terminal = terminalDeliveryState(published, intentId, 'completed')
-  const completed = {
-    ...terminal,
-    state: {
-      ...terminal.state,
-      events: [...terminal.state.events, 'placement_restored'].toSorted(),
-    },
-  }
+  const { claimed, prepared, completed } = restorationDeliveryStages(before, {
+    restrictionId: record.restrictionId,
+    intentId,
+    now,
+    recipients,
+  })
   const [result] = await Promise.allSettled([processCopyrightActionIntent(intentId, now)])
   expect([
     { outcome: nativeCopyrightSerializationConflict, state: before },

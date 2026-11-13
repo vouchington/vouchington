@@ -1,3 +1,12 @@
+import {
+  actionIntent,
+  createWithdrawalContinuation,
+  completeWithdrawalContinuation,
+  noticeRequest,
+  euNoticeRequest,
+  target,
+} from '@voucha/test-helpers/copyright-withdrawal-owned-inputs'
+import { assertRenewedTerritorialOutcome } from '@voucha/test-helpers/copyright-renewed-territorial-outcome'
 import { seedCommittedTerritorialDecision } from '@voucha/test-helpers/copyright-territorial-committed-decision'
 import { seedCommittedTerritorialRedressDecision } from '@voucha/test-helpers/copyright-territorial-committed-redress'
 import { assertCommittedEuWithdrawalContinuity as assertTestEuWithdrawalContinuity } from '@voucha/test-helpers/copyright-eu-withdrawal-subject'
@@ -32,42 +41,6 @@ import {
   withRolledBackTerritorialTransaction,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
 
-function noticeRequest() {
-  const suffix = crypto.randomUUID()
-  return {
-    contact: `claimant-${suffix}@example.test`,
-    contentDescription: `Work ${suffix}`,
-    grounds: `Grounds ${suffix}`,
-    hostedUseUrl: `https://example.test/${suffix}`,
-  }
-}
-
-function euNoticeRequest() {
-  const base = noticeRequest()
-  return {
-    ...base,
-    notifierName: 'Notice claimant',
-    notifierEmail: base.contact,
-    goodFaithStatement: true as const,
-  }
-}
-
-function target(post: Awaited<ReturnType<typeof createHostedImagePost>>) {
-  return {
-    surfaceKind: 'post-image' as const,
-    postId: post.postId,
-    imageId: post.imageId,
-    hostedUseUrl: `https://example.test/${post.postId}`,
-  }
-}
-
-async function actionIntent(noticeId: string, action: 'withhold' | 'restore') {
-  const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-  const intent = aggregate?.actionIntents.find(row => row.action === action)
-  if (!intent) throw new Error(`Missing ${action} intent for ${noticeId}`)
-  return intent
-}
-
 describe('territorial approval withdrawal keeps received-case duties', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -76,16 +49,25 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
 
   it('gates new EU and UK intake while pending and decided notices continue', async () => {
     installTestMediaDeliveryEdge()
-    const [administrator, staff, claimant, euAImage, euCImage, euDImage, ukImage] =
-      await Promise.all([
-        createTestUser({ administrator: true }),
-        createTestUser({ extraRoles: ['moderator'] }),
-        createTestUser(),
-        createHostedImagePost('public'),
-        createHostedImagePost('public'),
-        createHostedImagePost('public'),
-        createHostedImagePost('public'),
-      ])
+    const [
+      administrator,
+      staff,
+      claimant,
+      euAImage,
+      euCImage,
+      euDImage,
+      euContinuationImage,
+      ukImage,
+    ] = await Promise.all([
+      createTestUser({ administrator: true }),
+      createTestUser({ extraRoles: ['moderator'] }),
+      createTestUser(),
+      createHostedImagePost('public'),
+      createHostedImagePost('public'),
+      createHostedImagePost('public'),
+      createHostedImagePost('public'),
+      createHostedImagePost('public'),
+    ])
     const euApproval = await recordCopyrightJurisdictionPolicyApproval(administrator, {
       jurisdiction: 'eu_dsa',
       policyVersion: `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
@@ -114,10 +96,11 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       crypto.randomUUID(),
       euNoticeRequest(),
     )
+    const euDRequest = euNoticeRequest()
     const euD = await receiveEuCopyrightNotice(
       { user: claimant, identity: `user:${claimant.id}` },
       crypto.randomUUID(),
-      euNoticeRequest(),
+      euDRequest,
     )
     const uk = await receiveUkCopyrightNotice(
       { user: claimant, identity: `user:${claimant.id}` },
@@ -148,6 +131,10 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       euD.notice_id,
       crypto.randomUUID(),
       'Please reconsider the no-action decision.',
+    )
+    const { euContinuation, continuationComplaint } = await createWithdrawalContinuation(
+      claimant,
+      staff,
     )
     const euGuest = await prepareTestEuWithdrawalGuestCase()
     await withRolledBackTerritorialTransaction(async transaction => {
@@ -235,17 +222,37 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       rationale: 'The no-action decision was unfounded.',
     })
     expect((await getCopyrightNoticePrivateAggregate(euD.notice_id))?.actionIntents).toHaveLength(0)
-    await recordEuCopyrightStatementOfReasons(staff, euD.notice_id, {
-      text: 'On renewed review the notice identifies infringement.',
-      publicExplanation: 'The image reproduces the claimant’s work.',
-      outcome: 'restrict',
-      targets: [target(euDImage)],
-    })
-    await expect(readCopyrightTerritorialContractShape(euD.notice_id)).resolves.toMatchObject({
+    await assertRenewedTerritorialOutcome(
+      {
+        staff,
+        claimant,
+        claimantContact: euDRequest.notifierEmail,
+        noticeId: euD.notice_id,
+        posts: [euDImage],
+        targets: [target(euDImage)],
+      },
+      {
+        text: 'On renewed review the notice identifies infringement.',
+        publicExplanation: 'The image reproduces the claimant’s work.',
+        outcome: 'restrict',
+        targets: [target(euDImage)],
+      },
+    )
+    await completeWithdrawalContinuation(
+      staff,
+      euContinuation.notice_id,
+      continuationComplaint.id,
+      euContinuationImage,
+    )
+    await expect(
+      readCopyrightTerritorialContractShape(euContinuation.notice_id),
+    ).resolves.toMatchObject({
       eu_statement_count: 2,
       target_count: 1,
     })
-    expect((await getCopyrightNoticePrivateAggregate(euD.notice_id))?.restrictions).toHaveLength(1)
+    expect(
+      (await getCopyrightNoticePrivateAggregate(euContinuation.notice_id))?.restrictions,
+    ).toHaveLength(1)
 
     await withRolledBackTerritorialTransaction(async transaction => {
       await withdrawCopyrightJurisdictionPolicyApproval(administrator, ukApproval.id, {

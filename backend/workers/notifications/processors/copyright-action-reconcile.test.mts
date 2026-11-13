@@ -1,8 +1,8 @@
+import { createCommittedSuspendedSweepCase } from '@voucha/test-helpers/copyright-suspended-sweep-prerequisite'
 import {
   createCopyrightActionSweepReview,
   createCopyrightActionSweepEnforcement,
   createCopyrightActionSweepDeadline,
-  createCopyrightActionSweepSuspended,
   createCopyrightActionSweepBlocked,
   createCopyrightActionSweepRestricted,
   removeCopyrightActionSweepJob,
@@ -104,8 +104,8 @@ describe('processReconcileCopyrightActionIntents', () => {
   })
 
   it('lifts only the selected suspended claimant restriction', async () => {
-    const owned = await createCopyrightActionSweepSuspended()
-    const neighbor = await createCopyrightActionSweepSuspended()
+    const owned = await createCommittedSuspendedSweepCase()
+    const neighbor = await createCommittedSuspendedSweepCase()
     await expect(
       processReconcileCopyrightActionIntents(
         { evaluatedAt: '2030-01-02T03:04:05.000Z', pending: ['suspended'] },

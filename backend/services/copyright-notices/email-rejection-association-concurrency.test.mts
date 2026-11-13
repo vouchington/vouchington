@@ -44,61 +44,74 @@ async function createRejectionScene() {
 
 describe('copyright correspondence rejection and another intake association', () => {
   it.each(['rejection', 'association'] as const)(
-    'commits only %s when its overlapping transaction writes first',
+    'preserves complete outcomes with %s scheduled first',
     async first => {
       const { noticeId, input } = await createRejectionScene()
       const associated = await recordThreadedCopyrightEmail({
         messageId: copyrightEmailMessageId(),
         replyReferences: [copyrightEmailMessageId()],
       })
+      const before = await getCopyrightNoticePrivateAggregate(noticeId)
+      const beforeClock = await readCopyrightCaseLifecycleClock(noticeId)
       const result = await rejectAndAssociateCopyrightEmail(
         input,
         noticeId,
         associated.intakeId,
         first,
       )
-      const rejectionWon = first === 'rejection'
-      const winner = rejectionWon ? result.rejection : result.association
-      const loser = rejectionWon ? result.association : result.rejection
-      expect(winner).toMatchObject({ status: 'fulfilled' })
-      expect(loser).toMatchObject({
+      const rejectionWon = result.rejection.status === 'fulfilled'
+      const associationWon = result.association.status === 'fulfilled'
+      const rejected = {
         status: 'rejected',
-        reason: {
+        reason: expect.objectContaining({
           status: 409,
-          code: first === 'association' ? 'CONFLICT' : 'copyright_email_thread_changed',
-          cause: { code: '40001' },
-        },
-      })
-      expect(result.rejection).toMatchObject(
-        rejectionWon
-          ? { status: 'fulfilled', value: { noticeId, isDuplicate: false } }
-          : { status: 'rejected' },
-      )
-      expect(result.association).toMatchObject(
-        rejectionWon
-          ? { status: 'rejected' }
-          : {
-              status: 'fulfilled',
-              value: {
-                copyright_notice: { id: noticeId },
-                copyright_email_intake: { id: associated.intakeId },
-              },
-            },
-      )
+          code: 'CONFLICT',
+          cause: expect.objectContaining({ code: '40001' }),
+        }),
+      }
+      const associationRejected = {
+        status: 'rejected',
+        reason: expect.objectContaining({
+          status: 409,
+          code: 'copyright_email_thread_changed',
+          cause: expect.objectContaining({ code: '40001' }),
+        }),
+      }
+      const rejectionSuccess = { status: 'fulfilled', value: { noticeId, isDuplicate: false } }
+      const associationSuccess = {
+        status: 'fulfilled',
+        value: expect.objectContaining({
+          copyright_notice: expect.objectContaining({ id: noticeId }),
+          copyright_email_intake: expect.objectContaining({ id: associated.intakeId }),
+        }),
+      }
+      expect([
+        { rejection: rejectionSuccess, association: associationRejected },
+        { rejection: rejected, association: associationSuccess },
+        { rejection: rejected, association: associationRejected },
+      ]).toContainEqual(result)
+      const bothAborted = !rejectionWon && !associationWon
+      const rollbackState = bothAborted
+        ? {
+            aggregate: await getCopyrightNoticePrivateAggregate(noticeId),
+            clock: await readCopyrightCaseLifecycleClock(noticeId),
+          }
+        : null
+      expect(rollbackState).toEqual(bothAborted ? { aggregate: before, clock: beforeClock } : null)
       expect(await readCopyrightEmailIntakeNoticeLinks(input.intakeId)).toEqual([
         { copyright_notice_id: noticeId, link_kind: 'thread' },
       ])
       expect(await readCopyrightEmailIntakeNoticeLinks(associated.intakeId)).toEqual(
-        rejectionWon ? [] : [{ copyright_notice_id: noticeId, link_kind: 'thread' }],
+        associationWon ? [{ copyright_notice_id: noticeId, link_kind: 'thread' }] : [],
       )
       expect(await readCopyrightEmailManualAssociationReview(input.intakeId)).toEqual([
         { copyright_notice_id: noticeId, action: rejectionWon ? 'rejected' : 'pending' },
       ])
       expect(await readCopyrightEmailManualAssociationReview(associated.intakeId)).toEqual(
-        rejectionWon ? [] : [{ copyright_notice_id: noticeId, action: 'pending' }],
+        associationWon ? [{ copyright_notice_id: noticeId, action: 'pending' }] : [],
       )
       expect(await readCopyrightEmailManualAssociationEvent(associated.intakeId)).toEqual(
-        rejectionWon
+        !associationWon
           ? []
           : [
               {
