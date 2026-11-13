@@ -1,3 +1,5 @@
+import { withIsolatedRssSnapshotGeneration } from '@voucha/test-helpers/rss-snapshot-generation-scope'
+import { stableSerialize } from '@services/entity-cache/search-cache'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { valkeyEvents } from 'valkyries'
@@ -57,5 +59,56 @@ describe('legal RSS snapshot eviction', () => {
     } finally {
       valkeyEvents.off('cache:set', onSet)
     }
+  })
+  it('does not revive a retained public snapshot when its generation key is evicted', async () => {
+    await withIsolatedRssSnapshotGeneration(async scope => {
+      const author = await createTestUserDirect()
+      const markdown = `public-before-generation-loss-${randomUUID()}`
+      const id = await insertTestPost({
+        title: 'RSS generation loss',
+        slug: `rss-generation-loss-${randomUUID()}`,
+        createdById: author.id,
+        markdown,
+      })
+      const generation = await getRssSnapshotLegalGeneration()
+      const options = { postIds: [id] }
+      const oldKey = stableSerialize({ ...options, legalGeneration: generation })
+      const stored = Promise.withResolvers<void>()
+      const onSet = (event: { cacheName: string; keys: string[] }) => {
+        if (event.cacheName === 'rss_public_post_snapshots_anon' && event.keys.includes(oldKey))
+          stored.resolve()
+      }
+      valkeyEvents.on('cache:set', onSet)
+      try {
+        expect((await getPublicRssPostSnapshotsCached(options))[0]?.markdown).toBe(markdown)
+        await stored.promise
+        await makeTestRssPostPrivate(id, `never-public-${randomUUID()}`)
+        await scope.evict()
+
+        const replacement = await getRssSnapshotLegalGeneration()
+        expect(replacement).not.toBe(generation)
+        expect(await getPublicRssPostSnapshotsCached(options)).toEqual([])
+        expect(await scope.readSnapshot(oldKey)).toMatchObject([{ id, markdown }])
+      } finally {
+        valkeyEvents.off('cache:set', onSet)
+      }
+    })
+  })
+
+  it('returns the winning namespace to both concurrent missing-key initializers', async () => {
+    await withIsolatedRssSnapshotGeneration(async scope => {
+      const generations = await Promise.all([
+        getRssSnapshotLegalGeneration(),
+        getRssSnapshotLegalGeneration(),
+      ])
+      const winner = scope.initializations.find(attempt => attempt.installed)
+      const loser = scope.initializations.find(attempt => !attempt.installed)
+      expect(scope.initializations).toHaveLength(2)
+      expect(winner).toBeDefined()
+      expect(loser).toBeDefined()
+      expect(loser?.generation).not.toBe(winner?.generation)
+      expect(generations).toEqual([winner?.generation, winner?.generation])
+      expect(generations).not.toContain(loser?.generation)
+    }, 2)
   })
 })
