@@ -1,3 +1,6 @@
+import { createCommittedWaitingCopyrightEmailThread } from '@voucha/test-helpers/copyright-email-committed-intake'
+import { createUnparsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import { parseOrAssertSerializableRollback } from '@voucha/test-helpers/copyright-email-thread-serialization'
 import { createTestUser } from '@voucha/test-helpers'
 import { readCopyrightEmailAncestorIds } from '@voucha/test-helpers/copyright-email-ancestor-edges'
 import {
@@ -134,31 +137,45 @@ describe('copyright email review path', () => {
 
   it('links a waiting reply through the root References edge before the intermediate arrives', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const rootMessageId = copyrightEmailMessageId()
-    const intermediateMessageId = copyrightEmailMessageId()
-    const reply = await recordThreadedCopyrightEmail({
-      messageId: copyrightEmailMessageId(),
-      inReplyTo: [intermediateMessageId],
-      replyReferences: [rootMessageId],
-    })
-    const root = await recordThreadedCopyrightEmail({
-      messageId: rootMessageId,
-      replyReferences: [],
-    })
-    const promoted = await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, root.intakeId),
-    )
+    const { rootMessageId, intermediateMessageId, rootIntakeId, replyIntakeId, noticeId } =
+      await createCommittedWaitingCopyrightEmailThread(moderator.id)
 
-    await expect(getCopyrightStaffEmailIntake(reply.intakeId, moderator)).resolves.toMatchObject({
+    await expect(getCopyrightStaffEmailIntake(replyIntakeId, moderator)).resolves.toMatchObject({
       review_path: 'matched_thread',
-      linked_notice: { id: promoted.noticeId },
+      linked_notice: { id: noticeId },
     })
-    await expect(
-      recordThreadedCopyrightEmail({
-        messageId: intermediateMessageId,
-        replyReferences: [rootMessageId],
-      }),
-    ).resolves.toMatchObject({ match: expect.objectContaining({ noticeId: promoted.noticeId }) })
+    const existingAncestors = await readCopyrightEmailAncestorIds(replyIntakeId)
+    const intermediate = await createUnparsedCopyrightEmailIntake()
+    const outcome = await parseOrAssertSerializableRollback(intermediate, {
+      status: 'succeeded',
+      fromEmail: `claimant-${intermediate.id}@example.test`,
+      subject: 'Copyright notice',
+      bodyText: 'Threaded copyright email.',
+      messageId: intermediateMessageId,
+      replyReferences: [rootMessageId],
+      attachments: [],
+    })
+
+    await expect(getCopyrightStaffEmailIntake(replyIntakeId, moderator)).resolves.toMatchObject({
+      review_path: 'matched_thread',
+      linked_notice: { id: noticeId },
+    })
+    expect(outcome).toMatchObject(
+      outcome.conflict ? { conflict: true } : { conflict: false, match: { noticeId: noticeId } },
+    )
+    await expect(readCopyrightEmailAncestorIds(intermediate.id)).resolves.toEqual(
+      outcome.conflict ? [] : [rootIntakeId],
+    )
+    await expect(readCopyrightEmailAncestorIds(replyIntakeId)).resolves.toEqual(
+      outcome.conflict ? existingAncestors : [rootIntakeId, intermediate.id].toSorted(),
+    )
+    const retained = await getCopyrightStaffEmailIntake(intermediate.id, moderator)
+    expect(retained).toMatchObject({
+      linked_notice: outcome.conflict ? null : { id: noticeId },
+    })
+    expect(outcome.conflict ? ['initial', 'unresolved_thread'] : ['matched_thread']).toContain(
+      retained?.review_path,
+    )
   })
 
   it('keeps that conflict unlinked when both parents are promoted after the reply', async () => {
