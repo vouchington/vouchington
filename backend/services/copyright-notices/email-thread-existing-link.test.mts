@@ -17,12 +17,13 @@ import {
   createRetentionThreadSeedEmail,
   createRetentionParsedEmail,
 } from '@voucha/test-helpers/services/copyright-notices/retention-parsed-email'
-import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 import {
-  claimCopyrightDeliveryIntent,
-  createCopyrightDeliveryIntent,
-  markCopyrightDeliveryIntentSent,
-} from './delivery-intents.mts'
+  seedCopyrightStaffReceiptCorrespondence,
+  seedCopyrightStaffReceiptDelivery,
+  seedCopyrightStaffReceiptSent,
+} from '@voucha/test-helpers/copyright-staff-receipt-delivery'
+import { seedStatementTransportClaim } from '@voucha/test-helpers/copyright-statement-transport-fixtures'
+import { readStatementTransportState } from '@voucha/test-helpers/copyright-statement-transport-state'
 import { recordCopyrightEmailThreadReferences } from './email-threading.mts'
 import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
 
@@ -94,7 +95,7 @@ describe('copyright email thread ownership', () => {
   it('keeps an existing case link when a later outbound reference names another case', async () => {
     const source = await createRetentionMinimalCase()
     const owner = await createRetentionMinimalCase()
-    const correspondence = await createOutboundCopyrightCorrespondence({
+    const correspondence = await seedCopyrightStaffReceiptCorrespondence({
       noticeId: source.noticeId,
       submissionId: null,
       correspondenceKind: 'status_update',
@@ -102,7 +103,7 @@ describe('copyright email thread ownership', () => {
       bodyCiphertext: `body-${randomUUID()}`,
       draftedById: null,
     })
-    const intent = await createCopyrightDeliveryIntent({
+    const intent = await seedCopyrightStaffReceiptDelivery({
       noticeId: source.noticeId,
       submissionId: null,
       correspondenceId: correspondence.id,
@@ -113,13 +114,14 @@ describe('copyright email thread ownership', () => {
       idempotencyKey: `thread-owner-${randomUUID()}`,
       recipientEmail: `claimant-${randomUUID()}@example.test`,
     })
-    const claim = await claimCopyrightDeliveryIntent(intent.id)
+    const leaseToken = await seedStatementTransportClaim(intent.id)
+    const claim = (await readStatementTransportState(intent.id)).state.work
     expect(claim?.state).toBe('claimed')
     const outboundMessageId = `ses-owner-${randomUUID()}`
     expect(
-      await markCopyrightDeliveryIntentSent({
+      await seedCopyrightStaffReceiptSent({
         intentId: intent.id,
-        leaseToken: claim!.lease_token,
+        leaseToken,
         sesMessageId: outboundMessageId,
       }),
     ).toBe(true)

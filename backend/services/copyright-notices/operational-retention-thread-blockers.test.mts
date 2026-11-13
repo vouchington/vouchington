@@ -9,7 +9,8 @@ import { assertTerritorialReviewOutcome } from '@voucha/test-helpers/copyright-t
 import { readTerritorialReviewState } from '@voucha/test-helpers/copyright-territorial-review-state'
 import { beginTransaction } from '@voucha/test-helpers'
 import { interceptCopyrightImpositionForTest } from '@voucha/test-helpers/copyright-imposition-intercept'
-import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
+import { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
+import { seedCopyrightStatementRestriction } from '@voucha/test-helpers/copyright-statement-restriction-fixture'
 import { createTestTerritorialRestrictionScene } from '@voucha/test-helpers/copyright-territorial-restriction-fixtures'
 import {
   createTestExpiredTerritorialDecisionHistory,
@@ -24,7 +25,6 @@ import {
   readTestCopyrightThreadEnforcementPage,
 } from '@voucha/test-helpers/copyright-thread-blocker-retention'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import type { BlockerCursor } from './operational-retention-thread-blockers-state.mts'
 import { readCopyrightThreadBusinessPage } from './operational-retention-thread-blockers-business.mts'
 import { readCopyrightThreadScreeningPage } from './operational-retention-thread-blockers-screening.mts'
@@ -96,16 +96,8 @@ describe('bounded copyright thread blocker proof', () => {
   })
 
   it('finds owed enforcement on a raw target page and settles after that target is restricted', async () => {
-    const fixture = await createAssessedUsDmcaCopyrightNoticeFixture({
-      postTitlePrefix: 'thread blocker enforcement',
-      postSlugPrefix: 'thread-blocker-enforcement',
-      postMarkdown: 'image',
-      claimantDisplayName: 'thread blocker claimant',
-      noticeBodyCiphertext: `notice-${crypto.randomUUID()}`,
-      receiptIdempotencyKeyPrefix: 'thread-blocker-receipt',
-      assessBeforeReceipt: false,
-    })
-    const assessmentId = fixture.noticeAssessment.id
+    const fixture = await createCopyrightRestorationHoldFixture()
+    const assessmentId = fixture.assessment.id
     const noticeId = fixture.notice.id
     const targetId = fixture.aggregate.targets[0]!.id
     const cursor: BlockerCursor = {
@@ -119,12 +111,15 @@ describe('bounded copyright thread blocker proof', () => {
     const pending = await readTestCopyrightThreadEnforcementPage(noticeId, decisions)
     expect(pending.blocked).toBe(true)
 
-    await acceptCopyrightNoticeAndImposeRestriction({
+    await seedCopyrightStatementRestriction({
       noticeId,
       targetId,
       assessmentId,
       imposedAt: new Date(),
-      imposedById: null,
+      moderatorId: fixture.moderator.id,
+      revision: fixture.aggregate.targets[0]!.placement_revision,
+      automated: false,
+      reviewed: false,
     })
     const restricted = await readTestCopyrightThreadEnforcementPage(noticeId, decisions)
     expect(restricted.blocked).toBe(false)

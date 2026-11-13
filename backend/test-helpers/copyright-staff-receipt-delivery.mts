@@ -1,3 +1,4 @@
+import sql from 'sql-template-strings'
 import { beginTransaction } from '@data-stores/psql'
 import { createOutboundCopyrightCorrespondence } from '../services/copyright-notices/correspondence.mts'
 import { createCopyrightDeliveryIntent } from '../services/copyright-notices/delivery-intents.mts'
@@ -20,4 +21,21 @@ export async function seedCopyrightStaffReceiptCorrespondence(
   const correspondence = await createOutboundCopyrightCorrespondence(input, transaction)
   await transaction.commit()
   return correspondence
+}
+
+/** Commits the sent work and attempt facts required by outbound-reference threading subjects. */
+export async function seedCopyrightStaffReceiptSent(input: {
+  intentId: string
+  leaseToken: string
+  sesMessageId: string
+}): Promise<boolean> {
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction(sql`/* seedCopyrightStaffReceiptSent */
+    UPDATE copyright_notice_delivery_work_items SET sent_at = CURRENT_TIMESTAMP,
+      amazon_ses_message_id = ${input.sesMessageId}
+    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
+      AND lease_expires_at > clock_timestamp()
+    RETURNING id`)
+  await transaction.commit()
+  return rows.length === 1
 }
