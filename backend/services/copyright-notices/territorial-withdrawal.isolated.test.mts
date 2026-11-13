@@ -1,3 +1,12 @@
+import { assertWithdrawalWithhold } from '@voucha/test-helpers/copyright-withdrawal-action-duties'
+import { assertWithdrawalAcknowledgment } from '@voucha/test-helpers/copyright-withdrawal-ack-outcome'
+import { assertWithdrawalSupervisedComplaint } from '@voucha/test-helpers/copyright-withdrawal-supervised-outcome'
+import {
+  prepareEuWithdrawalDuties,
+  assertEuWithdrawalNoticeDuties,
+  assertEuWithdrawalRedressActors,
+  completeEuWithdrawalRestoration,
+} from '@voucha/test-helpers/copyright-withdrawal-eu-duties'
 import { seedCommittedTerritorialAcknowledgment } from '@voucha/test-helpers/copyright-territorial-acknowledged-fixture'
 import {
   assertUkWithdrawalReview,
@@ -5,7 +14,6 @@ import {
   completeUkWithdrawalContinuation,
 } from '@voucha/test-helpers/copyright-uk-withdrawal-outcome'
 import {
-  actionIntent,
   createWithdrawalContinuation,
   completeWithdrawalContinuation,
   noticeRequest,
@@ -14,7 +22,10 @@ import {
 } from '@voucha/test-helpers/copyright-withdrawal-owned-inputs'
 import { assertRenewedTerritorialOutcome } from '@voucha/test-helpers/copyright-renewed-territorial-outcome'
 import { seedCommittedTerritorialDecision } from '@voucha/test-helpers/copyright-territorial-committed-decision'
-import { seedCommittedTerritorialRedressDecision } from '@voucha/test-helpers/copyright-territorial-committed-redress'
+import {
+  seedCommittedTerritorialRedress,
+  seedCommittedTerritorialRedressDecision,
+} from '@voucha/test-helpers/copyright-territorial-committed-redress'
 import { assertCommittedEuWithdrawalContinuity as assertTestEuWithdrawalContinuity } from '@voucha/test-helpers/copyright-eu-withdrawal-subject'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
@@ -22,20 +33,12 @@ import { prepareTestEuWithdrawalGuestCase } from '@voucha/test-helpers/copyright
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createHostedImagePost } from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import {
-  acknowledgeEuCopyrightNotice,
-  processCopyrightActionIntent,
   getCopyrightJurisdictionAvailability,
   receiveEuCopyrightNotice,
   receiveUkCopyrightNotice,
-  recordEuCopyrightAcknowledgmentFailure,
-  recordEuCopyrightRedressDecision,
-  recordEuCopyrightStatementOfReasons,
-  recordEuCopyrightSupervisedComplaint,
   recordCopyrightJurisdictionPolicyApproval,
   withdrawCopyrightJurisdictionPolicyApproval,
-  submitEuCopyrightRedress,
 } from './index.mts'
 import { receiveTerritorialCopyrightNoticeInTransaction } from './territorial-notice-receipt.mts'
 import {
@@ -93,10 +96,11 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       crypto.randomUUID(),
       euNoticeRequest(),
     )
+    const euCRequest = euNoticeRequest()
     const euC = await receiveEuCopyrightNotice(
       { user: claimant, identity: `user:${claimant.id}` },
       crypto.randomUUID(),
-      euNoticeRequest(),
+      euCRequest,
     )
     const euDRequest = euNoticeRequest()
     const euD = await receiveEuCopyrightNotice(
@@ -120,19 +124,17 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       outcome: 'restrict',
       targets: [target(euAImage)],
     })
-    await expect(
-      processCopyrightActionIntent((await actionIntent(euA.notice_id, 'withhold')).id),
-    ).resolves.toBe('applied')
+    await assertWithdrawalWithhold(euA.notice_id, euAImage.poster.id)
     await seedCommittedTerritorialDecision('eu_dsa', staff, euD.notice_id, {
       text: 'The supplied evidence does not identify infringement.',
       publicExplanation: 'The notice did not establish that this image infringes.',
       outcome: 'no_action',
       targets: [],
     })
-    const euDComplaint = await submitEuCopyrightRedress(
-      claimant,
+    const euDComplaint = await seedCommittedTerritorialRedress(
+      'eu_dsa',
       euD.notice_id,
-      crypto.randomUUID(),
+      claimant,
       'Please reconsider the no-action decision.',
     )
     const { euContinuation, continuationComplaint } = await createWithdrawalContinuation(
@@ -140,6 +142,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       staff,
     )
     const ukContinuation = await prepareUkWithdrawalContinuation(claimant, staff)
+    const euDuties = await prepareEuWithdrawalDuties(claimant, staff)
     const euGuest = await prepareTestEuWithdrawalGuestCase()
     await withRolledBackTerritorialTransaction(async transaction => {
       await withdrawCopyrightJurisdictionPolicyApproval(administrator, euApproval.id, {
@@ -164,62 +167,28 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       guest: euGuest,
     })
 
-    const failure = await recordEuCopyrightAcknowledgmentFailure(staff, euB.notice_id)
-    expect(failure.attempt_count).toBe(1)
-    const acknowledgment = await acknowledgeEuCopyrightNotice(claimant, euB.notice_id)
-    expect(acknowledgment.acknowledged_at).toBeInstanceOf(Date)
-    await recordEuCopyrightStatementOfReasons(staff, euC.notice_id, {
-      text: 'The notice identifies the work and the infringing hosted image.',
-      publicExplanation: 'This post image reproduces the claimant’s work.',
-      outcome: 'restrict',
-      targets: [target(euCImage)],
-    })
-    const euCState = await getCopyrightNoticePrivateAggregate(euC.notice_id)
-    expect(euCState?.restrictions).toHaveLength(1)
-    expect(euCState?.actionIntents.some(row => row.action === 'withhold')).toBe(true)
-    const euCNotices = await readTestCopyrightStatementIntents(euC.notice_id)
-    expect(euCNotices).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          delivery_kind: 'poster_restriction_notice',
-          channel: 'in_app',
-          recipient_user_id: euCImage.poster.id,
-        }),
-        expect.objectContaining({
-          delivery_kind: 'poster_restriction_notice',
-          channel: 'email',
-          recipient_user_id: euCImage.poster.id,
-        }),
-        expect.objectContaining({
-          delivery_kind: 'claimant_decision_notice',
-          channel: 'in_app',
-          recipient_user_id: claimant.id,
-        }),
-      ]),
+    await assertWithdrawalAcknowledgment(staff, euB.notice_id, true)
+    await assertWithdrawalAcknowledgment(claimant, euDuties.failedNoticeId, false)
+    await assertRenewedTerritorialOutcome(
+      {
+        staff,
+        claimant,
+        claimantContact: euCRequest.notifierEmail,
+        noticeId: euC.notice_id,
+        posts: [euCImage],
+        targets: [target(euCImage)],
+      },
+      {
+        text: 'The notice identifies the work and the infringing hosted image.',
+        publicExplanation: 'This post image reproduces the claimant’s work.',
+        outcome: 'restrict',
+        targets: [target(euCImage)],
+      },
     )
-    await expect(
-      recordEuCopyrightSupervisedComplaint(claimant, euC.notice_id, {
-        idempotencyKey: crypto.randomUUID(),
-        authorityReference: `DSC-${crypto.randomUUID()}`,
-        explanation: 'The notified decision merits supervisory review.',
-      }),
-    ).resolves.toMatchObject({ escalation_id: expect.any(String) })
-
-    const euAComplaint = await submitEuCopyrightRedress(
-      claimant,
-      euA.notice_id,
-      crypto.randomUUID(),
-      'The first image should be restored.',
-    )
-    await recordEuCopyrightRedressDecision(staff, euA.notice_id, euAComplaint.id, {
-      disposition: 'revoke',
-      rationale: 'The restriction is reversed after complaint review.',
-    })
-    const euARestore = await actionIntent(euA.notice_id, 'restore')
-    await expect(processCopyrightActionIntent(euARestore.id)).resolves.toBe('applied')
-    expect(
-      (await getCopyrightNoticePrivateAggregate(euA.notice_id))?.restrictions[0]?.lifted_at,
-    ).toBeInstanceOf(Date)
+    await assertEuWithdrawalNoticeDuties(euDuties)
+    await assertWithdrawalSupervisedComplaint(claimant, euDuties.notification.noticeId)
+    await assertEuWithdrawalRedressActors(euDuties, euA.notice_id)
+    await completeEuWithdrawalRestoration(euDuties)
 
     await seedCommittedTerritorialRedressDecision('eu_dsa', euD.notice_id, euDComplaint.id, staff, {
       disposition: 'revoke',

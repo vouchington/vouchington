@@ -1,9 +1,15 @@
+import { seedRestorationSceneWithhold } from './copyright-withhold-scene-fixture.mts'
 import { expect } from 'vitest'
 import { recordUkCopyrightReview } from '../services/copyright-notices/uk-review.mts'
 import { receiveUkCopyrightNotice } from '../services/copyright-notices/uk-notice-receipt.mts'
 import { seedCommittedTerritorialAcknowledgment } from './copyright-territorial-acknowledged-fixture.mts'
-import { submitUkCopyrightRedress } from '../services/copyright-notices/uk-redress.mts'
-import { processCopyrightActionIntent } from '../services/copyright-notices/action-delivery.mts'
+import { assertTerritorialRequestOutcome } from './copyright-territorial-request-outcome.mts'
+import {
+  assertWithdrawalWithhold,
+  assertWithdrawalRestore,
+  seedCompletedWithdrawalRestoration,
+  assertCompletedWithdrawalRestoration,
+} from './copyright-withdrawal-action-duties.mts'
 import { isCopyrightStaydownMatchingEnabled } from '../services/copyright-notices/config.mts'
 import {
   readTerritorialDecisionState,
@@ -13,7 +19,10 @@ import { territorialDecisionPlacements } from './copyright-territorial-decision-
 import { territorialDecisionStages } from './copyright-territorial-decision-stages.mts'
 import { copyrightRaceResult } from './copyright-assessment-race-outcomes.mts'
 import { seedCommittedTerritorialDecision } from './copyright-territorial-committed-decision.mts'
-import { seedCommittedTerritorialRedressDecision } from './copyright-territorial-committed-redress.mts'
+import {
+  seedCommittedTerritorialRedress,
+  seedCommittedTerritorialRedressDecision,
+} from './copyright-territorial-committed-redress.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 import { actionIntent, noticeRequest, target } from './copyright-withdrawal-owned-inputs.mts'
@@ -73,38 +82,56 @@ export async function assertUkWithdrawalReview(scene: TerritorialRestrictionScen
 
 /** A separate committed received-case restriction keeps all downstream UK obligations executable. */
 export async function prepareUkWithdrawalContinuation(claimant: PrivateUser, staff: PrivateUser) {
-  const post = await createHostedImagePost('public')
-  const notice = await receiveUkCopyrightNotice(
-    { user: claimant, identity: `user:${claimant.id}` },
-    crypto.randomUUID(),
-    noticeRequest(),
+  const restricted = async () => {
+    const post = await createHostedImagePost('public')
+    const notice = await receiveUkCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      noticeRequest(),
+    )
+    await seedCommittedTerritorialAcknowledgment('uk', notice.notice_id)
+    await seedCommittedTerritorialDecision('uk', staff, notice.notice_id, review(post))
+    return { post, noticeId: notice.notice_id }
+  }
+  const subject = await restricted()
+  const completed = await restricted()
+  await seedCompletedWithdrawalRestoration('uk', completed.noticeId, claimant, staff)
+  const reversal = await restricted()
+  const complaint = await seedCommittedTerritorialRedress(
+    'uk',
+    reversal.noticeId,
+    claimant,
+    'The UK restriction should be reversed.',
   )
-  await seedCommittedTerritorialAcknowledgment('uk', notice.notice_id)
-  await seedCommittedTerritorialDecision('uk', staff, notice.notice_id, review(post))
-  return { post, noticeId: notice.notice_id, claimant, staff }
+  return { ...subject, reversal, completed, complaint, claimant, staff }
 }
 
 export async function completeUkWithdrawalContinuation(
   scene: Awaited<ReturnType<typeof prepareUkWithdrawalContinuation>>,
 ) {
   expect((await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions).toHaveLength(1)
-  await expect(
-    processCopyrightActionIntent((await actionIntent(scene.noticeId, 'withhold')).id),
-  ).resolves.toBe('applied')
-  const complaint = await submitUkCopyrightRedress(
-    scene.claimant,
+  await assertWithdrawalWithhold(scene.noticeId, scene.post.poster.id)
+  await assertTerritorialRequestOutcome(
+    'uk',
     scene.noticeId,
-    crypto.randomUUID(),
+    scene.claimant,
     'The UK restriction should be reversed.',
+    'notifier',
   )
-  await seedCommittedTerritorialRedressDecision('uk', scene.noticeId, complaint.id, scene.staff, {
-    disposition: 'revoke',
-    rationale: 'The UK restriction is reversed.',
-  })
-  await expect(
-    processCopyrightActionIntent((await actionIntent(scene.noticeId, 'restore')).id),
-  ).resolves.toBe('applied')
-  expect(
-    (await getCopyrightNoticePrivateAggregate(scene.noticeId))?.restrictions[0]?.lifted_at,
-  ).toBeInstanceOf(Date)
+  await seedRestorationSceneWithhold((await actionIntent(scene.reversal.noticeId, 'withhold')).id)
+  await seedCommittedTerritorialRedressDecision(
+    'uk',
+    scene.reversal.noticeId,
+    scene.complaint.id,
+    scene.staff,
+    {
+      disposition: 'revoke',
+      rationale: 'The UK restriction is reversed.',
+    },
+  )
+  await assertWithdrawalRestore(scene.reversal.noticeId, scene.reversal.post.poster.id)
+  await assertCompletedWithdrawalRestoration(
+    scene.completed.noticeId,
+    scene.completed.post.poster.id,
+  )
 }

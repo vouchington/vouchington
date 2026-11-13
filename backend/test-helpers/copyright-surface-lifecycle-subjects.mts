@@ -15,7 +15,10 @@ import type {
   SurfaceLifecycleCase,
 } from './copyright-surface-lifecycle-fixtures.mts'
 
-function owner(fixture: SurfaceLifecycleFixture, record: SurfaceLifecycleCase) {
+function owner(
+  fixture: Pick<SurfaceLifecycleFixture, 'placementId' | 'actorUserId'>,
+  record: Pick<SurfaceLifecycleCase, 'noticeId' | 'restrictionId'>,
+) {
   return {
     noticeId: record.noticeId,
     restrictionId: record.restrictionId,
@@ -26,8 +29,8 @@ function owner(fixture: SurfaceLifecycleFixture, record: SurfaceLifecycleCase) {
 
 /** A real surface withhold keeps its complete legal/lease/tuple registry state at each commit boundary. */
 export async function assertSurfaceLifecycleWithhold(
-  fixture: SurfaceLifecycleFixture,
-  record: SurfaceLifecycleCase,
+  fixture: Pick<SurfaceLifecycleFixture, 'placementId' | 'actorUserId'>,
+  record: Pick<SurfaceLifecycleCase, 'noticeId' | 'restrictionId' | 'withholdIntentId'>,
   now = new Date(),
 ) {
   const input = owner(fixture, record)
@@ -42,6 +45,9 @@ export async function assertSurfaceLifecycleWithhold(
           ? { ...row, desired: 'withheld', state: 'completed' }
           : row,
       ),
+      ...(before.registry.some(row => row.revision === before.physical.revision)
+        ? []
+        : [{ revision: before.physical.revision, desired: 'withheld', state: 'completed' }]),
       { revision: before.physical.revision + 1, desired: 'withheld', state: 'completed' },
     ],
   }
@@ -69,8 +75,8 @@ export async function assertSurfaceLifecycleWithhold(
 
 /** The independent committed reverse decision exists even if this actual worker stops after its claim. */
 export async function assertSurfaceLifecycleRestore(
-  fixture: SurfaceLifecycleFixture,
-  record: SurfaceLifecycleCase,
+  fixture: Pick<SurfaceLifecycleFixture, 'placementId' | 'actorUserId' | 'ownerKind'>,
+  record: Pick<SurfaceLifecycleCase, 'noticeId' | 'restrictionId'>,
   intentId: string,
   now = new Date(),
 ) {
