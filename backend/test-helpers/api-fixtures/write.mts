@@ -9,7 +9,7 @@ import { apiFixtureCases } from './cases.mts'
 import { validateFixtureContracts } from './fixture-contract-validation.mts'
 import { backendResponseContracts as canonicalResponseContracts } from './response-contracts.mts'
 import { buildApiFixtureSchemaLock, responseSchemaFor } from './schema-lock.mts'
-import type { ApiFixtureManifest } from './types.mts'
+import type { ApiFixtureManifest, ResolvedApiFixtureCase } from './types.mts'
 
 export { stableStringify } from '@modules/utils/stable-stringify'
 
@@ -25,14 +25,15 @@ function bodyFileFor(id: string): string {
 
 export function buildApiFixtureManifest(
   responseContracts?: Record<string, BackendResponseContract>,
+  fixtureCases: readonly ResolvedApiFixtureCase[] = apiFixtureCases,
 ): ApiFixtureManifest {
   const requestedContractKeys = new Set(
-    apiFixtureCases.map(fixtureCase => fixtureCase.backendResponseContractKey),
+    fixtureCases.map(fixtureCase => fixtureCase.backendResponseContractKey),
   )
   const backendResponseContracts = responseContracts
     ? selectFixtureContracts(responseContracts, requestedContractKeys)
     : selectFixtureContracts(canonicalResponseContracts, requestedContractKeys)
-  validateFixtureContracts(apiFixtureCases, backendResponseContracts)
+  validateFixtureContracts(fixtureCases, backendResponseContracts)
   return {
     version: 2,
     source: {
@@ -41,7 +42,7 @@ export function buildApiFixtureManifest(
       caseRoot: 'backend/test-helpers/api-fixtures',
     },
     backendResponseContracts,
-    fixtures: apiFixtureCases.map(({ body, responseSchemaKey, ...fixtureCase }) => ({
+    fixtures: fixtureCases.map(({ body, responseSchemaKey, ...fixtureCase }) => ({
       ...fixtureCase,
       bodyFile: bodyFileFor(fixtureCase.id),
       responseSchema: responseSchemaFor(fixtureCase.id, responseSchemaKey, body),
