@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import {
+  overrideDynamicConfigFieldsForTest,
+  pinDynamicConfigFields,
+} from '@voucha/test-helpers/dynamic-config'
 import { getTopicDataPointInsights } from '@services/data-points/insights'
 import { topicDataPointInsightsConfig } from '@services/data-points/insights-config'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -51,6 +54,10 @@ export async function runTopicDataPointInsightsScenario(): Promise<void> {
       ],
     })
     await runAndCapture('topic-data-point-insights', async () => {
+      // A Valkey refresh replaces the shared field map between awaits, which resets row_cap to the
+      // 10,000 default and makes the lateral return all 12 seeded points. Pin it again in the same
+      // turn as the read, as alias-unlink-precapture does.
+      pinDynamicConfigFields(topicDataPointInsightsConfig, { row_cap: ROW_CAP })
       const insights = await getTopicDataPointInsights(topicId)
       assert.equal(insights.total_count, ROW_CAP)
     })
