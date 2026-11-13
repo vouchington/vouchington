@@ -41,7 +41,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           ref: ${{ github.sha }}
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@8a48840ca216dfaa119d6cacd2789cb3c0dcdba1 # v2.0.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@e4f21b79d1398af8dd76c70f0775ded58f0c4f80 # v2.0.1
         timeout-minutes: 3
         with:
           deadline-seconds: '150'
