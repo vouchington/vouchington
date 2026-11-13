@@ -1,3 +1,4 @@
+import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import { prepublishCopyrightImagePlacementDenial } from './action-delivery-edge.mts'
 import {
@@ -24,6 +25,9 @@ export async function compensateCopyrightActionFailure(
         await prepublishCopyrightImagePlacementDenial({
           ...restorePublishedTuple,
         })
+        // The denial committed independently; evict snapshots a concurrent fill cached while
+        // the restored placement was publicly projected.
+        await invalidateCopyrightPlacementCache(restorePublishedTuple.placementId)
       }
     },
   })

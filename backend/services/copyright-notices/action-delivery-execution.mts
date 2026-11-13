@@ -61,6 +61,8 @@ export async function executeCopyrightActionIntent(
     )
     if (legal.action === 'restore' && !finalized) {
       await prepublishCopyrightImagePlacementDenial({ ...tuple })
+      // The denial changes public projection after the earlier eviction; evict fills in between.
+      await invalidateCopyrightPlacementCache(legal.placement_id)
       return 'stale'
     }
     return finalized ? 'applied' : 'stale'

@@ -1,3 +1,4 @@
+import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
@@ -82,6 +83,9 @@ export async function finalizeCopyrightActionAfterDelivery(
         }),
       () => transaction.commit(),
     ])
+    // Evict only after the denial commits: a fill between the restore's eviction and this
+    // denial may have cached the restored image, and snapshot hits never recheck projection.
+    await invalidateCopyrightPlacementCache(legal.placement_id)
     return false
   }
   await completeCopyrightActionAndInvalidate({

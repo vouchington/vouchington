@@ -1,3 +1,4 @@
+import * as copyrightCache from './action-delivery-cache.mts'
 import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { closeServer, listen } from '@voucha/test-helpers/api/http-boundary'
@@ -211,6 +212,46 @@ describe('copyright action delivery branches', () => {
     expect(statements[0]?.text).toContain('Restoration is authorized.')
     expect(statements[0]?.text).toContain('when restoration delivery completes')
     expect(statements[0]?.text).not.toContain('The image is visible again.')
+  })
+  it('evicts snapshots again after a restore is denied at finalization', async () => {
+    const { aggregate, assessment, claimant, moderator, notice } =
+      await createCopyrightRestorationHoldFixture()
+    const target = aggregate.targets[0]!
+    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
+      noticeId: notice.id,
+      targetId: target.id,
+      assessmentId: assessment.id,
+      imposedAt: new Date('2026-07-01T12:00:00.000Z'),
+      imposedById: moderator.id,
+    })
+    const withhold = (await getActionIntent(notice.id, 'withhold'))!
+    await expect(processCopyrightActionIntent(withhold.id, new Date())).resolves.toBe('applied')
+    const restore = await createRestoreIntent({
+      claimant,
+      moderator,
+      noticeId: notice.id,
+      restrictionId: restriction.id,
+      target,
+    })
+    const evictions = vi.spyOn(copyrightCache, 'invalidateCopyrightPlacementCache')
+
+    await expect(
+      processCopyrightActionIntent(restore.id, restore.now, {
+        // Re-withholds between preparation and finalization so the restore is denied afterwards.
+        publishStagedMediaDeliveryRecord: async () => {
+          const current = await getImagePlacementForCopyright(target.placement_id)
+          if (!current) throw new Error('restored placement disappeared')
+          await withholdImagePlacementForCopyright({
+            placementId: current.placementId,
+            expectedRevision: current.revision,
+          })
+        },
+      }),
+    ).resolves.toBe('stale')
+
+    // Once after the committed restore, and again after the denial that follows it.
+    expect(evictions).toHaveBeenCalledTimes(2)
+    expect(evictions).toHaveBeenLastCalledWith(target.placement_id)
   })
 })
 
