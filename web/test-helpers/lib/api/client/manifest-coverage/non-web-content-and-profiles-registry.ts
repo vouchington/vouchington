@@ -86,6 +86,9 @@ export const contentAndProfilesEndpointRegistry = {
   'native.users.profile.restricted': endpoint('/api/v1/users/restricted', {
     include_bio: '1',
   }),
+  'native.users.profile.private-counts.owner': endpoint('/api/v1/users/alice', {
+    include_bio: '1',
+  }),
   'native.users.vouch-context.default': endpoint('/api/v1/users/user-abc/vouch-context'),
   'native.users.profile.posts.all': endpoint('/api/v1/posts', {
     creator: 'user-abc',

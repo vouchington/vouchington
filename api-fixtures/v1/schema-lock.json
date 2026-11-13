@@ -1068,7 +1068,7 @@
       "hash": "508bd3bce72abb5160d9414028173d7a8325b1e9f7703ad5217450c4aa736302"
     },
     "GET:/api/v1/users/:idOrSlug#self": {
-      "fixtureIds": ["native.users.profile.default"],
+      "fixtureIds": ["native.users.profile.default", "native.users.profile.private-counts.owner"],
       "hash": "ddea85c515c72a5ad63ffe3406c97ab64e6a531406497ffcc48ae363929d2976"
     },
     "GET:/api/v1/users/:idOrSlug/communities/:listType": {
@@ -3341,6 +3341,10 @@
     "native.users.profile.posts.staff-provenance": {
       "fixtureIds": ["native.users.profile.posts.staff-provenance"],
       "hash": "943d8525d32dc89ad3b4721dc9da2243088d18a49d3e55d776b2b9b60fc65704"
+    },
+    "native.users.profile.private-counts.owner": {
+      "fixtureIds": ["native.users.profile.private-counts.owner"],
+      "hash": "e3cf53636f7e7d4b93528a8920d76f015164841fda3fa1d6e6490e5787cd90b6"
     },
     "native.users.profile.restricted": {
       "fixtureIds": ["native.users.profile.restricted"],
