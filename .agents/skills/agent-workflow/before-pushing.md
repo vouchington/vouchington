@@ -4,14 +4,12 @@
   evidence sweep (`node_modules/vouchington-tooling/skills/agent-workflow/references/evidence-sweep.md`)
   and review (`node_modules/vouchington-tooling/skills/agent-workflow/references/review.md`).
   For client/API changes, use the relevant [impact recipe](impact-recipes.md).
-- Follow the [commit checklist](../../../docs/checklists/commit.md): type-aware lint for changed
-  TypeScript and its direct dependents, directly changed tests, scope inspection, and formatting.
-  The listed `oxlint-type-aware` gate appends changed files only, so add the dependents yourself;
-  CI's whole-repository lint remains the backstop. CI owns full area suites;
-  run broader local checks when the change or a failure requires them. List the static gates CI
-  will run for the diff with `pnpm exec no-mistakes impacted-checks --generic-only --changed-files
-  <manifest>` ([planning § Static gate planning](../planning/references/impact-discovery.md#static-gate-planning)).
-- Run the generated-artifact checks that `impacted-checks` lists (catalogs, fixtures, snapshots, selector maps) and regenerate whatever they report stale. CI only catches these after a push.
+- Follow the [commit checklist](../../../docs/checklists/commit.md): type-aware lint, directly changed
+  tests, scope inspection, and formatting. Run `pnpm run impacted-checks` before pushing. It
+  computes the changed-file manifest, refreshes the local catalog, selects static and
+  generated-artifact checks, and runs each selected command without database or service setup.
+  It runs no test suites; CI owns the full area suites. Fix every failure and selection warning
+  before pushing.
 - When local impact selection fails, diagnose the cause while keeping selection unknown. For invocation failures,
   native CLI reports with `--format json` write an `error` object: exit `75` means `lock_busy` or `lock_timeout`, while exit
   `124` means `deadline`; `error.phase` identifies the interrupted phase. Read the current holder
