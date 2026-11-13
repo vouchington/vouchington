@@ -529,6 +529,10 @@
       "fixtureIds": ["web.growth-metrics.default"],
       "hash": "44b673150e44d489701c6b73fccd83a65ad8a53d3a340e60ab556b83169d3faa"
     },
+    "GET:/api/v1/hacker-news-config": {
+      "fixtureIds": ["native.hacker-news-config.default"],
+      "hash": "10d79e801bc9426f4c8f89b24eb1c6cbdeb337f4eb98498040f30d38e4899d9c"
+    },
     "GET:/api/v1/hostname-block-operations/:operationId": {
       "fixtureIds": ["web.hostname-block-operation.completed"],
       "hash": "9482712bb43f3f37ebf1ad8bc86f135cb999a900b6b299c7c69646083f02613f"
@@ -2273,6 +2277,10 @@
     "native.friend-recommendations.second-page": {
       "fixtureIds": ["native.friend-recommendations.second-page"],
       "hash": "9ee884ae2dfa81ab50249b11cc408fc1076b8463d75b52800804cec79969a118"
+    },
+    "native.hacker-news-config.default": {
+      "fixtureIds": ["native.hacker-news-config.default"],
+      "hash": "9015672782abdfa0445bd7607a39528a37c81f404005b049edecadfbeef54488"
     },
     "native.hostname.default": {
       "fixtureIds": ["native.hostname.default"],

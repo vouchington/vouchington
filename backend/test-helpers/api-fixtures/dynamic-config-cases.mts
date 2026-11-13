@@ -36,6 +36,15 @@ export const dynamicConfigApiFixtureCases: ApiFixtureCase[] = [
     migratedFrom: ['backend/api/v1/captcha-config/captcha-config.mts'],
   }),
   fixtureCase({
+    id: 'native.hacker-news-config.default',
+    method: 'GET',
+    path: '/api/v1/hacker-news-config',
+    route: { routeTemplate: '/api/v1/hacker-news-config' },
+    auth: 'none',
+    status: 200,
+    migratedFrom: ['backend/api/v1/hacker-news-config/index.mts'],
+  }),
+  fixtureCase({
     id: 'native.dynamic-config.namespaces.developer',
     method: 'GET',
     path: '/api/v1/dynamic-config/namespaces',

@@ -26951,6 +26951,60 @@
       "source": "backend/api/v1/admin/growth-metrics/growth-metrics.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/hacker-news-config": {
+      "bodyKind": "content",
+      "hash": "10d79e801bc9426f4c8f89b24eb1c6cbdeb337f4eb98498040f30d38e4899d9c",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/hacker-news-config",
+      "schema": {
+        "definitions": {
+          "HackerNewsConfigResponse": {
+            "additionalProperties": false,
+            "properties": {
+              "post_time_range_cap": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "1w"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "1m"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "1y"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "all"
+                    }
+                  ]
+                }
+              },
+              "references_visible": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "name": "HackerNewsConfigResponse",
+          "type": "ref"
+        }
+      },
+      "source": "backend/api/v1/hacker-news-config/index.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/hostname-block-operations/:operationId": {
       "bodyKind": "content",
       "hash": "9482712bb43f3f37ebf1ad8bc86f135cb999a900b6b299c7c69646083f02613f",
@@ -105898,6 +105952,27 @@
       },
       "route": {
         "routeTemplate": "/api/v1/captcha-config"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/dynamic-config-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "GET:/api/v1/hacker-news-config",
+      "bodyFile": "responses/native.hacker-news-config.default.json",
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.hacker-news-config.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/hacker-news-config/index.mts"],
+      "path": "/api/v1/hacker-news-config",
+      "responseSchema": {
+        "hash": "9015672782abdfa0445bd7607a39528a37c81f404005b049edecadfbeef54488",
+        "key": "native.hacker-news-config.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/hacker-news-config"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/dynamic-config-cases.mts"
