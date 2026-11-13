@@ -1,7 +1,8 @@
 import type { AccountChangeSession } from './active-account-session.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import assert from 'http-assert'
+import createHttpError from 'http-errors'
+import { ADMINISTRATOR_MFA_REQUIRED } from '@modules/on-error/error-codes'
 import { getUserMfaStatus } from './status.mts'
 import { withReauthenticatedAccountChange } from './account-change.mts'
 import { conflictOnSerializationFailure } from '@modules/utils/serialization-conflict'
@@ -26,7 +27,11 @@ async function assertAdministratorKeepsMfa(
     SELECT 1 FROM user_roles r JOIN user_role_types t ON t.id = r.role_type_id
     WHERE r.user_id = ${userId} AND t.slug = 'administrator' LIMIT 1
   `)
-  assert(rows.length === 0, 403, 'Administrators must keep an MFA method')
+  if (rows.length > 0) {
+    throw createHttpError(403, 'Administrators must keep an MFA method', {
+      code: ADMINISTRATOR_MFA_REQUIRED,
+    })
+  }
 }
 
 export async function deletePasskeyWithMfaProtection(

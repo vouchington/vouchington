@@ -54,16 +54,18 @@ describe('fresh provider and passkey proof routes', () => {
 
     const anotherSession = createRequest()
     await anotherSession.authenticateAs(user)
-    await anotherSession
+    const otherSession = await anotherSession
       .post('/api/v1/auth/re-auth/providers/github/proofs')
       .send({ flow_id: started.body.flow_id })
       .expect(403)
+    expect(otherSession.body.code).toBe('MFA_REAUTH_REQUIRED')
 
     await expireTestOAuthAuthorization(started.body.flow_id)
-    await request
+    const expired = await request
       .post('/api/v1/auth/re-auth/providers/github/proofs')
       .send({ flow_id: started.body.flow_id })
       .expect(410)
+    expect(expired.body.code).toBe('MFA_REAUTH_REQUIRED')
   })
 
   it('retrieves one proof only after the linked-provider callback completed for this session', async () => {

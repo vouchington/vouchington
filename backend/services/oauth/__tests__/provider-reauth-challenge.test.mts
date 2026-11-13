@@ -45,9 +45,12 @@ describe('linked provider reauthentication challenge', () => {
       await expect(createProviderReAuthChallenge(identity)).rejects.toMatchObject({ status: 409 })
       await expect(
         consumeProviderReAuthChallenge({ ...identity, sessionId: randomUUID() }),
-      ).rejects.toMatchObject({ status: 401 })
+      ).rejects.toMatchObject({ status: 401, code: 'MFA_REAUTH_REQUIRED' })
       await expect(consumeProviderReAuthChallenge(identity)).resolves.toEqual(context)
-      await expect(consumeProviderReAuthChallenge(identity)).rejects.toMatchObject({ status: 401 })
+      await expect(consumeProviderReAuthChallenge(identity)).rejects.toMatchObject({
+        status: 401,
+        code: 'MFA_REAUTH_REQUIRED',
+      })
     },
   )
 })

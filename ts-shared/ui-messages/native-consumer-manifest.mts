@@ -48,6 +48,7 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_42_PRIVATE_COUNT_LABELS } from './nativ
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_43_REAUTH_CONFIRMATION } from './native-consumer-manifest/claims-43-reauth-confirmation.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_44_RSS_FEED_DELETION } from './native-consumer-manifest/claims-44-rss-feed-deletion.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_45_PRIVATE_COUNT_METRIC_LABELS } from './native-consumer-manifest/claims-45-private-count-metric-labels.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_45_REAUTH_ERROR_CODES } from './native-consumer-manifest/claims-45-reauth-error-codes.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_47_ENGINEERING_RANGES } from './native-consumer-manifest/claims-47-engineering-ranges.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
 
@@ -108,6 +109,7 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_43_REAUTH_CONFIRMATION,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_44_RSS_FEED_DELETION,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_45_PRIVATE_COUNT_METRIC_LABELS,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_45_REAUTH_ERROR_CODES,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_47_ENGINEERING_RANGES,
 ]
 

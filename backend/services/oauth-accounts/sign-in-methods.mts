@@ -1,5 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
+import { LAST_SIGN_IN_METHOD_REMOVAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { getConfiguredOAuthProviders } from './configuration.mts'
 import { providerTableConfigs } from './providers.mts'
 
@@ -26,5 +27,9 @@ export async function assertUserHasSignInMethod(
     `/* assertUserHasSignInMethod */ SELECT EXISTS (${checks.map(check => `(${check} LIMIT 1)`).join(' UNION ALL ')}) AS present`,
     [currentUserId],
   )
-  if (!rows[0]?.present) throw createHttpError(400, 'Cannot remove your last authentication method')
+  if (!rows[0]?.present) {
+    throw createHttpError(400, 'Cannot remove your last authentication method', {
+      code: LAST_SIGN_IN_METHOD_REMOVAL_FORBIDDEN,
+    })
+  }
 }
