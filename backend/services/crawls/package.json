@@ -23,7 +23,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1165.0",
+    "@aws-sdk/client-s3": "^3.1166.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",

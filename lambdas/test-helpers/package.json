@@ -5,6 +5,6 @@
   "license": "UNLICENSED",
   "type": "module",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1165.0"
+    "@aws-sdk/client-dynamodb": "^3.1166.0"
   }
 }
