@@ -1,4 +1,5 @@
-import { write } from '@data-stores/psql'
+import assert from 'node:assert/strict'
+import { read, write } from '@data-stores/psql'
 import { seedUuid, seedUuidAtTimestamp } from './common.mts'
 
 const POST_START = 80_000
@@ -27,6 +28,23 @@ export function clusterScalePostIds(): string[] {
   return Array.from({ length: DISTINCT_CLUSTER_COUNT }, (_, offset) =>
     seedUuid(DISTINCT_CLUSTER_START + offset, '05'),
   ).toSorted()
+}
+
+/** Keep target-index witnesses separate from the hot post's later case-history churn. */
+export async function loadModerationClusterWriterPostId(): Promise<string> {
+  const postId = clusterFixturePostIds(0)[0]!
+  const { rows } = await read<{ resolution_action: string | null }>(
+    `/* moderationClusterWriterFixtureOutcomes */ SELECT resolution_action
+     FROM moderation_report_clusters WHERE post_id = $1::uuid`,
+    [postId],
+  )
+  assert.deepEqual(rows.map(row => row.resolution_action ?? 'pending').toSorted(), [
+    'actioned',
+    'dismissed',
+    'pending',
+    'reviewed',
+  ])
+  return postId
 }
 
 /** Same-millisecond report ids force the cluster order's entity-id tie breaker. */
