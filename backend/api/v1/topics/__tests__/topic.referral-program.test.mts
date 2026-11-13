@@ -6,9 +6,8 @@ import {
   enableReferralProgramByTopicId,
   insertTestTopic,
 } from '@voucha/test-helpers'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
-const longPublicCacheControl = `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`
+const longPublicCacheControl = 'public'
 
 describe('topic.referral-program', () => {
   describe('Topic Referral Program Routes', () => {

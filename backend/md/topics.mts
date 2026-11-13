@@ -11,7 +11,6 @@ import { getTopicIdsCached } from '@services/entity-fetch/search-caches'
 import { parseTopicsSearchParams } from '@services/search-params'
 
 import { getTopicTypeSlug } from '@voucha/types/entities/topic'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS, HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { toFrontmatter } from '@modules/utils'
 
 const siteOrigin = process.env.SITE_ORIGIN ?? 'https://voucha.ai'
@@ -37,7 +36,7 @@ app.route('/md/topics').get(async (ctx: Context) => {
   searchOptions.limit = clampAnonLimit(searchOptions.limit)
   searchOptions.omitLimit = false
 
-  ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
+  ctx.set('Cache-Control', 'public')
 
   if (shouldReturnEmpty) {
     const frontmatter = toFrontmatter({
@@ -101,7 +100,7 @@ app.route('/md/topics/:idOrSlug').get(async (ctx: Context) => {
   )
   ctx.assert(!topic.is_noindexed, 404, 'Topic not found')
 
-  ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
+  ctx.set('Cache-Control', 'public')
 
   const slug = getTopicTypeSlug(topic.topic_type)
   const url = `${siteOrigin}/${slug}/${topic.slug}`

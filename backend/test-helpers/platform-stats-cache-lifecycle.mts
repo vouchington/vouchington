@@ -1,13 +1,13 @@
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '../config/index.mts'
+import { SEARCH_CACHE_TTL_SECONDS } from '../services/entity-cache/search-cache-ttl.mts'
 import { stableSerialize } from '../services/entity-cache/search-cache.mts'
 
 /** Own conditional cache commands for the isolated Stats Valkey instance. */
 export function observePlatformStatsCache() {
   const cache = new ValkeyCache<Record<string, never>>({
     prefix: 'platform_stats_anon',
-    ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
+    ttlSeconds: SEARCH_CACHE_TTL_SECONDS,
     keySerializer: stableSerialize,
   })
   const key = cache.getKey({})

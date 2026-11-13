@@ -10,8 +10,6 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-
 import type { PrivateUser } from '@services/users/types'
 
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
@@ -210,5 +208,4 @@ describe('post.descendants', () => {
   })
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof deleteTestPost)
-  void (0 as unknown as typeof HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
 })

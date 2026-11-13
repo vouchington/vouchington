@@ -2,7 +2,6 @@ import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getTopicElectionVotesByElectionId,
   getTopicElectionVotesByUserForEntity,
@@ -37,7 +36,7 @@ app
 
     const attributes = await getRetailerAttributes(topic)
     if (!attributes) ctx.throw(404, 'Retailer attributes not found')
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
+    ctx.set('Cache-Control', 'public')
     ctx.json({ retailer_attributes: attributes })
   })
   .patch(async (ctx: Context) => {
@@ -70,7 +69,7 @@ app
     if (!attributes) ctx.throw(404, 'Retailer attributes not found')
 
     const countries = await getRetailerCountries(topic)
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
+    ctx.set('Cache-Control', 'public')
     ctx.json({ results: countries })
   })
   .put(async (ctx: Context) => {

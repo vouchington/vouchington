@@ -1,8 +1,12 @@
+import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import { clampAnonLimit, clampLimit } from '@services/pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import {
+  getOptionalAuthAndRateLimit,
+  validateRequestContract,
+  setAnonymousPublicCacheHeaders,
+} from '../../response-helpers.mts'
 import {
   FEDIVERSE_CURSOR_MAX_LENGTH,
   parseFediverseProviders,
@@ -62,8 +66,10 @@ app.route('/api/v1/fediverse/search').get(async (ctx: Context) => {
 
   const result = await searchFediverse({ q, providers, type, limit, cursor: after })
 
-  if (!currentUser && result.buckets.every(bucket => bucket.status === 'ok')) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
+  if (result.buckets.every(bucket => bucket.status === 'ok')) {
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
+  } else {
+    setPrivateNoStoreCacheHeaders(ctx)
   }
 
   ctx.json(result)

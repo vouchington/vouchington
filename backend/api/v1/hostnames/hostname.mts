@@ -1,6 +1,5 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getTopicByAnyCached,
   getUrlHostnameByAnyCached,
@@ -82,7 +81,7 @@ app.route('/api/v1/hostnames/:id').get(async ctx => {
     return ctx.json({ error: 'Hostname not found' })
   }
 
-  setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   const cachedTopic = hostname.topic_id ? await getTopicByAnyCached(hostname.topic_id) : null
   const [[topic = null], hostnameElection, electionVote, topUrls, rssFeeds] = await Promise.all([

@@ -17,8 +17,6 @@ import {
 } from '@voucha/test-helpers/entities/communities'
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
-
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 
 describe('post', () => {
@@ -139,6 +137,5 @@ describe('post', () => {
     })
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof HTTP_CACHE_LONG_MAX_AGE_SECONDS)
   void (0 as unknown as typeof getMinUUIDv7ForDate)
 })

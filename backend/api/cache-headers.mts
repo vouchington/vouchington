@@ -13,11 +13,13 @@ export function setPrivateNoStoreCacheHeaders(ctx: Context): void {
 export function setAnonymousPublicCacheHeaders(
   ctx: Context,
   currentUser: PrivateUser | null,
-  maxAgeSeconds: number,
 ): void {
-  if (currentUser) return
+  if (currentUser) {
+    setPrivateNoStoreCacheHeaders(ctx)
+    return
+  }
 
-  ctx.set('Cache-Control', `public, max-age=${maxAgeSeconds}`)
+  ctx.set('Cache-Control', 'public')
   ctx.set('Vary', mergeAuthSensitiveVary(ctx.res.getHeader('Vary')))
 }
 

@@ -3,7 +3,6 @@ import type { Context } from '@jongleberry/api-server'
 import { setAnonymousPublicCacheHeaders } from '../response-helpers.mts'
 import { getTotalUserCount } from '@services/users'
 import { getSiteUrl } from '@modules/utils'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 // Mirrors the schema this same codebase already reads from remote instances — see
 // backend/services/fediverse-search/adapters/instance-classification-mappers.mts, the Phase B
@@ -17,7 +16,7 @@ const NODEINFO_SOFTWARE_VERSION = '1.0.0'
 // Phase B classifier when reading *other* instances) — no Voucha session applies, so both routes
 // intentionally skip response-helpers.mts's session-auth preamble.
 app.route('/.well-known/nodeinfo').get((ctx: Context) => {
-  setAnonymousPublicCacheHeaders(ctx, null, HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
+  setAnonymousPublicCacheHeaders(ctx, null)
   ctx.response.buffer(
     Buffer.from(
       JSON.stringify({
@@ -31,7 +30,7 @@ app.route('/.well-known/nodeinfo').get((ctx: Context) => {
 app.route('/nodeinfo/2.0').get(async (ctx: Context) => {
   const totalUsers = await getTotalUserCount()
 
-  setAnonymousPublicCacheHeaders(ctx, null, HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
+  setAnonymousPublicCacheHeaders(ctx, null)
   ctx.response.buffer(
     Buffer.from(
       JSON.stringify({

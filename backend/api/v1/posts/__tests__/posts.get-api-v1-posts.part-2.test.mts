@@ -12,8 +12,6 @@ import {
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-
 import type { PrivateUser } from '@services/users/types'
 
 import { createTopicAliases } from '@services/topics/aliases'
@@ -190,6 +188,5 @@ describe('posts', () => {
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof insertTestPostReview)
   void (0 as unknown as typeof insertTestTopic)
-  void (0 as unknown as typeof HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
   void (0 as unknown as typeof createTopicAliases)
 })

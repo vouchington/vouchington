@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import { clampAnonLimit } from '@services/pagination'
 import { validateTopicSearchTerms } from '@services/search-params'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
@@ -30,7 +31,6 @@ import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { searchCommunitiesCached } from '@services/entity-fetch/search-caches'
 import { indexById } from '@modules/utils'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   parseCommunitiesListQuery,
   parseEligiblePostType,
@@ -115,9 +115,7 @@ app
 
     const communities = result.results
 
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     const communityIds = communities.map(c => c.id)
 

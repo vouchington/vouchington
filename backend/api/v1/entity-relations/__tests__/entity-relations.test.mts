@@ -17,7 +17,6 @@ import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 
 import type { PrivateUser } from '@services/users/types'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { expectEntityRelationPagination } from '../../../../test-helpers/api/v1/entity-relations/entity-relations-pagination.mts'
 
 describe('entity-relations', () => {
@@ -115,10 +114,7 @@ describe('entity-relations', () => {
         expect(unauthResponse.body.election_votes).toBeUndefined()
 
         // Should set Cache-Control for unauthenticated users
-        expect(unauthResponse.headers['cache-control']).toContain('public')
-        expect(unauthResponse.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-        )
+        expect(unauthResponse.headers['cache-control']).toBe('public')
 
         // Test as authenticated user
         const authRequest = createRequest()

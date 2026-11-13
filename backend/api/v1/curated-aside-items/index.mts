@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -16,7 +17,6 @@ import {
   deleteCuratedItem,
   reorderCuratedItems,
 } from '@services/curated-aside-items'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { apiQuery } from '../../api-query-contract.mts'
 import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 
@@ -47,9 +47,7 @@ app.route('/api/v1/curated-aside-items').get(async (ctx: Context) => {
 
   const items = await listCuratedItems(safeAsideType)
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   ctx.json({ curated_aside_items: items })
 })

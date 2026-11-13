@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('topic.spending-category', () => {
   let admin: Awaited<ReturnType<typeof createTestUser>> | null = null
@@ -53,9 +52,7 @@ describe('topic.spending-category', () => {
         expect(response.body.spending_category_attributes.default_spending_frequency).toBe(
           'annually',
         )
-        expect(response.headers['cache-control']).toBe(
-          `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
       })
 
       it('should return 404 when spending category attributes are missing', async () => {

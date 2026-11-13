@@ -9,8 +9,6 @@ import {
   safeUsername,
 } from '@voucha/test-helpers'
 
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
-
 import { caches } from '@services/entity-cache/caches'
 
 import {
@@ -149,10 +147,7 @@ describe('Users API Routes', () => {
         expect(byId.id).toBe(user!.id)
         expect(byId.viewer_count).toBeUndefined()
         expect(byId.private_count).toBeUndefined()
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
         expect(response.headers['vary']).toContain('Cookie')
         expect(response.headers['vary']).toContain('Authorization')
       } finally {
@@ -194,7 +189,6 @@ describe('Users API Routes', () => {
   })
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof createTestPost)
-  void (0 as unknown as typeof HTTP_CACHE_LONG_MAX_AGE_SECONDS)
   // keep generated shard import bindings live for typecheck
   void (0 as unknown as typeof createDataRequest)
   void (0 as unknown as typeof markDataRequestProcessing)

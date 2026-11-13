@@ -7,10 +7,10 @@ import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/rou
 import {
   parseJsonBody,
   getOptionalAuthAndRateLimit,
+  setAnonymousPublicCacheHeaders,
   requireAuth,
   validateRequestContract,
 } from '../../response-helpers.mts'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 app.route('/api/v1/posts/:idOrSlug/images').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts/:idOrSlug/images')
@@ -24,10 +24,7 @@ app.route('/api/v1/posts/:idOrSlug/images').get(async (ctx: Context) => {
   ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
 
   const images = await getPostImages(post.id)
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    ctx.set('Vary', 'Cookie, Authorization')
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
   ctx.json({ images })
 })
 

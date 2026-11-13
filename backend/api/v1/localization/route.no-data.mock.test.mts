@@ -57,6 +57,7 @@ describe('localization route handler', () => {
     const ok = createContext({ consumer: 'web', locales: 'en', selectors: 'nav.*' })
     localizationRoute(ok as never)
     expect(ok.json).toHaveBeenCalled()
+    expect(ok.set).toHaveBeenCalledWith('Cache-Control', 'public')
     const etag = ok.set.mock.calls.find(call => call[0] === 'ETag')?.[1]
     const cached = createContext({ consumer: 'web', locales: 'en', selectors: 'nav.*' }, etag)
     localizationRoute(cached as never)

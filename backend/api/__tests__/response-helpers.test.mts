@@ -17,22 +17,23 @@ describe('route helpers', () => {
     })
 
     ctx.res.setHeader('Vary', 'Accept-Encoding')
-    setAnonymousPublicCacheHeaders(ctx, null, 60)
+    setAnonymousPublicCacheHeaders(ctx, null)
 
-    expect(ctx.set).toHaveBeenCalledWith('Cache-Control', 'public, max-age=60')
+    expect(ctx.set).toHaveBeenCalledWith('Cache-Control', 'public')
     expect(ctx.set).toHaveBeenCalledWith('Vary', 'Accept-Encoding, Cookie, Authorization')
     expect(ctx.res.getHeader('Vary')).toBe('Accept-Encoding, Cookie, Authorization')
   })
 
-  it('does not set anonymous cache headers for authenticated users', () => {
+  it('sets private no-store cache headers for authenticated users', () => {
     const currentUser = makeUser()
     const ctx = makeContext({
       currentUser,
     })
 
-    setAnonymousPublicCacheHeaders(ctx, currentUser, 60)
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
-    expect(ctx.set).not.toHaveBeenCalled()
+    expect(ctx.set).toHaveBeenCalledWith('Cache-Control', 'private, no-store')
+    expect(ctx.set).not.toHaveBeenCalledWith('Vary', expect.anything())
   })
 
   it('requireAuth rate-limits before rethrowing a signature failure', async () => {

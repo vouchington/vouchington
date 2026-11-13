@@ -18,7 +18,6 @@ import {
 } from '@services/fediverse-instances'
 import { currentUserCanModifyFediverseInstanceIntegrationStatus } from '@services/fediverse-instances/authorization'
 import { assertNotSuspended } from '@services/users'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 type PublicFediverseInstanceAttributes = Omit<
   FediverseInstanceAttributes,
@@ -54,7 +53,7 @@ app.route('/api/v1/fediverse/instances/:id').get(async (ctx: Context) => {
     'Fediverse instance not found',
   )
 
-  setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   const [[labeledTopic], fediverseInstance, elections] = await Promise.all([
     attachTopicProvenance([topic], currentUser),

@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { buildCommunityListItemsOutput } from './list-items-output.mts'
@@ -19,7 +20,6 @@ import {
 } from '@services/communities'
 import { attachPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 app
   .route('/api/v1/communities/:idOrSlug/list-items/posts')
@@ -48,9 +48,7 @@ app
       currentUser,
     })
 
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     const output = buildCommunityListItemsOutput(result, {
       name: 'posts',

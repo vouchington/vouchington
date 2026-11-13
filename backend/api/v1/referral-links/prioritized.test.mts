@@ -6,7 +6,6 @@ import {
   createTestUser,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { createUserReferralLink } from '@services/user-referral-program-links'
 
 describe('prioritized referral links routes', () => {
@@ -39,11 +38,7 @@ describe('prioritized referral links routes', () => {
       const response = await createRequest()
         .get(`/api/v1/topics/${referralProgramId}/prioritized-referral-links`)
         .expect(200)
-
-      expect(response.headers['cache-control']).toContain('public')
-      expect(response.headers['cache-control']).toContain(
-        `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-      )
+      expect(response.headers['cache-control']).toBe('public')
       expect(response.headers['vary']).toContain('Cookie')
       expect(response.headers['vary']).toContain('Authorization')
       expect(response.body.links.length).toBeGreaterThan(0)

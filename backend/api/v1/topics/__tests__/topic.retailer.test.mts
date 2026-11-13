@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { insertTestRetailer, getTestCountryId } from '@voucha/test-helpers/entities/retailers'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('Topic Retailer Routes', () => {
   describe('GET /api/v1/topics/:idOrSlug/retailer', () => {
@@ -21,10 +20,7 @@ describe('Topic Retailer Routes', () => {
       const response = await request.get(`/api/v1/topics/${topicId}/retailer`).expect(200)
 
       expect(response.body.retailer_attributes).toBeDefined()
-      expect(response.headers['cache-control']).toContain('public')
-      expect(response.headers['cache-control']).toContain(
-        `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-      )
+      expect(response.headers['cache-control']).toBe('public')
     })
 
     it('should return 404 for a topic without retailer attributes', async () => {
@@ -108,10 +104,7 @@ describe('Topic Retailer Routes', () => {
       const response = await request.get(`/api/v1/topics/${topicId}/retailer/countries`).expect(200)
 
       expect(Array.isArray(response.body.results)).toBe(true)
-      expect(response.headers['cache-control']).toContain('public')
-      expect(response.headers['cache-control']).toContain(
-        `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-      )
+      expect(response.headers['cache-control']).toBe('public')
     })
 
     it('should return 404 for a topic without retailer attributes', async () => {

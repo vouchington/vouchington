@@ -16,7 +16,6 @@ import {
   getActorUri,
   getSharedInboxUri,
 } from '@modules/activitypub-uris'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 // Actor documents are fetched anonymously by remote fediverse servers — no Voucha session
 // applies, so this route intentionally skips response-helpers.mts's session-auth preamble.
@@ -32,7 +31,7 @@ app.route('/ap/users/:userId').get(async (ctx: Context) => {
   const keyPair = await getOrCreateActorKeyPair(userId)
   const actorUri = getActorUri(userId)
 
-  setAnonymousPublicCacheHeaders(ctx, null, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
+  setAnonymousPublicCacheHeaders(ctx, null)
   ctx.response.buffer(
     Buffer.from(
       JSON.stringify({

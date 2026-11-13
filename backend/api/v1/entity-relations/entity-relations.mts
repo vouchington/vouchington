@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import { apiHeaders } from '@vouchington/utils/api-response-contract'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
@@ -5,7 +6,6 @@ import {
   getEntityRelationsPage,
   type PublicEntityRelationResult,
 } from '@services/entity-relations/query'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { parseEntityRelationSearchInput } from '@services/entity-relations'
 import { indexById } from '@modules/utils'
 import { entityRelationViewerFor, getPublicUserByIdOrSlug } from '@services/users'
@@ -129,9 +129,7 @@ app
       entity_relations: indexById(publicRelationsWithId),
       entity_relation_elections: getElectionRecordsForRelations(parsed.metadata, entityIds),
     }
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     // Include election votes for authenticated users
     if (currentUser) {

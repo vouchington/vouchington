@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
@@ -21,7 +22,6 @@ import {
 } from '@services/communities'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { indexById, isUUID } from '@modules/utils'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { communityMembersQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 
 app
@@ -56,9 +56,7 @@ app
     })
     const userIds = result.results.map(m => m.user_id)
 
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     const searchResults = result.results.map(m => ({
       __entity_type: 'community_member' as const,

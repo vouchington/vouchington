@@ -1,6 +1,6 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getOptionalAuthAndRateLimit,
   validateRequestContract,
@@ -16,9 +16,7 @@ app.route('/api/v1/podcast-episodes/:id/chapters').get(async (ctx: Context) => {
   validateRequestContract(ctx, 'GET:/api/v1/podcast-episodes/:id/chapters', { path: ctx.params })
   const rssFeedItemId = validateUUIDParam(ctx, 'id')
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   const chapters = await getPodcastEpisodeChaptersById(rssFeedItemId)
   ctx.json({ chapters })

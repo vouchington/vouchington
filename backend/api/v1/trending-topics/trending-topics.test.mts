@@ -6,7 +6,6 @@ import {
   createTrendingTopicData,
   createTrendingTopicCursorBefore,
 } from '@voucha/test-helpers/entities/trending-topics'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view-for-test'
 
 describe('trending-topics', () => {
@@ -36,10 +35,7 @@ describe('trending-topics', () => {
         expect(response.body).toHaveProperty('results')
         expect(response.body).toHaveProperty('page_info')
         expect(typeof response.body.topics).toBe('object')
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
       })
 
       it('should return topics as objects (streaming pattern)', async () => {

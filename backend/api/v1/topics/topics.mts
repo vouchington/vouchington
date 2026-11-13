@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
@@ -17,7 +18,6 @@ import {
 } from '@services/entity-fetch'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { indexById, isUUID } from '@modules/utils'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { getAdminUserIdsFromEntities } from '@services/markdown/admin-users'
 import {
@@ -63,9 +63,7 @@ app
     }
 
     if (shouldReturnEmpty) {
-      if (!currentUser) {
-        ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-      }
+      setAnonymousPublicCacheHeaders(ctx, currentUser)
 
       const output: Record<string, unknown> = {
         results: [],
@@ -91,9 +89,7 @@ app
     const topicIds = result.results.map((r: { id: string }) => r.id)
 
     // Only cache for logged-out users
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     // Use streaming pattern: pass promises directly to allow independent streaming
     const topicsPromise = getTopicByAnyCachedBatch(topicIds)

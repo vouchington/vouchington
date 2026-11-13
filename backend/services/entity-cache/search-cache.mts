@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import type { ValkeyCacheOptions } from '@data-stores/valkey/types'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { SEARCH_CACHE_TTL_SECONDS } from './search-cache-ttl.mts'
 
 /**
  * Creates a Valkey-cached wrapper for a search/list function used by logged-out users.
@@ -14,7 +14,7 @@ export function createSearchCache<O extends object, R>(
 ): (options: O) => Promise<R> {
   const cache = new ValkeyCache<O>({
     prefix,
-    ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
+    ttlSeconds: SEARCH_CACHE_TTL_SECONDS,
     keySerializer: stableSerialize,
   } as unknown as ValkeyCacheOptions<O>)
 

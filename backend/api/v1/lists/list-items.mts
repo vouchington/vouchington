@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
@@ -7,7 +8,6 @@ import {
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   defineQueryContract,
   queryBoolean,
@@ -60,9 +60,7 @@ app.route('/api/v1/lists/:id/items').get(async (ctx: Context) => {
     ...(read !== undefined && currentUser ? { read } : {}),
   })
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   ctx.setType('json')
   await ctx.pipeline(

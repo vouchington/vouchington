@@ -37,7 +37,7 @@ describe('posts', () => {
       expect(response.headers['content-type']).toContain('text/markdown')
       expect(response.text).toMatch(/^---/)
       expect(response.text).toContain('has_next_page')
-      expect(response.headers['cache-control']).toBe('public, max-age=60')
+      expect(response.headers['cache-control']).toBe('public')
       expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 

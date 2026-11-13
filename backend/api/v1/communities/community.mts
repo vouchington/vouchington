@@ -19,7 +19,6 @@ import {
   updateCommunity,
   updateCommunityAndSetArchiveState,
 } from '@services/communities'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   attachCommunityProvenance,
   attachWrittenCommunityProvenance,
@@ -35,7 +34,7 @@ app
     const { community, membership, hasPendingApplication } =
       await loadCommunityForViewerOrApplicant(currentUser, idOrSlug)
 
-    setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     const { owner, ...communityData } = community
     const [labelledCommunity] = await attachCommunityProvenance([communityData], currentUser)

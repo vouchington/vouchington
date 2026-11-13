@@ -1,8 +1,8 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '../../app.mts'
 import { attachTopicProvenance } from '@services/content-provenance'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   searchUrlHostnames,
   currentUserCanFilterHostnameModeration,
@@ -84,9 +84,7 @@ app.route('/api/v1/hostnames').get(async ctx => {
     searchOptions.limit = clampAnonLimit(searchOptions.limit ?? ANON_MAX_LIMIT)
   }
   if (shouldReturnEmpty) {
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
     ctx.json({
       results: [],
       page_info: EMPTY_PAGE_INFO,
@@ -105,9 +103,7 @@ app.route('/api/v1/hostnames').get(async ctx => {
       })
     : await searchUrlHostnamesCached(searchOptions)
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
   const visibleHostnames = canSeeModeration

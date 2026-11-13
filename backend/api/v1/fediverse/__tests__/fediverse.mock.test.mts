@@ -101,7 +101,7 @@ describe('GET /api/v1/fediverse/search (real adapters, mocked undici)', () => {
     expect(byProvider.mastodon).toBe('error')
     // A degraded bucket must never be marked publicly cacheable — a shared HTTP cache replaying
     // this response would serve the transient Mastodon failure to later anonymous callers.
-    expect(response.headers['cache-control']).toBeUndefined()
+    expect(response.headers['cache-control']).toBe('private, no-store')
   })
 
   it('paginates a single-provider query end-to-end, requesting the next page on the second call', async () => {

@@ -13,8 +13,6 @@ import { createDeviceAndSessionTokens } from '@services/jwt-session'
 
 import type { PrivateUser } from '@services/users/types'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS, HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
-
 import { v7 } from 'uuid'
 
 describe('index', () => {
@@ -92,10 +90,7 @@ describe('index', () => {
         expect(response.body.hostname.votes_count_up).toBeUndefined()
         expect(response.body.hostname.votes_count_down).toBeUndefined()
         expect(response.body.crawlers).toBeUndefined()
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
         expect(response.headers['vary']).toContain('Cookie')
         expect(response.headers['vary']).toContain('Authorization')
       })
@@ -195,5 +190,4 @@ describe('index', () => {
     })
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
 })

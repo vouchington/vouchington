@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import { clampAnonLimit } from '@services/pagination'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject } from '@jongleberry/api-server'
@@ -13,7 +14,6 @@ import { getTrendingTopicsCached } from '@services/entity-fetch/search-caches'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { indexById } from '@modules/utils'
 import { parseNumberParam } from '@ts-shared/utils/query'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 // Trending topics use a custom time range (day/week/month), not the standard TimeRange type
 const TIME_RANGES = ['day', 'week', 'month'] as const
@@ -67,9 +67,7 @@ app.route('/api/v1/trending-topics').get(async ctx => {
   const topicIds = result.results.map((r: { id: string }) => r.id)
 
   // Only cache for logged-out users
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   // Use streaming pattern: pass promises directly to allow independent streaming
   const output: Record<string, unknown> = {

@@ -7,8 +7,6 @@ import {
   createTestMembership,
 } from '@voucha/test-helpers'
 
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
-
 import type { PrivateUser } from '@services/users/types'
 import { backendResponseContracts } from '../../../../test-helpers/api-fixtures/response-contracts.mts'
 import { validateResponseContract } from '../../../../test-helpers/api-fixtures/contract-schema.mts'
@@ -139,10 +137,7 @@ describe('index', () => {
 
         const getResponse = await request.get(`/api/v1/rss-feeds/${feedId}`).expect(200)
         expect(getResponse.body.rss_feed.id).toBe(feedId)
-        expect(getResponse.headers['cache-control']).toContain('public')
-        expect(getResponse.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-        )
+        expect(getResponse.headers['cache-control']).toBe('public')
         expect(getResponse.headers['vary']).toContain('Cookie')
         expect(getResponse.headers['vary']).toContain('Authorization')
 

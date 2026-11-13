@@ -8,8 +8,6 @@ import {
   safeUsername,
 } from '@voucha/test-helpers'
 
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
-
 import { caches } from '@services/entity-cache/caches'
 
 import {
@@ -156,10 +154,7 @@ describe('Users API Routes', () => {
       expect(response.body.user).toBeDefined()
       expect(response.body.user.id).toBe(user!.id)
       expect(response.body.user.email_address).toBeUndefined()
-      expect(response.headers['cache-control']).toContain('public')
-      expect(response.headers['cache-control']).toContain(
-        `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-      )
+      expect(response.headers['cache-control']).toBe('public')
     })
 
     it('should return private data for authenticated self requests', async () => {

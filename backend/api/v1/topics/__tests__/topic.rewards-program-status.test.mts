@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('topic.rewards-program-status', () => {
   describe('Topic Rewards Program Status Routes', () => {
@@ -47,9 +46,7 @@ describe('topic.rewards-program-status', () => {
           .expect(200)
 
         expect(response.body.rewards_program_status_attributes.order_index).toBe(3)
-        expect(response.headers['cache-control']).toBe(
-          `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
 
         // rewards_program_id is now on the topic, not the status attributes
         const topicResponse = await request.get(`/api/v1/topics/${topicId}`).expect(200)

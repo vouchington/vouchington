@@ -44,7 +44,8 @@ Cached wrappers for list/search queries, used for logged-out users only. Config:
 | Trending posts  | `trending_posts_anon`   | 60s |
 | Platform stats  | `platform_stats_anon`   | 60s |
 
-Search cache TTL aligns with `HTTP_CACHE_SHORT_MAX_AGE_SECONDS` (60s). Cache keys use SHA-256 hashing of stable-serialized options for deterministic, case-sensitive keys.
+Search cache owns its Valkey TTL independently of HTTP headers and the Worker's cache policy.
+Cache keys use SHA-256 hashing of stable-serialized options for deterministic, case-sensitive keys.
 
 Anonymous search entries expire naturally. Playwright global setup clears its test cache before
 browser runs so seeded pages do not see results from an earlier run. `GET /api/v1/urls` requires

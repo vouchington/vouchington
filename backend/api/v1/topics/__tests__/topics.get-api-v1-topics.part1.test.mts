@@ -7,7 +7,6 @@ import {
   createTestUser,
   updateRssFeedTiming,
 } from '@voucha/test-helpers'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { encodeCursor } from '@modules/pagination'
 import { caches } from '@services/entity-cache/caches'
 import { getTopicByAny } from '@services/topics/get'
@@ -39,10 +38,7 @@ describe('topics', () => {
         expect(response.body).toHaveProperty('topics_metrics')
         expect(response.body).toHaveProperty('results')
         expect(response.body).toHaveProperty('page_info')
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
       })
 
       it('should return topics as objects (streaming pattern)', async () => {

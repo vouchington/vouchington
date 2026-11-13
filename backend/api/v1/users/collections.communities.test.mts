@@ -7,7 +7,6 @@ import {
   insertTestLocalFollow,
   safeUsername,
 } from '@voucha/test-helpers'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { updateUserFields } from '@services/users/update-fields'
 
 describe('GET /api/v1/users/:idOrSlug communities collections', () => {
@@ -114,10 +113,7 @@ describe('GET /api/v1/users/:idOrSlug communities collections', () => {
       'updated_at',
       'visibility',
     ])
-    expect(anonResponse.headers['cache-control']).toContain('public')
-    expect(anonResponse.headers['cache-control']).toContain(
-      `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-    )
+    expect(anonResponse.headers['cache-control']).toBe('public')
   })
 
   it('restricts community member list by visibility=followers (anon→404, follower→200)', async () => {

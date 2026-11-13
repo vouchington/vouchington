@@ -1,5 +1,8 @@
 import type { Context } from '@jongleberry/api-server'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import {
+  setAnonymousPublicCacheHeaders,
+  setPrivateNoStoreCacheHeaders,
+} from '../../cache-headers.mts'
 import createHttpError from 'http-errors'
 import {
   currentUserCanAccessUser,
@@ -74,7 +77,9 @@ export function applyCacheHeaders(
   currentUser: Awaited<ReturnType<Context['getCurrentUser']>>,
 ) {
   if (isPublicCollection && !currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
+    setAnonymousPublicCacheHeaders(ctx, null)
+  } else {
+    setPrivateNoStoreCacheHeaders(ctx)
   }
 }
 

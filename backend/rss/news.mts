@@ -40,10 +40,10 @@ app.route('/rss/news').get(async (ctx: Context) => {
   })
 
   if (apikey) {
-    ctx.set('Cache-Control', 'private, max-age=300')
+    ctx.set('Cache-Control', 'private, no-store')
     ctx.set('Referrer-Policy', 'no-referrer')
   } else {
-    ctx.set('Cache-Control', 'public, max-age=300')
+    ctx.set('Cache-Control', 'public')
   }
   ctx.response.buffer(Buffer.from(xml, 'utf8'), 'application/rss+xml; charset=utf-8')
 })

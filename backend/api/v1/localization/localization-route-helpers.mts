@@ -39,7 +39,7 @@ export function localizationRoute(ctx: Context): void {
       headerValue(ctx.req.headers['if-none-match']),
     )
     ctx.set('ETag', result.etag)
-    ctx.set('Cache-Control', `public, max-age=${result.ttlSeconds}`)
+    ctx.set('Cache-Control', 'public')
     if (result.status === 304 || result.body === undefined) {
       ctx.setStatus(304)
       return

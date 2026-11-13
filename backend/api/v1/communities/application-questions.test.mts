@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { setApplicationQuestions } from '@services/communities'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -69,8 +68,10 @@ describe('Community Application Questions Routes', () => {
               .expect(201)
           }
           expect(response.headers['cache-control']).toBe(
-            visibility === 'public' && role === 'anonymous'
-              ? `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`
+            allowed
+              ? visibility === 'public' && role === 'anonymous'
+                ? 'public'
+                : 'private, no-store'
               : undefined,
           )
         }
@@ -118,7 +119,7 @@ describe('Community Application Questions Routes', () => {
           .get(`/api/v1/communities/${community.slug}/application-questions`)
           .expect(200)
         expect(response.body.questions[0].id).toBe(questions[0]!.id)
-        expect(response.headers['cache-control']).toBeUndefined()
+        expect(response.headers['cache-control']).toBe('private, no-store')
       },
     )
 
