@@ -1,4 +1,5 @@
 import { edgeErrorResponse, timingSafeCredentialMatch } from '@vouchington/edge'
+import { edgeNotFoundResponse } from './edge-not-found.mts'
 import { isProductionMode } from './production-mode.mts'
 import {
   EDGE_CACHE_CANARY_PATH,
@@ -36,10 +37,10 @@ export const resolveStagingCanaryControl = (
   const hasControl = secret !== null || requestedFault !== null
   const isCanaryPath = url.pathname === EDGE_CACHE_CANARY_PATH
   if (isProductionMode(env) && (hasControl || isCanaryPath)) {
-    return { response: edgeErrorResponse(404, 'Not Found', 'NOT_FOUND') }
+    return { response: edgeNotFoundResponse('staging-canary:production') }
   }
   if (isCanaryPath && request.method !== 'GET') {
-    return { response: edgeErrorResponse(404, 'Not Found', 'NOT_FOUND') }
+    return { response: edgeNotFoundResponse('staging-canary:method') }
   }
   if (!hasControl) {
     if (!suppliedInternalFault) return { fault: null, request }

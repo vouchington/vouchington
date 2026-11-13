@@ -173,7 +173,8 @@ export function createPlaywrightConfig({
       {
         command: 'node cloudflare-worker/scripts/wrangler/start.mts',
         name: 'cloudflare-worker',
-        url: WORKER_URL,
+        // Worker-routed web page: a mis-routed worker's JSON 404 on /login fails boot (#5701).
+        url: `${WORKER_URL}/login`,
         reuseExistingServer,
         timeout: CI ? 45_000 : 60_000,
         stdout: 'pipe',

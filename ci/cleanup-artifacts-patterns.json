@@ -27,6 +27,7 @@
     "playwright-junit-*",
     "playwright-credentialed-junit",
     "playwright-test-results-shard-*",
+    "playwright-server-logs-shard-*",
     "wrangler-logs-*"
   ],
   "delete": [

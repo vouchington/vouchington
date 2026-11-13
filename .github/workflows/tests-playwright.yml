@@ -219,6 +219,17 @@ jobs:
           path: ${{ runner.temp }}/wrangler-logs/
           retention-days: 1
           if-no-files-found: ignore
+      - name: Upload web and backend server logs
+        if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: playwright-server-logs-shard-${{ matrix.shard }}
+          path: ${{ runner.temp }}/playwright-web-server-logs/
+          retention-days: 1
+          if-no-files-found: ignore
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1

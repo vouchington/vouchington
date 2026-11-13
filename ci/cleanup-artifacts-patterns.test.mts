@@ -29,6 +29,7 @@ const KEEP_NAMES = [
   'web-test-report-shard-1',
   'playwright-junit-shard-2',
   'playwright-credentialed-junit',
+  'playwright-server-logs-shard-2',
   'wrangler-logs-2',
 ]
 
