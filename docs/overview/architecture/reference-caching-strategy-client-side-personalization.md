@@ -36,6 +36,15 @@ client must revalidate or apply its own HTTP caching policy rather than assume t
   including copyright removal and user deletion; it is not a freshness mechanism. The authenticated
   purge path remains separate from ordinary expiry and must fail visibly if a required legal purge
   cannot complete.
+  All regular cached responses carry one shared legal-removal tag so legal erasure can evict
+  embedded content in threads, lists, HTML, and feeds without collecting dependency identities
+  before streaming. The staging canary keeps its separate override tag.
+  Account deletion attempts an immediate purge after the privacy fence commits, but keeps the
+  coarse purge owed until erasure and sibling external work finish. Its final durable purge must
+  complete before deletion is acknowledged. Successful copyright withholds admit a purge under the canonical action's identity;
+  an older active purge must not coalesce a later legal removal. Failed admission leaves action
+  completion retryable. This intentionally evicts broadly after legal removal, with an
+  unmeasured cache-warmup cost.
 
 ## What is NOT Cached
 

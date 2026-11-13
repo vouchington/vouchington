@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { invalidate } from '@services/entity-cache/invalidate'
+import { LEGAL_REMOVAL_TAG } from '@services/entity-cache/legal-removal'
 import {
   userDeletionErrorMessage,
   runWithUserDeletionAttemptHeartbeat,
@@ -83,7 +84,16 @@ async function getPendingExternalWork(requestId: string) {
       lineage.provider_account_id AS stripe_customer_id
     FROM user_deletion_external_works work
     LEFT JOIN membership_provider_lineages lineage ON lineage.id = work.membership_provider_lineage_id
-    WHERE work.request_id = ${requestId} AND work.completed_at IS NULL ORDER BY work.id LIMIT 1`)
+    WHERE work.request_id = ${requestId} AND work.completed_at IS NULL
+      AND (
+        work.work_kind <> 'cloudflare-cache-tag' OR work.work_key <> ${LEGAL_REMOVAL_TAG}
+        OR NOT EXISTS (
+          SELECT 1 FROM user_deletion_external_works sibling
+          WHERE sibling.request_id = work.request_id AND sibling.completed_at IS NULL
+            AND sibling.id <> work.id
+        )
+      )
+    ORDER BY work.id LIMIT 1`)
   return rows[0] as PendingExternalWork | undefined
 }
 

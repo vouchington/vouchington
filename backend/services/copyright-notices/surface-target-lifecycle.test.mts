@@ -209,10 +209,11 @@ describe('copyright surface target lifecycle', () => {
         id: fixture.ownerId,
       })
 
-      const purgeEnqueue = cache ? null : vi.spyOn(cachePurgeEnqueues, 'enqueueBulkPurgeCacheTags')
+      const purgeEnqueue = vi.spyOn(cachePurgeEnqueues, 'enqueueBulkPurgeCacheTags')
+      const legalPurgeEnqueue = vi.spyOn(cachePurgeEnqueues, 'enqueueLegalRemovalPurgeCacheTag')
       const matchingPurgeCalls = () =>
-        purgeEnqueue?.mock.calls.filter(([tags]) => tags.includes(`community:${fixture.ownerId}`))
-          .length ?? 0
+        purgeEnqueue.mock.calls.filter(([tags]) => tags.includes(`community:${fixture.ownerId}`))
+          .length
       await expect(processCopyrightActionIntent(caseRecord.withholdIntentId)).resolves.toBe(
         'applied',
       )
@@ -222,6 +223,7 @@ describe('copyright surface target lifecycle', () => {
       const purgeQueued = cache ? true : await communityPurgeWasQueued(fixture.ownerId)
       expect(purgeQueued).toBe(true)
       expect(matchingPurgeCalls()).toBe(cache ? 0 : 1)
+      expect(legalPurgeEnqueue).toHaveBeenCalledExactlyOnceWith(caseRecord.withholdIntentId)
       expect(await publicImageIsProjected(fixture)).toBe(false)
       const withheld = await getImagePlacementForCopyright(fixture.placementId)
       expect(withheld).toMatchObject({ withheld: true, imageId: fixture.imageId })
@@ -245,6 +247,7 @@ describe('copyright surface target lifecycle', () => {
       if (!restoreIntent) throw new Error('Copyright restore intent missing')
       await expect(processCopyrightActionIntent(restoreIntent.id)).resolves.toBe('applied')
       expect(matchingPurgeCalls()).toBe(cache ? 0 : 2)
+      expect(legalPurgeEnqueue).toHaveBeenCalledExactlyOnceWith(caseRecord.withholdIntentId)
       expect(cache ? (await cache.get(fixture.ownerId)) === null : true).toBe(true)
       expect(await publicImageIsProjected(fixture)).toBe(true)
       const restored = await getImagePlacementForCopyright(fixture.placementId)

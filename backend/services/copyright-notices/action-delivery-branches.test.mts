@@ -15,6 +15,7 @@ import {
   createCounterNoticeRestoreIntent,
 } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import * as cachePurgeEnqueues from '../../queues/cache-purge/enqueues.mts'
 
 describe('copyright action delivery branches', () => {
   let edge: ReturnType<typeof installTestMediaDeliveryEdge>
@@ -53,6 +54,7 @@ describe('copyright action delivery branches', () => {
       }),
     ).resolves.toMatchObject({ status: 'applied' })
     edge.put.mockClear()
+    const purgeEnqueue = vi.spyOn(cachePurgeEnqueues, 'enqueueLegalRemovalPurgeCacheTag')
 
     await expect(processCopyrightActionIntent(withhold.id, new Date())).resolves.toBe('stale')
 
@@ -61,6 +63,7 @@ describe('copyright action delivery branches', () => {
       revision: target.placement_revision + 2,
     })
     expect(edge.put).not.toHaveBeenCalled()
+    expect(purgeEnqueue).not.toHaveBeenCalled()
   })
 
   it('completes an unavailable restore without projecting a deleted placement', async () => {

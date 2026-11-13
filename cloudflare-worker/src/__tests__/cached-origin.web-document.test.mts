@@ -72,7 +72,7 @@ describe('CachedOrigin web-document validation', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toContain('public, max-age=')
-    expect(response.headers.get('cache-tag')).toBe('html')
+    expect(response.headers.get('cache-tag')).toBe('html,legal-removal')
   })
 
   it.each([204, 205])('preserves an intentionally empty %s response', async status => {

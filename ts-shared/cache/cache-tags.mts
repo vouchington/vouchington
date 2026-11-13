@@ -39,6 +39,7 @@ export const rssFeedItemTag = (id: string): string => cacheTag('rss-feed-item', 
 // existing anon TTL window instead.
 
 export const SITEMAP_TAG = 'sitemap'
+export const LEGAL_REMOVAL_TAG = 'legal-removal'
 const RSS_TAG = 'rss'
 const STATIC_TAG = 'static'
 // Fallback for any cacheable page that isn't a single-entity detail page (home, search,
@@ -46,7 +47,6 @@ const STATIC_TAG = 'static'
 // map to one entity, so they share one coarse, purge-by-tag-able class instead of being
 // left untagged.
 export const HTML_TAG = 'html'
-
 // Detail-route type-slug sets, used to classify the first path segment of a request into
 // an entity family. Kept in sync manually with the routing tables that actually mint these
 // URLs — there is no single canonical source shared by both sides (see the files below), so

@@ -1,4 +1,8 @@
-import { deriveCacheTags, type CacheTagRouteContext } from '@ts-shared/cache/cache-tags'
+import {
+  deriveCacheTags,
+  LEGAL_REMOVAL_TAG,
+  type CacheTagRouteContext,
+} from '@ts-shared/cache/cache-tags'
 import { isValidCacheTag } from '@vouchington/utils/cache-tags'
 import {
   edgeErrorResponse,
@@ -36,7 +40,7 @@ export const finalizeCachedOriginResponse = (
   }
   const tags = input.cacheTagOverride
     ? [input.cacheTagOverride]
-    : deriveCacheTags(input.pathname, tagContext)
+    : [...deriveCacheTags(input.pathname, tagContext), LEGAL_REMOVAL_TAG]
   return finalizeEdgeCachedOriginResponse(originResponse, {
     ttlSeconds,
     tags,

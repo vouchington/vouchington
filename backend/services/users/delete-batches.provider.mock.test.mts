@@ -31,7 +31,10 @@ import {
   rotateTestUserDeletionAttemptDuringProviderCall,
 } from '@voucha/test-helpers'
 import { addTestStripeDeletionWork } from '@voucha/test-helpers/entities/stripe-customer-deletion'
-import { markUserDeletionAttemptStartedForTest } from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
+import {
+  getUserDeletionCompletionAuditForTest,
+  markUserDeletionAttemptStartedForTest,
+} from '@voucha/test-helpers/services/user-deletions/user-deletion-lifecycle'
 import { executeUserDeletionExternalWork } from './delete-external-work-dispatch.mts'
 import { processUserDeletionExternalWork } from './delete-phase-external-work.mts'
 
@@ -116,7 +119,7 @@ describe('user deletion provider work', () => {
   it('completes cache-tag work through the cache purge', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', [`user:${user.id}`])
+    await addUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', ['legal-removal'])
     await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
     const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
 
@@ -127,7 +130,46 @@ describe('user deletion provider work', () => {
     await expect(
       processUserDeletionExternalWork(request.id, request.processingAttemptId),
     ).resolves.toEqual({ hasMore: false })
-    expect(purge).toHaveBeenCalledExactlyOnceWith([`user:${user.id}`])
+    expect(purge).toHaveBeenCalledExactlyOnceWith(['legal-removal'])
+  })
+
+  it('processes the legal purge after sibling work and retries its failure', async () => {
+    const user = await createTestUser()
+    const request = await createUserDeletionRequest(user.id, user.id)
+    const exportKey = `test/${randomUUID()}.zip`
+    await addUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', ['legal-removal'])
+    await addUserDeletionExternalWorks(request.id, 's3-export', [exportKey])
+    await markUserDeletionAttemptStartedForTest(request.id, request.processingAttemptId)
+    mockS3Send.mockResolvedValue({})
+    const purge = vi.spyOn(cachePurge, 'purgeCacheTags')
+
+    await expect(
+      processUserDeletionExternalWork(request.id, request.processingAttemptId),
+    ).resolves.toEqual({ hasMore: true })
+    expect(sentS3Inputs()).toEqual([{ Bucket: S3Buckets.userExports, Key: exportKey }])
+    expect(purge).not.toHaveBeenCalled()
+
+    vi.stubEnv('CF_WORKER_ROUTE', 'https://127.0.0.1:9')
+    vi.stubEnv('CF_WORKER_SECRET', 'test-secret')
+    vi.stubEnv('SKIP_CACHE_PURGE', 'false')
+    try {
+      await expect(
+        processUserDeletionExternalWork(request.id, request.processingAttemptId),
+      ).rejects.toThrow('Cache purge request failed')
+      expect(
+        (await getUserDeletionCompletionAuditForTest(request.id)).externalWorks.find(
+          work => work.workKey === 'legal-removal',
+        )?.completedAt,
+      ).toBeNull()
+      vi.stubEnv('SKIP_CACHE_PURGE', 'true')
+      await expect(
+        processUserDeletionExternalWork(request.id, request.processingAttemptId),
+      ).resolves.toEqual({ hasMore: true })
+      await expect(isTestUserDeletionExternalWorkCompleted(request.id)).resolves.toBe(true)
+      expect(purge).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('completes Stripe work when the customer is already missing', async () => {

@@ -7,6 +7,7 @@ import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-del
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { purgeCacheTags } from '@services/entity-cache/purge'
+import { LEGAL_REMOVAL_TAG } from '@services/entity-cache/legal-removal'
 import {
   addUserDeletionExternalWorks,
   completeUserDeletionExternalWorks,
@@ -83,6 +84,7 @@ async function addUserDeletionCacheEvictionWork(
 
 function getUserDeletionCacheTags(target: UserDeletionTarget): string[] {
   return [
+    LEGAL_REMOVAL_TAG,
     `user:${target.id}`,
     ...(target.username ? [`user:${target.username.toLowerCase()}`] : []),
   ]
@@ -96,7 +98,13 @@ async function attemptImmediateUserDeletionCacheEviction(
   try {
     await purgeCacheTags(tags)
     await settleUserDeletionOperations(
-      [completeUserDeletionExternalWorks(requestId, 'cloudflare-cache-tag', tags)],
+      [
+        completeUserDeletionExternalWorks(
+          requestId,
+          'cloudflare-cache-tag',
+          tags.filter(tag => tag !== LEGAL_REMOVAL_TAG),
+        ),
+      ],
       'User deletion cache receipts failed',
     )
   } catch (err) {

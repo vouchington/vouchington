@@ -424,3 +424,12 @@ visible to its statement, but an earlier provider event can commit after a later
 already frozen that invoice's cap. This rare commit-order inversion is accepted: replay must
 not rewrite a financial snapshot or increase an already allocated refund. Staff can inspect
 the retained evidence rather than treating provider timestamps as a global commit order.
+
+## Legal cache removal
+
+Copyright withhold purges use a separate admission identity per canonical legal action. A purge
+already in flight may have run before a later removal, so coalescing those actions would lose a
+required eviction. Admission participates in the existing action completion and retry boundary;
+the purge queue owns outbound retries. Account deletion keeps its own durable external-work
+receipts. See the [caching strategy](../reference-caching-strategy-client-side-personalization.md#cache-invalidation)
+for why legal removal uses broad eviction while ordinary freshness follows the Worker TTL.
