@@ -1,149 +1,83 @@
-import { createTestRetiredCopyrightAssessment } from '@voucha/test-helpers/copyright-retired-assessment'
-import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
-import {
-  createTestUser,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
-import {
-  createTestCopyrightFormRejectionByErasedModerator,
-  readTestCopyrightFormReviewActor,
-} from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
-  createCopyrightFormIntake,
   enforceCopyrightAssessment,
   searchPendingCopyrightEnforcementAssessmentIds,
-  recoverRejectedCopyrightFormReviewEffect,
   searchRecoverableCopyrightFormReviewIntakeIds,
 } from './index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
-import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-
-async function createAutomatedCopyrightForm(historyRetired = false) {
-  const claimant = await createTestUser()
-  const postId = await insertTestPost({
-    title: `erased copyright reviewer ${crypto.randomUUID()}`,
-    slug: `erased-copyright-reviewer-${crypto.randomUUID()}`,
-    createdById: claimant.id,
-    markdown: 'image',
-  })
-  const imageId = await insertTestImage(claimant.id)
-  await insertTestPostImage({ postId, imageId })
-  const notice = await createCopyrightFormIntake({
-    currentUser: claimant,
-    requesterIdentity: `user:${claimant.id}`,
-    idempotencyKey: crypto.randomUUID(),
-    request: {
-      jurisdiction: 'us_dmca',
-      claimantDisplayName: 'Claimant',
-      claimantContact: 'claimant@example.test',
-      claimantEmail: 'claimant@example.test',
-      workDescription: 'Original photograph',
-      goodFaithBelief: true,
-      accuracyAuthorityUnderPenaltyOfPerjury: true,
-      electronicSignature: 'Claimant',
-      claimantTargets: [
-        {
-          surfaceKind: 'post-image' as const,
-          postId,
-          imageId,
-          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-        },
-      ],
-    },
-  })
-  const screeningId = await appendTestCopyrightFormScreening({
-    intakeId: notice.intake.id,
-    inputSha256: Buffer.alloc(32),
-    recommendation: 'not_obviously_invalid',
-    rationale: 'No obvious spam markers.',
-    guidance: testCopyrightFormGuidance,
-    promptVersion: 'copyright-form-screening-v2',
-    model: 'test-model',
-  })
-  const assessment = historyRetired
-    ? await createTestRetiredCopyrightAssessment({
-        submissionId: notice.intake.copyright_notice_submission_id,
-        screeningId,
-      })
-    : await appendCopyrightSubmissionAssessment({
-        submissionId: notice.intake.copyright_notice_submission_id,
-        assessedAt: new Date(),
-        currentUser: null,
-        substantiallyCompliant: true,
-        copyrightFormScreeningId: screeningId,
-      })
-  return { assessment, notice }
-}
-
-async function rejectWithErasedModerator(intakeId: string): Promise<void> {
-  const moderator = await createTestUser()
-  await createTestCopyrightFormRejectionByErasedModerator({ intakeId, moderatorId: moderator.id })
-  await expect(readTestCopyrightFormReviewActor(intakeId)).resolves.toBeNull()
-}
-
-/** Recovers one owned rejection the sweep lists, then proves the sweep no longer lists it. */
-async function recoverListedFormReview(intakeId: string): Promise<void> {
-  await expect(
-    readTestOwnedCopyrightSweepIds(searchRecoverableCopyrightFormReviewIntakeIds, intakeId),
-  ).resolves.toEqual([intakeId])
-  await recoverRejectedCopyrightFormReviewEffect(intakeId)
-  await expect(
-    readTestOwnedCopyrightSweepIds(searchRecoverableCopyrightFormReviewIntakeIds, intakeId),
-  ).resolves.toEqual([])
-}
+import {
+  createErasedReviewScene,
+  seedErasedReviewRestriction,
+  rejectErasedReviewScene,
+} from '@voucha/test-helpers/copyright-erased-review-scenes'
+import { assertErasedReviewRecovery } from '@voucha/test-helpers/copyright-erased-review-subject'
+import { seedCommittedErasedRecovery } from '@voucha/test-helpers/copyright-erased-review-completion'
+import { readEffectiveReviewState } from '@voucha/test-helpers/copyright-effective-review-state'
 
 describe('copyright rejected form-review recovery after actor erasure', () => {
   useAutomaticProvisionalWithholding()
 
   it('reverses an automated restriction after its detailed assessment history retired', async () => {
-    const { assessment, notice } = await createAutomatedCopyrightForm(true)
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
-    await acceptCopyrightNoticeAndImposeRestriction({
-      noticeId: notice.intake.copyright_notice_id,
-      targetId: aggregate!.targets[0]!.id,
-      assessmentId: assessment.id,
-      imposedAt: new Date(),
-      imposedById: null,
-    })
-    await rejectWithErasedModerator(notice.intake.id)
-
-    await recoverListedFormReview(notice.intake.id)
-
-    const recovered = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    const actual = await createErasedReviewScene(true)
+    await seedErasedReviewRestriction(actual)
+    await rejectErasedReviewScene(actual.notice.intake.id)
+    await assertErasedReviewRecovery(actual)
+    // This independent complete retired-history reversal always reaches the read and queue guards.
+    const committed = await createErasedReviewScene(true)
+    await seedErasedReviewRestriction(committed)
+    await rejectErasedReviewScene(committed.notice.intake.id)
+    await seedCommittedErasedRecovery(committed)
+    await expect(
+      readTestOwnedCopyrightSweepIds(
+        searchRecoverableCopyrightFormReviewIntakeIds,
+        committed.notice.intake.id,
+      ),
+    ).resolves.toEqual([])
+    const recovered = await getCopyrightNoticePrivateAggregate(
+      committed.notice.intake.copyright_notice_id,
+    )
     expect(recovered?.restrictions).toEqual([
       expect.objectContaining({ human_review_action: 'reverse', human_reviewed_by_id: null }),
     ])
     expect(recovered?.actionIntents).toEqual(
       expect.arrayContaining([expect.objectContaining({ action: 'restore' })]),
     )
+    expect(recovered?.assessments).toEqual([])
   })
 
   it('never enforces a pending automated assessment after the durable erased rejection', async () => {
-    const { assessment, notice } = await createAutomatedCopyrightForm()
+    const scene = await createErasedReviewScene()
     await expect(
-      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id),
-    ).resolves.toEqual([assessment.id])
-    await rejectWithErasedModerator(notice.intake.id)
-
+      readTestOwnedCopyrightSweepIds(
+        searchPendingCopyrightEnforcementAssessmentIds,
+        scene.assessment.id,
+      ),
+    ).resolves.toEqual([scene.assessment.id])
+    await rejectErasedReviewScene(scene.notice.intake.id)
     await expect(
-      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id),
+      readTestOwnedCopyrightSweepIds(
+        searchPendingCopyrightEnforcementAssessmentIds,
+        scene.assessment.id,
+      ),
     ).resolves.toEqual([])
     await expect(
       readTestOwnedCopyrightSweepIds(
         searchRecoverableCopyrightFormReviewIntakeIds,
-        notice.intake.id,
+        scene.notice.intake.id,
       ),
     ).resolves.toEqual([])
-    await enforceCopyrightAssessment(assessment.id)
-    const recovered = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    const before = await readEffectiveReviewState(scene.notice.intake.copyright_notice_id, [
+      scene.claimant.id,
+    ])
+    await expect(enforceCopyrightAssessment(scene.assessment.id)).resolves.toBeUndefined()
+    expect(
+      await readEffectiveReviewState(scene.notice.intake.copyright_notice_id, [scene.claimant.id]),
+    ).toEqual(before)
+    const recovered = await getCopyrightNoticePrivateAggregate(
+      scene.notice.intake.copyright_notice_id,
+    )
     expect(recovered?.restrictions).toEqual([])
   })
 })

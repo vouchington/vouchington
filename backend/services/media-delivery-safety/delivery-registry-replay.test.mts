@@ -1,12 +1,10 @@
+import { createCommittedFailedRegistryReplayFixture } from '@voucha/test-helpers/copyright-committed-registry-replay-fixture'
 import { encodeScopedUuidCursor } from '@modules/pagination'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getTestMediaDeliveryRecordSnapshot } from '@voucha/test-helpers'
 import { notifications } from '../../queues/notifications/queues.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  settleReplayFixtureOperations,
-  createFailedMediaDeliveryReplayFixture,
-} from '@voucha/test-helpers/copyright-route-replay-setup'
+import { settleReplayFixtureOperations } from '@voucha/test-helpers/copyright-route-replay-setup'
 import { countTestCopyrightLifecycleEvents } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { getTestMediaDeliveryTransitionHistory } from '@voucha/test-helpers/entities/media-delivery-retry'
 import { processReplayMediaDeliveryRegistry } from '../../workers/notifications/processors/media-delivery-registry.mts'
@@ -21,9 +19,9 @@ describe('media delivery replay jobs', () => {
     async schedule => {
       installTestMediaDeliveryEdge()
       const [first, second, excluded] = await settleReplayFixtureOperations([
-        createFailedMediaDeliveryReplayFixture(),
-        createFailedMediaDeliveryReplayFixture(),
-        createFailedMediaDeliveryReplayFixture(),
+        createCommittedFailedRegistryReplayFixture(),
+        createCommittedFailedRegistryReplayFixture(),
+        createCommittedFailedRegistryReplayFixture(),
       ])
       const excludedBefore = await getTestMediaDeliveryRecordSnapshot(
         excluded.mediaDeliveryRegistryRecordId,

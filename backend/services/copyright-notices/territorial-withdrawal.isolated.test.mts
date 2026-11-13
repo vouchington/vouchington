@@ -1,3 +1,5 @@
+import { seedCommittedTerritorialDecision } from '@voucha/test-helpers/copyright-territorial-committed-decision'
+import { seedCommittedTerritorialRedressDecision } from '@voucha/test-helpers/copyright-territorial-committed-redress'
 import { assertCommittedEuWithdrawalContinuity as assertTestEuWithdrawalContinuity } from '@voucha/test-helpers/copyright-eu-withdrawal-subject'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
@@ -135,7 +137,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
     await expect(
       processCopyrightActionIntent((await actionIntent(euA.notice_id, 'withhold')).id),
     ).resolves.toBe('applied')
-    await recordEuCopyrightStatementOfReasons(staff, euD.notice_id, {
+    await seedCommittedTerritorialDecision('eu_dsa', staff, euD.notice_id, {
       text: 'The supplied evidence does not identify infringement.',
       publicExplanation: 'The notice did not establish that this image infringes.',
       outcome: 'no_action',
@@ -228,7 +230,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       (await getCopyrightNoticePrivateAggregate(euA.notice_id))?.restrictions[0]?.lifted_at,
     ).toBeInstanceOf(Date)
 
-    await recordEuCopyrightRedressDecision(staff, euD.notice_id, euDComplaint.id, {
+    await seedCommittedTerritorialRedressDecision('eu_dsa', euD.notice_id, euDComplaint.id, staff, {
       disposition: 'revoke',
       rationale: 'The no-action decision was unfounded.',
     })

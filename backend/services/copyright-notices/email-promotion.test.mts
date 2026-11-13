@@ -1,95 +1,86 @@
-import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
-import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { copyrightPromotionText, copyrightReceiptText } from './statement-of-reasons-wording.mts'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import {
   readCopyrightEmailIntakeReview,
   readCopyrightEmailIntakeResponses,
 } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import {
-  markCopyrightDeliveryIntentBouncedBySesMessageId,
-  markCopyrightDeliveryIntentFailed,
-  markCopyrightDeliveryIntentSent,
-  prepareCopyrightEmailDelivery,
-} from './index.mts'
+  createOwnedCopyrightReceiptScene,
+  seedOwnedCopyrightReceiptSource,
+  createOwnedCopyrightProviderReply,
+  seedOwnedCopyrightProviderStage,
+} from '@voucha/test-helpers/copyright-email-receipt-scenes'
+import { seedOwnedCopyrightReplyClaim } from '@voucha/test-helpers/copyright-reply-replay-fixtures'
+import { readOwnedCopyrightMailWork } from '@voucha/test-helpers/copyright-email-work-state'
+import {
+  assertOwnedCopyrightMailPreparation,
+  assertOwnedCopyrightProviderWrite,
+  assertOwnedCopyrightStaleMailLease,
+} from '@voucha/test-helpers/copyright-email-work-outcomes'
+import { assertCopyrightPromotionOutcome } from '@voucha/test-helpers/copyright-email-promotion-outcomes'
+import { assertCommittedCopyrightGraphReplay } from '@voucha/test-helpers/copyright-committed-graph-replay'
+import { seedCommittedCopyrightPromotion } from '@voucha/test-helpers/copyright-promotion-committed-fixtures'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { markCopyrightDeliveryIntentBouncedBySesMessageId } from './delivery-bounces.mts'
+import {
+  copyrightPromotionText,
+  copyrightReceiptText,
+  copyrightNeedsInformationText,
+} from './statement-of-reasons-wording.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
-import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
-import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright email promotion', () => {
   useCopyrightIntakeEnvironment()
   it.each(['pending', 'failed', 'none'] as const)(
-    'promotes while retaining a %s arrival receipt and uses the applicable case acknowledgement',
-    async receiptState => {
-      const [poster, moderatorRecord] = await Promise.all([createTestUser(), createTestUser()])
-      const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-      const postId = await insertTestPost({
-        title: `Copyright email approval ${crypto.randomUUID()}`,
-        slug: `copyright-email-approval-${crypto.randomUUID()}`,
-        createdById: poster.id,
-        markdown: 'Hosted copyright target.',
-      })
-      const imageId = await insertTestImage(poster.id)
-      const placementId = await insertTestPostImage({ postId, imageId })
-      if (receiptState === 'none') vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'false')
-      const intake = await createParsedCopyrightEmailIntake()
-      vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
-      const arrival = (await readCopyrightEmailIntakeResponses(intake.id))[0]
-      expect(arrival?.delivery_kind).toBe(
-        receiptState === 'none' ? undefined : 'email_intake_received',
+    'promotes atomically while retaining the %s arrival receipt',
+    async state => {
+      expect.hasAssertions()
+      const scene = await createOwnedCopyrightReceiptScene(state)
+      const before = await readCopyrightEmailIntakeResponses(scene.intake.id)
+      expect(before).toEqual(
+        state === 'none'
+          ? []
+          : [{ id: scene.arrivalId, delivery_kind: 'email_intake_received', state }],
       )
-      if (receiptState === 'failed') await failTestCopyrightDeliveryIntent(arrival!.id)
-      const approved = await promoteCopyrightEmailIntake({
-        currentUser: moderator,
-        intakeId: intake.id,
-        recommendationId: null,
-        manualFallbackReason: 'The extraction agent was unavailable.',
-        jurisdiction: 'us_dmca',
-        claimantDisplayName: 'Claimant',
-        claimantContact: 'claimant@example.test',
-        claimantEmail: 'claimant@example.test',
-        workDescription: 'Original photograph',
-        goodFaithBelief: true,
-        accuracyAuthorityUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        targets: [
-          {
-            placementId,
-            placementRevision: 1,
-            imageId,
-            bindingFamily: 'post',
-            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-          },
-        ],
-        rationale: 'The email contains the statutory notice statements.',
-      })
+      await assertCopyrightPromotionOutcome({ input: scene.input, intakeIds: [scene.intake.id] })
+      expect(await readCopyrightEmailIntakeResponses(scene.intake.id)).toEqual(before)
+    },
+  )
+
+  it.each(['pending', 'failed', 'none'] as const)(
+    'uses the applicable case acknowledgement from a committed %s arrival stage',
+    async state => {
+      const scene = await createOwnedCopyrightReceiptScene(state)
+      const approved = await seedCommittedCopyrightPromotion(scene.input)
       const aggregate = await getCopyrightNoticePrivateAggregate(approved.noticeId)
       const receipt = aggregate!.deliveryIntents.find(
         row => row.delivery_kind === 'claimant_receipt',
       )!
-      expect((await prepareCopyrightEmailDelivery(receipt.id)).text).toBe(
-        receiptState === 'pending'
+      await assertOwnedCopyrightMailPreparation(
+        receipt.id,
+        'claimant@example.test',
+        state === 'pending'
           ? copyrightPromotionText(approved.noticeId)
           : copyrightReceiptText(approved.noticeId),
       )
-      expect(await readCopyrightEmailIntakeResponses(intake.id)).toEqual(
-        receiptState === 'none'
+      expect(await readCopyrightEmailIntakeResponses(scene.intake.id)).toEqual(
+        state === 'none'
           ? []
-          : [{ id: arrival!.id, delivery_kind: 'email_intake_received', state: receiptState }],
+          : [{ id: scene.arrivalId, delivery_kind: 'email_intake_received', state }],
       )
-      const claimantDecision = (await readTestCopyrightStatementIntents(approved.noticeId)).filter(
+      const decisions = (await readTestCopyrightStatementIntents(approved.noticeId)).filter(
         row => row.recipient_role === 'claimant',
       )
-      expect(claimantDecision).toHaveLength(1)
-      expect(claimantDecision[0]).toMatchObject({
+      expect(decisions).toHaveLength(1)
+      expect(decisions[0]).toMatchObject({
         channel: 'email',
         recipient_user_id: null,
         email: 'claimant@example.test',
@@ -100,90 +91,89 @@ describe('copyright email promotion', () => {
         ]),
       )
       expect(aggregate?.restrictions).toEqual(
-        expect.arrayContaining([expect.objectContaining({ imposed_by_id: moderator.id })]),
+        expect.arrayContaining([expect.objectContaining({ imposed_by_id: scene.moderator.id })]),
       )
-      await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
+      await expect(readCopyrightEmailIntakeReview(scene.intake.id)).resolves.toEqual([
         { decision: 'approved', promoted_copyright_notice_id: approved.noticeId },
       ])
-      await expect(
-        promoteCopyrightEmailIntake({
-          currentUser: moderator,
-          intakeId: intake.id,
-          recommendationId: null,
-          manualFallbackReason: 'The extraction agent was unavailable.',
-          jurisdiction: 'us_dmca',
-          claimantDisplayName: 'Claimant',
-          claimantContact: 'claimant@example.test',
-          claimantEmail: 'claimant@example.test',
-          workDescription: 'Original photograph',
-          goodFaithBelief: true,
-          accuracyAuthorityUnderPenaltyOfPerjury: true,
-          electronicSignature: 'Claimant',
-          targets: [
-            {
-              placementId,
-              placementRevision: 1,
-              imageId,
-              bindingFamily: 'post',
-              hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-            },
-          ],
-          rationale: 'The prior moderator decision may be safely replayed.',
-        }),
-      ).resolves.toEqual(approved)
+      await assertCommittedCopyrightGraphReplay(
+        {
+          input: {
+            ...scene.input,
+            rationale: 'The prior moderator decision may be safely replayed.',
+          },
+          intakeIds: [scene.intake.id],
+          parentNoticeIds: [approved.noticeId],
+        },
+        approved.noticeId,
+      )
     },
   )
 
-  it('sends and records a bounced staff response to a rejected email', async () => {
-    const responseId = await rejectParsedIntakeWithResponse({
-      responseKind: 'needs_information',
-      responseMessage: 'Please identify the work and the hosted material.',
+  it('prepares the exact stored staff response for its unmatched recipient', async () => {
+    expect.hasAssertions()
+    const scene = await createOwnedCopyrightProviderReply('needs_information')
+    await assertOwnedCopyrightMailPreparation(
+      scene.intentId,
+      'claimant@example.test',
+      `${copyrightNeedsInformationText}\n\nPlease identify the work and the hosted material.`,
+    )
+  })
+
+  it('records the owned provider acceptance atomically', async () => {
+    expect.hasAssertions()
+    const scene = await createOwnedCopyrightProviderReply('needs_information')
+    await seedOwnedCopyrightReplyClaim(scene.intentId)
+    const before = await readOwnedCopyrightMailWork(scene.intentId)
+    const leaseToken = before.work.lease_token
+    if (!leaseToken) throw new Error('Owned provider claim is missing')
+    await assertOwnedCopyrightProviderWrite({
+      kind: 'sent',
+      intentId: scene.intentId,
+      leaseToken,
+      sesMessageId: `ses-outbound-${crypto.randomUUID()}`,
     })
-    const first = await prepareCopyrightEmailDelivery(responseId)
-    expect(first.subject).toContain('More information')
-    expect(first.text).toContain('Please identify the work')
-    const sesMessageId = `ses-outbound-${crypto.randomUUID()}`
-    expect(
-      await markCopyrightDeliveryIntentSent({
-        intentId: responseId,
-        leaseToken: first.leaseToken,
-        sesMessageId,
-      }),
-    ).toBe(true)
+  })
+
+  it('bounces only its committed sent reply and its matching private recipient', async () => {
+    const scene = await createOwnedCopyrightProviderReply('needs_information')
+    const sent = await seedOwnedCopyrightProviderStage(scene.intentId, 'sent')
+    const before = await readOwnedCopyrightMailWork(scene.intentId)
     await expect(
       markCopyrightDeliveryIntentBouncedBySesMessageId({
-        sesMessageId,
+        sesMessageId: sent.sesMessageId,
         recipientEmails: ['someone-else@example.test'],
       }),
     ).resolves.toBe(0)
-    await expect(
-      markCopyrightDeliveryIntentBouncedBySesMessageId({
-        sesMessageId,
-        recipientEmails: [first.recipientEmail.toUpperCase()],
-      }),
-    ).resolves.toBe(1)
+    expect(await readOwnedCopyrightMailWork(scene.intentId)).toEqual(before)
+    await assertOwnedCopyrightProviderWrite({
+      kind: 'bounced',
+      intentId: scene.intentId,
+      sesMessageId: sent.sesMessageId,
+      recipientEmail: 'claimant@example.test',
+    })
   })
 
-  it('records a retryable failure only after claiming an email response', async () => {
-    const responseId = await rejectParsedIntakeWithResponse({
-      responseKind: 'rejected',
-      responseMessage: null,
+  it('records a retryable provider failure atomically', async () => {
+    expect.hasAssertions()
+    const scene = await createOwnedCopyrightProviderReply('rejected')
+    await seedOwnedCopyrightReplyClaim(scene.intentId)
+    const before = await readOwnedCopyrightMailWork(scene.intentId)
+    const leaseToken = before.work.lease_token
+    if (!leaseToken) throw new Error('Owned provider claim is missing')
+    await assertOwnedCopyrightProviderWrite({
+      kind: 'failed',
+      intentId: scene.intentId,
+      leaseToken,
+      error: 'The email provider timed out.',
     })
-    const prepared = await prepareCopyrightEmailDelivery(responseId)
-    await expect(
-      markCopyrightDeliveryIntentFailed({
-        intentId: responseId,
-        leaseToken: prepared.leaseToken,
-        error: 'The email provider timed out.',
-      }),
-    ).resolves.toBe(true)
-    await expect(
-      markCopyrightDeliveryIntentSent({
-        intentId: responseId,
-        leaseToken: prepared.leaseToken,
-        sesMessageId: `ses-should-not-send-${crypto.randomUUID()}`,
-      }),
-    ).resolves.toBe(false)
+  })
+
+  it('never sends using a separately committed failed lease', async () => {
+    expect.hasAssertions()
+    const scene = await createOwnedCopyrightProviderReply('rejected')
+    const failed = await seedOwnedCopyrightProviderStage(scene.intentId, 'retryable_failure')
+    await assertOwnedCopyrightStaleMailLease(scene.intentId, failed.leaseToken)
   })
 
   it('rejects a recommendation that does not belong to the intake', async () => {
@@ -197,7 +187,7 @@ describe('copyright email promotion', () => {
     })
     const imageId = await insertTestImage(poster.id)
     const placementId = await insertTestPostImage({ postId, imageId })
-    const intake = await createParsedCopyrightEmailIntake()
+    const { intake } = await seedOwnedCopyrightReceiptSource('pending')
     const foreignRecommendationId = '00000000-0000-7000-8000-000000000099'
     await expect(
       promoteCopyrightEmailIntake({
@@ -238,24 +228,3 @@ describe('copyright email promotion', () => {
     ).rejects.toMatchObject({ status: 422 })
   })
 })
-
-async function rejectParsedIntakeWithResponse(
-  response: Pick<
-    Parameters<typeof rejectCopyrightEmailIntake>[0],
-    'responseKind' | 'responseMessage'
-  >,
-): Promise<string> {
-  const moderatorRecord = await createTestUser()
-  const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-  const intake = await createParsedCopyrightEmailIntake()
-  const { responseId } = await rejectCopyrightEmailIntake({
-    currentUser: moderator,
-    intakeId: intake.id,
-    recommendationId: null,
-    manualFallbackReason: 'The extraction agent was unavailable.',
-    rationale: 'The message lacks the required declarations.',
-    ...response,
-  })
-  if (!responseId) throw new Error('response was not created')
-  return responseId
-}

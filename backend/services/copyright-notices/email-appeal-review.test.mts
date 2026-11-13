@@ -1,135 +1,46 @@
-import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
-import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { describe, expect, it } from 'vitest'
 import {
-  createTestUser,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
-import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+  createOwnedCopyrightEmailAppealScene,
+  readOwnedEmailAppealAuthority,
+} from '@voucha/test-helpers/copyright-email-appeal-scene'
 import {
-  createCopyrightEmailIntake,
-  createCopyrightFormIntake,
-  prepareCopyrightEmailDelivery,
-  recordCopyrightEmailParse,
-  reviewCopyrightAppeal,
-} from './index.mts'
-import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
-import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
-import { linkCopyrightEmailIntakeToNotice } from '@voucha/test-helpers/copyright-email-intake-link'
-import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
-import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
+  assertOwnedEmailAppealReview,
+  ownedEmailAppealText,
+} from '@voucha/test-helpers/copyright-email-appeal-outcomes'
+import { assertOwnedCopyrightMailPreparation } from '@voucha/test-helpers/copyright-email-work-outcomes'
+import { seedEffectiveAppealDecision } from '@voucha/test-helpers/copyright-effective-review-decisions'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('email appeal review', () => {
-  useAutomaticProvisionalWithholding()
+  it('atomically records the unmatched submitter outcome with the actual appeal review', async () => {
+    expect.hasAssertions()
+    await assertOwnedEmailAppealReview(await createOwnedCopyrightEmailAppealScene())
+  })
 
-  it('emails the unmatched submitter the appeal outcome', async () => {
-    const [poster, claimant, moderatorRecord] = await Promise.all([
-      createTestUser(),
-      createTestUser(),
-      createTestUser(),
-    ])
-    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-    const postId = await insertTestPost({
-      title: `email appeal ${crypto.randomUUID()}`,
-      slug: `email-appeal-${crypto.randomUUID()}`,
-      createdById: poster.id,
-      markdown: 'image',
+  it('emails the unmatched submitter from an independently committed appeal outcome', async () => {
+    const scene = await createOwnedCopyrightEmailAppealScene()
+    expect(await readOwnedEmailAppealAuthority(scene)).toEqual({
+      automated: true,
+      screening: scene.screeningId,
+      assessor: null,
+      imposed: null,
+      current: true,
     })
-    const imageId = await insertTestImage(poster.id)
-    await insertTestPostImage({ postId, imageId })
-    const intake = await createCopyrightFormIntake({
-      currentUser: claimant,
-      requesterIdentity: `user:${claimant.id}`,
-      idempotencyKey: crypto.randomUUID(),
-      request: {
-        jurisdiction: 'us_dmca',
-        claimantDisplayName: 'Claimant',
-        claimantContact: 'claimant@example.test',
-        claimantEmail: 'claimant@example.test',
-        workDescription: 'Claimed photograph',
-        goodFaithBelief: true,
-        accuracyAuthorityUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        claimantTargets: [
-          {
-            surfaceKind: 'post-image' as const,
-            postId,
-            imageId,
-            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-          },
-        ],
-      },
-    })
-    await appendTestCopyrightFormScreening({
-      intakeId: intake.intake.id,
-      inputSha256: Buffer.alloc(32, 12),
-      recommendation: 'not_obviously_invalid',
-      rationale: 'No obvious spam or invalidity.',
-      guidance: testCopyrightFormGuidance,
-      promptVersion: 'copyright-form-screening-v2',
-      model: 'test-model',
-    })
-    await applyNonSpamSignedInCopyrightFormScreening(intake.intake.copyright_notice_submission_id)
-    const noticeId = intake.intake.copyright_notice_id
-    const targetId = await readCopyrightNoticeTargetId(noticeId)
-    const restriction = (await getCopyrightNoticePrivateAggregate(noticeId))?.restrictions[0]
-    if (!restriction) throw new Error('fixture restriction missing')
-    const sesMessageId = `ses-appeal-${crypto.randomUUID()}`
-    const { intake: emailIntake } = await createCopyrightEmailIntake({
-      sesMessageId,
-      receivedAt: new Date(),
-      rawStorageKey: `email/${sesMessageId}/original.eml`,
-      rawSha256: Buffer.alloc(32, 13),
-      rawMimeType: 'message/rfc822',
-      rawByteSize: 12,
-      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
-    })
-    await recordCopyrightEmailParse(emailIntake, {
-      status: 'succeeded',
-      fromEmail: 'poster@example.test',
-      subject: 'Appeal',
-      bodyText: 'I created this image.',
-      messageId: `<${crypto.randomUUID()}@example.test>`,
-      replyReferences: [],
-      attachments: [],
-    })
-    await linkCopyrightEmailIntakeToNotice({
-      intakeId: emailIntake.id,
-      noticeId,
-      linkKind: 'thread',
-    })
-    const admitted = await admitCopyrightEmailCorrespondence({
-      currentUser: moderator,
-      intakeId: emailIntake.id,
-      kind: 'appeal',
-      targetIds: [targetId],
-      structuredSubmission: { reason: 'I created this image.', targetIds: [targetId] },
-      rationale: 'The email completes an appeal of the restricted material.',
-      recommendationId: null,
-      manualFallbackReason: 'Agent output is unavailable.',
-    })
-    await reviewCopyrightAppeal({
-      submissionId: admitted.submissionId,
-      currentUser: moderator,
-      recommendationId: null,
-      manualFallbackReason: 'The record is sufficient without an agent recommendation.',
-      rationale: 'The supplied record supports reversal.',
-      decisions: [{ restrictionId: restriction.id, action: 'reverse' }],
-    })
-    const reviewed = await getCopyrightNoticePrivateAggregate(noticeId)
-    const outcomeIntent = reviewed?.deliveryIntents.find(
-      intent =>
-        intent.copyright_notice_submission_id === admitted.submissionId &&
-        intent.delivery_kind === 'status_update' &&
-        intent.channel === 'email',
+    await seedEffectiveAppealDecision(scene.input, scene.noticeId)
+    const reviewed = await getCopyrightNoticePrivateAggregate(scene.noticeId)
+    const intent = reviewed?.deliveryIntents.find(
+      row =>
+        row.copyright_notice_submission_id === scene.input.submissionId &&
+        row.delivery_kind === 'status_update' &&
+        row.channel === 'email',
     )
-    if (!outcomeIntent) throw new Error('Email appeal outcome was not queued')
-    await expect(prepareCopyrightEmailDelivery(outcomeIntent.id)).resolves.toMatchObject({
-      recipientEmail: 'poster@example.test',
-      text: 'Your appeal has been reviewed. See the copyright case for the recorded outcome.',
-    })
+    if (!intent) throw new Error('Committed email appeal outcome was not queued')
+    expect(intent.recipient_user_id).toBeNull()
+    expect(intent.recipient_role).toBe('correspondent')
+    await assertOwnedCopyrightMailPreparation(
+      intent.id,
+      'poster@example.test',
+      ownedEmailAppealText,
+    )
   })
 })

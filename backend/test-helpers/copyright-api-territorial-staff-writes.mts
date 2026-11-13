@@ -88,23 +88,15 @@ export async function assertApiNoActionRedressDecision(input: {
     .send({ staff_disposition: input.disposition, rationale: input.rationale })
   const after = await readTerritorialReviewState(input.jurisdiction, input.noticeId, [])
   const created = after.history.find(row => row.request === input.redressId)
-  const revoke = input.disposition === 'revoke'
-  const notices = [
-    ...(revoke
-      ? [
-          ...(input.jurisdiction === 'eu_dsa'
-            ? [`claimant_decision_notice:email:${input.claimantId}`]
-            : []),
-          `claimant_decision_notice:in_app:${input.claimantId}`,
-        ]
-      : []),
-    ...(input.jurisdiction === 'eu_dsa'
+  // The committed no-action decision already notified rejection; reversing it without a
+  // later restriction owes no second claimant decision (claimantDecisionIsOwed).
+  const notices =
+    input.jurisdiction === 'eu_dsa'
       ? [
           `redress_decision_notice:email:${input.claimantId}`,
           `redress_decision_notice:in_app:${input.claimantId}`,
         ]
-      : []),
-  ]
+      : []
   expect([
     {
       status: 409,
@@ -158,7 +150,7 @@ export async function assertApiNoActionRedressDecision(input: {
             correspondence: [
               ...before.effective.state.correspondence,
               ...Array.from(
-                { length: (revoke ? 1 : 0) + (input.jurisdiction === 'eu_dsa' ? 1 : 0) },
+                { length: input.jurisdiction === 'eu_dsa' ? 1 : 0 },
                 () => 'decision_notice',
               ),
             ].toSorted(),

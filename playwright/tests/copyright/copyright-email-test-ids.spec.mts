@@ -11,9 +11,9 @@ import {
 import { declineTestCopyrightEmailIntake } from '../../../backend/test-helpers/services/copyright-notices/declined-email-intake.mts'
 import {
   copyrightEmailMessageId,
-  promoteInitialCopyrightEmail,
   recordThreadedCopyrightEmail,
 } from '../../../backend/test-helpers/services/copyright-notices/email-thread-cases.mts'
+import { createCommittedCopyrightEmailCase } from '../../../backend/test-helpers/copyright-committed-email-case.mts'
 import { failTestCopyrightDeliveryIntent } from '../../../backend/test-helpers/data-stores/psql/copyright-notice-reads.mts'
 import { appendCopyrightEmailIntakeRecommendation } from '../../../backend/services/copyright-notices/email-recommendations.mts'
 
@@ -73,7 +73,7 @@ test('a declined email whose reply failed can be retried after confirming', asyn
 test('a reply to an admitted email offers admit and reject correspondence', async ({ page }) => {
   const moderator = await createTestUser({ administrator: true })
   const messageId = copyrightEmailMessageId()
-  await promoteInitialCopyrightEmail({ moderator, messageId })
+  await createCommittedCopyrightEmailCase({ moderator, messageId })
   const reply = await recordThreadedCopyrightEmail({
     messageId: copyrightEmailMessageId(),
     inReplyTo: [messageId],
