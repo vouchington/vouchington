@@ -11,6 +11,9 @@ import { createDeviceAndSessionTokens } from './create.mts'
 import { readSessionDeviceAuthority } from './device-authority.mts'
 import { upgradeVerifiedNativeSession } from './native-upgrade.mts'
 import { refreshSessionState } from './flows.mts'
+import { revokeAuthenticatedSession } from './user-session-revocation.mts'
+import { rotateAuthenticatedDeviceToken } from './device-authority-rotation.mts'
+import { listActiveUserSessions } from './list-active-user-sessions.mts'
 
 const userAgent = 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0 Safari/537.36'
 
@@ -41,6 +44,43 @@ describe('original MFA across verified native authority changes', () => {
       code: 'SESSION_RELOGIN_REQUIRED',
     })
   })
+
+  it.each(['logout', 'rotation'] as const)(
+    'rejects an upgrade when %s consumes its source after authority validation',
+    async operation => {
+      const user = await createTestUserDirect()
+      const original = await createDeviceAndSessionTokens({
+        uid: user.id,
+        did: v7(),
+        deviceContext: { user_agent: userAgent },
+      })
+      const sid = original.sessionToken.payload.sid
+
+      await expect(
+        upgradeVerifiedNativeSession({
+          deviceToken: original.deviceToken.token,
+          uid: user.id,
+          did: original.deviceToken.payload.did,
+          sid,
+          fetchUser: async (uid, query) => {
+            if (operation === 'logout') {
+              await revokeAuthenticatedSession(user.id, sid)
+            } else {
+              await rotateAuthenticatedDeviceToken({
+                deviceToken: original.deviceToken.token,
+                uid: user.id,
+                did: original.deviceToken.payload.did,
+                sid,
+              })
+            }
+            return getTestPrivateUserById(uid, { query })
+          },
+        }),
+      ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
+      const active = await listActiveUserSessions(user.id, sid)
+      expect(active.results.map(session => session.id)).toEqual(operation === 'logout' ? [] : [sid])
+    },
+  )
 
   it.each([false, true])(
     'preserves original proof, without creating it, during upgrade and renewal (proof=%s)',
