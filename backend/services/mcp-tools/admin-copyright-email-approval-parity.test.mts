@@ -15,7 +15,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import { createCommittedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-committed-intake'
 import {
   createCopyrightNoticeForManualAssociation,
   readCopyrightEmailManualAssociationEvent,
@@ -108,7 +108,7 @@ async function approvalFixture(overrides: Record<string, unknown> = {}) {
   const { form } = await createCopyrightFormFixture()
   const [target] = form.targets
   await publishTestHostedPostImageDelivery(target!.post_id, target!.image_id)
-  const intake = await createParsedCopyrightEmailIntake()
+  const intake = await createCommittedCopyrightEmailIntake()
   const body = {
     ...form,
     rationale,
