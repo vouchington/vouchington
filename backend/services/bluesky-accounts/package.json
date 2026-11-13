@@ -31,7 +31,7 @@
     "@queues/entity-listeners": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/mfa": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.3",
+    "@valkey/valkey-glide": "^2.6.0",
     "@vouchington/sentry": "^0.6.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",

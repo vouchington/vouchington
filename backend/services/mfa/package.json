@@ -37,7 +37,7 @@
     "@services/passkeys": "workspace:^",
     "@services/totp": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.3",
+    "@valkey/valkey-glide": "^2.6.0",
     "@vouchington/sentry": "^0.6.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",

@@ -31,7 +31,7 @@
     "@services/app-attestation": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.3",
+    "@valkey/valkey-glide": "^2.6.0",
     "@vouchington/sentry": "^0.6.0",
     "http-errors": "^2.0.1",
     "undici": "^8.12.3"

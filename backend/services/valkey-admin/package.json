@@ -28,7 +28,7 @@
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@services/users": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.3",
+    "@valkey/valkey-glide": "^2.6.0",
     "http-errors": "^2.0.1",
     "valkyries": "^0.15.0"
   },
