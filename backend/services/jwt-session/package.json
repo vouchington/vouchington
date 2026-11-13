@@ -33,7 +33,7 @@
     "@services/user-rate-limits": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.3",
+    "@valkey/valkey-glide": "^2.6.0",
     "@voucha/types": "workspace:^",
     "@vouchington/sentry": "^0.6.0",
     "@vouchington/session-jwt": "^0.0.3",

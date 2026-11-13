@@ -39,7 +39,7 @@
     "@services/oauth-microsoft": "workspace:^",
     "@services/oauth-x": "workspace:^",
     "@services/users": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.3",
+    "@valkey/valkey-glide": "^2.6.0",
     "@voucha/config": "workspace:^",
     "@vouchington/postgres": "^0.6.0",
     "http-errors": "^2.0.1",

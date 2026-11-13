@@ -53,8 +53,8 @@ importers:
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@vitejs/plugin-react':
         specifier: ^6.3.0
         version: 6.3.0(babel-plugin-react-compiler@1.0.0)(vite@8.3.7(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -1488,8 +1488,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/session-jwt
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       valkyries:
         specifier: ^0.15.0
         version: 0.15.0
@@ -3292,8 +3292,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -4471,8 +4471,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/on-error
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -4856,8 +4856,8 @@ importers:
         specifier: workspace:^
         version: link:../mfa
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.11.0)(@sentry/core@11.11.0)(@sentry/node@11.11.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
@@ -5009,8 +5009,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -5071,8 +5071,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.11.0)(@sentry/core@11.11.0)(@sentry/node@11.11.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
@@ -7770,8 +7770,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/session-jwt
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -8292,8 +8292,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@vouchington/sentry':
         specifier: ^0.6.0
         version: 0.6.0(@sentry/browser@11.11.0)(@sentry/core@11.11.0)(@sentry/node@11.11.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
@@ -8973,8 +8973,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
@@ -9503,8 +9503,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -10250,8 +10250,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
@@ -11891,8 +11891,8 @@ importers:
         version: 0.15.0
     devDependencies:
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -12502,8 +12502,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12649,8 +12649,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12807,8 +12807,8 @@ importers:
         specifier: workspace:^
         version: link:../../ts-shared/url-signing
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
       '@voucha/api-fixtures':
         specifier: workspace:^
         version: link:../../api-fixtures
@@ -13308,8 +13308,8 @@ importers:
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@valkey/valkey-glide':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^2.6.0
+        version: 2.6.0
 
   backend/workers/background:
     dependencies:
@@ -20585,43 +20585,43 @@ packages:
   '@ungap/structured-clone@1.3.2':
     resolution: {integrity: sha512-5jsZFwgR5rTdKwidH9Qmat75RKwqfpKlWWB1frDkljN127mwqBu8K0PYo7/hFpF03IEJpfVPpCQDY/eDx3iHvA==}
 
-  '@valkey/valkey-glide-darwin-arm64@2.5.3':
-    resolution: {integrity: sha512-DB2dooH/OLhN6v2/rHbg5L+cynkYx/HhXSG/Iqs18+xaKvWlQZwdbfj5x2AXK0XObQVQaJKLMnc6+EYbv5+Img==}
+  '@valkey/valkey-glide-darwin-arm64@2.6.0':
+    resolution: {integrity: sha512-AUrmRaOjov5D9+eqgwj3MrHlzg39dNA1PbkxjZwyi1qLuCtorD2UGpF96pqQ3y6HbIjH45+AZioP13tjlx1I6Q==}
     cpu: [arm64]
     os: [darwin]
 
-  '@valkey/valkey-glide-darwin-x64@2.5.3':
-    resolution: {integrity: sha512-Sxw+2uA2K445FCdIr78T7XirwKHMDP1rdliqRzRWgx87PYQOfkp8Qz/LXyri3la+YZ6/rnGezwkyuNlDT75kBw==}
+  '@valkey/valkey-glide-darwin-x64@2.6.0':
+    resolution: {integrity: sha512-W4agR7sGPFVelfx4uYMOAAdsxxQPRPpb5IQFnZahtlCBZSl0kihy2tHzZnYdRJXw391jTBlhC+B6ZZ7588tZ0g==}
     cpu: [x64]
     os: [darwin]
 
-  '@valkey/valkey-glide-linux-arm64-gnu@2.5.3':
-    resolution: {integrity: sha512-/hpjvDQGarJe1KJFSYcUfPB1KrnhqUBkiFbK3Yq9wyv8CA/Jh5QiADDXYjDjVwpY+Ocy+znm6E7Od8tNTrmdiw==}
+  '@valkey/valkey-glide-linux-arm64-gnu@2.6.0':
+    resolution: {integrity: sha512-dAprivzsyAMqaP1DhB2fq3I9TV31YBbcZS+YjkUaqFu3DQwGwknORnYDhIVczuZiCFMhczKdfu1PGAHRFF+IKw==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@valkey/valkey-glide-linux-arm64-musl@2.5.3':
-    resolution: {integrity: sha512-aKqkDMEewlQvEjdCa+rSWKwL41nLxEshqJ8otMtvpgtRyU2fjRH5yDuJ4JXsCz+4Y/Zi5xQVspUawU37XgIf0A==}
+  '@valkey/valkey-glide-linux-arm64-musl@2.6.0':
+    resolution: {integrity: sha512-Gtt0vWYm084P63RQpRVgVnQV3Tkm5l+4zyBYJHcJRNHRx1oOQyNrfq73GqiV6hJkBKn/AB9vALXfyqOab039+A==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@valkey/valkey-glide-linux-x64-gnu@2.5.3':
-    resolution: {integrity: sha512-65JCnAj0IlQqiIzVCNzWo8v1N5c58Hoi2jP+fmtf78+1Uw4JInPAgicGI6GronlaLrfXZRTLqNNnjVez0QeMUg==}
+  '@valkey/valkey-glide-linux-x64-gnu@2.6.0':
+    resolution: {integrity: sha512-frKlFE8i6xbULU5/AAyBBdqNPSe6+ncsDdRENtSyqzngQCDyFgwGH1Gb3n+Q8bOF2Fb2SH0APn74XyW0hUekeA==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@valkey/valkey-glide-linux-x64-musl@2.5.3':
-    resolution: {integrity: sha512-kBsS6nLjhcIcecM+iEUdVdTl/WzkJH8YNSKeKeUPZJUfK3zQqiyw6dbC/w6aYmOB/UrtJOQkuSbRZqfNWyf+Dw==}
+  '@valkey/valkey-glide-linux-x64-musl@2.6.0':
+    resolution: {integrity: sha512-Z9SFPB+Pjq345fnEYYZs23bx02lTR08TCx3M6Cn6aEDgtrqDXBg08HIWUBFCho/AXULC1KiJIInPfzxjwxNm0w==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@valkey/valkey-glide@2.5.3':
-    resolution: {integrity: sha512-VvT7oOr1ZyvPDFUEEovYqVKNaCicUHJPmrfDyflCEi8hzH+YEdxEikYDheHGeclgFW0MlLkJ2rky6pa7tT6iqg==}
-    engines: {node: '>=16'}
+  '@valkey/valkey-glide@2.6.0':
+    resolution: {integrity: sha512-5lLrm/0VLCIsWSgHSgAc1FwfDQ+kEDk5yfvGELblIG1c6lmsQ6jSofvbDjcPcpvD131hOJy/tfGrO+QFcrcGIw==}
+    engines: {node: '>=20'}
 
   '@vitejs/plugin-react@6.3.0':
     resolution: {integrity: sha512-H9E955aVvD2F4zNHCw4eIZbIfF6xKldlh7MNu+hSU7xwQzh65lI/N+CJWqmfhi0PEjDXIt/H7T7J/4wU63KJiw==}
@@ -29575,35 +29575,35 @@ snapshots:
 
   '@ungap/structured-clone@1.3.2': {}
 
-  '@valkey/valkey-glide-darwin-arm64@2.5.3':
+  '@valkey/valkey-glide-darwin-arm64@2.6.0':
     optional: true
 
-  '@valkey/valkey-glide-darwin-x64@2.5.3':
+  '@valkey/valkey-glide-darwin-x64@2.6.0':
     optional: true
 
-  '@valkey/valkey-glide-linux-arm64-gnu@2.5.3':
+  '@valkey/valkey-glide-linux-arm64-gnu@2.6.0':
     optional: true
 
-  '@valkey/valkey-glide-linux-arm64-musl@2.5.3':
+  '@valkey/valkey-glide-linux-arm64-musl@2.6.0':
     optional: true
 
-  '@valkey/valkey-glide-linux-x64-gnu@2.5.3':
+  '@valkey/valkey-glide-linux-x64-gnu@2.6.0':
     optional: true
 
-  '@valkey/valkey-glide-linux-x64-musl@2.5.3':
+  '@valkey/valkey-glide-linux-x64-musl@2.6.0':
     optional: true
 
-  '@valkey/valkey-glide@2.5.3':
+  '@valkey/valkey-glide@2.6.0':
     dependencies:
       long: 5.3.2
       protobufjs: 7.6.6
     optionalDependencies:
-      '@valkey/valkey-glide-darwin-arm64': 2.5.3
-      '@valkey/valkey-glide-darwin-x64': 2.5.3
-      '@valkey/valkey-glide-linux-arm64-gnu': 2.5.3
-      '@valkey/valkey-glide-linux-arm64-musl': 2.5.3
-      '@valkey/valkey-glide-linux-x64-gnu': 2.5.3
-      '@valkey/valkey-glide-linux-x64-musl': 2.5.3
+      '@valkey/valkey-glide-darwin-arm64': 2.6.0
+      '@valkey/valkey-glide-darwin-x64': 2.6.0
+      '@valkey/valkey-glide-linux-arm64-gnu': 2.6.0
+      '@valkey/valkey-glide-linux-arm64-musl': 2.6.0
+      '@valkey/valkey-glide-linux-x64-gnu': 2.6.0
+      '@valkey/valkey-glide-linux-x64-musl': 2.6.0
 
   '@vitejs/plugin-react@6.3.0(babel-plugin-react-compiler@1.0.0)(vite@8.3.7(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
@@ -33875,7 +33875,7 @@ snapshots:
 
   valkyries@0.15.0:
     dependencies:
-      '@valkey/valkey-glide': 2.5.3
+      '@valkey/valkey-glide': 2.6.0
 
   vary@1.1.2: {}
 

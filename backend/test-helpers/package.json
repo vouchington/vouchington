@@ -60,7 +60,7 @@
     "@smithy/core": "^3.39.0",
     "@ts-shared/money": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.3",
+    "@valkey/valkey-glide": "^2.6.0",
     "@voucha/api-fixtures": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
