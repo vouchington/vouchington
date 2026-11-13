@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { purgeCacheTags } from './purge.mts'
+import { purgeLegalRemovalCacheTag } from './legal-removal.mts'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { CACHE_PURGE_SECRET_HEADER, MAX_TAGS_PER_REQUEST } from '@ts-shared/cache'
 
@@ -41,6 +42,41 @@ describe('purgeCacheTags', () => {
   it('does nothing when CF_WORKER_SECRET is not configured', async () => {
     vi.stubEnv('CF_WORKER_SECRET', '')
     await expect(purgeCacheTags(['post:abc'])).resolves.toBeUndefined()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    {
+      label: 'skip override',
+      env: 'SKIP_CACHE_PURGE',
+      value: 'true',
+      message: 'Cache purge confirmation required but cache purge is skipped',
+    },
+    {
+      label: 'missing route',
+      env: 'CF_WORKER_ROUTE',
+      value: 'undefined',
+      message: 'Cache purge confirmation required but worker route is missing',
+    },
+    {
+      label: 'missing secret',
+      env: 'CF_WORKER_SECRET',
+      value: '',
+      message: 'Cache purge confirmation required but worker secret is missing',
+    },
+  ])('requires deployed legal purge confirmation with $label', async ({ env, value, message }) => {
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    vi.stubEnv(env, value)
+
+    await expect(purgeLegalRemovalCacheTag()).rejects.toThrow(message)
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('keeps the local legal purge opt-out', async () => {
+    vi.stubEnv('ENVIRONMENT', 'development')
+    vi.stubEnv('SKIP_CACHE_PURGE', 'true')
+
+    await expect(purgeLegalRemovalCacheTag()).resolves.toBeUndefined()
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 

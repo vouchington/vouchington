@@ -161,12 +161,26 @@ describe('user deletion provider work', () => {
           work => work.workKey === 'legal-removal',
         )?.completedAt,
       ).toBeNull()
+      vi.stubEnv('ENVIRONMENT', 'staging')
       vi.stubEnv('SKIP_CACHE_PURGE', 'true')
       await expect(
         processUserDeletionExternalWork(request.id, request.processingAttemptId),
+      ).rejects.toThrow('Cache purge confirmation required')
+      expect(
+        (await getUserDeletionCompletionAuditForTest(request.id)).externalWorks.find(
+          work => work.workKey === 'legal-removal',
+        )?.completedAt,
+      ).toBeNull()
+      vi.stubEnv('ENVIRONMENT', 'development')
+      await expect(
+        processUserDeletionExternalWork(request.id, request.processingAttemptId),
       ).resolves.toEqual({ hasMore: true })
-      await expect(isTestUserDeletionExternalWorkCompleted(request.id)).resolves.toBe(true)
-      expect(purge).toHaveBeenCalledTimes(2)
+      expect(
+        (await getUserDeletionCompletionAuditForTest(request.id)).externalWorks.find(
+          work => work.workKey === 'legal-removal',
+        )?.completedAt,
+      ).toBeInstanceOf(Date)
+      expect(purge).toHaveBeenCalledTimes(3)
     } finally {
       vi.unstubAllEnvs()
     }

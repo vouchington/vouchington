@@ -43,8 +43,10 @@ client must revalidate or apply its own HTTP caching policy rather than assume t
   coarse purge owed until erasure and sibling external work finish. Its final durable purge must
   complete before deletion is acknowledged. Copyright withholds await successful eviction before
   their durable action completes. Purge failure retains the action's existing retry and explicit
-  operator-replay path; it cannot disappear with a lost or exhausted cache-purge queue job. This
-  intentionally evicts broadly after legal removal, with an unmeasured cache-warmup cost.
+  operator-replay path; it cannot disappear with a lost or exhausted cache-purge queue job.
+  Deployed copyright completion also fails if legal purging is disabled or its target is missing;
+  local and undeployed environments retain their explicit no-cache opt-out. This intentionally
+  evicts broadly after legal removal, with an unmeasured cache-warmup cost.
 
 ## What is NOT Cached
 
