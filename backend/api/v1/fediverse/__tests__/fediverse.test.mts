@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 
 describe('GET /api/v1/fediverse/search', () => {
@@ -8,7 +9,15 @@ describe('GET /api/v1/fediverse/search', () => {
     const request = createRequest()
     const response = await request.get('/api/v1/fediverse/search?q=a').expect(200)
 
-    expect(response.headers['cache-control']).toMatch(/public/)
+    expect(response.headers['cache-control']).toBe('public')
+    expect(response.body).toEqual({ buckets: [] })
+  })
+
+  it('keeps authenticated results private and uncacheable', async () => {
+    const request = createRequest()
+    await request.authenticateAs(await createTestUser())
+    const response = await request.get('/api/v1/fediverse/search?q=a').expect(200)
+    expect(response.headers['cache-control']).toBe('private, no-store')
     expect(response.body).toEqual({ buckets: [] })
   })
 
