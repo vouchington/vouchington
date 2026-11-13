@@ -122,7 +122,7 @@
     "backend-row-contracts:check": "node backend/test-helpers/api-fixtures/check.mts"
   },
   "devDependencies": {
-    "@ast-grep/cli": "^0.51.1",
+    "@ast-grep/cli": "^0.51.2",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@jongleberry/vurst-runtime": "^0.4.3",
