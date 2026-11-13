@@ -45,6 +45,7 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_39_POST_TIME_RANGE } from './native-con
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_40_REFERRAL_LABELS } from './native-consumer-manifest/claims-40-referral-labels.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_41_HOUSEHOLD_INVITATIONS } from './native-consumer-manifest/claims-41-household-invitations.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_42_PRIVATE_COUNT_LABELS } from './native-consumer-manifest/claims-42-private-count-labels.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_43_REAUTH_CONFIRMATION } from './native-consumer-manifest/claims-43-reauth-confirmation.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_44_RSS_FEED_DELETION } from './native-consumer-manifest/claims-44-rss-feed-deletion.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
 
@@ -102,6 +103,7 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_40_REFERRAL_LABELS,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_41_HOUSEHOLD_INVITATIONS,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_42_PRIVATE_COUNT_LABELS,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_43_REAUTH_CONFIRMATION,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_44_RSS_FEED_DELETION,
 ]
 
