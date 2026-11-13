@@ -12,11 +12,11 @@
     "@vouchington/localization-compiler": "^0.3.0",
     "@vouchington/postgres": "^0.6.0",
     "ajv": "^8.20.0",
-    "no-mistakes": "^0.109.46",
+    "no-mistakes": "^0.109.47",
     "oxfmt": "^0.78.0",
     "picomatch": "^4.0.4",
     "smol-toml": "^1.9.1",
-    "vouchington-tooling": "^2.0.0",
+    "vouchington-tooling": "^2.0.1",
     "yaml": "^2.9.1"
   },
   "devDependencies": {

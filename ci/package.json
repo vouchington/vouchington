@@ -13,14 +13,14 @@
     "@vouchington/localization-compiler": "^0.3.0",
     "coverage-check": "^0.18.0",
     "jsonc-parser": "^3.3.1",
-    "no-mistakes": "^0.109.46",
+    "no-mistakes": "^0.109.47",
     "picomatch": "^4.0.4",
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
     "unified": "^11.0.5",
-    "vouchington-tooling": "^2.0.0"
+    "vouchington-tooling": "^2.0.1"
   },
   "devDependencies": {
     "@types/picomatch": "^4.0.3",

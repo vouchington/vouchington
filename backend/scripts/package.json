@@ -143,6 +143,6 @@
   "devDependencies": {
     "@services/openai-agents": "workspace:^",
     "husky": "^9.1.7",
-    "vouchington-tooling": "^2.0.0"
+    "vouchington-tooling": "^2.0.1"
   }
 }
