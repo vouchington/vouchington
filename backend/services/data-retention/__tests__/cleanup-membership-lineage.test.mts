@@ -14,6 +14,16 @@ import {
 import { DELETED_USER_ID } from '@services/users/constants'
 import { v7 } from 'uuid'
 
+import { cleanupSoftDeletedUserBatch } from '../cleanup-batches.mts'
+import {
+  readMembershipPurgeState,
+  completedMembershipPurgeState,
+  observeOwnedMembershipPurgePair,
+} from '@voucha/test-helpers/membership-purge-outcomes'
+import {
+  createRetainedPurgeGrantFixture,
+  assertRetainedPurgeGrantTerminalization,
+} from '@voucha/test-helpers/membership-purge-retained-fixture'
 import { runDataRetentionCleanup } from '../cleanup.mts'
 import { lockEligibleSoftDeletedUserForFinalPurge } from '../cleanup-soft-deleted-user.mts'
 import { terminateRetainedMembershipGrants } from '../terminate-retained-membership-grants.mts'
@@ -84,49 +94,48 @@ describe('membership lineage retention', () => {
     const queued = await grantMembership(administrator.id, member.id, 'pro', queuedSku.id, 30)
 
     await softDeleteUserAt(member.id, window.firstEligibleDate)
-    const cleanups = await Promise.all([
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        { families: ['softDeletedUsers'], softDeletedUsers: window },
-      ).then(result => result.softDeletedUsers),
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        { families: ['softDeletedUsers'], softDeletedUsers: window },
-      ).then(result => result.softDeletedUsers),
-    ])
-
-    expect(cleanups.reduce((count, result) => count + result.deleted, 0)).toBe(1)
-    expect(await getTestUserRaw(member.id)).toBeNull()
-    const activeGrant = await getTestMembershipGrant(active.grantId)
-    const queuedGrant = await getTestMembershipGrant(queued.grantId)
-    expect(activeGrant).toMatchObject({
-      revoked_by_id: DELETED_USER_ID,
-      revocation_reason: 'account_hard_deleted',
-      revoked_at: expect.any(Date),
-      source_cancelled_at: expect.any(Date),
-      activation_started_at: expect.any(Date),
-      activation_ended_at: expect.any(Date),
-    })
-    expect(activeGrant!.activation_ended_at!.getTime()).toBeGreaterThanOrEqual(
-      activeGrant!.activation_started_at!.getTime(),
+    const before = await readMembershipPurgeState(member.id)
+    expect(before.bindings).toEqual([])
+    expect(before.operations).toEqual([])
+    expect(before.grants.map(row => row.id)).toEqual([active.grantId, queued.grantId])
+    const observed = await observeOwnedMembershipPurgePair(member.id, () =>
+      Promise.all([
+        cleanupSoftDeletedUserBatch(window.upperBoundDate, 500, window.lowerBoundDate, undefined, [
+          member.id,
+        ]),
+        cleanupSoftDeletedUserBatch(window.upperBoundDate, 500, window.lowerBoundDate, undefined, [
+          member.id,
+        ]),
+      ]),
     )
-    expect(queuedGrant).toMatchObject({
-      revoked_by_id: DELETED_USER_ID,
-      revocation_reason: 'account_hard_deleted',
-      revoked_at: expect.any(Date),
-      source_cancelled_at: expect.any(Date),
-      activation_started_at: null,
-      activation_ended_at: null,
-    })
+    const state = await readMembershipPurgeState(member.id)
+    const stopped = { deleted: 0, hasMore: false }
+    const purged = { deleted: 1, hasMore: false }
+    const complete =
+      state.account === null ? completedMembershipPurgeState(before, state) : undefined
+    // Each owned transaction either commits every terminal/cascade effect or rolls back completely.
+    expect([
+      { result: [stopped, stopped], aborts: 2, state: before },
+      { result: [purged, stopped], aborts: 0, state: complete },
+      { result: [purged, stopped], aborts: 1, state: complete },
+      { result: [stopped, purged], aborts: 0, state: complete },
+      { result: [stopped, purged], aborts: 1, state: complete },
+    ]).toContainEqual({ ...observed, state })
+
+    const retained = await createRetainedPurgeGrantFixture(
+      administrator.id,
+      activeSku.id,
+      queuedSku.id,
+    )
+    await assertRetainedPurgeGrantTerminalization(retained.activeId, retained.queuedId)
+    expect(await getTestUserRaw(retained.userId)).toBeNull()
+    const retainedBefore = await readMembershipPurgeState(retained.userId)
     await expect(
-      runDataRetentionCleanup(
-        { batchSize: 500, maxBatches: 1 },
-        { families: ['softDeletedUsers'], softDeletedUsers: window },
-      ).then(result => result.softDeletedUsers),
-    ).resolves.toEqual({
-      deleted: 0,
-      hasMore: false,
-    })
+      cleanupSoftDeletedUserBatch(window.upperBoundDate, 500, window.lowerBoundDate, undefined, [
+        retained.userId,
+      ]),
+    ).resolves.toEqual(stopped)
+    expect(await readMembershipPurgeState(retained.userId)).toEqual(retainedBefore)
   })
 
   it('locks the user before racing a grant lifecycle mutation with final deletion', async () => {

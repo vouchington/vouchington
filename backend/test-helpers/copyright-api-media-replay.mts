@@ -5,14 +5,16 @@ import { readEnqueuedJob } from './index.mts'
 import { createRequest } from './api/server.mts'
 import { countTestCopyrightLifecycleEvents } from './data-stores/psql/copyright-notice-reads.mts'
 import { replayFailedMediaDeliveryRegistryRecords } from '../services/media-delivery-safety/index.mts'
-import { settleReplayFixtureOperations } from './copyright-route-replay-setup.mts'
-import { createCommittedFailedMediaReplayFixture } from './copyright-api-replay-scene.mts'
+import {
+  settleReplayFixtureOperations,
+  createFailedMediaDeliveryReplayFixture,
+} from './copyright-route-replay-setup.mts'
 
 /** The actual route/queue/owned record replay and untouched foreign audit assertions stay real. */
 export async function verifyCommittedMediaDeliveryReplayRoute(): Promise<true> {
   const [fixture, foreign] = await settleReplayFixtureOperations([
-    createCommittedFailedMediaReplayFixture(),
-    createCommittedFailedMediaReplayFixture(),
+    createFailedMediaDeliveryReplayFixture(),
+    createFailedMediaDeliveryReplayFixture(),
   ])
   const nonModeratorRequest = createRequest()
   await nonModeratorRequest.authenticateAs(fixture.nonModerator)

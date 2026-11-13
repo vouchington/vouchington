@@ -9,9 +9,10 @@ import {
 import { mediaDeliveryEdgeEnvironment } from './media-delivery-emulator.mts'
 import { markTestMediaDeliveryRecordFailed } from '@voucha/test-helpers/entities/image-surface-placements'
 import { stageImagePlacementDeliveryRecord } from '../services/media-delivery-safety/index.mts'
-import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
-import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
+import { prepublishCopyrightImagePlacementDenial } from '../services/copyright-notices/action-delivery-edge.mts'
+import { seedRestorationSceneWithhold } from './copyright-withhold-scene-fixture.mts'
+import { seedCopyrightStatementRestriction } from './copyright-statement-restriction-fixture.mts'
+import { seedCopyrightSubmissionAssessment } from './copyright-notice-submissions.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
@@ -74,18 +75,19 @@ export async function createCopyrightReplayFixture() {
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
   if (!aggregate) throw new Error('copyright action replay notice disappeared')
-  const assessment = await appendCopyrightSubmissionAssessment({
+  const assessment = await seedCopyrightSubmissionAssessment({
     submissionId: aggregate.submissions[0]!.id,
     assessedAt: new Date('2026-07-01T11:30:00.000Z'),
     currentUser: moderator,
     substantiallyCompliant: true,
   })
-  await acceptCopyrightNoticeAndImposeRestriction({
+  await seedCopyrightStatementRestriction({
     noticeId: notice.id,
     targetId: aggregate.targets[0]!.id,
     assessmentId: assessment.id,
     imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-    imposedById: moderator.id,
+    moderatorId: moderator.id,
+    revision: aggregate.targets[0]!.placement_revision,
   })
   const intent = (await getCopyrightNoticePrivateAggregate(notice.id))?.actionIntents.find(
     item => item.action === 'withhold',
@@ -103,10 +105,18 @@ export async function createCopyrightReplayFixture() {
   }
 }
 
+/** Complete physical withholding is fixture authority, not another SERIALIZABLE actor under test. */
 async function applyCopyrightActionAndLoadPlacement(
   fixture: Awaited<ReturnType<typeof createCopyrightReplayFixture>>,
 ) {
-  await processCopyrightActionIntent(fixture.intentId, new Date())
+  const before = await getTestPostImagePlacement(fixture.postId, fixture.imageId)
+  if (!before) throw new Error('copyright replay dependency placement disappeared')
+  await prepublishCopyrightImagePlacementDenial({
+    placementId: before.placement_id,
+    revision: before.placement_revision,
+    imageId: fixture.imageId,
+  })
+  await seedRestorationSceneWithhold(fixture.intentId)
   const placement = await getTestPostImagePlacement(fixture.postId, fixture.imageId)
   if (!placement) throw new Error('copyright media delivery placement disappeared')
   return placement

@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { useTestMediaDeliveryReplayProviders } from '@voucha/test-helpers/copyright-route-replay-setup'
-import { createCommittedCopyrightReplayFixture } from '@voucha/test-helpers/copyright-api-replay-scene'
+import {
+  useTestMediaDeliveryReplayProviders,
+  createCopyrightReplayFixture,
+} from '@voucha/test-helpers/copyright-route-replay-setup'
 import {
   seedFailedTimelineAction,
   seedTimelineInternalFacts,
@@ -28,7 +30,7 @@ describe('copyright case timeline audiences', () => {
   useTestMediaDeliveryReplayProviders()
 
   it('gives members and case participants only case-facing events while staff keep the full timeline', async () => {
-    const actor = await createCommittedCopyrightReplayFixture()
+    const actor = await createCopyrightReplayFixture()
     const actorStaff = createRequest()
     await actorStaff.authenticateAs(actor.moderator)
     await seedFailedTimelineAction(actor.intentId)
@@ -38,7 +40,7 @@ describe('copyright case timeline audiences', () => {
       intentId: actor.intentId,
       actorId: actor.moderator.id,
     })
-    const fixture = await createCommittedCopyrightReplayFixture()
+    const fixture = await createCopyrightReplayFixture()
     const staff = createRequest()
     await staff.authenticateAs(fixture.moderator)
     await seedTimelineInternalFacts(fixture)

@@ -4,9 +4,9 @@ import { encryptSecret } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { seedCopyrightGuestCapabilities } from './copyright-staff-case-states.mts'
 import { copyrightSubmissionPurpose } from '../services/copyright-notices/submissions.mts'
-import type { createCommittedCopyrightReplayFixture } from './copyright-api-replay-scene.mts'
+import type { createCopyrightReplayFixture } from './copyright-route-replay-setup.mts'
 
-type Scene = Awaited<ReturnType<typeof createCommittedCopyrightReplayFixture>>
+type Scene = Awaited<ReturnType<typeof createCopyrightReplayFixture>>
 /** Terminal failed work is a committed prerequisite for the real operator replay request. */
 export async function seedFailedTimelineAction(intentId: string) {
   await using transaction = await beginTransaction()
