@@ -28,6 +28,7 @@ export type ApiFixtureCase = {
   status: number
   body: unknown
   consumers: ApiFixtureConsumer[]
+  pending?: true
   migratedFrom: string[]
   responseSchemaKey?: string
   backendResponseContractKey?: string

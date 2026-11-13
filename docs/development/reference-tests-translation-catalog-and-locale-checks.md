@@ -5,7 +5,14 @@ The normalized catalog is hand-maintained through `pnpm run localization:catalog
 - **Catalog contract.** Cross-locale key parity (`es`/`fr`/`pt` against `en`, including leaf-kind mismatches), locale fallback, and the missing-key policy: the default translator throws on a missing or non-leaf key, while a selected-catalog miss in web returns an empty string, reports one Sentry error per key per translator, and never toasts.
 - **Request selection.** Every web server and browser fetches a versioned web-chrome selector plus one versioned exact current-route selector; the server resolves them through generated `routes.json`. Checks guard that selection contract, not catalog content. Whole-catalog route bounds and representative-copy verdicts run once in static CI (`ci/check-live-web-route-localization.mts`); unit fixtures never assemble the full catalog.
 - **Route selector map.** The `--check` form of `route-selector-map.mts` fails when a route, its imports, shared chrome, or a web alias changes membership without regenerated artifacts; see the [static-analysis guide](quality/static-code-analysis/README.md#web-route-localization-map). Translation-text edits that leave aliases and membership unchanged need no local graph command.
-- **Native resources.** The manifest must have a real product consumer for every claim and a matching claim for every reference; generated `.__plural.*`/`.__select.*` variants normalize to their descriptor leaf. `pnpm run native-localization:check` validates the producer catalog in CI. Generate or check native output only from the native-client checkout, passing both absolute roots to `node dev/native-localization.mts` (`--output-root`, `--consumer-root`, and `--check`).
+- **Native resources.** The manifest tracks adopted product copy and pending native adoption, with a matching claim for every reference; generated `.__plural.*`/`.__select.*` variants normalize to their descriptor leaf. `pnpm run native-localization:check` validates the producer catalog in CI. Generate or check native output only from the native-client checkout, passing both absolute roots to `node dev/native-localization.mts` (`--output-root`, `--consumer-root`, and `--check`).
+
+Pending claims let additive producer copy land before native screens adopt it, without hiding
+unreferenced copy from maintenance. Breaking contract changes still require coordinated producer
+and client adoption. The [scheduled adoption reconciliation](../prompts/scheduled/native-pending-adoption.md)
+retires pending metadata after verified client use and tracks older adoption gaps rather than
+deleting copy. This maintenance does not add a required stale-flag check or block already adopted
+copy while its pending metadata remains.
 
 After any rebase that touches `localization/catalog/`, run `pnpm run test:ts-shared` explicitly: a rebase can introduce catalog drift that surfaces only after many pushes. After changing the manifest or a catalog leaf it covers, also run `pnpm run native-localization:check`.
 

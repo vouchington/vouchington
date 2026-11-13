@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-import type { ApiFixtureManifest } from './types.mts'
+import { fromCaseFile } from './resolve-case-file.mts'
+import type { BackendResponseContract } from './response-contract-types.mts'
+import type { ApiFixtureCase, ApiFixtureManifest } from './types.mts'
 import { buildApiFixtureManifest } from './write.mts'
 
 const manifest = JSON.parse(
@@ -9,6 +11,39 @@ const manifest = JSON.parse(
 ) as ApiFixtureManifest
 
 describe('fixture validation with explicit response contracts', () => {
+  it('preserves pending fixture adoption metadata in serialized manifests', () => {
+    const original: ApiFixtureCase = {
+      id: 'synthetic.pending',
+      method: 'GET',
+      path: '/synthetic',
+      route: { routeTemplate: '/synthetic' },
+      auth: 'none',
+      status: 200,
+      body: {},
+      consumers: ['swift-core'],
+      migratedFrom: [],
+    }
+    const contract: BackendResponseContract = {
+      source: 'test',
+      method: 'GET',
+      routeTemplate: '/synthetic',
+      hash: 'synthetic',
+      schema: {
+        root: { type: 'object', properties: {}, additionalProperties: false },
+        definitions: {},
+      },
+    }
+    const contracts = { 'GET:/synthetic': contract }
+    const [pending] = fromCaseFile('synthetic-case.mts', [{ ...original, pending: true }])
+    const serialized = JSON.parse(JSON.stringify(buildApiFixtureManifest(contracts, [pending!])))
+    expect(serialized.fixtures[0]).toMatchObject({ id: original.id, pending: true })
+    const ordinary = buildApiFixtureManifest(
+      contracts,
+      fromCaseFile('synthetic-case.mts', [original]),
+    )
+    expect(ordinary.fixtures[0]).not.toHaveProperty('pending')
+  })
+
   it('uses checked-in contracts without compiler discovery', () => {
     expect(buildApiFixtureManifest()).toEqual(manifest)
   })

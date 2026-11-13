@@ -44,6 +44,7 @@ export function validateNativeConsumerUsage(
   }
   const uses = new Set<string>()
   const problems: string[] = []
+  const warnings: string[] = []
 
   for (const source of sources) {
     if (isSwiftProductSource(source.path)) {
@@ -105,12 +106,15 @@ export function validateNativeConsumerUsage(
   for (const entry of manifest) {
     for (const consumer of entry.consumers) {
       if (!uses.has(usageId(consumer, entry.key))) {
-        problems.push(
-          `unused ${consumer} manifest claim "${entry.key}" (no product source references it)`,
-        )
+        const message = `unused ${consumer} manifest claim "${entry.key}" (no product source references it)`
+        if (entry.pending) warnings.push(message)
+        else problems.push(message)
       }
     }
   }
+
+  for (const warning of warnings.toSorted())
+    console.warn(`Native consumer manifest pending: ${warning}`)
 
   if (problems.length > 0) {
     throw new Error(
