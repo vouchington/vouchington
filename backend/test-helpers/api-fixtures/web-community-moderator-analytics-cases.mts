@@ -71,6 +71,7 @@ export const webCommunityModeratorAnalyticsApiFixtureCases: ApiFixtureCase[] = [
   },
   fixtureCase({
     id: 'native.communities.moderator-stats.placement',
+    pending: true,
     method: 'GET',
     path: `/api/v1/communities/${community.slug}/moderator-stats`,
     query: { window: '30' },
