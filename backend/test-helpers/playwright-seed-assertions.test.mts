@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { v7 as uuidv7 } from 'uuid'
 import {
   insertTestCrawl,
   insertTestCrawlChunksBulk,
@@ -8,6 +8,7 @@ import {
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
 import { assertPlaywrightWebSearchSeedData } from './playwright-seed-assertions.mts'
+import { getTestCrawlPreviousMonthInstant } from './crawl-fixture-time.mts'
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -17,8 +18,9 @@ describe('assertPlaywrightWebSearchSeedData', () => {
     const hostname = `stale-playwright-seed-${randomUUID()}.example.com`
     const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
     const urlId = await insertTestUrl({ url: `https://${hostname}/${token}`, hostnameId })
-    const now = new Date()
-    const staleCrawlId = getMinUUIDv7ForDate(new Date(now.getTime() - THIRTY_DAYS_MS - 1))
+    const staleAt = getTestCrawlPreviousMonthInstant()
+    const now = new Date(staleAt.getTime() + THIRTY_DAYS_MS + 1)
+    const staleCrawlId = uuidv7({ msecs: staleAt.getTime() })
     await insertTestCrawl({
       id: staleCrawlId,
       urlId,

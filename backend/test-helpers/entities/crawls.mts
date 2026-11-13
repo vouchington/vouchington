@@ -2,12 +2,13 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CrawlerHtmlStructuredObject } from '@voucha/types/entities/crawl'
 import { v7 as uuidv7 } from 'uuid'
+import { getTestCrawlPreviousMonthInstant } from '../crawl-fixture-time.mts'
 
 export async function insertOldInvalidCrawlForTest(
   urlId: string,
   options: { startedAt?: Date; networkError?: 'timeout' | null } = {},
 ): Promise<string> {
-  const id = uuidv7({ msecs: options.startedAt?.getTime() ?? Date.now() - 31 * 86400000 })
+  const id = uuidv7({ msecs: (options.startedAt ?? getTestCrawlPreviousMonthInstant()).getTime() })
   await write(sql`/* insertOldInvalidCrawlForTest */
     INSERT INTO crawls (id, url_id, response_status_code, markdown, network_error)
     VALUES (${id}, ${urlId}, 500, '', ${options.networkError === undefined ? 'timeout' : options.networkError})
