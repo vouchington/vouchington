@@ -1,3 +1,4 @@
+import { copyrightRaceResult } from '@voucha/test-helpers/copyright-assessment-race-outcomes'
 import { readCopyrightThreadDigestUsage } from '@voucha/test-helpers/copyright-thread-retention'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { readCopyrightCaseLifecycleClock } from '@voucha/test-helpers/copyright-lifecycle-clock'
@@ -7,6 +8,7 @@ import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { describe, expect, it } from 'vitest'
 import {
   seedCopyrightThreadRetirement,
+  seedTestCopyrightAncestorEdge,
   linkTestCopyrightEmailIntake,
   readCopyrightThreadReferenceState,
 } from '@voucha/test-helpers/copyright-operational-email-retention'
@@ -66,12 +68,30 @@ describe('copyright email thread ownership', () => {
     await linkTestCopyrightEmailIntake(ancestor.id, ancestorCase.noticeId)
     await linkTestCopyrightEmailIntake(reply.id, notice.noticeId)
     const input = { intakeId: reply.id, messageId, inReplyTo: [ancestorMessage], references: [] }
-    await recordCopyrightEmailThreadReferences(input)
+    await seedTestCopyrightAncestorEdge(reply.id, ancestor.id)
     await seedCopyrightThreadRetirement(notice.noticeId, reply.id)
     const referencesBefore = await readCopyrightThreadReferenceState(reply.id)
     const intakeBefore = await readCopyrightIntakeRetentionState(reply.id)
     const linksBefore = await readCopyrightEmailIntakeNoticeLinks(reply.id)
-    await expect(recordCopyrightEmailThreadReferences(input)).resolves.toBeNull()
+    const clocksBefore = await Promise.all(
+      [notice.noticeId, ancestorCase.noticeId].map(readCopyrightCaseLifecycleClock),
+    )
+    const [replay] = await Promise.allSettled([recordCopyrightEmailThreadReferences(input)])
+    expect([
+      { status: 'fulfilled', value: null },
+      {
+        status: 'rejected',
+        statusCode: 409,
+        code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+        message: 'Copyright email thread changed; retry staff approval',
+        causeCode: '40001',
+      },
+    ]).toContainEqual(replay!.status === 'fulfilled' ? replay : copyrightRaceResult(replay!))
+    expect(
+      await Promise.all(
+        [notice.noticeId, ancestorCase.noticeId].map(readCopyrightCaseLifecycleClock),
+      ),
+    ).toEqual(clocksBefore)
     expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(referencesBefore)
     expect(await readCopyrightIntakeRetentionState(reply.id)).toEqual(intakeBefore)
     expect(await readCopyrightEmailIntakeNoticeLinks(reply.id)).toEqual(linksBefore)
@@ -87,6 +107,11 @@ describe('copyright email thread ownership', () => {
       references: 0,
       matched_links: 0,
     })
+    expect(
+      await Promise.all(
+        [notice.noticeId, ancestorCase.noticeId].map(readCopyrightCaseLifecycleClock),
+      ),
+    ).toEqual(clocksBefore)
     expect(await readCopyrightThreadReferenceState(reply.id)).toEqual(referencesBefore)
     expect(await readCopyrightIntakeRetentionState(reply.id)).toEqual(intakeBefore)
     expect(await readCopyrightEmailIntakeNoticeLinks(reply.id)).toEqual(linksBefore)
