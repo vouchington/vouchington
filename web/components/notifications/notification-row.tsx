@@ -16,6 +16,14 @@ interface NotificationRowProps {
 
 export function NotificationRow({ notification, onOpen, onDelete, compact }: NotificationRowProps) {
   const t = useTranslations()
+  const title =
+    notification.entity_type === 'household_invitation'
+      ? t('settings.householdInvitations.notificationTitle')
+      : notification.title
+  const body =
+    notification.entity_type === 'household_invitation'
+      ? t('settings.householdInvitations.notificationBody')
+      : notification.body
   const DismissNotificationIcon = EntityActionIcons.notificationDismiss
 
   if (compact) {
@@ -33,12 +41,10 @@ export function NotificationRow({ notification, onOpen, onDelete, compact }: Not
               entityType={notification.entity_type}
               size='sm'
             />
-            <span className='block truncate text-sm font-medium'>{notification.title}</span>
+            <span className='block truncate text-sm font-medium'>{title}</span>
           </span>
-          {notification.body ? (
-            <span className='mt-1 block line-clamp-2 text-xs text-muted-foreground'>
-              {notification.body}
-            </span>
+          {body ? (
+            <span className='mt-1 block line-clamp-2 text-xs text-muted-foreground'>{body}</span>
           ) : null}
         </Button>
         <Button
@@ -75,15 +81,13 @@ export function NotificationRow({ notification, onOpen, onDelete, compact }: Not
             className='block text-sm font-medium'
             data-pw='notification-item-title'
           >
-            {notification.title}
+            {title}
           </span>
           {!notification.read_at ? (
             <span className='inline-flex h-2 w-2 rounded-full bg-destructive' />
           ) : null}
         </span>
-        {notification.body ? (
-          <span className='mt-1 block text-sm text-muted-foreground'>{notification.body}</span>
-        ) : null}
+        {body ? <span className='mt-1 block text-sm text-muted-foreground'>{body}</span> : null}
         <span className='mt-1 block text-xs text-muted-foreground'>
           <TimeAgo date={notification.created_at} />
         </span>

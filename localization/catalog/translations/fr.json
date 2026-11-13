@@ -6225,6 +6225,8 @@
 {"id":"copy.settings.householdInvitations.loadMore","value":"Charger plus"},
 {"id":"copy.settings.householdInvitations.memberFallback","value":"Un membre de Voucha"},
 {"id":"copy.settings.householdInvitations.noPendingInvitations","value":"Aucune invitation en attente."},
+{"id":"copy.settings.householdInvitations.notificationBody","value":"Vous avez été invité à rejoindre un foyer."},
+{"id":"copy.settings.householdInvitations.notificationTitle","value":"Invitation à rejoindre un foyer"},
 {"id":"copy.settings.householdInvitations.receivedFromOther","value":"Invitation de {inviter} pour le foyer de {owner}"},
 {"id":"copy.settings.householdInvitations.receivedFromOwner","value":"Invitation de {owner}"},
 {"id":"copy.settings.householdInvitations.receivedTitle","value":"Invitations reçues"},

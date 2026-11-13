@@ -76376,6 +76376,8 @@
 {"alias":"nav.newsSources","consumer":"web","pattern":"web.chrome"},
 {"alias":"nav.podcasts","consumer":"web","pattern":"web.chrome"},
 {"alias":"nav.sources","consumer":"web","pattern":"web.chrome"},
+{"alias":"settings.householdInvitations.notificationBody","consumer":"web","pattern":"web.chrome"},
+{"alias":"settings.householdInvitations.notificationTitle","consumer":"web","pattern":"web.chrome"},
 {"alias":"shared.botChallenge.completeToContinue","consumer":"web","pattern":"web.chrome"},
 {"alias":"shared.botChallenge.securityVerification","consumer":"web","pattern":"web.chrome"},
 {"alias":"shared.timeAgo.relativeDuration","consumer":"web","pattern":"web.chrome"}

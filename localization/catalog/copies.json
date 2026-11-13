@@ -6225,6 +6225,8 @@
 {"descriptor":null,"id":"copy.settings.householdInvitations.loadMore"},
 {"descriptor":null,"id":"copy.settings.householdInvitations.memberFallback"},
 {"descriptor":null,"id":"copy.settings.householdInvitations.noPendingInvitations"},
+{"descriptor":null,"id":"copy.settings.householdInvitations.notificationBody"},
+{"descriptor":null,"id":"copy.settings.householdInvitations.notificationTitle"},
 {"descriptor":null,"id":"copy.settings.householdInvitations.receivedFromOther"},
 {"descriptor":null,"id":"copy.settings.householdInvitations.receivedFromOwner"},
 {"descriptor":null,"id":"copy.settings.householdInvitations.receivedTitle"},
