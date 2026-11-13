@@ -34,6 +34,7 @@ import { nativeAiCostApiFixtureCases } from './native-ai-cost-cases.mts'
 import { nativeMessageApiFixtureCases } from './native-message-cases.mts'
 import { nativeMembershipApiFixtureCases } from './native-membership-cases.mts'
 import { nativeImportExportApiFixtureCases } from './native-import-export-cases.mts'
+import { nativeRelationLimitApiFixtureCases } from './native-relation-limit-cases.mts'
 import { nativeModerationApiFixtureCases } from './native-moderation-cases.mts'
 import { nativeTagsBookmarksApiFixtureCases } from './native-tags-bookmarks-cases.mts'
 import { nativeUserAccountDataApiFixtureCases } from './native-user-account-data-cases.mts'
@@ -98,10 +99,7 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
     'backend/test-helpers/api-fixtures/native-point-valuation-cases.mts',
     nativePointValuationApiFixtureCases,
   ),
-  ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/native-card-cases.mts',
-    nativeCardApiFixtureCases,
-  ),
+  ...fromCaseFile(`${caseRoot}native-card-cases.mts`, nativeCardApiFixtureCases),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-account-pagination-cases.mts',
     nativeAccountPaginationApiFixtureCases,
@@ -160,6 +158,10 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-import-export-cases.mts',
     nativeImportExportApiFixtureCases,
+  ),
+  ...fromCaseFile(
+    'backend/test-helpers/api-fixtures/native-relation-limit-cases.mts',
+    nativeRelationLimitApiFixtureCases,
   ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-moderation-cases.mts',
