@@ -4,7 +4,6 @@ import { setAnonymousPublicCacheHeaders } from '../response-helpers.mts'
 import { getPublicUserByIdOrSlug, isFederationEnabledForUser } from '@services/users'
 import { getActorUri, getWebfingerAcct, parseWebfingerAcct } from '@modules/activitypub-uris'
 import { getSiteOrigin } from '@modules/utils'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 // WebFinger is fetched anonymously by remote fediverse servers resolving an `acct:` handle — there
 // is no Voucha session to authenticate, so this route intentionally skips response-helpers.mts's
@@ -24,7 +23,7 @@ app.route('/.well-known/webfinger').get(async (ctx: Context) => {
   ctx.assert(await isFederationEnabledForUser(user.id), 404, 'Not Found')
 
   const actorUri = getActorUri(user.id)
-  setAnonymousPublicCacheHeaders(ctx, null, HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
+  setAnonymousPublicCacheHeaders(ctx, null)
   ctx.response.buffer(
     Buffer.from(
       JSON.stringify({

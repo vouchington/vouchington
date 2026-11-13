@@ -1,6 +1,6 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getTopicByAnyCachedBatch,
   getTopicMetricsByAnyCachedBatch,
@@ -47,9 +47,7 @@ app.route('/api/v1/topics/compare').get(async (ctx: Context) => {
     ctx.throw(404, 'One or more topics not found')
   }
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   const [topicA, topicB] = topics
   const viewer = entityRelationViewerFor(currentUser)

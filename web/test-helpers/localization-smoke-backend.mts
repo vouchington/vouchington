@@ -37,7 +37,7 @@ const server = createServer((request, response) => {
     )
     response.setHeader('Content-Type', 'application/json; charset=utf-8')
     response.setHeader('ETag', result.etag)
-    response.setHeader('Cache-Control', `public, max-age=${result.ttlSeconds}`)
+    response.setHeader('Cache-Control', 'public')
     response.writeHead(result.status).end(result.body)
   } catch (err) {
     console.error(err)

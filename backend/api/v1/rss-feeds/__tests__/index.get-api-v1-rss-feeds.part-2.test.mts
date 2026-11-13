@@ -19,8 +19,6 @@ import { upsertEntityRelation } from '@services/entity-relations'
 
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-
 import { upsertTopicElectionVotes } from '@services/elections-votes/topic'
 
 import type { PrivateUser } from '@services/users/types'
@@ -280,6 +278,5 @@ describe('index', () => {
   void (0 as unknown as typeof createTopicAliases)
   void (0 as unknown as typeof upsertEntityRelation)
   void (0 as unknown as typeof entityRelationMetadatum)
-  void (0 as unknown as typeof HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
   void (0 as unknown as typeof upsertTopicElectionVotes)
 })

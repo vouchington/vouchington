@@ -15,8 +15,6 @@ import { upsertEntityRelation } from '@services/entity-relations'
 
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-
 import { upsertTopicElectionVotes } from '@services/elections-votes/topic'
 
 import type { PrivateUser } from '@services/users/types'
@@ -52,10 +50,7 @@ describe('index', () => {
         expect(typeof response.body.page_info.has_next_page).toBe('boolean')
         expect('end_cursor' in response.body.page_info).toBe(true)
         expect('start_cursor' in response.body.page_info).toBe(true)
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
       })
 
       it('should support topic alias filter', async () => {

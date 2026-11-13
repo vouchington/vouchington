@@ -1,6 +1,5 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getAllReferralLinksPage,
   getPrioritizedReferralLinks,
@@ -65,7 +64,7 @@ app.route('/api/v1/topics/:id/prioritized-referral-links').get(async (ctx: Conte
   const result = all
     ? await getAllReferralLinksPage(currentUser!.id, referralProgramId, pagination)
     : await getPrioritizedReferralLinks(currentUser?.id ?? null, referralProgramId, pagination)
-  setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   ctx.json(result)
 })

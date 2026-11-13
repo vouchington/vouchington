@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('GET /api/v1/topics/compare', () => {
   let slugA: string
@@ -54,11 +53,7 @@ describe('GET /api/v1/topics/compare', () => {
   it('sets Cache-Control for anonymous requests', async () => {
     const req = createRequest()
     const response = await req.get(`/api/v1/topics/compare?slugs=${slugA},${slugB}`).expect(200)
-
-    expect(response.headers['cache-control']).toContain('public')
-    expect(response.headers['cache-control']).toContain(
-      `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-    )
+    expect(response.headers['cache-control']).toBe('public')
   })
 
   it('returns 400 when slugs param is missing', async () => {

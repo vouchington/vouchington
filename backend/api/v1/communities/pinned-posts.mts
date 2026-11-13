@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -12,7 +13,6 @@ import {
   getPinnedPosts,
   setPinnedPosts,
 } from '@services/communities'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 app.route('/api/v1/communities/:idOrSlug/pinned-posts').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(
@@ -28,9 +28,7 @@ app.route('/api/v1/communities/:idOrSlug/pinned-posts').get(async (ctx: Context)
 
   const pinnedPosts = await getPinnedPosts(community.id, currentUser ?? null)
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   ctx.json({ pinned_posts: pinnedPosts })
 })

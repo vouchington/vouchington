@@ -1,5 +1,4 @@
 import type { Context } from '@jongleberry/api-server'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { getTopicByAnyCached } from '@services/entity-fetch'
 import { getValidationInfoForReferralProgram } from '@services/referral-program-link-validations'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
@@ -30,7 +29,7 @@ app
     if (!topic) ctx.throw(404, 'Topic not found')
     const attributes = await getRewardsProgramAttributes(topic)
     if (!attributes) ctx.throw(404, 'Rewards program attributes not found')
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
+    ctx.set('Cache-Control', 'public')
     ctx.json({ rewards_program_attributes: attributes })
   })
   .patch(async (ctx: Context) => {
@@ -71,7 +70,7 @@ app
     if (!topic) ctx.throw(404, 'Topic not found')
     const attributes = await getRewardsProgramStatusAttributes(topic)
     if (!attributes) ctx.throw(404, 'Rewards program status attributes not found')
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
+    ctx.set('Cache-Control', 'public')
     ctx.json({ rewards_program_status_attributes: attributes })
   })
   .patch(async (ctx: Context) => {
@@ -140,6 +139,6 @@ app.route('/api/v1/topics/:idOrSlug/referral-program/validation-info').get(async
   if (!referralProgramId) ctx.throw(404, 'Topic is not linked to a referral program')
   const info = await getValidationInfoForReferralProgram(referralProgramId)
   if (!info) ctx.throw(404, 'No validation info found')
-  ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
+  ctx.set('Cache-Control', 'public')
   ctx.json({ validation_info: info })
 })

@@ -9,7 +9,6 @@ import { valkeyEvents } from 'valkyries'
 import { stableSerialize } from '@services/entity-cache/search-cache'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { countCapturedQueriesByAnnotation, createTestUser } from '@voucha/test-helpers'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { getPlatformStatsCached } from '@services/entity-fetch/search-caches'
 import { createPlatformStatsLifecycle } from '@voucha/test-helpers/platform-stats-lifecycle'
 
@@ -86,10 +85,7 @@ describe('platform-stats', () => {
         expect(typeof response.body[field]).toBe('number')
       }
     }
-    expect(responses[0].headers['cache-control']).toContain('public')
-    expect(responses[0].headers['cache-control']).toContain(
-      `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-    )
+    expect(responses[0].headers['cache-control']).toBe('public')
     for (const response of responses.slice(1))
       expect(response.headers['cache-control'] ?? '').not.toContain('public')
   })

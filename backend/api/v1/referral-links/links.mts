@@ -1,8 +1,8 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { clampAnonLimit } from '@services/pagination'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getOptionalAuthAndRateLimit,
   parseJsonBody,
@@ -69,9 +69,7 @@ app
       referral_program_id: referralProgramId,
     })
 
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
     ctx.json({
       results: result.results,
       page_info: result.page_info,

@@ -24,7 +24,7 @@ describe('users', () => {
       expect(response.text).toMatch(/^---/)
       expect(response.text).toContain('username')
       expect(response.text).toContain('url')
-      expect(response.headers['cache-control']).toBe('public, max-age=300')
+      expect(response.headers['cache-control']).toBe('public')
       expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 

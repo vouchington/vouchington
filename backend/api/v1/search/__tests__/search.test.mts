@@ -15,7 +15,6 @@ import {
   insertUnlinkedTopicAliasForTest,
   setPostDeclaredLanguage,
 } from '@voucha/test-helpers'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { createTopicAliases } from '@services/topics/aliases'
 import { withDominantPostFixtures } from '@voucha/test-helpers/entities/trending-posts'
 
@@ -60,19 +59,15 @@ describe('GET /api/v1/search', () => {
   it('sets Cache-Control for anonymous requests', async () => {
     const request = createRequest()
     const response = await request.get('/api/v1/search?q=test').expect(200)
-
-    expect(response.headers['cache-control']).toContain('public')
-    expect(response.headers['cache-control']).toContain(
-      `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-    )
+    expect(response.headers['cache-control']).toBe('public')
   })
 
-  it('does not set public Cache-Control for authenticated requests', async () => {
+  it('sets private no-store Cache-Control for authenticated requests', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     const response = await request.get('/api/v1/search?q=test').expect(200)
 
-    expect(response.headers['cache-control'] ?? '').not.toContain('public')
+    expect(response.headers['cache-control']).toBe('private, no-store')
     expect(response.body).toHaveProperty('topics')
     expect(response.body).toHaveProperty('communities')
   })

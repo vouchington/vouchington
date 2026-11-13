@@ -5,7 +5,7 @@ import type {
   FediverseSearchProvider,
 } from '../types.mts'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { SEARCH_CACHE_TTL_SECONDS } from '@services/entity-cache/search-cache-ttl'
 import onError from '@modules/on-error'
 import { stableSerialize } from '@services/entity-cache'
 import { createBlueskyAdapter } from './bluesky.mts'
@@ -30,7 +30,7 @@ export function createFediverseAdapters(): Record<
 function cacheAdapter(adapter: FediverseProviderAdapter): FediverseProviderAdapter {
   const cache = new ValkeyCache({
     prefix: `fediverse-search:${adapter.provider}`,
-    ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
+    ttlSeconds: SEARCH_CACHE_TTL_SECONDS,
     mode: 'json',
   })
 

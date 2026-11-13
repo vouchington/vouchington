@@ -22,14 +22,12 @@ function resolvePublicLocalizationBatch(request: LocalizationRequest): Localizat
 export function localizationBatchPayload(request: LocalizationRequest): {
   etag: string
   revision: string
-  ttlSeconds: number
   body: string
 } {
   const batch = resolvePublicLocalizationBatch(request)
   return {
     etag: localizationEtag(batch.revision),
     revision: batch.revision,
-    ttlSeconds: batch.ttlSeconds,
     body: serializeLocalizationBatch(batch),
   }
 }
@@ -40,7 +38,6 @@ export function localizationGetResult(
 ): {
   status: 200 | 304
   etag: string
-  ttlSeconds: number
   body?: string
 } {
   const consumer = query.consumer
@@ -53,9 +50,9 @@ export function localizationGetResult(
     selectors: queryValues(query.selectors),
   })
   if (etagMatches(ifNoneMatch, payload.revision)) {
-    return { status: 304, etag: payload.etag, ttlSeconds: payload.ttlSeconds }
+    return { status: 304, etag: payload.etag }
   }
-  return { status: 200, etag: payload.etag, ttlSeconds: payload.ttlSeconds, body: payload.body }
+  return { status: 200, etag: payload.etag, body: payload.body }
 }
 
 export function isLocalizationClientError(error: unknown): error is Error {

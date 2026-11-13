@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestUrlHostname } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('compare-hostnames', () => {
   let admin: PrivateUser
@@ -76,11 +75,7 @@ describe('compare-hostnames', () => {
     it('returns cache-control header for anonymous users', async () => {
       const request = createRequest()
       const response = await request.get(`/api/v1/hostnames/compare?ids=${hostnameId1}`).expect(200)
-
-      expect(response.headers['cache-control']).toContain('public')
-      expect(response.headers['cache-control']).toContain(
-        `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-      )
+      expect(response.headers['cache-control']).toBe('public')
     })
 
     it('does not set cache-control for authenticated users', async () => {
@@ -88,7 +83,7 @@ describe('compare-hostnames', () => {
       await request.authenticateAs(admin)
       const response = await request.get(`/api/v1/hostnames/compare?ids=${hostnameId1}`).expect(200)
 
-      expect(response.headers['cache-control']).toBeUndefined()
+      expect(response.headers['cache-control']).toBe('private, no-store')
     })
 
     it('returns only non-blocked hostnames to non-admin users', async () => {

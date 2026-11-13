@@ -7,13 +7,21 @@ Caches other routes through configuration such as:
 - `/favicon.ico`
 - `/robots.txt`
 
-All public backend GET endpoints set `Cache-Control: public, max-age=N` headers for logged-out users — this signals the response is safe to cache publicly. Cacheable audiences are dispatched to `CachedOrigin`, a separate `WorkerEntrypoint` that Cloudflare's Workers Cache (GA) sits in front of; on a platform HIT, `CachedOrigin` never runs. The worker overwrites the backend's `max-age` with its own edge TTL (`ANON_CACHE_TTL_SECONDS`, default 30s) via `public, max-age=${TTL}, stale-while-revalidate=${TTL * 2}, stale-if-error=86400` on cached responses. The 30-second anonymous TTL remains in place while the auth-transition hardening is staged; raising it to 300 seconds is a separate gated rollout. See [docs/overview/architecture/caching-strategy.md](../../architecture/caching-strategy.md) for the full tier/audience breakdown and [docs/overview/architecture/anon-html-edge-caching-csp.md](../../architecture/anon-html-edge-caching-csp.md) for how anon HTML caches despite its per-request CSP nonce.
+Cacheable anonymous backend responses send plain `Cache-Control: public`; authenticated responses
+send `private, no-store`. Origins signal eligibility only. The Worker owns the audience and route
+TTL policy and applies freshness and stale-response directives to cached responses. Cacheable
+audiences are dispatched to `CachedOrigin`, a separate `WorkerEntrypoint` behind Cloudflare's
+Workers Cache; on a platform HIT, `CachedOrigin` never runs. Direct-origin requests receive no
+origin-specified freshness lifetime. See [the caching strategy](../../architecture/caching-strategy.md)
+for the tier boundaries and [anonymous HTML caching](../../architecture/anon-html-edge-caching-csp.md)
+for the CSP nonce design.
 
 `CachedOrigin` keeps the path-derived entity tag and appends one valid `Cache-Tag` supplied by a
 trusted origin response. The backend post detail supplies its visible author's `user:<id>` tag.
 For a post-detail HTML cache fill, the web proxy makes a lightweight HEAD request to read the same
-backend dependency header and places it on the HTML response, so a user-tag purge after bio-language detection evicts both cached API
-and HTML details. A failed dependency lookup marks the HTML response `Vary: *`; the Worker declines
+backend dependency header and places it on the HTML response, so a required legal user-deletion purge can evict both cached API
+and HTML details. Tags are reserved for legal removal obligations, not freshness; ordinary changes
+wait for the Worker-owned TTL. A failed dependency lookup marks the HTML response `Vary: *`; the Worker declines
 to cache it while the page can still render. Missing, malformed, duplicate, or multi-tag origin
 values leave the path-derived tag intact. Anonymous posts supply no author tag.
 

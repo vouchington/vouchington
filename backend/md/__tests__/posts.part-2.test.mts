@@ -211,7 +211,7 @@ describe('posts', () => {
       await request.get(`/md/posts/${postId}`).expect(404)
     })
 
-    it('should set Cache-Control header with max-age=300', async () => {
+    it('sets a public Cache-Control header', async () => {
       const random = Math.random().toString(36).slice(2, 8)
       const postId = await insertTestPost({
         title: `Cache MD Post ${random}`,
@@ -224,7 +224,7 @@ describe('posts', () => {
       await setMarkdownPostVotesForTest({ postId, countUp: 1 })
       const request = createRequest()
       const response = await request.get(`/md/posts/${postId}`).expect(200)
-      expect(response.headers['cache-control']).toBe('public, max-age=300')
+      expect(response.headers['cache-control']).toBe('public')
     })
 
     it('returns ETag header for detail page', async () => {

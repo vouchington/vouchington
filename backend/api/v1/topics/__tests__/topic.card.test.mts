@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('topic.card', () => {
   describe('Topic Card Routes', () => {
@@ -41,10 +40,7 @@ describe('topic.card', () => {
           amount: 9500,
           currency: 'usd',
         })
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
       })
 
       it('should return 400 for non-card topic', async () => {

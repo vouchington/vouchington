@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import app from '../../app.mts'
 import { attachTopicProvenance } from '@services/content-provenance'
 import type { Context } from '@jongleberry/api-server'
@@ -5,7 +6,6 @@ import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../resp
 import { apiQuery } from '../../api-query-contract.mts'
 import { defineQueryContract, queryString } from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getUrlHostnameByAnyCachedBatch,
   getHostnameElectionByIdCachedBatch,
@@ -46,9 +46,7 @@ app.route('/api/v1/hostnames/compare').get(async (ctx: Context) => {
     return [canSeeModeration ? stripHostnameElectionFields(h) : toPublicViewHostname(h)]
   })
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   const hostnameIds = [...new Set(hostnames.map(h => h.id))]
   const topicIds = [...new Set(hostnames.flatMap(h => (h.topic_id ? [h.topic_id] : [])))]

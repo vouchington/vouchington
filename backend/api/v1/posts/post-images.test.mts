@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { insertTestPost, insertTestImage, createTestUser, followUser } from '@voucha/test-helpers'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('post-images', () => {
   let admin: PrivateUser
@@ -56,9 +55,8 @@ describe('post-images', () => {
         const request = createRequest()
         const response = await request.get(`/api/v1/posts/${getPostId}/images`).expect(200)
         expect(response.body.images).toEqual([])
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-        )
+
+        expect(response.headers['cache-control']).toBe('public')
         expect(response.headers.vary).toContain('Cookie')
         expect(response.headers.vary).toContain('Authorization')
       })
@@ -69,9 +67,8 @@ describe('post-images', () => {
           .get(`/api/v1/posts/${getFollowersPublicPostId}/images`)
           .expect(200)
         expect(response.body.images).toEqual([])
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-        )
+
+        expect(response.headers['cache-control']).toBe('public')
         expect(response.headers.vary).toContain('Cookie')
         expect(response.headers.vary).toContain('Authorization')
       })
@@ -86,7 +83,7 @@ describe('post-images', () => {
           .get(`/api/v1/posts/${getFollowersPrivatePostId}/images`)
           .expect(200)
         expect(response.body.images).toEqual([])
-        expect(response.headers['cache-control']).toBeUndefined()
+        expect(response.headers['cache-control']).toBe('private, no-store')
         expect(response.headers.vary).toBeUndefined()
       })
 
@@ -95,7 +92,7 @@ describe('post-images', () => {
         await request.authenticateAs(otherUser)
         const response = await request.get(`/api/v1/posts/${getPostId}/images`).expect(200)
         expect(response.body.images).toEqual([])
-        expect(response.headers['cache-control']).toBeUndefined()
+        expect(response.headers['cache-control']).toBe('private, no-store')
         expect(response.headers.vary).toBeUndefined()
       })
     })

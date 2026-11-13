@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { communityPageQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
@@ -20,7 +21,6 @@ import { attachRssFeedProvenance } from '@services/content-provenance'
 import { getRssFeedByIdCachedBatch } from '@services/entity-fetch'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
 import { indexById } from '@modules/utils'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 app
   .route('/api/v1/communities/:idOrSlug/list-items/rss-feeds')
@@ -46,9 +46,7 @@ app
     const result = await searchCommunityListItems(community.id, 'rss_feed', { limit, after })
     const entityIds = result.results.map(item => item.entity_id)
 
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     const output: Record<string, unknown> = {
       results: result.results.map(item => ({

@@ -13,8 +13,6 @@ import { createDeviceAndSessionTokens } from '@services/jwt-session'
 
 import type { PrivateUser } from '@services/users/types'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS, HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
-
 import { v7 } from 'uuid'
 
 describe('index', () => {
@@ -94,10 +92,7 @@ describe('index', () => {
         expect(hostname.votes_score_net).toBeUndefined()
         expect(hostname.votes_count_up).toBeUndefined()
         expect(hostname.votes_count_down).toBeUndefined()
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
       })
 
       it('returns public topic, election, and top URL payloads for hostname browse pages', async () => {
@@ -135,7 +130,7 @@ describe('index', () => {
 
         const response = await request.get('/api/v1/hostnames').expect(200)
 
-        expect(response.headers['cache-control']).toBeUndefined()
+        expect(response.headers['cache-control']).toBe('private, no-store')
       })
 
       it('should support query filter', async () => {
@@ -240,6 +235,5 @@ describe('index', () => {
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof insertTestCrawler)
   void (0 as unknown as typeof createDeviceAndSessionTokens)
-  void (0 as unknown as typeof HTTP_CACHE_LONG_MAX_AGE_SECONDS)
   void (0 as unknown as typeof v7)
 })

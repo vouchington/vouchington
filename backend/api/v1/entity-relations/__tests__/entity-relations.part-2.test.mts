@@ -18,7 +18,6 @@ import { getPublisherTypeTopics } from '@services/topics/publisher-type-topics'
 
 import type { PrivateUser } from '@services/users/types'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 describe('entity-relations', () => {
@@ -232,5 +231,4 @@ describe('entity-relations', () => {
     })
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
 })

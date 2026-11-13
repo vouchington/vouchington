@@ -7,7 +7,6 @@ import {
   getNativeOAuthClientDocument,
   NATIVE_OAUTH_CLIENT_APPS,
 } from '@services/oauth-authorization-server'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 // RFC 8414 and RFC 9728 discovery documents, fetched anonymously by OAuth and MCP clients, so these
 // routes intentionally skip the session-auth preamble. Several protected resources share this origin,
@@ -46,6 +45,6 @@ app.route('/api/v1/oauth/native-clients/:app').get((ctx: Context) => {
 })
 
 function sendDiscoveryDocument(ctx: Context, document: object): void {
-  setAnonymousPublicCacheHeaders(ctx, null, HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
+  setAnonymousPublicCacheHeaders(ctx, null)
   ctx.response.buffer(Buffer.from(JSON.stringify(document)), 'application/json')
 }

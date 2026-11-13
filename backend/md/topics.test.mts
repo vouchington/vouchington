@@ -26,7 +26,7 @@ describe('topics', () => {
       // response should have markdown headings for topics
       expect(response.text).toContain('## [')
       expect(response.headers['content-type']).toContain('text/markdown')
-      expect(response.headers['cache-control']).toBe('public, max-age=60')
+      expect(response.headers['cache-control']).toBe('public')
       expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 
@@ -102,7 +102,7 @@ describe('topics', () => {
       expect(response.text).toMatch(/^---/)
       expect(response.text).toContain('name')
       expect(response.text).toContain(`Detail MD Topic ${random}`)
-      expect(response.headers['cache-control']).toBe('public, max-age=300')
+      expect(response.headers['cache-control']).toBe('public')
       expect(response.headers['etag']).toMatch(/^"[A-Za-z0-9_-]+"$/)
     })
 

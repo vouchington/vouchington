@@ -18,29 +18,24 @@ HTTP API responses are a separate concern from preference storage. Anonymous opt
 publicly cacheable, but its outer response varies on `Cookie` and `Authorization`. After login, the
 same browser URL is fetched as an authenticated variant and the Worker bypasses its shared cache.
 
+The Cloudflare Worker owns HTTP cache lifetimes. Origins signal cacheability with plain `public`
+for cacheable anonymous responses and `private, no-store` for authenticated responses; they do not
+choose a freshness duration. The Worker applies its audience and route policy before returning a
+cacheable response to the client. Direct origin requests, including local development paths that
+bypass the Worker, receive the origin signal without an explicit freshness lifetime. A direct
+client must revalidate or apply its own HTTP caching policy rather than assume the edge lifetime.
+
 ## Cache Invalidation
 
 - **Entity cache**: Invalidated on mutations via job queue (`invalidate.*` from `@services/entity-cache`). Lookup caches and entity caches are invalidated separately when identifiers change (username, slug, aliases, URL).
-- **Search cache**: Natural TTL expiry (60s). No explicit invalidation.
-- **CF Worker edge cache**: Natural TTL expiry (30s anon, 24h bot/static) **plus** explicit
-  `Cache-Tag` purge. `@services/entity-cache/invalidate.mts` mints tags for the mutated
-  entity (`ts-shared/cache/cache-tags.mts` — `post:`, `topic:`, `user:`, `community:`,
-  `list:`, `story:`, `hostname:`, RSS feed/item tags, and coarse `sitemap`/`html` tags, using
-  both UUID and every known slug/alias/hostname form where those identifiers route publicly) and
-  POSTs `{tags}` to the worker's
-  `POST /infra/cache-purge`, gated by the `x-voucha-cache-purge-secret` header (reuses the
-  existing `CF_WORKER_SECRET` value under a distinct header name) and an explicit
-  `CF_WORKER_ROUTE` env var. The purge worker skips quietly when that route is unset instead of
-  guessing at `https://voucha.ai`, which keeps undeployed environments from sending purge jobs to
-  a production origin. The worker forwards the tags to `CachedOrigin`'s `purge(tags)` RPC method,
-  which calls `ctx.cache.purge({tags})` and throws if the cache binding is unavailable
-  (fail-closed, rather than silently no-oping on a cache-correctness path). Cloudflare accepts
-  only printable ASCII excluding space and comma, a bounded size per tag, and fails the whole
-  batch on one bad tag, so `@vouchington/utils/cache-tags` percent-encodes every identifier into
-  that alphabet (truncating on an escape boundary at the cap) and the purge route rejects a
-  non-conforming batch with 400 rather than letting it surface as a retried 502. Votes/elections are
-  intentionally **not** wired to this purge path — see `cache-tags.mts` — and self-heal within the
-  existing anon TTL instead.
+- **Search cache**: Natural expiry under its own Valkey TTL, independent of HTTP caching. No explicit invalidation.
+- **CF Worker edge cache**: Freshness comes from the Worker's audience and route TTL policy.
+  Anonymous readers may observe a cached response until it expires, including after a public post
+  changes visibility. Requests must not query the origin merely to re-check whether cached posts
+  are still public. Server-to-CDN `Cache-Tag` purging is reserved for legal removal obligations,
+  including copyright removal and user deletion; it is not a freshness mechanism. The authenticated
+  purge path remains separate from ordinary expiry and must fail visibly if a required legal purge
+  cannot complete.
 
 ## What is NOT Cached
 

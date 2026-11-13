@@ -5,7 +5,8 @@
 ## Cache Tiers
 
 The read path below traces a request across all three tiers, plus where the invalidation/purge
-path re-enters at Tier 1.
+path re-enters at Tier 1 for legal removals. The Worker alone chooses HTTP cache lifetimes;
+Valkey cache lifetimes are independent.
 
 ```mermaid
 flowchart TD
@@ -23,11 +24,11 @@ flowchart TD
         VCheck -- yes --> VHit["Return cached value"]
         VCheck -- no --> PG["Query PostgreSQL, populate Valkey"]
     end
-    VHit --> Headers["Tier 2: backend sets Cache-Control (60s lists, 300s entities, logged-out only)"]
+    VHit --> Headers["Tier 2: origin signals public or private, no-store"]
     PG --> Headers
-    Headers --> EdgeWrite["CF Worker overwrites max-age with edge TTL, writes Workers Cache"]
-    Mutation["Mutation"] --> Invalidate["invalidate.mts: unlink Valkey key, mint Cache-Tag"]
-    Invalidate --> Purge["POST /infra/cache-purge to CachedOrigin.purge"]
+    Headers --> EdgeWrite["CF Worker applies its TTL policy, writes Workers Cache"]
+    Mutation["Mutation"] --> Invalidate["Invalidate Valkey entity keys"]
+    Legal["Legal removal: copyright or user deletion"] --> Purge["Cache-Tag purge through authenticated worker endpoint"]
 ```
 
 ### Contents

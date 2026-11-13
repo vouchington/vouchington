@@ -12,7 +12,6 @@ import {
 // the exact original `processPostCreated` admission and terminal event for posts created
 // through the actual `createPost` write path.
 import { createPostWithEntityListenerCompletion as createTestPost } from '@voucha/test-helpers/entity-listener-posts'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { invalidate } from '@services/entity-cache'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 
@@ -40,10 +39,7 @@ describe('topic', () => {
         expect(response.body).toHaveProperty('html')
         expect(response.body).toHaveProperty('topic_categories')
         expect(Array.isArray(response.body.topic_categories)).toBe(true)
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
         expect(response.headers['vary']).toContain('Cookie')
         expect(response.headers['vary']).toContain('Authorization')
       })

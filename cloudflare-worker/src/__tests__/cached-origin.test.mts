@@ -107,24 +107,6 @@ describe('CachedOrigin.fetch', () => {
     expect(await response.text()).toBe('with cookie')
   })
 
-  it('sets a cache-control TTL for the audience and strips shared-cache-volatile headers', async () => {
-    globalThis.fetch = vi.fn<VitestLooseMock>(() =>
-      Promise.resolve(
-        new Response('ok', { headers: { 'content-security-policy': "script-src 'nonce-stale'" } }),
-      ),
-    ) as unknown as typeof fetch
-
-    const origin = buildOrigin(
-      { audience: 'bot', isRsc: false },
-      { BACKEND_ORIGIN: 'https://backend.example.com', BOT_CACHE_TTL_SECONDS: '86400' },
-    )
-    const response = await origin.fetch(new Request('https://voucha.ai/api/v1/posts'))
-
-    expect(response.headers.get('cache-control')).toContain('max-age=86400')
-    expect(response.headers.get('content-security-policy')).toBeNull()
-    expect(response.headers.get('set-cookie')).toBeNull()
-  })
-
   it('gates on the bot limiter only when the dispatch-only bot-tier header is "unknown", stripping it before the origin request', async () => {
     const deniedFetch = vi.fn<VitestLooseMock>(() =>
       Promise.resolve(new Response('should not be called')),

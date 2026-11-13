@@ -33,7 +33,8 @@ describe('GET /api/v1/podcast-episodes/:id/chapters', () => {
     const response = await request.get(`/api/v1/podcast-episodes/${episodeId}/chapters`).expect(200)
 
     expect(response.body).toEqual({ chapters: [] })
-    expect(response.headers['cache-control']).toMatch(/^public, max-age=/)
+
+    expect(response.headers['cache-control']).toBe('public')
   })
 
   it('returns chapters for authenticated users', async () => {
@@ -43,7 +44,7 @@ describe('GET /api/v1/podcast-episodes/:id/chapters', () => {
     const response = await request.get(`/api/v1/podcast-episodes/${episodeId}/chapters`).expect(200)
 
     expect(response.body).toEqual({ chapters: [] })
-    expect(response.headers['cache-control']).toBeUndefined()
+    expect(response.headers['cache-control']).toBe('private, no-store')
   })
 
   it('returns 422 for an invalid UUID', async () => {

@@ -12,7 +12,6 @@ import {
 import { getPostIdsCached } from '@services/entity-fetch/search-caches'
 import { parsePostsSearchParams } from '@services/search-params'
 
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS, HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { toFrontmatter } from '@modules/utils'
 import { getPublicPostIds } from '@services/posts'
 import type { Post } from '@services/posts/types'
@@ -66,7 +65,7 @@ app.route('/md/posts').get(async (ctx: Context) => {
   searchOptions.limit = clampAnonLimit(searchOptions.limit)
   searchOptions.omitLimit = false
 
-  ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
+  ctx.set('Cache-Control', 'public')
 
   if (shouldReturnEmpty) {
     const frontmatter = toFrontmatter({
@@ -139,7 +138,7 @@ app.route('/md/posts/:idOrSlug').get(async (ctx: Context) => {
     'Post not found',
   )
 
-  ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
+  ctx.set('Cache-Control', 'public')
 
   const url = getPostUrl(post)
   const frontmatter = toFrontmatter({

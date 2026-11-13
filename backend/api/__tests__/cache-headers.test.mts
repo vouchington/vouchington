@@ -8,12 +8,13 @@ describe('anonymous public cache headers', () => {
     const app = createVouchaApiApp()
     app.route('/cached').get(ctx => {
       ctx.set('Vary', 'Origin, Accept-Language')
-      setAnonymousPublicCacheHeaders(ctx, null, 60)
+      setAnonymousPublicCacheHeaders(ctx, null)
       ctx.json({ body: 'x'.repeat(1013) })
     })
 
     const response = await request(app.callback()).get('/cached').set('Accept-Encoding', 'gzip')
 
+    expect(response.headers['cache-control']).toBe('public')
     expect(response.headers['content-encoding']).toBe('gzip')
     expect(response.headers.vary?.split(',').map(value => value.trim())).toEqual([
       'Origin',

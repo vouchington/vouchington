@@ -127,7 +127,6 @@ describe('index', () => {
       const response = await request.get('/api/v1/memberships/plans').expect(200)
 
       expect(response.headers['cache-control']).toMatch(/public/)
-      expect(response.headers['cache-control']).toMatch(/max-age=/)
     })
 
     it('does not set Cache-Control for authenticated requests', async () => {
@@ -135,7 +134,7 @@ describe('index', () => {
       await request.authenticateAs(regularUser)
       const response = await request.get('/api/v1/memberships/plans').expect(200)
 
-      expect(response.headers['cache-control']).toBeUndefined()
+      expect(response.headers['cache-control']).toBe('private, no-store')
     })
 
     it('returns SKU fields in response', async () => {

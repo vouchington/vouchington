@@ -24,7 +24,6 @@ import {
   type CreateTopicUpdates,
 } from '@services/topics'
 import { assertNotSuspended, entityRelationViewerFor } from '@services/users'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
 import {
   parseJsonBody,
@@ -55,7 +54,7 @@ app
     if (!topicResult) ctx.throw(404, 'Topic not found')
     const { topic, topic_redirect } = topicResult
 
-    setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     const html = topic.markdown ? await renderMarkdown(topic.markdown) : ''
     const topicMetricsPromise = getTopicMetricsByAnyCached(topic.id).then(topicMetrics => {

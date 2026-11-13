@@ -11,7 +11,6 @@ import { submitRssFeedSource } from '@services/user-import-export/submit-rss-fee
 import { attachRssFeedProvenance } from '@services/content-provenance'
 import { searchRssFeedsCached } from '@services/entity-fetch'
 import { assertNotSuspended } from '@services/users'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   parseRssFeedsSearchParams,
   prepareRssFeedsSearchParams,
@@ -77,7 +76,7 @@ app
     const cursor = decodeRssFeedsCursor(after, searchOptions.sort)
 
     if (shouldReturnEmpty) {
-      setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
+      setAnonymousPublicCacheHeaders(ctx, currentUser)
       ctx.json({
         results: [],
         page_info: {
@@ -111,7 +110,7 @@ app
     })
     const pageFeeds = await attachRssFeedProvenance(feeds.map(proxyRssFeedCoverArt), currentUser)
 
-    setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     // Compute sidecars from the page slice only (not the over-fetched row).
     const sidecars = await buildRssFeedSidecars(pageFeeds, currentUser)

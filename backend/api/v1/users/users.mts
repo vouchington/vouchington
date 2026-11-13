@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -8,7 +9,6 @@ import {
   usersSearchCursorScope,
 } from '@services/users'
 import { getBookmarksForEntityGroups } from '@services/bookmarks/get'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { validateUsername } from '@modules/utils'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
@@ -88,9 +88,7 @@ app.route('/api/v1/users').get(async (ctx: Context) => {
   ctx.assert(user, 404, 'User not found')
 
   // Only cache for logged-out users
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   ctx.json({ user })
 })

@@ -1,3 +1,4 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
@@ -7,7 +8,6 @@ import {
   validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getListForWrite,
   getManageableList,
@@ -35,9 +35,7 @@ app
     const currentUserId = currentUser?.id ?? null
     ctx.assert(list && currentUserCanViewList(currentUserId, list), 404, 'List not found')
 
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     // The list came from the primary, so its provenance does too: a replica may not have it yet.
     const [labelled] = await attachListProvenance([list], currentUser, { readOnly: false })

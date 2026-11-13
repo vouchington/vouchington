@@ -1,6 +1,6 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import { clampAnonLimit, clampLimit } from '@services/pagination'
 import app from '../../app.mts'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { searchWeb, type WebSearchResult } from '@services/web-search'
 import { toPublicViewHostname } from '@services/urls-hostnames'
 import {
@@ -34,9 +34,7 @@ app.route('/api/v1/web-search').get(async ctx => {
   )
 
   if (query.length < 3) {
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
     ctx.json({ results: [], page_info: EMPTY_PAGE_INFO })
     return
   }
@@ -52,9 +50,7 @@ app.route('/api/v1/web-search').get(async ctx => {
     },
   }))
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   ctx.json({ results: publicResults, page_info })
 })

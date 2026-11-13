@@ -22,7 +22,6 @@ import type { PrivateUser } from '@services/users/types'
 import { VALID_COMMUNITY_NEWS_FEED_TYPES } from '@ts-shared/feed-capabilities'
 
 import { createHash } from 'node:crypto'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('community', () => {
   let user: PrivateUser
@@ -62,10 +61,7 @@ describe('community', () => {
         expect(response.body.user).not.toBeNull()
         expect(response.body.user.id).toBe(user.id)
         expect(response.body.user.username).toBe(user.username)
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-        )
+        expect(response.headers['cache-control']).toBe('public')
         expect(response.headers['vary']).toContain('Cookie')
         expect(response.headers['vary']).toContain('Authorization')
       })

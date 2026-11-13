@@ -60,14 +60,14 @@ export function registerRssFeedRouteTests(
     const rawKey = await freshKey()
     const request = createRequest()
     const response = await request.get(`${path}?apikey=${rawKey}`).expect(200)
-    expect(response.headers['cache-control']).toBe('private, max-age=300')
+    expect(response.headers['cache-control']).toBe('private, no-store')
     expect(response.headers['referrer-policy']).toBe('no-referrer')
   })
 
   it('sets public cache headers for anonymous access', async () => {
     const request = createRequest()
     const response = await request.get(path).expect(200)
-    expect(response.headers['cache-control']).toBe('public, max-age=300')
+    expect(response.headers['cache-control']).toBe('public')
     expect(response.headers['referrer-policy']).toBeUndefined()
   })
 

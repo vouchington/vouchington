@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
@@ -155,10 +154,6 @@ describe('topic.referral-program', () => {
       })
     })
 
-    registerTopicProgramAttributeRouteTests(
-      'referral',
-      ['patch'],
-      `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
-    )
+    registerTopicProgramAttributeRouteTests('referral', ['patch'], 'public')
   })
 })

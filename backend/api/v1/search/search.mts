@@ -1,6 +1,6 @@
+import { setAnonymousPublicCacheHeaders } from '../../cache-headers.mts'
 import { clampAnonLimit, clampLimit } from '@services/pagination'
 import app from '../../app.mts'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { defineQueryContract, queryInteger, queryString } from '@vouchington/pagination'
@@ -74,9 +74,7 @@ app.route('/api/v1/search').get(async ctx => {
     postAfter,
   })
 
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
+  setAnonymousPublicCacheHeaders(ctx, currentUser)
 
   ctx.json(result)
 })

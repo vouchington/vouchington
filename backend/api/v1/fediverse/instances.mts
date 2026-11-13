@@ -21,7 +21,6 @@ import {
 } from '@services/fediverse-instances'
 import { currentUserCanModifyFediverseInstanceIntegrationStatus } from '@services/fediverse-instances/authorization'
 import { indexById } from '@modules/utils'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { parseBooleanish } from '@ts-shared/utils/query'
 
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
@@ -118,7 +117,7 @@ app
       : await getTopicIdsCached(searchOptions)
     const topicIds = result.results.map(r => r.id)
 
-    setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_SHORT_MAX_AGE_SECONDS)
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
     const topicsPromise = getTopicByAnyCachedBatch(topicIds)
     const labeledTopics = topicsPromise.then(topics => attachTopicProvenance(topics, currentUser))
     const topicsIndexedPromise = labeledTopics.then(indexById)

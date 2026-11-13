@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createUserProfileFixture, safeUsername } from '@voucha/test-helpers'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { updateUserFields } from '@services/users/update-fields'
 import {
   PRIVATE_USER_PROFILE_COLLECTIONS,
@@ -29,10 +28,7 @@ describe('GET /api/v1/users/:idOrSlug collections', () => {
       .expect(200)
     expect(followingResponse.body.results).toHaveLength(1)
     expect(followingResponse.body.results[0].id).toBe(fixture.followingTopic.id)
-    expect(followingResponse.headers['cache-control']).toContain('public')
-    expect(followingResponse.headers['cache-control']).toContain(
-      `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-    )
+    expect(followingResponse.headers['cache-control']).toBe('public')
 
     const followerViewer = await createTestUser({
       username: safeUsername('users-viewer'),

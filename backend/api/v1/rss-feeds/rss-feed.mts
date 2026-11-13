@@ -22,7 +22,6 @@ import { assertNotSuspended, isAdminUser } from '@services/users'
 import type { UpdateRssFeedChanges } from '@services/rss-feeds/update'
 import { searchRssFeedCrawls } from '@services/rss-feeds/crawls'
 import { getMembershipByUserId } from '@services/memberships'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   parseJsonBody,
   getOptionalAuthAndRateLimit,
@@ -56,7 +55,7 @@ app
       currentUser,
     )
     ctx.assert(rssFeed, 404, 'RSS feed not found')
-    setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     const membership =
       currentUser && !currentUserCanRefreshRssFeed(currentUser)

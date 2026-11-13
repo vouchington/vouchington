@@ -16,7 +16,6 @@ import { createVoteClearHandler, createVoteHandler } from '../../election-vote-h
 import { getUserVouchElectionById } from '@services/elections-votes/user-vouch'
 import { userVouchVoteOptions } from '@services/elections-votes/user-vouch/vote-handler-options'
 import { getUserVouchContextResponse } from './get-user-vouch-context-response.mts'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import renderMarkdown from '@services/markdown'
 import {
   apiNoRequestBody,
@@ -80,7 +79,7 @@ app
       isAdminViewer ? getUserVouchElectionById(resolvedUser.id) : Promise.resolve(null),
     ])
 
-    setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
+    setAnonymousPublicCacheHeaders(ctx, currentUser)
 
     const response = {
       user: resolvedUser,

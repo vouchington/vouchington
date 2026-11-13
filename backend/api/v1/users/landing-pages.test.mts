@@ -46,8 +46,7 @@ describe('Public landing pages API', () => {
     expect(response.body.user.username).toBe(user.username)
     expect(response.body.landing_page.title).toBe('Public links')
     expect(response.body.landing_page.items).toHaveLength(1)
-    expect(response.headers['cache-control']).toContain('public')
-    expect(response.headers['cache-control']).toContain('max-age')
+    expect(response.headers['cache-control']).toBe('public')
   })
 
   it('returns 404 for unknown landing pages', async () => {

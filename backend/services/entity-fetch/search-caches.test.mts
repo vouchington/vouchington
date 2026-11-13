@@ -5,7 +5,7 @@ import { COMMUNITIES_ANON_CACHE } from '@services/entity-cache/anonymous-search-
 import { stableSerialize } from '@services/entity-cache/search-cache'
 import { searchCommunitiesCached } from './search-caches.mts'
 import { createRandomString, createTestUser, insertTestCommunity } from '@voucha/test-helpers'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { SEARCH_CACHE_TTL_SECONDS } from '@services/entity-cache/search-cache-ttl'
 
 describe('anonymous community search cache', () => {
   it('returns a cached result until its owned key is deleted', async () => {
@@ -14,7 +14,7 @@ describe('anonymous community search cache', () => {
     const options = { search: suffix, limit: 10 }
     const cache = new ValkeyCache<typeof options>({
       prefix: COMMUNITIES_ANON_CACHE,
-      ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
+      ttlSeconds: SEARCH_CACHE_TTL_SECONDS,
       keySerializer: stableSerialize,
     })
     let stored = Promise.withResolvers<void>()

@@ -1,6 +1,5 @@
 import type { Context } from '@jongleberry/api-server'
 import './financial-topic-routes-programs.mts'
-import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { getTopicByAnyCached } from '@services/entity-fetch'
 import {
   getCardAttributes,
@@ -29,7 +28,7 @@ app
 
     const cardAttributes = await getCardAttributes(topic)
     if (!cardAttributes) ctx.throw(404, 'Card attributes not found')
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
+    ctx.set('Cache-Control', 'public')
     ctx.json({ card_attributes: cardAttributes })
   })
   .patch(async (ctx: Context) => {
@@ -64,7 +63,7 @@ app
 
     const attributes = await getSpendingCategoryAttributes(topic)
     if (!attributes) ctx.throw(404, 'Spending category attributes not found')
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`)
+    ctx.set('Cache-Control', 'public')
     ctx.json({ spending_category_attributes: attributes })
   })
   .patch(async (ctx: Context) => {

@@ -3,6 +3,7 @@ import type { Context } from '@jongleberry/api-server'
 import {
   parseJsonBody,
   getOptionalAuthAndRateLimit,
+  setAnonymousPublicCacheHeaders,
   requireAuth,
   validateRequestContract,
 } from '../../response-helpers.mts'
@@ -14,7 +15,6 @@ import {
   setApplicationQuestions,
   type ApplicationQuestionInput,
 } from '@services/communities'
-import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 app
   .route('/api/v1/communities/:idOrSlug/application-questions')
@@ -33,7 +33,9 @@ app
     const questions = await getApplicationQuestions(community.id)
 
     if (!currentUser && community.visibility === 'public') {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
+      setAnonymousPublicCacheHeaders(ctx, null)
+    } else {
+      ctx.set('Cache-Control', 'private, no-store')
     }
 
     ctx.json({ questions })
