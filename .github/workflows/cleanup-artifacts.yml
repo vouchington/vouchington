@@ -29,6 +29,6 @@ jobs:
     permissions:
       actions: write
       contents: read
-    uses: vouchington/vouchington-tooling/.github/workflows/cleanup-artifacts.yml@8a48840ca216dfaa119d6cacd2789cb3c0dcdba1 # v2.0.0
+    uses: vouchington/vouchington-tooling/.github/workflows/cleanup-artifacts.yml@e4f21b79d1398af8dd76c70f0775ded58f0c4f80 # v2.0.1
     with:
       patterns-file: ci/cleanup-artifacts-patterns.json
