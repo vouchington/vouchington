@@ -1,23 +1,28 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createChannelPubSub } from '../channel-pubsub.mts'
+import { type ChannelPubSub, createChannelPubSub } from '../channel-pubsub.mts'
 
 const channelPrefix = 'test:valkey:channel-pubsub'
 
 describe('createChannelPubSub', () => {
   let cleanup: Array<() => void | Promise<void>> = []
-  let closeSubscriber: (() => Promise<void>) | null = null
+  let closePubSub: (() => Promise<void>) | null = null
 
+  // Owner close() releases the publisher and subscriber clients; closeSubscriber() alone leaves
+  // the publisher's Glide socket open for the rest of the fork.
   afterEach(async () => {
     for (const fn of cleanup.toReversed()) {
       await fn()
     }
     cleanup = []
-    if (closeSubscriber) {
-      await closeSubscriber()
-      closeSubscriber = null
-    }
+    await closePubSub?.()
+    closePubSub = null
   })
+
+  function own<T>(pubSub: ChannelPubSub<T>): ChannelPubSub<T> {
+    closePubSub = () => pubSub.close()
+    return pubSub
+  }
 
   function trackClose<T extends { close(): void | Promise<void> }>(subscription: T): T {
     cleanup.push(() => subscription.close())
@@ -25,8 +30,7 @@ describe('createChannelPubSub', () => {
   }
 
   it('publishes and receives JSON payloads', async () => {
-    const pubSub = createChannelPubSub<{ x: number }>(channelPrefix)
-    closeSubscriber = () => pubSub.closeSubscriber()
+    const pubSub = own(createChannelPubSub<{ x: number }>(channelPrefix))
 
     const key = randomUUID()
     const sub = trackClose(await pubSub.subscribe(key))
@@ -36,8 +40,7 @@ describe('createChannelPubSub', () => {
   })
 
   it('replays buffered messages after a handler is installed', async () => {
-    const pubSub = createChannelPubSub<{ x: string }>(channelPrefix)
-    closeSubscriber = () => pubSub.closeSubscriber()
+    const pubSub = own(createChannelPubSub<{ x: string }>(channelPrefix))
 
     const key = randomUUID()
     const sub = trackClose(await pubSub.subscribe(key))
@@ -59,11 +62,12 @@ describe('createChannelPubSub', () => {
   })
 
   it('supports custom serializers and deserializers', async () => {
-    const pubSub = createChannelPubSub<number>(channelPrefix, {
-      serialize: value => `value:${value}`,
-      deserialize: payload => Number(payload.slice(6)),
-    })
-    closeSubscriber = () => pubSub.closeSubscriber()
+    const pubSub = own(
+      createChannelPubSub<number>(channelPrefix, {
+        serialize: value => `value:${value}`,
+        deserialize: payload => Number(payload.slice(6)),
+      }),
+    )
 
     const key = randomUUID()
     const sub = trackClose(await pubSub.subscribe(key))
@@ -73,8 +77,7 @@ describe('createChannelPubSub', () => {
   })
 
   it('delivers a message to every active subscription for the same key', async () => {
-    const pubSub = createChannelPubSub<{ done: boolean }>(channelPrefix)
-    closeSubscriber = () => pubSub.closeSubscriber()
+    const pubSub = own(createChannelPubSub<{ done: boolean }>(channelPrefix))
 
     const key = randomUUID()
     const subA = trackClose(await pubSub.subscribe(key))
@@ -87,10 +90,11 @@ describe('createChannelPubSub', () => {
   })
 
   it('contains decode failures and keeps the subscription usable', async () => {
-    const pubSub = createChannelPubSub<{ x: number }>(channelPrefix, {
-      serialize: value => (value.x === 0 ? 'not-json' : JSON.stringify(value)),
-    })
-    closeSubscriber = () => pubSub.closeSubscriber()
+    const pubSub = own(
+      createChannelPubSub<{ x: number }>(channelPrefix, {
+        serialize: value => (value.x === 0 ? 'not-json' : JSON.stringify(value)),
+      }),
+    )
 
     const key = randomUUID()
     const sub = trackClose(await pubSub.subscribe(key))
@@ -102,8 +106,7 @@ describe('createChannelPubSub', () => {
   })
 
   it('rejects direct subscriber closure while subscriptions are active', async () => {
-    const pubSub = createChannelPubSub<{ x: number }>(channelPrefix)
-    closeSubscriber = () => pubSub.closeSubscriber()
+    const pubSub = own(createChannelPubSub<{ x: number }>(channelPrefix))
 
     const subscription = trackClose(await pubSub.subscribe(randomUUID()))
 
@@ -115,7 +118,7 @@ describe('createChannelPubSub', () => {
   })
 
   it('owner shutdown closes active subscriptions safely and is terminal', async () => {
-    const pubSub = createChannelPubSub<{ x: number }>(channelPrefix)
+    const pubSub = own(createChannelPubSub<{ x: number }>(channelPrefix))
     const key = randomUUID()
     const subscription = await pubSub.subscribe(key)
 
